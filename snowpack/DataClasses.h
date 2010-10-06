@@ -498,6 +498,7 @@ class Q_PROFILE_DAT {
 
 	public:
 		mio::Date date;
+		std::string stationname;
 		int  loc_for_snow;
 		int  loc_for_wind;
 

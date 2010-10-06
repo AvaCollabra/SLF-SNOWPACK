@@ -36,6 +36,7 @@ class SnowpackConfig : public mio::Config {
 		 * @param[in] i_filename string representing the absolute filename of the key/value file
 		 */
 		SnowpackConfig(const std::string& i_filename);
+		~SnowpackConfig();
 
 	private:
 		static const bool __init;     ///<helper variable to enable the init of static collection data

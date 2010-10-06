@@ -108,7 +108,7 @@ void Hazard::initializeHazard(const double TimeEnd, double *OldDrift, double Slo
 	Hdata[nHz-1].nHz = nHz;
 
 	qr_VersionUserRuntime(Hdata[0].sn_version, Hdata[0].sn_computation_date, 
-					  &Hdata[0].sn_jul_computation_date, Hdata[0].sn_user);
+					  &Hdata[0].sn_jul_computation_date, Hdata[0].sn_user, Hdata[0].sn_compile_date);
 
 	Hdata[0].wind_trans = driftIndex(OldDrift, 0., Hazard::wind_slab_density, 6, -1) / cos(SlopeAngle);
 	Hdata[0].wind_trans24 = driftIndex(OldDrift, 0., Hazard::wind_slab_density, 24, -1) / cos(SlopeAngle);

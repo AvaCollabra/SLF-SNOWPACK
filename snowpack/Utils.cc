@@ -252,7 +252,8 @@ int findUpperNode(const double& z, const vector<SN_NODE_DATA>& Ndata, const int&
  * @param *jul_computation_date Julian Date
  * @param *user
  */
-void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, char *user)
+void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, 
+					  char *user, mio::Date& date)
 {
 	char *logname;
 
@@ -264,6 +265,8 @@ void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_co
 	time_t ltime = mktime(timeinfo);
 	Date localdate(ltime);
 	
+	date = localdate;
+
 	// version and computation time
 	snprintf(version, MAX_STRING_LENGTH-1, "%s", SN_VERSION);
 	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());

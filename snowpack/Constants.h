@@ -45,7 +45,7 @@
  * Please only use SN_VERSION in the code
  */
 #ifndef SVNREV
-#define SVNREV "20100203.712pc" //"20100616.837-845Mpc" //
+#define SVNREV "20101006.001" //"20100616.837-845Mpc" //
 #endif
 #ifndef SN_VERSION
 	#define SN_VERSION SVNREV

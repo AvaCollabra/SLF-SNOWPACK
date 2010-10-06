@@ -35,7 +35,7 @@
  * @param w2 Weight of former layer l
  * @param *Pdata (Q_PROFILE_DAT)
  */
-void ml_ag_Average(const int e, const int l, const double w1, const double w2, Q_PROFILE_DAT *Pdata)
+void ml_ag_Average(const int& e, const int& l, const double& w1, const double& w2, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	Pdata[l].height += w1;
 	Pdata[l].layer_date = (w1*Pdata[e].layer_date + w2*Pdata[l].layer_date)/(w1+w2) ;
@@ -63,12 +63,12 @@ void ml_ag_Average(const int e, const int l, const double w1, const double w2, Q
 /**
  * @brief Eliminate the "empty" layers shift the remaining layers to form a compact snowpack
  * @param nE (int)
- * @param *Pdata (Q_PROFILE_DAT)
+ * @param Pdata (Q_PROFILE_DAT)
  */
-void ml_ag_Shift(const int nE, Q_PROFILE_DAT *Pdata)
+void ml_ag_Shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 {
-	int e, l=0;
-	for (e=1; e<nE; e++) {
+	int l = 0;
+	for (int e=1; e<nE; e++) {
 		if ( Pdata[e].height != SNOWPACK_UNDEFINED ) {
 			l++;
 			Pdata[l].height = Pdata[e].height;
@@ -88,9 +88,6 @@ void ml_ag_Shift(const int nE, Q_PROFILE_DAT *Pdata)
 			Pdata[l].marker = Pdata[e].marker;
 		}
 	} // for all old elements
-
-	return;
-
 } // End of ml_ag_Shift
 
 
@@ -99,7 +96,7 @@ void ml_ag_Shift(const int nE, Q_PROFILE_DAT *Pdata)
  * @param e1 (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Join2(const int e1, Q_PROFILE_DAT *Pdata)
+int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	int e2, aggreg = ON;
 
@@ -153,7 +150,7 @@ int ml_ag_Join2(const int e1, Q_PROFILE_DAT *Pdata)
  * @param e1 (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Join(const int e1, Q_PROFILE_DAT *Pdata)
+int ml_ag_Join(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	int e2, aggreg = ON;
 
@@ -387,7 +384,7 @@ int ml_ag_Classify(const double dendricity, const double sphericity, const doubl
  * @param nE (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Aggregate(int nE, Q_PROFILE_DAT *Pdata)
+int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	int e, nL, l, flag=OFF;
 	double l1, l2;

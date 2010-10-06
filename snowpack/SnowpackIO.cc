@@ -20,27 +20,39 @@
 
 #include <snowpack/SnowpackIO.h>
 
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg) {}
+using namespace std;
 
+#ifdef IMISDBIO
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), imisdbio(cfg) {}
+#else
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg) {}
+#endif
 void SnowpackIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
 	asciiio.readSnowCover(station, SSdata, Zdata);
 }
 
 void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
-						  const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+				const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	asciiio.writeSnowCover(date, station, Xdata, Zdata, forbackup);
 }
 	
 void SnowpackIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-						   const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, const Q_PROCESS_DAT& Hdata)
+				 const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, const Q_PROCESS_DAT& Hdata)
 {
 	asciiio.writeTimeSeries(station, Xdata, Sdata, Mdata, Hdata);
 }
 	
-void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station,
+void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
 						const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
-	asciiio.writeProfile(date, station, Xdata, Hdata);
+	asciiio.writeProfile(date, station, expo, Xdata, Hdata);
+}
+
+void SnowpackIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, const int& num)
+{
+#ifdef IMISDBIO
+	imisdbio.writeHazardData(station, Hdata, num);
+#endif
 }

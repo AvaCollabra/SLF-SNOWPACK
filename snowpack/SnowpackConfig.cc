@@ -91,6 +91,8 @@ bool SnowpackConfig::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
+SnowpackConfig::~SnowpackConfig() {}
+
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
 {
 	string variant = get("VARIANT", "Parameters", Config::nothrow);

@@ -31,7 +31,7 @@
 #include <snowpack/Utils.h>
 #include <snowpack/Laws.h>
 
-struct Q_PROFILE_DAT;
+#include <vector>
 
 /*
  * CONSTANTS
@@ -61,16 +61,16 @@ struct Q_PROFILE_DAT;
 /*
  * FUNCTION PROTOTYPES
  */
-void ml_ag_Average(const int e, const int l, const double w1, const double w2, Q_PROFILE_DAT *Pdata);
+void ml_ag_Average(const int& e, const int& l, const double& w1, const double& w2, std::vector<Q_PROFILE_DAT>& Pdata);
 
-void ml_ag_Shift(const int nE, Q_PROFILE_DAT *Pdata);
+void ml_ag_Shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata);
 
-int ml_ag_Join2(const int e1, Q_PROFILE_DAT *Pdata);
+int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
 
-int ml_ag_Join(const int e1, Q_PROFILE_DAT *Pdata);
+int ml_ag_Join(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
 
-int ml_ag_Classify(const double dendricity, const double sphericity, const double grain_dia, const int marker, const double theta_w, const double theta_i);
+int ml_ag_Classify(const double dendricity, const double sphericity, 
+			    const double grain_dia, const int marker, const double theta_w, const double theta_i);
 
-int ml_ag_Aggregate(int nE, Q_PROFILE_DAT *Pdata);
-
+int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata);
 #endif //End of Template.h

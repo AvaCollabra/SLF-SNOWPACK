@@ -74,7 +74,8 @@ int qr_BooleanTime(const double& JulianDate, double days_between,
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
 					 const std::string& station, const int& number_expo);
 
-void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, char *user);
+void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, 
+					  char *user, mio::Date& date);
 
 void qr_AverageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, 
 						SN_SURFACE_DATA& Sdata, SN_STATION_DATA& Xdata);

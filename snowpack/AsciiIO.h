@@ -59,8 +59,11 @@ class AsciiIO : public SnowpackIOInterface {
 							    const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, 
 							    const Q_PROCESS_DAT& Hdata);
 		
-		virtual void writeProfile(const mio::Date& date, const std::string& station,
+		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
 							 const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata);
+
+		virtual void writeHazardData(const std::string& station, 
+							    const std::vector<Q_PROCESS_DAT>& Hdata, const int& num);
 
 	private:
 		std::string getFilenamePrefix(const std::string& stationname);
@@ -88,6 +91,9 @@ class AsciiIO : public SnowpackIOInterface {
 		void writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_SURFACE_DATA *Sdata, 
 								  const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout);
 
+		void writeProfileDB(const mio::Date& date, const std::string& station, 
+						const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata);
+
 		mio::Config cfg;
 
 		double calculation_step_length, hazard_steps_between;
@@ -96,13 +102,14 @@ class AsciiIO : public SnowpackIOInterface {
 		int NUMBER_EXPO, NUMBER_SENSORS;//Actual number of "sensors" that are monitored, including tags in advanced mode
 		bool OUT_HEAT, OUT_LW, OUT_SW, OUT_METEO, OUT_HAZ, OUT_MASS, OUT_T, OUT_LOAD, OUT_STAB, OUT_CANOPY;
 		bool PERP_TO_SLOPE;
-		std::string variant, experiment, outpath;
+
+		std::string variant, experiment, outpath, inpath;
 
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
 		std::vector<double> depth_of_sensors;
 
 		int CHANGE_BC, MEAS_TSS;
-
+		static const std::string profile_filename;
 };
 
 #endif //End of AsciiIO.h

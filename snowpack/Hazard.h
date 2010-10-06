@@ -52,8 +52,10 @@ typedef struct Q_PROCESS_DAT {
 	char sn_version[MAX_STRING_LENGTH];          ///< SNOWPACK version
 	char sn_computation_date[MAX_STRING_LENGTH];
 	double sn_jul_computation_date;
+	mio::Date sn_compile_date;
 	char sn_user[MAX_STRING_LENGTH];             ///< SNOWPACK user
 	int nHz;               ///< Number of hazard steps
+
 	// Snow depth
 	double ch;             ///< cm
 	// SWE, total liquid water content and runoff
