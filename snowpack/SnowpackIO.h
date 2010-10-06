@@ -30,7 +30,7 @@
 #include <snowpack/ImisDBIO.h>
 #endif
 
-class SnowpackIO : public SnowpackIOInterface{
+class SnowpackIO : public SnowpackIOInterface {
 
 	public:
 		SnowpackIO(const mio::Config& i_cfg);

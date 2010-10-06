@@ -31,6 +31,10 @@ const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE sta
 
 const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,wstao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43,:44)";
 
+string ImisDBIO::oracleDB = "";
+string ImisDBIO::oracleUser = "";
+string ImisDBIO::oraclePassword = "";
+
 ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 {
 	cfg.getValue("DBNAME", "Output", oracleDB, Config::nothrow);
