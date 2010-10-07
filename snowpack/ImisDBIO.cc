@@ -128,10 +128,12 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 	if (datestart[3] == 24){
 		mio::Date tmpDate = dateStart + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
+		tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	}
 	if (dateend[3] == 24){
 		mio::Date tmpDate = dateEnd + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
+		tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	}
 
@@ -166,6 +168,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){
 		mio::Date tmpDate = dateSn + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
+		tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
@@ -179,6 +182,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 		if (hzdate[3] == 24){
 			mio::Date tmpDate = dateH + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
+			tmpDate.setTimeZone(in_tz);
 			tmpDate.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 		}
 
@@ -205,7 +209,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setNumber(param++, Hdata[i].hoar_ind24);
 		stmt->setNumber(param++, Hdata[i].wind_trans);
 		stmt->setNumber(param++, Hdata[i].hns3);
-		stmt->setNumber(param++, Hdata[i].hns6);
+		stmt->setNumber(param++, Hdata[i].hns6); 
 		stmt->setNumber(param++, Hdata[i].hns12);
 		stmt->setNumber(param++, Hdata[i].hns24);
 		stmt->setNumber(param++, Hdata[i].hns72);
@@ -218,7 +222,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setNumber(param++, Hdata[i].wc72);
 		stmt->setNumber(param++, Hdata[i].hoar_size);
 		stmt->setNumber(param++, Hdata[i].wind_trans24);
-		
+
 		stmt->setNumber(param++, Hdata[i].stab_class1);
 		stmt->setNumber(param++, Hdata[i].stab_class2);
 		stmt->setNumber(param++, Hdata[i].stab_index1);
@@ -231,7 +235,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setNumber(param++, Hdata[i].stab_height4);
 		stmt->setNumber(param++, Hdata[i].stab_index5);
 		stmt->setNumber(param++, Hdata[i].stab_height5);
-		
+
 		stmt->setNumber(param++, Hdata[i].ch);
 		stmt->setNumber(param++, Hdata[i].crust);
 		if (Hdata[i].en_bal < -9999.9){
@@ -248,6 +252,11 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setNumber(param++, Hdata[i].swe);
 		stmt->setNumber(param++, Hdata[i].tot_lwc);
 		stmt->setNumber(param++, Hdata[i].runoff);
+
+		/*for (unsigned int ii=10; ii<45; ii++){
+			if (ii!=41)
+				stmt->setNumber(ii, 0.0);
+				}	*/	
 
 		rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		conn->terminateStatement(stmt);

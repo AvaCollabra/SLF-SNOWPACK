@@ -33,12 +33,12 @@
 #define RESEARCH 1
 
 /// @brief Default research variant
-#define DEFAULT 0
+#define DEFLT 0
 #define JAPAN 1
 #define ANTARCTICA 2
 #define CALIBRATION 3
 
-#define VARIANT DEFAULT //CALIBRATION //ANTARCTICA //JAPAN //
+#define VARIANT DEFLT //CALIBRATION //ANTARCTICA //JAPAN //
 
 /**
  * @brief SVNREV is given as a compilation flag to tell us what is the version number \n

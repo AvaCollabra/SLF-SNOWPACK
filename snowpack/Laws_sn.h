@@ -141,11 +141,11 @@ typedef enum {
 	#define VISC_CAL VS_ANT //VS_STEINKOGLER //DEFAULT //
 	#define SETFIX 0
 #else
-	#define T_TERM DEFAULT
+	#define T_TERM DEFLT
 	#define V_TIME_FUDGE 11.
 	#define V_ICE_FUDGE 0.5
 	#define V_SP_FUDGE 0.3
-	#define VISC_CAL DEFAULT
+	#define VISC_CAL DEFLT
 	#define SETFIX 0
 #endif
 /// @brief Defines the smallest allowable viscosity (Pa s) that a viscosity law will return.
