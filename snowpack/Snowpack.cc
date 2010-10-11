@@ -100,13 +100,13 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	ENFORCE_MEASURED_SNOW_HEIGHTS = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
+	enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
 
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
-	CANOPY = cfg.get("CANOPY", "Parameters");
+	useCanopyModel = cfg.get("CANOPY", "Parameters");
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
@@ -141,6 +141,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	// Defines whether soil layers are used
 	SNP_SOIL = cfg.get("SNP_SOIL", "Parameters");
 
+	research_mode = cfg.get("RESEARCH", "Parameters");
 
 	string tmp_viscosity_model = cfg.get("VISCOSITY_MODEL", "Parameters"); 
 	viscosity_model = tmp_viscosity_model;
@@ -708,7 +709,7 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// What snow depth should be used?
-	if ( ENFORCE_MEASURED_SNOW_HEIGHTS && (Xdata.SlopeAngle < 0.017 * Constants::pi) ) {
+	if ( enforce_measured_snow_heights && (Xdata.SlopeAngle < 0.017 * Constants::pi) ) {
 		hs = Mdata.hs1;
 	} else {
 		hs = Xdata.cH;
@@ -735,8 +736,8 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 		Alb = Xdata.SoilAlb;
 	}
 
-	if ( !(CANOPY && (Xdata.Cdata.height > 3.5)) ) {
-		if ( RESEARCH ) { // Treatment of "No Snow" on the ground in research mode
+	if ( !(useCanopyModel && (Xdata.Cdata.height > 3.5)) ) {
+		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
 			if ( (hs < 0.02) || (NDS[nN-1].T > C_TO_K(3.5)) ||
 				((hs < 0.05) && (NDS[nN-1].T > C_TO_K(1.7))) ) {
 				Alb = Xdata.SoilAlb;
@@ -1286,7 +1287,7 @@ double Snowpack::calculateNewSnowDensity(const SN_MET_DATA& Mdata, const SN_STAT
 
 /**
  * @brief Determines whether new snow elements are added on top of the snowpack
- * - If ENFORCE_MEASURED_SNOW_HEIGHTS=0 (research mode), new snow height corresponding to cumulated
+ * - If enforce_measured_snow_heights=0 (research mode), new snow height corresponding to cumulated
  *   new snow water equivalent cumu_hnw must be greater than HNS_NE_HEIGHT to be added to Xdata->mH
  * - In case of virtual slopes, uses new snow depth and density from either flat field or luv slope
  * - The first thing is to calculate the height of each element in the snow layer. For now,
@@ -1320,7 +1321,7 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 	}
 	rho_hn = calculateNewSnowDensity(Mdata, Xdata, t_surf, cumu_hnw, Snowpack::hn_density_model);
 
-	if ( !ENFORCE_MEASURED_SNOW_HEIGHTS ) {
+	if ( !enforce_measured_snow_heights ) {
 		if ( Mdata.ta < C_TO_K(thresh_rain) ) {
 			if ( (rho_hn != NODATA) && (cumu_hnw/rho_hn > hns_ne_height*cos_sl) ) {
 				Xdata.mH += (cumu_hnw/rho_hn);
@@ -1335,7 +1336,7 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 	}
 	// Check thresholds to see if a new snow layer has appeared
 	// NOTE No new snow during cloud free conditions
-	if ( ((Mdata.rh > THRESH_RH) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0)) ||  !ENFORCE_MEASURED_SNOW_HEIGHTS || (Xdata.hn_slope > 0.) ) {
+	if ( ((Mdata.rh > THRESH_RH) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0)) ||  !enforce_measured_snow_heights || (Xdata.hn_slope > 0.) ) {
 		if ( Xdata.cH < (Xdata.mH - (hns_ne_height*cos_sl)) || (Xdata.hn_slope > 0.) ) {
 			// In case of virtual slope use new snow depth and density from either flat field or luv slope
 		  if ( Xdata.rho_slope > 0. && (Xdata.SlopeAngle >= 0.017*Constants::pi) ) {

@@ -79,6 +79,8 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - default: 1
 	 * - Antarctica: 0 */
 	force_rh_water = cfg.get("FORCE_RH_WATER", "Parameters");
+
+	research_mode = cfg.get("RESEARCH", "Parameters");
 }
 
 /**
@@ -209,6 +211,22 @@ void Hazard::calculateMeltFreezeCrust(const SN_STATION_DATA& Xdata, Q_PROCESS_DA
 		Hdata_ind.crust = -1;
 	} 
 }
+
+/***********************************************************************************************/
+double Hazard::calcDewPointDeficit(double TA, double TSS, double RH)
+/*---------------------------------------------------------------------------------------------+
+ | Determines the dew point deficit in degC                                                    |
+ +---------------------------------------------------------------------------------------------*/
+{ 
+  double b=9.5, c=265.5;
+  
+  TA = K_TO_C(TA);
+  TSS = K_TO_C(TSS);
+
+  return(TSS - (c*(log10(RH) + b*TA/(c+TA))/
+                (b - log10(RH) - b*TA/(c+TA))));
+  
+} // End of ml_hz_DewPointDeficit
 
 
 /**
@@ -373,8 +391,13 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 	}
 
 	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
-	Hdata.dewpt_def = K_TO_C(Xdata.Ndata[Xdata.getNumberOfNodes()-1].T) 
-		- RhtoDewPoint(Mdata.rh, K_TO_C(Mdata.ta), force_rh_water);
+	if (research_mode){
+		Hdata.dewpt_def = K_TO_C(Xdata.Ndata[Xdata.getNumberOfNodes()-1].T) 
+			- RhtoDewPoint(Mdata.rh, K_TO_C(Mdata.ta), force_rh_water);
+	} else {
+		Hdata.dewpt_def = calcDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
+	}
+
 	if ( !((Hdata.dewpt_def > -50.) && (Hdata.dewpt_def < 50.)) ) {
 		Hdata_ind.dewpt_def = -1;
 	}

@@ -180,7 +180,10 @@ class Hazard {
 		static const bool r_in_n;
 
 	private:		
+		double calcDewPointDeficit(double TA, double TSS, double RH);
+
 		mio::Config cfg;
+		bool research_mode;
 		bool enforce_measured_snow_heights;
 		bool force_rh_water;
 		double sn_dt, calculation_step_length;

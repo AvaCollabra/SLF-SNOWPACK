@@ -104,7 +104,7 @@ void Radiation::computeDayNumbers(const mio::Date& date, double& day_number, dou
 	// Calculate the day-of-the-year (DOY) from the Julian Date
 	date.getDate(YYYY, MM, DD, HH, MI);
 	Date year_end(YYYY-1, 12, 31, 0, 0);
-	day_number = date.getJulianDate() - year_end.getJulianDate();
+	day_number = (int)(date.getJulianDate() - year_end.getJulianDate());
 
 	// Calculate the day-of-the-year (DOY) from the Julian Date starting at spring equinox
 	// spring equinox time in days from the beginning of the year (Bourges (1985))
@@ -458,7 +458,7 @@ void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Md
                                    PositionSun& Psolar, RadiationData& Rdata)
 {
 	// SOLAR PARAMETERS have to be calculated
-	double local_time = Mdata.date.getJulianDate() - floor(Mdata.date.getJulianDate()); // in days
+	double local_time = Mdata.date.getJulianDate() - floor(Mdata.date.getJulianDate()) - 0.5; // in julian days
 	// Compute daily solar parameters once a day (shortly after midnight)
 	if( (local_time > 0.005 && local_time < 0.016) || !(Psolar.ecc_corr > 0.) ) {
 		computeSolarDailyParameters(Mdata.date, Psolar);

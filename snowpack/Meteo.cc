@@ -40,7 +40,7 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 *         recommended with Neumann b.c., i.e., BC_CHANGE=0
 	 * - (-1): Simplified Richardson number stability correction
 	 */
-	NEUTRAL = cfg.get("NEUTRAL", "Parameters");
+	neutral = cfg.get("NEUTRAL", "Parameters");
 
 	/**
 	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
@@ -52,7 +52,7 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
-	CANOPY = cfg.get("CANOPY", "Parameters");
+	useCanopyModel = cfg.get("CANOPY", "Parameters");
 
 
 	/**
@@ -60,6 +60,8 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 * Required for surface energy exchange calculation and for drifting and blowing snow.
 	 */
 	HEIGHT_OF_WIND_VALUE = cfg.get("HEIGHT_OF_WIND_VALUE", "Parameters");
+
+	research_mode = cfg.get("RESEARCH", "Parameters");
 }
 
 
@@ -144,7 +146,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 		z_ratio = log((zref - d_pump) / z0);
 		
 		// Prepare Values for Richardson
-		if ( NEUTRAL < 0 ) { // Switch for Richardson
+		if ( neutral < 0 ) { // Switch for Richardson
 			Ri = Constants::g / tss_v * (ta_v - tss_v) * zref / vw / vw;
 			if ( Ri < 0.2 ) {// neutral and unstable
 				stab_ratio = Ri;
@@ -166,7 +168,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 
 			// Calculate ustar
 			ustar = 0.4 * vw / (z_ratio - psi_m);
-		} else if ( NEUTRAL == 0 || (!RESEARCH && Mdata.tss > 273. && Mdata.ta > 277.) ) { // MO Iteration
+		} else if ( neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.)) ) { // MO Iteration
 			// Calculate ustar
 			ustar = 0.4 * vw / (z_ratio - psi_m);
 			// Calculate Tstar
@@ -240,13 +242,10 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
  */
 void Meteo::calculateMeteo(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata)
 {
-	if (CANOPY)
+	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, ROUGHNESS_LENGTH, HEIGHT_OF_WIND_VALUE);
 
-	if (!CANOPY || Xdata->Cdata.zdispl < 0.)
+	if (!useCanopyModel || Xdata->Cdata.zdispl < 0.)
 		MicroMet(*Xdata, *Mdata);
-} // End Meteo
+}
 
-/*
- * End of Meteo.c
-*/

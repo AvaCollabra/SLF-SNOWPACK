@@ -48,7 +48,8 @@ class Meteo {
 		void MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata);
 		
 		mio::Config cfg;
-		int NEUTRAL, CANOPY;
+		int neutral;
+		bool research_mode, useCanopyModel;
 		double ROUGHNESS_LENGTH;
 		double HEIGHT_OF_WIND_VALUE;
 		Canopy canopy;

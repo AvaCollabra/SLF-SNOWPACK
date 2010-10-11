@@ -120,20 +120,20 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 	//IMIS is in TZ=+1, so moving back to this timezone
 	mio::Date dateS(dateStart), dateE(dateEnd);
-	dateS.setTimeZone(in_tz);
-	dateE.setTimeZone(in_tz);
+	//dateS.setTimeZone(in_tz);
+	//dateE.setTimeZone(in_tz);
 	dateS.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	dateE.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 
 	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 	if (datestart[3] == 24){
 		mio::Date tmpDate = dateStart + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		tmpDate.setTimeZone(in_tz);
+		//tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	}
 	if (dateend[3] == 24){
 		mio::Date tmpDate = dateEnd + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		tmpDate.setTimeZone(in_tz);
+		//tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	}
 
@@ -164,11 +164,11 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	IOUtils::convertString(sn_version, Hdata[0].sn_version);
 
 	mio::Date dateSn(Hdata[0].sn_compile_date);
-	dateSn.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
+	//dateSn.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
 	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){
 		mio::Date tmpDate = dateSn + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		tmpDate.setTimeZone(in_tz);
+		//tmpDate.setTimeZone(in_tz);
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
@@ -176,13 +176,13 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		
 		vector<int> hzdate = vector<int>(5);
 		mio::Date dateH(Hdata[i].date);
-		dateH.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
+		//dateH.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
 		dateH.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 
 		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 		if (hzdate[3] == 24){
 			mio::Date tmpDate = dateH + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-			tmpDate.setTimeZone(in_tz);
+			//tmpDate.setTimeZone(in_tz);
 			tmpDate.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 		}
 

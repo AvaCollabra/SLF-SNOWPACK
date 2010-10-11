@@ -29,8 +29,6 @@
 
 /// @brief Defines whether a distributed or 1D use of SNOWPACK is foreseen
 #define ALPINE3D 0
-/// @brief Defines whether SNOWPACK is run in research or operational mode
-#define RESEARCH 1
 
 /// @brief Default research variant
 #define DEFLT 0
