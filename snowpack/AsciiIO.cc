@@ -1428,7 +1428,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 	return true;
 }
 
-void AsciiIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, const int& num)
+void AsciiIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
+						const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	throw IOException("Nothing implemented here!", AT);
 }

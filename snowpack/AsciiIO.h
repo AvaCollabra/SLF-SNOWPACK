@@ -62,8 +62,8 @@ class AsciiIO : public SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
 							 const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata);
 
-		virtual void writeHazardData(const std::string& station, 
-							    const std::vector<Q_PROCESS_DAT>& Hdata, const int& num);
+		virtual void writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
+							    const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
 
 	private:
 		std::string getFilenamePrefix(const std::string& stationname);

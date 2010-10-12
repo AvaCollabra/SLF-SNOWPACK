@@ -50,9 +50,10 @@ void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station,
 	asciiio.writeProfile(date, station, expo, Xdata, Hdata);
 }
 
-void SnowpackIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, const int& num)
+void SnowpackIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
+						   const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 #ifdef IMISDBIO
-	imisdbio.writeHazardData(station, Hdata, num);
+	imisdbio.writeHazardData(station, Hdata, Hdata_ind, num);
 #endif
 }

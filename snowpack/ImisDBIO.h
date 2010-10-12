@@ -43,8 +43,9 @@ class ImisDBIO : public SnowpackIOInterface{
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
 							 const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata);
 
-		virtual void writeHazardData(const std::string& station,
-							    const std::vector<Q_PROCESS_DAT>& Hdata, const int& num);
+		virtual void writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
+							    const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
+
 	private:
 		void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
 
@@ -53,8 +54,8 @@ class ImisDBIO : public SnowpackIOInterface{
 					  oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
 		void insertHdata(const std::string& stationName, const std::string& stationNumber,
-					  const std::vector<Q_PROCESS_DAT>& Hdata, const int& num, 
-					  oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
+					  const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind, 
+					  const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
 		mio::Config cfg;
 		static std::string oracleDB, oracleUser, oraclePassword;

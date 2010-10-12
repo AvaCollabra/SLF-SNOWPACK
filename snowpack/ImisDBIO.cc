@@ -65,7 +65,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, const int& num)
+void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
+						 const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == ""))
 		throw IOException("You must set the output database, username and password", AT);
@@ -82,7 +83,7 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
 		conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
 
 		deleteHdata(stationName, stationNumber, Hdata[0].date, Hdata[num-1].date, env, conn);
-		insertHdata(stationName, stationNumber, Hdata, num, env, conn);
+		insertHdata(stationName, stationNumber, Hdata, Hdata_ind, num, env, conn);
 
 		env->terminateConnection(conn);
 		Environment::terminateEnvironment(env); // static OCCI function
@@ -155,8 +156,8 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
-					  const std::vector<Q_PROCESS_DAT>& Hdata, const int& num, 
-					  oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
+					  const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind, 
+					  const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
 {
 	vector<int> sndate = vector<int>(5);
 	unsigned int rows_inserted = 0;
@@ -204,59 +205,92 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setNumber(param++, statNum);
 		stmt->setNumber(param++, statNum);
 		
-		stmt->setNumber(param++, Hdata[i].dewpt_def);
-		stmt->setNumber(param++, Hdata[i].hoar_ind6);
-		stmt->setNumber(param++, Hdata[i].hoar_ind24);
-		stmt->setNumber(param++, Hdata[i].wind_trans);
-		stmt->setNumber(param++, Hdata[i].hns3);
-		stmt->setNumber(param++, Hdata[i].hns6); 
-		stmt->setNumber(param++, Hdata[i].hns12);
-		stmt->setNumber(param++, Hdata[i].hns24);
-		stmt->setNumber(param++, Hdata[i].hns72);
-		stmt->setNumber(param++, Hdata[i].hns72_24);
+		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def); 
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hoar_ind6 != -1)	stmt->setNumber(param++, Hdata[i].hoar_ind6);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hoar_ind24 != -1) stmt->setNumber(param++, Hdata[i].hoar_ind24);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wind_trans != -1) stmt->setNumber(param++, Hdata[i].wind_trans);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns3 != -1)       stmt->setNumber(param++, Hdata[i].hns3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns6 != -1)       stmt->setNumber(param++, Hdata[i].hns6);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns12 != -1)      stmt->setNumber(param++, Hdata[i].hns12);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns24 != -1)      stmt->setNumber(param++, Hdata[i].hns24);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns72 != -1)      stmt->setNumber(param++, Hdata[i].hns72);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].hns72_24 != -1)   stmt->setNumber(param++, Hdata[i].hns72_24);
+		else stmt->setNull(param++, occi::OCCINUMBER);
 		
-		stmt->setNumber(param++, Hdata[i].wc3);
-		stmt->setNumber(param++, Hdata[i].wc6);
-		stmt->setNumber(param++, Hdata[i].wc12);
-		stmt->setNumber(param++, Hdata[i].wc24);
-		stmt->setNumber(param++, Hdata[i].wc72);
-		stmt->setNumber(param++, Hdata[i].hoar_size);
-		stmt->setNumber(param++, Hdata[i].wind_trans24);
+		if (Hdata_ind[i].wc3 != -1)        stmt->setNumber(param++, Hdata[i].wc3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wc6 != -1)        stmt->setNumber(param++, Hdata[i].wc6);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wc12 != -1)       stmt->setNumber(param++, Hdata[i].wc12);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wc24 != -1)       stmt->setNumber(param++, Hdata[i].wc24);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wc72 != -1)       stmt->setNumber(param++, Hdata[i].wc72);
+		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		stmt->setNumber(param++, Hdata[i].stab_class1);
-		stmt->setNumber(param++, Hdata[i].stab_class2);
-		stmt->setNumber(param++, Hdata[i].stab_index1);
-		stmt->setNumber(param++, Hdata[i].stab_height1);
-		stmt->setNumber(param++, Hdata[i].stab_index2);
-		stmt->setNumber(param++, Hdata[i].stab_height2);
-		stmt->setNumber(param++, Hdata[i].stab_index3);
-		stmt->setNumber(param++, Hdata[i].stab_height3);
-		stmt->setNumber(param++, Hdata[i].stab_index4);
-		stmt->setNumber(param++, Hdata[i].stab_height4);
-		stmt->setNumber(param++, Hdata[i].stab_index5);
-		stmt->setNumber(param++, Hdata[i].stab_height5);
+		if (Hdata_ind[i].hoar_size != -1)  stmt->setNumber(param++, Hdata[i].hoar_size);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].wind_trans24 != -1) stmt->setNumber(param++, Hdata[i].wind_trans24);
+		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		stmt->setNumber(param++, Hdata[i].ch);
-		stmt->setNumber(param++, Hdata[i].crust);
-		if (Hdata[i].en_bal < -9999.9){
-			stmt->setNumber(param++, -9999.9);
-		} else {
-			stmt->setNumber(param++, Hdata[i].en_bal);
-		}
-		stmt->setNumber(param++, Hdata[i].sw_net);
-		stmt->setNumber(param++, Hdata[i].t_top1);
-		stmt->setNumber(param++, Hdata[i].t_top2);
+		if (Hdata_ind[i].stab_class1 != -1)  stmt->setNumber(param++, Hdata[i].stab_class1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_class2 != -1)  stmt->setNumber(param++, Hdata[i].stab_class2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index4);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height4);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index5);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height5);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].ch != -1)     stmt->setNumber(param++, Hdata[i].ch);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].crust != -1)  stmt->setNumber(param++, Hdata[i].crust);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].en_bal != -1) stmt->setNumber(param++, Hdata[i].en_bal);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].sw_net != -1)  stmt->setNumber(param++, Hdata[i].sw_net);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].t_top1 != -1)  stmt->setNumber(param++, Hdata[i].t_top1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].t_top2 != -1)  stmt->setNumber(param++, Hdata[i].t_top2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
 		stmt->setNumber(param++, sn_version);
-
 		stmt->setDate(param++, computationdate);
-		stmt->setNumber(param++, Hdata[i].swe);
-		stmt->setNumber(param++, Hdata[i].tot_lwc);
-		stmt->setNumber(param++, Hdata[i].runoff);
 
-		/*for (unsigned int ii=10; ii<45; ii++){
-			if (ii!=41)
-				stmt->setNumber(ii, 0.0);
-				}	*/	
+		if (Hdata_ind[i].swe != -1)      stmt->setNumber(param++, Hdata[i].swe);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].tot_lwc != -1)  stmt->setNumber(param++, Hdata[i].tot_lwc);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].runoff != -1)   stmt->setNumber(param++, Hdata[i].runoff);
+		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		conn->terminateStatement(stmt);
