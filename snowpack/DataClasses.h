@@ -505,7 +505,7 @@ class Q_PROFILE_DAT {
 		// Version used, date, user, ...
 		std::string sn_version;
 		std::string sn_computation_date;
-		std::string sn_jul_computation_date;
+		double sn_jul_computation_date;
 		std::string sn_user;
 
 		// Data

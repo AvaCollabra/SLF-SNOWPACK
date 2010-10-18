@@ -27,6 +27,8 @@
 class SnowpackIOInterface {
 
 	public:
+		virtual ~SnowpackIOInterface(){}
+		
 		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, 
 							  SN_ZWISCHEN_DATA& Zdata) = 0;
 	  
