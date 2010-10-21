@@ -25,6 +25,7 @@
 #include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 #include <occi.h>
+#include <cctype>
 
 class ImisDBIO : public SnowpackIOInterface{
 
@@ -58,11 +59,13 @@ class ImisDBIO : public SnowpackIOInterface{
 					  const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
 		mio::Config cfg;
+		static bool research_mode;
 		static std::string oracleDB, oracleUser, oraclePassword;
 
 		static const double in_tz; //All IMIS data is in gmt+1
 		static const std::string sqlDeleteHdata; //Delete statement for Hdata from snowpack.ams_pmod
 		static const std::string sqlInsertHdata; //Insert statement for Hdata to snowpack.ams_pmod
+		static const std::string profile_filename;
 };
 
 #endif //End of ImisDBIO.h

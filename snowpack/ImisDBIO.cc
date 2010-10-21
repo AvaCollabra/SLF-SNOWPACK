@@ -27,6 +27,8 @@ using namespace oracle::occi;
 
 const double ImisDBIO::in_tz = 1.; //All IMIS data is in gmt+1
 
+bool ImisDBIO::research_mode = true;
+
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and wstao_nr = :3 and datum>=:4 and datum<=:5";
 
 const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,wstao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43,:44)";
@@ -35,11 +37,15 @@ string ImisDBIO::oracleDB = "";
 string ImisDBIO::oracleUser = "";
 string ImisDBIO::oraclePassword = "";
 
+const std::string ImisDBIO::profile_filename = "loaddata/pmodpro.dat";
+
 ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 {
 	cfg.getValue("DBNAME", "Output", oracleDB, Config::nothrow);
 	cfg.getValue("DBUSER", "Output", oracleUser, Config::nothrow);
 	cfg.getValue("DBPASS", "Output", oraclePassword, Config::nothrow);
+
+	research_mode = cfg.get("RESEARCH", "Parameters");
 }
 
 void ImisDBIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
@@ -58,11 +64,97 @@ void ImisDBIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA
 {
 	throw IOException("Nothing implemented here!", AT);
 }
-	
+
+/**
+ * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
+ */
 void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-			      const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+					   const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
-	throw IOException("Nothing implemented here!", AT);
+
+	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
+		return;
+
+	FILE *PFile=NULL;
+	int n1, e, l = 0,  nL = 0, nE ;
+	vector<Q_PROFILE_DAT> Pdata;
+
+	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
+	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata; 
+
+	// Allocate Memory, use double memory for possible surface hoar layers
+	Pdata.resize(nE);
+
+	// Generate the profile data from the element data (1 layer = 1 element)
+	int snowloc = 1;
+	string mystation = station;
+	if (isdigit(station[station.length()-1])){
+	    snowloc = station[station.length()-1] - '0';
+	    if (mystation.length() > 2)
+		    mystation = mystation.substr(0, mystation.length()-1);
+	}
+	
+
+	for(e=0; e<nE; e++) {
+		Pdata[l].date = date;
+		Pdata[l].stationname = mystation;
+		Pdata[l].loc_for_snow = snowloc;
+		Pdata[l].loc_for_wind = 1;
+
+		//write version and date
+		Pdata[l].sn_version = Hdata.sn_version;
+		Pdata[l].sn_computation_date = Hdata.sn_computation_date;
+		Pdata[l].sn_jul_computation_date=Hdata.sn_jul_computation_date;
+		n1=e+1;
+		Pdata[l].height = M_TO_CM(NDS[n1].z + NDS[n1].u);
+		Pdata[l].layer_date = EMS[e].date.getJulianDate();
+		Pdata[l].rho = EMS[e].Rho;
+		Pdata[l].tem = K_TO_C(EMS[e].Te);
+		Pdata[l].tem_grad = EMS[e].gradT;
+		Pdata[l].strain_rate = fabs(EMS[e].EDot);
+		Pdata[l].theta_w = EMS[e].theta[WATER] * 100.;
+		Pdata[l].theta_i = EMS[e].theta[ICE] * 100.;
+		Pdata[l].dendricity = EMS[e].dd;
+		Pdata[l].sphericity = EMS[e].sp;
+		Pdata[l].coordin_num = EMS[e].N3;
+		Pdata[l].grain_dia = 2. * EMS[e].rg;
+		Pdata[l].bond_dia = 2. * EMS[e].rb;
+		Pdata[l].marker = EMS[e].mk%100;
+		Pdata[l].hard = EMS[e].hard;
+		l++;
+	}
+
+	if ( (nL = ml_ag_Aggregate(l, Pdata) ) < 0 ) {
+		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot aggregate layers");
+		throw IOException("Cannot aggregate layers", AT);
+	}
+
+	if ( !(PFile = fopen(profile_filename.c_str(), "a")) ) {
+		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot open Profile file: %s", 
+			   profile_filename.c_str());
+		throw FileAccessException(profile_filename, AT);
+	}
+
+	for(e=0; e<nL; e++) {
+		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
+			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height);
+		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
+			   Pdata[e].layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
+			   Pdata[e].theta_w, Pdata[e].theta_i, Pdata[e].dendricity, Pdata[e].sphericity, 
+			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
+	}
+
+	if ( NDS[nE].hoar > MM_TO_M(MIN_SIZE_HOAR_SURF) * DENSITY_HOAR_SURF ) {
+		double gsz_SH = M_TO_MM(NDS[nE].hoar / DENSITY_HOAR_SURF);
+		e=nL-1;
+		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
+			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
+		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
+			   Pdata[e].layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
+			   0., DENSITY_HOAR_SURF/Constants::DENSITY_ICE, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
+	}
+
+	fclose(PFile);
 }
 
 void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 

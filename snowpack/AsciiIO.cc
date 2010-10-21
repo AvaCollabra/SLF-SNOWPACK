@@ -23,8 +23,6 @@
 using namespace std;
 using namespace mio;
 
-const std::string AsciiIO::profile_filename = "loaddata/pmodpro.dat";
-
 AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 {
 	string tmp_variant = cfg.get("VARIANT", "Parameters"); 
@@ -34,9 +32,13 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	string tmp_outpath = cfg.get("OUTPATH", "Parameters");
 	outpath = tmp_outpath;
 
-	inpath = "input";
-	string tmp_inpath = cfg.get("INPATH", "Parameters", Config::nothrow);
-	if (tmp_inpath != "") inpath = tmp_inpath;
+	i_snopath = "input";
+	string tmp_snopath = cfg.get("SNOPATH", "INPUT", Config::nothrow);
+	if (tmp_snopath != "") i_snopath = tmp_snopath;
+
+	o_snopath = outpath;
+	string tmp_snopath_out = cfg.get("SNOPATH", "OUTPUT", Config::nothrow);
+	if (tmp_snopath_out != "") o_snopath = tmp_snopath_out;
 
 	NUMBER_EXPO = cfg.get("NUMBER_EXPO", "Parameters");
 	OUT_HEAT = cfg.get("OUT_HEAT", "Parameters");
@@ -53,7 +55,6 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	PERP_TO_SLOPE = cfg.get("PERP_TO_SLOPE", "Parameters");	
 
-	research_mode = cfg.get("RESEARCH", "Parameters");
 	sw_ref = cfg.get("SW_REF", "Parameters");
 	hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Parameters");
 	calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
@@ -76,7 +77,7 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
  */
 void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
-	string filename = inpath + "/" + station + ".sno";
+	string filename = getFilenamePrefix(station, i_snopath) + ".sno";
 
 	FILE *fin=NULL;
 	int l,i; // Counters
@@ -90,13 +91,8 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 
 	// Header, Station Name and Julian Date
 	fscanf(fin, " %*s");
-	if ( research_mode ) {
-		fscanf(fin, "\nStationName= %*s");
-	} else {
-		fscanf(fin, "\nStationName= %*s");
-		//HACK: fscanf(fin, "\nStationName= %*s", RESEARCH_STATION);
-	}
-	fscanf(fin, "\nProfileDate=%d %d %d %d %d", &YYYY, &MM, &DD, &HH, &MI);
+	fscanf(fin, "\nStationName= %*s");
+	fscanf(fin, "\nProfileDate= %4d %2d %2d %2d %2d", &YYYY, &MM, &DD, &HH, &MI);
 	SSdata.date = Date(YYYY, MM, DD, HH, MI);
 
 	// Last checked measured Snow Height used for data Control of next run
@@ -258,7 +254,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	FILE *fout=NULL;
 	int  e, i;
 
-	string filename = getFilenamePrefix(station) + ".sno";
+	string filename = getFilenamePrefix(station, o_snopath) + ".sno";
 
 	if (forbackup){
 		stringstream ss;
@@ -318,7 +314,9 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 		fprintf(fout, " cIce cWater cAir  cSoil");
 	}
 	for (e = 0; e < Xdata.getNumberOfElements(); e++) {
-		fprintf(fout, "\n%s", EMS[e].date.toString(Date::ISO).c_str());
+		int YYYY, MM, DD, hh, mm;
+		EMS[e].date.getDate(YYYY, MM, DD, hh, mm);
+		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, hh, mm); 
 		fprintf(fout, " %7.5lf %8.4lf %7.5lf %7.5lf %7.5lf",  EMS[e].L,
 			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
 		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf 1",
@@ -360,13 +358,13 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	fclose(fout);
 }
 
-std::string AsciiIO::getFilenamePrefix(const std::string& stationname)
+std::string AsciiIO::getFilenamePrefix(const std::string& stationname, const std::string& path)
 {
 	//TODO: read only once (in constructor)
-	string filename_prefix = outpath + "/" + stationname;
+	string filename_prefix = path + "/" + stationname;
 
-	if ( experiment != "none") // complete filename_prefix
-		filename_prefix += "_" + experiment;
+	if ((experiment != "none") && (experiment != "opera")) //in operational mode, nothing is appended
+		filename_prefix += "_" + experiment; // complete filename_prefix
 
 	return filename_prefix;
 }
@@ -385,15 +383,12 @@ std::string AsciiIO::getFilenamePrefix(const std::string& stationname)
 void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationname, const unsigned int& expo,
 					  const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
-	if ((!research_mode) && (expo == 0))//only for the flat field
-		writeProfileDB(i_date, stationname, Xdata, Hdata);
-	
 	stringstream ss;
 	ss << stationname;
 	if (expo != 0) ss << expo;
 
 	const string station = ss.str();
-	string filename = getFilenamePrefix(station) + ".pro";
+	string filename = getFilenamePrefix(station, outpath) + ".pro";
 
 	FILE *PFile=NULL;
 	int e, nN, nE, nz;
@@ -873,7 +868,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	int    i, j;
 	double cos_sl;
 
-	string filename = getFilenamePrefix(station) + ".met";
+	string filename = getFilenamePrefix(station, outpath) + ".met";
 
 	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
 	nN=Xdata.getNumberOfNodes();
@@ -1434,81 +1429,3 @@ void AsciiIO::writeHazardData(const std::string& station, const std::vector<Q_PR
 	throw IOException("Nothing implemented here!", AT);
 }
 
-/**
- * @brief Dump snow profile to file for subsequent upload to SDBO
- */
-void AsciiIO::writeProfileDB(const mio::Date& date, const std::string& station, 
-					    const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
-{
-	FILE *PFile=NULL;
-	int n1, e, l = 0,  nL = 0, nE ;
-	vector<Q_PROFILE_DAT> Pdata;
-
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata; 
-
-	// Allocate Memory, use double memory for possible surface hoar layers
-	Pdata.resize(nE);
-
-	// Generate the profile data from the element data (1 layer = 1 element)
-	for(e=0; e<nE; e++) {
-		Pdata[l].date = date;
-		Pdata[l].stationname = station;
-		Pdata[l].loc_for_snow = (int)station[station.length()-1];
-		Pdata[l].loc_for_wind = 1;
-
-		//write version and date
-		Pdata[l].sn_version = Hdata.sn_version;
-		Pdata[l].sn_computation_date = Hdata.sn_computation_date;
-		Pdata[l].sn_jul_computation_date=Hdata.sn_jul_computation_date;
-		n1=e+1;
-		Pdata[l].height = M_TO_CM(NDS[n1].z + NDS[n1].u);
-		Pdata[l].layer_date = EMS[e].date.getJulianDate();
-		Pdata[l].rho = EMS[e].Rho;
-		Pdata[l].tem = K_TO_C(EMS[e].Te);
-		Pdata[l].tem_grad = EMS[e].gradT;
-		Pdata[l].strain_rate = fabs(EMS[e].EDot);
-		Pdata[l].theta_w = EMS[e].theta[WATER] * 100.;
-		Pdata[l].theta_i = EMS[e].theta[ICE] * 100.;
-		Pdata[l].dendricity = EMS[e].dd;
-		Pdata[l].sphericity = EMS[e].sp;
-		Pdata[l].coordin_num = EMS[e].N3;
-		Pdata[l].grain_dia = 2. * EMS[e].rg;
-		Pdata[l].bond_dia = 2. * EMS[e].rb;
-		Pdata[l].marker = EMS[e].mk%100;
-		Pdata[l].hard = EMS[e].hard;
-		l++;
-	}
-
-	if ( (nL = ml_ag_Aggregate(l, Pdata) ) < 0 ) {
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot aggregate layers");
-		throw IOException("Cannot aggregate layers", AT);
-	}
-
-	if ( !(PFile = fopen(profile_filename.c_str(), "a")) ) {
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot open Profile file: %s", 
-			   profile_filename.c_str());
-		throw FileAccessException(profile_filename, AT);
-	}
-
-	for(e=0; e<nL; e++) {
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
-			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height);
-		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   Pdata[e].layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
-			   Pdata[e].theta_w, Pdata[e].theta_i, Pdata[e].dendricity, Pdata[e].sphericity, 
-			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
-	}
-
-	if ( NDS[nE].hoar > MM_TO_M(MIN_SIZE_HOAR_SURF) * DENSITY_HOAR_SURF ) {
-		double gsz_SH = M_TO_MM(NDS[nE].hoar / DENSITY_HOAR_SURF);
-		e=nL-1;
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
-			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
-		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   Pdata[e].layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
-			   0., DENSITY_HOAR_SURF/Constants::DENSITY_ICE, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
-	}
-
-	fclose(PFile);
-} // End qro_WriteProfileDB

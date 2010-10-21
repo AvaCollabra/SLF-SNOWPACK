@@ -52,6 +52,8 @@ class SnowpackIO : public SnowpackIOInterface {
 
 	private:
 		mio::Config cfg;
+		bool outputprofile_as_ascii, outputprofile_as_imis;
+
 		AsciiIO asciiio;
 #ifdef IMISDBIO
 		ImisDBIO imisdbio;
