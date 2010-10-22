@@ -1,16 +1,19 @@
-FIND_PATH(METEOIO_INCLUDE_DIR meteoio/MeteoIO.h "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include")
-FIND_LIBRARY(METEOIO_SHARED meteoio PATHS "/usr/lib/" "/usr/local/lib/" "~/usr/lib/" "/opt/lib")
+include(LibFindMacros)
 
-IF (METEOIO_INCLUDE_DIR AND METEOIO_SHARED)
-   SET(METEOIO_FOUND TRUE)
-ENDIF (METEOIO_INCLUDE_DIR AND METEOIO_SHARED)
+# Glib-related libraries also use a separate config header, which is in lib dir
+find_path(METEOIO_INCLUDE_DIR
+  NAMES meteoio/MeteoIO.h
+  PATHS "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include"
+)
 
-IF (METEOIO_FOUND)
-   IF (NOT MeteoIO_FIND_QUIETLY)
-      MESSAGE(STATUS "Found MeteoIO: ${METEOIO_SHARED}")
-   ENDIF (NOT MeteoIO_FIND_QUIETLY)
-ELSE (METEOIO_FOUND)
-   IF (MeteoIO_FIND_REQUIRED)
-      MESSAGE(FATAL_ERROR "Could not find MeteoIO")
-   ENDIF (MeteoIO_FIND_REQUIRED)
-ENDIF (METEOIO_FOUND)
+# Finally the library itself
+find_library(METEOIO_LIBRARY
+  NAMES meteoio
+  PATHS "/usr/lib" "/usr/local/lib" "~/usr/lib" "/opt/lib"
+)
+
+# Set the include dir variables and the libraries and let libfind_process do the rest.
+# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
+set(METEOIO_PROCESS_INCLUDES METEOIO_INCLUDE_DIR)
+set(METEOIO_PROCESS_LIBS METEOIO_LIBRARY)
+libfind_process(METEOIO)

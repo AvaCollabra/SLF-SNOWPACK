@@ -1,16 +1,19 @@
-FIND_PATH(LIBSNOWPACK_INCLUDE_DIR snowpack/libsnowpack.h "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include")
-FIND_LIBRARY(LIBSNOWPACK_SHARED libsnowpack PATHS "/usr/lib/" "/usr/local/lib/" "~/usr/lib/" "/opt/lib")
+include(LibFindMacros)
 
-IF (LIBSNOWPACK_INCLUDE_DIR AND LIBSNOWPACK_SHARED)
-   SET(LIBSNOWPACK_FOUND TRUE)
-ENDIF (LIBSNOWPACK_INCLUDE_DIR AND LIBSNOWPACK_SHARED)
+# Glib-related libraries also use a separate config header, which is in lib dir
+find_path(LIBSNOWPACK_INCLUDE_DIR
+  NAMES snowpack/libsnowpack.h
+  PATHS "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include"
+)
 
-IF (LIBSNOWPACK_FOUND)
-   IF (NOT Libsnowpack_FIND_QUIETLY)
-      MESSAGE(STATUS "Found libsnowpackO: ${LIBSNOWPACK_SHARED}")
-   ENDIF (NOT Libsnowpack_FIND_QUIETLY)
-ELSE (LIBSNOWPACK_FOUND)
-   IF (Libsnowpack_FIND_REQUIRED)
-      MESSAGE(FATAL_ERROR "Could not find libsnowpack")
-   ENDIF (Libsnowpack_FIND_REQUIRED)
-ENDIF (LIBSNOWPACK_FOUND)
+# Finally the library itself
+find_library(LIBSNOWPACK_LIBRARY
+  NAMES snowpack
+  PATHS "/usr/lib" "/usr/local/lib" "~/usr/lib" "/opt/lib"
+)
+
+# Set the include dir variables and the libraries and let libfind_process do the rest.
+# NOTE: Singular variables for this library, plural for libraries this this lib depends on.
+set(LIBSNOWPACK_PROCESS_INCLUDES LIBSNOWPACK_INCLUDE_DIR)
+set(LIBSNOWPACK_PROCESS_LIBS LIBSNOWPACK_LIBRARY)
+libfind_process(LIBSNOWPACK)
