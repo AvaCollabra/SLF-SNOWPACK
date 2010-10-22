@@ -33,11 +33,11 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	outpath = tmp_outpath;
 
 	i_snopath = "input";
-	string tmp_snopath = cfg.get("SNOPATH", "INPUT", Config::nothrow);
+	string tmp_snopath = cfg.get("SNOWPATH", "INPUT", Config::nothrow);
 	if (tmp_snopath != "") i_snopath = tmp_snopath;
 
 	o_snopath = outpath;
-	string tmp_snopath_out = cfg.get("SNOPATH", "OUTPUT", Config::nothrow);
+	string tmp_snopath_out = cfg.get("SNOWPATH", "OUTPUT", Config::nothrow);
 	if (tmp_snopath_out != "") o_snopath = tmp_snopath_out;
 
 	NUMBER_EXPO = cfg.get("NUMBER_EXPO", "Parameters");
@@ -62,6 +62,8 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	useSnowLayers = cfg.get("SNP_SOIL", "Parameters");
 	t_internal = cfg.get("T_INTERNAL", "Parameters");
 	depth_of_sensors = cfg.get("DEPTH", "Parameters");	
+
+	research_mode = cfg.get("RESEARCH", "Parameters");
 	
 	if (depth_of_sensors.size() != FIXED_HEIGHTS)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
@@ -78,6 +80,11 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
 	string filename = getFilenamePrefix(station, i_snopath) + ".sno";
+
+	if (research_mode){ //research mode: the key SNOWFILE/section INPUT is a valid identifier for the sno file
+		string tmpsno = cfg.get("SNOWFILE", "INPUT", Config::nothrow);
+		if (tmpsno != "") filename = tmpsno;
+	}
 
 	FILE *fin=NULL;
 	int l,i; // Counters
