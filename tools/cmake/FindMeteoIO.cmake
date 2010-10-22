@@ -1,0 +1,16 @@
+FIND_PATH(METEOIO_INCLUDE_DIR meteoio/MeteoIO.h "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include")
+FIND_LIBRARY(METEOIO_SHARED meteoio PATHS "/usr/lib/" "/usr/local/lib/" "~/usr/lib/" "/opt/lib")
+
+IF (METEOIO_INCLUDE_DIR AND METEOIO_SHARED)
+   SET(METEOIO_FOUND TRUE)
+ENDIF (METEOIO_INCLUDE_DIR AND METEOIO_SHARED)
+
+IF (METEOIO_FOUND)
+   IF (NOT MeteoIO_FIND_QUIETLY)
+      MESSAGE(STATUS "Found MeteoIO: ${METEOIO_SHARED}")
+   ENDIF (NOT MeteoIO_FIND_QUIETLY)
+ELSE (METEOIO_FOUND)
+   IF (MeteoIO_FIND_REQUIRED)
+      MESSAGE(FATAL_ERROR "Could not find MeteoIO")
+   ENDIF (MeteoIO_FIND_REQUIRED)
+ENDIF (METEOIO_FOUND)

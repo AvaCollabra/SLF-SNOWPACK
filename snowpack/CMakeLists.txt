@@ -49,11 +49,11 @@ IF(PLUGIN_IMISIO)
   SET(snowpacklib_sources ${snowpacklib_sources} ImisDBIO.cc)
 ENDIF(PLUGIN_IMISIO)
 
+FIND_PACKAGE(MeteoIO)
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
+
 SET(SHAREDNAME ${PROJECT_NAME})
 ADD_LIBRARY(${SHAREDNAME} SHARED ${snowpacklib_sources})
-FIND_PATH(METEOIO_INCLUDE_DIR meteoio/MeteoIO.h "/usr/include/meteoio/" "/usr/local/include/meteoio/" "~/usr/include/meteoio/")
-FIND_LIBRARY(METEOIO_SHARED meteoio PATHS "/usr/lib/" "/usr/local/lib/" "~/usr/lib/")
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
 TARGET_LINK_LIBRARIES(${SHAREDNAME} ${METEOIO_SHARED})
 
 IF(PLUGIN_IMISIO)

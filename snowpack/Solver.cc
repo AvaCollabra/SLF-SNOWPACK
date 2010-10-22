@@ -13,7 +13,7 @@
 /*
 * DEFINE STATEMENTS
 */
-static char *ErrMsg = "++++Errror:gs_SolveMatrix:%s\n";
+static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
 static int gd_MemErr; 
 
 /*

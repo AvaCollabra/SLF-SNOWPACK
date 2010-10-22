@@ -33,12 +33,12 @@ ELSE(UNIX)
 ENDIF(UNIX)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "debug" CACHE STRING
+  set(CMAKE_BUILD_TYPE "release" CACHE STRING
       "Choose the type of build, options are: debug release "
       FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
 
-set(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF")
+set(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 IF(PLUGIN_IMISIO)
   SET(MYDEFINES "-DIMISDBIO")
 ENDIF(PLUGIN_IMISIO)
@@ -82,7 +82,7 @@ FILE(GLOB alibs "${PROJECT_SOURCE_DIR}/lib/*.a*")
 INSTALL(FILES ${solibs} ${alibs} DESTINATION lib)
 
 add_custom_target(distclean make clean
-  COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake meteoio/cmake_install.cmake meteoio/plugins/cmake_install.cmake meteoio/plugins/gsn/cmake_install.cmake
+  COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake
   COMMAND cmake -E remove_directory CMakeFiles
   COMMAND cmake -E remove_directory snowpack/CMakeFiles
 )
@@ -99,16 +99,16 @@ ADD_CUSTOM_TARGET(uninstall
 ###########################################################
 #creation of packages NOT FULLY WORKING YET
 set(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "..")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
 set(CPACK_PACKAGE_NAME "libsnowpack")
 set(CPACK_PACKAGE_CONTACT "Mathias Bavay ")
 set(CPACK_PACKAGE_VENDOR "WSL Institute for Snow and Avalanche Research")
 set(CPACK_DEBIAN_PACKAGE_NAME "libsnowpack")
 set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, MeteoIO")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386")
 set(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
-set(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6")
+set(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, MeteoIO")
 set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
 set(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
 
