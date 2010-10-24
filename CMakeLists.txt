@@ -13,6 +13,7 @@ ADD_SUBDIRECTORY(snowpack)
 set(DEBUG_ARITHM ON CACHE BOOL "Use the debug flags -DDEBUG_ARITHM to catch arithmetic exceptions")
 set(WARNINGS "-Wall")
 #set(EXTRA_WARNINGS "-Wextra -ansi -pedantic")
+set(EXTRA_WARNINGS "-Wextra")
 
 IF(DEBUG_ARITHM)
   LIST(APPEND CFLAGS "-DDEBUG_ARITHM")
