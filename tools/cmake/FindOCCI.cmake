@@ -11,8 +11,15 @@ include(LibFindMacros)
 # Finally the library itself
 find_library(OCCI_LIBRARY
   NAMES occi clntsh
-  HINTS $ENV{ORACLE_HOME}/client_1/lib $ENV{ORACLE_BASE}/client_1/lib
-  PATHS "/usr/lib" "/usr/local/lib" "~/usr/lib" "/opt/lib" ENV LD_LIBRARY_PATH
+  #HINTS $ENV{ORACLE_HOME}/client_1/lib $ENV{ORACLE_BASE}/client_1/lib
+  PATHS
+	"$ENV{ORACLE_HOME}/client_1/lib"
+	"$ENV{ORACLE_BASE}/client_1/lib"
+	ENV LD_LIBRARY_PATH
+	"~/usr/lib"
+	"/usr/local/lib"
+	"/usr/lib"
+	"/opt/lib"
   PATH_SUFFIXES "oracle/*/client_1/lib"
 )
 
@@ -24,8 +31,14 @@ endif ("${OCCI_LIBRARY}" MATCHES "^(.+)lib[\\/]libocci.(.+)$")
 # locate header files
 find_path(OCCI_INCLUDE_DIR
   NAMES occi.h
-  HINTS ${ORACLE_ROOT}/include
-  PATHS "/usr/include" "/usr/local/include" "/usr/local" "~/usr/include" "/opt/include"
+  #HINTS ${ORACLE_ROOT}/include
+  PATHS
+	"${ORACLE_ROOT}/include"
+	"~/usr/include"
+	"/usr/local/include"
+	"/usr/local"
+	"/usr/include"
+	"/opt/include"
   PATH_SUFFIXES "oracle/*/client_1/include"
 )
 

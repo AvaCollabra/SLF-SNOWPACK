@@ -3,7 +3,12 @@ include(LibFindMacros)
 # Finally the library itself
 find_library(LIBSNOWPACK_LIBRARY
   NAMES snowpack
-  PATHS "/usr/lib" "/usr/local/lib" "~/usr/lib" "/opt/lib" ENV LD_LIBRARY_PATH
+  PATHS
+	ENV LD_LIBRARY_PATH
+	"~/usr/lib"
+	"/usr/local/lib"
+	"/usr/lib"
+	"/opt/lib"
   DOC "Location of the libsnowpack, like /usr/lib"
 )
 
@@ -15,8 +20,13 @@ endif ("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack.(.+)$")
 # locate main header file
 find_path(LIBSNOWPACK_INCLUDE_DIR
   NAMES snowpack/libsnowpack.h
-  HINTS ${LIBSNOWPACK_ROOT}/include
-  PATHS "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include"
+  #HINTS ${LIBSNOWPACK_ROOT}/include
+  PATHS
+	"${LIBSNOWPACK_ROOT}/include"
+	"~/usr/include"
+	"/usr/local/include"
+	"/usr/include"
+	"/opt/include"
   DOC "Location of the libsnowpack headers, like /usr/include"
 )
 

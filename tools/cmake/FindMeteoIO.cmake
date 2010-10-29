@@ -3,7 +3,12 @@ include(LibFindMacros)
 # Finally the library itself
 find_library(METEOIO_LIBRARY
   NAMES meteoio
-  PATHS "/usr/lib" "/usr/local/lib" "~/usr/lib" "/opt/lib" ENV LD_LIBRARY_PATH
+  PATHS
+	ENV LD_LIBRARY_PATH
+	"~/usr/lib"
+	"/usr/local/lib"
+	"/usr/lib"
+	"/opt/lib"
   DOC "Location of the libmeteoio, like /usr/lib"
  )
 
@@ -15,8 +20,13 @@ endif ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio.(.+)$")
 # locate main header file
 find_path(METEOIO_INCLUDE_DIR
   NAMES meteoio/MeteoIO.h
-  HINTS ${METEOIO_ROOT}/include
-  PATHS "/usr/include" "/usr/local/include" "~/usr/include" "/opt/include"
+  #HINTS ${METEOIO_ROOT}/include
+  PATHS
+	"${METEOIO_ROOT}/include"
+	"~/usr/include"
+	"/usr/local/include"
+	"/usr/include"
+	"/opt/include"
   DOC "Location of the meteoio headers, like /usr/include"
 )
 
