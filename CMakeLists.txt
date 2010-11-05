@@ -123,4 +123,22 @@ set(CPACK_GENERATOR "DEB;RPM;TGZ;")
 set(CPACK_ARCH "i386")
 set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_ARCH}")
 
+set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}" CACHE INTERNAL "tarball basename")
+set(CPACK_SOURCE_GENERATOR TGZ)
+# The following components are regex's to match anywhere (unless anchored)
+# in absolute path + filename to find files or directories to be excluded
+# from source tarball.
+set(CPACK_SOURCE_IGNORE_FILES
+	"~$"
+	"\\\\.svn/"
+	"/CMakeFiles/"
+	"/CMakeCache*"
+	"/cmake_install\\\\.cmake$"
+	"/cmake_uninstall\\\\.cmake$"
+	"^_CPack_.*/"
+	"/CPack*"
+	"\\\\.o$"
+	"/m4/"
+)
+
 include(CPack)
