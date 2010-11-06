@@ -110,7 +110,7 @@ if (DOXYGEN_FOUND)
 	add_dependencies(doc documentation)
 endif (DOXYGEN_FOUND)
 #Install the documentation if the user desires it
-set(INSTALL_DOC ON CACHE BOOL "Install documentation ON or OFF")
+set(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 if(INSTALL_DOC)
 	set(DOC_PATH "share/doc/${CMAKE_PROJECT_NAME}")
 	if (DOXYGEN_FOUND)

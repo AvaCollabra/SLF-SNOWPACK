@@ -136,21 +136,29 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	}
 
 	for(e=0; e<nL; e++) {
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
+		//HACK: these legacy offset should be removed.
+		//This means specify a different import date format for the database and remove the offset here
+		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
+		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height);
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   Pdata[e].layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
+			   layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
 			   Pdata[e].theta_w, Pdata[e].theta_i, Pdata[e].dendricity, Pdata[e].sphericity, 
 			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
 	}
 
 	if ( NDS[nE].hoar > MM_TO_M(MIN_SIZE_HOAR_SURF) * DENSITY_HOAR_SURF ) {
+		//HACK: these legacy offset should be removed.
+		//This means specify a different import date format for the database and remove the offset here
+		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
 		double gsz_SH = M_TO_MM(NDS[nE].hoar / DENSITY_HOAR_SURF);
 		e=nL-1;
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", Pdata[e].date.getJulianDate(), Pdata[e].stationname.c_str(), 
+		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   Pdata[e].layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate, 
+			   layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
 			   0., DENSITY_HOAR_SURF/Constants::DENSITY_ICE, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
 	}
 
