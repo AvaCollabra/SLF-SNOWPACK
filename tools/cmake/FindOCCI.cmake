@@ -10,7 +10,7 @@ include(LibFindMacros)
 
 # Finally the library itself
 find_library(OCCI_LIBRARY
-  NAMES occi clntsh
+  NAMES occi
   #HINTS $ENV{ORACLE_HOME}/client_1/lib $ENV{ORACLE_BASE}/client_1/lib
   PATHS
 	"$ENV{ORACLE_HOME}/client_1/lib"
@@ -24,9 +24,12 @@ find_library(OCCI_LIBRARY
 )
 
 #build ORACLE_ROOT so we can provide a hint for searching for the header file
-if ("${OCCI_LIBRARY}" MATCHES "^(.+)lib[\\/]libocci.(.+)$")
+if ("${OCCI_LIBRARY}" MATCHES "^(.+)lib[\\/]libocci\\.(.+)$")
    set(ORACLE_ROOT "${CMAKE_MATCH_1}")
-endif ("${OCCI_LIBRARY}" MATCHES "^(.+)lib[\\/]libocci.(.+)$")
+endif ("${OCCI_LIBRARY}" MATCHES "^(.+)lib[\\/]libocci\\.(.+)$")
+
+#libclntsh comes with libocci, in the same directory, but we need to explicitly reference it
+find_library(CLNTSH_LIBRARY  NAMES clntsh PATHS "${ORACLE_ROOT}/lib")
 
 # locate header files
 find_path(OCCI_INCLUDE_DIR
@@ -45,5 +48,5 @@ find_path(OCCI_INCLUDE_DIR
 # Set the include dir variables and the libraries and let libfind_process do the rest.
 # NOTE: Singular variables for this library, plural for libraries this this lib depends on.
 set(OCCI_PROCESS_INCLUDES OCCI_INCLUDE_DIR)
-set(OCCI_PROCESS_LIBS OCCI_LIBRARY)
+set(OCCI_PROCESS_LIBS OCCI_LIBRARY CLNTSH_LIBRARY)
 libfind_process(OCCI)

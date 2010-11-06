@@ -13,9 +13,9 @@ find_library(METEOIO_LIBRARY
  )
 
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
-if ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio.(.+)$")
+if ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
    set(METEOIO_ROOT "${CMAKE_MATCH_1}")
-endif ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio.(.+)$")
+endif ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
 
 # locate main header file
 find_path(METEOIO_INCLUDE_DIR

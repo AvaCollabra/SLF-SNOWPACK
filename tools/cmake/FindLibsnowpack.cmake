@@ -13,9 +13,9 @@ find_library(LIBSNOWPACK_LIBRARY
 )
 
 #build LIBSNOWPACK_ROOT so we can provide a hint for searching for the header file
-if ("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack.(.+)$")
+if ("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack\\.(.+)$")
    set(LIBSNOWPACK_ROOT "${CMAKE_MATCH_1}")
-endif ("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack.(.+)$")
+endif ("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack\\.(.+)$")
 
 # locate main header file
 find_path(LIBSNOWPACK_INCLUDE_DIR
