@@ -93,7 +93,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fin = fopen(filename.c_str(), "r");
 	if (fin == NULL) {
 		prn_msg(__FILE__, __LINE__, "err", -1., "Cannot open profile INPUT file: %s", filename.c_str());
-		throw IOException("Cannot generate Xdata", AT);
+		throw IOException("Cannot generate Xdata from file " + filename, AT);
 	}
 
 	// Header, Station Name and Julian Date
@@ -406,7 +406,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 
 	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", &Hdata, station, "pro", &Xdata) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),"Checking header in file %s", filename.c_str());
-		throw IOException("Cannot dump profile " + filename + "for Java Visualisation", AT);
+		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	} else if ( !(PFile = fopen(filename.c_str(), "a")) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),
 			   "Cannot open profile series file: %s", filename.c_str());

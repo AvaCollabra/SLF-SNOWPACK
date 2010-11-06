@@ -110,7 +110,7 @@ class Snowpack {
 		 */
 		enum BoundaryCondition {
 			NEUMANN_BC,
-			DIRICHLET_BC,
+			DIRICHLET_BC
 		};
 
 		///@brief Types of events for computing new snow density
