@@ -50,8 +50,7 @@ class Meteo {
 		mio::Config cfg;
 		int neutral;
 		bool research_mode, useCanopyModel;
-		double ROUGHNESS_LENGTH;
-		double HEIGHT_OF_WIND_VALUE;
+		double roughness_length, height_of_wind_value;
 		Canopy canopy;
 };
 

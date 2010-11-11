@@ -161,12 +161,9 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, "\nCanopyDirectThroughfall=%lf",&SSdata.Canopy_Direct_Throughfall);
 
 	// Allocate Space for the Layers
-	if (SSdata.nLayers > 0) {
-		if ( (SSdata.Ldata = (SN_LAYER_DATA *) realloc(SSdata.Ldata, sizeof(SN_LAYER_DATA)*SSdata.nLayers)) == NULL ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Cannot ALLOCATE layer Data");
-			throw IOException("Cannot generate Xdata", AT);
-		}
-	}
+	if (SSdata.nLayers > 0)
+		SSdata.Ldata.resize(SSdata.nLayers);
+
 	// Read the layer data
 	if ( fscanf(fin,"\nYYYY") < 0 ) {
 		prn_msg(__FILE__, __LINE__, "err", -1., "Failed reading layer header in Snowfile (*.sno)");

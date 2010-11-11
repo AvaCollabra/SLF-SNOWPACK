@@ -46,7 +46,7 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
 	 * Default value and operational mode: 0.002 m
 	 */
-	ROUGHNESS_LENGTH = cfg.get("ROUGHNESS_LENGTH", "Parameters");
+	roughness_length = cfg.get("ROUGHNESS_LENGTH", "Parameters");
 
 	/**
 	 * @brief Defines whether the canopy model is used \n
@@ -59,7 +59,7 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
 	 * Required for surface energy exchange calculation and for drifting and blowing snow.
 	 */
-	HEIGHT_OF_WIND_VALUE = cfg.get("HEIGHT_OF_WIND_VALUE", "Parameters");
+	height_of_wind_value = cfg.get("HEIGHT_OF_WIND_VALUE", "Parameters");
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
 }
@@ -86,7 +86,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 {
 	int e, iter = 1, max_iter = 100;
 	const double eps1 = 1.e-3, eps2 = 1.e-5;
-	double ustar, z0 = ROUGHNESS_LENGTH, zref, a2 = 0.16 , vw, z0_old, ustar_old;
+	double ustar, z0 = roughness_length, zref, a2 = 0.16 , vw, z0_old, ustar_old;
 	double d_pump; // Wind pumping displacement depth (m)
 
 	// New variables for stability correction
@@ -118,7 +118,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 	e = Xdata.getNumberOfElements();
 	vw = MAX(0.3, Mdata.vw);
 	// Adjust for snow height
-	zref = MAX (0.5, HEIGHT_OF_WIND_VALUE - (Xdata.cH - Xdata.Ground));
+	zref = MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
 	
 	// In case of ventilation ...
 	if ( WIND_PUMP ) {
@@ -133,7 +133,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 	do {
 		iter++;
 		if ( iter > max_iter ) {
-			Mdata.z0 = z0 = ROUGHNESS_LENGTH;
+			Mdata.z0 = z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
 			prn_msg ( __FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
@@ -243,7 +243,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 void Meteo::calculateMeteo(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata)
 {
 	if (useCanopyModel)
-		canopy.runCanopyModel(Mdata, Xdata, ROUGHNESS_LENGTH, HEIGHT_OF_WIND_VALUE);
+		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);
 
 	if (!useCanopyModel || Xdata->Cdata.zdispl < 0.)
 		MicroMet(*Xdata, *Mdata);

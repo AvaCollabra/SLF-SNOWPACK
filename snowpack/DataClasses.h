@@ -274,7 +274,7 @@ struct SN_SNOWSOIL_DATA{
 	double Height;        ///< Total height of snowpack in m (sum of the layer heights)
 	int ErosionLevel;     ///< Indicates the initial erosion level for the flat field
 	int nLayers;          ///< Total number of snowpack layers
-	SN_LAYER_DATA *Ldata; ///< Pointer to the layer data; contains all the information required to construct the Xdata
+	std::vector<SN_LAYER_DATA> Ldata; ///< vector of layer data; contains all the information required to construct the Xdata
 	mio::Date date;
 	double Hslast;        ///< Last checked measured Snow Height
 	double Albedo;        ///< Snow albedo

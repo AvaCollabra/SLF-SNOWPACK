@@ -581,12 +581,6 @@ void SN_MET_DATA::reset()
 }
 
 
-void print_mdata(SN_MET_DATA& mdata)
-{
-
-	cout << endl;
-}
-
 std::ostream& operator<<(std::ostream &os, const SN_MET_DATA& mdata)
 {
 	os << "<InterpolatedMeteoData>" << endl;
