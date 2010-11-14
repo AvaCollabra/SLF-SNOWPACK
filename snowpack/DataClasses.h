@@ -240,28 +240,33 @@ enum SN_SOIL_DATA{
  * @brief Parameters of the different layers of the snowpack \n
  * It is used as a pointer (array) within the sn_SSdata (profile) data structure.
  */
-struct SN_LAYER_DATA {
-	mio::Date date;    ///< The birth date of layer
-	double hl;         ///< The height of the layer in m
-	int    ne;         ///< Number of finite elements in the the layer (hl/ne defines elm. size)
-	double tl;         ///< Temperature at the top of the layer in K or degC
-	double phiIce;     ///< Volumetric ice content in %
-	double phiWater;   ///< Volumetric water content in %
-	double phiVoids;   ///< Volumetric void content in %
-	double phiSoil;    ///< Volumetric soil content in %
-	double cIce[MAX_N_SOLUTES];   ///< Solute concentrations in Ice
-	double cWater[MAX_N_SOLUTES]; ///< Solute concentrations in Water
-	double cVoids[MAX_N_SOLUTES]; ///< Solute concentrations in Air
-	double cSoil[MAX_N_SOLUTES];  ///< Solute concentrations in Soil
-	double SoilRho;    ///< Density of soil in kg m-3
-	double SoilK;      ///< Conductivity of soil
-	double SoilC;      ///< Heat Capacity of soil
-	double rg;         ///< Micro-structure : Grainsize in mm
-	double sp;         ///< Micro-structure : Sphericity
-	double dd;         ///< Micro-structure : Dendricity
-	double rb;         ///< Micro-structure : Bond Radius in mm
-	int    mk;         ///< Micro-structure : Marker
-	double hr;         ///< Surface hoar Mass in kg m-2
+class SN_LAYER_DATA {
+
+	public:
+		SN_LAYER_DATA() : date(0.), hl(0.), ne(0), tl(0.), phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.),
+			SoilRho(0.), SoilK(0.), SoilC(0.), rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.) {}
+
+		mio::Date date;    ///< The birth date of layer
+		double hl;         ///< The height of the layer in m
+		int    ne;         ///< Number of finite elements in the the layer (hl/ne defines elm. size)
+		double tl;         ///< Temperature at the top of the layer in K or degC
+		double phiIce;     ///< Volumetric ice content in %
+		double phiWater;   ///< Volumetric water content in %
+		double phiVoids;   ///< Volumetric void content in %
+		double phiSoil;    ///< Volumetric soil content in %
+		double cIce[MAX_N_SOLUTES];   ///< Solute concentrations in Ice
+		double cWater[MAX_N_SOLUTES]; ///< Solute concentrations in Water
+		double cVoids[MAX_N_SOLUTES]; ///< Solute concentrations in Air
+		double cSoil[MAX_N_SOLUTES];  ///< Solute concentrations in Soil
+		double SoilRho;    ///< Density of soil in kg m-3
+		double SoilK;      ///< Conductivity of soil
+		double SoilC;      ///< Heat Capacity of soil
+		double rg;         ///< Micro-structure : Grainsize in mm
+		double sp;         ///< Micro-structure : Sphericity
+		double dd;         ///< Micro-structure : Dendricity
+		double rb;         ///< Micro-structure : Bond Radius in mm
+		int    mk;         ///< Micro-structure : Marker
+		double hr;         ///< Surface hoar Mass in kg m-2
 };
 
 /**
@@ -269,25 +274,35 @@ struct SN_LAYER_DATA {
  * This data structure will have to be replaced by something a little more complicated soon ???
  * For now it is simply an efficient way of creating a snowpack to investigate.
  */
-struct SN_SNOWSOIL_DATA{
-	int nN;               ///< Total number of FE nodes
-	double Height;        ///< Total height of snowpack in m (sum of the layer heights)
-	int ErosionLevel;     ///< Indicates the initial erosion level for the flat field
-	int nLayers;          ///< Total number of snowpack layers
-	std::vector<SN_LAYER_DATA> Ldata; ///< vector of layer data; contains all the information required to construct the Xdata
-	mio::Date date;
-	double Hslast;        ///< Last checked measured Snow Height
-	double Albedo;        ///< Snow albedo
-	double SoilAlb;       ///< Soil albedo; default 0.2
-	double BareSoil_z0;   ///< Bare soil roughness in m; default 0.02 m
-	double Lat;           ///< Latitude in deg
-	double Lon;           ///< Longitude in deg
-	double Alt;           ///< Altidude above sea level in m
-	double Azi;           ///< slope aspect in degree(!), clockwise from north N = 0
-	double Angle;         ///< Slope angle in degree(!)
-	double Canopy_Height; ///< Canopy Height in m
-	double Canopy_LAI;    ///< Canopy Leaf Area Index in m2 m-2
-	double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
+class SN_SNOWSOIL_DATA{
+
+	public:
+
+		SN_SNOWSOIL_DATA() : nN(0), Height(0.0), ErosionLevel(0), nLayers(0), date(0.0), Hslast(0.0), Albedo(0.0),
+			SoilAlb(0.0), BareSoil_z0(0.0), Lat(0.0), Lon(0.0), Alt(0.0), Azi(0.0), Angle(0.0), Canopy_Height(0.0),
+			Canopy_LAI(0.0), Canopy_Direct_Throughfall(0.0) 
+		{
+			Ldata.resize(0);
+		}
+
+		int nN;               ///< Total number of FE nodes
+		double Height;        ///< Total height of snowpack in m (sum of the layer heights)
+		int ErosionLevel;     ///< Indicates the initial erosion level for the flat field
+		int nLayers;          ///< Total number of snowpack layers
+		std::vector<SN_LAYER_DATA> Ldata; ///< contains all the information required to construct the Xdata
+		mio::Date date;
+		double Hslast;        ///< Last checked measured Snow Height
+		double Albedo;        ///< Snow albedo
+		double SoilAlb;       ///< Soil albedo; default 0.2
+		double BareSoil_z0;   ///< Bare soil roughness in m; default 0.02 m
+		double Lat;           ///< Latitude in deg
+		double Lon;           ///< Longitude in deg
+		double Alt;           ///< Altidude above sea level in m
+		double Azi;           ///< slope aspect in degree(!), clockwise from north N = 0
+		double Angle;         ///< Slope angle in degree(!)
+		double Canopy_Height; ///< Canopy Height in m
+		double Canopy_LAI;    ///< Canopy Leaf Area Index in m2 m-2
+		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
 };
 
 /**
