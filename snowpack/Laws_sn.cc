@@ -239,7 +239,7 @@ double lwsn_Extinction(const SN_ELEM_DATA& Edata)
  * @param *Xdata
  * @param I0 net shortwave radiation (W m-2)
  */
-void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const int& SNP_SOIL, const bool& multistream)
+void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const bool& useSnowLayers, const bool& multistream)
 {
 	int nE, e, i, bottom_element;
 	double I0_band, dI, Ks;
@@ -272,7 +272,7 @@ void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const in
 		return;
 	}
 
-	if ( SNP_SOIL ){
+	if ( useSnowLayers ){
 		bottom_element = Xdata.SoilNode - 1;
 	} else {
 		bottom_element = 0;
@@ -287,7 +287,7 @@ void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const in
 		for (i = 0; i < nb; i++) {
 			I0_band = I0 * pc[i] / 100.;
 			for (e = nE-1; e > bottom_element; e--) {
-				Ks = fb[i] * 0.84 * sqrt( 1000. * k[i] / (2. * EMS[e].rg) ) * EMS[e].Rho / Constants::DENSITY_ICE;
+				Ks = fb[i] * 0.84 * sqrt( 1000. * k[i] / (2. * EMS[e].rg) ) * EMS[e].Rho / Constants::density_ice;
 				dI = I0_band * (1. - exp(-(Ks * (EMS[e].L))));  // Radiation absorbed by element e in wavelength band i
 				EMS[e].sw_abs += dI;
 				I0_band -= dI;
@@ -474,7 +474,7 @@ double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz
 
 	// In case of dry soil, simply use the given conductivity with a possible ventilation part
 	if ( WIND_PUMP_SOIL ) {
-		C_eff_soil += ALPHA_POR_TOR_SOIL * SPECIFIC_HEAT_AIR * Edata->soil[SOIL_RHO] * PORE_LENGTH_SOIL * PORE_LENGTH_SOIL * dvdz;
+		C_eff_soil += ALPHA_POR_TOR_SOIL * Constants::specific_heat_air * Edata->soil[SOIL_RHO] * PORE_LENGTH_SOIL * PORE_LENGTH_SOIL * dvdz;
 	}
 	return(C_eff_soil);
 }
@@ -548,14 +548,14 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	}
 
 	// Important are the conductivities and cross sectional areas.
-	kap = CONDUCTIVITY_AIR + ((Lh*Lh* DIFFUSION_COEFFICIENT_IN_AIR * P * lw_SaturationPressure(Te)) / (GAS_CONSTANT*GAS_CONSTANT * Te*Te*Te * (P - lw_SaturationPressure(Te))));
+	kap = CONDUCTIVITY_AIR + ((Lh*Lh* DIFFUSION_COEFFICIENT_IN_AIR * P * lw_SaturationPressure(Te)) / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
 
 	/*
 	* Determine C1 = nca/ncl (nca:=number of grains per unit area; ncl:=number
 	* of grains per unit length) = ncl since nca=ncl^2
 	* Now we can also determine the series cross sectional areas
 	*/
-	C1 =  (3.0 * Edata.Rho / Constants::DENSITY_ICE) / ( 4.0 * Constants::pi * rg*rg*rg);
+	C1 =  (3.0 * Edata.Rho / Constants::density_ice) / ( 4.0 * Constants::pi * rg*rg*rg);
 	C1 =  pow(C1, 0.3333333);
 
 	/*
@@ -612,7 +612,7 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	}
 	// Now introduce the effect of windpumping
 	if ( WIND_PUMP /* && Edata.theta[WATER] < 0.001 */ ) {
-		C_eff += ALPHA_POR_TOR * SPECIFIC_HEAT_AIR * Edata.Rho  * dvdz / (C1*C1);
+		C_eff += ALPHA_POR_TOR * Constants::specific_heat_air * Edata.Rho  * dvdz / (C1*C1);
 	}
 	return (C_eff);
 }
@@ -628,9 +628,9 @@ double lwsn_HeatCapacity(const SN_ELEM_DATA& Edata)
 {
 	double c_p;
 
-	c_p  = Constants::DENSITY_AIR * Edata.theta[AIR] * SPECIFIC_HEAT_AIR;
-	c_p += Constants::DENSITY_ICE * Edata.theta[ICE] * SPECIFIC_HEAT_ICE;
-	c_p += Constants::DENSITY_WATER * Edata.theta[WATER] * SPECIFIC_HEAT_WATER;
+	c_p  = Constants::density_air * Edata.theta[AIR] * Constants::specific_heat_air;
+	c_p += Constants::density_ice * Edata.theta[ICE] * Constants::specific_heat_ice;
+	c_p += Constants::density_water * Edata.theta[WATER] * Constants::specific_heat_water;
 	c_p += Edata.soil[SOIL_RHO] * Edata.theta[SOIL] * Edata.soil[SOIL_C];
 	c_p /= Edata.Rho;
 	return(c_p);
@@ -660,8 +660,8 @@ double lwsn_SensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata,
 
 	c = karman * Mdata.ustar / (0.74 * MAX (0.7, lrat-Mdata.psi_s));
 
-	return(c * Constants::DENSITY_AIR * SPECIFIC_HEAT_AIR);
-	//return(2.77e-3*Mdata.vw*DENSITY_AIR*SPECIFIC_HEAT_AIR);
+	return(c * Constants::density_air * Constants::specific_heat_air);
+	//return(2.77e-3*Mdata.vw*DENSITY_AIR*Constants::specific_heat_air);
 }
 
 /**
@@ -782,7 +782,7 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
 			c = 1. / c;
 		}
 	}
-	return(c * 0.622 * LH_SUBLIMATION / GAS_CONSTANT_AIR / Mdata.ta);
+	return(c * 0.622 * LH_SUBLIMATION / Constants::gas_constant_air / Mdata.ta);
 }
 
 /**

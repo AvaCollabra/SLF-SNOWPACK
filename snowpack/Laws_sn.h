@@ -172,7 +172,7 @@ class LawsSnowpack {
 
 		double lwsn_Extinction(const SN_ELEM_DATA& Edata);
 
-		void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const int& SNP_SOIL, 
+		void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const bool& useSnowLayers, 
 								const bool& multistream);
 
 		double lwsn_SnowpackInternalEnergy(SN_STATION_DATA& Xdata);

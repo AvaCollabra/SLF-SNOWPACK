@@ -84,10 +84,6 @@
 #define NODATA -999.
 #define INODATA 999
 #define SNOWPACK_UNDEFINED -77777777
-#define SNOWPACK_UNDEFINED_INT -777
-#define SNOWPACK_UNDEFINED_FLOAT -77777777.4
-#define TRUE  1
-#define FALSE 0
 //@}
 
 /**
@@ -105,28 +101,6 @@
 #else
 	#define MINIMUM_L_ELEMENT 0.0025
 #endif
-
-/// @name Threshholds for precipitation
-//@{
-/**
- * @brief Precipitation only for rH above threshold (1)
- * - default: 0.50
- * 	- 2007-12-01: set THRESH_RH to 0.70 to be consistent with data range of ZWART new snow density model
- * 	- 2008-01-21: set back THRESH_RH to 0.50 (IMIS sensor problem in operational mode)
- * - Antarctica: 0.70
- */
-#if VARIANT == ANTARCTICA
-	#define THRESH_RH   0.70
-#else
-	#define THRESH_RH   0.50
-#endif
-/**
- * @brief Rain only for air temperatures warmer than threshold (degC)
- * - ori: 1.5
- * - SnowMIP I for WFJ 92/93: 1.0
- */
-#define THRESH_RAIN 1.2
-//@}
 
 /**
  * @name Snow sensors
@@ -193,20 +167,6 @@
  * - 0.002  m : favored operational value with Dirichlet bc
  */
 //@{
-/**
- * @brief No surface hoar will form for rH above threshold (1)
- * - Original calibration with the 98/99 data set: 0.9
- * - r141: RH_HOAR_THRESH set to 0.9
- * - r719: RH_HOAR_THRESH set to 0.97
- */
-#define RH_HOAR_THRESH        0.97
-/**
- * @brief No surface hoar will form at wind speeds above threshold (m s-1)
- * - Original calibration with the 98/99 data set: 3.5
- * - r141: V_HOAR_THRESH set to 3.0
- * - r242: V_HOAR_THRESH set to 3.5
- */
-#define V_HOAR_THRESH         3.5
 /// @brief Minimum size to show surface hoar on surface (mm)
 #define MIN_SIZE_HOAR_SURF    0.5
 /// @brief Density of surface hoar (-> hoar index of surface node) (kg m-3)
@@ -250,18 +210,25 @@ typedef struct {
 
 namespace Constants {
 
-  //const double PI = 3.14159265358979323846;
-  const double pi = 3.141593;
+  const double pi = 3.14159265358979323846;
   const double g  = 9.80665;
   const double stefan_boltzmann = 5.67051e-8;
 
   //Density (kg m-3)
-  const double DENSITY_AIR = 1.1; ///< Approximation: use ideal gas law
-  const double DENSITY_ICE = 917.0; ///< At T = 0 degC
-  const double DENSITY_WATER = 1000.0; ///<  At T = 0 degC
-  const double DENSITY_VAPOR = 1.0; ///< Approximation: use ideal gas law
+  const double density_air = 1.1; ///< Approximation: use ideal gas law
+  const double density_ice = 917.0; ///< At T = 0 degC
+  const double density_water = 1000.0; ///<  At T = 0 degC
+  const double density_vapor = 1.0; ///< Approximation: use ideal gas law
 
   const double solcon = 1366.1; ///< Total Solar Irradiance (W m-2) (Froehlich, 2006)
+
+  const double gas_constant = 461.9; ///< (J mol-1 K-1)
+  const double gas_constant_air = 287.0; ///< for air (J kg-1 K-1)
+  const double gas_constant_mol = 8.31;  ///< (J mol-1 K-1)
+
+  const double specific_heat_ice = 2100.0; ///< at T = 0 degC
+  const double specific_heat_water = 4190.0; ///< at T = 0 degC
+  const double specific_heat_air = 1004.67; ///< see Stull "Meteorology for scientists and engineers" p44
 }
 
 /// @name PHYSICAL CONSTANTS
@@ -275,18 +242,18 @@ namespace Constants {
 /// @brief (W m-2 K-4)
 //#define STEFAN_BOLTZMANN 5.67051e-8
 /// @brief For air (J kg-1 K-1)
-#define GAS_CONSTANT_AIR 287.
+//#define GAS_CONSTANT_AIR 287.
 /// @brief For water vapor (J kg-1 K-1)
-#define GAS_CONSTANT 461.9
+//#define GAS_CONSTANT 461.9
 /// @brief (J mol-1 K-1)
-#define GAS_CONSTANT_MOL 8.31
+//#define GAS_CONSTANT_MOL 8.31
 //@}
 /// @name Density (kg m-3)
 //@{
 /// @brief  At T = 0 degC
 //#define DENSITY_ICE 917.0
 /// @brief At T = 0 degC
-//#define Constants::DENSITY_WATER 1000.0
+//#define DENSITY_WATER 1000.0
 /// @brief Approximation: use ideal gas law
 //#define DENSITY_VAPOR 1.0
 /// @brief Approximation: use ideal gas law
@@ -297,17 +264,17 @@ namespace Constants {
 #define MAX_RHO 1000.
 /// @brief Min volumetric ice content allowed
 #define MIN_HN_DENSITY     30.
-#define MIN_ICE_CONTENT MIN_HN_DENSITY/Constants::DENSITY_ICE
+#define MIN_ICE_CONTENT MIN_HN_DENSITY/Constants::density_ice
 //@}
 //@}
 /// @name Specific heat (J kg-1 K-1)
 //@{
 /// @brief At T = 0 degC
-#define SPECIFIC_HEAT_ICE 2100.0
+//#define SPECIFIC_HEAT_ICE 2100.0
 /// @brief At T = 0 degC
-#define SPECIFIC_HEAT_WATER 4190.0
+//#define SPECIFIC_HEAT_WATER 4190.0
 /// @brief See Stull "Meteorology for scientists and engineers" p44
-#define SPECIFIC_HEAT_AIR 1004.67
+//#define SPECIFIC_HEAT_AIR 1004.67
 //@}
 /// @name Thermal conductivity of snow components ice, water and air (W m-1 K-1)
 //@{

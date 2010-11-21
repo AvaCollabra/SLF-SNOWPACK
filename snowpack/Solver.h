@@ -69,17 +69,15 @@
  * START MACRO DEFINITIONS AND TYPEDEFS
  */
 #define   GD_INIT(VALUE)
-#define TRUE   1
-#define FALSE  0 
 #define NORM_R double
 #define FLOAT  double
 
 #define  GD_MEM_ERR( POINTER, MSG0, MSG )                                                      \
 {                                                                                              \
 	if ( POINTER  ) {                                                                      \
-		gd_MemErr = FALSE;                                                             \
+		gd_MemErr = false;                                                             \
 	} else {                                                                               \
-		gd_MemErr = TRUE; fprintf(stderr, "\n+++++ %s: %s\n", MSG0,MSG);               \
+		gd_MemErr = true; fprintf(stderr, "\n+++++ %s: %s\n", MSG0,MSG);               \
 	}                                                                                      \
 }                                                                                              \
 
@@ -562,7 +560,7 @@ typedef  SD_MATRIX_DATA MYTYPE;
 
 
 #define ERROR_SOLVER(MSG)      { printf("++++Errror:%s:%d:%s\n", __FILE__, __LINE__, MSG); return(1); }
-#define USER_ERROR(MSG) { printf(ErrMsg, MSG); return TRUE; }
+#define USER_ERROR(MSG) { printf(ErrMsg, MSG); return 1; }
 #define EXIT(MSG)  {  printf("++++Exit:%s:%d:%s\n", __FILE__, __LINE__, MSG);  exit(1);   }
 
 

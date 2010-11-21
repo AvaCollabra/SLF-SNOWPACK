@@ -14,7 +14,7 @@
 * DEFINE STATEMENTS
 */
 static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
-static int gd_MemErr; 
+static bool gd_MemErr; 
 
 /*
  * INTERFACE FUNCITONS TO ACCESS THE SOLVER
@@ -31,9 +31,9 @@ int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat)
 	memset( pMat,0,sizeof(MYTYPE) );
 	pMat->nEq = MatDim * Multiplicity;
 	pMat->Multiplicity = Multiplicity;
-	if ( AllocateConData( MatDim, &pMat->Mat.Con ) ){
-		 return TRUE;
-	}
+	if ( AllocateConData( MatDim, &pMat->Mat.Con ) )
+		 return 1;
+
 	pMat->State = ConMatrix;
 	
 	*ppMat = pMat;
@@ -1602,9 +1602,9 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 	*/
 	GD_MALLOC( pMat->pFirstColBlock, int, pMat->nColBlock, "Matrix First Col. Block" );
 	GD_MALLOC( pMat->pSizeColBlock,  int, pMat->nColBlock, "Matrix Size  Col. Block" );
-	if ( gd_MemErr ) {
-		return TRUE; 
-	}	
+	if ( gd_MemErr )
+		return 1; 
+
 	for( k = pMat->nRowBlock, pFirstColBlock = pMat->pFirstColBlock, pSizeColBlock = pMat->pSizeColBlock, nTotCol = 0,
 		nTotColBlock = 0, MaxColBlock = 0, pTmpRowBlock = pTmpMat->pRowBlock; k>0; k--, pTmpRowBlock++ )
 	{
@@ -1649,10 +1649,8 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 	pMat->SizeBlockJump = MaxColBlock;
 	GD_MALLOC( pMat->pBlockJump, int, pMat->SizeBlockJump, "Jump Data" );
 	
-	if ( gd_MemErr ) {
-		return TRUE; 
-	}
-	
+	if ( gd_MemErr )
+		return 1; 
 	
 	return 0;
 

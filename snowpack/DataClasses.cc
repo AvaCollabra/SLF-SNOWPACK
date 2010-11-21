@@ -366,8 +366,8 @@ void SN_STATION_DATA::initialize(const SN_SNOWSOIL_DATA& SSdata)
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[l].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[l].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[l].SoilC;
-			Edata[e].Rho = Edata[e].theta[ICE]*Constants::DENSITY_ICE + 
-				Edata[e].theta[WATER]*Constants::DENSITY_WATER + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
+			Edata[e].Rho = Edata[e].theta[ICE]*Constants::density_ice + 
+				Edata[e].theta[WATER]*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
 			for (i = 0; i < N_SOLUTES; i++) {
 				Edata[e].conc[SOIL][i]  = SSdata.Ldata[l].cSoil[i];
 			}
@@ -549,7 +549,7 @@ void SN_STATION_DATA::mergeElements(SN_ELEM_DATA& Edata0, const SN_ELEM_DATA& Ed
 	Edata0.theta[ICE] = (L1*Edata1.theta[ICE] + L0*Edata0.theta[ICE]) / LNew;
 	Edata0.theta[WATER] = (L1*Edata1.theta[WATER] + L0*Edata0.theta[WATER]) / LNew;
 	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
-	Edata0.Rho = (Edata0.theta[ICE]*Constants::DENSITY_ICE) + (Edata0.theta[WATER]*Constants::DENSITY_WATER);
+	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);
 	
 	for (i = 0; i < N_SOLUTES; i++) {
 		for (k = 0; k < N_COMPONENTS; k++) {

@@ -87,7 +87,7 @@ double lw_AirPressure(const double altitude)
 	const double p0 = 101325.; 		// Air and standard pressure in Pa
 	const double lapse_rate = 0.0065;	// K m-1
 	const double sea_level_temp = 288.15;	// K
-	const double expo = Constants::g / (lapse_rate * GAS_CONSTANT_AIR);
+	const double expo = Constants::g / (lapse_rate * Constants::gas_constant_air);
 	const double R0 = 6356766.0;		// Earth's radius in m
 
 	p = p0 * pow( 1. - ( (lapse_rate * R0 * altitude) / (sea_level_temp * (R0 + altitude)) ), expo );
@@ -102,7 +102,7 @@ double lw_WetBulbTemperature(const double L, const double T, const double RH, co
 	const double p = lw_AirPressure(altitude);
 	const double Vp = lw_SaturationPressure(T);
 
-	return ( T - (RH*Vp - Vp) * mixing_ratio * L / p / SPECIFIC_HEAT_AIR );
+	return ( T - (RH*Vp - Vp) * mixing_ratio * L / p / Constants::specific_heat_air );
 
 }
 

@@ -83,6 +83,9 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
 	defaultConfig["FIXED_NS_DENSITY"] = "100.";
 	defaultConfig["FORCE_RH_WATER"] = "1";
+	defaultConfig["THRESH_RH"] = "0.5";  
+	defaultConfig["RH_HOAR_THRESH"] = "0.97";  
+	defaultConfig["V_HOAR_THRESH"] = "3.5";  
 
 	return true;
 }
@@ -98,7 +101,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	string variant = get("VARIANT", "Parameters", Config::nothrow);
 	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
 
-	if ( enforce_measured_snow_heights) {
+	if (enforce_measured_snow_heights) {
 		addKey("HNS_NE_HEIGHT", "Parameters", "0.02");
 	} else {
 		stringstream ss;
@@ -130,6 +133,9 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 		string force_rh_water = get("FORCE_RH_WATER", "Parameters", Config::nothrow); 
 		if (force_rh_water == "") addKey("FORCE_RH_WATER", "Parameters", "0");
+
+		string thresh_rh = get("THRESH_RH", "Parameters", Config::nothrow); 
+		if (thresh_rh == "") addKey("THRESH_RH", "Parameters", "0.7");
 
 		if ( !enforce_measured_snow_heights) {
 			stringstream ss;

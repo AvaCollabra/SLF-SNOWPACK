@@ -377,10 +377,10 @@ double Metamorphism::TGBondRate(const SN_ELEM_DATA& Edata)
 
 	A = 1./3. * (Constants::pi*(rb*rb + rg*rg) + csPoreArea(Edata));
 	TGradBond = Edata.k[TEMPERATURE] / CONDUCTIVITY_ICE * A / (Constants::pi * rb*rb) * (-TGrad);       // (K m-1) NOTE Why take TGrad neg.?
-	flux = -DIFFUSION_COEFFICIENT_IN_AIR / (GAS_CONSTANT * Edata.Te*Edata.Te) * (LH_SUBLIMATION / (GAS_CONSTANT * Edata.Te) - 1) * TGradBond;
+	flux = -DIFFUSION_COEFFICIENT_IN_AIR / (Constants::gas_constant * Edata.Te*Edata.Te) * (LH_SUBLIMATION / (Constants::gas_constant * Edata.Te) - 1) * TGradBond;
 	flux *= lw_SaturationPressure(Edata.Te); // (kg s-1 m-2)
 	// Bond radius growth rate (m s-1)
-	rbDot = flux / Constants::DENSITY_ICE * Metamorphism::sa_g_fudge;
+	rbDot = flux / Constants::density_ice * Metamorphism::sa_g_fudge;
 	// Convert to mm d-1
 	return(M_TO_MM(D_TO_S(rbDot)));
 }
@@ -448,7 +448,7 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
 	a0 = LatticeConstant0( th_i );
 	if ( gsz > 2*new_snow_grain_rad ) {
 		// Use an empirical estimation of the lattice constant
-		a1 = reg0 + reg1*(th_i * Constants::DENSITY_ICE);
+		a1 = reg0 + reg1*(th_i * Constants::density_ice);
 		a  = a0 + a1*(gsz - 2*new_snow_grain_rad);
 	} else {
 		a = a0;
@@ -456,17 +456,17 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
 	a  = MIN (a, hElem);
 
 	// Intra layer flux, where the direction of flow does not matter! Units: kg/(sm2)
-	intraFlux =  fabs(DIFFUSION_COEFFICIENT_IN_SNOW / (GAS_CONSTANT * Te*Te) * (LH_SUBLIMATION / (GAS_CONSTANT * Te) - 1.) * gradT);
+	intraFlux =  fabs(DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Te*Te) * (LH_SUBLIMATION / (Constants::gas_constant * Te) - 1.) * gradT);
 	intraFlux *= lw_SaturationPressure(Te);
 
 	// Layer to layer flux, where the direction of flow DOES matter! Units: kg/(sm2)
-	botFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (GAS_CONSTANT * Tbot*Tbot) * (LH_SUBLIMATION / (GAS_CONSTANT * Tbot) - 1.) * gradTbot;
+	botFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Tbot*Tbot) * (LH_SUBLIMATION / (Constants::gas_constant * Tbot) - 1.) * gradTbot;
 	botFlux *= lw_SaturationPressure(Tbot);
-	topFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (GAS_CONSTANT * Ttop*Ttop) * (LH_SUBLIMATION / (GAS_CONSTANT * Ttop) - 1.) * gradTtop;
+	topFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Ttop*Ttop) * (LH_SUBLIMATION / (Constants::gas_constant * Ttop) - 1.) * gradTtop;
 	topFlux *= lw_SaturationPressure(Ttop);
 	dFluxL2L = -(topFlux - botFlux);
 	// Calculate the rate in m s-1
-	rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::DENSITY_ICE * (2 * new_snow_grain_rad) * gsz);
+	rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::density_ice * (2 * new_snow_grain_rad) * gsz);
 	// Conversion to mm d-1
 	rgDot = M_TO_MM(D_TO_S(rgDot));
 
@@ -629,7 +629,7 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
 		EMS[e].N3 = getCoordinationNumberN3(EMS[e].Rho);
 
 		// Compute local values
-		double thetam_w = 1.e2 * (Constants::DENSITY_WATER * (EMS[e].theta[WATER]) / (EMS[e].Rho));
+		double thetam_w = 1.e2 * (Constants::density_water * (EMS[e].theta[WATER]) / (EMS[e].Rho));
 
 		splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
@@ -858,7 +858,7 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 
 		// Compute local values
 		cw = 1.e8 * exp(-6000. / 273.15);
-		thetam_w = 1.e2 * (Constants::DENSITY_WATER * EMS[e].theta[WATER] / EMS[e].Rho);
+		thetam_w = 1.e2 * (Constants::density_water * EMS[e].theta[WATER] / EMS[e].Rho);
 		splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
 			splim1=0.0;
@@ -1069,7 +1069,7 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 		// Update the calculation of grain class.
 		EMS[e].type = ml_ag_Classify(EMS[e].dd, EMS[e].sp, 2. * EMS[e].rg, EMS[e].mk % 100, EMS[e].theta[WATER], EMS[e].theta[ICE]);
 //Fz Structure has no longer members named ng, nb; also note that mg and mb are both (hopefully) 0., so what!
-//	  EMS[e].ng = (EMS[e].M - Constants::DENSITY_WATER * EMS[e].theta[WATER] * EMS[e].L) / (mg + 0.5 * EMS[e].N3 * mb);
+//	  EMS[e].ng = (EMS[e].M - Constants::density_water * EMS[e].theta[WATER] * EMS[e].L) / (mg + 0.5 * EMS[e].N3 * mb);
 //	  EMS[e].nb = 0.5 * N3 * EMS[e].ng;
 	} // end of loop over snow elements
 }

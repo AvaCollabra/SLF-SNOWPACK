@@ -247,11 +247,11 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 			// Change in volumetric water content in layer
 			d_theta = MIN ( MAX (0., ( EMS[e].theta[WATER] -
 					WP_FRACTION * lwsn_SoilFieldCapacity(&EMS[e]) )),
-					rootfr*water / ( Constants::DENSITY_WATER * EMS[e].L ) );
+					rootfr*water / ( Constants::density_water * EMS[e].L ) );
 
 			// residual water to be extracted in layers below
 			waterresidual -= rootfr * water;
-			waterresidual_real -= d_theta * Constants::DENSITY_WATER * EMS[e].L;
+			waterresidual_real -= d_theta * Constants::density_water * EMS[e].L;
 
 			// Update volumetric water content in layer
 			EMS[e].theta[WATER] -= d_theta;
@@ -268,11 +268,11 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 	}
 	d_theta = MIN ( MAX (0., ( EMS[RootLayer].theta[WATER] -
 			WP_FRACTION * lwsn_SoilFieldCapacity(&EMS[RootLayer]) ) ),
-			waterresidual / ( Constants::DENSITY_WATER * EMS[RootLayer].L ) );
+			waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
 
 	EMS[RootLayer].theta[WATER] -= d_theta;
 	EMS[RootLayer].theta[AIR] += d_theta;
-	waterresidual_real -= d_theta * Constants::DENSITY_WATER * EMS[RootLayer].L;
+	waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
 
 	// Check if water content is below wilting point in last layer
 	if ( waterresidual_real > 0.5 ) {
@@ -668,7 +668,7 @@ double Canopy::cn_DSaturationPressureDT(const double& L, const double& T)
 	double dpdt;
 	double c1, c2, c3;
 
-	// dpdt = lw_SaturationPressure(T) * L / (GAS_CONSTANT * T * T);
+	// dpdt = lw_SaturationPressure(T) * L / (Constants::gas_constant * T * T);
 	if ( L != LH_SUBLIMATION ) {
 		c1 = 610.780;
 		c2 = 17.08085;
@@ -1085,7 +1085,7 @@ void Canopy::cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& 
 	ustar = vw_local * karman / (log((refheight - zdisplcan) / zomc) + psim);
 
 	// 2.4 TRANSFER COEFFICIENT FOR SCALARS ABOVE CANOPY
-	ch = CAN_CH0 / (Constants::DENSITY_AIR * SPECIFIC_HEAT_AIR) + ustar * karman / (log((refheight - zdisplcan) / zohc) + psih);
+	ch = CAN_CH0 / (Constants::density_air * Constants::specific_heat_air) + ustar * karman / (log((refheight - zdisplcan) / zohc) + psih);
 	ch_e = ustar * karman / (log((refheight - zdisplcan) / zohc) + psih);
 
 	// 2.5 AERODYNAMIC RESISTANCE ABOVE CANOPY
@@ -1160,21 +1160,21 @@ void Canopy::cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& 
 	}
 
 	// Exchange coefficients sensible heat
-	ch_canopy = Constants::DENSITY_AIR * SPECIFIC_HEAT_AIR / (Cdata->ra + Cdata->rc);
+	ch_canopy = Constants::density_air * Constants::specific_heat_air / (Cdata->ra + Cdata->rc);
 
 	// latent heat interception
 	if ( Mdata.ta < 273.15 ) {
-		ce_condensation  = 0.622 * LH_SUBLIMATION / (GAS_CONSTANT_AIR * Mdata.ta
+		ce_condensation  = 0.622 * LH_SUBLIMATION / (Constants::gas_constant_air * Mdata.ta
 											* RAINCREASE_SNOW * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
-		ce_interception  = 0.622 * LH_SUBLIMATION / (GAS_CONSTANT_AIR * Mdata.ta
+		ce_interception  = 0.622 * LH_SUBLIMATION / (Constants::gas_constant_air * Mdata.ta
 											* RAINCREASE_SNOW * (ra_e + Cdata->rc));// * wetfraction;
 		ce_transpiration = 0.0;
 	} else {
-		ce_condensation  = 0.622 * LH_VAPORIZATION / (GAS_CONSTANT_AIR * Mdata.ta
+		ce_condensation  = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
-		ce_interception  = 0.622 * LH_VAPORIZATION / (GAS_CONSTANT_AIR * Mdata.ta
+		ce_interception  = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rc));// * wetfraction;
-		ce_transpiration = 0.622 * LH_VAPORIZATION / (GAS_CONSTANT_AIR * Mdata.ta
+		ce_transpiration = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rstransp + Cdata->rc));// * (1.0-wetfraction);
 	}
 

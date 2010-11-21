@@ -159,7 +159,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
 			   layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
-			   0., DENSITY_HOAR_SURF/Constants::DENSITY_ICE, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
+			   0., DENSITY_HOAR_SURF/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
 	}
 
 	fclose(PFile);

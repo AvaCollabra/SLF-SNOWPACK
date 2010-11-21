@@ -86,13 +86,13 @@ double SnowDrift::calcMassFlux(const SN_ELEM_DATA& Edata, const double& ustar, c
 
 	// Compute basic quantities that are needed: friction velocity, z0, threshold vw
 	// For now assume logarithmic wind profile; TODO change this later
-	weight = 0.02 * Constants::DENSITY_ICE * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
+	weight = 0.02 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
 	// weight = Edata.Rho*(Edata.sp + 1.)*Constants::g*MM_TO_M(Edata.rg);
 	binding = 0.0015 * sig * Edata.N3 * (Edata.rb*Edata.rb) / (Edata.rg*Edata.rg);
 	tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
-	ustar_thresh = sqrt(tau_thresh / Constants::DENSITY_AIR);
+	ustar_thresh = sqrt(tau_thresh / Constants::density_air);
 	// fprintf(stdout, "weight: %lf   binding:%lf  tau_th:%lf\n",weight, binding, tau_thresh);
-	tau = Constants::DENSITY_AIR * pow(ustar, 2);
+	tau = Constants::density_air * pow(ustar, 2);
 
 	// First, look whether there is any transport at all: use formulation of Schmidt
 	if ( tau_thresh > tau ) {

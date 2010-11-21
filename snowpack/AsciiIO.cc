@@ -68,6 +68,19 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	if (depth_of_sensors.size() != FIXED_HEIGHTS)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
 }
+/*
+AsciiIO::~AsciiIO() throw()
+{
+	cleanup();
+}
+
+void AsciiIO::cleanup() throw()
+{
+	if (fout.is_open()) {//close fin if open
+		fout.close();
+	}
+}
+*/
 
 /**
  * @brief This routine reads the status of the snow cover at program start
@@ -1427,9 +1440,51 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 	return true;
 }
 
-void AsciiIO::writeHazardData(const std::string&, const std::vector<Q_PROCESS_DAT>&, 
-						const std::vector<Q_PROCESS_IND>&, const int&)
+void AsciiIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
+						 const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
-	throw IOException("Nothing implemented here!", AT);
+	/*
+	fout.open(name.c_str());
+	if (fout.fail()) throw FileAccessException(name, AT);
+
+	try {
+		// Print out the hoar hazard data info, contained in Zdata
+		fout << "SurfaceHoarIndex" << endl;
+		for(unsigned int e = 0; e < 48; e++) {
+			if (e != 0) fout << " ";
+			fout << Zdata.hoar24[e];
+		}
+		fout << endl;
+
+		// Print out the drift hazard data info, contained in Zdata
+		fout << "DriftIndex" << endl;
+		for(unsigned int e = 0; e < 48; e++) {
+			if (e != 0) fout << " ";
+			fout << Zdata.drift24[e];
+		}
+		fout << endl;
+
+		// Print out the 3 hour new snowfall hazard data info, contained in Zdata
+		fout << "ThreeHourNewSnow" << endl;
+		for(unsigned int e = 0; e < 144; e++) {
+			if (e != 0) fout << " ";
+			fout << Zdata.hns3[e];
+		}
+		fout << endl;
+
+		// Print out the 24 hour new snowfall hazard data info, contained in Zdata
+		fout << "TwentyFourHourNewSnow" << endl;
+		for(unsigned int e = 0; e < 144; e++) {
+			if (e != 0) fout << " ";
+			fout << Zdata.hns24[e];
+		}
+		fout << endl;
+	} catch (exception& e){
+		cleanup();
+		throw;
+	}
+
+	cleanup();
+	*/
 }
 

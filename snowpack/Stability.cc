@@ -509,7 +509,7 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	double rho_ri;                        // Snow density relative to ice
 
 	// Snow density relative to ice
-	rho_ri = Edata.Rho/Constants::DENSITY_ICE;
+	rho_ri = Edata.Rho/Constants::density_ice;
 	// Determine majority grain shape
 	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
 
@@ -620,7 +620,7 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	double rho_ri;                 // Snow density relative to ice
 
 	// Snow density relative to ice
-	rho_ri = Edata.Rho/Constants::DENSITY_ICE;
+	rho_ri = Edata.Rho/Constants::density_ice;
 	// Determine majority grain shape
 	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
 
@@ -638,11 +638,11 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 			phi = 0.08*Sig_c2 + 0.224;
 			break;
 		case 1: // PP //NIED (H. Hirashima)
-			Sig_c2= 9.4*0.0001*pow(Edata.theta[ICE]*Constants::DENSITY_ICE,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+			Sig_c2= 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 			phi = 0.08*Sig_c2 + 0.056 + 0.022*STpar.sig_n;
 			break;
 		case 2: case 3: // DF & RG //NIED (H. Hirashima)
-			Sig_c2= 9.4*0.0001*pow(Edata.theta[ICE]*Constants::DENSITY_ICE,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+			Sig_c2= 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 			phi = 0.08*Sig_c2 + 0.224;
 			break;
 		case 6: // SH
@@ -676,12 +676,12 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 			Sig_c3 = 84.*exp(2.55*log(rho_ri));
 			break;
 		case 7: // MF //NIED (H. Hirashima)
-			Sig_c2= 4.97*0.0001*pow(Edata.theta[ICE]*Constants::DENSITY_ICE,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+			Sig_c2= 4.97*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 			phi = 0.08*Sig_c2 + 0.224;
 			break;
 		default: // FC, DH, FCmx
 			Sig_c2 = 18.5*exp(2.11*log(rho_ri));
-			//Sig_c2 = 0.0391*exp(0.0141*Edata.theta[ICE]*Constants::DENSITY_ICE); //NIED (H. Hirashima)
+			//Sig_c2 = 0.0391*exp(0.0141*Edata.theta[ICE]*Constants::density_ice); //NIED (H. Hirashima)
 			Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
 			// phi = 0.08*Sig_c2 + 0.224; // Correction not used by B. Jamieson, see IGS03
 			break;
@@ -691,8 +691,8 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 
 	// Final assignements
 	//NIED (H. Hirashima)
-	Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::DENSITY_ICE,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
-	Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::DENSITY_ICE,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+	Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+	Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK

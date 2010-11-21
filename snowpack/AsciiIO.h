@@ -106,6 +106,8 @@ class AsciiIO : public SnowpackIOInterface {
 		std::vector<double> depth_of_sensors;
 
 		int CHANGE_BC, MEAS_TSS;
+
+		//std::ofstream fout;//Output file streams
 };
 
 #endif //End of AsciiIO.h

@@ -62,5 +62,7 @@ class WaterTransport {
 		double thresh_rain; //Rain only for air temperatures warmer than threshold (degC)
 		double sn_dt;       //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		unsigned int max_n_solutes; //The maximum number of solutes to be treated
+		double rh_hoar_thresh; //No surface hoar will form for rH above threshold
+		double v_hoar_thresh; //No surface hoar will form at wind speeds above threshold (m s-1)
 };
 #endif //End of WaterTransport.h

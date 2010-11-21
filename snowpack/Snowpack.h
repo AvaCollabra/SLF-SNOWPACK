@@ -154,10 +154,10 @@ class Snowpack {
 		
 		mio::Config cfg;
 		BoundaryCondition surfaceCode;
-		bool research_mode, useCanopyModel, enforce_measured_snow_heights;
-		int SOIL_FLUX, SW_REF, SNP_SOIL; //CHANGE_BC
-		double THRESH_CHANGE_BC, GEO_HEAT, HEIGHT_OF_METEO_VALUES, METEO_STEP_LENGTH, hns_ne_height, thresh_rain, sn_dt;
-		double t_crazy_min, t_crazy_max;
+		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSnowLayers;
+		int sw_ref;
+		double thresh_change_bc, geo_heat, height_of_meteo_values, meteo_step_length, hns_ne_height, thresh_rain, sn_dt;
+		double t_crazy_min, t_crazy_max, thresh_rh;
 		std::string viscosity_model, variant;
 		bool multistream, join_elements, change_bc, meas_tss;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
