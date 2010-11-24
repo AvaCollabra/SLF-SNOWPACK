@@ -181,9 +181,6 @@ class SN_MET_DATA {
 		std::vector<double> ts;        ///< Snowpack and/or Soil temperatures (K)
 		std::vector<double> zv_ts;     ///< Depth of temperature sensors (m)
 		std::vector<double> conc;      ///< Solute concentrations in precipitation
-		//double ts[MAX_NUMBER_SENSORS];    ///< Snowpack and/or Soil temperatures (K)
-		//double zv_ts[MAX_NUMBER_SENSORS]; ///< Depth of temperature sensors (m)
-		//double conc[MAX_N_SOLUTES];       ///< Solute concentrations in precipitation
 		double rho_hn; ///< Measured new sno density (kg m-3)
 
 	private:

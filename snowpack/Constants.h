@@ -102,62 +102,12 @@
 	#define MINIMUM_L_ELEMENT 0.0025
 #endif
 
-/**
- * @name Snow sensors
- * @brief Defines the number of modelled and/or measured sensors that are monitored
- */
-//@{
-/**
- * @brief description:
- * - FIXED_HEIGHTS (default: 5) modelled and measured temperatures at fixed positions (m) can be monitored.
- * 	- positive position values: heigth from ground surface (snow only)
- * 	- negative position values: depth from either ground surface or snow surface if SNP_SOIL = 0
- * - NOTE:
- *  - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output
- * 	- At most MAX_NUMBER_SENSORS can be monitored (maximum 10+44 columns are available).
- *    If (CANOPY && OUT_CANOPY), however, only 10 values can be dumped to file, that is,
- *    five modelled and five measured temperatures.
- * 	- T_INTERNAL (<= MAX_NUMBER_SENSORS) is the number of monitored PHYSICAL sensors,
- *    typically thermometers (and their position). A mix of sensors at fixed positions (FIXED_HEIGHTS) and
- *    variable positions is allowed.
- * 		-# research mode: up to 5
- * 		-# advanced mode: up to 5+22 = 27
- * 			- Antarctica 7+7+9 = 23
- * 			- Calibration 5+11 = 16
- * 		-# operational mode: 3
- * 	- Add data columns to the input file after the snow depth as follows:
- * 		-# FIXED_HEIGHTS (\< T_INTERNAL) columns of measured values at fixed positions
- * 		-# FIXED_RATES (\< T_INTERNAL-FIXED_HEIGHTS) double columns of measured values and positions given by
- *       fixed negative settling rates (d-1). Enter the initial position (pos or neg, see above) at the time
- *       the change is effective, followed by the rate. Additional such entries can be repeated when initial
- *       position and/or rate change again. Otherwise fill the column with -999.9 [NODATA]
- * 		-# Up to T_INTERNAL-FIXED_HEIGHTS-FIXED_RATES double columns of measured values and positions
- * 	- FIXED_HEIGHTS, and FIXED_RATES are all set in Constants.h, T_INTERNAL is read from CONSTANTS_User.INI
- */
-#if VARIANT == ANTARCTICA
-	#define FIXED_HEIGHTS 7
-	#define FIXED_RATES 7
-	#define MAX_NUMBER_SENSORS 23
-	#define MIN_DEPTH_SUBSURF 0.0
-#elif VARIANT == CALIBRATION
-	#define FIXED_HEIGHTS 5
-	#define FIXED_RATES 0
-	#define MAX_NUMBER_SENSORS 16
-	#define MIN_DEPTH_SUBSURF 0.0
-#else
-	#define FIXED_HEIGHTS 5
-	#define FIXED_RATES 0
-	#define MAX_NUMBER_SENSORS 8
-	#define MIN_DEPTH_SUBSURF 0.07
-#endif
-
 /// @brief Initial value for stability parameter
 #define INIT_STABILITY 999.
 /// @brief Switch on or off wind pumping in snow
 #define WIND_PUMP ON
 /// @brief Switch on or off wind pumping in soil
 #define WIND_PUMP_SOIL ON
-//@}
 
 /**
  * @name Thresholds for surface hoar formation and burial

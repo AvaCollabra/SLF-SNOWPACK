@@ -570,9 +570,9 @@ SN_MET_DATA::SN_MET_DATA(const unsigned int& i_max_number_of_sensors, const unsi
     psi_s(0.), iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.), 
     max_number_of_sensors(i_max_number_of_sensors), max_number_of_solutes(i_max_number_of_solutes)
 {
-	ts    = vector<double>(MAX_NUMBER_SENSORS, 0.);
-	zv_ts = vector<double>(MAX_NUMBER_SENSORS, 0.);
-	conc  = vector<double>(MAX_N_SOLUTES, 0.);
+	ts    = vector<double>(max_number_of_sensors, 0.);
+	zv_ts = vector<double>(max_number_of_sensors, 0.);
+	conc  = vector<double>(max_number_of_solutes, 0.);
 }
 
 void SN_MET_DATA::reset()

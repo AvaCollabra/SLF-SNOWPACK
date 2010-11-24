@@ -160,7 +160,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 		addKey("FIXED_HEIGHTS", "Parameters", "5");
 		addKey("FIXED_RATES", "Parameters", "0");
-		addKey("MAX_NUMBER_SENSORS", "Parameters", "16");
+		addKey("MAX_NUMBER_SENSORS", "Parameters", "8");
 		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
 
 	} else {
@@ -209,7 +209,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	}
 }
 
-void checkUserConfiguration(mio::Config& cfg)
+void checkUserConfiguration(mio::Config& /*cfg*/)
 {
 	/*
 	if ( !((T_INTERNAL > -1) && (T_INTERNAL <= MAX_NUMBER_SENSORS)) ) {

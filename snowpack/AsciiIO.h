@@ -99,6 +99,7 @@ class AsciiIO : public SnowpackIOInterface {
 		int NUMBER_EXPO, NUMBER_SENSORS;//Actual number of "sensors" that are monitored, including tags in advanced mode
 		bool OUT_HEAT, OUT_LW, OUT_SW, OUT_METEO, OUT_HAZ, OUT_MASS, OUT_T, OUT_LOAD, OUT_STAB, OUT_CANOPY;
 		bool PERP_TO_SLOPE;
+		double fixed_heights, fixed_rates, max_number_sensors, min_depth_subsurf;
 
 		std::string variant, experiment, outpath, i_snopath, o_snopath;
 

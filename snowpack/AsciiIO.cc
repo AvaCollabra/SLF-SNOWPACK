@@ -25,6 +25,42 @@ using namespace mio;
 
 AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 {
+	/**
+	 * @name Snow sensors
+	 * @brief Defines the number of modelled and/or measured sensors that are monitored
+	 */
+	/**
+	 * @brief description:
+	 * - FIXED_HEIGHTS (default: 5) modelled and measured temperatures at fixed positions (m) can be monitored.
+	 * 	- positive position values: heigth from ground surface (snow only)
+	 * 	- negative position values: depth from either ground surface or snow surface if SNP_SOIL = 0
+	 * - NOTE:
+	 *  - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output
+	 * 	- At most MAX_NUMBER_SENSORS can be monitored (maximum 10+44 columns are available).
+	 *    If (CANOPY && OUT_CANOPY), however, only 10 values can be dumped to file, that is,
+	 *    five modelled and five measured temperatures.
+	 * 	- T_INTERNAL (<= MAX_NUMBER_SENSORS) is the number of monitored PHYSICAL sensors,
+	 *    typically thermometers (and their position). A mix of sensors at fixed positions (FIXED_HEIGHTS) and
+	 *    variable positions is allowed.
+	 * 		-# research mode: up to 5
+	 * 		-# advanced mode: up to 5+22 = 27
+	 * 			- Antarctica 7+7+9 = 23
+	 * 			- Calibration 5+11 = 16
+	 * 		-# operational mode: 3
+	 * 	- Add data columns to the input file after the snow depth as follows:
+	 * 		-# FIXED_HEIGHTS (\< T_INTERNAL) columns of measured values at fixed positions
+	 * 		-# FIXED_RATES (\< T_INTERNAL-FIXED_HEIGHTS) double columns of measured values and positions given by
+	 *       fixed negative settling rates (d-1). Enter the initial position (pos or neg, see above) at the time
+	 *       the change is effective, followed by the rate. Additional such entries can be repeated when initial
+	 *       position and/or rate change again. Otherwise fill the column with -999.9 [NODATA]
+	 * 		-# Up to T_INTERNAL-FIXED_HEIGHTS-FIXED_RATES double columns of measured values and positions
+	 * 	- FIXED_HEIGHTS, and FIXED_RATES are all set in Constants.h, T_INTERNAL is read from CONSTANTS_User.INI
+	 */
+	fixed_heights = cfg.get("FIXED_HEIGHTS", "Parameters");
+	fixed_rates = cfg.get("FIXED_RATES", "Parameters");
+	max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "Parameters");
+	min_depth_subsurf = cfg.get("MIN_DEPTH_SUBSURF", "Parameters");
+
 	string tmp_variant = cfg.get("VARIANT", "Parameters"); 
 	variant=tmp_variant;
 	string tmp_experiment = cfg.get("EXPERIMENT", "Parameters");
@@ -65,7 +101,7 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
 	
-	if (depth_of_sensors.size() != FIXED_HEIGHTS)
+	if (depth_of_sensors.size() != fixed_heights)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
 }
 /*
@@ -740,7 +776,7 @@ int AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double& T
 	/// @brief Initial height of snow needed to compute sensor position from ground if FIXED_RATES is set
 	double INITIAL_HS=0;
 
-	if ( i < FIXED_HEIGHTS ) {
+	if ( i < fixed_heights ) {
 		perp_pos = calcPerpPosition(z_vert, Xdata.cH, Xdata.Ground, Xdata.SlopeAngle);
 	} else {
 		if ( (perp_pos = calcPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.SlopeAngle)) == NODATA ) {
@@ -786,7 +822,7 @@ double AsciiIO::calcPerpPosition(const double& z_vert, const double& hs_ref, con
 /**
  * @brief Checks whether measured internal snow or/and soil temperature (instantaneous value) is valid \n
  * The temperature defaults to NODATA if
- *  - the sensor is not covered by more than MIN_DEPTH_SUBSURF snow (measured perpendicular to slope)
+ *  - the sensor is not covered by more than min_depth_subsurf snow (measured perpendicular to slope)
  * @author Charles Fierz
  * @version 10.01
  * @param T Measured temperature (K)
@@ -796,7 +832,7 @@ double AsciiIO::calcPerpPosition(const double& z_vert, const double& hs_ref, con
  */
 double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const double& mH)
 {
-	if ( (z <= (mH - MIN_DEPTH_SUBSURF)) && (T != NODATA) ) {
+	if ( (z <= (mH - min_depth_subsurf)) && (T != NODATA) ) {
 		return K_TO_C(T);
 	} else {
 		return NODATA;
@@ -835,7 +871,7 @@ int AsciiIO::findTaggedElement(const int& tag, const SN_STATION_DATA& Xdata)
 int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata)
 {
 	int e, j=2;
-	const int i = FIXED_HEIGHTS+FIXED_RATES + (tag-1);
+	const int i = fixed_heights+fixed_rates + (tag-1);
 	double perp_pos, temp;
 	if ( (e = findTaggedElement(tag, Xdata)) >= 0 ) {
 		perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
@@ -965,9 +1001,9 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 		fprintf(TFile,",,,,,,");
 	}
 	// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
-	if ( OUT_T && (FIXED_HEIGHTS || FIXED_RATES) ) {
+	if ( OUT_T && (fixed_heights || fixed_rates) ) {
 		j = 0;
-		for (i = 0; i < MIN(5, FIXED_HEIGHTS); i++) {
+		for (i = 0; i < MIN(5, fixed_heights); i++) {
 			j += writeTemperatures(TFile, Mdata.zv_ts[i], Mdata.ts[i], i, Xdata);
 		}
     for (; j < 10; j++) {
@@ -976,7 +1012,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	} else {
 		fprintf(TFile,",,,,,,,,,,");
 	}
-	if ( MAX_NUMBER_SENSORS == 5 ) {
+	if ( max_number_sensors == 5 ) {
 		if ( OUT_LOAD ) {
 		// 50: Solute load at ground surface
 			fprintf(TFile,",%lf",Sdata.load[0]);
@@ -1004,7 +1040,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	} else if ( OUT_T ) {
 		// 50-93 (44 columns)
 		j = 0;
-		for (i = MIN(5, FIXED_HEIGHTS); i < FIXED_HEIGHTS+FIXED_RATES; i++) {
+		for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
 			if ( (j += writeTemperatures(TFile, Mdata.zv_ts[i], Mdata.ts[i], i, Xdata)) > 44 ) {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), 
 					   "There is not enough space to accomodate your temperature sensors: j=%d > 44!", j);
@@ -1227,7 +1263,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\nSlopeAngle= %.2lf", RAD_TO_DEG(va_Xdata->SlopeAngle));
 			fprintf(fout, "\nSlopeAzi= %.2lf",   RAD_TO_DEG(va_Xdata->SlopeAzi));
 			fprintf(fout, "\nDepthTemp= %1d",    useSnowLayers);
-			for (i = 0; i < FIXED_HEIGHTS; i++) {
+			for (i = 0; i < fixed_heights; i++) {
 				fprintf(fout, ",%.3lf", depth_of_sensors[i]);
 			}
 			fprintf(fout, "\n\n[HEADER]");
@@ -1239,7 +1275,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)");
 			fprintf(fout, ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Measured snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),Total snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration)");
 			fprintf(fout, ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)");
-			if ( MAX_NUMBER_SENSORS == 5 ) {
+			if ( max_number_sensors == 5 ) {
 				fprintf(fout, ",Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
 				if ( useCanopyModel && OUT_CANOPY ) {
 					fprintf(fout, ",Interception storage,Canopy surface  temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation canopy,Sensible heat flux into the canopy,Latent heat flux into the canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the canopy,Latent heat flux to the canopy,Longwave radiation up above canopy,Longwave radiation down above canopy");
@@ -1250,18 +1286,18 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			} else if ( OUT_T ) {
 				int i_prn;
 				j = 0;
-				for (i = MIN(5, FIXED_HEIGHTS); i < FIXED_HEIGHTS+FIXED_RATES; i++) {
-					if ( i < FIXED_HEIGHTS ) {
+				for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
+					if ( i < fixed_heights ) {
 						i_prn = i + 1;
 						fprintf(fout, ",Temperature %d (modelled)", i_prn);
 					} else {
-						i_prn = (i-FIXED_HEIGHTS)+1;
+						i_prn = (i-fixed_heights)+1;
 						fprintf(fout, ",Hfr %d", i_prn);
 						fprintf(fout, ",Tfr %d (modelled)", i_prn);
 						j++;
 					}
 					if ( i < t_internal ) {
-						if ( i < FIXED_HEIGHTS ) {
+						if ( i < fixed_heights ) {
 							fprintf(fout, ",Temperature %d (measured)", i_prn);
 						} else {
 							fprintf(fout, ",Tfr %d (measured)", i_prn);
@@ -1306,7 +1342,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			}
 
 			fprintf(fout, "\n,,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,degC,degC,degC,degC,W m-2,degC,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,%%,m s-1,m s-1,deg,kg m-2 h-1,cm,cm,mm,cm,cm,cm,kg m-2,kg m-2 h-1,kg m-2 h-1,kg m-2,kg m-2,kg m-2,degC,degC,degC,degC,degC,degC,degC,degC,degC,degC");
-			if ( MAX_NUMBER_SENSORS == 5 ) {
+			if ( max_number_sensors == 5 ) {
 				fprintf(fout, ",kg m-2,kg m-2,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1");
 				if ( OUT_CANOPY && useCanopyModel ) {
 					fprintf(fout, ",kg m-2,degC,-,-,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,kg m-2 per timestep,kg m-2 per timestep,kg m-2,kg m-2,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,degC,kg m-2,kg m-2 per timestep");
@@ -1315,8 +1351,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 				}
 			} else if ( OUT_T ) {
 				j = 0;
-				for (i = MIN(5, FIXED_HEIGHTS); i < FIXED_HEIGHTS+FIXED_RATES; i++) {
-					if ( i >= FIXED_HEIGHTS ) {
+				for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
+					if ( i >= fixed_heights ) {
 						fprintf(fout, ",cm");
 						j++;
 					}
