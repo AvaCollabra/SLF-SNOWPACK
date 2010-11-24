@@ -61,6 +61,7 @@ class ImisDBIO : public SnowpackIOInterface{
 		mio::Config cfg;
 		static bool research_mode;
 		static std::string oracleDB, oracleUser, oraclePassword;
+		static double min_size_hoar_surf, density_hoar_surf;
 
 		static const double in_tz; //All IMIS data is in gmt+1
 		static const std::string sqlDeleteHdata; //Delete statement for Hdata from snowpack.ams_pmod

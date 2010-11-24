@@ -139,6 +139,7 @@ class Stability {
 		mio::Config cfg;
 		std::string strength_model, hardness_model;
 		bool plastic;
+		double density_hoar_buried;
 };
 
 

@@ -188,5 +188,6 @@ class Hazard {
 		bool force_rh_water;
 		double sn_dt, calculation_step_length;
 		int hazard_steps_between;
+		double min_size_hoar_surf, density_hoar_surf;
 };
 #endif //End of Hazard.h

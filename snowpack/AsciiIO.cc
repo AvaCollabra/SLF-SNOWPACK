@@ -100,6 +100,12 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	depth_of_sensors = cfg.get("DEPTH", "Parameters");	
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
+
+	//Minimum size to show surface hoar on surface (mm)
+	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
 	
 	if (depth_of_sensors.size() != fixed_heights)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
@@ -523,7 +529,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 		fprintf(PFile,",%03d",EMS[e].type);
 	}
 	// surface hoar at surface? (depending on boundary conditions)
-	if ( M_TO_MM(NDS[nN-1].hoar/DENSITY_HOAR_SURF) > MIN_SIZE_HOAR_SURF ) {
+	if ( M_TO_MM(NDS[nN-1].hoar/density_hoar_surf) > min_size_hoar_surf ) {
 		fprintf(PFile,",660");
 	} else {
 		fprintf(PFile,",0");

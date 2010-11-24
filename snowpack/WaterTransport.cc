@@ -60,6 +60,15 @@ WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	//To build up a water table over impermeable layers
 	jam = cfg.get("JAM", "Parameters");
+
+	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
+	density_hoar_buried = cfg.get("DENSITY_HOAR_BURIED", "Parameters");
+
+	//Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
+	min_size_hoar_buried = cfg.get("MIN_SIZE_HOAR_BURIED", "Parameters");
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
 }
 
 /**
@@ -309,7 +318,7 @@ void WaterTransport::removeElements(const double& ta, SN_STATION_DATA& Xdata, SN
 				enforce_join = false;
 			}
 			if ( EMS[e1].mk%100 == 3 ) {
-				if ( (e1 < nE-1) && (EMS[e1].L >= MM_TO_M(0.75*MIN_SIZE_HOAR_BURIED * (DENSITY_HOAR_SURF/DENSITY_HOAR_BURIED))) && (EMS[e1].Rho <= 300.) ) {
+				if ( (e1 < nE-1) && (EMS[e1].L >= MM_TO_M(0.75*min_size_hoar_buried * (density_hoar_surf/density_hoar_buried))) && (EMS[e1].Rho <= 300.) ) {
 					enforce_join = false;
 				} else {
 					enforce_join = true;

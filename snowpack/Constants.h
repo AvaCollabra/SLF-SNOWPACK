@@ -109,40 +109,6 @@
 /// @brief Switch on or off wind pumping in soil
 #define WIND_PUMP_SOIL ON
 
-/**
- * @name Thresholds for surface hoar formation and burial
- * NOTE that the value of the parameter ROUGHNESS_LENGTH in CONSTANTS_User.INI is critical for surface hoar formation,
- * particularly for Dirichlet boundary conditions. Value should be < 1 mm. However, other considerations favor larger values.
- * - 0.0007 m : original calibration with the 98/99 data set \n
- * - 0.002  m : favored operational value with Dirichlet bc
- */
-//@{
-/// @brief Minimum size to show surface hoar on surface (mm)
-#define MIN_SIZE_HOAR_SURF    0.5
-/// @brief Density of surface hoar (-> hoar index of surface node) (kg m-3)
-#define DENSITY_HOAR_SURF   100.
-/// @brief Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
-#define MIN_SIZE_HOAR_BURIED  2.0
-/**
- * @brief Density of BURIED surface hoar (kg m-3)
- * - default: 125.
- * - Antarctica: 200.
- */
-#if VARIANT == ANTARCTICA
-	#define DENSITY_HOAR_BURIED 200.
-#else
-	#define DENSITY_HOAR_BURIED 125.
-#endif
-//@}
-
-/**
- * @name User parameters
- * @brief External declarations for user parameters set in CONSTANTS_User.INI (documented in Constants.c)
- */
-//@{
-//extern double INITIAL_HS;
-//@}
-
 /// @brief Time step control parameters
 typedef struct {
   double TimeN;      ///< Time of present calculation (s)

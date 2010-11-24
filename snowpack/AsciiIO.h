@@ -100,6 +100,7 @@ class AsciiIO : public SnowpackIOInterface {
 		bool OUT_HEAT, OUT_LW, OUT_SW, OUT_METEO, OUT_HAZ, OUT_MASS, OUT_T, OUT_LOAD, OUT_STAB, OUT_CANOPY;
 		bool PERP_TO_SLOPE;
 		double fixed_heights, fixed_rates, max_number_sensors, min_depth_subsurf;
+		double min_size_hoar_surf, density_hoar_surf;
 
 		std::string variant, experiment, outpath, i_snopath, o_snopath;
 

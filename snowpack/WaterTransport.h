@@ -64,5 +64,6 @@ class WaterTransport {
 		unsigned int max_n_solutes; //The maximum number of solutes to be treated
 		double rh_hoar_thresh; //No surface hoar will form for rH above threshold
 		double v_hoar_thresh; //No surface hoar will form at wind speeds above threshold (m s-1)
+		double density_hoar_surf, density_hoar_buried, min_size_hoar_buried;
 };
 #endif //End of WaterTransport.h

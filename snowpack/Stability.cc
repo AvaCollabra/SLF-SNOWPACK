@@ -99,6 +99,9 @@ Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg)
 	//To build a sandwich with a non-snow layer (plastic or wood chips) on top; 
 	//originally introduced for snow farming applications
 	plastic = cfg.get("PLASTIC", "Parameters");
+
+	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
+	density_hoar_buried = cfg.get("DENSITY_HOAR_BURIED", "Parameters");
 }
 
 
@@ -159,8 +162,8 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
 				break;
 			}
 			case 6: { // Surface hoar SH; empirical: index 1 to 2 from DENSITY_HOAR_BURIED to 250 kg m-3
-				A = 1. - DENSITY_HOAR_BURIED/(250. - DENSITY_HOAR_BURIED);
-				B = 1./(250. - DENSITY_HOAR_BURIED);
+				A = 1. - density_hoar_buried/(250. - density_hoar_buried);
+				B = 1./(250. - density_hoar_buried);
 				break;
 			}
 			case 7: { // Melt Forms MF
@@ -282,8 +285,8 @@ double Stability::st_HandHardnessASARC(const SN_ELEM_DATA& Edata)
 				break;
 			}
 			case 6: { // Surface hoar SH; empirical: index 1 to 2 from DENSITY_HOAR_BURIED to 250 kg m-3
-				A = 1. - DENSITY_HOAR_BURIED/(250. - DENSITY_HOAR_BURIED);
-				B = 1./(250. - DENSITY_HOAR_BURIED);
+				A = 1. - density_hoar_buried/(250. - density_hoar_buried);
+				B = 1./(250. - density_hoar_buried);
 				C = 0.;
 				break;
 			}

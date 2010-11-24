@@ -204,6 +204,22 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	new_snow_grain_rad = cfg.get("NEW_SNOW_GRAIN_RAD", "Parameters");
 	new_snow_bond_rad = 0.25 * new_snow_grain_rad;
+
+	/**
+	 * @name Thresholds for surface hoar formation and burial
+	 * NOTE that the value of the parameter ROUGHNESS_LENGTH in CONSTANTS_User.INI is critical for surface hoar formation,
+	 * particularly for Dirichlet boundary conditions. Value should be < 1 mm. Other considerations favor larger values.
+	 * - 0.0007 m : original calibration with the 98/99 data set \n
+	 * - 0.002  m : favored operational value with Dirichlet bc
+	 */
+	//Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
+	density_hoar_buried = cfg.get("DENSITY_HOAR_BURIED", "Parameters");
+
+	//Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
+	min_size_hoar_buried = cfg.get("MIN_SIZE_HOAR_BURIED", "Parameters");
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
 }
 
 /**
@@ -1374,9 +1390,9 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 			hoar = Xdata.Ndata[nOldN-1].hoar;
 			if ( nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < 0.00001 ) {
 				// W.E. of surface hoar must be larger than a threshold to be buried
-				if ( hoar > 1.5*MM_TO_M(MIN_SIZE_HOAR_BURIED)*DENSITY_HOAR_SURF ) {
+				if ( hoar > 1.5*MM_TO_M(min_size_hoar_buried)*density_hoar_surf ) {
 					nHoarE = 1;
-				} else if ( !(change_bc && meas_tss) && (hoar > MM_TO_M(MIN_SIZE_HOAR_BURIED)*DENSITY_HOAR_SURF) ) {
+				} else if ( !(change_bc && meas_tss) && (hoar > MM_TO_M(min_size_hoar_buried)*density_hoar_surf) ) {
 					nHoarE = 1;
 				} else {
 					nHoarE = 0;
@@ -1423,9 +1439,9 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 				// Now fill nodal data for upper hoar node
 				NDS[nOldN].T = t_surf;              // The temperature of the new node
 				// The new nodal position;
-				NDS[nOldN].z = NDS[nOldN-1].z + NDS[nOldN-1].u + hoar/DENSITY_HOAR_BURIED;
+				NDS[nOldN].z = NDS[nOldN-1].z + NDS[nOldN-1].u + hoar/density_hoar_buried;
 				NDS[nOldN].u = 0.0;                 // Initial displacement is 0
-				NDS[nOldN].hoar = hoar / DENSITY_HOAR_BURIED;         // Surface hoar initial size
+				NDS[nOldN].hoar = hoar / density_hoar_buried;         // Surface hoar initial size
 				NDS[nOldN].udot = 0.0;               // Settlement rate is also 0
 				NDS[nOldN].f = 0.0;                 // Unbalanced forces is 0
 				NDS[nOldN].S_n = INIT_STABILITY;
@@ -1462,7 +1478,7 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 				// Density
 				EMS[e].Rho = rho_hn;
 				if ( nHoarE && e == nOldE ) {
-					EMS[e].Rho = DENSITY_HOAR_BURIED;
+					EMS[e].Rho = density_hoar_buried;
 				}
 				// Mass
 				EMS[e].M = EMS[e].L0*EMS[e].Rho;
@@ -1555,7 +1571,7 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 						EMS[e].dd = 0.;
 						EMS[e].sp = 0.;
 						EMS[e].rg = MAX(new_snow_grain_rad, 0.5*M_TO_MM(EMS[e].L0));
-						// Note: L0 > MIN_SIZE_HOAR_BURIED/DENSITY_HOAR_BURIED
+						// Note: L0 > min_size_hoar_buried/density_hoar_buried
 						EMS[e].rb = EMS[e].rg/3.;
 					}
 				} // Treat all the initial snow types

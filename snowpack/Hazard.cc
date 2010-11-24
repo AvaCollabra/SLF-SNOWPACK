@@ -81,6 +81,12 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	force_rh_water = cfg.get("FORCE_RH_WATER", "Parameters");
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
+
+	//Minimum size to show surface hoar on surface (mm)
+	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
 }
 
 /**
@@ -403,9 +409,9 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 	}
 
 	// HOAR SIZE, size in mm assuming DENSITY_HOAR_SURF at surface
-	Hdata.hoar_size = M_TO_MM(Xdata.Ndata[nE].hoar / DENSITY_HOAR_SURF);
+	Hdata.hoar_size = M_TO_MM(Xdata.Ndata[nE].hoar / density_hoar_surf);
 	// Check for lower size limit
-	if ( Hdata.hoar_size <= MIN_SIZE_HOAR_SURF ) {
+	if ( Hdata.hoar_size <= min_size_hoar_surf ) {
 		Hdata.hoar_size = 0.;
 	}
 	if ( !((Hdata.hoar_size >= 0.) && (Hdata.hoar_size < 100.)) ) {

@@ -28,6 +28,8 @@ using namespace oracle::occi;
 const double ImisDBIO::in_tz = 1.; //All IMIS data is in gmt+1
 
 bool ImisDBIO::research_mode = true;
+double ImisDBIO::density_hoar_surf = 0.0;
+double ImisDBIO::min_size_hoar_surf = 0.0;
 
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and wstao_nr = :3 and datum>=:4 and datum<=:5";
 
@@ -46,6 +48,12 @@ ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("DBPASS", "Output", oraclePassword, Config::nothrow);
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
+
+	//Minimum size to show surface hoar on surface (mm)
+	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
 }
 
 void ImisDBIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
@@ -148,18 +156,18 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
 	}
 
-	if ( NDS[nE].hoar > MM_TO_M(MIN_SIZE_HOAR_SURF) * DENSITY_HOAR_SURF ) {
+	if ( NDS[nE].hoar > MM_TO_M(min_size_hoar_surf) * density_hoar_surf ) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
 		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
-		double gsz_SH = M_TO_MM(NDS[nE].hoar / DENSITY_HOAR_SURF);
+		double gsz_SH = M_TO_MM(NDS[nE].hoar / density_hoar_surf);
 		e=nL-1;
 		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   layer_date, DENSITY_HOAR_SURF, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
-			   0., DENSITY_HOAR_SURF/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
+			   layer_date, density_hoar_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
+			   0., density_hoar_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
 	}
 
 	fclose(PFile);

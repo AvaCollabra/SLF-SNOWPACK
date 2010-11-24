@@ -162,6 +162,7 @@ class Snowpack {
 		bool multistream, join_elements, change_bc, meas_tss;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_rad, new_snow_bond_rad;
+		double density_hoar_surf, density_hoar_buried, min_size_hoar_buried;
 		bool vw_dendricity;
 
 		//The following block is necessary, because calculateNewSnowDensity() is called from other modules

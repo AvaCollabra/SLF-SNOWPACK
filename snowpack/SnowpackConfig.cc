@@ -86,6 +86,10 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["THRESH_RH"] = "0.5";  
 	defaultConfig["RH_HOAR_THRESH"] = "0.97";  
 	defaultConfig["V_HOAR_THRESH"] = "3.5";  
+	defaultConfig["DENSITY_HOAR_BURIED"] = "125.0";  
+	defaultConfig["MIN_SIZE_HOAR_BURIED"] = "2.0";
+	defaultConfig["DENSITY_HOAR_SURF"] = "100.0";
+	defaultConfig["MIN_SIZE_HOAR_SURF"] = "0.5";
 
 	return true;
 }
@@ -124,6 +128,9 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_KOJIMA");
 
 	} else if (variant == "ANTARCTICA"){
+
+		string density_hoar_buried = get("DENSITY_HOAR_BURIED", "Parameters", Config::nothrow); 
+		if (density_hoar_buried == "") addKey("DENSITY_HOAR_BURIED", "Parameters", "200.0");
 
 		string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow); 
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_CALIBRATION");
