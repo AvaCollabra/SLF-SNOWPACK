@@ -315,42 +315,50 @@ class SN_SNOWSOIL_DATA{
  * It is set in the data initialization and used to calculate the stress field.
  * It can ONLY be changed by the WATER TRANSPORT or SURFACE SUBLIMATION or WIND TRANSPORT routines.
  */
-struct SN_ELEM_DATA {
-	mio::Date date;        ///< Layer Birthday (d)
-	double L0, L;          ///< Original and present element length (m)
-	double Te;             ///< mean element temperature (K)
-	double gradT;          ///< temperature gradient over element (K m-1)
-	double theta[N_COMPONENTS]; ///< volumetric contents: SOIL, ICE, WATER, AIR (1)
-	double Rho;            ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
-	double conc[N_COMPONENTS][MAX_N_SOLUTES]; ///< Concentration for chemical constituents in (kg m-3)
-	double M;              ///< the total mass of the element (kg m-2)
-	double k[N_SN_FIELDS]; ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
-                         //   Stored in order to visualize constitutive laws
-                         //   Will be used for creep field hydraulic conductivity in m3 s kg-1
-	double c[N_SN_FIELDS]; ///< For example, specific heat of TEMPERATURE field (J kg)
-	                       //   Will also be used for creep specific snow water capacity  in m3 J-1
-	double soil[N_SOIL_FIELDS]; ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
-	double sw_abs;         ///< total absorbed shortwave radiation by the element (W m-2)
-	// Snow Metamorphism Data
-	double rg;             ///< grain radius (mm)
-	double dd;             ///< snow dendricity: 0 = none, 1 = newsnow
-	double sp;             ///< sphericity: 1 = round, 0 = angular
-	double rb;             ///< grain bond radius (mm)
-	double ps2rb;          ///< proportion of grain bond growth due to pressure sintering (1)
-	double N3;             ///< grain Coordination number (1)
-	int    mk;             ///< grain marker (history dependent)
-	int    type;           ///< grain class
-	double dth_w;          ///< Subsurface Melting & Freezing Data: change of water content
-	double Qmf;            ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
-	double dE, E, Ee, Ev;  ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-	double EDot, EvDot;    ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
-	double S;              ///< Total Element Stress (Pa), S being the energy conjugate stress.
-	double C;              ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output.
-	double S_dr;           ///< Stability Index based on deformation rate (Direct Action Avalanching)
-	double s_strength;     ///< Parameterized snow shear strength (kPa)
-	double hard;           ///< Parameterized hand hardness (1)
-	//NIED (H. Hirashima)
-	double dhf;
+class SN_ELEM_DATA {
+	
+	public:
+		SN_ELEM_DATA(const unsigned int& i_max_number_of_solutes);
+
+		mio::Date date;        ///< Layer Birthday (d)
+		double L0, L;          ///< Original and present element length (m)
+		double Te;             ///< mean element temperature (K)
+		double gradT;          ///< temperature gradient over element (K m-1)
+		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, AIR (1)
+		double Rho;            ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
+		mio::Array2D<double> conc; ///< Concentration for chemical constituents in (kg m-3)
+		double M;              ///< the total mass of the element (kg m-2)
+		std::vector<double> k; ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
+		//   Stored in order to visualize constitutive laws
+		//   Will be used for creep field hydraulic conductivity in m3 s kg-1
+		std::vector<double> c; ///< For example, specific heat of TEMPERATURE field (J kg)
+		//   Will also be used for creep specific snow water capacity  in m3 J-1
+		std::vector<double> soil; ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
+		double sw_abs;         ///< total absorbed shortwave radiation by the element (W m-2)
+		// Snow Metamorphism Data
+		double rg;             ///< grain radius (mm)
+		double dd;             ///< snow dendricity: 0 = none, 1 = newsnow
+		double sp;             ///< sphericity: 1 = round, 0 = angular
+		double rb;             ///< grain bond radius (mm)
+		double ps2rb;          ///< proportion of grain bond growth due to pressure sintering (1)
+		double N3;             ///< grain Coordination number (1)
+		int    mk;             ///< grain marker (history dependent)
+		int    type;           ///< grain class
+		double dth_w;          ///< Subsurface Melting & Freezing Data: change of water content
+		double Qmf;            ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
+		double dE, E, Ee, Ev;  ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
+		double EDot, EvDot;    ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
+		double S;              ///< Total Element Stress (Pa), S being the energy conjugate stress.
+		double C;              ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output.
+		double S_dr;           ///< Stability Index based on deformation rate (Direct Action Avalanching)
+		double s_strength;     ///< Parameterized snow shear strength (kPa)
+		double hard;           ///< Parameterized hand hardness (1)
+		//NIED (H. Hirashima)
+		double dhf;
+
+	private:
+		unsigned int max_number_of_solutes;
+
 };
 
 /// @brief NODAL DATA used as a pointer in the SN_STATION_DATA structure
@@ -455,7 +463,7 @@ class SN_CANOPY_DATA {
 class SN_STATION_DATA {
 
 	public:
-		SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_useSnowLayers);
+		SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes);
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata);
 		void resize(const int& number_of_elements);
@@ -508,6 +516,7 @@ class SN_STATION_DATA {
 
 	private:
 		bool useCanopyModel, useSnowLayers;
+		unsigned int max_number_of_solutes;
 		int nNodes; ///< actual number of nodes; different for each exposition
 		int nElems; ///< actual number of elements (nElems=nNodes-1)
 };

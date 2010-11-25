@@ -384,8 +384,8 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
 
 		for (i = 0; i < N_SOLUTES; i++) {
-			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc[ICE][i], EMS[e].conc[WATER][i],
-					EMS[e].conc[AIR][i], EMS[e].conc[SOIL][i]);
+			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc(ICE,i), EMS[e].conc(WATER,i),
+				   EMS[e].conc(AIR,i), EMS[e].conc(SOIL,i));
 		}
 	}
 
@@ -648,7 +648,7 @@ void AsciiIO::writeFreeProfilesDEFAULT(const SN_STATION_DATA& Xdata, FILE *fout)
 			for (i = 0; i < N_SOLUTES; i++) {
 				fprintf(fout,"\n06%02d,%d" , 10*j + i,nE-Xdata.SoilNode);
 				for (e = Xdata.SoilNode; e < nE; e++) {
-					fprintf(fout,",%.1lf",EMS[e].conc[i][j]);
+					fprintf(fout,",%.1lf",EMS[e].conc(i,j));
 				}
 			}
 		}

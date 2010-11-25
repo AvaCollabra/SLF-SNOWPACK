@@ -61,9 +61,6 @@
 #define MAX_STRING_LENGTH 256
 #define MAX_LINE_LENGTH 6000
 
-/// @brief The maximum number of solutes to be treated
-#define MAX_N_SOLUTES 10
-
 
 /*****************************************************************************/
 /*****************************************************************************/

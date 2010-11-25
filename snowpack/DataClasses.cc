@@ -129,14 +129,15 @@ void SN_CANOPY_DATA::initializeSurfaceExchangeData()
 	intcapacity = 0.0;
 }
 
-SN_STATION_DATA::SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_useSnowLayers) : 
+SN_STATION_DATA::SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes) : 
 	Lat(0.), Lon(0.), Alt(0.), 
 	SlopeAzi(0.), SlopeAngle(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn_slope(0.), rho_slope(0.), windward(0), ErosionLevel(0), ErosionMass(0.), 
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.), 
 	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), Ks(NULL), ColdContent(0.), 
 	SubSurfaceMelt('x'), SubSurfaceFrze('x'), Cdata(), tag_low(0),
-	useCanopyModel(i_useCanopyModel), useSnowLayers(i_useSnowLayers), nNodes(0), nElems(0)
+	useCanopyModel(i_useCanopyModel), useSnowLayers(i_useSnowLayers), 
+     max_number_of_solutes(max_n_solutes), nNodes(0), nElems(0)
 {
 	Edata = vector<SN_ELEM_DATA>();
 	Ndata = vector<SN_NODE_DATA>();
@@ -152,18 +153,11 @@ SN_STATION_DATA::SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_use
  */
 void SN_STATION_DATA::resize(const int& number_of_elements)
 {
-	int oldNE = getNumberOfElements();
-	int dnE = number_of_elements - oldNE;
-
 	try {
-		Edata.resize(number_of_elements);
+		Edata.resize(number_of_elements, SN_ELEM_DATA(max_number_of_solutes));
 		Ndata.resize(number_of_elements + 1);
 	}catch(exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
-	}
-
-	if (dnE > 0) {
-		memset(&Edata[oldNE], 0, (dnE)*sizeof(SN_ELEM_DATA));
 	}
 
 	nElems = (int)Edata.size();
@@ -553,7 +547,7 @@ void SN_STATION_DATA::mergeElements(SN_ELEM_DATA& Edata0, const SN_ELEM_DATA& Ed
 	
 	for (i = 0; i < N_SOLUTES; i++) {
 		for (k = 0; k < N_COMPONENTS; k++) {
-			Edata0.conc[k][i] = (L1*Edata1.conc[k][i] + L0*Edata0.conc[k][i]) / LNew;
+			Edata0.conc[k][i] = (L1*Edata1.conc(k,i) + L0*Edata0.conc[k][i]) / LNew;
 		}
 	}
 	Edata0.dth_w = (L1*Edata1.dth_w + L0*Edata0.dth_w) / LNew;
@@ -623,4 +617,16 @@ SN_LAYER_DATA::SN_LAYER_DATA(const unsigned int& i_max_number_of_solutes) : date
 	cWater.resize(max_number_of_solutes);
 	cVoids.resize(max_number_of_solutes);
 	cSoil.resize(max_number_of_solutes);
+}
+
+SN_ELEM_DATA::SN_ELEM_DATA(const unsigned int& i_max_number_of_solutes) : date(0.), L0(0.), L(0.), Te(0.), gradT(0.),
+					  Rho(0.), M(0.), sw_abs(0.), rg(0.), dd(0.), sp(0.), rb(0.), ps2rb(0.), N3(0.), mk(0), type(0), 
+                           dth_w(0.), Qmf(0.), dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.), S(0.), C(0.), S_dr(0.), 
+                           s_strength(0.), hard(0.), dhf(0.), max_number_of_solutes(i_max_number_of_solutes)
+{
+	theta.resize(N_COMPONENTS);
+	conc.resize(N_COMPONENTS, max_number_of_solutes);
+	k.resize(N_SN_FIELDS);
+	c.resize(N_SN_FIELDS);
+	soil.resize(N_SOIL_FIELDS);
 }
