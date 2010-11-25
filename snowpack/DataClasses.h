@@ -240,8 +240,7 @@ enum SN_SOIL_DATA{
 class SN_LAYER_DATA {
 
 	public:
-		SN_LAYER_DATA() : date(0.), hl(0.), ne(0), tl(0.), phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.),
-			SoilRho(0.), SoilK(0.), SoilC(0.), rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.) {}
+		SN_LAYER_DATA(const unsigned int& i_max_number_of_solutes); 
 
 		mio::Date date;    ///< The birth date of layer
 		double hl;         ///< The height of the layer in m
@@ -251,10 +250,10 @@ class SN_LAYER_DATA {
 		double phiWater;   ///< Volumetric water content in %
 		double phiVoids;   ///< Volumetric void content in %
 		double phiSoil;    ///< Volumetric soil content in %
-		double cIce[MAX_N_SOLUTES];   ///< Solute concentrations in Ice
-		double cWater[MAX_N_SOLUTES]; ///< Solute concentrations in Water
-		double cVoids[MAX_N_SOLUTES]; ///< Solute concentrations in Air
-		double cSoil[MAX_N_SOLUTES];  ///< Solute concentrations in Soil
+		std::vector<double> cIce;   ///< Solute concentrations in Ice
+		std::vector<double> cWater; ///< Solute concentrations in Water
+		std::vector<double> cVoids; ///< Solute concentrations in Air
+		std::vector<double> cSoil;  ///< Solute concentrations in Soil
 		double SoilRho;    ///< Density of soil in kg m-3
 		double SoilK;      ///< Conductivity of soil
 		double SoilC;      ///< Heat Capacity of soil
@@ -264,6 +263,9 @@ class SN_LAYER_DATA {
 		double rb;         ///< Micro-structure : Bond Radius in mm
 		int    mk;         ///< Micro-structure : Marker
 		double hr;         ///< Surface hoar Mass in kg m-2
+
+	private:
+		unsigned int max_number_of_solutes;
 };
 
 /**
@@ -275,11 +277,13 @@ class SN_SNOWSOIL_DATA{
 
 	public:
 
-		SN_SNOWSOIL_DATA() : nN(0), Height(0.0), ErosionLevel(0), nLayers(0), date(0.0), Hslast(0.0), Albedo(0.0),
-			SoilAlb(0.0), BareSoil_z0(0.0), Lat(0.0), Lon(0.0), Alt(0.0), Azi(0.0), Angle(0.0), Canopy_Height(0.0),
-			Canopy_LAI(0.0), Canopy_Direct_Throughfall(0.0) 
+		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : nN(0), Height(0.0), 
+               ErosionLevel(0), nLayers(0), date(0.0), Hslast(0.0), Albedo(0.0), SoilAlb(0.0), 
+               BareSoil_z0(0.0), Lat(0.0), Lon(0.0), Alt(0.0), Azi(0.0), Angle(0.0), 
+               Canopy_Height(0.0), Canopy_LAI(0.0), Canopy_Direct_Throughfall(0.0),
+               max_number_of_solutes(i_max_number_of_solutes)
 		{
-			Ldata.resize(0);
+			Ldata.clear();
 		}
 
 		int nN;               ///< Total number of FE nodes
@@ -300,6 +304,9 @@ class SN_SNOWSOIL_DATA{
 		double Canopy_Height; ///< Canopy Height in m
 		double Canopy_LAI;    ///< Canopy Leaf Area Index in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
+
+	private:
+		unsigned int max_number_of_solutes;
 };
 
 /**

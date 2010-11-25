@@ -59,7 +59,10 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	fixed_heights = cfg.get("FIXED_HEIGHTS", "Parameters");
 	fixed_rates = cfg.get("FIXED_RATES", "Parameters");
 	max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "Parameters");
+	max_number_of_solutes = cfg.get("MAX_N_SOLUTES", "Parameters"); //The maximum number of solutes to be treated
 	min_depth_subsurf = cfg.get("MIN_DEPTH_SUBSURF", "Parameters");
+
+	number_sensors = fixed_heights + fixed_rates;
 
 	string tmp_variant = cfg.get("VARIANT", "Parameters"); 
 	variant=tmp_variant;
@@ -76,20 +79,18 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	string tmp_snopath_out = cfg.get("SNOWPATH", "OUTPUT", Config::nothrow);
 	if (tmp_snopath_out != "") o_snopath = tmp_snopath_out;
 
-	NUMBER_EXPO = cfg.get("NUMBER_EXPO", "Parameters");
-	OUT_HEAT = cfg.get("OUT_HEAT", "Parameters");
-	OUT_LW = cfg.get("OUT_LW", "Parameters");
-	OUT_SW = cfg.get("OUT_SW", "Parameters");
-	OUT_METEO = cfg.get("OUT_METEO", "Parameters");
-	OUT_HAZ = cfg.get("OUT_HAZ", "Parameters");
-	OUT_MASS = cfg.get("OUT_MASS", "Parameters");
-	OUT_T = cfg.get("OUT_T", "Parameters");
-	OUT_LOAD = cfg.get("OUT_LOAD", "Parameters");
-	OUT_STAB = cfg.get("OUT_STAB", "Parameters");
-	OUT_CANOPY = cfg.get("OUT_CANOPY", "Parameters");
-	PERP_TO_SLOPE = cfg.get("PERP_TO_SLOPE", "Parameters");	
+	out_heat = cfg.get("OUT_HEAT", "Parameters");
+	out_lw = cfg.get("OUT_LW", "Parameters");
+	out_sw = cfg.get("OUT_SW", "Parameters");
+	out_meteo = cfg.get("OUT_METEO", "Parameters");
+	out_haz = cfg.get("OUT_HAZ", "Parameters");
+	out_mass = cfg.get("OUT_MASS", "Parameters");
+	out_t = cfg.get("OUT_T", "Parameters");
+	out_load = cfg.get("OUT_LOAD", "Parameters");
+	out_stab = cfg.get("OUT_STAB", "Parameters");
+	out_canopy = cfg.get("OUT_CANOPY", "Parameters");
 
-	PERP_TO_SLOPE = cfg.get("PERP_TO_SLOPE", "Parameters");	
+	perp_to_slope = cfg.get("PERP_TO_SLOPE", "Parameters");	
 
 	sw_ref = cfg.get("SW_REF", "Parameters");
 	hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Parameters");
@@ -165,7 +166,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, "\nAltitude=%lf", &SSdata.Alt);
 	fscanf(fin, "\nSlopeAngle=%lf", &SSdata.Angle);
 	fscanf(fin, "\nSlopeAzi=%lf", &SSdata.Azi);
-	if ( (sw_ref%10 == 2) && PERP_TO_SLOPE && !(SSdata.Angle <= 3.) ) {
+	if ( (sw_ref%10 == 2) && perp_to_slope && !(SSdata.Angle <= 3.) ) {
 		prn_msg(__FILE__, __LINE__, "wrn", -1., 
 			   "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
 	}
@@ -217,7 +218,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 
 	// Allocate Space for the Layers
 	if (SSdata.nLayers > 0)
-		SSdata.Ldata.resize(SSdata.nLayers);
+		SSdata.Ldata.resize(SSdata.nLayers, SN_LAYER_DATA(max_number_of_solutes));
 
 	// Read the layer data
 	if ( fscanf(fin,"\nYYYY") < 0 ) {
@@ -640,7 +641,7 @@ void AsciiIO::writeFreeProfilesDEFAULT(const SN_STATION_DATA& Xdata, FILE *fout)
 	const int nE = Xdata.getNumberOfElements();
 
 	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata;
-	if ( OUT_LOAD ) {
+	if ( out_load ) {
 		// *6nn: e.g. solute concentration
 		int i, j;
 		for (j = 2; j < N_COMPONENTS-1; j++) {
@@ -945,43 +946,43 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	}
 	// Print time stamp
 	fprintf(TFile,"\n0203,%s", Mdata.date.toString(Date::DIN).c_str());
-	if ( OUT_HEAT ) {
+	if ( out_heat ) {
 		// 1-2: Turbulent fluxes (W m-2)
 		fprintf(TFile,",%lf,%lf", Sdata.qs, Sdata.ql);
 	} else {
 		fprintf(TFile,",,");
 	}
-	if ( OUT_LW ) {
+	if ( out_lw ) {
 		// 3-5: Longwave radiation fluxes (W m-2)
 		fprintf(TFile,",%lf,%lf,%lf", Sdata.lw_out, Sdata.lw_in, Sdata.lw_net);
 	} else {
 		fprintf(TFile,",,,");
 	}
-	if ( OUT_SW ) {
+	if ( out_sw ) {
 		// 6-9: Shortwave radiation fluxes (W m-2) and calc. albedo (1)
 		fprintf(TFile,",%lf,%lf,%lf,%lf", Sdata.sw_out, Sdata.sw_in, Sdata.qw, Sdata.cA);
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( OUT_METEO ) {
+	if ( out_meteo ) {
 		// 10-13: Air temperature, snow surface temperature (modeled and measured) (degC)
 		fprintf(TFile,",%lf,%lf,%lf,%lf", K_TO_C(Mdata.ta), K_TO_C(NDS[nE].T), K_TO_C(Mdata.tss), K_TO_C(NDS[0].T));
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( OUT_HEAT ) {
+	if ( out_heat ) {
 		// 14-17: soil heat fluxes (W m-2), ground surface temperature (degC), rain energy (W m-2)
 		fprintf(TFile,",%lf,%lf,%lf,%lf", Sdata.qg, K_TO_C(NDS[Xdata.SoilNode].T), Sdata.qg0, Sdata.qr);
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( OUT_SW ) {
+	if ( out_sw ) {
 		// 18-22: projected solar radiation (W m-2), meas. albedo (1)
 		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf", Sdata.sw_hor, Sdata.sw_in, Sdata.sw_dir, Sdata.sw_diff, Sdata.mA);
 	} else {
 		fprintf(TFile,",,,,,");
 	}
-	if ( OUT_METEO ) {
+	if ( out_meteo ) {
 		// 23-26: rH (%), wind (m s-1), wind_max (m s-1), wind_dir (deg),
 		// 27: solid precipitation rate (kg m-2 h-1),
 		// 28-29: modeled and maesured vertical snow depth (cm)
@@ -989,9 +990,9 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	} else {
 		fprintf(TFile,",,,,,,,");
 	}
-	if ( OUT_HAZ ) {
+	if ( out_haz ) {
 		// 30-33: surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
-		if ( !PERP_TO_SLOPE ) {
+		if ( !perp_to_slope ) {
 			fprintf(TFile,",%lf,%lf,%lf,%lf", Hdata.hoar_size, Hdata.wind_trans24, Hdata.hns24, Hdata.hns72_24);
 		} else {
 			// dump vertical values if PERP_TO_SLOPE
@@ -1000,14 +1001,14 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( OUT_MASS ) {
+	if ( out_mass ) {
 		// 34-39: total mass, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 51-52 & 93
 		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf,%lf", Sdata.mass[SN_SURFACE_DATA::MS_TOTALMASS]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_WIND]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_RAIN]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_RUNOFF]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_SUBLIMATION]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_EVAPORATION]/cos_sl);
 	} else{
 		fprintf(TFile,",,,,,,");
 	}
 	// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
-	if ( OUT_T && (fixed_heights || fixed_rates) ) {
+	if ( out_t && (fixed_heights || fixed_rates) ) {
 		j = 0;
 		for (i = 0; i < MIN(5, fixed_heights); i++) {
 			j += writeTemperatures(TFile, Mdata.zv_ts[i], Mdata.ts[i], i, Xdata);
@@ -1019,31 +1020,31 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 		fprintf(TFile,",,,,,,,,,,");
 	}
 	if ( max_number_sensors == 5 ) {
-		if ( OUT_LOAD ) {
+		if ( out_load ) {
 		// 50: Solute load at ground surface
 			fprintf(TFile,",%lf",Sdata.load[0]);
 		} else {
 			fprintf(TFile,",");
 		}
-		if ( OUT_MASS ) {
+		if ( out_mass ) {
 		// 51-52: SWE (for checks) and LWC (kg m-2); see also 34-39
 			fprintf(TFile,",%lf,%lf", Sdata.mass[SN_SURFACE_DATA::MS_SWE]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_WATER]/cos_sl);
 		} else {
 			fprintf(TFile,",,");
 		}
-		if ( OUT_STAB ) {
+		if ( out_stab ) {
 			// 53-64: Stability Time Series, heights in cm
 			fprintf(TFile,",%d,%d,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf", Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d, M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s, M_TO_CM(Xdata.z_S_4/cos_sl), Xdata.S_4, M_TO_CM(Xdata.z_S_5/cos_sl), Xdata.S_5);
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,");
 		}
-		if ( OUT_CANOPY && useCanopyModel ) {
+		if ( out_canopy && useCanopyModel ) {
 			// 65-92 (28 columns)
 			Canopy::cn_DumpCanopyData(TFile, &Xdata.Cdata, &Sdata, cos_sl);
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,,,,,,,,,,,,,,,,,");
 		}
-	} else if ( OUT_T ) {
+	} else if ( out_t ) {
 		// 50-93 (44 columns)
 		j = 0;
 		for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
@@ -1055,7 +1056,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 		}
 		if ( Xdata.tag_low ) {
 			int tag = Xdata.tag_low, j_lim;
-			while ( (tag + i) <= NUMBER_SENSORS ) {
+			while ( (tag + i) <= number_sensors ) {
 			  if ( (tag + i) <= t_internal ) {
 			    j_lim = 41;
 			  } else {
@@ -1111,13 +1112,13 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SN_STATION_DATA *Xdata, const SN_SURF
 	} else {
 		fprintf(fout,",");
 	}
-	if ( OUT_HEAT ) {
+	if ( out_heat ) {
 		// 94-95: Measured Turbulent Fluxes (W m-2); see also 1-2
 		fprintf(fout,",%lf,%lf",0.0,0.0);
 	} else {
 		fprintf(fout,",,");
 	}
-	if ( OUT_HAZ ) {
+	if ( out_haz ) {
 		// 96: crust thickness (S-slope) (cm)
 		fprintf(fout,",%lf", Hdata->crust); //lwsn_SnowpackEnergyInput(Xdata)); //
 		// 97:
@@ -1157,12 +1158,12 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SN_STATION_DATA *Xdata, const SN_S
 								const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout)
 {
 	(void) *Hdata;
-	if ( OUT_METEO ) {
+	if ( out_meteo ) {
 		// 94-98: 6 Antarctic Special Time Series
 		fprintf(fout,",%.2lf,%.2lf,%.1lf,%.1lf,%.1lf", 100.*Mdata->rh_ave, Mdata->vw_ave, Xdata->rho_slope, 
 			   Mdata->rho_hn, M_TO_CM(Xdata->Ndata[Xdata->ErosionLevel+1].z - Xdata->cH));
 	}
-	if ( OUT_HEAT ) {
+	if ( out_heat ) {
 		// 99: change of internal energy (kJ m-2)
 		fprintf(fout, ",%lf", Sdata->dIntEnergy / 1000.);
 		// 100: sum of energy fluxes at surface (kJ m-2)
@@ -1204,7 +1205,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_
 	} else {
 		fprintf(fout,",0.0,0.0,0.0,0.0,0.0");
 	}
-	if ( OUT_HEAT ) {
+	if ( out_heat ) {
 		// 99: // change of internal energy (kJ m-2)
 		fprintf(fout, ",%lf", Sdata->dIntEnergy / 1000.);
 		// 100: sum of energy fluxes at surface (kJ m-2)
@@ -1273,7 +1274,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 				fprintf(fout, ",%.3lf", depth_of_sensors[i]);
 			}
 			fprintf(fout, "\n\n[HEADER]");
-			if ( OUT_HAZ ) { // HACK To avoid troubles in A3D
+			if ( out_haz ) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", Hdata->sn_computation_date,
 					   variant.c_str(),Hdata->sn_version,Hdata->sn_user);
 			}
@@ -1283,13 +1284,13 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)");
 			if ( max_number_sensors == 5 ) {
 				fprintf(fout, ",Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
-				if ( useCanopyModel && OUT_CANOPY ) {
+				if ( useCanopyModel && out_canopy ) {
 					fprintf(fout, ",Interception storage,Canopy surface  temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation canopy,Sensible heat flux into the canopy,Latent heat flux into the canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the canopy,Latent heat flux to the canopy,Longwave radiation up above canopy,Longwave radiation down above canopy");
 					fprintf(fout, ",Net longwave radiation above canopy,Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation above canopy,Total land surface albedo,Total net radiation,Surface (radiative) temperature,Precipitation Above Canopy,Total Evapotranspiration");
 				} else {
 					fprintf(fout,",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-");
 				}
-			} else if ( OUT_T ) {
+			} else if ( out_t ) {
 				int i_prn;
 				j = 0;
 				for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
@@ -1315,7 +1316,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 				}
 				if ( va_Xdata->tag_low ) {
 					int tag = va_Xdata->tag_low, j_lim;
-					while ( (tag + i) <= NUMBER_SENSORS ) {
+					while ( (tag + i) <= number_sensors ) {
 						if ( (tag + i) <= t_internal ) {
 							j_lim = 41;
 						} else {
@@ -1350,12 +1351,12 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\n,,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,degC,degC,degC,degC,W m-2,degC,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,%%,m s-1,m s-1,deg,kg m-2 h-1,cm,cm,mm,cm,cm,cm,kg m-2,kg m-2 h-1,kg m-2 h-1,kg m-2,kg m-2,kg m-2,degC,degC,degC,degC,degC,degC,degC,degC,degC,degC");
 			if ( max_number_sensors == 5 ) {
 				fprintf(fout, ",kg m-2,kg m-2,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1");
-				if ( OUT_CANOPY && useCanopyModel ) {
+				if ( out_canopy && useCanopyModel ) {
 					fprintf(fout, ",kg m-2,degC,-,-,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,kg m-2 per timestep,kg m-2 per timestep,kg m-2,kg m-2,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,degC,kg m-2,kg m-2 per timestep");
 				} else {
 					fprintf(fout,",,,,,,,,,,,,,,,,,,,,,,,,,,,,");
 				}
-			} else if ( OUT_T ) {
+			} else if ( out_t ) {
 				j = 0;
 				for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
 					if ( i >= fixed_heights ) {
@@ -1371,7 +1372,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 				}
 				if ( va_Xdata->tag_low ) {
 					int tag = va_Xdata->tag_low, j_lim;
-					while ( (tag + i) <= NUMBER_SENSORS ) {
+					while ( (tag + i) <= number_sensors ) {
 						if ( (tag + i) <= t_internal ) {
 							j_lim = 41;
 						} else {
@@ -1437,7 +1438,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\nSlopeAzi= %.2lf",   RAD_TO_DEG(va_Xdata->SlopeAzi));
 
 			fprintf(fout, "\n\n[HEADER]");
-			if( OUT_HAZ ) { // HACK To avoid troubles in A3D
+			if( out_haz ) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", 
 					   Hdata->sn_computation_date, variant.c_str(), Hdata->sn_version, Hdata->sn_user);
 			}

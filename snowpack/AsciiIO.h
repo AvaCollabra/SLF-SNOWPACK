@@ -96,11 +96,12 @@ class AsciiIO : public SnowpackIOInterface {
 		double calculation_step_length, hazard_steps_between;
 		bool useCanopyModel, useSnowLayers, research_mode;
 		int t_internal, sw_ref;
-		int NUMBER_EXPO, NUMBER_SENSORS;//Actual number of "sensors" that are monitored, including tags in advanced mode
-		bool OUT_HEAT, OUT_LW, OUT_SW, OUT_METEO, OUT_HAZ, OUT_MASS, OUT_T, OUT_LOAD, OUT_STAB, OUT_CANOPY;
-		bool PERP_TO_SLOPE;
+		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
+		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
+		bool perp_to_slope;
 		double fixed_heights, fixed_rates, max_number_sensors, min_depth_subsurf;
 		double min_size_hoar_surf, density_hoar_surf;
+		int max_number_of_solutes;
 
 		std::string variant, experiment, outpath, i_snopath, o_snopath;
 

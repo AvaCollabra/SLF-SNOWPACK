@@ -613,3 +613,14 @@ std::ostream& operator<<(std::ostream &os, const SN_MET_DATA& mdata)
 	os << "</InterpolatedMeteoData>" << endl;
 	return os;
 }
+
+
+SN_LAYER_DATA::SN_LAYER_DATA(const unsigned int& i_max_number_of_solutes) : date(0.), hl(0.), ne(0), tl(0.), phiIce(0.), 
+					    phiWater(0.), phiVoids(0.), phiSoil(0.), SoilRho(0.), SoilK(0.), SoilC(0.), rg(0.), sp(0.), 
+                             dd(0.), rb(0.), mk(0), hr(0.), max_number_of_solutes(i_max_number_of_solutes)
+{
+	cIce.resize(max_number_of_solutes);
+	cWater.resize(max_number_of_solutes);
+	cVoids.resize(max_number_of_solutes);
+	cSoil.resize(max_number_of_solutes);
+}

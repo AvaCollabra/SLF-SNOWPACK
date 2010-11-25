@@ -144,12 +144,11 @@ int qr_BooleanTime(const double& JulianDate, double days_between,
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
 					 const std::string& station, const int& number_expo)
 {
-	//FILE_EXT ext;
 	vector<string> vecExtension;
-	vecExtension.push_back("sno");
-	vecExtension.push_back("met");
-	vecExtension.push_back("pro");
-	vecExtension.push_back("ini");
+	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
+	vecExtension.push_back("met"); //Meteo data input
+	vecExtension.push_back("pro"); //Time series of modeled profile-type data
+	vecExtension.push_back("ini"); //Record of run configuration
 
 	char fp[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
 	int j, n_files;

@@ -34,29 +34,6 @@
 #include <cstdarg> // needed for va_list
 #include <string>
 #include <vector>
-/*
-struct SN_ZWISCHEN_DATA;
-struct Q_PROCESS_DAT;
-struct SN_MET_DATA;
-struct SN_ELEM_DATA;
-struct SN_NODE_DATA;
-struct SN_STATION_DATA;
-struct SN_SURFACE_DATA;
-struct SN_SNOWSOIL_DATA;
-struct SN_CANOPY_DATA;
-*/
-/// @brief IO File extensions
-typedef enum {
- inp, ///< Meteo data input
- sno, ///< Snow-cover profile file (I/O)
- met, ///< Time series of meteo and modeled data
- pro, ///< Time series of modeled profile-type data
- pev, ///< Results of profile evaluation
- ini, ///< Record of run configuration
- N_FEXT
-} FILE_EXT;
-/// @brief Array of file extension strings
-#define SN_OUT_EXT { "inp", "sno", "met", "pro", "pev", "ini" }
 
 /*
  * FUNCTION PROTOTYPES
