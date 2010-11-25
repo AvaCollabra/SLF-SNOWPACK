@@ -65,5 +65,6 @@ class WaterTransport {
 		double rh_hoar_thresh; //No surface hoar will form for rH above threshold
 		double v_hoar_thresh; //No surface hoar will form at wind speeds above threshold (m s-1)
 		double density_hoar_surf, density_hoar_buried, min_size_hoar_buried;
+		double minimum_l_element;
 };
 #endif //End of WaterTransport.h

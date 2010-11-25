@@ -394,7 +394,7 @@ double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
 	double epsNeckDot;              // Total strain rate in the neck (s-1)
 	double Te;                      // Element temperature (K)
 
-	Te = MIN(Edata.Te, MELTING_TK);
+	Te = MIN(Edata.Te, Constants::melting_tk);
 	// If you have less than 5% ice then say you know you have something unstable
 	if ( Edata.theta[ICE] < 0.05 ) {
 		return(0.1);
@@ -737,7 +737,7 @@ double Stability::st_SkierStabilityIndex(const double& depth_lay, const Stabilit
 {
 	double delta_sig; // Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
 
-	if ( depth_lay > EPS ) {
+	if ( depth_lay > Constants::eps ) {
 		delta_sig = (2.*0.5*cos(STpar.alpha_max)*sin(STpar.alpha_max)*sin(STpar.alpha_max)*sin(STpar.alpha_max + (STpar.psi_ref*Constants::pi/180.)));
 		delta_sig /= Constants::pi*STpar.cos_psi_ref*depth_lay;
 		// Limit skier stability index to range {0.05, Stability::max_stability}

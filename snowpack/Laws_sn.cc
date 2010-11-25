@@ -328,7 +328,7 @@ double lwsn_SnowpackInternalEnergy(SN_STATION_DATA& Xdata)
 	Xdata.ColdContent = 0.;
 	for (int e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
 		sum_Qmf -= Xdata.Edata[e].Qmf * Xdata.Edata[e].L;
-		Xdata.ColdContent += Xdata.Edata[e].Rho * Xdata.Edata[e].c[TEMPERATURE] * (Xdata.Edata[e].Te - MELTING_TK) * Xdata.Edata[e].L;
+		Xdata.ColdContent += Xdata.Edata[e].Rho * Xdata.Edata[e].c[TEMPERATURE] * (Xdata.Edata[e].Te - Constants::melting_tk) * Xdata.Edata[e].L;
 	}
 	return(sum_Qmf);
 }
@@ -445,7 +445,7 @@ double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz
 	 * 10000: means rock, which is also no soil but Ingo seems not to understand this.
 	*/
 	if ( (Edata->rg > 0.) && (Edata->rg < 10000.) ) {
-		C_eff_soil_max = Edata->theta[SOIL] * c_mineral + Edata->theta[WATER] * CONDUCTIVITY_WATER + Edata->theta[ICE] * CONDUCTIVITY_ICE;
+		C_eff_soil_max = Edata->theta[SOIL] * c_mineral + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[ICE] * Constants::conductivity_ice;
 
 		/*
 		 * This nice formulation is based on some tedious curve fitting by
@@ -464,7 +464,7 @@ double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz
 		}
 		C_eff_soil = MIN (C_eff_soil_max, C_eff_soil);
 	} else {
-		C_eff_soil = Edata->soil[SOIL_K] + Edata->theta[WATER] * CONDUCTIVITY_WATER + Edata->theta[ICE] * CONDUCTIVITY_ICE;
+		C_eff_soil = Edata->soil[SOIL_K] + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[ICE] * Constants::conductivity_ice;
 	}
 
 	// Now check for possible ERRORS
@@ -535,20 +535,20 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	double Ap, Aip, Aiw;        // Cross sectional areas of conduction paths (m2)
 	double rg, rb;              // Grain and bond radius (m)
 	double Te;                  // Element temperature (K)
-	double Lh = LH_SUBLIMATION;
+	double Lh = Constants::lh_sublimation;
 	double P = 950.;
 
 	rg = MM_TO_M(Edata.rg);
 	rb = MM_TO_M(Edata.rb);
-	Te = MIN(Edata.Te, MELTING_TK);
+	Te = MIN(Edata.Te, Constants::melting_tk);
 
 	// Check for elements with no ice and assume they contain only water
-	if ( Edata.theta[ICE] < MIN_ICE_CONTENT ) {
-		return(CONDUCTIVITY_WATER);
+	if ( Edata.theta[ICE] < Constants::min_ice_content ) {
+		return(Constants::conductivity_water);
 	}
 
 	// Important are the conductivities and cross sectional areas.
-	kap = CONDUCTIVITY_AIR + ((Lh*Lh* DIFFUSION_COEFFICIENT_IN_AIR * P * lw_SaturationPressure(Te)) / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
+	kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P * lw_SaturationPressure(Te)) / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
 
 	/*
 	* Determine C1 = nca/ncl (nca:=number of grains per unit area; ncl:=number
@@ -563,7 +563,7 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	* (I believe that this is the solid ice conduction from one grain through a
 	* bond/neck into another ice grain.)
 	*/
-	C2 = Constants::pi * Constants::pi * rb * CONDUCTIVITY_ICE * Edata.N3 / 32.0;
+	C2 = Constants::pi * Constants::pi * rb * Constants::conductivity_ice * Edata.N3 / 32.0;
 
 	// Compute cross-sectional areas
 	Ap = Metamorphism::csPoreArea(Edata); // (mm2)
@@ -575,8 +575,8 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	 * k coefficients. (I believe that this is the series conduction in which
 	 * heat goes through a grain, then across a pore and into another grain.)
 	*/
-	C3 = CONDUCTIVITY_ICE * kap * Aip;
-	C3 = C3 / (rg * kap + (1. / C1 - rg) * CONDUCTIVITY_ICE);
+	C3 = Constants::conductivity_ice * kap * Aip;
+	C3 = C3 / (rg * kap + (1. / C1 - rg) * Constants::conductivity_ice);
 
 	/*
 	 * Determine C4 = a funny fraction containing one PI and  a few (one) funny
@@ -591,24 +591,24 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	 * k coefficients. (I believe that this is the series conduction in which
 	 * heat goes through a grain, then across water and into another grain.)
 	*/
-	C5 = CONDUCTIVITY_ICE * CONDUCTIVITY_WATER * Aiw;
-	C5 = C5 / (rg * CONDUCTIVITY_WATER  + (1./C1 - rg) * CONDUCTIVITY_ICE);
+	C5 = Constants::conductivity_ice * Constants::conductivity_water * Aiw;
+	C5 = C5 / (rg * Constants::conductivity_water  + (1./C1 - rg) * Constants::conductivity_ice);
 
-	C_eff  = MONTANA_C_FUDGE * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (MELTING_TK*MELTING_TK));
+	C_eff  = MONTANA_C_FUDGE * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (Constants::melting_tk*Constants::melting_tk));
 
-	if ( !((C_eff < 5.*CONDUCTIVITY_ICE) && (C_eff > 0.2*CONDUCTIVITY_AIR)) && !ALPINE3D ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "Conductivity out of range (0.2*CONDUCTIVITY_AIR=%.3lf, 5.*CONDUCTIVITY_ICE=%.3lf):", 0.2 * CONDUCTIVITY_AIR, 5. * CONDUCTIVITY_ICE);
+	if ( !((C_eff < 5.*Constants::conductivity_ice) && (C_eff > 0.2*Constants::conductivity_air)) && !ALPINE3D ) {
+		prn_msg(__FILE__, __LINE__, "wrn", -1., "Conductivity out of range (0.2*Constants::conductivity_air=%.3lf, 5.*Constants::conductivity_ice=%.3lf):", 0.2 * Constants::conductivity_air, 5. * Constants::conductivity_ice);
 		prn_msg(__FILE__, __LINE__, "msg-", -1., "C_eff: %lf  C_1: %lf  C_2: %lf  C_3: %lf  C_4: %lf  C_5: %lf", C_eff, C1, C2, C3, C4, C5);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "C_Air: %lf  C_Water: %lf  C_Ice: %lf", CONDUCTIVITY_AIR, CONDUCTIVITY_WATER, CONDUCTIVITY_ICE);
+		prn_msg(__FILE__, __LINE__, "msg-", -1., "C_Air: %lf  C_Water: %lf  C_Ice: %lf", Constants::conductivity_air, Constants::conductivity_water, Constants::conductivity_ice);
 		prn_msg(__FILE__, __LINE__, "msg-", -1., "Ap: %lf  kap: %lf  Thet_i: %lf  Thet_w: %lf  T: %lf", Ap, kap, Edata.theta[ICE], Edata.theta[WATER], Te );
 		prn_msg(__FILE__, __LINE__, "msg-", -1., "type: %3d  rg: %.3lf mm  rb: %.3lf mm N3: %lf  Lel: %.3lf mm", Edata.type, Edata.rg, Edata.rb, Edata.N3, M_TO_MM(Edata.L));
 	}
 
-	if ( !(C_eff < CONDUCTIVITY_ICE) ) {
-		C_eff = CONDUCTIVITY_ICE;
+	if ( !(C_eff < Constants::conductivity_ice) ) {
+		C_eff = Constants::conductivity_ice;
 	}
-	if ( !(C_eff > CONDUCTIVITY_AIR) ) {
-		C_eff = CONDUCTIVITY_AIR;
+	if ( !(C_eff > Constants::conductivity_air) ) {
+		C_eff = Constants::conductivity_air;
 	}
 	// Now introduce the effect of windpumping
 	if ( WIND_PUMP /* && Edata.theta[WATER] < 0.001 */ ) {
@@ -699,7 +699,7 @@ double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata
 
 	// First, the case of no snow
 	if ( Xdata.getNumberOfNodes() == Xdata.SoilNode + 1 && Xdata.getNumberOfElements() > 0 ) {
-		if( Tss < MELTING_TK ) {
+		if( Tss < Constants::melting_tk ) {
 			eS = Vp1 ;
 		} else {
 			/*
@@ -717,7 +717,7 @@ double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata
 		}
 	} else {
 		// for snow assume saturation
-		if ( Tss < MELTING_TK ) {
+		if ( Tss < Constants::melting_tk ) {
 			eS = Vp1;
 		} else {
 			eS = Vp2;
@@ -773,7 +773,7 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
 	 * The soil resistance is only used for bare soil layers, when TSS >= 0C and eSurf >= eAtm
 	*/
 	if (Xdata.getNumberOfNodes() == Xdata.SoilNode + 1 && Xdata.getNumberOfElements() > 0 &&
-		Xdata.Ndata[Xdata.getNumberOfElements()].T >= MELTING_TK && SOIL_EVAPORATION == 1) {
+		Xdata.Ndata[Xdata.getNumberOfElements()].T >= Constants::melting_tk && SOIL_EVAPORATION == 1) {
 		eA = Mdata.rh * lw_SaturationPressure(Mdata.ta);
 		eS = lw_SaturationPressure(Xdata.Ndata[Xdata.getNumberOfElements()].T);
 		if (eS >= eA) {
@@ -782,7 +782,7 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
 			c = 1. / c;
 		}
 	}
-	return(c * 0.622 * LH_SUBLIMATION / Constants::gas_constant_air / Mdata.ta);
+	return(c * 0.622 * Constants::lh_sublimation / Constants::gas_constant_air / Mdata.ta);
 }
 
 /**
@@ -824,7 +824,7 @@ double lwsn_SnowElasticity(const double rho)
 	}
 	h = pow(10.0, g);
 	if ( rho > 1000. ) {
-		return(BIG);
+		return(Constants::big);
 	}
 	return(h * 100000.0);
 }
@@ -869,9 +869,9 @@ double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata)
  */
 double lwsn_ConcaveNeckRadius(const double rg, const double rb)
 {
-	if ( (rg - rb) < EPS ) {
-		prn_msg (__FILE__, __LINE__, "wrn", -1., "Infinite radius of curvature, rg(%lf) = rb(%lf); return BIG!", rg, rb );
-		return (BIG);
+	if ( (rg - rb) < Constants::eps ) {
+		prn_msg (__FILE__, __LINE__, "wrn", -1., "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb );
+		return (Constants::big);
 	} else {
 		return (rb*rb / (2. * (rg - rb) ));
 	}
@@ -935,7 +935,7 @@ double lwsn_SnowViscosityTemperatureTerm(const double Te)
 		case ARRHENIUS_CRITICAL: {
 			const double Q_fac=0.39; // Adjust Q to snow. from Sz: 0.24; Ml: 0.39; Fz: 0.31
 			const double T_r=265.15; // Reference temperature (K); ori: 265.15 + 2.15
-			return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r)) * (0.3 * sqrt(MELTING_TK - Te) + 0.4));
+			return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r)) * (0.3 * sqrt(Constants::melting_tk - Te) + 0.4));
 			break;
 		}
 		case STEINKOGLER: { // Master thesis, September 2009
@@ -943,7 +943,7 @@ double lwsn_SnowViscosityTemperatureTerm(const double Te)
 			break;
 		}
 		default: { // from r243
-			return (9. - 8.7 * exp(0.015 * (Te - MELTING_TK)));
+			return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
 			break;
 		}
 	}
@@ -1071,7 +1071,7 @@ double lwsn_SnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& dat
 	double v_fudge, v_factor;          // Fit and reference parameters
 	double eta;                        // Viscosity (Pa s)
 
-	Te = MIN(Edata.Te, MELTING_TK);
+	Te = MIN(Edata.Te, Constants::melting_tk);
 
 	// Check needed while JAM set!
 	if ( Edata.theta[WATER] > 0.3 ) {
@@ -1129,17 +1129,17 @@ double lwsn_SnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date&
 	double v_fudge, v_factor;          // Fit and reference parameters
 	double eta;                        // Viscosity (Pa s)
 
-	Te = MIN(Edata.Te, MELTING_TK);
+	Te = MIN(Edata.Te, Constants::melting_tk);
 
 	// TODO Check whether the two commented checks below are needed!
 	// If the element length is SMALLER than the grain size then the thing aint settling ....
 	//  if( Edata.L <= 2.*MM_TO_M(rg) )
-	//    return(BIG);
+	//    return(Constants::big);
 	// Perry introduced this little check when the ice matrix is completely melted away -- in this case
 	// set the viscosity to a high number to give the water in the element time to percolate away
 	// NOTE MassTransport() is called before SnowCreep, thus this condition should never be met?
-	//if ( Edata.theta[ICE] < EPS ) {
-	//	return(BIG);
+	//if ( Edata.theta[ICE] < Constants::eps ) {
+	//	return(Constants::big);
 	//}
 	// Check needed while JAM set!
 	if ( Edata.theta[WATER] >= 0.005 /*> 0.3*/ ) {

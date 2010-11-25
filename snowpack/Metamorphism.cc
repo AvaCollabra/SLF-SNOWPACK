@@ -376,8 +376,8 @@ double Metamorphism::TGBondRate(const SN_ELEM_DATA& Edata)
 	const double TGrad = fabs(Edata.gradT); // absolute value of temp gradient within element (K m-1)
 
 	A = 1./3. * (Constants::pi*(rb*rb + rg*rg) + csPoreArea(Edata));
-	TGradBond = Edata.k[TEMPERATURE] / CONDUCTIVITY_ICE * A / (Constants::pi * rb*rb) * (-TGrad);       // (K m-1) NOTE Why take TGrad neg.?
-	flux = -DIFFUSION_COEFFICIENT_IN_AIR / (Constants::gas_constant * Edata.Te*Edata.Te) * (LH_SUBLIMATION / (Constants::gas_constant * Edata.Te) - 1) * TGradBond;
+	TGradBond = Edata.k[TEMPERATURE] / Constants::conductivity_ice * A / (Constants::pi * rb*rb) * (-TGrad);       // (K m-1) NOTE Why take TGrad neg.?
+	flux = -Constants::diffusion_coefficient_in_air / (Constants::gas_constant * Edata.Te*Edata.Te) * (Constants::lh_sublimation / (Constants::gas_constant * Edata.Te) - 1) * TGradBond;
 	flux *= lw_SaturationPressure(Edata.Te); // (kg s-1 m-2)
 	// Bond radius growth rate (m s-1)
 	rbDot = flux / Constants::density_ice * Metamorphism::sa_g_fudge;
@@ -456,13 +456,13 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
 	a  = MIN (a, hElem);
 
 	// Intra layer flux, where the direction of flow does not matter! Units: kg/(sm2)
-	intraFlux =  fabs(DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Te*Te) * (LH_SUBLIMATION / (Constants::gas_constant * Te) - 1.) * gradT);
+	intraFlux =  fabs(Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Te*Te) * (Constants::lh_sublimation / (Constants::gas_constant * Te) - 1.) * gradT);
 	intraFlux *= lw_SaturationPressure(Te);
 
 	// Layer to layer flux, where the direction of flow DOES matter! Units: kg/(sm2)
-	botFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Tbot*Tbot) * (LH_SUBLIMATION / (Constants::gas_constant * Tbot) - 1.) * gradTbot;
+	botFlux = - Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Tbot*Tbot) * (Constants::lh_sublimation / (Constants::gas_constant * Tbot) - 1.) * gradTbot;
 	botFlux *= lw_SaturationPressure(Tbot);
-	topFlux = - DIFFUSION_COEFFICIENT_IN_SNOW / (Constants::gas_constant * Ttop*Ttop) * (LH_SUBLIMATION / (Constants::gas_constant * Ttop) - 1.) * gradTtop;
+	topFlux = - Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Ttop*Ttop) * (Constants::lh_sublimation / (Constants::gas_constant * Ttop) - 1.) * gradTtop;
 	topFlux *= lw_SaturationPressure(Ttop);
 	dFluxL2L = -(topFlux - botFlux);
 	// Calculate the rate in m s-1
@@ -496,7 +496,7 @@ double Metamorphism::ETBondRate(const SN_ELEM_DATA& Edata)
 	const double rc = lwsn_ConcaveNeckRadius(Edata.rg, Edata.rb);
 	double rbDot; // Bond radius growth rate (mm s-1)
 
-	if ( fabs(rc - Edata.rb) < EPS ) {	//special case: thermodynamic neck radius rn is infinite
+	if ( fabs(rc - Edata.rb) < Constants::eps ) {	//special case: thermodynamic neck radius rn is infinite
 		rbDot  = B_1 * (1. - exp(B_2/Edata.rg) ) * exp( (B_3/B_R) - (B_3/Edata.Te)  );
 	} else {
 		const double rn = ( 2.*Edata.rb*rc) / (rc - Edata.rb);
@@ -555,7 +555,7 @@ double Metamorphism::PressureSintering(const SN_ELEM_DATA& Edata)
 	 *    spherical ice grains (by the time they have been wet long enough to reduce
 	 *    the ice mass to this low value, the grains are spherical) has disappeared.
 	*/
-	if ( Edata.theta[ICE] <= MIN_ICE_CONTENT ) {
+	if ( Edata.theta[ICE] <= Constants::min_ice_content ) {
 		return (0.0);
 	}
 
@@ -565,7 +565,7 @@ double Metamorphism::PressureSintering(const SN_ELEM_DATA& Edata)
 	 * it can occur that theta_i > 0 and T == 0. The next piece of code picks this
 	 * case up....
 	*/
-	if ( Edata.Te > MELTING_TK ) {
+	if ( Edata.Te > Constants::melting_tk ) {
 		return (0.0);
 	}
 
@@ -803,7 +803,7 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
 			}
 		}
     // First melt-freeze cycle completed
-		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < MELTING_TK - 0.3) ) {
+		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3) ) {
 			EMS[e].mk += 10;
 		}
 
@@ -1062,7 +1062,7 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 			EMS[e].mk += 10;
 		}
     // First melt-freeze cycle completed
-		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < MELTING_TK - 0.3) ) {
+		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3) ) {
 			EMS[e].mk += 10;
 		}
 

@@ -460,7 +460,7 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 		Hdata_ind.stab_class2 = -1;
 	}
 	// Stability index: Deformation index
-	if ( (Xdata.S_d < (Stability::max_stability + EPS)) && (Xdata.S_d > 0.) ) {
+	if ( (Xdata.S_d < (Stability::max_stability + Constants::eps)) && (Xdata.S_d > 0.) ) {
 		Hdata.stab_index1 = Xdata.S_d;
 		Hdata.stab_height1 = M_TO_CM(Xdata.z_S_d / cos_sl);
 	} else {
@@ -468,7 +468,7 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 		Hdata_ind.stab_height1 = -1;
 	}
 	// Natural stability index Sn38
-	if ( (Xdata.S_n < (Stability::max_stability + EPS)) && (Xdata.S_n > 0.) ) {
+	if ( (Xdata.S_n < (Stability::max_stability + Constants::eps)) && (Xdata.S_n > 0.) ) {
 		Hdata.stab_index2 = Xdata.S_n;
 		Hdata.stab_height2 = M_TO_CM(Xdata.z_S_n / cos_sl);
 	} else {
@@ -476,7 +476,7 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 		Hdata_ind.stab_height2 = -1;
 	}
 	// Skier stability index Sk38
-	if ( (Xdata.S_s < (Stability::max_stability + EPS)) && (Xdata.S_s > 0.) ) {
+	if ( (Xdata.S_s < (Stability::max_stability + Constants::eps)) && (Xdata.S_s > 0.) ) {
 		Hdata.stab_index3 = Xdata.S_s;
 		Hdata.stab_height3 = M_TO_CM(Xdata.z_S_s / cos_sl);
 	} else {
@@ -484,7 +484,7 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 		Hdata_ind.stab_height3 = -1;
 	}
 	// Structural stability index SSI
-	if ( (Xdata.S_4 < (Stability::max_stability + EPS)) && (Xdata.S_4 > 0.) ) {
+	if ( (Xdata.S_4 < (Stability::max_stability + Constants::eps)) && (Xdata.S_4 > 0.) ) {
 		Hdata.stab_index4 = Xdata.S_4;
 		Hdata.stab_height4 = M_TO_CM(Xdata.z_S_4 / cos_sl);
 	} else {
@@ -492,7 +492,7 @@ void Hazard::calculateHazard(const double& d_hs6, const double& d_hs24, const SN
 		Hdata_ind.stab_height4 = -1;
 	}
 	// ???Index???
-	if ( (Xdata.S_5 < (Stability::max_stability + EPS)) && (Xdata.S_5 > 0.) ) {
+	if ( (Xdata.S_5 < (Stability::max_stability + Constants::eps)) && (Xdata.S_5 > 0.) ) {
 		Hdata.stab_index5 = Xdata.S_5;
 		Hdata.stab_height5 = M_TO_CM(Xdata.z_S_5 / cos_sl);
 	} else {

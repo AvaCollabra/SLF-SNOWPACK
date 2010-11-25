@@ -446,7 +446,7 @@ double Canopy::cn_IntRate(const double& capacity, const double& storage, const d
 double Canopy::cn_CanopyAlbedo(const double& tair, const double& wetfrac)
 {
 	// Albedo of partly "wet" canopy = weighted average of dry and wet parts
-	if( tair > MELTING_TK ) {
+	if( tair > Constants::melting_tk ) {
 		return (wetfrac * CAN_ALB_WET + (1. - wetfrac) * CAN_ALB_DRY);
 	} else {
 		return (wetfrac * CAN_ALB_SNOW + (1. - wetfrac) * CAN_ALB_DRY);
@@ -669,7 +669,7 @@ double Canopy::cn_DSaturationPressureDT(const double& L, const double& T)
 	double c1, c2, c3;
 
 	// dpdt = lw_SaturationPressure(T) * L / (Constants::gas_constant * T * T);
-	if ( L != LH_SUBLIMATION ) {
+	if ( L != Constants::lh_sublimation ) {
 		c1 = 610.780;
 		c2 = 17.08085;
 		c3 = 234.175 ;
@@ -697,10 +697,10 @@ void Canopy::cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& t
 								double& le0, double& le1)
 {
 	if(tc_old > 273.15) {
-		le1 = ce_canopy * cn_DSaturationPressureDT(LH_VAPORIZATION, tc_old);
+		le1 = ce_canopy * cn_DSaturationPressureDT(Constants::lh_vaporization, tc_old);
 		le0 = ce_canopy * (lw_SaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	} else {
-		le1 = ce_canopy * cn_DSaturationPressureDT(LH_SUBLIMATION, tc_old);
+		le1 = ce_canopy * cn_DSaturationPressureDT(Constants::lh_sublimation, tc_old);
 		le0 = ce_canopy * (lw_SaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	}
 }
@@ -814,9 +814,9 @@ void Canopy::cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interc
 	r0change = 0.0;
 
 	if ( ta > 273.15 ) {
-		*CanopyEvaporation = DT * 3600.0 * (*LECANOPY) / LH_VAPORIZATION; // [mm]
+		*CanopyEvaporation = DT * 3600.0 * (*LECANOPY) / Constants::lh_vaporization; // [mm]
 	} else {
-		*CanopyEvaporation = DT * 3600.0 * (*LECANOPY) / LH_SUBLIMATION;  // [mm]
+		*CanopyEvaporation = DT * 3600.0 * (*LECANOPY) / Constants::lh_sublimation;  // [mm]
 	}
 
 	if ( *CanopyEvaporation <= 0.0 ) {
@@ -831,9 +831,9 @@ void Canopy::cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interc
 			*INTEVAP = I;
 			*CanopyEvaporation = *INTEVAP + (*TRANSPIRATION);
 			if ( ta > 273.15 ) {
-				*LECANOPYCORR = *CanopyEvaporation * LH_VAPORIZATION / (DT * 3600.0);
+				*LECANOPYCORR = *CanopyEvaporation * Constants::lh_vaporization / (DT * 3600.0);
 			} else {
-				*LECANOPYCORR = *CanopyEvaporation * LH_SUBLIMATION / (DT * 3600.0);
+				*LECANOPYCORR = *CanopyEvaporation * Constants::lh_sublimation / (DT * 3600.0);
 			}
 			TC_OLD = *TCANOPY;
 
@@ -1164,17 +1164,17 @@ void Canopy::cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& 
 
 	// latent heat interception
 	if ( Mdata.ta < 273.15 ) {
-		ce_condensation  = 0.622 * LH_SUBLIMATION / (Constants::gas_constant_air * Mdata.ta
+		ce_condensation  = 0.622 * Constants::lh_sublimation / (Constants::gas_constant_air * Mdata.ta
 											* RAINCREASE_SNOW * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
-		ce_interception  = 0.622 * LH_SUBLIMATION / (Constants::gas_constant_air * Mdata.ta
+		ce_interception  = 0.622 * Constants::lh_sublimation / (Constants::gas_constant_air * Mdata.ta
 											* RAINCREASE_SNOW * (ra_e + Cdata->rc));// * wetfraction;
 		ce_transpiration = 0.0;
 	} else {
-		ce_condensation  = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
+		ce_condensation  = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
-		ce_interception  = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
+		ce_interception  = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rc));// * wetfraction;
-		ce_transpiration = 0.622 * LH_VAPORIZATION / (Constants::gas_constant_air * Mdata.ta
+		ce_transpiration = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
 											 * (ra_e + Cdata->rstransp + Cdata->rc));// * (1.0-wetfraction);
 	}
 

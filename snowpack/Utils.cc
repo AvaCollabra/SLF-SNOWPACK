@@ -377,18 +377,18 @@ bool qr_MassBalanceCheck(const SN_STATION_DATA& Xdata, const SN_SURFACE_DATA& Sd
 		tot_mass += Xdata.Edata[e].M;
 		tot_swe  += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
 		dmassE = Xdata.Edata[e].M - (Xdata.Edata[e].L * Xdata.Edata[e].Rho);
-		if ( fabs(dmassE) > EPS ) {
+		if ( fabs(dmassE) > Constants::eps ) {
 			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass error at element e=%d (nE=%d): mass(now)=%lf swe(now)=%lf dmassE=%lf", e, Xdata.getNumberOfElements(), tot_mass, tot_swe, dmassE);
 			mass_error = false;
 		}
 	}
 	// Mass balance check
-	if ( tot_mass > EPS ) {
+	if ( tot_mass > Constants::eps ) {
 		if ( (fabs(tot_swe/tot_mass) - 1.) > 0.5e-2 ) {
 			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance (theta): mass(now)=%lf swe(now)=%lf swe/mass=%lf mass-swe=%lf", tot_mass, tot_swe, tot_swe/tot_mass, tot_mass - tot_swe);
 			mass_error = false;
 		}
-		if ( tot_mass_in > EPS ) {
+		if ( tot_mass_in > Constants::eps ) {
 			if ( (fabs(tot_mass - (tot_mass_in + mass_change))/tot_mass) > 0.5e-4 ) {
 				prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance: mass_err(now)=%lf", tot_mass - (tot_mass_in + mass_change));
 				prn_msg(__FILE__, __LINE__, "msg", -1., "tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
@@ -397,7 +397,7 @@ bool qr_MassBalanceCheck(const SN_STATION_DATA& Xdata, const SN_SURFACE_DATA& Sd
 		} else {
 			tot_mass_in = tot_mass;
 		}
-	} else if ( tot_mass_in > EPS ) {
+	} else if ( tot_mass_in > Constants::eps ) {
 		if ( fabs(tot_mass_in + mass_change) > 1.0e-3 ) {
 			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance error: tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
 			mass_error = false;

@@ -73,7 +73,7 @@ PhaseChange::PhaseChange(const mio::Config& i_cfg) : cfg(i_cfg)
 void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, double& ql_Rest)
 {
 	double sum;   // sum of components
-	double dT;    // FREEZING_TK - Te > 0
+	double dT;    // Constants::freezing_tk - Te > 0
 	double A;     // coefficient A ( see notes below )
 	double dth_i; // change in volumetric ice content
 	double dth_w; // change in volumetric water content
@@ -95,11 +95,11 @@ void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, doub
 	 * is above the melting temperature (2) there is something to melt and (3) there is enough
 	 * room to place the meltwater ...
 	*/
-	if (((Edata.Te < MELTING_TK) && (ql_Rest == 0.)) 
+	if (((Edata.Te < Constants::melting_tk) && (ql_Rest == 0.)) 
 		|| (Edata.theta[ICE] <= 0.0) || (Edata.theta[WATER] >= PhaseChange::theta_s)) {
 		return;
 	} else {
-		dT = MELTING_TK - Edata.Te;
+		dT = Constants::melting_tk - Edata.Te;
 		// Now we take into account that there might be some extra energy that could not be used 
 		// by the element above because of complete melting
 		dT -= ql_Rest / (Edata.c[TEMPERATURE] * Edata.Rho * Edata.L);
@@ -107,7 +107,7 @@ void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, doub
 			return;
 		}
 		// Determine the DECREASE in ice content and the INCREASE of water content
-		A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * LH_FUSION ); // Adapt A to calculate mass changes
+		A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion ); // Adapt A to calculate mass changes
 		dth_i = A * dT;
 		dth_w = - (Constants::density_ice / Constants::density_water) * dth_i;
 		// It could happen that there is enough energy available to melt more ice than is present. You can only melt so much ice as is there ....
@@ -149,22 +149,22 @@ void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, doub
 		}
 		// Calculate the bulk density
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] + (Constants::density_water * Edata.theta[WATER] ) + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
-		if ( (Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0 && Edata.Rho <= MAX_RHO) ) {
+		if ( (Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0 && Edata.Rho <= Constants::max_rho) ) {
 			prn_msg(__FILE__, __LINE__, "err", -1., "Rho(snow)=%lf (SubSurfaceMelt)", Edata.Rho);
 			throw IOException("Error in calcSubSurfaceMelt()", AT);
 		}
 	 	// Re-Calculate the specific heat capacity of our porous medium
 		Edata.c[TEMPERATURE] = lwsn_HeatCapacity(Edata);
 		// Calculate MELTING ENERGY
-		Edata.Qmf = (dth_i * Constants::density_ice * LH_FUSION) / dt; // (W m-3)
+		Edata.Qmf = (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
 		Edata.dth_w = dth_w;                                // (1)
 		// Reset the element temperature
 		Edata.Te += dT;
-		if ( Edata.Te <= MELTING_TK ) {
+		if ( Edata.Te <= Constants::melting_tk ) {
 			ql_Rest = 0.0;
 		} else {
-			ql_Rest = Edata.c[TEMPERATURE] * Edata.Rho * Edata.L * (Edata.Te - MELTING_TK);
-			Edata.Te = MELTING_TK;
+			ql_Rest = Edata.c[TEMPERATURE] * Edata.Rho * Edata.L * (Edata.Te - Constants::melting_tk);
+			Edata.Te = Constants::melting_tk;
 		}
 	}
 }
@@ -201,7 +201,7 @@ void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, doub
 void PhaseChange::calcSubSurfaceFrze(SN_ELEM_DATA& Edata, const double& dt)
 {
 	double sum;   // sum of volumetric components
-	double dT;    // FREEZING_TK - Te > 0
+	double dT;    // Constants::freezing_tk - Te > 0
 	double A;     // coefficient A ( see notes below )
 	double dth_i; // change in volumetric ice content
 	double dth_w; // change in volumetric water content
@@ -223,12 +223,12 @@ void PhaseChange::calcSubSurfaceFrze(SN_ELEM_DATA& Edata, const double& dt)
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below 0
 	 * and if water is present to be refrozen
 	*/
-	if ( (Edata.Te >= FREEZING_TK) || (Edata.theta[WATER] <= PhaseChange::theta_r) ) {
+	if ( (Edata.Te >= Constants::freezing_tk) || (Edata.theta[WATER] <= PhaseChange::theta_r) ) {
 		return;
 	} else {
-		dT = FREEZING_TK - Edata.Te;
+		dT = Constants::freezing_tk - Edata.Te;
 		// Adapt A to calculate mass changes
-		A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * LH_FUSION );
+		A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion );
 		// Calculate the change in volumetric ice and water contents
 		dth_i = A * dT;
 		dth_w = - (Constants::density_ice / Constants::density_water) * dth_i;
@@ -264,14 +264,14 @@ void PhaseChange::calcSubSurfaceFrze(SN_ELEM_DATA& Edata, const double& dt)
 		}
 		// Calculate the densities
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] + (Constants::density_water * Edata.theta[WATER]) + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
-		if( (Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= MAX_RHO) ) {
+		if( (Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= Constants::max_rho) ) {
 			prn_msg(__FILE__, __LINE__, "err", -1., "Rho(snow)=%lf (SubSurfaceFrze)", Edata.Rho);
 			throw IOException("Error in calcSubSurfaceFrze()", AT);
 		}
 		// Re-Calculate the specific heat capacity of our porous medium
 		Edata.c[TEMPERATURE] = lwsn_HeatCapacity(Edata);
 		// Calculate the REFREEZING Energy
-		Edata.Qmf = dth_i * Constants::density_ice * LH_FUSION / dt; // (W m-3)
+		Edata.Qmf = dth_i * Constants::density_ice * Constants::lh_fusion / dt; // (W m-3)
 		Edata.dth_w = dth_w;                              // (1)
 		// Reset the element temperature
 		Edata.Te += dT;
@@ -307,7 +307,7 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 		// In the first step check the density
 		for (e = 0; e < nE; e++) {
 			if ( EMS[e].theta[SOIL] == 0.0) {
-				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= MAX_RHO) ) {
+				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho) ) {
 					prn_msg(__FILE__, __LINE__, "wrn", -1., "Phase Change Begin: rho[%d]=%lf", e, EMS[e].Rho);
 				}
 			}
@@ -340,11 +340,11 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
 				if ( (EMS[e].theta[WATER] > thresh_th_w) && 
-					((EMS[e].theta[ICE] > MIN_ICE_CONTENT) || (EMS[e].Te <= MELTING_TK)) ) {
-					NDS[e+1].T = MELTING_TK;
+					((EMS[e].theta[ICE] > Constants::min_ice_content) || (EMS[e].Te <= Constants::melting_tk)) ) {
+					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
 					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) ) {
-						NDS[e].T = MELTING_TK;
+						NDS[e].T = Constants::melting_tk;
 					}
 				}
 				// See whether hoar has melted
@@ -376,11 +376,11 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 					thresh_th_w = 0.0;
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
-				if ( (EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > MIN_ICE_CONTENT) ) {
-					NDS[e+1].T = MELTING_TK;
+				if ( (EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > Constants::min_ice_content) ) {
+					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
 					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) )
-						NDS[e].T = MELTING_TK;
+						NDS[e].T = Constants::melting_tk;
 				}
 				// Make sure all nodal temperatures are consistent
 				if (EMS[e].Te < Te_old) {
@@ -395,7 +395,7 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
 			if ( EMS[e].theta[SOIL] == 0.0 ) {
-				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= MAX_RHO) ) {
+				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho) ) {
 					prn_msg(__FILE__, __LINE__, "err", -1., "Phase Change End: rho[%d]=%lf", e, EMS[e].Rho);
 					throw IOException("Runtime error in runPhaseChange()", AT);
 				}
@@ -411,10 +411,10 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 				throw IOException("Runtime error in runPhaseChange()", AT);
 		}
 			M1 += EMS[e].theta[ICE] * EMS[e].L;
-			ColdContent1 += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - MELTING_TK) * EMS[e].L;
+			ColdContent1 += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - Constants::melting_tk) * EMS[e].L;
 			S_Qmf += EMS[e].Qmf * EMS[e].L;
 		}
-		if ( 0 && (S_Qmf > EPS) ) {
+		if ( 0 && (S_Qmf > Constants::eps) ) {
 			prn_msg(__FILE__, __LINE__, "msg+", -1., "Checking energy balance  (W/m2):");
 			prn_msg(__FILE__, __LINE__, "msg+", -1., " E1: %lf   E0: %lf  E1-E0: %lf  S_Qmf: %lf  Surface EB : %lf", 
 				   (ColdContent1) / sn_dt, (ColdContent0) / sn_dt, 

@@ -124,16 +124,16 @@ class Snowpack {
 
 		static double sn_NewSnowDensityEvent(const SN_MET_DATA& Mdata, const EventType& i_event_type);
 
-		int sn_SnowForces(SN_ELEM_DATA *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ], 
-					   double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], 
-					   double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
+		bool sn_SnowForces(SN_ELEM_DATA *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ], 
+					    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], 
+					    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
 
 		void calcSnowCreep(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata);
 	
-		int sn_ElementKtMatrix(SN_ELEM_DATA *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], 
-						   double Tn[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], 
-						   double Fe[ N_OF_INCIDENCES ], char *SubSurfaceMelt, char *SubSurfaceFrze, 
-						   double VaporEnhance);
+		bool sn_ElementKtMatrix(SN_ELEM_DATA *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], 
+						    double Tn[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], 
+						    double Fe[ N_OF_INCIDENCES ], char *SubSurfaceMelt, char *SubSurfaceFrze, 
+						    double VaporEnhance);
 		
 		void updateMeteoHeatFluxes(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
 							  SN_BOUNDARY_DATA& Bdata, SN_SURFACE_DATA& Sdata);
@@ -163,6 +163,7 @@ class Snowpack {
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_rad, new_snow_bond_rad;
 		double density_hoar_surf, density_hoar_buried, min_size_hoar_buried;
+		double minimum_l_element;
 		bool vw_dendricity;
 
 		//The following block is necessary, because calculateNewSnowDensity() is called from other modules

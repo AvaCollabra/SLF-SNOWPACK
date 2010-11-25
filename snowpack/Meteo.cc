@@ -100,10 +100,10 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 
 	// Ideal approximation of pressure and vapor pressure
 	p0 = lw_AirPressure(Xdata.Alt);
-	if (Mdata.ta > MELTING_TK) {
-		LH = LH_VAPORIZATION;
+	if (Mdata.ta > Constants::melting_tk) {
+		LH = Constants::lh_vaporization;
 	} else {
-		LH = LH_SUBLIMATION;
+		LH = Constants::lh_sublimation;
 	}
 
 	sat_vap = lw_SaturationPressure(Mdata.ta);

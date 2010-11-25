@@ -58,14 +58,8 @@
 /*
  * CONSTANTS & ENUMERATIONS
  */
-/**
- * @name USER SETTABLE CONSTANTS \n
- */
-//@{
-/// @brief String lengths
 #define MAX_STRING_LENGTH 256
 #define MAX_LINE_LENGTH 6000
-//@}
 
 /// @brief The maximum number of solutes to be treated
 #define MAX_N_SOLUTES 10
@@ -90,18 +84,6 @@
  * @name INTERNAL MODEL PARAMETERS AND CONSTANTS
  * @brief These parameters should only be changed by advanced users.
  */
-//@{
-/**
- * @brief Minimum element length (m)
- * - default: 0.0025
- * - Antarctica: 0.0001
- */
-#if VARIANT == ANTARCTICA
-	#define MINIMUM_L_ELEMENT 0.0001
-#else
-	#define MINIMUM_L_ELEMENT 0.0025
-#endif
-
 /// @brief Initial value for stability parameter
 #define INIT_STABILITY 999.
 /// @brief Switch on or off wind pumping in snow
@@ -126,114 +108,73 @@ typedef struct {
 
 namespace Constants {
 
-  const double pi = 3.14159265358979323846;
-  const double g  = 9.80665;
-  const double stefan_boltzmann = 5.67051e-8;
+	const double pi = 3.14159265358979323846;
+	const double g  = 9.80665;
+	const double stefan_boltzmann = 5.67051e-8;
 
-  //Density (kg m-3)
-  const double density_air = 1.1; ///< Approximation: use ideal gas law
-  const double density_ice = 917.0; ///< At T = 0 degC
-  const double density_water = 1000.0; ///<  At T = 0 degC
-  const double density_vapor = 1.0; ///< Approximation: use ideal gas law
+	const double solcon = 1366.1; ///< Total Solar Irradiance (W m-2) (Froehlich, 2006)
 
-  const double solcon = 1366.1; ///< Total Solar Irradiance (W m-2) (Froehlich, 2006)
+	const double gas_constant = 461.9; ///< (J mol-1 K-1)
+	const double gas_constant_air = 287.0; ///< for air (J kg-1 K-1)
+	const double gas_constant_mol = 8.31;  ///< (J mol-1 K-1)
 
-  const double gas_constant = 461.9; ///< (J mol-1 K-1)
-  const double gas_constant_air = 287.0; ///< for air (J kg-1 K-1)
-  const double gas_constant_mol = 8.31;  ///< (J mol-1 K-1)
+	/// @name Density (kg m-3)
+	//@{
+	const double density_air = 1.1; ///< Approximation: use ideal gas law
+	const double density_ice = 917.0; ///< At T = 0 degC
+	const double density_water = 1000.0; ///<  At T = 0 degC
+	const double density_vapor = 1.0; ///< Approximation: use ideal gas law
+	/// @name Max and min densities (kg m-3)
+	//@{
+	const double min_rho = 5.0;
+	const double max_rho = 1000.0;
+	/// @brief Min volumetric ice content allowed
+	const double min_hn_density = 30.0;
+	const double min_ice_content = min_hn_density / density_ice;
+	//@}
+	//@}
 
-  const double specific_heat_ice = 2100.0; ///< at T = 0 degC
-  const double specific_heat_water = 4190.0; ///< at T = 0 degC
-  const double specific_heat_air = 1004.67; ///< see Stull "Meteorology for scientists and engineers" p44
+	///@name Specific heat (J kg-1 K-1)
+	//@{
+	const double specific_heat_ice = 2100.0; ///< at T = 0 degC
+	const double specific_heat_water = 4190.0; ///< at T = 0 degC
+	const double specific_heat_air = 1004.67; ///< see Stull "Meteorology for scientists and engineers" p44
+	//@}
+
+	///@name Thermal conductivity of snow components ice, water and air (W m-1 K-1)
+	//@{
+	const double conductivity_ice = 2.2; ///< (W m-1 K-1)
+	const double conductivity_water = 0.598; ///< (W m-1 K-1)
+	const double conductivity_air = 0.026; ///< (W m-1 K-1)
+	//@}
+
+	///@name Vapor Diffusion in Air and Snow (m2 s-1)
+	//@{
+	///@brief This value was taken from: Colbeck, S.C., 1993. The vapor diffusion coefficient for snow, Water Resources Research, 29(1)
+	const double diffusion_coefficient_in_air = 22.0e-6;  
+	const double diffusion_coefficient_in_snow = 85.0e-6; ///< It is larger (see Colbeck) according to work prior to 2008!
+	//@}
+
+	///@name Phase change constants
+	//@{
+	const double melting_tk = 273.15; ///< (K)
+	const double freezing_tk = 273.15; ///< (K)
+	const double triple_point_t = 273.16; ///< (K)
+	const double triple_point_p = 611.657; ///< (Pa)
+	const double lh_sublimation = 2.838e6; ///< (J kg-1) (solid to vapor)
+	const double lh_vaporization = 2.504e6; ///< (J kg-1) (liquid to vapor)
+	const double lh_fusion = 3.34e5; ///< (J kg-1) (solid to liquid)
+	//@}
+
+	///@name Numerical Constants
+	//@{
+	/// @brief Small numbers for comparisons and to avoid divisions by zero
+	const double eps = 1.e-6;
+	const double eps2 = eps*eps;
+	const double big = 1.0e200; ///< used for Dirichlet boundary conditions
+	//@}
 }
 
-/// @name PHYSICAL CONSTANTS
-//@{
-/// @name Constants
-//@{
-/// @brief 
-//#define SOLCON  1366.1
-/// @brief (m s-2)
-//#define GRAVITY	9.80665
-/// @brief (W m-2 K-4)
-//#define STEFAN_BOLTZMANN 5.67051e-8
-/// @brief For air (J kg-1 K-1)
-//#define GAS_CONSTANT_AIR 287.
-/// @brief For water vapor (J kg-1 K-1)
-//#define GAS_CONSTANT 461.9
-/// @brief (J mol-1 K-1)
-//#define GAS_CONSTANT_MOL 8.31
-//@}
-/// @name Density (kg m-3)
-//@{
-/// @brief  At T = 0 degC
-//#define DENSITY_ICE 917.0
-/// @brief At T = 0 degC
-//#define DENSITY_WATER 1000.0
-/// @brief Approximation: use ideal gas law
-//#define DENSITY_VAPOR 1.0
-/// @brief Approximation: use ideal gas law
-//#define DENSITY_AIR 1.1
-/// @name Max and min densities (kg m-3)
-//@{
-#define MIN_RHO 5.0
-#define MAX_RHO 1000.
-/// @brief Min volumetric ice content allowed
-#define MIN_HN_DENSITY     30.
-#define MIN_ICE_CONTENT MIN_HN_DENSITY/Constants::density_ice
-//@}
-//@}
-/// @name Specific heat (J kg-1 K-1)
-//@{
-/// @brief At T = 0 degC
-//#define SPECIFIC_HEAT_ICE 2100.0
-/// @brief At T = 0 degC
-//#define SPECIFIC_HEAT_WATER 4190.0
-/// @brief See Stull "Meteorology for scientists and engineers" p44
-//#define SPECIFIC_HEAT_AIR 1004.67
-//@}
-/// @name Thermal conductivity of snow components ice, water and air (W m-1 K-1)
-//@{
-#define CONDUCTIVITY_ICE 2.2
-#define CONDUCTIVITY_WATER 0.598
-#define CONDUCTIVITY_AIR 0.026
-//@}
-/// @brief Vapor Diffusion in Air and Snow (m2 s-1)
-//@{
-/// @brief This value was taken from: Colbeck, S.C., 1993. The vapor diffusion coefficient for snow, Water Resources Research, 29(1)
-#define	DIFFUSION_COEFFICIENT_IN_AIR  22.0e-6
-/// @brief It is larger (see Colbeck) according to work prior to 2008!!!
-#define	DIFFUSION_COEFFICIENT_IN_SNOW 85.0e-6
-//@}
-/// @name Phasechange constants
-//@{
-/// @brief (degC)
-#define MELTING_TC 0.0
-/// @brief (K)
-#define MELTING_TK 273.15
-/// @brief (K)
-#define FREEZING_TK 273.15
-/// @brief (K)
-#define TRIPLE_POINT_T 273.16
-/// @brief (Pa)
-#define TRIPLE_POINT_P 610.5
-/// @brief (J kg-1)	( Solid to Vapor )
-#define LH_SUBLIMATION 2.838e6
-/// @brief (J kg-1)	( Liquid to Vapor )
-#define LH_VAPORIZATION 2.504e6
-/// @brief (J kg-1)	( Solid to Liquid )
-#define LH_FUSION 3.34e5
-//@}
-/// @name Numerical Constants
-//@{
-/// @brief Small numbers for comparisons and to avoid divisions by zero
-#define EPS 1.e-6
-#define EPS2 EPS*EPS
-/// @brief Used for Dirichlet boundary conditions
-#define BIG 1.0e200
-//#define PI  3.141593
-//@}
-//@}
 
 /**
  * @name MACRO definitions (to be replaced by proper functions some day)

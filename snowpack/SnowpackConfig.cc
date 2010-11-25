@@ -105,11 +105,14 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	string variant = get("VARIANT", "Parameters", Config::nothrow);
 	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
 
+	addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0025"); //Minimum element length (m)
+	double minimum_l_element = get("MINIMUM_L_ELEMENT", "Parameters"); 
+
 	if (enforce_measured_snow_heights) {
 		addKey("HNS_NE_HEIGHT", "Parameters", "0.02");
 	} else {
 		stringstream ss;
-		double tmp = 2.0 * MINIMUM_L_ELEMENT;
+		double tmp = 2.0 * minimum_l_element;
 		ss << tmp;
 		addKey("HNS_NE_HEIGHT", "Parameters", ss.str());
 	}
@@ -129,6 +132,9 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 	} else if (variant == "ANTARCTICA"){
 
+		addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0001"); //Minimum element length (m)
+		minimum_l_element = get("MINIMUM_L_ELEMENT", "Parameters");
+
 		string density_hoar_buried = get("DENSITY_HOAR_BURIED", "Parameters", Config::nothrow); 
 		if (density_hoar_buried == "") addKey("DENSITY_HOAR_BURIED", "Parameters", "200.0");
 
@@ -146,7 +152,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 		if ( !enforce_measured_snow_heights) {
 			stringstream ss;
-			double tmp = 1.1 * MINIMUM_L_ELEMENT;
+			double tmp = 1.1 * minimum_l_element;
 			ss << tmp;
 			addKey("HNS_NE_HEIGHT", "Parameters", ss.str());
 		}
