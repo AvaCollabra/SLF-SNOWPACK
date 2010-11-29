@@ -28,10 +28,37 @@
 #include <snowpack/Utils.h>
 #include <snowpack/Canopy.h>
 #include <snowpack/Metamorphism.h>
-#include <snowpack/Aggregate.h>
 
 using namespace mio;
 using namespace std;
+
+/**
+ * @brief Determines the averaged quantities for the current layer with another layer
+ * @param w1 Weight of layer Pdata
+ * @param w2 Weight of this layer 
+ * @param Pdata layer to average with
+ */
+void Q_PROFILE_DAT::average(const double& w1, const double& w2, const Q_PROFILE_DAT& profile_data)
+{
+	const double weightsum = w1 + w2;
+
+	height     += w1;
+	layer_date  = (w1*profile_data.layer_date + w2*layer_date) / weightsum;
+	rho         = (w1*profile_data.rho + w2*rho) / weightsum;
+	tem         = (w1*profile_data.tem + w2*tem) / weightsum;
+	tem_grad    = (w1*profile_data.tem_grad + w2*tem_grad) / weightsum;
+	strain_rate = (w1*profile_data.strain_rate + w2*strain_rate) / weightsum;
+	theta_w     = (w1*profile_data.theta_w + w2*theta_w) / weightsum;
+	theta_i     = (w1*profile_data.theta_i + w2*theta_i) / weightsum;
+	dendricity  = (w1*profile_data.dendricity + w2*dendricity) / weightsum;
+	sphericity  = (w1*profile_data.sphericity + w2*sphericity) / weightsum;
+	coordin_num = (w1*profile_data.coordin_num + w2*coordin_num) / weightsum;
+	grain_dia   = (w1*profile_data.grain_dia + w2*grain_dia) / weightsum;
+	bond_dia    = (w1*profile_data.bond_dia + w2*bond_dia) / weightsum;
+	hard        = (w1*profile_data.hard + w2*hard) / weightsum;
+	marker      = MAX(profile_data.marker, marker);
+}
+
 
 SN_SURFACE_DATA::SN_SURFACE_DATA(const unsigned int& i_max_number_of_solutes) 
   : dIntEnergy(0.), lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),

@@ -519,3 +519,183 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 		Xdata->mH -= (cH_old - Xdata->cH);
 	}
 } // End qro_ErodeDeflateInflate
+
+/**
+ * @brief Determine the grain class
+ * Revisited by Fierz and Bellaire fall 2006
+ * @param dendricity
+ * @param sphericity
+ * @param grain_dia
+ * @param marker
+ * @param theta_w
+ * @param theta_i
+ */
+int ml_ag_Classify(const double& dendricity, const double& sphericity, const double& grain_dia, 
+			    const int& marker, const double& theta_w, const double& theta_i)
+{
+	int a=-1,b=-1,c=0;
+	int sw2;
+	double res_wat_cont;
+
+	res_wat_cont = lw_SnowResidualWaterContent(theta_i);
+
+	// Dry snow
+	if( dendricity > 0. ) {
+		// Dry dendritic (new) snow: dendricity and sphericity determine the class
+		sw2 = (int)(sphericity*10.);
+		if( dendricity > 0.80 ) {
+			// ori 0.90, 27 Nov 2007 sb
+			a = 1; b = 1; c = 0;
+		} else if( dendricity > 0.70 ) {
+			// ori 0.85, 27 Nov 2007 sb
+			a = 1; b = 2; c = 1;
+		} else if( dendricity > 0.65 ) {
+			// ori 0.75, 27 Nov 2007 sb
+			a = 2; b = 1; c = 0;
+		} else if( dendricity > 0.60 ) {
+			// ori 0.70, 27 Nov 2007 sb
+			a = 2; b = 1; c = 1;
+		} else if( dendricity > 0.30 ) {
+			a = 2; b = 2; c = 0;
+		} else if( dendricity > 0.05 ) {
+			a = 2;
+			switch(sw2) {
+				case 0: case 1: case 2:
+				b = 4; c = 0; break;
+				case 3: case 4:
+				b = 4; c = 1; break;
+				case 5: case 6:
+				b = 3; c = 1; break;
+				default:
+				b = 3; c = 0;
+			}
+		} else {
+			switch(sw2) {
+				case 0: case 1:
+				a = 4; b = 4; c = 0; break;
+				case 2: case 3: case 4:
+				a = 4; b = 2; c = 1; break;
+				case 5: case 6: case 7:
+				a = 3;  b = 2; c = 1; break;
+				default:
+				a = 3; b = 3; c = 0;
+			}
+		}
+	} else if( marker <= 2) {
+		/*
+		 * Dry non-dendritic snow
+		 * Sphericity is most important for "a", while the marker is most important for "b","c"
+		 */
+		if( grain_dia < 0.7 ) {
+			sw2 = (int)(sphericity*10.);
+			switch(sw2) {
+				case 0: case 1:
+				a = 4; b = 4; c = 0; break;
+				case 2: case 3:
+				a = 4; b = 3; c = 1; break;
+				case 4: case 5:
+				a = 4;  b = 3; c = 0; break;
+				case 6: case 7:
+				a = 3;  b = 4; c = 1; break;
+				default:
+				a = 3; b = 3; c = 0;
+			}
+		} else if( grain_dia < 1.1 ) {
+			if( sphericity < 0.2 ) {
+				a = 4; b = 4; c = 0;
+			} else if( sphericity < 0.4 ) {
+				a = 4; b = 9; c = 0;
+			} else {
+				// sphericity limited to sp_max=0.5 in Metamorphism.c
+				a = 9; b = 9 ; c = 0;
+			}
+		} else if( grain_dia < 1.5 ) {
+			if( sphericity < 0.2 ) {
+				a = 4; b = 5; c = 0;
+			} else if( sphericity < 0.4 ) {
+				a = 4; b = 9; c = 1;
+			} else {
+				// sphericity limited to sp_max=0.5 in Metamorphism.c
+				a = 9; b = 9 ; c = 0;
+			}
+		} else {
+			if( sphericity < 0.2 ) {
+				a = 5; b = 5; c = 0;
+			} else if( sphericity < 0.4 ) {
+				a = 5; b = 9; c = 1;
+			} else {
+				// sphericity limited to sp_max=0.5 in Metamorphism.c
+				a = 9; b = 5 ; c = 1;
+			}
+		}
+	} // end dry snow
+
+	// Snow getting wet
+	if( marker >= 10 ) {
+		if( dendricity > 0.0 ) {
+			// Wet dendritic snow
+			if( sphericity > 0.7 ) {
+				b = a; a = 7; c = 0;
+			} else {
+				b = 7 ; c = 1;
+			}
+		} else {
+			// Wet non-dendritic snow
+			b = 7; c = 0;
+			if( sphericity > 0.75) {
+				a = 7;
+			} else if( sphericity > 0.4 ) {
+				if( grain_dia <= 0.7 ) {
+					b = a; a = 7;
+				} else if( marker != 13 ) {
+					if( grain_dia <= 1.5 ) {
+						a = 7; b = 9; c = 1;
+					} else {
+						a = 7; b = 5; c = 1;
+					}
+				} else {
+					a = 7; b = 6;  c = 1;
+				}
+			} else {
+				if( grain_dia <= 1.5 ) {
+					a = 4;
+				} else {
+					a = 5;
+				}
+				if( sphericity <= 0.2 ) {
+					c = 1;
+				}
+			}
+		}
+	}
+
+	// Now treat a couple of exceptions - note that the order is important
+	if( b < 0 ) {
+		b = a;
+	}
+	// Melt-Freeze
+	if( (marker >= 20) && (theta_w < 0.1*res_wat_cont) ) {
+		c = 2;
+	}
+	// Surface Hoar
+	if( marker == 3 ) {
+		 a = 6;
+		 b = 6;
+		 c = 0;
+	}
+	// Graupel
+	if( marker == 4 ) {
+		 a = 0;
+		 b = 0;
+		 c = 0;
+	}
+	// Ice Layer
+	if( marker % 10 == 8 ) {
+		 a = 8;
+		 b = 8;
+		 c = 0;
+	}
+
+	return (a*100 + b*10 + c);
+
+} // End of ml_ag_Classify

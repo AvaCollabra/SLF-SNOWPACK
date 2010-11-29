@@ -73,6 +73,21 @@ struct WL_STRUCT {
 	double perc;    ///< Percentage of Energy
 };
 
+/// @brief Time step control parameters
+typedef struct {
+  double TimeN;      ///< Time of present calculation (s)
+  int    nStep;      ///< Time step number
+  double TimeEnd;    ///< Calculate up to TimeEnd that can be less than last time of last record (s)
+  int    TsDump;     ///< Flag for time series dump
+  int    nAvg;       ///< Number of calculation time steps to average fluxes etc.
+  int    HzStep;     ///< Hazard step number (should be half of nStep in operational mode)
+  int    HzDump;     ///< Calculation of hazard information will be performed
+  int    PrDump;     ///< Flag for profile dump
+  int    XdataDump;  ///< Backup of Xdata will be performed
+  int    TaglayDump; ///< Flag for tagged layer series dump
+  int    PrTabDump;  ///< Flag for tabular profile dump
+} MN_TIME_DATA;
+
 /**
  * SN_SURFACE_DATA contains all surface exchange data \n
  * Some of the most important results of the simulation are contained in this data structure.
@@ -525,6 +540,8 @@ class SN_STATION_DATA {
 class Q_PROFILE_DAT {
 
 	public:
+		void average(const double& w1, const double& w2, const Q_PROFILE_DAT& Pdata);
+
 		mio::Date date;
 		std::string stationname;
 		int  loc_for_snow;
@@ -553,6 +570,123 @@ class Q_PROFILE_DAT {
 		double hard;          ///< 0. bis 5.       (-)
 		int    marker;        ///< 0 bis 100       (-)
 		int    grain_class;   ///< 0 bis 100       (-)
+};
+
+
+/// Structure of double values to supplement snowpack model
+struct Q_PROCESS_DAT {
+	mio::Date date;
+	char stat_abbrev[16];
+	int  loc_for_snow;
+	int  loc_for_wind;
+	// Version used, date, user, ...
+	char sn_version[MAX_STRING_LENGTH];          ///< SNOWPACK version
+	char sn_computation_date[MAX_STRING_LENGTH];
+	double sn_jul_computation_date;
+	mio::Date sn_compile_date;
+	char sn_user[MAX_STRING_LENGTH];             ///< SNOWPACK user
+	int nHz;               ///< Number of hazard steps
+
+	// Snow depth
+	double ch;             ///< cm
+	// SWE, total liquid water content and runoff
+	double swe;
+	double tot_lwc;
+	double runoff;
+	// Surface hoar index
+	double dewpt_def;      ///< degC
+	double hoar_size;      ///< mm
+	double hoar_ind6;      ///< kg m-2
+	double hoar_ind24;     ///< kg m-2
+	// Drift index
+	double wind_trans;     ///< cm
+	double wind_trans24;   ///< cm
+	// New snow depths
+	double hns_half_hour;  ///< cm
+	double hns3;           ///< cm
+	double hns6;           ///< cm
+	double hns12;          ///< cm
+	double hns24;          ///< cm
+	double hns72;          ///< cm
+	double hns72_24;       ///< cm;
+	// New snow water equivalents
+	double wc_half_hour;   ///< kg m-2
+	double wc3;            ///< kg m-2
+	double wc6;            ///< kg m-2
+	double wc12;           ///< kg m-2
+	double wc24;           ///< kg m-2
+	double wc72;           ///< kg m-2
+	// Stability indices
+	int stab_class1;       ///< Stability class 1,3,5
+	int stab_class2;       ///< Profile type 0..10
+	double stab_index1;
+	double stab_index2;
+	double stab_index3;
+	double stab_index4;
+	double stab_index5;
+	double stab_height1;   ///< cm
+	double stab_height2;   ///< cm
+	double stab_height3;   ///< cm
+	double stab_height4;   ///< cm
+	double stab_height5;   ///< cm
+	// Special parameters
+	double crust;          ///< cm
+	double en_bal;         ///< kJ m-2
+	double sw_net;         ///< kJ m-2
+	double t_top1;         ///< degC
+	double t_top2;         ///< degC
+};
+
+struct Q_PROCESS_IND {
+	short stat_abbrev;
+	short loc_for_snow;
+	short loc_for_wind;
+	// Data
+	short ch;
+
+	short swe;
+	short tot_lwc;
+	short runoff;
+
+	short dewpt_def;
+	short hoar_size;
+	short hoar_ind6;
+	short hoar_ind24;
+
+	short wind_trans;
+	short wind_trans24;
+
+	short hns3;
+	short hns6;
+	short hns12;
+	short hns24;
+	short hns72;
+	short hns72_24;
+
+	short wc3;
+	short wc6;
+	short wc12;
+	short wc24;
+	short wc72;
+
+	short stab_class1;
+	short stab_class2;
+	short stab_index1;
+	short stab_index2;
+	short stab_index3;
+	short stab_index4;
+	short stab_index5;
+	short stab_height1;
+	short stab_height2;
+	short stab_height3;
+	short stab_height4;
+	short stab_height5;
+
+	short crust;
+	short en_bal;
+	short sw_net;
+	short t_top1;
+	short t_top2;
 };
 
 #endif

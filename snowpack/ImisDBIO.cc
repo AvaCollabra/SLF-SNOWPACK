@@ -80,7 +80,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 					   const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
 
-	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
+	//if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
+	if ((expo != 0)) //write output only for the flat field (expo == 0)
 		return;
 
 	FILE *PFile=NULL;
@@ -132,7 +133,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		l++;
 	}
 
-	if ( (nL = ml_ag_Aggregate(l, Pdata) ) < 0 ) {
+	if ( (nL = Aggregate::aggregate(Pdata) ) < 0 ) {
 		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot aggregate layers");
 		throw IOException("Cannot aggregate layers", AT);
 	}

@@ -1546,7 +1546,7 @@ void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdat
 							EMS[e].dd = new_snow_dd;
 							EMS[e].sp = new_snow_sp;
 							// Adapt dd and sp for blowing snow
-							if ( (Mdata.vw > 5.) && ((VARIANT == ANTARCTICA) || (!Snowpack::jordy_new_snow && ((Snowpack::hn_density_model == BELLAIRE) || (Snowpack::hn_density_model == LEHNING_NEW)))) ) {
+							if ( (Mdata.vw > 5.) && ((variant == "ANTARCTICA") || (!Snowpack::jordy_new_snow && ((Snowpack::hn_density_model == BELLAIRE) || (Snowpack::hn_density_model == LEHNING_NEW)))) ) {
 								EMS[e].dd = new_snow_dd_wind;
 								EMS[e].sp = new_snow_sp_wind;
 							} else if ( vw_dendricity && ((Snowpack::hn_density_model == BELLAIRE) || (Snowpack::hn_density_model == ZWART)) ) {

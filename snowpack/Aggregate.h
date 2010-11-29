@@ -17,60 +17,40 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
- * @file Aggregate.h
- * @version 9.10
- */
 
 #ifndef __AGGREGATE_H__
 #define __AGGREGATE_H__
 
+#include <snowpack/DataClasses.h>
 #include <snowpack/Constants.h>
-#include <snowpack/Snowpack.h>
-#include <snowpack/Hazard.h>
 #include <snowpack/Utils.h>
 #include <snowpack/Laws.h>
-
 #include <vector>
 
-/*
- * CONSTANTS
- */
 /**
- * @name Thresholds for aggregation
+ * @class Aggregate
+ * @version 7.03
+ * @bug     -
+ * @brief This module contains the routines to perform profile aggregation
  */
-//@{
-/// Distinguishes between dry and wet snow layers (1)
-#define LIMIT_DRY 0.001
-/// Maximum water difference for aggregation (Vol %)
-#define DIFF_THETA_W 0.7
-/// Maximum  age difference (days) for aggregation
-#define DIFF_JUL 1.0
-/// Maximum  sphericity difference for aggregation
-#define DIFF_SP 0.2
-/// Maximum  dendricity difference for aggregation
-#define DIFF_DD 0.2
-/// Maximum  grain size difference for aggregation
-#define DIFF_DG 0.25
-/// Maximum  relative grain size difference for aggregation
-#define DIFF_DG_REL 0.2
-/// Minimum length of element to be kept separate
-#define MIN_L_ELEMENT 0.3
-//@}
+class Aggregate {
 
-/*
- * FUNCTION PROTOTYPES
- */
-void ml_ag_Average(const int& e, const int& l, const double& w1, const double& w2, std::vector<Q_PROFILE_DAT>& Pdata);
+	public:
+		static int aggregate(std::vector<Q_PROFILE_DAT>& Pdata);
 
-void ml_ag_Shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata);
+	private:
+		static void shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata);
+		static bool doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
+		static bool doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
 
-int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
+		static const double limit_dry;     ///< Distinguishes between dry and wet snow layers (1)
+		static const double diff_theta_w;  ///< Maximum water difference for aggregation (Vol %)
+		static const double diff_jul;      ///< Maximum  age difference (days) for aggregation
+		static const double diff_sp;       ///< Maximum  sphericity difference for aggregation
+		static const double diff_dd;       ///< Maximum  dendricity difference for aggregation
+		static const double diff_dg;       ///< Maximum  grain size difference for aggregation
+		static const double diff_dg_rel;   ///< Maximum  relative grain size difference for aggregation
+		static const double min_l_element; ///< Minimum length of element to be kept separate
+};
 
-int ml_ag_Join(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata);
-
-int ml_ag_Classify(const double dendricity, const double sphericity, 
-			    const double grain_dia, const int marker, const double theta_w, const double theta_i);
-
-int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata);
-#endif //End of Template.h
+#endif

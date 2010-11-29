@@ -27,6 +27,9 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 
+#include <string.h>
+#include <errno.h>
+
 /// @brief Defines whether a distributed or 1D use of SNOWPACK is foreseen
 #define ALPINE3D 0
 
@@ -50,20 +53,10 @@
 #endif
 
 /*
- * INCLUDES
- */
-#include <string.h>
-#include <errno.h>
-
-/*
  * CONSTANTS & ENUMERATIONS
  */
 #define MAX_STRING_LENGTH 256
 #define MAX_LINE_LENGTH 6000
-
-
-/*****************************************************************************/
-/*****************************************************************************/
 
 /// @name Flags and numbers
 //@{
@@ -87,21 +80,6 @@
 #define WIND_PUMP ON
 /// @brief Switch on or off wind pumping in soil
 #define WIND_PUMP_SOIL ON
-
-/// @brief Time step control parameters
-typedef struct {
-  double TimeN;      ///< Time of present calculation (s)
-  int    nStep;      ///< Time step number
-  double TimeEnd;    ///< Calculate up to TimeEnd that can be less than last time of last record (s)
-  int    TsDump;     ///< Flag for time series dump
-  int    nAvg;       ///< Number of calculation time steps to average fluxes etc.
-  int    HzStep;     ///< Hazard step number (should be half of nStep in operational mode)
-  int    HzDump;     ///< Calculation of hazard information will be performed
-  int    PrDump;     ///< Flag for profile dump
-  int    XdataDump;  ///< Backup of Xdata will be performed
-  int    TaglayDump; ///< Flag for tagged layer series dump
-  int    PrTabDump;  ///< Flag for tabular profile dump
-} MN_TIME_DATA;
 
 namespace Constants {
 

@@ -27,9 +27,10 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#include <snowpack/Constants.h> 
-#include <meteoio/MeteoIO.h>
 #include <snowpack/DataClasses.h>
+#include <snowpack/Constants.h> 
+#include <snowpack/Laws.h>
+#include <meteoio/MeteoIO.h>
 
 #include <cstdarg> // needed for va_list
 #include <string>
@@ -68,5 +69,8 @@ int findUpperNode(const double& z, const std::vector<SN_NODE_DATA>& Ndata, const
 double qro_ForcedErosion(const double hs1, SN_STATION_DATA *Xdata);
 
 void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double *dhs_corr, double *mass_corr);
+
+int ml_ag_Classify(const double& dendricity, const double& sphericity, 
+			    const double& grain_dia, const int& marker, const double& theta_w, const double& theta_i);
 
 #endif //End of Queries.h

@@ -17,60 +17,30 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
- * @file Aggregate.c
- * @version 7.03
- * @bug     -
- * @brief This module contains the routines to perform profile aggregation
- */
 
 #include <snowpack/Aggregate.h>
 
-
-/**
- * @brief Determine the average quantities of the new layer
- * @param e Index of former layer
- * @param l Index of former/new layer
- * @param w1 Weight of former layer e
- * @param w2 Weight of former layer l
- * @param *Pdata (Q_PROFILE_DAT)
- */
-void ml_ag_Average(const int& e, const int& l, const double& w1, const double& w2, std::vector<Q_PROFILE_DAT>& Pdata)
-{
-	Pdata[l].height += w1;
-	Pdata[l].layer_date = (w1*Pdata[e].layer_date + w2*Pdata[l].layer_date)/(w1+w2) ;
-	Pdata[l].rho = (w1*Pdata[e].rho + w2*Pdata[l].rho)/(w1+w2) ;
-	Pdata[l].tem = (w1*Pdata[e].tem + w2*Pdata[l].tem)/(w1+w2) ;
-	Pdata[l].tem_grad = (w1*Pdata[e].tem_grad + w2*Pdata[l].tem_grad)/(w1+w2) ;
-	Pdata[l].strain_rate = (w1*Pdata[e].strain_rate + w2*Pdata[l].strain_rate)/(w1+w2) ;
-	Pdata[l].theta_w = (w1*Pdata[e].theta_w + w2*Pdata[l].theta_w)/(w1+w2) ;
-	Pdata[l].theta_i = (w1*Pdata[e].theta_i + w2*Pdata[l].theta_i)/(w1+w2) ;
-	Pdata[l].dendricity = (w1*Pdata[e].dendricity + w2*Pdata[l].dendricity)/(w1+w2) ;
-	Pdata[l].sphericity = (w1*Pdata[e].sphericity + w2*Pdata[l].sphericity)/(w1+w2) ;
-	Pdata[l].coordin_num = (w1*Pdata[e].coordin_num + w2*Pdata[l].coordin_num)/(w1+w2) ;
-	Pdata[l].grain_dia = (w1*Pdata[e].grain_dia + w2*Pdata[l].grain_dia)/(w1+w2) ;
-	Pdata[l].bond_dia = (w1*Pdata[e].bond_dia + w2*Pdata[l].bond_dia)/(w1+w2) ;
-	Pdata[l].hard = (w1*Pdata[e].hard + w2*Pdata[l].hard)/(w1+w2) ;
-	Pdata[l].marker = MAX(Pdata[e].marker, Pdata[l].marker) ;
-
-	Pdata[e].height = SNOWPACK_UNDEFINED;
-
-	return;
-
-} // End of ml_ag_Average
-
+const double Aggregate::limit_dry     = 0.001; ///< Distinguishes between dry and wet snow layers (1)
+const double Aggregate::diff_theta_w  = 0.7;   ///< Maximum water difference for aggregation (Vol %)
+const double Aggregate::diff_jul      = 1.0;   ///< Maximum  age difference (days) for aggregation
+const double Aggregate::diff_sp       = 0.2;   ///< Maximum  sphericity difference for aggregation
+const double Aggregate::diff_dd       = 0.2;   ///< Maximum  dendricity difference for aggregation
+const double Aggregate::diff_dg       = 0.25;  ///< Maximum  grain size difference for aggregation
+const double Aggregate::diff_dg_rel   = 0.2;   ///< Maximum  relative grain size difference for aggregation
+const double Aggregate::min_l_element = 0.3;   ///< Minimum length of element to be kept separate
 
 /**
  * @brief Eliminate the "empty" layers shift the remaining layers to form a compact snowpack
  * @param nE (int)
  * @param Pdata (Q_PROFILE_DAT)
  */
-void ml_ag_Shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
+void Aggregate::shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	int l = 0;
 	for (int e=1; e<nE; e++) {
 		if ( Pdata[e].height != SNOWPACK_UNDEFINED ) {
 			l++;
+
 			Pdata[l].height = Pdata[e].height;
 			Pdata[l].layer_date = Pdata[e].layer_date;
 			Pdata[l].rho = Pdata[e].rho;
@@ -96,29 +66,27 @@ void ml_ag_Shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
  * @param e1 (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
+bool Aggregate::doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
-	int e2, aggreg = ON;
-
-	e2 = e1+1;
+	int e2 = e1+1;
 
 	// if a dry layer is involved
-	if ( (Pdata[e1].theta_w < LIMIT_DRY) || (Pdata[e2].theta_w < LIMIT_DRY) ) {
+	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)){
 		// do not combine dry with moist layers
-		if ( fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > LIMIT_DRY ) {
-			aggreg = OFF;
-		}
+		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > limit_dry)
+			return false;
+
 		// do not combine layers which are of quite different age
-		if ( fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > 2*DIFF_JUL ) {
-			aggreg = OFF;
-		}
+		if (fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > 2 * diff_jul )
+			return false;
+
 		// do not combine layers with different grain classes
 		if (Pdata[e1].marker != Pdata[e2].marker) {
-			aggreg = OFF;
+			return false;
 		}
 		// do not combine layers which are of quite different hardness
 		if ( fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.5 ) {
-			aggreg = OFF;
+			return false;
 		}
 	}
 	// for two wet layers
@@ -126,7 +94,7 @@ int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 		if ( (Pdata[e1].grain_dia < 0.75) || (Pdata[e1].sphericity < 0.5) ||
 			(Pdata[e2].grain_dia < 0.75) || (Pdata[e2].sphericity < 0.5) ) {
 			if (Pdata[e1].marker != Pdata[e2].marker) {
-				aggreg = OFF;
+				return false;
 			}
 		}
 		else {
@@ -134,14 +102,14 @@ int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23)) ) &&
 				( ((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
 				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23)) ) ) ) {
-				if (Pdata[e1].marker != Pdata[e2].marker) {
-					aggreg = OFF;
-				}
+				
+				if (Pdata[e1].marker != Pdata[e2].marker)
+					return false;
 			}
 		}
 	}
 
-	return(aggreg);
+	return true;
 } // End of ml_ag_Join2
 
 
@@ -150,233 +118,44 @@ int ml_ag_Join2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
  * @param e1 (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Join(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
+bool Aggregate::doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
-	int e2, aggreg = ON;
+	int e2 = e1 - 1;
 
-	e2 = e1-1;
-
-	if ( (Pdata[e1].theta_w < LIMIT_DRY) || (Pdata[e2].theta_w < LIMIT_DRY) ) {
-		 if ( fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > LIMIT_DRY) {
-			 aggreg = OFF;
-		 }
+	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)) {
+		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > limit_dry)
+			return false;
 	} else {
-		if ( fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > DIFF_THETA_W) {
-			aggreg = OFF;
-		}
+		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > diff_theta_w)
+			return false;
 	}
 
-	if ( fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > DIFF_JUL) {
-		aggreg = OFF;
-	}
+	if (fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > diff_jul)
+		return false;
 
-	if (Pdata[e1].marker != Pdata[e2].marker) {
-		aggreg = OFF;
-	}
+	if (Pdata[e1].marker != Pdata[e2].marker)
+		return false;
 
 	// do not combine layers which are of quite different hardness 020917;Fz
-	if ( fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.0 ) {
-		aggreg = OFF;
-	}
+	if (fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.0)
+		return false;
 
-	if ( (Pdata[e1].dendricity == 0) && (Pdata[e2].dendricity == 0) ) {
-		if ( fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > DIFF_SP) {
-			aggreg = OFF;
-		}
-		if ( fabs(Pdata[e1].grain_dia - Pdata[e2].grain_dia) >
-		MAX(DIFF_DG, DIFF_DG_REL*Pdata[e1].grain_dia) ) {
-			aggreg = OFF;
-		}
+	if ((Pdata[e1].dendricity == 0) && (Pdata[e2].dendricity == 0)){
+		if ( fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
+			return false;
+		
+		if (fabs(Pdata[e1].grain_dia - Pdata[e2].grain_dia) >	MAX(diff_dg, diff_dg_rel * Pdata[e1].grain_dia))
+			return false;
 	} else {
-		if ( fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > DIFF_SP) {
-			aggreg = OFF;
-		}
-		if ( fabs(Pdata[e1].dendricity - Pdata[e2].dendricity) > DIFF_DD) {
-			aggreg = OFF;
-		}
+		if (fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
+			return false;
+
+		if (fabs(Pdata[e1].dendricity - Pdata[e2].dendricity) > diff_dd)
+			return false;
 	}
 
-	return(aggreg);
+	return true;
 } // End of ml_ag_Join
-
-/**
- * @brief Determine the grain class
- * Revisited by Fierz and Bellaire fall 2006
- * @param dendricity
- * @param sphericity
- * @param grain_dia
- * @param marker
- * @param theta_w
- * @param theta_i
- */
-int ml_ag_Classify(const double dendricity, const double sphericity, const double grain_dia, const int marker, const double theta_w, const double theta_i)
-{
-	int a=-1,b=-1,c=0;
-	int sw2;
-	double res_wat_cont;
-
-	res_wat_cont = lw_SnowResidualWaterContent(theta_i);
-
-	// Dry snow
-	if( dendricity > 0. ) {
-		// Dry dendritic (new) snow: dendricity and sphericity determine the class
-		sw2 = (int)(sphericity*10.);
-		if( dendricity > 0.80 ) {
-			// ori 0.90, 27 Nov 2007 sb
-			a = 1; b = 1; c = 0;
-		} else if( dendricity > 0.70 ) {
-			// ori 0.85, 27 Nov 2007 sb
-			a = 1; b = 2; c = 1;
-		} else if( dendricity > 0.65 ) {
-			// ori 0.75, 27 Nov 2007 sb
-			a = 2; b = 1; c = 0;
-		} else if( dendricity > 0.60 ) {
-			// ori 0.70, 27 Nov 2007 sb
-			a = 2; b = 1; c = 1;
-		} else if( dendricity > 0.30 ) {
-			a = 2; b = 2; c = 0;
-		} else if( dendricity > 0.05 ) {
-			a = 2;
-			switch(sw2) {
-				case 0: case 1: case 2:
-				b = 4; c = 0; break;
-				case 3: case 4:
-				b = 4; c = 1; break;
-				case 5: case 6:
-				b = 3; c = 1; break;
-				default:
-				b = 3; c = 0;
-			}
-		} else {
-			switch(sw2) {
-				case 0: case 1:
-				a = 4; b = 4; c = 0; break;
-				case 2: case 3: case 4:
-				a = 4; b = 2; c = 1; break;
-				case 5: case 6: case 7:
-				a = 3;  b = 2; c = 1; break;
-				default:
-				a = 3; b = 3; c = 0;
-			}
-		}
-	} else if( marker <= 2) {
-		/*
-		 * Dry non-dendritic snow
-		 * Sphericity is most important for "a", while the marker is most important for "b","c"
-		 */
-		if( grain_dia < 0.7 ) {
-			sw2 = (int)(sphericity*10.);
-			switch(sw2) {
-				case 0: case 1:
-				a = 4; b = 4; c = 0; break;
-				case 2: case 3:
-				a = 4; b = 3; c = 1; break;
-				case 4: case 5:
-				a = 4;  b = 3; c = 0; break;
-				case 6: case 7:
-				a = 3;  b = 4; c = 1; break;
-				default:
-				a = 3; b = 3; c = 0;
-			}
-		} else if( grain_dia < 1.1 ) {
-			if( sphericity < 0.2 ) {
-				a = 4; b = 4; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 4; b = 9; c = 0;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 9 ; c = 0;
-			}
-		} else if( grain_dia < 1.5 ) {
-			if( sphericity < 0.2 ) {
-				a = 4; b = 5; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 4; b = 9; c = 1;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 9 ; c = 0;
-			}
-		} else {
-			if( sphericity < 0.2 ) {
-				a = 5; b = 5; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 5; b = 9; c = 1;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 5 ; c = 1;
-			}
-		}
-	} // end dry snow
-
-	// Snow getting wet
-	if( marker >= 10 ) {
-		if( dendricity > 0.0 ) {
-			// Wet dendritic snow
-			if( sphericity > 0.7 ) {
-				b = a; a = 7; c = 0;
-			} else {
-				b = 7 ; c = 1;
-			}
-		} else {
-			// Wet non-dendritic snow
-			b = 7; c = 0;
-			if( sphericity > 0.75) {
-				a = 7;
-			} else if( sphericity > 0.4 ) {
-				if( grain_dia <= 0.7 ) {
-					b = a; a = 7;
-				} else if( marker != 13 ) {
-					if( grain_dia <= 1.5 ) {
-						a = 7; b = 9; c = 1;
-					} else {
-						a = 7; b = 5; c = 1;
-					}
-				} else {
-					a = 7; b = 6;  c = 1;
-				}
-			} else {
-				if( grain_dia <= 1.5 ) {
-					a = 4;
-				} else {
-					a = 5;
-				}
-				if( sphericity <= 0.2 ) {
-					c = 1;
-				}
-			}
-		}
-	}
-
-	// Now treat a couple of exceptions - note that the order is important
-	if( b < 0 ) {
-		b = a;
-	}
-	// Melt-Freeze
-	if( (marker >= 20) && (theta_w < 0.1*res_wat_cont) ) {
-		c = 2;
-	}
-	// Surface Hoar
-	if( marker == 3 ) {
-		 a = 6;
-		 b = 6;
-		 c = 0;
-	}
-	// Graupel
-	if( marker == 4 ) {
-		 a = 0;
-		 b = 0;
-		 c = 0;
-	}
-	// Ice Layer
-	if( marker % 10 == 8 ) {
-		 a = 8;
-		 b = 8;
-		 c = 0;
-	}
-
-	return (a*100 + b*10 + c);
-
-} // End of ml_ag_Classify
 
 
 /**
@@ -384,10 +163,13 @@ int ml_ag_Classify(const double dendricity, const double sphericity, const doubl
  * @param nE (int)
  * @param *Pdata (Q_PROFILE_DAT)
  */
-int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata)
+int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 {
-	int e, nL, l, flag=OFF;
+	bool flag = false;
+	int e, nL, l;
 	double l1, l2;
+
+	int nE = (int)Pdata.size();
 
 	// Initialize number of elements  and aggregate only if more than 5 layers
 	nL = nE;
@@ -405,15 +187,16 @@ int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata)
 				l2 = Pdata[l].height;
 			}
 			// if two layers are similar combine them
-			if ( (ml_ag_Join(e, Pdata) == ON) && (Pdata[l].marker != 3) && (Pdata[e].marker != 3) ) {
+			if ( doJoin(e, Pdata) && (Pdata[l].marker != 3) && (Pdata[e].marker != 3) ) {
 				nL--;
-				ml_ag_Average(e, l, l1, l2, Pdata);
+				Pdata[l].average(l1, l2, Pdata[e]);
+				Pdata[e].height = SNOWPACK_UNDEFINED;
 				l2 += l1;
 			}
 
 		}  // for all elements
 
-		ml_ag_Shift(nE, Pdata);
+		shift(nE, Pdata);
 		nE = nL;
 
 		// Second Run - aggregate remaining very thin layers
@@ -429,43 +212,38 @@ int ml_ag_Aggregate(int nE, std::vector<Q_PROFILE_DAT>& Pdata)
 				}
 				if ( (Pdata[l].marker != 3) && (Pdata[e].marker != 3) ) {
 					// trick to try to join with upper or lower level -> use flag to mark thin layer
-					if ( (flag == ON) || (l2 < (sqrt(Pdata[nE-1].height-Pdata[l].height)/4.)) || (l2 < MIN_L_ELEMENT) ) {
+					if ( flag || (l2 < (sqrt(Pdata[nE-1].height-Pdata[l].height)/4.)) || (l2 < min_l_element) ) {
 						// if two layers are similar or one layer is very very small combine them
-						if ( (ml_ag_Join2(e, Pdata) == ON) || (l2 < MIN_L_ELEMENT) ||
-							(l1 < MIN_L_ELEMENT)  ) {
+						if (doJoin2(e, Pdata) || (l2 < min_l_element) || (l1 < min_l_element)){
 							nL--;
-							ml_ag_Average(e, l, l1, l2, Pdata);
+							Pdata[l].average(l1, l2, Pdata[e]);
+							Pdata[e].height = SNOWPACK_UNDEFINED;
 							l2 += l1;
-							flag = OFF;
+							flag = false;
 						} else {
-							flag = ON;
+							flag = true;
 						}
 					} else {
-						flag = OFF;
+						flag = false;
 					}
 				} // if not surface hoar layer
 				else {
-					flag = OFF;
+					flag = false;
 				}
 
 			}  // for all elements
 
-			ml_ag_Shift(nE, Pdata);
+			shift(nE, Pdata);
 		} // if nE > 2
-
 	} // if more than 5 layers
 
 	// Now Calculate the grain class. The grain class is coded according to the Matt&Sommer profile visualization
 	for(e=0; e<nL; e++) {
 		Pdata[e].grain_class = ml_ag_Classify(Pdata[e].dendricity, Pdata[e].sphericity,
-						Pdata[e].grain_dia, Pdata[e].marker,
-						Pdata[e].theta_w/100., Pdata[e].theta_i/100.);
+                                                Pdata[e].grain_dia, Pdata[e].marker,
+                                                Pdata[e].theta_w/100., Pdata[e].theta_i/100.);
 	}
 
 	return (nL);
 
 } // End of ml_ag_Aggregate
-
-/*
- * End of Aggregate.c
- */
