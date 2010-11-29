@@ -368,10 +368,10 @@ double lwsn_SoilFieldCapacity(const SN_ELEM_DATA *Edata)
  * @brief Computes the displacement depth in case of ventilation
  * @author Michael Lehning \n Charles Fierz
  * @version 10.01
- * @param *Xdata
+ * @param Xdata
  * @return Displacement depth (m)
  */
-double lwsn_WindPumpingDisplacement(const SN_STATION_DATA& Xdata)
+double SnLaws::calcWindPumpingDisplacement(const SN_STATION_DATA& Xdata)
 {
 	int e = Xdata.getNumberOfElements();
 	double d_pump=0.;      // Displacement depth (m)
@@ -624,7 +624,7 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
  * @param *Edata
  * @return Effective heat capacity (J kg-1 K-1)
  */
-double lwsn_HeatCapacity(const SN_ELEM_DATA& Edata)
+double SnLaws::calcHeatCapacity(const SN_ELEM_DATA& Edata)
 {
 	double c_p;
 
@@ -633,6 +633,7 @@ double lwsn_HeatCapacity(const SN_ELEM_DATA& Edata)
 	c_p += Constants::density_water * Edata.theta[WATER] * Constants::specific_heat_water;
 	c_p += Edata.soil[SOIL_RHO] * Edata.theta[SOIL] * Edata.soil[SOIL_C];
 	c_p /= Edata.Rho;
+
 	return(c_p);
 }
 
@@ -858,7 +859,7 @@ double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata)
 }
 
 /**
- * @brief A non-generic function to compute the  concave neck radius (mm). \n
+ * @brief A non-generic function to compute the concave neck radius (mm). \n
  * It is assumed that the neck is bound by a sphere fitting between the two grains side by side
  * such as the sphere goes to RB from the axis (this is a quick and dirty approximation)
  * @author Mathias Bavay
@@ -867,7 +868,7 @@ double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata)
  * @param rb Bond radius (mm)
  * @return Concave neck radius (mm)
  */
-double lwsn_ConcaveNeckRadius(const double rg, const double rb)
+double SnLaws::calcConcaveNeckRadius(const double& rg, const double& rb)
 {
 	if ( (rg - rb) < Constants::eps ) {
 		prn_msg (__FILE__, __LINE__, "wrn", -1., "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb );
@@ -885,7 +886,7 @@ double lwsn_ConcaveNeckRadius(const double rg, const double rb)
  * @param rc Concave bond radius (mm)
  * @return Neck length (mm)
  */
-double lwsn_NeckLength(const double rg, const double rc)
+double SnLaws::calcNeckLength(const double& rg, const double& rc)
 {
 	return ((2. * rg * rc) / (rg + rc));
 }
@@ -894,13 +895,13 @@ double lwsn_NeckLength(const double rg, const double rc)
  * @brief Relates the neck strain to the global volumetric strain
  * @author Charles Fierz
  * @version 9.10
- * @param *Edata
+ * @param Edata
  * @return Macro factor
  */
-double lwsn_Neck2VolumetricStrain(const SN_ELEM_DATA& Edata)
+double SnLaws::calcNeck2VolumetricStrain(const SN_ELEM_DATA& Edata)
 {
-	const double rc = lwsn_ConcaveNeckRadius(Edata.rg, Edata.rb);
-	const double Ln = lwsn_NeckLength(Edata.rg, rc);
+	const double rc = SnLaws::calcConcaveNeckRadius(Edata.rg, Edata.rb);
+	const double Ln = SnLaws::calcNeckLength(Edata.rg, rc);
 
 	return (Ln / (2. * Edata.rg + Ln));
 }
@@ -912,7 +913,7 @@ double lwsn_Neck2VolumetricStrain(const SN_ELEM_DATA& Edata)
  * @param *Edata
  * @return Enhancement factor for neck stress
  */
-double lwsn_NeckStressEnhancement(const SN_ELEM_DATA& Edata)
+double SnLaws::calcNeckStressEnhancement(const SN_ELEM_DATA& Edata)
 {
 	return ((4. / (Edata.N3 * Edata.theta[ICE])) * (Edata.rg * Edata.rg) / (Edata.rb * Edata.rb));
 }
@@ -1084,8 +1085,8 @@ double lwsn_SnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& dat
 
 	v_fudge = lwsn_SnowViscosityFudgeDEFAULT(Edata, date);
 	v_factor = (sig1*sig1*sig1 / (eps1Dot * v_fudge*v_fudge*v_fudge));
-	v_macro = lwsn_Neck2VolumetricStrain(Edata);
-	v_micro = lwsn_NeckStressEnhancement(Edata);
+	v_macro = SnLaws::calcNeck2VolumetricStrain(Edata);
+	v_micro = SnLaws::calcNeckStressEnhancement(Edata);
 	eta = (1. / v_macro) * lwsn_SnowViscosityTemperatureTerm(Te) * v_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
 	if ( (v_micro * sig) <= 100. * sigNeckYield ) {
@@ -1153,8 +1154,8 @@ double lwsn_SnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date&
 
 	v_fudge = lwsn_SnowViscosityFudgeCALIBRATION(Edata, date);
 	v_factor = (sig1*sig1*sig1 / (eps1Dot * v_fudge*v_fudge*v_fudge));
-	v_macro = lwsn_Neck2VolumetricStrain(Edata);
-	v_micro = lwsn_NeckStressEnhancement(Edata);
+	v_macro = SnLaws::calcNeck2VolumetricStrain(Edata);
+	v_micro = SnLaws::calcNeckStressEnhancement(Edata);
 	eta = (1. / v_macro) * lwsn_SnowViscosityTemperatureTerm(Te) * v_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
 	if ( (v_micro * sig) <= 100. * sigNeckYield ) {

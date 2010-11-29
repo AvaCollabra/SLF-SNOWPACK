@@ -481,7 +481,7 @@ bool Snowpack::sn_ElementKtMatrix(SN_ELEM_DATA *Edata, double dt, double dvdz, d
 	k = Keff/Edata->L;   // Divide by the length to save from doing it during the matrix operations
 
 	// Compute heat capacity of element
-	Edata->c[TEMPERATURE] = lwsn_HeatCapacity(*Edata);
+	Edata->c[TEMPERATURE] = SnLaws::calcHeatCapacity(*Edata);
 	c = Edata->c[TEMPERATURE] * Edata->L * Edata->Rho / (6. * dt);
 
 	// Evaluate the stiffness matrix
@@ -925,7 +925,7 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 	Xdata.SubSurfaceMelt = false;
 	Xdata.SubSurfaceFrze = false;
 	// Determine the displacement depth d_pump
-	d_pump = lwsn_WindPumpingDisplacement(Xdata);
+	d_pump = SnLaws::calcWindPumpingDisplacement(Xdata);
 
 	// IMPLICIT INTEGRATION LOOP
 	do {

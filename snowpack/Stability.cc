@@ -400,7 +400,7 @@ double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
 		return(0.1);
 	}
 	// First find the absolute neck stress
-	sigNeck = lwsn_NeckStressEnhancement(Edata) * (sig);
+	sigNeck = SnLaws::calcNeckStressEnhancement(Edata) * (sig);
 	// Now find the strain rate in the neck
 	epsNeckDot =  eps1Dot * lwsn_SnowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
 	// Return the stability index
@@ -1330,8 +1330,4 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
 			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Profile not classifiable! (recognizeProfileType)");
 		}
 	}
-} // End st_CheckStability
-
-/*
- * End of Stability.c
-*/
+} // End checkStability

@@ -122,7 +122,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 	
 	// In case of ventilation ...
 	if ( WIND_PUMP ) {
-		d_pump = lwsn_WindPumpingDisplacement(Xdata);
+		d_pump = SnLaws::calcWindPumpingDisplacement(Xdata);
 	} else {
 		d_pump = 0.;
 	}

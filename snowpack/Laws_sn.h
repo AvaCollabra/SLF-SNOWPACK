@@ -160,12 +160,6 @@ enum {
 };
 
 
-/*
-class LawsSnowpack {
-
-	public:
-		LawsSnowpack(const mio::Config& i_cfg);
-*/
 		double lwsn_InitialStress(const std::string& i_viscosity_model, const SN_ELEM_DATA& Edata);
 
 		double lwsn_Albedo(const SN_ELEM_DATA& Edata, const double& Tss, const SN_MET_DATA& Mdata, const double& age);
@@ -179,8 +173,6 @@ class LawsSnowpack {
 
 		double lwsn_SoilFieldCapacity(const SN_ELEM_DATA *Edata);
 
-		double lwsn_WindPumpingDisplacement(const SN_STATION_DATA& Xdata);
-
 		double lwsn_WindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
 
 		double lwsn_WindGradientSnow(double *v_pump, const SN_ELEM_DATA *Edata);
@@ -191,8 +183,6 @@ class LawsSnowpack {
 		
 		double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
 		
-		double lwsn_HeatCapacity(const SN_ELEM_DATA& Edata);
- 
 		double lwsn_SensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
 							const double& height_of_meteo_values);
  
@@ -208,15 +198,6 @@ class LawsSnowpack {
 
 		double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata);
 
-		double lwsn_ConcaveNeckRadius(const double rg, const double rb);
-
-		double lwsn_NeckLength(const double rg, const double rc);
-
-		double lwsn_Neck2VolumetricStrain(const SN_ELEM_DATA& Edata);
-
-		double lwsn_NeckStressEnhancement(const SN_ELEM_DATA& Edata);
-
-
 		double lwsn_SnowViscosityTemperatureTerm(const double Te);
 
 		double lwsn_SnowViscosity(const std::string& i_viscosity_model, 
@@ -230,9 +211,16 @@ class LawsSnowpack {
 		double lwsn_InitialStressDEFAULT(const SN_ELEM_DATA& Edata);
 		double lwsn_InitialStressCALIBRATION(const SN_ELEM_DATA& Edata);
 
-/*
-	private:
-		mio::Config cfg;
-		};
-*/
+class SnLaws {
+
+	public:
+		static double calcHeatCapacity(const SN_ELEM_DATA& Edata);
+		static double calcNeckStressEnhancement(const SN_ELEM_DATA& Edata);
+		static double calcConcaveNeckRadius(const double& rg, const double& rb);
+		static double calcNeckLength(const double& rg, const double& rc);
+		static double calcNeck2VolumetricStrain(const SN_ELEM_DATA& Edata);
+		static double calcWindPumpingDisplacement(const SN_STATION_DATA& Xdata);
+
+};
+
 #endif //End of Laws_sn.h

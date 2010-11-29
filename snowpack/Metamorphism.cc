@@ -493,7 +493,7 @@ double Metamorphism::ETBondRate(const SN_ELEM_DATA& Edata)
 	const double B_2 = -1.8850e-6;        //  in mm
 	const double B_3 = 4.6690e+3;         //  deg K
 	const double B_R = 273.;
-	const double rc = lwsn_ConcaveNeckRadius(Edata.rg, Edata.rb);
+	const double rc = SnLaws::calcConcaveNeckRadius(Edata.rg, Edata.rb);
 	double rbDot; // Bond radius growth rate (mm s-1)
 
 	if ( fabs(rc - Edata.rb) < Constants::eps ) {	//special case: thermodynamic neck radius rn is infinite
@@ -575,7 +575,7 @@ double Metamorphism::PressureSintering(const SN_ELEM_DATA& Edata)
 	 * Previously this was done with microstructure viscosity, which is only used for main part of
 	 * settling, however.
 	*/
-	rbdot = -0.1 * Edata.rb * Edata.EvDot / lwsn_Neck2VolumetricStrain(Edata);
+	rbdot = -0.1 * Edata.rb * Edata.EvDot / SnLaws::calcNeck2VolumetricStrain(Edata);
 
 	// Convert from (mm s-1) to (mm d-1)
 	rbdot = D_TO_S(rbdot);

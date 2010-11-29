@@ -154,7 +154,7 @@ void PhaseChange::calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, doub
 			throw IOException("Error in calcSubSurfaceMelt()", AT);
 		}
 	 	// Re-Calculate the specific heat capacity of our porous medium
-		Edata.c[TEMPERATURE] = lwsn_HeatCapacity(Edata);
+		Edata.c[TEMPERATURE] = SnLaws::calcHeatCapacity(Edata);
 		// Calculate MELTING ENERGY
 		Edata.Qmf = (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
 		Edata.dth_w = dth_w;                                // (1)
@@ -269,7 +269,7 @@ void PhaseChange::calcSubSurfaceFrze(SN_ELEM_DATA& Edata, const double& dt)
 			throw IOException("Error in calcSubSurfaceFrze()", AT);
 		}
 		// Re-Calculate the specific heat capacity of our porous medium
-		Edata.c[TEMPERATURE] = lwsn_HeatCapacity(Edata);
+		Edata.c[TEMPERATURE] = SnLaws::calcHeatCapacity(Edata);
 		// Calculate the REFREEZING Energy
 		Edata.Qmf = dth_i * Constants::density_ice * Constants::lh_fusion / dt; // (W m-3)
 		Edata.dth_w = dth_w;                              // (1)
@@ -299,7 +299,7 @@ void PhaseChange::runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& 
 	// Initialize and Determine Energy Content
 	for (e = 0; e < nE; e++) {
 		EMS[e].dth_w = EMS[e].Qmf = 0.0;
-		EMS[e].c[TEMPERATURE] = lwsn_HeatCapacity(EMS[e]);
+		EMS[e].c[TEMPERATURE] = SnLaws::calcHeatCapacity(EMS[e]);
 		M0 += EMS[e].theta[ICE] * EMS[e].L;
 	}
 
