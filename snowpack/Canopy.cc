@@ -399,7 +399,6 @@ double Canopy::cn_IntCapacity(const double& tair, const double& density_of_new_s
  * @param capacity
  * @param storage
  * @param *unload
- * @return ERROR if any, NO_ERROR if not
  */
 double Canopy::cn_IntUnload(const double& capacity, const double& storage)
 {
@@ -419,7 +418,6 @@ double Canopy::cn_IntUnload(const double& capacity, const double& storage)
  * @param *interception
  * @param direct
  * @param tair
- * @return ERROR if any, NO_ERROR if not
  */
 double Canopy::cn_IntRate(const double& capacity, const double& storage, const double& prec,
                           const double& direct, const double& tair)
@@ -1316,9 +1314,10 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const
  * heat fluxes)
  * 3. Final mass balance (evaporation of intercepted water, and
  * transpiration
- * @param *Mdata SN_MET_DATA
- * @param *Xdata SN_STATION_DATA
- * @return ERROR if any, NO_ERROR if not
+ * @param Mdata SN_MET_DATA
+ * @param Xdata SN_STATION_DATA
+ * @param roughness_length
+ * @param height_of_wind_value
  */
 
 void Canopy::runCanopyModel(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double roughness_length, double height_of_wind_val)

@@ -174,9 +174,7 @@ SN_STATION_DATA::SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_use
  * @brief Reallocate element and node data \n
  * Xdata->Edata, Xdata->Ndata and Xdata->nElems, Xdata->nNodes are reallocated or reset, respectively.
  * In case of augmenting the element number, the new elements are initialized to 0 (memset)
- * @param **Xdata
- * @param NewnE New number of elements
- * @return ERROR if any, NO_ERROR if not
+ * @param number_of_elements The new number of elements
  */
 void SN_STATION_DATA::resize(const int& number_of_elements)
 {
@@ -211,8 +209,7 @@ int SN_STATION_DATA::getNumberOfNodes() const
  * The elements being very similar and thus the microstructure parameters being approximately equal
  * as defined in sn_JoinCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
- * @param *Xdata
- * @return ERROR if any, NO_ERROR if not
+ * @param number_top_elements The number of surface elements to be left untouched
  */
 void SN_STATION_DATA::joinElements(const int& number_top_elements)
 {

@@ -208,7 +208,7 @@ double lwsn_Albedo(const SN_ELEM_DATA& Edata, const double& Tss, const SN_MET_DA
 		}
 		default: {
 			prn_msg ( __FILE__, __LINE__, "err", -1., "ALB=%d not implemented yet!", ALBEDO_MODEL );
-			exit(ERROR);
+			throw IOException("The albedo model configured not implemented yet!", AT);
 			break;
 		}
 	}

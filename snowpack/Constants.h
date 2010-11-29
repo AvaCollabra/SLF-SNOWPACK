@@ -46,7 +46,7 @@
  * Please only use SN_VERSION in the code
  */
 #ifndef SVNREV
-#define SVNREV "20101006.001" //"20100616.837-845Mpc" //
+#define SVNREV "20101006.001"
 #endif
 #ifndef SN_VERSION
 	#define SN_VERSION SVNREV
@@ -60,11 +60,6 @@
 
 /// @name Flags and numbers
 //@{
-#define ON 1
-#define OFF 0
-#define ERROR 0
-#define NO_ERROR 1
-
 #define NODATA -999.
 #define INODATA 999
 #define SNOWPACK_UNDEFINED -77777777
@@ -77,9 +72,9 @@
 /// @brief Initial value for stability parameter
 #define INIT_STABILITY 999.
 /// @brief Switch on or off wind pumping in snow
-#define WIND_PUMP ON
+#define WIND_PUMP true
 /// @brief Switch on or off wind pumping in soil
-#define WIND_PUMP_SOIL ON
+#define WIND_PUMP_SOIL true
 
 namespace Constants {
 
@@ -192,6 +187,3 @@ namespace Constants {
 //@}
 
 #endif
-/*
- * End of Constants.h
-*/

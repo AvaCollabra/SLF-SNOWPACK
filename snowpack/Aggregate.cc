@@ -20,6 +20,10 @@
 
 #include <snowpack/Aggregate.h>
 
+/************************************************************
+ * static section                                           *
+ ************************************************************/
+
 const double Aggregate::limit_dry     = 0.001; ///< Distinguishes between dry and wet snow layers (1)
 const double Aggregate::diff_theta_w  = 0.7;   ///< Maximum water difference for aggregation (Vol %)
 const double Aggregate::diff_jul      = 1.0;   ///< Maximum  age difference (days) for aggregation
@@ -32,7 +36,7 @@ const double Aggregate::min_l_element = 0.3;   ///< Minimum length of element to
 /**
  * @brief Eliminate the "empty" layers shift the remaining layers to form a compact snowpack
  * @param nE (int)
- * @param Pdata (Q_PROFILE_DAT)
+ * @param Pdata A vector of Q_PROFILE_DAT
  */
 void Aggregate::shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 {
@@ -58,13 +62,13 @@ void Aggregate::shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 			Pdata[l].marker = Pdata[e].marker;
 		}
 	} // for all old elements
-} // End of ml_ag_Shift
+} // End of shift
 
 
 /**
  * @brief Decide whether to codense two layers
  * @param e1 (int)
- * @param *Pdata (Q_PROFILE_DAT)
+ * @param Pdata A vector of Q_PROFILE_DAT
  */
 bool Aggregate::doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
@@ -110,13 +114,13 @@ bool Aggregate::doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 	}
 
 	return true;
-} // End of ml_ag_Join2
+} // End of doJoin2
 
 
 /**
  * @brief Decide whether to codense two layers
  * @param e1 (int)
- * @param *Pdata (Q_PROFILE_DAT)
+ * @param Pdata A vector of Q_PROFILE_DAT
  */
 bool Aggregate::doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 {
@@ -155,13 +159,12 @@ bool Aggregate::doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 	}
 
 	return true;
-} // End of ml_ag_Join
+} // End of doJoin
 
 
 /**
  * @brief Aggregate the Layers and calculate the grain class
- * @param nE (int)
- * @param *Pdata (Q_PROFILE_DAT)
+ * @param Pdata A vector of Q_PROFILE_DAT
  */
 int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 {
@@ -245,5 +248,4 @@ int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 	}
 
 	return (nL);
-
-} // End of ml_ag_Aggregate
+} // End of aggregate

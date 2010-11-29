@@ -1319,11 +1319,10 @@ double Snowpack::calculateNewSnowDensity(const SN_MET_DATA& Mdata, const SN_STAT
  *   instead of trying to find an optimal number of elements, we will define the number of new
  *   elements as a constant nNnew. The constant is related to HNS_NE_HEIGHT, which is set in
  *   qr_ReadParameter(). The smaller HNS_NE_HEIGHT, the more elements we will use.
- * @param *Xdata Snow cover data
- * @param *cumu_hnw cumulated amount of precipitation (kg m-2)
- * @param *Mdata Meteorological data
- * @return ERROR if any, NO_ERROR if not
-*/
+ * @param Mdata Meteorological data
+ * @param Xdata Snow cover data
+ * @param cumu_hnw cumulated amount of precipitation (kg m-2)
+ */
 void Snowpack::determineSnowFall(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata, double& cumu_hnw)
 {
 	int nNewE, nHoarE;          // The number of new elements to be added to SN_STATION_DATA

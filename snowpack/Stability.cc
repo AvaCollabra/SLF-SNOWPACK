@@ -918,11 +918,11 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 	SN_ELEM_DATA *EMS;                              // Element pointer
 
 	int    prf_type=-1;                             // Profile type
-	double *z_el=NULL;                              // Vertical element heigth (m)
-	double *L_el=NULL;                              // Vertical element thickness (m)
-	double *hard=NULL;                              // Hardness in N
-	double *red_hard=NULL;                          // Reduced hardness in N
-	double *deltaN=NULL;                            // Difference in hardness between layers in N
+	vector<double> z_el;                            // Vertical element heigth (m)
+	vector<double> L_el;                            // Vertical element thickness (m)
+	vector<double> hard;                            // Hardness in N
+	vector<double> red_hard;                        // Reduced hardness in N
+	vector<double> deltaN;                          // Difference in hardness between layers in N
 
 	// Temporary variables
 	int    e, e_min, e_el, e_max, nE_s;             // Counters
@@ -932,7 +932,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 	double cH;                                      // Vertical snow depth
 	double L_base_0=0.2, L_base, L_sum;             // Lengths (m)
 	double min_hard=19.472, slope_hard=150.;        // Constants to calculate reduced hardness,
-							// (N) and (N m-1), respectively
+                                                     // (N) and (N m-1), respectively
 	double thresh_hard;                             // Hardness threshold (N)
 	double mean_hard, mean_red_hard, mean_gsz;      // Means
 	double sum_red_hard;
@@ -957,37 +957,17 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 	EMS = &Xdata.Edata[0];
 	vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
 
-	// Allocate space for temporary arrays
-	if ( (z_el = (double *) malloc(sizeof(double)*nE_s)) == NULL ) {
-		prn_msg ( __FILE__, __LINE__, "err", date.getJulianDate(),
-			"Cannot allocate space for temporary element heights z_el" );
-		exit (ERROR);
+	try { // Allocate space for temporary vectors
+		z_el.resize(nE_s, 0.0);
+		L_el.resize(nE_s, 0.0);
+		hard.resize(nE_s, 0.0);
+		red_hard.resize(nE_s, 0.0);
+		deltaN.resize(nE_s, 0.0);
+	} catch(exception& e){
+		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(),
+			   "Cannot allocate space for temporary objects in Stability::recognizeProfileType");
+		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
-	if ( (L_el = (double *) malloc(sizeof(double)*nE_s)) == NULL ) {
-		prn_msg ( __FILE__, __LINE__, "err", date.getJulianDate(),
-			"Cannot allocate space for temporary element thicknesses L_el" );
-		exit (ERROR);
-	}
-	if ( (hard = (double *) malloc(sizeof(double)*nE_s)) == NULL ) {
-		prn_msg ( __FILE__, __LINE__, "err", date.getJulianDate(),
-			"Cannot allocate space for temporary hardness parameter hard" );
-		exit (ERROR);
-	}
-	if ( (red_hard = (double *) malloc(sizeof(double)*nE_s)) == NULL ) {
-		prn_msg ( __FILE__, __LINE__, "err", date.getJulianDate(),
-			"Cannot allocate space for temporary hardness parameter red_hard" );
-		exit (ERROR);
-	}
-	 if ( (deltaN = (double *) malloc(sizeof(double)*nE_s)) == NULL ) {
-		prn_msg ( __FILE__, __LINE__, "err", date.getJulianDate(),
-			"Cannot allocate space for temporary element heights gradN" );
-		exit (ERROR);
-	}
-	memset(z_el, 0, sizeof(double)*nE_s);
-	memset(L_el, 0, sizeof(double)*nE_s);
-	memset(hard, 0, sizeof(double)*nE_s);
-	memset(red_hard, 0, sizeof(double)*nE_s);
-	memset(deltaN, 0, sizeof(double)*nE_s);
 
 	// Absolute and reduced hardness profiles (N)
 	for (e = nE_s-1; e >= 0; e--) {
@@ -1141,12 +1121,6 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 	// end of classify
 
 	Xdata.S_class1 = prf_type;
-
-	free (z_el);
-	free (L_el);
-	free (hard);
-	free (red_hard);
-	free (deltaN);
 
 	return true;
 } // End of recognizeProfileType
