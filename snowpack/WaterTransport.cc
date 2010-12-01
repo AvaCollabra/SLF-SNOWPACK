@@ -556,7 +556,8 @@ void WaterTransport::transportWater(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 			res_wat_cont = lw_SnowResidualWaterContent(EMS[e0].theta[ICE]);
 			Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE]), res_wat_cont + dth_w);
 		} else { // treat soil separately
-			Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]), lwsn_SoilFieldCapacity(&EMS[e0]) + dth_w);
+			Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]), 
+					 SnLaws::calcSoilFieldCapacity(EMS[e0]) + dth_w);
 		}
 		Wres = MAX (0., Wres);
 
@@ -654,7 +655,8 @@ void WaterTransport::transportWater(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 		res_wat_cont = lw_SnowResidualWaterContent(EMS[0].theta[ICE]);
 		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE]), res_wat_cont + dth_w);
 	} else { // treat soil separately
-		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE] - EMS[0].theta[SOIL]), lwsn_SoilFieldCapacity(&EMS[0]) + dth_w);
+		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE] - EMS[0].theta[SOIL]),
+				 SnLaws::calcSoilFieldCapacity(EMS[0]) + dth_w);
 	}
 	Wres = MAX (0., Wres);
 	// Do not drain last water element if wet_layer is set

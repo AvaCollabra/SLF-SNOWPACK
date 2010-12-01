@@ -78,10 +78,38 @@
 #include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Metamorphism.h>
-//#include <snowpack/assert.h>
 
 using namespace std;
 using namespace mio;
+
+/// @name SOIL PARAMETERS
+//@{
+/**
+ * @brief Define Method and Coefficents for the calculation of the influence of soil water
+ * content on Evaporation from Bare Soil Layers:
+ * - 1 ==> Resistance Approach, see Laws_sn.c
+ * - 0 ==> Relative Humidity Approach, see Snowpack.c
+ * - -1 ==> none, assume saturation pressure and no extra resistance
+ */
+const int SnLaws::soil_evaporation = 1;
+
+/// @brief Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
+const double SnLaws::rsoilmin = 50.0;
+
+/// @brief Minimum relative saturation of top soil layer
+const double SnLaws::relsatmin = 0.05;
+
+/// @brief Ratio of Porosity to Tortuosity for Soil
+const double SnLaws::alpha_por_tor_soil = 0.05;
+
+/// @brief Pore length for surface soil for ventilation (m)
+const double SnLaws::pore_length_soil = 0.01;
+
+/// @brief Field capacity of the soil (1). Above this levels, water begins to drain
+const double SnLaws::field_capacity_soil = 0.15;
+//@}
+
+
 
 double lwsn_InitialStress(const std::string& i_viscosity_model, const SN_ELEM_DATA& Edata)
 {
@@ -344,9 +372,10 @@ double lwsn_SnowpackInternalEnergy(SN_STATION_DATA& Xdata)
  * @param *Edata
  * @return Soil field capacity (?)
  */
-double lwsn_SoilFieldCapacity(const SN_ELEM_DATA *Edata)
+double SnLaws::calcSoilFieldCapacity(const SN_ELEM_DATA& Edata)
 {
 	double fc;
+
 	/*
 	 * This nice formulation is based on some tedious curve fitting by
 	 * Martina, who became more happy when she saw how nicely it could
@@ -354,11 +383,11 @@ double lwsn_SoilFieldCapacity(const SN_ELEM_DATA *Edata)
 	 * (Richtwerte Baugrund), which once more proves that "nomen est omen".
 	 * If my name was "Schachtschabel", I would never ever be dealing with
 	 * wet soils and Baugrund.
-	*/
-	if ( !(Edata->rg > 0.) ) {
-		fc = MIN(FIELD_CAPACITY_SOIL,(1.-Edata->theta[SOIL])*0.1);
+	 */
+	if ( !(Edata.rg > 0.) ) {
+		fc = MIN(SnLaws::field_capacity_soil,(1. - Edata.theta[SOIL]) * 0.1);
 	} else {
-		fc = MIN(0.95,0.32/sqrt(Edata->rg) + 0.02);
+		fc = MIN(0.95, 0.32 / sqrt(Edata.rg) + 0.02);
 	}
 
 	return fc;
@@ -429,7 +458,7 @@ double lwsn_WindGradientSnow(double *v_pump, const SN_ELEM_DATA *Edata)
  * @param dvdz Wind velocity gradient (s-1)
  * @return Soil thermal conductivity (W K-1 m-1)
  */
-double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz)
+double SnLaws::calcSoilThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz)
 {
 	double C_eff_soil, C_eff_soil_max, weight;
 	const double c_clay = 1.3, c_sand = 0.27;
@@ -444,8 +473,9 @@ double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz
 	 * 0: means no soil.
 	 * 10000: means rock, which is also no soil but Ingo seems not to understand this.
 	*/
-	if ( (Edata->rg > 0.) && (Edata->rg < 10000.) ) {
-		C_eff_soil_max = Edata->theta[SOIL] * c_mineral + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[ICE] * Constants::conductivity_ice;
+	if ( (Edata.rg > 0.) && (Edata.rg < 10000.) ) {
+		C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
+                           * Constants::conductivity_water + Edata.theta[ICE] * Constants::conductivity_ice;
 
 		/*
 		 * This nice formulation is based on some tedious curve fitting by
@@ -455,27 +485,29 @@ double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz
 		 * and Nixon, while the water influence was deduced from deVries and
 		 * Afgan in "Heat and Mass Transfer in the Biosphere".
 		*/
-		weight = (c_clay - Edata->soil[SOIL_K]) / (c_clay - c_sand);
-		C_eff_soil = (beta1 + weight * beta2) * Edata->theta[ICE];
-		if (Edata->theta[WATER] > 0.0001) {
-			C_eff_soil += MAX (0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata->theta[WATER]));
+		weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
+		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
+		if (Edata.theta[WATER] > 0.0001) {
+			C_eff_soil += MAX (0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]));
 		} else {
 			C_eff_soil += 0.27;
 		}
 		C_eff_soil = MIN (C_eff_soil_max, C_eff_soil);
 	} else {
-		C_eff_soil = Edata->soil[SOIL_K] + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[ICE] * Constants::conductivity_ice;
+		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * Constants::conductivity_water 
+                       + Edata.theta[ICE] * Constants::conductivity_ice;
 	}
 
 	// Now check for possible ERRORS
-	if ( !(C_eff_soil >= 0.1*Edata->soil[SOIL_K] && C_eff_soil < 10.) ) {
+	if (!(C_eff_soil >= 0.1*Edata.soil[SOIL_K] && C_eff_soil < 10.))
 		prn_msg ( __FILE__, __LINE__, "wrn", -1., "Thermal Conductivity of Soil: %lf", C_eff_soil );
-	}
 
 	// In case of dry soil, simply use the given conductivity with a possible ventilation part
-	if ( WIND_PUMP_SOIL ) {
-		C_eff_soil += ALPHA_POR_TOR_SOIL * Constants::specific_heat_air * Edata->soil[SOIL_RHO] * PORE_LENGTH_SOIL * PORE_LENGTH_SOIL * dvdz;
+	if (WIND_PUMP_SOIL){
+		C_eff_soil += SnLaws::alpha_por_tor_soil * Constants::specific_heat_air 
+                        * Edata.soil[SOIL_RHO] * SnLaws::pore_length_soil * SnLaws::pore_length_soil * dvdz;
 	}
+
 	return(C_eff_soil);
 }
 
@@ -528,7 +560,7 @@ double lwsn_EnhanceWaterVaporTransportSnow(const SN_STATION_DATA& Xdata, const i
  * @param dvdz Wind velocity gradient (s-1)
  * @return Thermal conductivity of snow (W K-1 m-1)
  */
-double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz)
+double SnLaws::calcSnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz)
 {
 	double C_eff, C1, C2, C3, C4, C5;
 	double kap;                 // The conductivity including latent heat transfer (W K-1 m-1)
@@ -548,7 +580,9 @@ double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvd
 	}
 
 	// Important are the conductivities and cross sectional areas.
-	kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P * lw_SaturationPressure(Te)) / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
+	kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P 
+		 * lw_SaturationPressure(Te)) 
+		 / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
 
 	/*
 	* Determine C1 = nca/ncl (nca:=number of grains per unit area; ncl:=number
@@ -645,7 +679,7 @@ double SnLaws::calcHeatCapacity(const SN_ELEM_DATA& Edata)
  * @param Xdata
  * @return Exchange coefficient for sensible heat (?)
 */
-double lwsn_SensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
+double SnLaws::calcSensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
 {
 	double c;
 	double z, karman = 0.4, lrat;
@@ -676,7 +710,7 @@ double lwsn_SensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata,
  * @param Xdata
  * @return Latent heat flux (W m-2)
  */
-double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
+double SnLaws::calcLatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
 {
 	double beta, eA, eS;
 	double Vp1, Vp2;
@@ -706,12 +740,12 @@ double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata
 			/*
 			 * Soil evaporation can now be calculated using the Relative Humidity approach below,
 			 * or a Resistance approach modifying the ql value instead of the eS. The latter
-			 * function is defined in lwsn_LatentHeat, and the Switch SOIL_EVAPORATION is found
+			 * function is defined in lwsn_LatentHeat, and the Switch SnLaws::soil_evaporation is found
 			 * in Laws_sn.h
 			*/
-			if ( SOIL_EVAPORATION == 0 && th_w_ss < lwsn_SoilFieldCapacity(&Xdata.Edata[Xdata.SoilNode-1]) ) {
+			if (SnLaws::soil_evaporation == 0 && th_w_ss < SnLaws::calcSoilFieldCapacity(Xdata.Edata[Xdata.SoilNode-1])){
 				eS = Vp2 * 0.5 * ( 1 - cos (MIN (Constants::pi, th_w_ss * Constants::pi /
-				(lwsn_SoilFieldCapacity( &Xdata.Edata[Xdata.SoilNode-1] ) * 1.6))) );
+                         (SnLaws::calcSoilFieldCapacity(Xdata.Edata[Xdata.SoilNode-1]) * 1.6))));
 			} else {
 				eS = Vp2;
 			}
@@ -725,7 +759,7 @@ double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata
 		}
 	}
 	// Now the latent heat
-	beta = lwsn_LatentHeat(Mdata, Xdata, height_of_meteo_values);
+	beta = SnLaws::calcLatentHeat(Mdata, Xdata, height_of_meteo_values);
 
 	return ( beta * (eA - eS) );
 }
@@ -738,7 +772,7 @@ double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata
  * @param Xdata
  * @return Exchange coefficient for latent heat (?)
  */
-double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
+double SnLaws::calcLatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, const double& height_of_meteo_values)
 {
 	double c, eS, eA;
 	double z, karman = 0.4, lrat;
@@ -761,7 +795,7 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
 	 * is used to reduce the heat exchange coefficient in the case of evaporation:
 	 * c = 1/(Ra + Rsoil), where Ra = 1/c as calculated above, and
 	 * Rsoil = 50 [s/m] * field_capacity_soil / theta_soil. \n
-	 * A new switch SOIL_EVAPORATION is defined in Constants.h to select method.
+	 * A new switch SnLaws::soil_evaporation is defined in Constants.h to select method.
 	 * The resistance formulation originates from van den Hurk et al.(2000) "Offline validation
 	 * of the ERA40 surface scheme": ECMWF Tech.Memo 295. \n
 	 * A difference from the RH method is that the surface vapour pressure is always assumed
@@ -774,12 +808,12 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
 	 * The soil resistance is only used for bare soil layers, when TSS >= 0C and eSurf >= eAtm
 	*/
 	if (Xdata.getNumberOfNodes() == Xdata.SoilNode + 1 && Xdata.getNumberOfElements() > 0 &&
-		Xdata.Ndata[Xdata.getNumberOfElements()].T >= Constants::melting_tk && SOIL_EVAPORATION == 1) {
+		Xdata.Ndata[Xdata.getNumberOfElements()].T >= Constants::melting_tk && SnLaws::soil_evaporation == 1) {
 		eA = Mdata.rh * lw_SaturationPressure(Mdata.ta);
 		eS = lw_SaturationPressure(Xdata.Ndata[Xdata.getNumberOfElements()].T);
 		if (eS >= eA) {
-			c = 1. / c + RSOILMIN / (MAX (RELSATMIN, MIN(1. ,Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER]
-				/ lwsn_SoilFieldCapacity(&Xdata.Edata[Xdata.SoilNode-1]))));
+			c = 1. / c + SnLaws::rsoilmin / (MAX (SnLaws::relsatmin, MIN(1. ,Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER]
+					            / SnLaws::calcSoilFieldCapacity(Xdata.Edata[Xdata.SoilNode-1]))));
 			c = 1. / c;
 		}
 	}
@@ -799,10 +833,11 @@ double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, c
  * @param e_atm Emissivity of the atmosphere (1)
  * @return LW radiation coefficient (?)
  */
-double lwsn_LongWave(const double T_snow, const double T_atm, const double e_atm)
+double SnLaws::calcLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm)
 {
-	return ( Constants::stefan_boltzmann * ( ( T_snow * T_snow ) + ( sqrt( e_atm ) * T_atm * T_atm ) ) *
-		( ( T_snow ) + ( pow( e_atm, 0.25 ) * T_atm ) ) );
+	return (Constants::stefan_boltzmann 
+		   * ((t_snow * t_snow) + (sqrt(e_atm) * t_atm * t_atm)) 
+		   * ((t_snow) + (pow(e_atm, 0.25) * t_atm)));
 }
 
 /**
@@ -814,7 +849,7 @@ double lwsn_LongWave(const double T_snow, const double T_atm, const double e_atm
  * @param rho Snow density (kg m-3)
  * @return Module of elasticity (Pa)
  */
-double lwsn_SnowElasticity(const double rho)
+double SnLaws::calcSnowElasticity(const double& rho)
 {
 	double g, h;
 
@@ -824,9 +859,10 @@ double lwsn_SnowElasticity(const double rho)
 		g = ((70. / 1000.0) * 8.235 ) - 0.47;
 	}
 	h = pow(10.0, g);
-	if ( rho > 1000. ) {
+
+	if ( rho > 1000. )
 		return(Constants::big);
-	}
+
 	return(h * 100000.0);
 }
 
@@ -925,7 +961,7 @@ double SnLaws::calcNeckStressEnhancement(const SN_ELEM_DATA& Edata)
  * @param Te Element temperature
  * @return Temperature term of snow viscosity
  */
-double lwsn_SnowViscosityTemperatureTerm(const double Te)
+double SnLaws::calcSnowViscosityTemperatureTerm(const double& Te)
 {
 	const double Q = 67000.; // Activation energy for defects in ice J mol-1
 
@@ -1087,7 +1123,7 @@ double lwsn_SnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& dat
 	v_factor = (sig1*sig1*sig1 / (eps1Dot * v_fudge*v_fudge*v_fudge));
 	v_macro = SnLaws::calcNeck2VolumetricStrain(Edata);
 	v_micro = SnLaws::calcNeckStressEnhancement(Edata);
-	eta = (1. / v_macro) * lwsn_SnowViscosityTemperatureTerm(Te) * v_factor;
+	eta = (1. / v_macro) * SnLaws::calcSnowViscosityTemperatureTerm(Te) * v_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
 	if ( (v_micro * sig) <= 100. * sigNeckYield ) {
 		eta /= v_micro * sigNeckYield*sigNeckYield;
@@ -1156,7 +1192,7 @@ double lwsn_SnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date&
 	v_factor = (sig1*sig1*sig1 / (eps1Dot * v_fudge*v_fudge*v_fudge));
 	v_macro = SnLaws::calcNeck2VolumetricStrain(Edata);
 	v_micro = SnLaws::calcNeckStressEnhancement(Edata);
-	eta = (1. / v_macro) * lwsn_SnowViscosityTemperatureTerm(Te) * v_factor;
+	eta = (1. / v_macro) * SnLaws::calcSnowViscosityTemperatureTerm(Te) * v_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
 	if ( (v_micro * sig) <= 100. * sigNeckYield ) {
 		eta /= v_micro * sigNeckYield*sigNeckYield;

@@ -402,7 +402,7 @@ double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
 	// First find the absolute neck stress
 	sigNeck = SnLaws::calcNeckStressEnhancement(Edata) * (sig);
 	// Now find the strain rate in the neck
-	epsNeckDot =  eps1Dot * lwsn_SnowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
+	epsNeckDot =  eps1Dot * SnLaws::calcSnowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
 	// Return the stability index
 	return(MAX(0.1, MIN(st_CriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 } // End of st_DeformationRateIndex

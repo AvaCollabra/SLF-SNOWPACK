@@ -79,28 +79,6 @@ typedef enum {
 #define ALPHA_POR_TOR 0.07
 //@}
 
-/// @name SOIL PARAMETERS
-//@{
-/**
- * @brief Define Method and Coefficents for the calculation of the influence of soil water
- * content on Evaporation from Bare Soil Layers:
- * - 1 ==> Resistance Approach, see Laws_sn.c
- * - 0 ==> Relative Humidity Approach, see Snowpack.c
- * - -1 ==> none, assume saturation pressure and no extra resistance
- */
-#define SOIL_EVAPORATION 1
-/// Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
-#define RSOILMIN 50.0
-/// Minimum relative saturation of top soil layer
-#define RELSATMIN 0.05
-/// @brief Ratio of Porosity to Tortuosity for Soil
-#define ALPHA_POR_TOR_SOIL 0.05
-/// @brief Pore length for surface soil for ventilation (m)
-#define PORE_LENGTH_SOIL 0.01
-/// Field capacity of the soil (1). Above this levels, water begins to drain
-#define FIELD_CAPACITY_SOIL    0.15
-//@}
-
 /**
  * @name Snow viscosity
  * @brief Defines the constants and parameters for computing the snow viscosity \n
@@ -171,34 +149,13 @@ enum {
 
 		double lwsn_SnowpackInternalEnergy(SN_STATION_DATA& Xdata);
 
-		double lwsn_SoilFieldCapacity(const SN_ELEM_DATA *Edata);
-
 		double lwsn_WindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
 
 		double lwsn_WindGradientSnow(double *v_pump, const SN_ELEM_DATA *Edata);
 
-		double lwsn_SoilThermalConductivity(const SN_ELEM_DATA *Edata, const double dvdz);
-
 		double lwsn_EnhanceWaterVaporTransportSnow(const SN_STATION_DATA& Xdata, const int& e);
 		
-		double lwsn_SnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
-		
-		double lwsn_SensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-							const double& height_of_meteo_values);
- 
-		double lwsn_LatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-							 const double& height_of_meteo_values);
-
-		double lwsn_LatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-						   const double& height_of_meteo_values);
-
-		double lwsn_LongWave(const double T_snow, const double T_atm, const double e_atm);
-
-		double lwsn_SnowElasticity(const double rho);
-
 		double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata);
-
-		double lwsn_SnowViscosityTemperatureTerm(const double Te);
 
 		double lwsn_SnowViscosity(const std::string& i_viscosity_model, 
 							 const SN_ELEM_DATA& Edata, const mio::Date& date);
@@ -221,6 +178,25 @@ class SnLaws {
 		static double calcNeck2VolumetricStrain(const SN_ELEM_DATA& Edata);
 		static double calcWindPumpingDisplacement(const SN_STATION_DATA& Xdata);
 
+		static double calcSoilFieldCapacity(const SN_ELEM_DATA& Edata);
+		static double calcSnowViscosityTemperatureTerm(const double& Te);
+		static double calcSnowElasticity(const double& rho);
+
+		static double calcLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
+				
+		static double calcSensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
+								 const double& height_of_meteo_values); 
+		static double calcLatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
+								  const double& height_of_meteo_values);
+		static double calcLatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
+							    const double& height_of_meteo_values);
+
+		static double calcSoilThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
+		static double calcSnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
+
+	private:
+		static const int soil_evaporation;
+		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil, field_capacity_soil;
 };
 
 #endif //End of Laws_sn.h

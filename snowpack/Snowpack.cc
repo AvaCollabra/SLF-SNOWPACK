@@ -294,7 +294,7 @@ bool Snowpack::sn_SnowForces(SN_ELEM_DATA *Edata,  double dt, double cos_sl, dou
 	Fe[0] = Fe[1] = -(Edata->M * Constants::g * cos_sl) / 2.;
 	// Calculate the elastic strain and stress
 	Edata->Ee = Edata->E - Edata->Ev;
-	D = lwsn_SnowElasticity(Edata->Rho);
+	D = SnLaws::calcSnowElasticity(Edata->Rho);
 	S = Edata->S = D * Edata->Ee;
 	// Calculate the internal forces
 	Fi[0] = -S;
@@ -469,11 +469,11 @@ bool Snowpack::sn_ElementKtMatrix(SN_ELEM_DATA *Edata, double dt, double dvdz, d
 
 	// Find the conductivity of the element
 	if ( Edata->theta[SOIL] > 0.0 ) {
-		Keff = lwsn_SoilThermalConductivity(Edata, dvdz);
+		Keff = SnLaws::calcSoilThermalConductivity(*Edata, dvdz);
 	} else if ( Edata->theta[ICE] > 0.55 || Edata->theta[ICE] < Constants::min_ice_content ) {
 		Keff = Edata->theta[AIR] * Constants::conductivity_air + Edata->theta[ICE] * Constants::conductivity_ice + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[SOIL] * Edata->soil[SOIL_K];
 	} else {
-		Keff = lwsn_SnowThermalConductivity(*Edata, dvdz);
+		Keff = SnLaws::calcSnowThermalConductivity(*Edata, dvdz);
 	}
 	// mimics effect of vapour transport if liquid water present in snowpack
 	Keff *= VaporEnhance;
@@ -549,11 +549,11 @@ void Snowpack::updateMeteoHeatFluxes(const SN_MET_DATA& Mdata, const SN_STATION_
 	const double& T_air = Mdata.ta;
 	const double& Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
 
-	alpha = lwsn_SensibleHeat(Mdata, Xdata, height_of_meteo_values);
+	alpha = SnLaws::calcSensibleHeat(Mdata, Xdata, height_of_meteo_values);
 	Bdata.qs = MIN (350., MAX (-350., alpha * (T_air - Tss)));
 	Sdata.qs += Bdata.qs;
 
-	Bdata.ql = lwsn_LatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
+	Bdata.ql = SnLaws::calcLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
 	if ( (Xdata.getNumberOfElements() > 0) && (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= Constants::min_ice_content) ) {
 		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
 	}
@@ -585,7 +585,7 @@ void Snowpack::updateMeteoHeatFluxes(const SN_MET_DATA& Mdata, const SN_STATION_
  * Note that long wave radiation heat transfer is treated as a convection boundary condition
  * for the implicit solution, similar to the sensible heat exchange: \n
  *            q_lw = delta*(e*Ta - Ts) \n
- * where delta is a function of both Ta and Ts and is calculated by lwsn_LongWave
+ * where delta is a function of both Ta and Ts and is calculated by SnLaws::calcLWRadCoefficient
  * @param Mdata
  * @param Bdata
  * @param Xdata
@@ -624,7 +624,7 @@ void Snowpack::sn_Neumann(const SN_MET_DATA& Mdata, SN_BOUNDARY_DATA& Bdata, con
 		Fe[1] += alpha * T_air;
 	} else { // Implicit
 		// Sensible heat transfer
-		alpha = lwsn_SensibleHeat(Mdata, Xdata, height_of_meteo_values);
+		alpha = SnLaws::calcSensibleHeat(Mdata, Xdata, height_of_meteo_values);
 		Se[1][1] += alpha;
 		Fe[1] +=alpha * T_air;
 		// Latent heat transfer
@@ -636,7 +636,7 @@ void Snowpack::sn_Neumann(const SN_MET_DATA& Mdata, SN_BOUNDARY_DATA& Bdata, con
 			Fe[1] += gamma * T_air;
 		}
 		// Longwave Radiation
-		delta = lwsn_LongWave( T_iter, T_air, Mdata.ea);
+		delta = SnLaws::calcLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
 		Fe[1] += delta * pow( Mdata.ea, 0.25 ) * T_air;
 	} // end else

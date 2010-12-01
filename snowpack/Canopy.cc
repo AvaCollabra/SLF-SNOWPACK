@@ -212,7 +212,7 @@ double Canopy::cn_RootFraction(const double& zupper, const double& zlower)
 	- 2) Root water uptake is limited to the plant available water in each layer,
 	- defined by the wilting point and the field capacity.
 	- 3) Wilting point and field capacity is dependent on soil type:
-	- Fieldcapacity = lwsn_SoilFieldCapacity
+	- Fieldcapacity = SnLaws::calcSoilFieldCapacity
 	- Wilting point = WP_FRACTION * Fieldcapacity
  * Last update: David Gustafsson, 2005-03-16.
  * @param SoilNode
@@ -246,7 +246,7 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 
 			// Change in volumetric water content in layer
 			d_theta = MIN ( MAX (0., ( EMS[e].theta[WATER] -
-					WP_FRACTION * lwsn_SoilFieldCapacity(&EMS[e]) )),
+					WP_FRACTION * SnLaws::calcSoilFieldCapacity(EMS[e]) )),
 					rootfr*water / ( Constants::density_water * EMS[e].L ) );
 
 			// residual water to be extracted in layers below
@@ -267,7 +267,7 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 		RootLayer -= 1;
 	}
 	d_theta = MIN ( MAX (0., ( EMS[RootLayer].theta[WATER] -
-			WP_FRACTION * lwsn_SoilFieldCapacity(&EMS[RootLayer]) ) ),
+			WP_FRACTION * SnLaws::calcSoilFieldCapacity(EMS[RootLayer]) ) ),
 			waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
 
 	EMS[RootLayer].theta[WATER] -= d_theta;
@@ -331,7 +331,7 @@ double Canopy::cn_f2f4(const int& SoilNode, SN_ELEM_DATA* EMS)
 		if( rootfr > 0.0 ){
 			RootLayer = e;
 			// 2) Field Capacity in layer
-			F2_WCAP = lwsn_SoilFieldCapacity(&EMS[e]);
+			F2_WCAP = SnLaws::calcSoilFieldCapacity(EMS[e]);
 			// 3) Wilting point in layer
 			F2_WPWP = F2_WCAP * WP_FRACTION;
 			// 4) Soil water content in layer (from a root's point of view)
@@ -349,7 +349,7 @@ double Canopy::cn_f2f4(const int& SoilNode, SN_ELEM_DATA* EMS)
 	if ( RootLayer > 0 ){
 		RootLayer -= 1;
 	}
-	F2_WCAP = lwsn_SoilFieldCapacity(&EMS[RootLayer]);
+	F2_WCAP = SnLaws::calcSoilFieldCapacity(EMS[RootLayer]);
 	F2_WPWP = F2_WCAP * WP_FRACTION;
 	thet_act = MAX(F2_WPWP, EMS[RootLayer].theta[WATER]);
 	f2 += rootresidual * (thet_act - F2_WPWP) / (F2_WCAP - F2_WPWP);
