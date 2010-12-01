@@ -457,10 +457,23 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
 	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
 
+	//Check whether file exists, if so check whether data can be appended
+	//or file needs to be deleted
+	if (IOUtils::fileExists(filename)){
+		bool append = appendFile(filename, i_date, "pro");
+
+		if (!append){
+			if (remove(filename.c_str()) == 0)
+				cout << "[i] Restart of existing simulation, deleted file: " << filename << endl;
+		}
+	}
+
 	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", &Hdata, station, "pro", &Xdata) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),"Checking header in file %s", filename.c_str());
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
-	} else if ( !(PFile = fopen(filename.c_str(), "a")) ) {
+	} 
+
+	if ( !(PFile = fopen(filename.c_str(), "a")) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),
 			   "Cannot open profile series file: %s", filename.c_str());
 		throw IOException("Cannot dum profile " + filename + "for Java Visualisation", AT);
@@ -900,6 +913,109 @@ int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_
 }
 
 /**
+ * @brief Parse through a met file and read the last date for which meteo data has been written
+ * @param eoln A char that represents the end of line character
+ * @param currentdate An object to save the dates into (only the last one in the file will be returned)
+ * @param fin The file input stream to use
+ */
+void AsciiIO::parseMetFile(const char& eoln, mio::Date& currentdate, std::istream& fin)
+{
+	string tmpline = "";
+	vector<string> vecTmp;
+
+	do { //Loop going through the lines of the file
+		getline(fin, tmpline, eoln); //read complete line
+	} while(!fin.eof());
+
+	if (tmpline.length() > 20){//the last line is without a carriage return
+		IOUtils::trim(tmpline);
+		IOUtils::readLineToVec(tmpline, vecTmp, ',');
+		if ((vecTmp.size() >= 2) && (vecTmp[1].length() >= 16)){
+			string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
+				+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
+			IOUtils::convertString(currentdate, tmpdate);
+		}
+	}
+}
+
+/**
+ * @brief Parse through a pro file and read in all the dates on the way
+ * @param eoln A char that represents the end of line character
+ * @param currentdate An object to save the dates into (only the last one in the file will be returned)
+ * @param fin The file input stream to use
+ */
+void AsciiIO::parseProFile(const char& eoln, mio::Date& currentdate, std::istream& fin)
+{
+	string tmpline = "";
+	vector<string> vecTmp;
+
+	IOUtils::skipLines(fin, 20, eoln); //skip 20 lines
+	do { //Loop going through the lines of the file
+		getline(fin, tmpline, eoln); //read complete line
+		IOUtils::readLineToVec(tmpline, vecTmp, ',');
+		if (vecTmp.size() >= 2){
+			if (vecTmp[0] == "0500"){ //The date tag
+				if (vecTmp[1].length() >= 16){
+					string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) 
+						+ "-" + vecTmp[1].substr(0,2)
+						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
+					IOUtils::convertString(currentdate, tmpdate);
+				}					
+			}
+		}
+	} while(!fin.eof());
+}
+
+/**
+ * @brief Check whether data can be appended to a file, or whether
+ *        file needs to be deleted and recreated
+ * @param filename The file to check (must exist)
+ * @param startdate The start date of the data to be written
+ * @param type A string representing the type of file, i.e. "pro" or "met"
+ * @return A boolean, true if file can be appended, false otherwise
+ */
+bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate, const std::string& type)
+{
+	//Check if file has already been checked
+	set<string>::const_iterator it = setAppendableFiles.find(filename);
+	if (it != setAppendableFiles.end()) //file was already checked
+		return true;
+
+	/* Go through file and parse meteo data date if current date 
+	 * is newer than the last one in the file, appending is possible
+	 */
+	ifstream fin;
+
+	fin.open (filename.c_str());
+	if (fin.fail())
+		throw FileAccessException(filename, AT);
+
+	char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
+
+	try {
+		Date currentdate; //To store the last appearing date in the file
+
+		if (type == "pro"){
+			parseProFile(eoln, currentdate, fin);
+		} else if (type == "met"){
+			parseMetFile(eoln, currentdate, fin);
+		}
+			
+		if (currentdate < startdate) {
+			setAppendableFiles.insert(filename);
+			return true;
+		}
+	} catch(...) {
+		fin.close();
+		return false;
+	}
+	
+	fin.close();
+
+	return false;
+}
+
+/**
  * @brief Write all Time Series results (*.met)
  * All depths and water equivalents (mass) are taken VERTICALLY. \n
  * If AVGSUM_TIME_SERIES is set, mean fluxes and cumulated masses since last dump are written, \n
@@ -935,11 +1051,24 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	nE=Xdata.getNumberOfElements();
 	cos_sl = cos(Xdata.SlopeAngle);
 
+	//Check whether file exists, if so check whether data can be appended
+	//or file needs to be deleted
+	if (IOUtils::fileExists(filename)){
+		bool append = appendFile(filename, Mdata.date, "met");
+
+		if (!append){
+			if (remove(filename.c_str()) == 0)
+				cout << "[i] Restart of existing simulation, deleted file: " << filename << endl;
+		}
+	}
+
 	// Check file for header
 	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", &Hdata, station, "met", &Xdata) ) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), "Checking header in file %s", filename.c_str());
 		throw InvalidFormatException("Writing Time Series data failed", AT);
-	} else if ( !(TFile = fopen(filename.c_str(), "a")) ) {
+	} 
+
+	if ( !(TFile = fopen(filename.c_str(), "a")) ) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), 
 			   "Cannot open time series file: %s", filename.c_str());
 	     throw FileAccessException(filename, AT);

@@ -36,6 +36,7 @@
 #include <cstdarg> // needed for va_list
 #include <time.h>
 #include <string>
+#include <set>
 
 /// @brief Defines whether hardness (R) is output either in N (Swiss scale) or steps
 #define R_IN_N 1
@@ -66,6 +67,10 @@ class AsciiIO : public SnowpackIOInterface {
 							    const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
 
 	private:
+		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& type);
+		void parseMetFile(const char& eoln, mio::Date& currentdate, std::istream& fin);
+		void parseProFile(const char& eoln, mio::Date& currentdate, std::istream& fin);
+
 		std::string getFilenamePrefix(const std::string& stationname, const std::string& path);
 
 		bool checkHeader(const char *fnam, const char *first_string, const Q_PROCESS_DAT* Hdata, 
@@ -109,6 +114,8 @@ class AsciiIO : public SnowpackIOInterface {
 		std::vector<double> depth_of_sensors;
 
 		int CHANGE_BC, MEAS_TSS;
+
+		std::set<std::string> setAppendableFiles;
 
 		//std::ofstream fout;//Output file streams
 };

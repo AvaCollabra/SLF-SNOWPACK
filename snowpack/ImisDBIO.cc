@@ -148,6 +148,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		//This means specify a different import date format for the database and remove the offset here
 		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
+
 		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height);
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
@@ -156,11 +157,16 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
 	}
 
-	if ( NDS[nE].hoar > MM_TO_M(min_size_hoar_surf) * density_hoar_surf ) {
+	//HACK: The condition nL < nE added by Egger: the aggregation of the layers in Aggregate::aggregate, 
+	//disregards the top layer only if nE > 5, otherwise nL might equal nE and the index e is invalid
+	//It's a hack because if the heighest layer is actually hoar then the former loop should only loop until
+	//nL - 1, that is if nL == nE
+	if ((NDS[nE].hoar > MM_TO_M(min_size_hoar_surf) * density_hoar_surf) && (nL < nE)) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
+		const double profile_date = Pdata.at(e).date.getJulianDate() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata.at(e).layer_date - 2415021. + 0.5; //HACK
+
 		double gsz_SH = M_TO_MM(NDS[nE].hoar / density_hoar_surf);
 		e=nL-1;
 		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
