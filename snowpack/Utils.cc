@@ -474,6 +474,12 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 		// assume settling error
 		*dhs_corr = Mdata->hs1 - cH;
 		*mass_corr = 0.;
+
+		//Test whether normalization quantity does not lead to an arithmetic exception
+		//This is a work around for weird cases in which the whole snowpack appears at once
+		if (EMS[nE-1].date.getJulianDate() <= EMS[nSoil].date.getJulianDate())
+			return;
+
 		if ( 0 ) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata->date.getJulianDate(), 
 				   "Small correction due to assumed settling error\n");
