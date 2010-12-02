@@ -182,6 +182,11 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
 						 const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
+	if ((num < 0) || (num >= (int)Hdata.size())){
+		cout << "\tNo hazard data inserted or deleted from DB" << endl;
+		return; //nothing to do
+	}
+
 	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == ""))
 		throw IOException("You must set the output database, username and password", AT);
 
@@ -189,7 +194,7 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
 	parseStationName(station, stationName, stationNumber);
 
 	Environment *env = NULL;
-
+	
 	try {
 		env = Environment::createEnvironment();// static OCCI function
 		Connection *conn = NULL;
@@ -287,7 +292,8 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
-	for (int i = 0; i<num; i++){ 
+	for (int i = 0; i<num; i++){ 		
+		if (Hdata[i].date == Date()) break; //catch the case that not all Hdata has been set properly
 		
 		vector<int> hzdate = vector<int>(5);
 		mio::Date dateH(Hdata[i].date);
