@@ -293,7 +293,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	}
 
 	for (int i = 0; i<num; i++){ 		
-		if (Hdata[i].date == Date()) break; //catch the case that not all Hdata has been set properly
+		if (Hdata[i].date == mio::Date()) break; //catch the case that not all Hdata has been set properly
 		
 		vector<int> hzdate = vector<int>(5);
 		mio::Date dateH(Hdata[i].date);
