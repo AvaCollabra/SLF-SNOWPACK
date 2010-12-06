@@ -31,26 +31,6 @@
 #include <vector>
 #include <sstream>
 
-/// @name Threshholds to join similar elements
-//@{
-/// Number of top elements left untouched by the join functions
-#define NUMBER_TOP_ELEMENTS 5
-/// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
-#define JOIN_THRESH_L 0.015
-/// Volumetric ice content (1), i.e., about 46 kg m-3
-#define JOIN_THRESH_ICE 0.05
-/// Water content (1)
-#define JOIN_THRESH_WATER 0.01
-/// Dendricity (1)
-#define JOIN_THRESH_DD 0.2
-/// Sphericity (1)
-#define JOIN_THRESH_SP 0.05
-/// Grain radius (mm)
-#define JOIN_THRESH_RG 0.125
-//@}
-
-
-
 /// @brief The 3 different phases in the matrix
 enum {
 	SOLID,  ///< Solid
@@ -528,6 +508,10 @@ class SN_STATION_DATA {
 		char SubSurfaceFrze;  ///< subsurface refreezing flag ( yes/no ) for exposition
 		SN_CANOPY_DATA Cdata; ///< pointer to canopy data
 		int tag_low;          ///< lowest tag to dump, 0 means no tags at all
+
+		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
+		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
+		static const int number_top_elements;
 
 	private:
 		bool useCanopyModel, useSnowLayers;

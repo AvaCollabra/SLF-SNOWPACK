@@ -352,18 +352,19 @@ void Snowpack::calcSnowCreep(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
 		if (EMS[e].Rho > 910. ||  EMS[e].theta[SOIL] > 0. || EMS[e].theta[ICE] < Constants::eps) {
 			EMS[e].k[SETTLEMENT] = eta = 1.0e99;
 		} else {
-			EMS[e].k[SETTLEMENT] = eta = lwsn_SnowViscosity(viscosity_model, EMS[e], Mdata.date);
-			if ( !(eta > 0.01 * SMALLEST_VISCOSITY && eta <= 1.e11 * SMALLEST_VISCOSITY) && (EMS[e].theta[ICE] > 2. * Constants::min_ice_content) && (EMS[e].theta[ICE] < 0.6) ) {
+			EMS[e].k[SETTLEMENT] = eta = SnLaws::calcSnowViscosity(variant, viscosity_model, EMS[e], Mdata.date);
+			if ( !(eta > 0.01 * SnLaws::smallest_viscosity && eta <= 1.e11 * SnLaws::smallest_viscosity) 
+				&& (EMS[e].theta[ICE] > 2. * Constants::min_ice_content) && (EMS[e].theta[ICE] < 0.6) ) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Viscosity=%e out of range! e=%d nE=%d rg=%lf rb=%lf dd=%lf sp=%lf theta_i=%lf theta_w=%lf", eta, e, nE, EMS[e].rg, EMS[e].rb, EMS[e].dd, EMS[e].sp, EMS[e].theta[ICE], EMS[e].theta[WATER]);
 			}
-			if ( eta < SMALLEST_VISCOSITY ) {
+			if ( eta < SnLaws::smallest_viscosity ) {
 				if ( 0 ) {
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Viscosity=%e reset to SMALLEST_VISCOSITY! e=%d nE=%d", eta, e, nE);
 				}
-				EMS[e].k[SETTLEMENT] = eta = SMALLEST_VISCOSITY;
+				EMS[e].k[SETTLEMENT] = eta = SnLaws::smallest_viscosity;
 			}
 		}
-		Sig0 = lwsn_InitialStress(viscosity_model, EMS[e]);
+		Sig0 = SnLaws::calcInitialStress(variant, viscosity_model, EMS[e]);
 		L0 = EMS[e].L;
 
 		if ( !(EMS[e].mk%100 == 3) ) {
@@ -750,10 +751,12 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 	// Estimated albedo (statistical model) allowing correct treatment of PLASTIC or WET_LAYER
 	if ( (nE > Xdata.SoilNode) && (EMS[nE-1].theta[SOIL] < 0.000001) ) {
 		if ( (EMS[nE-1].theta[ICE] >= (Constants::min_ice_content)) ) { // Snow on top
-			Alb = lwsn_Albedo(EMS[nE-1], NDS[nN-1].T, Mdata, Mdata.date.getJulianDate() - EMS[nE-1].date.getJulianDate());
+			Alb = SnLaws::calcAlbedo(variant, EMS[nE-1], NDS[nN-1].T, Mdata, 
+								Mdata.date.getJulianDate() - EMS[nE-1].date.getJulianDate());
 		} else if ( (nE > Xdata.SoilNode+1) && (EMS[nE-2].theta[ICE] >= (Constants::min_ice_content)) ) {
 			// Water over snow or ice
-			Alb = lwsn_Albedo(EMS[nE-2], NDS[nN-2].T, Mdata, Mdata.date.getJulianDate() - EMS[nE-2].date.getJulianDate());
+			Alb = SnLaws::calcAlbedo(variant, EMS[nE-2], NDS[nN-2].T, Mdata, 
+								Mdata.date.getJulianDate() - EMS[nE-2].date.getJulianDate());
 		} else {
 			Alb = Xdata.SoilAlb;
 		}
@@ -812,7 +815,7 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
-		lwsn_ShortWaveAbsorption(Xdata, I0, useSnowLayers, multistream);
+		SnLaws::calcShortWaveAbsorption(I0, useSnowLayers, multistream, Xdata);
 	} catch(exception& ex){
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), "Runtime error in sn_SnowTemperature");
 		throw;
@@ -937,8 +940,8 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 			dU[n] = 0.0;
 		}
 		// Reinialize the wind pumping speed at the surface
-		if ( nE > Xdata.SoilNode || WIND_PUMP_SOIL ) {
-			v_pump = lwsn_WindPumpingVelocity(Mdata, d_pump);
+		if ( nE > Xdata.SoilNode || SnLaws::wind_pump_soil ) {
+			v_pump = SnLaws::calcWindPumpingVelocity(Mdata, d_pump);
 		} else {
 			v_pump = 0.0;
 		}
@@ -947,9 +950,9 @@ void Snowpack::sn_SnowTemperature(SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN
 			EL_INCID( e, Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Update the wind pumping velocity gradient
-			dvdz = lwsn_WindGradientSnow(&v_pump, &EMS[e]);
+			dvdz = SnLaws::calcWindGradientSnow(EMS[e], v_pump);
 			// Update the water vapor transport enhancement factor
-			VaporEnhance = MAX (1., lwsn_EnhanceWaterVaporTransportSnow(Xdata, e));
+			VaporEnhance = MAX (1., SnLaws::calcEnhanceWaterVaporTransportSnow(Xdata, e));
 			// Now fill the matrix
 			if ( !sn_ElementKtMatrix(&EMS[e], sn_dt, dvdz, T0, TN, Se, Fe, &Xdata.SubSurfaceMelt, &Xdata.SubSurfaceFrze, VaporEnhance) ) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(), "Error in sn_ElementKtMatrix @ element %d:", e);
@@ -1729,7 +1732,7 @@ void Snowpack::runSnowpackModel(SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata, doub
 	metamorphism.runMetamorphismModel(Mdata, Xdata);
 		
 	if (join_elements)
-		Xdata.joinElements(NUMBER_TOP_ELEMENTS);
+		Xdata.joinElements(SN_STATION_DATA::number_top_elements);
 }
 
 /*

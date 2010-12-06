@@ -28,147 +28,50 @@
 
 #include <string>
 #include <meteoio/MeteoIO.h>
+
 #include <snowpack/DataClasses.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Laws.h>
 #include <snowpack/Snowpack.h> //some constants are necessary
-/*
- * CONSTANTS & ENUMERATIONS
- */
-/**
- * @name Albedo models
- * @brief Statistical models based on measured data
- * - ALB_LEHNING: data from the SLF study plot at Weissfluhjoch, 2540 m a.s.l.;
- *                *_2 corresponds to the latest regression. Variant ANTARCTICA sets coefficient Cage to 0.0
- * - ALB_NIED: Japanese adaptation of model ALB_LEHNING_2
- */
-//@{
-typedef enum {
- ALB_LEHNING_0,
- ALB_LEHNING_1,
- ALB_LEHNING_2,
- ALB_NIED,
- N_ALBM
-} ALBM;
-/// @brief Albedo model to be used
-#if VARIANT == JAPAN
-	#define ALBEDO_MODEL ALB_NIED
-#else
-	#define ALBEDO_MODEL ALB_LEHNING_2
-#endif
-//@}
-
-/// @brief Defines whether the extinction coefficient for SW radiation in snow is based on 20 or less bands
-#define BAND20 0
-
-/**
- * @name Thermal conductivity
- * @brief Defines the constants and parameters for computing snow and soil thermal conductivity
- */
-//@{
-/// @brief Factor controlling ice to ice conduction
-#define MONTANA_C_FUDGE 0.13
-/// @brief Factor controlling increase in water vapor transport and thus energy transport in wet snow
-#define MONTANA_VAPOR_FUDGE 2.5
-//@}
-/// @name Wind pumping (for soil see soil parameters)
-//@{
-/// @brief Used to decribe advective flux attenuation
-#define WIND_EXT_COEF 0.1
-/// @brief Integral of snow density corresponding to the maximal displacement depth d_pump (m)
-#define DISPLACEMENT_COEF 0.7
-/// @brief Ratio of Porosity to Tortuosity
-#define ALPHA_POR_TOR 0.07
-//@}
-
-/**
- * @name Snow viscosity
- * @brief Defines the constants and parameters for computing the snow viscosity \n
- * NOTE The Japanese variant uses a viscosity parametrization by Kojima
- * - T_TERM Temperature dependence
- * - V_TIME_FUDGE: Empirical constant related to age of snow
- * - V_ICE_FUDGE : Empirical constant related to volumetric ice content; ori: 0.4
- * - V_SP_FUDGE  : Empirical constant related to sphericity of snow grains
- * @brief Switches to test settling routine with lwsn_SnowViscosityCALIBRATION()
- * - VISC_CAL defines the calibration version to be used
- * - SETFIX is a quickfix for Antarctica, reducing settling to 6% of calculated value for snow older than 2 months
- */
-//@{
-typedef enum {
- VS_ANT=777,
- VS_STEINKOGLER=999,
- N_VISC_CAL
-} VISC_CAL;
-typedef enum {
- ARRHENIUS=1,
- ARRHENIUS_CRITICAL,
- STEINKOGLER,
- N_T_TERM
-} T_TERM;
-/// @brief T_term to be used
-#if VARIANT == ANTARCTICA
-	#define T_TERM ARRHENIUS_CRITICAL
-	#define V_TIME_FUDGE 11.
-	#define V_ICE_FUDGE 0.5
-	#define V_SP_FUDGE 0.3
-	#define VISC_CAL VS_ANT
-	#define SETFIX 0
-#elif VARIANT == CALIBRATION
-	#define T_TERM ARRHENIUS_CRITICAL //STEINKOGLER //DEFAULT //
-	#define V_TIME_FUDGE 11. //8. //
-	#define V_ICE_FUDGE 0.5
-	#define V_SP_FUDGE 0.3
-	#define VISC_CAL VS_ANT //VS_STEINKOGLER //DEFAULT //
-	#define SETFIX 0
-#else
-	#define T_TERM DEFLT
-	#define V_TIME_FUDGE 11.
-	#define V_ICE_FUDGE 0.5
-	#define V_SP_FUDGE 0.3
-	#define VISC_CAL DEFLT
-	#define SETFIX 0
-#endif
-/// @brief Defines the smallest allowable viscosity (Pa s) that a viscosity law will return.
-/// Value is DAMM SMALL -- smaller values than this are pretty unrealistic.
-#define SMALLEST_VISCOSITY 1.0e6
-//@}
-
-enum {
-	VS_KOJIMA=1,
-	VS_CALIBRATION,
-	N_VS_MODEL
-};
-
-
-		double lwsn_InitialStress(const std::string& i_viscosity_model, const SN_ELEM_DATA& Edata);
-
-		double lwsn_Albedo(const SN_ELEM_DATA& Edata, const double& Tss, const SN_MET_DATA& Mdata, const double& age);
-
-		double lwsn_Extinction(const SN_ELEM_DATA& Edata);
-
-		void lwsn_ShortWaveAbsorption(SN_STATION_DATA& Xdata, const double& I0, const bool& useSnowLayers, 
-								const bool& multistream);
-
-		double lwsn_SnowpackInternalEnergy(SN_STATION_DATA& Xdata);
-
-		double lwsn_WindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
-
-		double lwsn_WindGradientSnow(double *v_pump, const SN_ELEM_DATA *Edata);
-
-		double lwsn_EnhanceWaterVaporTransportSnow(const SN_STATION_DATA& Xdata, const int& e);
-		
-		double lwsn_NewSnowViscosityLehning(const SN_ELEM_DATA Edata);
-
-		double lwsn_SnowViscosity(const std::string& i_viscosity_model, 
-							 const SN_ELEM_DATA& Edata, const mio::Date& date);
-		double lwsn_SnowViscosityFudgeDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		double lwsn_SnowViscosityFudgeCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		double lwsn_SnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		double lwsn_SnowViscosityKOJIMA(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		double lwsn_SnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		
-		double lwsn_InitialStressDEFAULT(const SN_ELEM_DATA& Edata);
-		double lwsn_InitialStressCALIBRATION(const SN_ELEM_DATA& Edata);
+#include <snowpack/Metamorphism.h>
 
 class SnLaws {
+
+	public:
+		/**
+		 * @brief Switches to test settling routine with lwsn_SnowViscosityCALIBRATION()
+		 * - VISC_CAL defines the calibration version to be used
+		 * - SETFIX is a quickfix for Antarctica, reducing settling to 6% of calculated value for snow older than 2 months
+		 */
+		enum ViscosityCalVersion {
+			vs_default=0,
+			vs_ant=777,
+			vs_steinkogler=999
+		};
+
+		enum TempDependence {
+			default_term,
+			arrhenius,
+			arrhenius_critical,
+			steinkogler,
+			n_t_term
+		};
+
+
+		/**
+		 * @name Albedo models
+		 * @brief Statistical models based on measured data
+		 * - ALB_LEHNING: data from the SLF study plot at Weissfluhjoch, 2540 m a.s.l.;
+		 *                *_2 corresponds to the latest regression. Variant ANTARCTICA sets coefficient Cage to 0.0
+		 * - ALB_NIED: Japanese adaptation of model ALB_LEHNING_2
+		 */
+		enum AlbedoModel {
+			alb_lehning_0,
+			alb_lehning_1,
+			alb_lehning_2,
+			alb_nied,
+			n_albm
+		};
 
 	public:
 		static double calcHeatCapacity(const SN_ELEM_DATA& Edata);
@@ -194,9 +97,59 @@ class SnLaws {
 		static double calcSoilThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
 		static double calcSnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
 
+		static double calcEnhanceWaterVaporTransportSnow(const SN_STATION_DATA& Xdata, const int& e);
+
+		static double calcNewSnowViscosityLehning(const SN_ELEM_DATA& Edata);
+
+		static double calcWindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
+		static double calcWindGradientSnow(const SN_ELEM_DATA& Edata, double& v_pump);
+
+		static double calcAlbedo(const std::string& variant, const SN_ELEM_DATA& Edata, const double& Tss, 
+                                   const SN_MET_DATA& Mdata, const double& age);
+
+		static double calcExtinction(const SN_ELEM_DATA& Edata);
+
+		static void calcShortWaveAbsorption(const double& I0, const bool& useSnowLayers,
+									 const bool& multistream,SN_STATION_DATA& Xdata);
+
+		static double calcSnowpackInternalEnergy(SN_STATION_DATA& Xdata);
+
+		static double calcInitialStress(const std::string& variant, const std::string& i_viscosity_model, 
+								  const SN_ELEM_DATA& Edata);
+
+
+		static double calcSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, 
+								  const SN_ELEM_DATA& Edata, const mio::Date& date);
+		static double calcSnowViscosityFudgeDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
+		static double calcSnowViscosityFudgeCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
+		static double calcSnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
+		static double calcSnowViscosityKOJIMA(const SN_ELEM_DATA& Edata, const mio::Date& date);
+		static double calcSnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
+		
+		static const double smallest_viscosity;
+		static const bool wind_pump, wind_pump_soil;
+
 	private:
+		static bool setStaticData(const std::string& variant);
+		static const bool __init;
+		static std::string current_variant;
+
+		static AlbedoModel currentAlbedoModel;
+		static double albedoCage;
+
+		static ViscosityCalVersion visc_cal;
+		static TempDependence t_term;
+		static double v_time_fudge, v_ice_fudge, v_sp_fudge;
+		static bool setfix;
+
+		static const bool band20;
+		static unsigned int swa_nb;
+		static std::vector<double> swa_k, swa_pc, swa_fb;
+
 		static const int soil_evaporation;
 		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil, field_capacity_soil;
+		static const double montana_c_fudge, montana_vapor_fudge;
+		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
 };
 
 #endif //End of Laws_sn.h

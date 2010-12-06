@@ -32,6 +32,18 @@
 using namespace mio;
 using namespace std;
 
+/// Number of top elements left untouched by the join functions
+const int SN_STATION_DATA::number_top_elements = 5;
+
+/// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
+const double SN_STATION_DATA::join_thresh_l = 0.015;
+/// Volumetric ice content (1), i.e., about 46 kg m-3
+const double SN_STATION_DATA::join_thresh_ice = 0.05;
+const double SN_STATION_DATA::join_thresh_water = 0.01; ///< Water content (1)
+const double SN_STATION_DATA::join_thresh_dd = 0.2;     ///< Dendricity (1)
+const double SN_STATION_DATA::join_thresh_sp = 0.05;    ///< Sphericity (1)
+const double SN_STATION_DATA::join_thresh_rg = 0.125;   ///< Grain radius (mm)
+
 /**
  * @brief Determines the averaged quantities for the current layer with another layer
  * @param w1 Weight of layer Pdata
@@ -429,11 +441,11 @@ void SN_STATION_DATA::initialize(const SN_SNOWSOIL_DATA& SSdata)
 		Cdata.height=SSdata.Canopy_Height;
 		Cdata.storage=0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp=273.15;	          // temperature (K)
-		Cdata.canopyalb=CAN_ALB_DRY; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+		Cdata.canopyalb=Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
 		Cdata.wetfraction=0.0;
 		Cdata.lai=SSdata.Canopy_LAI;
 
-		Cdata.sigf=1.-exp(-KRNT_LAI*(Cdata.lai)); // radiation transmissivity (-)
+		Cdata.sigf=1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // radiation transmissivity (-)
 		Cdata.ec=1.0;               //longwave emissivity
 
 		Cdata.z0m=Cdata.height*0.1;
@@ -453,7 +465,7 @@ void SN_STATION_DATA::initialize(const SN_SNOWSOIL_DATA& SSdata)
 		Cdata.height=0.0;
 		Cdata.storage=0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp=273.15;	          // temperature (K)
-		Cdata.canopyalb=CAN_ALB_DRY; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+		Cdata.canopyalb=Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
 		Cdata.wetfraction=0.0;
 		Cdata.intcapacity=0.0;
 		Cdata.lai=0.0;
@@ -475,7 +487,7 @@ void SN_STATION_DATA::initialize(const SN_SNOWSOIL_DATA& SSdata)
  * @brief Boolean routine to check whether two snow elements can be joined
  * -# NO ACTION will be taken if one of the two elements is
  * 	- a soil element
- * 	- larger than JOIN_THRESH_L
+ * 	- larger than join_thresh_l
  * 	- tagged
  * 	- dry surface hoar (mk=3),
  * 	- dendritic but not both
@@ -487,13 +499,13 @@ void SN_STATION_DATA::initialize(const SN_SNOWSOIL_DATA& SSdata)
  */
 bool SN_STATION_DATA::sn_JoinCondition(const SN_ELEM_DATA& Edata0, const SN_ELEM_DATA& Edata1)
 {
-	if ( (Edata0.L > JOIN_THRESH_L) || (Edata1.L > JOIN_THRESH_L) )
+	if ( (Edata0.L > join_thresh_l) || (Edata1.L > join_thresh_l) )
 		return false;
 	
 	if ( Edata0.mk%100 != Edata1.mk%100 )
 		return false;
 
-	if ( fabs(Edata0.sp - Edata1.sp) > JOIN_THRESH_SP )
+	if ( fabs(Edata0.sp - Edata1.sp) > join_thresh_sp )
 		return false;
 
 	if ( Edata0.theta[SOIL] > 0. || Edata1.theta[SOIL] > 0. )
@@ -505,20 +517,20 @@ bool SN_STATION_DATA::sn_JoinCondition(const SN_ELEM_DATA& Edata0, const SN_ELEM
 	if ( (Edata0.mk%100 == 3) || (Edata1.mk%100 == 3) )
 		return false;
 
-	if ( (Edata0.dd > JOIN_THRESH_DD || Edata1.dd > JOIN_THRESH_DD) && 
-		!(Edata0.dd > JOIN_THRESH_DD && Edata1.dd > JOIN_THRESH_DD) ) {
+	if ( (Edata0.dd > join_thresh_dd || Edata1.dd > join_thresh_dd) && 
+		!(Edata0.dd > join_thresh_dd && Edata1.dd > join_thresh_dd) ) {
 		return false;
-	} else if ( fabs(Edata0.dd - Edata1.dd) > JOIN_THRESH_DD ) {
+	} else if ( fabs(Edata0.dd - Edata1.dd) > join_thresh_dd ) {
 		return false;
 	}
 
-	if ( fabs(Edata0.theta[ICE] - Edata1.theta[ICE]) > JOIN_THRESH_ICE )
+	if ( fabs(Edata0.theta[ICE] - Edata1.theta[ICE]) > join_thresh_ice )
 		return false;
 
-	if ( fabs(Edata0.theta[WATER] - Edata1.theta[WATER]) > JOIN_THRESH_WATER )
+	if ( fabs(Edata0.theta[WATER] - Edata1.theta[WATER]) > join_thresh_water )
 		return false;
 
-	if ( fabs(Edata0.rg - Edata1.rg) > JOIN_THRESH_RG )
+	if ( fabs(Edata0.rg - Edata1.rg) > join_thresh_rg )
 		return false;
 
 	return true;

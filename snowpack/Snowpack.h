@@ -43,6 +43,8 @@
 #include <meteoio/MeteoIO.h>
 #include <string>
 #include <sstream>
+#include <errno.h>
+
 
 /**
  * @name Element macro definitions used in Snowpack.cc only

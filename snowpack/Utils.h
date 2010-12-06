@@ -34,6 +34,7 @@
 
 #include <cstdarg> // needed for va_list
 #include <string>
+#include <cstring>
 #include <vector>
 
 /*

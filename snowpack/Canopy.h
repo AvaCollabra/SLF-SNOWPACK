@@ -17,10 +17,6 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-/**
- * @file Canopy.h
- * @version 10.02
- */
 
 #ifndef __CANOPY_H__
 #define __CANOPY_H__
@@ -32,71 +28,6 @@
 #include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 
-/*
- * CONSTANTS & ENUMERATIONS
- */
-/**
- * @name CANOPY PARAMETERS
- * @brief History of changed values:
- * - 2007-12-20: update based on data from all SnowMIP2 sites, and calibration using Alptal data
- */
-//@{
-/// @brief INTERCEPTION
-/**
- * @brief Specific interception capacity for snow (i_LAI) (mm/LAI) \n
- * Please note that this parameter is further multiplied with (0.27+46/new_snow_density[Ta]) following (Pomeroy et al, Hydr. Proc. 1998)
- * - 5.9 Spruce and 6.6 Pine (Schmidt&Glums,CanJForRes,1991)
- */
-#define INT_CAP_SNOW 5.9
-/// Specific interception capacity for rain (I_LAI) (mm/LAI)
-#define INT_CAP_RAIN 0.3
-/// Coef in interception function, see (Pomeroy et al,1998) where a value of 0.7 was found to be appropriate for hourly time-step, but smaller time steps require smaller values, 0.5 was found reasoanble by using the SnowMIP2 data (2007-12-09)
-#define INTERCEPTION_TIMECOEF 0.5
-/// @brief RADIATION BALANCE
-#define CAN_ALB_DRY 0.09            // Albedo of dry canopy (calibr: 0.09, Alptal)
-#define CAN_ALB_WET 0.09            // Albedo of wet canopy (calibr: 0.09, Alptal)
-#define CAN_ALB_SNOW 0.35           // Albedo of snow covered albedo (calibr: 0.35, Alptal)
-#define KRNT_LAI 0.7               // Radiation transmissivity parameter, in the range 0.4-0.8
-                                   //     (calibr: 0.7, Alptal)
-#define CANOPYTRANSMISSION 1       // (1=on, 0=off) optional radiation transfer model taking solar elevation into account
-#define CAN_DIAMETER 1.0           // average canopy (tree) diameter [m], parameter in the new radiation transfer model
-
-/// @brief TURBULENT HEAT EXCHANGE
-/// @brief Stab. corr. aerodyn. resist. above and below canopy: 0=off and 1=on (Monin-Obukhov formulation)
-#define CANOPY_STABILITYCORRECTION 1
-/// @brief Ratio between canopy height and roughness length
-#define ROUGHMOM_TO_CANOPYHEIGHT_RATIO 0.10
-/// @brief As above for displacement height
-#define DISPL_TO_CANOPYHEIGHT_RATIO 0.6667
-/**
- * @brief Fractional increase of aerodynamic resistance for evaporation of intercepted snow.
- * - 10.0 from Koivusalo and Kokkonen (2002)
- * - 8.0 calibration with Alptal data
- */
-#define RAINCREASE_SNOW 8.0
-/// @brief Maximum allowed canopy temperature change (K hr-1)
-#define CANOPYTEMP_MAXCHANGE_PERHOUR 10.0
-/// @brief (~=1, but Not allowed to be exactly 1)
-#define ROUGHHEAT_TO_ROUGHMOM_RATIO 0.9999
-/// @brief minimum heat exchange (Wm-2K-1) at zero wind
-#define CAN_CH0 3.0
-/// @brief 1+CAN_RS_MULT = maximum factor to increase Cdata->rs below canopy
-#define CAN_RS_MULT 3.0
-/// @brief TRANSPIRATION
-/// @brief Minimum canopy surface resistance, 500 (sm-1) is for needle leaf treas van den Hurk et al (2000) *75% Gustafsson et al (2003)
-#define RSMIN 375.0
-/**
- * @brief gd (Pa-1) parameter for canopy surface resistance response to vapour pressure:
- * - 0.0003 = trees (needle or broadleafs)
- * - 0=crops, grass, tundra etc
- */
-#define F3_GD 0.0003
-/// @brief Root depth, determining the soil layers influenced by root water uptake
-#define ROOTDEPTH 1.0
-/// @brief Wilting point, defined as a fraction of water content at field capacity (-)
-#define WP_FRACTION 0.17
-//@}
-
 class Canopy {
 
  	public:
@@ -106,6 +37,8 @@ class Canopy {
 		
 		void runCanopyModel(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double roughness_length, 
 						double height_of_wind_val);
+
+		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
 
  	private:
 
@@ -182,6 +115,13 @@ class Canopy {
 								double *iswrbc, double *rswrbc, double *ilwrac,
 								double *rlwrac, double *ilwrbc, double *rlwrbc,
 								double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
+
+	private:
+		static const double int_cap_snow, int_cap_rain, interception_timecoef;
+		static const bool canopytransmission, canopy_stabilitycorrection;
+		static const double can_diameter, roughmom_to_canopyheight_ratio, displ_to_canopyheight_ratio, raincrease_snow;
+		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
+		static const double f3_gd, rootdepth, wp_fraction;
 		
 		mio::Config cfg;
 		int snp_soil;

@@ -20,26 +20,14 @@
 /**
  * @file Constants.h
  * @version 10.02
- * This module defines all the snow constants needed for the 1d snowpack model \n
- * Most external declarations are repeated and documented in Constants.c
+ * This module defines constants needed for the 1d snowpack model
  */
 
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 
-#include <string.h>
-#include <errno.h>
-
 /// @brief Defines whether a distributed or 1D use of SNOWPACK is foreseen
 #define ALPINE3D 0
-
-/// @brief Default research variant
-#define DEFLT 0
-#define JAPAN 1
-#define ANTARCTICA 2
-#define CALIBRATION 3
-
-#define VARIANT DEFLT //CALIBRATION //ANTARCTICA //JAPAN //
 
 /**
  * @brief SVNREV is given as a compilation flag to tell us what is the version number \n
@@ -52,9 +40,6 @@
 	#define SN_VERSION SVNREV
 #endif
 
-/*
- * CONSTANTS & ENUMERATIONS
- */
 #define MAX_STRING_LENGTH 256
 #define MAX_LINE_LENGTH 6000
 
@@ -65,16 +50,8 @@
 #define SNOWPACK_UNDEFINED -77777777
 //@}
 
-/**
- * @name INTERNAL MODEL PARAMETERS AND CONSTANTS
- * @brief These parameters should only be changed by advanced users.
- */
 /// @brief Initial value for stability parameter
 #define INIT_STABILITY 999.
-/// @brief Switch on or off wind pumping in snow
-#define WIND_PUMP true
-/// @brief Switch on or off wind pumping in soil
-#define WIND_PUMP_SOIL true
 
 namespace Constants {
 

@@ -34,17 +34,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstdarg> // needed for va_list
-#include <time.h>
+#include <ctime>
 #include <string>
 #include <set>
-
-/// @brief Defines whether hardness (R) is output either in N (Swiss scale) or steps
-#define R_IN_N 1
-
-/// Defines whether surface temperature is included in comparison; If no values are provided in Master-file, they will be extrapolated
-#define T_SRF 0
-/// Defines whether snow/ground temperature is included in comparison; If no values are provided in Master-file, they will be extrapolated
-#define T_GND 0
 
 class AsciiIO : public SnowpackIOInterface {
 
@@ -95,6 +87,8 @@ class AsciiIO : public SnowpackIOInterface {
 								 const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout);
 		void writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_SURFACE_DATA *Sdata, 
 								  const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout);
+
+		static const bool r_in_n, t_srf, t_gnd;
 
 		mio::Config cfg;
 

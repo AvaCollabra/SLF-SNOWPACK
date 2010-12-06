@@ -23,6 +23,26 @@
 using namespace std;
 using namespace mio;
 
+/************************************************************
+ * static section                                           *
+ ************************************************************/
+
+/// @brief Defines whether hardness (R) is output either in N (Swiss scale) or steps
+const bool AsciiIO::r_in_n = true;
+
+/// @brief Defines whether surface temperature is included in comparison; If no 
+///        values are provided in Master-file, they will be extrapolated
+const bool AsciiIO::t_srf = false;
+
+/// @brief Defines whether snow/ground temperature is included in comparison; If no 
+///        values are provided in Master-file, they will be extrapolated
+const bool AsciiIO::t_gnd = false;
+
+
+/************************************************************
+ * non-static section                                       *
+ ************************************************************/
+
 AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 {
 	/**
@@ -613,7 +633,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 	}
 	//  534: hand hardness ...
 	fprintf(PFile,"\n0534,%d" ,nE-Xdata.SoilNode);
-	if ( R_IN_N ) { // ... either converted to newtons according to Swiss scale
+	if ( AsciiIO::r_in_n ) { // ... either converted to newtons according to Swiss scale
 		for (e = Xdata.SoilNode; e < nE; e++) {
 			fprintf(PFile,",%.1lf",-1.*(19.472*pow(EMS[e].hard, 2.3607)));
 		}
@@ -1542,11 +1562,11 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			va_char = va_arg(argptr, char *);
 			fprintf(fout,"ProfEval @ station %s/%s for experiment %s\n",
 				   station.c_str(), va_char, experiment.c_str());
-			if ( T_SRF && T_GND ) {
+			if ( AsciiIO::t_srf && AsciiIO::t_gnd ) {
 				fprintf(fout, "(Tsrf and Tgnd BOTH included!)\n");
-			} else if ( T_SRF ) {
+			} else if ( AsciiIO::t_srf ) {
 				fprintf(fout, "(Tsrf included, Tgnd NOT included!)\n");
-			} else if ( T_GND ) {
+			} else if ( AsciiIO::t_gnd ) {
 				fprintf(fout, "(Tsrf NOT included, Tgnd included!)\n");
 			} else {
 				fprintf(fout, "(NEITHER Tsrf NOR Tgnd included!)\n");

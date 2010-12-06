@@ -121,7 +121,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 	zref = MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
 	
 	// In case of ventilation ...
-	if ( WIND_PUMP ) {
+	if ( SnLaws::wind_pump ) {
 		d_pump = SnLaws::calcWindPumpingDisplacement(Xdata);
 	} else {
 		d_pump = 0.;
