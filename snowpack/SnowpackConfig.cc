@@ -73,7 +73,7 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["BACKUP_DAYS_BETWEEN"] = "365";
 	defaultConfig["FIXED_HEIGHTS"] = "5";
 	defaultConfig["FIXED_RATES"] = "0";
-	defaultConfig["MAX_NUMBER_SENSORS"] = "8";
+	defaultConfig["MAX_NUMBER_SENSORS"] = "5";
 	defaultConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	defaultConfig["THRESH_RAIN"] = "1.2";
 	defaultConfig["MAX_N_SOLUTES"] = "10";
