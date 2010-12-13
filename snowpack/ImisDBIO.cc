@@ -56,19 +56,19 @@ ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
 }
 
-void ImisDBIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
+void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /*SSdata*/, SN_ZWISCHEN_DATA& /*Zdata*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void ImisDBIO::writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
-				const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SN_STATION_DATA& /*Xdata*/, 
+                              const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 	
-void ImisDBIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-				 const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, const Q_PROCESS_DAT& Hdata)
+void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SN_STATION_DATA& /*Xdata*/, 
+                               const SN_SURFACE_DATA& /*Sdata*/, const SN_MET_DATA& /*Mdata*/, const Q_PROCESS_DAT& /*Hdata*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
@@ -77,7 +77,7 @@ void ImisDBIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA
  * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
  */
 void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-					   const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+                            const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
 
 	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
@@ -180,7 +180,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 }
 
 void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
-						 const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
+                               const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	if ((num < 0) || (num >= (int)Hdata.size())){
 		cout << "\tNo hazard data inserted or deleted from DB" << endl;

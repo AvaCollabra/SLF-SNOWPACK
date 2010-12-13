@@ -118,7 +118,7 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	useCanopyModel = cfg.get("CANOPY", "Parameters");
 	useSnowLayers = cfg.get("SNP_SOIL", "Parameters");
 	t_internal = cfg.get("T_INTERNAL", "Parameters");
-	depth_of_sensors = cfg.get("DEPTH", "Parameters");	
+	depth_of_sensors = cfg.get("DEPTH", "Parameters");
 
 	research_mode = cfg.get("RESEARCH", "Parameters");
 
@@ -1632,8 +1632,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 	return true;
 }
 
-void AsciiIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
-						 const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
+void AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<Q_PROCESS_DAT>& /*Hdata*/, 
+                              const std::vector<Q_PROCESS_IND>& /*Hdata_ind*/, const int& /*num*/)
 {
 	/*
 	fout.open(name.c_str());
