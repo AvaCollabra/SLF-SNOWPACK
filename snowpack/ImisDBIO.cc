@@ -183,7 +183,7 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
                                const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	if ((num < 0) || (num >= (int)Hdata.size())){
-		cout << "\tNo hazard data inserted or deleted from DB" << endl;
+		cout << "\tNo hazard data inserted or deleted from DB (num=" << num << ")" << endl;
 		return; //nothing to do
 	}
 
