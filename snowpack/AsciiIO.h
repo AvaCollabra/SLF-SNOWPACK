@@ -98,7 +98,8 @@ class AsciiIO : public SnowpackIOInterface {
 		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 		bool perp_to_slope;
-		int fixed_heights, fixed_rates, max_number_sensors, min_depth_subsurf;
+		double min_depth_subsurf;
+		int fixed_heights, fixed_rates, max_number_sensors;
 		double min_size_hoar_surf, density_hoar_surf;
 		int max_number_of_solutes;
 
