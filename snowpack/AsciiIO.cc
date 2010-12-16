@@ -128,7 +128,7 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	//Minimum size to show surface hoar on surface (mm)
 	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
 	
-	if (depth_of_sensors.size() != fixed_heights)
+	if (depth_of_sensors.size() != (unsigned)fixed_heights)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
 }
 /*
