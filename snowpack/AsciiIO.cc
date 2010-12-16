@@ -329,7 +329,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
  * @param *XFilename char
  */
 void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
-					    const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+                             const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	FILE *fout=NULL;
 	int  e, i;
@@ -461,7 +461,7 @@ std::string AsciiIO::getFilenamePrefix(const std::string& stationname, const std
  * @param Hdata Q_PROCESS_DAT
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationname, const unsigned int& expo,
-					  const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+                           const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
 {
 	stringstream ss;
 	ss << stationname;
@@ -807,7 +807,7 @@ void AsciiIO::writeFreeProfilesCALIBRATION(const SN_STATION_DATA& Xdata, FILE *f
  * @return Number of items dumped to file
  */
 int AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double& T, 
-						 const int& i, const SN_STATION_DATA& Xdata)
+                               const int& i, const SN_STATION_DATA& Xdata)
 {
 	int j=2;
 	double perp_pos, temp;

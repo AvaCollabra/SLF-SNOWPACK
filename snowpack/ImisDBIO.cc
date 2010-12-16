@@ -33,7 +33,7 @@ double ImisDBIO::min_size_hoar_surf = 0.0;
 
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and wstao_nr = :3 and datum>=:4 and datum<=:5";
 
-const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,wstao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43,:44)";
+const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43)";
 
 string ImisDBIO::oracleDB = "";
 string ImisDBIO::oracleUser = "";
@@ -149,8 +149,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
 
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
-			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height);
+		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
+			   Pdata[e].loc_for_snow, Pdata[e].height);
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
 			   layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
 			   Pdata[e].theta_w, Pdata[e].theta_i, Pdata[e].dendricity, Pdata[e].sphericity, 
@@ -169,8 +169,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 
 		double gsz_SH = M_TO_MM(NDS[nE].hoar / density_hoar_surf);
 		e=nL-1;
-		fprintf(PFile,"%.5lf,%s,%d,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
-			   Pdata[e].loc_for_snow, Pdata[e].loc_for_wind, Pdata[e].height + MM_TO_CM(gsz_SH));
+		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
+			   Pdata[e].loc_for_snow, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
 			   layer_date, density_hoar_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
 			   0., density_hoar_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
@@ -322,7 +322,6 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 
 		stmt->setDate(param++, hazarddate);
 		stmt->setString(param++, stationName);
-		stmt->setNumber(param++, statNum);
 		stmt->setNumber(param++, statNum);
 		
 		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def); 
