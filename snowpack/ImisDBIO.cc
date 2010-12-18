@@ -31,7 +31,7 @@ bool ImisDBIO::research_mode = true;
 double ImisDBIO::density_hoar_surf = 0.0;
 double ImisDBIO::min_size_hoar_surf = 0.0;
 
-const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and wstao_nr = :3 and datum>=:4 and datum<=:5";
+const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
 
 const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43)";
 
@@ -183,7 +183,8 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
                                const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	if ((num < 0) || (num >= (int)Hdata.size())){
-		cout << "\tNo hazard data inserted or deleted from DB (num=" << num << ")" << endl;
+		cout << "\tNo hazard data inserted or deleted from DB (" << num << " steps while size="
+		     << Hdata.size() << ")" << endl;
 		return; //nothing to do
 	}
 
@@ -209,6 +210,9 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
 
 	} catch (exception& e){
 		Environment::terminateEnvironment(env); // static OCCI function
+		std::cout << "[E] error when writing " << station << " hazard data to db, between "
+		          << Hdata[0].date.toString(mio::Date::ISO) << " and "
+		          << Hdata[num-1].date.toString(mio::Date::ISO) << std::endl;
 		throw IOException("Oracle Error: " + string(e.what()), AT); //Translation of OCCI exception to IOException
 	}
 }
@@ -231,8 +235,8 @@ void ImisDBIO::parseStationName(const std::string& stationName, std::string& stN
 }
 
 void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& stationNumber,
-					  const mio::Date& dateStart, const mio::Date& dateEnd, 
-					  oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
+                           const mio::Date& dateStart, const mio::Date& dateEnd,
+                           oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
 {
 	vector< vector<string> > vecResult;
 	vector<int> datestart = vector<int>(5);
@@ -264,9 +268,8 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	occi::Date enddate(env, dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	stmt->setString(1, stationName);   // set 1st variable's value (station name)
 	stmt->setString(2, stationNumber); // set 2nd variable's value (station number)
-	stmt->setString(3, stationNumber); // set 3rd variable's value (station number)
-	stmt->setDate(4, begindate);       // set 4rd variable's value (begin date)
-	stmt->setDate(5, enddate);         // set 5th variable's value (enddate)
+	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
+	stmt->setDate(4, enddate);         // set 5th variable's value (enddate)
 
 	unsigned int rows_deleted = stmt->executeUpdate();
 	conn->terminateStatement(stmt);
