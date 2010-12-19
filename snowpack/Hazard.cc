@@ -101,7 +101,7 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
  * @return Number of hazard steps
  */
 void Hazard::initializeHazard(const double TimeEnd, double *OldDrift, double SlopeAngle, 
-						std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind)
+                              std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind)
 {
 	int nHz = (int)(TimeEnd / (hazard_steps_between * M_TO_S(calculation_step_length))) + 2;
 	if (nHz <= 0) nHz = 1;
@@ -116,7 +116,7 @@ void Hazard::initializeHazard(const double TimeEnd, double *OldDrift, double Slo
 	Hdata[nHz-1].nHz = nHz;
 
 	qr_VersionUserRuntime(Hdata[0].sn_version, Hdata[0].sn_computation_date, 
-					  &Hdata[0].sn_jul_computation_date, Hdata[0].sn_user, Hdata[0].sn_compile_date);
+	                      &Hdata[0].sn_jul_computation_date, Hdata[0].sn_user, Hdata[0].sn_compile_date); //HACK: compile_date is NOT the compilation date
 
 	Hdata[0].wind_trans = driftIndex(OldDrift, 0., Hazard::wind_slab_density, 6, -1) / cos(SlopeAngle);
 	Hdata[0].wind_trans24 = driftIndex(OldDrift, 0., Hazard::wind_slab_density, 24, -1) / cos(SlopeAngle);

@@ -182,8 +182,9 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
                                const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
-	if ((num < 0) || (num >= (int)Hdata.size())){
-		cout << "\tNo hazard data inserted or deleted from DB (" << num << " steps while size="
+	//HACK: num is incremented after each new data is added. It is therefore the index of the next element to write
+	if ((num <= 0) || (num > (int)Hdata.size())){
+		cout << "\tNo hazard data inserted or deleted from DB (" << num << " steps while Hdata.size="
 		     << Hdata.size() << ")" << endl;
 		return; //nothing to do
 	}
@@ -278,15 +279,15 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
-					  const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind, 
-					  const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
+                           const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind,
+                           const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
 {
 	vector<int> sndate = vector<int>(5);
 	unsigned int rows_inserted = 0;
 	double sn_version;
 	IOUtils::convertString(sn_version, Hdata[0].sn_version);
 
-	mio::Date dateSn(Hdata[0].sn_compile_date);
+	mio::Date dateSn( Hdata[0].sn_compile_date ); //HACK compile_date is NOT the compilation date
 	//dateSn.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
 	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){

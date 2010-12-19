@@ -57,7 +57,7 @@ void prn_msg(const char *theFile, int theLine, const char *msg_type, double Juli
 	va_start(argptr, format);
 
 	//calculate time stamp
-	string currentdate = Date(time(NULL)).toString(Date::ISO); //default
+	string currentdate = Date(time(NULL), 1.).toString(Date::ISO); //default HACK: we should read TZ from io.ini
 	if ( JulianDate > 0. ) currentdate = Date(JulianDate).toString(Date::ISO);
    	if ( JulianDate < 0. ) currentdate = "";
 
@@ -262,7 +262,7 @@ void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_co
 	time (&rawtime);
 	timeinfo = localtime (&rawtime);
 	time_t ltime = mktime(timeinfo);
-	Date localdate(ltime);
+	Date localdate(ltime, 1.); //HACK: use TZ from io.ini
 	
 	date = localdate;
 
