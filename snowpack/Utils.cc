@@ -252,7 +252,7 @@ int findUpperNode(const double& z, const vector<SN_NODE_DATA>& Ndata, const int&
  * @param *user
  */
 void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, 
-					  char *user, mio::Date& date)
+                           char *user, mio::Date& date)
 {
 	char *logname;
 
