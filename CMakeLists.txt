@@ -20,9 +20,10 @@ IF(DEBUG_ARITHM)
 ENDIF(DEBUG_ARITHM)
 
 #building version number
-FIND_PACKAGE(Subversion)
+#FIND_PACKAGE(Subversion) #HACK: returns error for non-svn trees
+SET(Subversion_FOUND FALSE)
 IF(Subversion_FOUND)
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} snowpack)
+  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} snowpack) #HACK: if not an svn tree, it does not work
   SET(VERSION "-DSVNREV=\"\"${snowpack_WC_REVISION}\"\"")
 ELSE(Subversion_FOUND)
   SET(VERSION "-DSVNREV=\"\"${VERSION_MAJOR}.${VERSION_MINOR}${VERSION_PATCH}\"\"")
