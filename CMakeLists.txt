@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.4) 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
+include("${CMAKE_MODULE_PATH}/GetDate.cmake")
 
 # Version of library
 SET(VERSION_MAJOR 1 CACHE INTERNAL "")
@@ -20,14 +21,20 @@ IF(DEBUG_ARITHM)
 ENDIF(DEBUG_ARITHM)
 
 #building version number
-#FIND_PACKAGE(Subversion) #HACK: returns error for non-svn trees
-SET(Subversion_FOUND FALSE)
+FIND_PACKAGE(Subversion)
 IF(Subversion_FOUND)
-  Subversion_WC_INFO(${PROJECT_SOURCE_DIR} snowpack) #HACK: if not an svn tree, it does not work
-  SET(VERSION "-DSVNREV=\"\"${snowpack_WC_REVISION}\"\"")
+  set(VERSION_FROM_SVN OFF CACHE BOOL "Retrieve software version from Subversion")
+  IF(VERSION_FROM_SVN)
+    Subversion_WC_INFO(${PROJECT_SOURCE_DIR} snowpack) #HACK: if not an svn tree, it does not work
+    GETDATE(TODAY)
+    SET(snowpack_REVISION "${TODAY}.${snowpack_WC_REVISION}")
+  ELSE(VERSION_FROM_SVN)
+    SET(snowpack_REVISION "${VERSION_MAJOR}.${VERSION_MINOR}${VERSION_PATCH}")
+  ENDIF(VERSION_FROM_SVN)
 ELSE(Subversion_FOUND)
-  SET(VERSION "-DSVNREV=\"\"${VERSION_MAJOR}.${VERSION_MINOR}${VERSION_PATCH}\"\"")
+  SET(snowpack_REVISION "${VERSION_MAJOR}.${VERSION_MINOR}${VERSION_PATCH}")
 ENDIF(Subversion_FOUND)
+SET(VERSION "-DSVNREV=\"\"${snowpack_REVISION}\"\"")
 
 ###########################################################
 #platform specific
