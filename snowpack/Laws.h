@@ -47,8 +47,6 @@ double lw_LW_Brutsaert(const double e0, const double ta);
 
 double lw_Omstedt(const double e0, const double cloud_frac);
 
-double lw_SnowResidualWaterContent(const double theta_i);
-
 /* minimum observed air emissivity
  * - default: 0.55 (from 1993 data at Weissfluhjoch)
  * - Antarctica: 0.31 (from 2006/2007 data of Dome C) */

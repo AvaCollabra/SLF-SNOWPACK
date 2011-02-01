@@ -33,11 +33,11 @@ using namespace mio;
  * If JulianDate < 0., no running date will be written \n
  * If JulianDate >= 0., compute current date and write it (\<t>) \n
  * The output format depends on message type:
- * - "err"  : [E] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg>
- * - "wrn"  : [W] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg>
- * - "msg+" : [I] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg>
- * - "msg"  : [i] [\<t>] ---> \<msg>
- * - "msg-" : [i] []      \<msg>
+ * - "err"  : [E] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
+ * - "wrn"  : [W] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
+ * - "msg+" : [I] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
+ * - "msg"  : [i] [\<t>] ---> \<msg> \<n>
+ * - "msg-" : [i] []      \<msg> \<n>
  * @author Charles Fierz \n Mathias Bavay
  * @version 9.mm
  * @param *theFile
@@ -56,7 +56,7 @@ void prn_msg(const char *theFile, int theLine, const char *msg_type, double Juli
 	// Initialize argptr to point to the first argument after the format string
 	va_start(argptr, format);
 
-	//calculate time stamp
+	//compute time stamp
 	string currentdate = Date(time(NULL), 1.).toString(Date::ISO); //default HACK: we should read TZ from io.ini
 	if ( JulianDate > 0. ) currentdate = Date(JulianDate).toString(Date::ISO);
    	if ( JulianDate < 0. ) currentdate = "";
@@ -111,7 +111,7 @@ void prn_msg(const char *theFile, int theLine, const char *msg_type, double Juli
  * @param start (const double) start date as Julian Date
  * @return int
  */
-int qr_BooleanTime(const double& JulianDate, double days_between, 
+int booleanTime(const double& JulianDate, double days_between,
 			    const double& start, const double& calculation_step_length)
 {
 	int ret;
@@ -142,7 +142,7 @@ int qr_BooleanTime(const double& JulianDate, double days_between,
  * @param outdir Output dir
  */
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
-					 const std::string& station, const int& number_expo)
+                          const std::string& station, const int& nSlopes)
 {
 	vector<string> vecExtension;
 	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
@@ -159,13 +159,10 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	prn_msg(__FILE__, __LINE__, "msg+", -1., "Erasing old result file(s) %s*%s*", outdir.c_str(), exp);
 	for (unsigned int ii=0; ii<vecExtension.size(); ii++){
 		const string& ext = vecExtension[ii];
-
-		cout << "Deleting " << ext << " files" << endl;
-
 		n_files = 0;
 
 		if ((ext == "sno") || (ext == "met") || (ext == "pro")){
-			for (j = 0; j < number_expo; j++) {
+			for (j = 0; j < nSlopes; j++) {
 				if ( j ) {
 					snprintf(fp, MAX_STRING_LENGTH-1, "%s%d%s.%s", outdir.c_str(), j, exp, ext.c_str());
 				} else {
@@ -183,10 +180,10 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 		} else if (ext == "ini"){
 			if (station != "IMIS"){
 				snprintf(fp, MAX_STRING_LENGTH-2, "%s%s.%s", outdir.c_str(), exp, ext.c_str());
-				if ( number_expo > 1 ) {
-					snprintf(fp, MAX_STRING_LENGTH-3, "%s%s-%d.%s", outdir.c_str(), exp, number_expo-1, ext.c_str());
+				if (nSlopes > 1) {
+					snprintf(fp, MAX_STRING_LENGTH-3, "%s%s-%d.%s", outdir.c_str(), exp, nSlopes-1, ext.c_str());
 				}
-				if ( remove(fp) == 0 ) {
+				if (remove(fp) == 0) {
 					prn_msg(__FILE__, __LINE__, "msg-", -1., "Erased %s", fp);
 				} else {
 					prn_msg(__FILE__, __LINE__, "msg-", -1., "No file %s to erase", fp);
@@ -199,20 +196,20 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 /**
  * @brief Returns modelled internal snow or/and soil temperature (instantaneous value; degC),
  *        at a given position z perpendicular to slope (m) \n
- *        z must be less than calculated height (Xdata->cH), otherwise modeled temperature is set to NODATA
+ *        z must be less than computed height (Xdata->cH), otherwise modeled temperature is set to Constants::undefined
  * @author Charles Fierz
  * @version 10.02
  * @param z Sensor position perpendicular to slope (m)
  * @param *Xdata
  */
-double getModelledTemperature(const double& z, const SN_STATION_DATA& Xdata)
+double getModelledTemperature(const double& z, const SnowStation& Xdata)
 {
 	int n_up;           // Upper node number
 	double z_up, z_low; // Upper and lower nodes around position z of sensor
 
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
-	if ( (z == NODATA) || !((Xdata.getNumberOfNodes() > 1) && (z < Xdata.cH)) ) {
-		return NODATA;
+	const vector<NodeData>& NDS = Xdata.Ndata;
+	if ( (z == Constants::nodata) || !((Xdata.getNumberOfNodes() > 1) && (z < Xdata.cH)) ) {
+		return Constants::nodata;
 	} else {
 		n_up = findUpperNode(z, NDS, Xdata.getNumberOfNodes());
 		z_low = (NDS[n_up-1].z + NDS[n_up-1].u);
@@ -231,7 +228,7 @@ double getModelledTemperature(const double& z, const SN_STATION_DATA& Xdata)
  * @param nN Number of nodes
  * @return Upper node number
  */
-int findUpperNode(const double& z, const vector<SN_NODE_DATA>& Ndata, const int& nN)
+int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
 {
 	int n_up = nN-2;
 	double z_low = Ndata[n_up].z + Ndata[n_up].u;
@@ -251,7 +248,7 @@ int findUpperNode(const double& z, const vector<SN_NODE_DATA>& Ndata, const int&
  * @param *jul_computation_date Julian Date
  * @param *user
  */
-void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, 
+void versionUserRuntime(char *version, char *computation_date, double *jul_computation_date,
                            char *user, mio::Date& date)
 {
 	char *logname;
@@ -267,7 +264,7 @@ void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_co
 	date = localdate;
 
 	// version and computation time
-	snprintf(version, MAX_STRING_LENGTH-1, "%s", SN_VERSION);
+	snprintf(version, MAX_STRING_LENGTH-1, "%lf", SN_VERSION);
 	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());
 
 	*jul_computation_date = localdate.getJulianDate();
@@ -288,11 +285,8 @@ void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_co
  * @param Xdata
  * @param n_steps Number of calculation time steps since last output
 */
-void qr_AverageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, 
-						SN_SURFACE_DATA& Sdata, SN_STATION_DATA& Xdata)
+void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, SurfaceFluxes& Sdata, SnowStation& Xdata)
 {
-	// Mean energy input (J m-2)
-	Sdata.dIntEnergy  /= n_steps;
 	// Mean energy fluxes (W m-2), including albedo
 	Sdata.lw_in   /= n_steps;
 	Sdata.lw_out  /= n_steps;
@@ -337,7 +331,7 @@ void qr_AverageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
 /**
  * @brief Decompose type in its constituents
  * At present decomposition into Swiss numerical code \n
- * TODO Work with new international code
+ * TODO Adapt to new international code
  * @author Charles Fierz
  * @version 9.12
  * @param F1 Majority grain shape
@@ -345,12 +339,12 @@ void qr_AverageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
  * @param F3 2 indicates a melt-freeze crust
  * @param type aggregated shape information
  */
-void qr_TypeToCode(int *F1, int *F2, int *F3, int type)
+void typeToCode(int *F1, int *F2, int *F3, int type)
 {
-	*F1   = (int)(floor(type/100.));
-	type -= (int)((*F1)*100);
-	*F2   = (int)(floor(type/10.));
-	*F3   = (int)(type - (*F2)*10);
+	*F1   = int (floor(type/100.));
+	type -= int ((*F1)*100);
+	*F2   = int (floor(type/10.));
+	*F3   = int (type - (*F2)*10);
 }
 
 /**
@@ -363,13 +357,13 @@ void qr_TypeToCode(int *F1, int *F2, int *F3, int type)
  * @param *tot_mass_in Total mass after last time step (kg m-2)
  * @return bool if mass error occured, putting balance terms on screen
  */
-bool qr_MassBalanceCheck(const SN_STATION_DATA& Xdata, const SN_SURFACE_DATA& Sdata, double& tot_mass_in)
+bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in)
 {
 	bool mass_error = true;
 	int e;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
-	double hnw = Xdata.hn_slope*Xdata.rho_slope;
-	double mass_change = hnw - Sdata.mass[SN_SURFACE_DATA::MS_RUNOFF] + Sdata.mass[SN_SURFACE_DATA::MS_RAIN] + Sdata.mass[SN_SURFACE_DATA::MS_SUBLIMATION] + Sdata.mass[SN_SURFACE_DATA::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
+	double hnw = Xdata.hn*Xdata.rho_hn;
+	double mass_change = hnw - Sdata.mass[SurfaceFluxes::MS_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
 	for (e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
@@ -414,19 +408,19 @@ bool qr_MassBalanceCheck(const SN_STATION_DATA& Xdata, const SN_SURFACE_DATA& Sd
  * @param *Xdata
  * @return Eroded mass (kg m-2)
  */
-double qro_ForcedErosion(const double hs1, SN_STATION_DATA *Xdata)
+double forcedErosion(const double hs1, SnowStation& Xdata)
 {
 	int    nErode=0;        // Counters
 	double massErode=0.;    // Eroded mass (kg m-2)
 
 	massErode=0.;
-	while ( (Xdata->getNumberOfElements() > Xdata->SoilNode) && (hs1 + 0.01) < (Xdata->cH - Xdata->Ground) ) {
-		massErode += Xdata->Edata[Xdata->getNumberOfElements()-1].M; 
-		Xdata->cH -= Xdata->Edata[Xdata->getNumberOfElements()-1].L; 
-		Xdata->resize(Xdata->getNumberOfElements() - 1);
+	while ( (Xdata.getNumberOfElements() > Xdata.SoilNode) && (hs1 + 0.01) < (Xdata.cH - Xdata.Ground) ) {
+		massErode += Xdata.Edata[Xdata.getNumberOfElements()-1].M;
+		Xdata.cH -= Xdata.Edata[Xdata.getNumberOfElements()-1].L;
+		Xdata.resize(Xdata.getNumberOfElements() - 1);
 		nErode++;
 	}
-	Xdata->ErosionLevel = MIN(Xdata->getNumberOfElements()-1, Xdata->ErosionLevel);
+	Xdata.ErosionLevel = MIN(Xdata.getNumberOfElements()-1, Xdata.ErosionLevel);
 
 	return(massErode);
 }
@@ -446,7 +440,7 @@ double qro_ForcedErosion(const double hs1, SN_STATION_DATA *Xdata)
  * @param *dhs_corr Correction on snow depth (m)
  * @param *mass_corr Mass correction (kg m-2)
  */
-void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double *dhs_corr, double *mass_corr)
+void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr)
 {
 	int    e, nE, nSoil;                         // Element counter
 	double factor_corr, sum_total_correction=0.; // Correction factor
@@ -454,25 +448,25 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 	double cH, cH_old;                           // Snow depth
 
 	// Dereference a few values
-	vector<SN_NODE_DATA>& NDS = Xdata->Ndata;
-	vector<SN_ELEM_DATA>& EMS = Xdata->Edata;
-	nE = Xdata->getNumberOfElements(); nSoil = Xdata->SoilNode;
-	cH = Xdata->cH - Xdata->Ground;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	nE = Xdata.getNumberOfElements(); nSoil = Xdata.SoilNode;
+	cH = Xdata.cH - Xdata.Ground;
 	/*
 	 * First try to find erosion events, which have not been captured by the drift module
 	 * (Maybe the wind sensor did not measure correctly due to riming, or s.th. else went
 	 * wrong with the model. For now assume erosion if more than 3 cm are missing
 	 */
-	if ( (Mdata->hs1 + 0.03) < cH ) {
-		*dhs_corr = Mdata->hs1 - cH;
-		*mass_corr = qro_ForcedErosion(Mdata->hs1, Xdata);
+	if ( (Mdata.hs1 + 0.03) < cH ) {
+		*dhs_corr = Mdata.hs1 - cH;
+		*mass_corr = forcedErosion(Mdata.hs1, Xdata);
 		if ( 0 ) {
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata->date.getJulianDate(), "Missed erosion event detected");
-			prn_msg(__FILE__, __LINE__, "msg-", -1., "Measured Snow Depth:%lf   Calculated Snow Depth:%lf", Mdata->hs1, cH);
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(), "Missed erosion event detected");
+			prn_msg(__FILE__, __LINE__, "msg-", -1., "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 	} else {
 		// assume settling error
-		*dhs_corr = Mdata->hs1 - cH;
+		*dhs_corr = Mdata.hs1 - cH;
 		*mass_corr = 0.;
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
@@ -481,21 +475,21 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 			return;
 
 		if ( 0 ) {
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata->date.getJulianDate(), 
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(),
 				   "Small correction due to assumed settling error\n");
 			prn_msg(__FILE__, __LINE__, "msg-", -1., 
-				   "Measured Snow Depth:%lf   Calculated Snow Depth:%lf", Mdata->hs1, cH);
+							"Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3))&&(Mdata->date.getJulianDate() > EMS[e].date.getJulianDate())){
+			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3))&&(Mdata.date.getJulianDate() > EMS[e].date.getJulianDate())){
 				sum_total_correction += EMS[e].L
 					* (1. - sqrt((EMS[nE-1].date.getJulianDate() - EMS[e].date.getJulianDate()) 
 							   / (EMS[nE-1].date.getJulianDate() - EMS[nSoil].date.getJulianDate())));
 			}
 		}
 		if ( sum_total_correction > 0. ) {
-			factor_corr = (Mdata->hs1 - cH) / sum_total_correction;
+			factor_corr = (Mdata.hs1 - cH) / sum_total_correction;
 		} else {
 			*dhs_corr = 0.;
 			return;
@@ -503,7 +497,7 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3)) && (Mdata->date.getJulianDate() > EMS[e].date.getJulianDate())){
+			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3)) && (Mdata.date.getJulianDate() > EMS[e].date.getJulianDate())){
 				ddL = EMS[e].L 
 					* MAX(-0.9, MIN(0.9, factor_corr 
 								 * (1. - sqrt((EMS[nE-1].date.getJulianDate() - EMS[e].date.getJulianDate()) 
@@ -520,188 +514,37 @@ void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double
 			EMS[e].E  = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
 		}
 		// Update the overall height
-		cH_old     = Xdata->cH;
-		Xdata->cH  = NDS[nE].z + NDS[nE].u;
-		Xdata->mH -= (cH_old - Xdata->cH);
+		cH_old     = Xdata.cH;
+		Xdata.cH  = NDS[nE].z + NDS[nE].u;
+		Xdata.mH -= (cH_old - Xdata.cH);
 	}
 } // End qro_ErodeDeflateInflate
 
 /**
- * @brief Determine the grain class
- * Revisited by Fierz and Bellaire fall 2006
- * @param dendricity
- * @param sphericity
- * @param grain_dia
- * @param marker
- * @param theta_w
- * @param theta_i
+ * @brief Logistic function
+ * @version 10.11
+ * @param input value
+ * @param threshold Threshold of logistic function
+ * @param width Width of logistic function
  */
-int ml_ag_Classify(const double& dendricity, const double& sphericity, const double& grain_dia, 
-			    const int& marker, const double& theta_w, const double& theta_i)
+double logisticFunction(const double input, const double threshold, const double width)
 {
-	int a=-1,b=-1,c=0;
-	int sw2;
-	double res_wat_cont;
+	const double x = (input - threshold) / width;
+	return exp(x)/(1. + exp(x));
+}
 
-	res_wat_cont = lw_SnowResidualWaterContent(theta_i);
-
-	// Dry snow
-	if( dendricity > 0. ) {
-		// Dry dendritic (new) snow: dendricity and sphericity determine the class
-		sw2 = (int)(sphericity*10.);
-		if( dendricity > 0.80 ) {
-			// ori 0.90, 27 Nov 2007 sb
-			a = 1; b = 1; c = 0;
-		} else if( dendricity > 0.70 ) {
-			// ori 0.85, 27 Nov 2007 sb
-			a = 1; b = 2; c = 1;
-		} else if( dendricity > 0.65 ) {
-			// ori 0.75, 27 Nov 2007 sb
-			a = 2; b = 1; c = 0;
-		} else if( dendricity > 0.60 ) {
-			// ori 0.70, 27 Nov 2007 sb
-			a = 2; b = 1; c = 1;
-		} else if( dendricity > 0.30 ) {
-			a = 2; b = 2; c = 0;
-		} else if( dendricity > 0.05 ) {
-			a = 2;
-			switch(sw2) {
-				case 0: case 1: case 2:
-				b = 4; c = 0; break;
-				case 3: case 4:
-				b = 4; c = 1; break;
-				case 5: case 6:
-				b = 3; c = 1; break;
-				default:
-				b = 3; c = 0;
-			}
-		} else {
-			switch(sw2) {
-				case 0: case 1:
-				a = 4; b = 4; c = 0; break;
-				case 2: case 3: case 4:
-				a = 4; b = 2; c = 1; break;
-				case 5: case 6: case 7:
-				a = 3;  b = 2; c = 1; break;
-				default:
-				a = 3; b = 3; c = 0;
-			}
-		}
-	} else if( marker <= 2) {
-		/*
-		 * Dry non-dendritic snow
-		 * Sphericity is most important for "a", while the marker is most important for "b","c"
-		 */
-		if( grain_dia < 0.7 ) {
-			sw2 = (int)(sphericity*10.);
-			switch(sw2) {
-				case 0: case 1:
-				a = 4; b = 4; c = 0; break;
-				case 2: case 3:
-				a = 4; b = 3; c = 1; break;
-				case 4: case 5:
-				a = 4;  b = 3; c = 0; break;
-				case 6: case 7:
-				a = 3;  b = 4; c = 1; break;
-				default:
-				a = 3; b = 3; c = 0;
-			}
-		} else if( grain_dia < 1.1 ) {
-			if( sphericity < 0.2 ) {
-				a = 4; b = 4; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 4; b = 9; c = 0;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 9 ; c = 0;
-			}
-		} else if( grain_dia < 1.5 ) {
-			if( sphericity < 0.2 ) {
-				a = 4; b = 5; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 4; b = 9; c = 1;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 9 ; c = 0;
-			}
-		} else {
-			if( sphericity < 0.2 ) {
-				a = 5; b = 5; c = 0;
-			} else if( sphericity < 0.4 ) {
-				a = 5; b = 9; c = 1;
-			} else {
-				// sphericity limited to sp_max=0.5 in Metamorphism.c
-				a = 9; b = 5 ; c = 1;
-			}
-		}
-	} // end dry snow
-
-	// Snow getting wet
-	if( marker >= 10 ) {
-		if( dendricity > 0.0 ) {
-			// Wet dendritic snow
-			if( sphericity > 0.7 ) {
-				b = a; a = 7; c = 0;
-			} else {
-				b = 7 ; c = 1;
-			}
-		} else {
-			// Wet non-dendritic snow
-			b = 7; c = 0;
-			if( sphericity > 0.75) {
-				a = 7;
-			} else if( sphericity > 0.4 ) {
-				if( grain_dia <= 0.7 ) {
-					b = a; a = 7;
-				} else if( marker != 13 ) {
-					if( grain_dia <= 1.5 ) {
-						a = 7; b = 9; c = 1;
-					} else {
-						a = 7; b = 5; c = 1;
-					}
-				} else {
-					a = 7; b = 6;  c = 1;
-				}
-			} else {
-				if( grain_dia <= 1.5 ) {
-					a = 4;
-				} else {
-					a = 5;
-				}
-				if( sphericity <= 0.2 ) {
-					c = 1;
-				}
-			}
-		}
+/**
+ * @brief Cumulate if and only if value is defined
+ * @version 11.01
+ * @param accu cumulator
+ * @param value to be added to accu
+ */
+void cumulate(double& accu, const double value)
+{
+	if (value != Constants::undefined) {
+		accu += value;
+	} else {
+		accu = Constants::undefined;
 	}
 
-	// Now treat a couple of exceptions - note that the order is important
-	if( b < 0 ) {
-		b = a;
-	}
-	// Melt-Freeze
-	if( (marker >= 20) && (theta_w < 0.1*res_wat_cont) ) {
-		c = 2;
-	}
-	// Surface Hoar
-	if( marker == 3 ) {
-		 a = 6;
-		 b = 6;
-		 c = 0;
-	}
-	// Graupel
-	if( marker == 4 ) {
-		 a = 0;
-		 b = 0;
-		 c = 0;
-	}
-	// Ice Layer
-	if( marker % 10 == 8 ) {
-		 a = 8;
-		 b = 8;
-		 c = 0;
-	}
-
-	return (a*100 + b*10 + c);
-
-} // End of ml_ag_Classify
+}

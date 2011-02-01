@@ -38,17 +38,16 @@
 class SnLaws {
 
 	public:
-		/**
-		 * @brief Switches to test settling routine with lwsn_SnowViscosityCALIBRATION()
-		 * - VISC_CAL defines the calibration version to be used
-		 * - SETFIX is a quickfix for Antarctica, reducing settling to 6% of calculated value for snow older than 2 months
-		 */
-		enum ViscosityCalVersion {
-			vs_default=0,
-			vs_ant=777,
-			vs_steinkogler=999
-		};
 
+		/// To define which version to use while calibrating
+		enum ViscosityCalVersion {
+			visc_cal_default=0,       ///< version currently in use
+			visc_cal_new=111,         ///< version currently under test
+			visc_cal_2010=333,        ///< calibration fall 2010 by Fierz
+			visc_cal_ant=555,         ///< calibration fall 2010 adapted to Antarctica
+			visc_cal_steinkogler=999  ///< calibration 2009 by Walter Steinkogler (MSc thesis)
+		};
+		/// To define which temeperature dependence to use for snow viscosity
 		enum TempDependence {
 			default_term,
 			arrhenius,
@@ -56,7 +55,6 @@ class SnLaws {
 			steinkogler,
 			n_t_term
 		};
-
 
 		/**
 		 * @name Albedo models
@@ -70,84 +68,65 @@ class SnLaws {
 			alb_lehning_1,
 			alb_lehning_2,
 			alb_nied,
-			n_albm
+			nAlbedoModel
 		};
 
-	public:
-		static double calcHeatCapacity(const SN_ELEM_DATA& Edata);
-		static double calcNeckStressEnhancement(const SN_ELEM_DATA& Edata);
-		static double calcConcaveNeckRadius(const double& rg, const double& rb);
-		static double calcNeckLength(const double& rg, const double& rc);
-		static double calcNeck2VolumetricStrain(const SN_ELEM_DATA& Edata);
-		static double calcWindPumpingDisplacement(const SN_STATION_DATA& Xdata);
+		static double compWindPumpingDisplacement(const SnowStation& Xdata);
+		static double compWindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
+		static double compWindGradientSnow(const ElementData& Edata, double& v_pump);
 
-		static double calcSoilFieldCapacity(const SN_ELEM_DATA& Edata);
-		static double calcSnowViscosityTemperatureTerm(const double& Te);
-		static double calcSnowElasticity(const double& rho);
+		static double compSensibleHeatCoefficient(const SN_MET_DATA& Mdata, const SnowStation& Xdata,
+		                                          const double& height_of_meteo_values);
+		static double compLatentHeat_Rh(const SN_MET_DATA& Mdata, SnowStation& Xdata,
+		                                const double& height_of_meteo_values);
+		static double compLatentHeat(const SN_MET_DATA& Mdata, SnowStation& Xdata,
+		                             const double& height_of_meteo_values);
 
-		static double calcLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
-				
-		static double calcSensibleHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-								 const double& height_of_meteo_values); 
-		static double calcLatentHeat_Rh(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-								  const double& height_of_meteo_values);
-		static double calcLatentHeat(const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata, 
-							    const double& height_of_meteo_values);
+		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz);
+		static double compSnowThermalConductivity(const ElementData& Edata, const double& dvdz);
 
-		static double calcSoilThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
-		static double calcSnowThermalConductivity(const SN_ELEM_DATA& Edata, const double& dvdz);
+		static double compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& e);
 
-		static double calcEnhanceWaterVaporTransportSnow(const SN_STATION_DATA& Xdata, const int& e);
+		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double calcNewSnowViscosityLehning(const SN_ELEM_DATA& Edata);
+		static double compAlbedo(const std::string& variant, const ElementData& Edata, const double& Tss,
+		                         const SN_MET_DATA& Mdata, const double& age);
+		static void compShortWaveAbsorption(const double& I0, const bool& useSnowLayers,
+		                                    const bool& multistream,SnowStation& Xdata);
 
-		static double calcWindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
-		static double calcWindGradientSnow(const SN_ELEM_DATA& Edata, double& v_pump);
+		static double NewSnowViscosityLehning(const ElementData& Edata);
+		static double compInitialStress(const std::string& variant, ElementData& Edata, const mio::Date& date);
+		static double initialStressDEFAULT(ElementData& Edata, const mio::Date& date);
+		static double initialStressCALIBRATION(ElementData& Edata, const mio::Date& date);
+		static double snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Date& date);
+		static double snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date);
+		static double snowViscosityTemperatureTerm(const double& Te);
+		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model,
+		                                ElementData& Edata, const mio::Date& date);
+		static double snowViscosityDEFAULT(ElementData& Edata, const mio::Date& date);
+		static double snowViscosityKOJIMA(const ElementData& Edata, const mio::Date& date);
+		static double snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date);
 
-		static double calcAlbedo(const std::string& variant, const SN_ELEM_DATA& Edata, const double& Tss, 
-                                   const SN_MET_DATA& Mdata, const double& age);
-
-		static double calcExtinction(const SN_ELEM_DATA& Edata);
-
-		static void calcShortWaveAbsorption(const double& I0, const bool& useSnowLayers,
-									 const bool& multistream,SN_STATION_DATA& Xdata);
-
-		static double calcSnowpackInternalEnergy(SN_STATION_DATA& Xdata);
-
-		static double calcInitialStress(const std::string& variant, const std::string& i_viscosity_model, 
-								  const SN_ELEM_DATA& Edata);
-
-
-		static double calcSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, 
-								  const SN_ELEM_DATA& Edata, const mio::Date& date);
-		static double calcSnowViscosityFudgeDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		static double calcSnowViscosityFudgeCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		static double calcSnowViscosityDEFAULT(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		static double calcSnowViscosityKOJIMA(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		static double calcSnowViscosityCALIBRATION(const SN_ELEM_DATA& Edata, const mio::Date& date);
-		
-		static const double smallest_viscosity;
+		static const double smallest_viscosity, field_capacity_soil;
 		static const bool wind_pump, wind_pump_soil;
 
 	private:
+		static const mio::Config& cfg;
 		static bool setStaticData(const std::string& variant);
+		static double sn_dt; //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		static const bool __init;
 		static std::string current_variant;
-
 		static AlbedoModel currentAlbedoModel;
 		static double albedoCage;
-
 		static ViscosityCalVersion visc_cal;
 		static TempDependence t_term;
-		static double v_time_fudge, v_ice_fudge, v_sp_fudge;
+		static double visc_time_fudge, visc_ice_fudge, visc_sp_fudge, visc_water_fudge;
 		static bool setfix;
-
 		static const bool band20;
-		static unsigned int swa_nb;
+		static unsigned int swa_nBands;
 		static std::vector<double> swa_k, swa_pc, swa_fb;
-
-		static const int soil_evaporation;
-		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil, field_capacity_soil;
+		static const bool soil_evaporation;
+		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil;
 		static const double montana_c_fudge, montana_vapor_fudge;
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
 };

@@ -47,31 +47,32 @@ __attribute__ ((format (printf, 5, 6)));
 void prn_msg(const char *theFile, int theLine, const char *msg_type, double JulianDate, const char *format, ...);
 #endif
 
-int qr_BooleanTime(const double& JulianDate, double days_between, 
+int booleanTime(const double& JulianDate, double days_between,
 			    const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
-					 const std::string& station, const int& number_expo);
+                          const std::string& station, const int& nSlopes);
 
-void qr_VersionUserRuntime(char *version, char *computation_date, double *jul_computation_date, 
+void versionUserRuntime(char *version, char *computation_date, double *jul_computation_date,
 					  char *user, mio::Date& date);
 
-void qr_AverageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, 
-						SN_SURFACE_DATA& Sdata, SN_STATION_DATA& Xdata);
+void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
+						SurfaceFluxes& Sdata, SnowStation& Xdata);
 
-void qr_TypeToCode(int *F1, int *F2, int *F3, int type);
+void typeToCode(int *F1, int *F2, int *F3, int type);
 
-bool qr_MassBalanceCheck(const SN_STATION_DATA& Xdata, const SN_SURFACE_DATA& Sdata, double& tot_mass_in);
+bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in);
 
-double getModelledTemperature(const double& z, const SN_STATION_DATA& Xdata);
+double getModelledTemperature(const double& z, const SnowStation& Xdata);
 
-int findUpperNode(const double& z, const std::vector<SN_NODE_DATA>& Ndata, const int& nN);
+int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int& nN);
 
-double qro_ForcedErosion(const double hs1, SN_STATION_DATA *Xdata);
+double forcedErosion(const double hs1, SnowStation& Xdata);
 
-void qro_DeflateInflate(const SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double *dhs_corr, double *mass_corr);
+void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr);
 
-int ml_ag_Classify(const double& dendricity, const double& sphericity, 
-			    const double& grain_dia, const int& marker, const double& theta_w, const double& theta_i);
+double logisticFunction(const double input, const double threshold, const double width);
 
-#endif //End of Queries.h
+void cumulate(double& accu, const double value);
+
+#endif //End of Utils.h

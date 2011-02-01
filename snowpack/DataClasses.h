@@ -53,48 +53,33 @@ struct WL_STRUCT {
 	double perc;    ///< Percentage of Energy
 };
 
-/// @brief Time step control parameters
-typedef struct {
-  double TimeN;      ///< Time of present calculation (s)
-  int    nStep;      ///< Time step number
-  double TimeEnd;    ///< Calculate up to TimeEnd that can be less than last time of last record (s)
-  int    TsDump;     ///< Flag for time series dump
-  int    nAvg;       ///< Number of calculation time steps to average fluxes etc.
-  int    HzStep;     ///< Hazard step number (should be half of nStep in operational mode)
-  int    HzDump;     ///< Calculation of hazard information will be performed
-  int    PrDump;     ///< Flag for profile dump
-  int    XdataDump;  ///< Backup of Xdata will be performed
-  int    TaglayDump; ///< Flag for tagged layer series dump
-  int    PrTabDump;  ///< Flag for tabular profile dump
-} MN_TIME_DATA;
-
 /**
- * SN_SURFACE_DATA contains all surface exchange data \n
+ * SurfaceFluxes contains all surface exchange data \n
  * Some of the most important results of the simulation are contained in this data structure.
  */
-class SN_SURFACE_DATA {
+class SurfaceFluxes {
 	public:
 		/**
 		 * @brief The different types of Mass fluxes
-		 * Mass fluxes in kg m-2, calculated and output in qr_WriteTimeSeries() \n
-		 * Rates in kg m-2 h-1 (MS_PRECIP, MS_RAIN and MS_WIND)
+		 * Mass fluxes in kg m-2, computed and output in qr_WriteTimeSeries() \n
+		 * Rates in kg m-2 h-1 (MS_HNW, MS_RAIN and MS_WIND)
 		 */
 		enum SN_MASS_CHANGES {
 			MS_TOTALMASS,      ///<  This of course is the total mass of the snowpack at the present time
 			MS_SWE,            ///<  This too, of course, but summing rho*L
 			MS_WATER,          ///<  The total amount of water in the snowpack at the present time
-			MS_PRECIP,         ///<  Precipitation rate (solid only in stand-alone version)
+			MS_HNW,            ///<  Solid precipitation rate
 			MS_RAIN,           ///<  Rain rate
 			MS_WIND,           ///<  Mass loss rate due to wind erosion
 			MS_EVAPORATION,    ///<  The mass loss or gain of the top element due to water evaporating
 			MS_SUBLIMATION,    ///<  The mass loss or gain of the top element due to snow (ice) sublimating
-			MS_RUNOFF,         ///<  The total mass loss due to surface runoff; used to check mass balance of snowpack and also to calculate cummulative discharge
+			MS_RUNOFF,         ///<  The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
 			MS_SOIL_RUNOFF,    ///<  Equivalent to MS_RUNOFF but at bottom soil node
 			MS_CORRECTION,     ///< Mass correction from either squeezing (neg) or blowing up (pos)
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 
-		SN_SURFACE_DATA(const unsigned int& max_number_of_solutes);
+		SurfaceFluxes(const unsigned int& max_number_of_solutes);
 
 		void reset(const bool& cumsum_mass);
 
@@ -114,7 +99,7 @@ class SN_SURFACE_DATA {
 		double qw;       ///< absorbed shortwave radiation in W m-2 on surface (net SW)
 		double sw_dir;   ///< incoming direct shortwave radiation in W/m2; on slopes: projected
 		double sw_diff;  ///< incoming diffuse shortwave radiation in W m-2
-		double cA;       ///< calculated Albedo (USED only for OUTPUT)
+		double cA;       ///< computed Albedo (USED only for OUTPUT)
 		double mA;       ///< measured Albedo (USED only for OUTPUT)
 		double drift;    ///< the surface flux of drifting snow in kg m-1 s-1
 		std::vector<double> mass; ///< Total mass of snowpack PLUS different amounts of total mass change, sublimation, runoff, erosion, etc. Basically the mass which crosses the surface
@@ -130,10 +115,10 @@ class SN_SURFACE_DATA {
  * It is used to prepare some parameters of qr_Hdata. This data is read from and written to *.sno files
  */
 struct SN_ZWISCHEN_DATA {
-	double hoar24[48];  ///< Twenty-four hour hoar index in half-hour intervals
-	double drift24[48]; ///< Twenty-four drift index  in half-hour intervals
-	double hns3[144];   ///< Three hour new snow heights in half-hour intervals over three days
-	double hns24[144];  ///< Twenty-four hour snow heights in 1/2-hour intervals over three days
+	double hoar24[48];  ///< Twenty-four hour hoar index every half-hour over one day
+	double drift24[48]; ///< Twenty-four hour drift index every half-hour over one day
+	double hn3[144];    ///< Three hour new snow heights every half-hour over three days
+	double hn24[144];   ///< Twenty-four hour snow heights every half-hour over three days
 };
 
 /**
@@ -155,13 +140,14 @@ class SN_MET_DATA {
 		double ta;     ///< Air temperature (K)
 		double rh;     ///< Relative humidity (% or 1)
 		double rh_ave; ///< Running mean of relative humidity (1)
-		double vw;     ///< Wind velocity  (m s-1)
-		double vw_ave; ///< Running mean of wind velocity (m s-1)
-		double vw_max; ///< Maximum wind velocity (m s-1)
-		///< Attention! in operational mode the wind velocity of ridge wind station
-		double dw;     ///< Wind direction (deg)
-		double ustar;  ///< The friction velocity (m s-1) calculated in mt_MicroMet() and also used later for the MeteoHeat fluxes
-		double z0;     ///< The roughness length calculated in SnowDrift and also used later for the MeteoHeat fluxes (m)
+		double vw;     ///< Wind velocity at snow station (m s-1)
+		double vw_ave; ///< Running mean of wind velocity at snow station (m s-1)
+		double vw_max; ///< Maximum wind velocity at snow station (m s-1)
+		double dw;     ///< Wind direction at snow station (deg)
+		double vw_drift; ///< Wind velocity for blowing and drifting snow (operational: wind ridge station)
+		double dw_drift; ///< Wind direction of blowing and drifting snow (operational: wind ridge station)
+		double ustar;  ///< The friction velocity (m s-1) computed in mt_MicroMet() and also used later for the MeteoHeat fluxes
+		double z0;     ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
 		double psi_s;  ///< Stability correction for scalar heat fluxes
 		double iswr;   ///< Incoming SHORTWAVE radiation (W m-2)
 		double rswr;   ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
@@ -232,10 +218,10 @@ enum SN_SOIL_DATA{
  * @brief Parameters of the different layers of the snowpack \n
  * It is used as a pointer (array) within the sn_SSdata (profile) data structure.
  */
-class SN_LAYER_DATA {
+class LayerData {
 
 	public:
-		SN_LAYER_DATA(const unsigned int& i_max_number_of_solutes); 
+		LayerData(const unsigned int& i_max_number_of_solutes); 
 
 		mio::Date date;    ///< The birth date of layer
 		double hl;         ///< The height of the layer in m
@@ -258,13 +244,16 @@ class SN_LAYER_DATA {
 		double rb;         ///< Micro-structure : Bond Radius in mm
 		int    mk;         ///< Micro-structure : Marker
 		double hr;         ///< Surface hoar Mass in kg m-2
+		double CDot;       ///< Stress rate (Pa s-1), that is the LAST overload change rate
+		double Qmf;        ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
+		double metamo;     ///< keep track of metamorphism
 
 	private:
 		unsigned int max_number_of_solutes;
 };
 
 /**
- * @brief sn_SSdata includes all important station parameters as well as SN_LAYER_DATA \n
+ * @brief sn_SSdata includes all important station parameters as well as LayerData \n
  * This data structure will have to be replaced by something a little more complicated soon ???
  * For now it is simply an efficient way of creating a snowpack to investigate.
  */
@@ -285,7 +274,7 @@ class SN_SNOWSOIL_DATA{
 		double Height;        ///< Total height of snowpack in m (sum of the layer heights)
 		int ErosionLevel;     ///< Indicates the initial erosion level for the flat field
 		int nLayers;          ///< Total number of snowpack layers
-		std::vector<SN_LAYER_DATA> Ldata; ///< contains all the information required to construct the Xdata
+		std::vector<LayerData> Ldata; ///< contains all the information required to construct the Xdata
 		mio::Date date;
 		double Hslast;        ///< Last checked measured Snow Height
 		double Albedo;        ///< Snow albedo
@@ -305,15 +294,33 @@ class SN_SNOWSOIL_DATA{
 };
 
 /**
- * @brief ELEMENT DATA used as a pointer in the SN_STATION_DATA structure
+ * @brief ELEMENT DATA used as a pointer in the SnowStation structure
  * NOTE on M below: this is the mass of an element that is neither changed by phase changes nor densification. \n
- * It is set in the data initialization and used to calculate the stress field.
+ * It is set in the data initialization and used to compute the stress field.
  * It can ONLY be changed by the WATER TRANSPORT or SURFACE SUBLIMATION or WIND TRANSPORT routines.
  */
-class SN_ELEM_DATA {
+class ElementData {
 	
 	public:
-		SN_ELEM_DATA(const unsigned int& i_max_number_of_solutes);
+		ElementData(const unsigned int& i_max_number_of_solutes);
+
+		bool checkVolContent();
+		void heatCapacity();
+		double coldContent();
+		double extinction();
+		double snowResidualWaterContent();
+		static double snowResidualWaterContent(const double theta_i);
+		double soilFieldCapacity();
+
+		double snowElasticity();
+		double neckStressEnhancement();
+		double concaveNeckRadius();
+		double neckLength();
+		double neck2VolumetricStrain();
+
+		void snowType();
+		static int snowType(const double dendricity, const double sphericity, const double grain_dia, const int marker,
+                        const double theta_w, const double res_wat_cont);
 
 		mio::Date date;        ///< Layer Birthday (d)
 		double L0, L;          ///< Original and present element length (m)
@@ -329,25 +336,27 @@ class SN_ELEM_DATA {
 		std::vector<double> c; ///< For example, specific heat of TEMPERATURE field (J kg)
 		//   Will also be used for creep specific snow water capacity  in m3 J-1
 		std::vector<double> soil; ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
-		double sw_abs;         ///< total absorbed shortwave radiation by the element (W m-2)
+		double sw_abs;     ///< total absorbed shortwave radiation by the element (W m-2)
 		// Snow Metamorphism Data
-		double rg;             ///< grain radius (mm)
-		double dd;             ///< snow dendricity: 0 = none, 1 = newsnow
-		double sp;             ///< sphericity: 1 = round, 0 = angular
-		double rb;             ///< grain bond radius (mm)
-		double ps2rb;          ///< proportion of grain bond growth due to pressure sintering (1)
-		double N3;             ///< grain Coordination number (1)
-		int    mk;             ///< grain marker (history dependent)
-		int    type;           ///< grain class
-		double dth_w;          ///< Subsurface Melting & Freezing Data: change of water content
-		double Qmf;            ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
-		double dE, E, Ee, Ev;  ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-		double EDot, EvDot;    ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
-		double S;              ///< Total Element Stress (Pa), S being the energy conjugate stress.
-		double C;              ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output.
-		double S_dr;           ///< Stability Index based on deformation rate (Direct Action Avalanching)
-		double s_strength;     ///< Parameterized snow shear strength (kPa)
-		double hard;           ///< Parameterized hand hardness (1)
+		double rg;         ///< grain radius (mm)
+		double dd;         ///< snow dendricity: 0 = none, 1 = newsnow
+		double sp;         ///< sphericity: 1 = round, 0 = angular
+		double rb;         ///< grain bond radius (mm)
+		double ps2rb;      ///< proportion of grain bond growth due to pressure sintering (1)
+		double N3;         ///< grain Coordination number (1)
+		int    mk;         ///< grain marker (history dependent)
+		int    type;       ///< grain class
+		double metamo;     ///< keep track of metamorphism
+		double dth_w;      ///< Subsurface Melting & Freezing Data: change of water content
+		double Qmf;        ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
+		double dE, E, Ee, Ev; ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
+		double EDot, EvDot;   ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
+		double S;          ///< Total Element Stress (Pa), S being the energy conjugate stress
+		double C;          ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output
+		double CDot;       ///< Stress rate (Pa s-1), that is the overload change rate
+		double S_dr;       ///< Stability Index based on deformation rate (Direct Action Avalanching)
+		double s_strength; ///< Parameterized snow shear strength (kPa)
+		double hard;       ///< Parameterized hand hardness (1)
 		//NIED (H. Hirashima)
 		double dhf;
 
@@ -356,10 +365,10 @@ class SN_ELEM_DATA {
 
 };
 
-/// @brief NODAL DATA used as a pointer in the SN_STATION_DATA structure
-class SN_NODE_DATA {
+/// @brief NODAL DATA used as a pointer in the SnowStation structure
+class NodeData {
 	public:
-		SN_NODE_DATA() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), hoar(0.), 
+		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), hoar(0.), 
 		                 dhf(0.), S_dhf(0.), Sigdhf(0.) {}
 
 		double z;    ///< nodal height from ground in m
@@ -378,7 +387,7 @@ class SN_NODE_DATA {
 };
 
 /**
- * @brief CANOPY DATA used as a pointer in the SN_STATION_DATA structure
+ * @brief CANOPY DATA used as a pointer in the SnowStation structure
  * -# INSTANTANEOUS VARIABLES
  * 	-# Canopy "state" variables, and some auxiliaries
  * 	-# Properties which could be given here or as a parameter field
@@ -455,18 +464,20 @@ class SN_CANOPY_DATA {
  * It is used extensively not only during the finite element solution but also to control
  * the post-processing writes. It is initialized from SN_SNOWSOIL_DATA (at present).
  */
-class SN_STATION_DATA {
+class SnowStation {
 
 	public:
-		SN_STATION_DATA(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes);
+		SnowStation(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes);
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata);
 		void resize(const int& number_of_elements);
 		void reduceNumberOfElements(const int& rnE);
 		void joinElements(const int& number_top_elements);
 
-		static bool sn_JoinCondition(const SN_ELEM_DATA& Edata0, const SN_ELEM_DATA& Edata1);
-		static void mergeElements(SN_ELEM_DATA& Edata0, const SN_ELEM_DATA& Edata1, const bool& join);
+		static bool sn_joinCondition(const ElementData& Edata0, const ElementData& Edata1);
+		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
+
+		double compSnowpackInternalEnergyChange(const double sn_dt);
 
 		int getNumberOfElements() const;
 		int getNumberOfNodes() const;
@@ -483,9 +494,9 @@ class SN_STATION_DATA {
 		double cH;            ///< the CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
 		double mH;            ///< the MEASURED snowpack height, including soil depth if SNP_SOIL == 1
 		double Ground;        ///< the ground height -- meaning the height of the top soil node
-		double hn_slope;      ///< New snow depth on slopes
-		double rho_slope;     ///< Snow density on slopes
-		int    windward;      ///< To be set for windward slope if SNOW_REDISTRIBUTION
+		double hn;            ///< Depth of new snow to be used on slopes
+		double rho_hn;        ///< Density of new snow to be used on slopes
+		bool   windward;      ///< True for windward (luv) slope
 		int    ErosionLevel;  ///< Element where snow erosion stopped previously for the drift index
 		double ErosionMass;   ///< Eroded mass either real or virtually (storage if less than one element)
 		int    S_class1;      ///< Stability class based on hand hardness, grain class ...
@@ -500,8 +511,8 @@ class SN_STATION_DATA {
 		double z_S_4;         ///< Depth of stab_index4
 		double S_5;           ///< stab_index5
 		double z_S_5;         ///< Depth of stab_index5
-		std::vector<SN_NODE_DATA> Ndata;  ///< pointer to nodal data array (e.g. T, z, u etc..)
-		std::vector<SN_ELEM_DATA> Edata;
+		std::vector<NodeData> Ndata;  ///< pointer to nodal data array (e.g. T, z, u etc..)
+		std::vector<ElementData> Edata;
 		void *Kt, *Ks;        ///< pointer to pseudo-conductivity and stiffnes matrix
 		double ColdContent;   ///< immediate cold content of snowpack (J m-2)
 		char SubSurfaceMelt;  ///< subsurface melting flag ( yes/no ) for exposition
@@ -549,11 +560,11 @@ class Q_PROFILE_DAT {
 		double dendricity;    ///< 0 bis 1         (-)
 		double sphericity;    ///< 0 bis 1         (-)
 		double coordin_num;   ///< 0 bis 10        (-)
-		double grain_dia;     ///< 0 bis 100       (mm)
-		double bond_dia;      ///< 0 bis 100       (mm)
+		double grain_size;    ///< 0 bis 100       (mm)
+		double bond_size;      ///< 0 bis 100       (mm)
 		double hard;          ///< 0. bis 5.       (-)
 		int    marker;        ///< 0 bis 100       (-)
-		int    grain_class;   ///< 0 bis 100       (-)
+		int    type;   ///< 0 bis 100       (-)
 };
 
 
@@ -586,20 +597,20 @@ struct Q_PROCESS_DAT {
 	double wind_trans;     ///< cm
 	double wind_trans24;   ///< cm
 	// New snow depths
-	double hns_half_hour;  ///< cm
-	double hns3;           ///< cm
-	double hns6;           ///< cm
-	double hns12;          ///< cm
-	double hns24;          ///< cm
-	double hns72;          ///< cm
-	double hns72_24;       ///< cm;
+	double hn_half_hour;   ///< cm
+	double hn3;            ///< cm
+	double hn6;            ///< cm
+	double hn12;           ///< cm
+	double hn24;           ///< cm
+	double hn72;           ///< cm
+	double hn72_24;        ///< cm;
 	// New snow water equivalents
-	double wc_half_hour;   ///< kg m-2
-	double wc3;            ///< kg m-2
-	double wc6;            ///< kg m-2
-	double wc12;           ///< kg m-2
-	double wc24;           ///< kg m-2
-	double wc72;           ///< kg m-2
+	double hnw_half_hour;  ///< kg m-2
+	double hnw3;           ///< kg m-2
+	double hnw6;           ///< kg m-2
+	double hnw12;          ///< kg m-2
+	double hnw24;          ///< kg m-2
+	double hnw72;          ///< kg m-2
 	// Stability indices
 	int stab_class1;       ///< Stability class 1,3,5
 	int stab_class2;       ///< Profile type 0..10
@@ -640,18 +651,18 @@ struct Q_PROCESS_IND {
 	short wind_trans;
 	short wind_trans24;
 
-	short hns3;
-	short hns6;
-	short hns12;
-	short hns24;
-	short hns72;
-	short hns72_24;
+	short hn3;
+	short hn6;
+	short hn12;
+	short hn24;
+	short hn72;
+	short hn72_24;
 
-	short wc3;
-	short wc6;
-	short wc12;
-	short wc24;
-	short wc72;
+	short hnw3;
+	short hnw6;
+	short hnw12;
+	short hnw24;
+	short hnw72;
 
 	short stab_class1;
 	short stab_class2;

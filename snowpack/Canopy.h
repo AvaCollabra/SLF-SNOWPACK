@@ -33,9 +33,9 @@ class Canopy {
  	public:
 		Canopy(const mio::Config& i_cfg);
 
-		static void cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const SN_SURFACE_DATA *Sdata, const double cos_sl);
+		static void cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		
-		void runCanopyModel(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata, double roughness_length, 
+		void runCanopyModel(SN_MET_DATA *Mdata, SnowStation *Xdata, double roughness_length,
 						double height_of_wind_val);
 
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
@@ -46,11 +46,11 @@ class Canopy {
 
 		double cn_RootFraction(const double& zupper, const double& zlower);
 
-		void cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, SN_ELEM_DATA* EMS);
+		void cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, ElementData* EMS);
 
 		double cn_f4(const double& tempC);
 
-		double cn_f2f4(const int& SoilNode, SN_ELEM_DATA* EMS);
+		double cn_f2f4(const int& SoilNode, ElementData* EMS);
 
 		double cn_f3(const double& vpd);
 
@@ -72,7 +72,7 @@ class Canopy {
 
 		double cn_CanopyTransmissivity(const double& lai, const double& elev);
 
-		void cn_LineariseNetRadiation(const SN_MET_DATA& Mdata,const SN_CANOPY_DATA& Cdata, const SN_STATION_DATA& Xdata,
+		void cn_LineariseNetRadiation(const SN_MET_DATA& Mdata,const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
 								double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
 								const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
 								const double& sigfdirect, double& r1p);
@@ -106,11 +106,11 @@ class Canopy {
 		double cn_RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
 
 		void cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& refheight, const double& zomg, 
-								  const double& wetfraction, SN_STATION_DATA& Xdata, double& ch_canopy, 
+								  const double& wetfraction, SnowStation& Xdata, double& ch_canopy, 
 								  double& ce_canopy, double& ce_transpiration, 
 								  double& ce_interception, double& ce_condensation);
 		
-		void cn_CanopyRadiationOutput(SN_STATION_DATA *Xdata, SN_MET_DATA *Mdata, double ac, 
+		void cn_CanopyRadiationOutput(SnowStation& Xdata, SN_MET_DATA& Mdata, double ac,
 								double *iswrac, double *rswrac,
 								double *iswrbc, double *rswrbc, double *ilwrac,
 								double *rlwrac, double *ilwrbc, double *rlwrbc,
@@ -123,7 +123,7 @@ class Canopy {
 		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
 		static const double f3_gd, rootdepth, wp_fraction;
 		
-		mio::Config cfg;
+		const mio::Config& cfg;
 		int snp_soil;
 		double thresh_rain, calculation_step_length;
 };

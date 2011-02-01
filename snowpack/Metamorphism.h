@@ -40,47 +40,47 @@
 #include <map>
 #include <string>
 
-class SN_STATION_DATA;
+class SnowStation;
 class Metamorphism;
 
-typedef void (Metamorphism::*MetaModelFn)(const SN_MET_DATA&, SN_STATION_DATA&); 
-typedef double (Metamorphism::*MetaSpRateFn)(const SN_ELEM_DATA&);
+typedef void (Metamorphism::*MetaModelFn)(const SN_MET_DATA&, SnowStation&); 
+typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 
 class Metamorphism {
 
 	public:
 		Metamorphism(const mio::Config& i_cfg);
 
-		void runMetamorphismModel(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata) throw();
+		void runMetamorphismModel(const SN_MET_DATA& Mdata, SnowStation& Xdata) throw();
 
-		static double csPoreArea(const SN_ELEM_DATA& Edata);
+		static double csPoreArea(const ElementData& Edata);
 
 		static double getCoordinationNumberN3(const double& Rho);
 
-		static double ddRate(const SN_ELEM_DATA& Edata);
+		static double ddRate(const ElementData& Edata);
 
 		static const double mm_tg_dpdz, ba_g_fudge, sa_g_fudge, max_grain_growth, bond_size_stop;
 		static const double max_grain_bond_ratio, wind_slab_enhance, wind_slab_vw, wind_slab_depth;
 		
 	private:
-		double TGBondRate(const SN_ELEM_DATA& Edata);
+		double TGBondRate(const ElementData& Edata);
  
 		double LatticeConstant0(const double& th_ice);
 
-		double TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, const double& Ttop,
+		double TGGrainRate(const ElementData& Edata, const double& Tbot, const double& Ttop,
 		                   const double& gradTSub, const double& gradTSup);
 
-		double ETBondRate(const SN_ELEM_DATA& Edata);
-		double ETGrainRate(const SN_ELEM_DATA& Edata);
+		double ETBondRate(ElementData& Edata);
+		double ETGrainRate(const ElementData& Edata);
 
-		double PressureSintering(const SN_ELEM_DATA& Edata);
+		double PressureSintering(ElementData& Edata);
 
-		void metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata);
-		void metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata);
+		void metamorphismDEFAULT(const SN_MET_DATA& Mdata, SnowStation& Xdata);
+		void metamorphismNIED(const SN_MET_DATA& Mdata, SnowStation& Xdata);
 		
 
-		double spRateDEFAULT(const SN_ELEM_DATA& Edata);
-		double spRateNIED(const SN_ELEM_DATA& Edata);
+		double spRateDEFAULT(const ElementData& Edata);
+		double spRateNIED(const ElementData& Edata);
 
 	private:
 		static const bool __init;    ///<helper variable to enable the init of static collection data
@@ -88,7 +88,7 @@ class Metamorphism {
 		static std::map<std::string, MetaModelFn> mapMetamorphismModel;
 		static std::map<std::string, MetaSpRateFn> mapSpRate;
 		
-		mio::Config cfg;
+		const mio::Config& cfg;
 		std::string metamorphism_model;
 		double sn_dt, new_snow_grain_rad;
 };

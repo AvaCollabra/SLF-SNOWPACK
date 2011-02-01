@@ -23,7 +23,7 @@
  * @version 9.x
  * @date -
  * @bug -
- * @brief Calculates missing meteorological information such as friction velocity and roughness length
+ * @brief Computes missing meteorological information such as friction velocity and roughness length
  * - 29.10.2002: Michael Lehning implements Micromet()
  * - 15.03.2005: Andy and Michi implement stability correction for turbulent fluxes in the hope
  *               that this will also improve the little bit too strong melting of the version 8.1
@@ -57,7 +57,7 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
-	 * Required for surface energy exchange calculation and for drifting and blowing snow.
+	 * Required for surface energy exchange computation and for drifting and blowing snow.
 	 */
 	height_of_wind_value = cfg.get("HEIGHT_OF_WIND_VALUE", "Parameters");
 
@@ -74,15 +74,15 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 void Meteo::projectPrecipitations(const double& SlopeAngle, double& precips, double& hs)
 {
 	precips *= cos(SlopeAngle);
-	hs  *= cos(SlopeAngle);
-} // End of ProjectPrecipitations
+	hs *= cos(SlopeAngle);
+}
 
 /**
  * @brief Make an iteration to find z0 and ustar at the same time
  * @param Mdata
  * @param Xdata
  */
-void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
+void Meteo::MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata)
 {
 	int e, iter = 1, max_iter = 100;
 	const double eps1 = 1.e-3, eps2 = 1.e-5;
@@ -118,11 +118,15 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 	e = Xdata.getNumberOfElements();
 	vw = MAX(0.3, Mdata.vw);
 	// Adjust for snow height
-	zref = MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
-	
+	if (ALPINE3D) {
+		zref = height_of_wind_value; // Assume model level over actual surface including snow
+	} else {
+		zref = MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
+	}
+
 	// In case of ventilation ...
 	if ( SnLaws::wind_pump ) {
-		d_pump = SnLaws::calcWindPumpingDisplacement(Xdata);
+		d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
 	} else {
 		d_pump = 0.;
 	}
@@ -166,14 +170,10 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 				psi_m = psi_s = -5. * stab_ratio;
 			}
 
-			// Calculate ustar
 			ustar = 0.4 * vw / (z_ratio - psi_m);
 		} else if ( neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.)) ) { // MO Iteration
-			// Calculate ustar
-			ustar = 0.4 * vw / (z_ratio - psi_m);
-			// Calculate Tstar
+		ustar = 0.4 * vw / (z_ratio - psi_m);
 			Tstar = 0.4 * (tss_v - ta_v) / (z_ratio - psi_s);
-			// Calculate Stability Parameter
 			stab_ratio = -0.4 * zref * Tstar * Constants::g / (tss * ustar*ustar);
 		
 			if ( stab_ratio > 0. ) { // stable
@@ -220,7 +220,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
 /**
  * @brief
  * \li with CANOPY set:
- * 		In case of an existing canopy, call canopy routine, which calculates precipitation, radiation,
+ * 		In case of an existing canopy, call canopy routine, which computes precipitation, radiation,
  * 		friction velocity and reference temperature for the surface below the canopy.
  * 		Note that solar radiation may change also in dg_cn_Canopy(). \n
  * 		- Mdata->iswr  incoming global solar radiation (direct + diffuse), adapted to canopy
@@ -240,7 +240,7 @@ void Meteo::MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata)
  * @param *Mdata
  * @param *Xdata
  */
-void Meteo::calculateMeteo(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata)
+void Meteo::compMeteo(SN_MET_DATA *Mdata, SnowStation *Xdata)
 {
 	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);

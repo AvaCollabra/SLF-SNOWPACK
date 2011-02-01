@@ -29,22 +29,20 @@ class SnowpackIOInterface {
 	public:
 		virtual ~SnowpackIOInterface(){}
 		
-		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, 
-							  SN_ZWISCHEN_DATA& Zdata) = 0;
+		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata) = 0;
 	  
-		virtual void writeSnowCover(const mio::Date& date, const std::string& station, 
-							   const SN_STATION_DATA& Xdata, 
-							   const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false) = 0;
+		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
+		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false) = 0;
 		
-		virtual void writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-							    const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, 
-							    const Q_PROCESS_DAT& Hdata) = 0;
+		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
+		                             const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
+		                             const Q_PROCESS_DAT& Hdata, const double wind_trans24) = 0;
 
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-							 const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata) = 0;
+                              SnowStation& Xdata, const Q_PROCESS_DAT& Hdata) = 0;
 
-		virtual void writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
-							    const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num) = 0;
+		virtual bool writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata,
+                                 const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num) = 0;
 };
 
 #endif //End of SnowpackIOInterface.h

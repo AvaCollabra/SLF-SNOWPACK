@@ -42,12 +42,12 @@ class Meteo {
 		Meteo(const mio::Config& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
-		void calculateMeteo(SN_MET_DATA *Mdata, SN_STATION_DATA *Xdata);
+		void compMeteo(SN_MET_DATA *Mdata, SnowStation *Xdata);
 
  	private:
-		void MicroMet(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata);
+		void MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata);
 		
-		mio::Config cfg;
+		const mio::Config& cfg;
 		int neutral;
 		bool research_mode, useCanopyModel;
 		double roughness_length, height_of_wind_value;

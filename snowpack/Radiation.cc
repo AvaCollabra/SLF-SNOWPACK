@@ -39,7 +39,8 @@ const double Radiation::thresh_sun_elevation = 1.e-2;
 
 Radiation::Radiation(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
-	sw_ref = cfg.get("SW_REF", "Parameters");
+	sw_mode = cfg.get("SW_MODE", "Parameters");
+	sw_mode %= 10;
 }
 
 double Radiation::ProjectToHorizontal(const double& slope_component, const double& ang_inc, 
@@ -101,12 +102,12 @@ void Radiation::computeDayNumbers(const mio::Date& date, double& day_number, dou
 	int    YYYY,MM,DD,HH,MI;
 	double spring_equi;
 
-	// Calculate the day-of-the-year (DOY) from the Julian Date
+	// Compute the day-of-the-year (DOY) from the Julian Date
 	date.getDate(YYYY, MM, DD, HH, MI);
 	Date year_end(YYYY-1, 12, 31, 0, 0);
 	day_number = (int)(date.getJulianDate() - year_end.getJulianDate());
 
-	// Calculate the day-of-the-year (DOY) from the Julian Date starting at spring equinox
+	// Compute the day-of-the-year (DOY) from the Julian Date starting at spring equinox
 	// spring equinox time in days from the beginning of the year (Bourges (1985))
 	// spring_equi = 78.801 + 0.2422 * (YYYY - 1969) - (int) ( 0.25 * (YYYY - 1969) );
 	// starting from spring equinox at the year 2000 (20.3. 8:30(UTC+1-> 79.3542)
@@ -193,7 +194,7 @@ void Radiation::computePositionSun(const double& local_time, const double& Lat, 
 	// standard meridian: longitude of the center of my local timezone, 15*time difference to UTC
 	// local standard time:
 	// meteo input always has to be in local standard time (winter in Davos: UTC+1) to avoid confusion
-	// with daylight saving time and for the calculation of the hour_angle
+	// with daylight saving time and for the computation of the hour_angle
 
 	if ( Lon >= 0. ) {
 		Psolar.solar_time = local_time
@@ -449,18 +450,19 @@ void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double&
  * @brief Compute global, direct and diffuse radiation on flat field, including potential radiation
  * ATTENTION: This function should NOT be called by Alpine3D !!!
  * @param *Mdata SN_MET_DATA
- * @param *Xdata SN_STATION_DATA
+ * @param *Xdata Profile
  * @param *Psolar PositionSun
  * @param *Rdata RadiationData
  * @return int
  */
-void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, 
+void Radiation::flatFieldRadiation(const SnowStation& Xdata, SN_MET_DATA& Mdata,
                                    PositionSun& Psolar, RadiationData& Rdata)
 {
-	// SOLAR PARAMETERS have to be calculated
+	// SOLAR PARAMETERS have to be computed
 	double local_time = Mdata.date.getJulianDate() - floor(Mdata.date.getJulianDate()) - 0.5; // in julian days
 	// Compute daily solar parameters once a day (shortly after midnight)
-	if( (local_time > 0.005 && local_time < 0.016) || !(Psolar.ecc_corr > 0.) ) {
+	// HACK what's the purpose of the condition on ecc_corr?
+	if ((local_time > 0.005 && local_time < 0.016) || !(Psolar.ecc_corr > 0.)) {
 		computeSolarDailyParameters(Mdata.date, Psolar);
 	}
 	// Hourly position of the sun
@@ -469,16 +471,18 @@ void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Md
 	angleOfIncidence(0., 0., Xdata.SlopeAngle, Xdata.SlopeAzi, Psolar);
 
 	// Incoming global solar radiation on horizontal surface
-	if( sw_ref%10 == 1 ) {
+	if (sw_mode == 1) {
 		Rdata.global_hor = Mdata.rswr/Xdata.Albedo;
 	} else {
 		Rdata.global_hor = Mdata.iswr;
 	}
 
 	// Top of atmosphere radiation
-	Rdata.toa_h = Constants::solcon * Psolar.ecc_corr * cos( Psolar.zen );
+	if ((Rdata.toa_h = Constants::solcon * Psolar.ecc_corr * cos( Psolar.zen )) < 0.) {
+		Rdata.toa_h = Constants::nodata;
+	}
 	// Compute potential radiation only for Psolar.elev > THRESH_SUN_ELEVATION ...
-	if ( Psolar.elev >= Radiation::thresh_sun_elevation) {
+	if (Psolar.elev >= Radiation::thresh_sun_elevation) {
 		computePotentialRadiation(Psolar, Xdata.Albedo, Xdata.Alt, lw_AirPressure(Xdata.Alt), Mdata.rh, Mdata.ta, Rdata);
 	} else {// ... because radiation is only diffuse otherwise
 		Rdata.pot_dir = 0.;
@@ -487,11 +491,11 @@ void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Md
 
 	// Split flat field radiation into direct and diffuse components
 	computeSplittingCoefficient(Psolar, Radiation::thresh_sun_elevation, Rdata);
-	if ( (Rdata.global_hor > 0.) && (Rdata.pot_dir > 0.) ) {
+	if ((Rdata.global_hor > 0.) && (Rdata.pot_dir > 0.)) {
 		Rdata.dir_hor = (1. - Rdata.Md)*Rdata.global_hor;
 		Rdata.diffsky = Rdata.Md*Rdata.global_hor;
 	} else {
-		if ( Rdata.global_hor > 0. ) {
+		if (Rdata.global_hor > 0.) {
 			Rdata.dir_hor = 0.;
 			Rdata.diffsky = MAX(Rdata.Md*Rdata.global_hor, Rdata.pot_diffsky);
 		} else {
@@ -501,7 +505,7 @@ void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Md
 	}
 
 	// Reset global radiation values
-	if ( sw_ref%10 == 1 ) {
+	if (sw_mode == 1) {
 		Mdata.rswr = (Rdata.dir_hor + Rdata.diffsky)*Xdata.Albedo;
 	} else {
 		Mdata.iswr = Rdata.dir_hor + Rdata.diffsky;
@@ -517,15 +521,15 @@ void Radiation::flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Md
  *        Otherwise one should use a mask (not implemented yet TODO)
  * ATTENTION: This function should NOT be called by Alpine3D !!!
  * @param Mdata SN_MET_DATA
- * @param Xdata SN_STATION_DATA
- * @param Sdata SN_SURFACE_DATA
+ * @param Xdata Profile
+ * @param Sdata SurfaceFluxes
  * @param Psolar PositionSun
  * @param Rdata RadiationData
  */
-void Radiation::radiationOnSlope(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN_SURFACE_DATA& Sdata,
+void Radiation::radiationOnSlope(const SnowStation& Xdata, SN_MET_DATA& Mdata, SurfaceFluxes& Sdata,
                                  PositionSun& Psolar, RadiationData& Rdata)
 {
-	if ( Xdata.SlopeAngle > 0. ) {
+	if ( Xdata.SlopeAngle > Constants::min_slopeangle ) {
 		// Angle of incidence
 		angleOfIncidence(0., 0., Xdata.SlopeAngle, Xdata.SlopeAzi, Psolar);
 		// Project radiation

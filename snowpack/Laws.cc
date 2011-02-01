@@ -29,7 +29,7 @@
  */
 
 /**
- * @brief Calculates the emissivity of a body
+ * @brief Computes the emissivity of a body
  * @author Mathias Bavay
  * @version 10.02
  * @param lwr longwave radiation emitted by the body (W m-2)
@@ -41,7 +41,7 @@ double lw_emissivity(const double lwr, const double T)
 }
 
 /**
- * @brief Calculates the long wave radiation coming from a body knowing its emissivity
+ * @brief Computes the long wave radiation coming from a body knowing its emissivity
  * @author Mathias Bavay
  * @version Y.mm
  * @param ea emissivity of the body (0-1)
@@ -291,43 +291,10 @@ double lw_Omstedt(const double e0, const double cloud_frac)
 	return (0.97 * (0.68 + 0.0036 * sqrt(e0)) * (1. + 0.18 * cloud_frac * cloud_frac));
 }
 
-
-/**
- * @brief Estimate the residual water content RWC by Vol from work by Coleou and Lesaffre, 1998.
- * Ann. Glaciol., 26, 64-68.
- * Experimental range:
- * - density unsoaked: 235 to 580
- * - density soaked: 328 to 589 kg m-3
- * - RWC by Vol 0.049 to 0.029
- * Note that function will limit range to 0.0264 to 0.08 RWC by Vol
- * @author Charles Fierz
- * @version 8.11
- * @param theta_i Volumetric fraction of ice in the snow
- * @return double
- */
-double lw_SnowResidualWaterContent(const double theta_i)
-{
-	const double max_content = 0.08; //TODO: is it really needed?
-	double res_wat_cont;
-
-	if ( theta_i > 0.23 ) {
-		res_wat_cont = 0.0264 + 0.0099 * (1. - theta_i) / theta_i;
-	} else {
-		res_wat_cont = 0.08 - 0.1023 * (theta_i - 0.03);
-	}
-
-	//maximum returned value: max_content
-	if(res_wat_cont > max_content) {
-		return max_content;
-	} else {
-		return res_wat_cont;
-	}
-}
-
 /**
  * @brief Computes air emissivity (1) \n
  * Uses either incoming long wave radiation or either Brutsaert (clear sky) or Omstedt (cloudiness) parametrization \n
- * NOTE ta and rh must be checked values, best containing no NODATA!
+ * NOTE ta and rh must be checked values, best containing no Constants::nodata!
  * @author Mathias Bavay et al.
  * @version 10.04
  * @param input
@@ -345,8 +312,8 @@ double lw_AirEmissivity(const double input, const double ta, const double rh, co
 	if(input > 1.) {
 		ea = input/(Constants::stefan_boltzmann*ta*ta*ta*ta);
 	} else {
-		if((ta == NODATA) || (rh == NODATA)) {
-			return NODATA;
+		if((ta == Constants::nodata) || (rh == Constants::nodata)) {
+			return Constants::nodata;
 		}
 		const double e0 = rh * lw_SaturationPressure(ta); // (Pa)
 		if(input <= 0.) {

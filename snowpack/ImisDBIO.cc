@@ -28,8 +28,8 @@ using namespace oracle::occi;
 const double ImisDBIO::in_tz = 1.; //All IMIS data is in gmt+1
 
 bool ImisDBIO::research_mode = true;
-double ImisDBIO::density_hoar_surf = 0.0;
-double ImisDBIO::min_size_hoar_surf = 0.0;
+double ImisDBIO::hoar_density_surf = 0.0;
+double ImisDBIO::hoar_min_size_surf = 0.0;
 
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
 
@@ -50,10 +50,10 @@ ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	research_mode = cfg.get("RESEARCH", "Parameters");
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
+	hoar_density_surf = cfg.get("HOAR_DENSITY_SURF", "Parameters");
 
 	//Minimum size to show surface hoar on surface (mm)
-	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
+	hoar_min_size_surf = cfg.get("HOAR_MIN_SIZE_SURF", "Parameters");
 }
 
 void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /*SSdata*/, SN_ZWISCHEN_DATA& /*Zdata*/)
@@ -61,14 +61,15 @@ void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SN_STATION_DATA& /*Xdata*/, 
+void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
                               const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 	
-void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SN_STATION_DATA& /*Xdata*/, 
-                               const SN_SURFACE_DATA& /*Sdata*/, const SN_MET_DATA& /*Mdata*/, const Q_PROCESS_DAT& /*Hdata*/)
+void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SnowStation& /*Xdata*/,
+                               const SurfaceFluxes& /*Sdata*/, const SN_MET_DATA& /*Mdata*/,
+                               const Q_PROCESS_DAT& /*Hdata*/, const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
@@ -77,9 +78,8 @@ void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SN_STATION_
  * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
  */
 void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                            const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+                            SnowStation& Xdata, const Q_PROCESS_DAT& Hdata)
 {
-
 	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
 		return;
 
@@ -87,8 +87,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	int n1, e, l = 0,  nL = 0, nE ;
 	vector<Q_PROFILE_DAT> Pdata;
 
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata; 
+	const vector<ElementData>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
+	const vector<NodeData>& NDS = Xdata.Ndata; 
 
 	// Allocate Memory, use double memory for possible surface hoar layers
 	Pdata.resize(nE);
@@ -97,9 +97,9 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	int snowloc = 1;
 	string mystation = station;
 	if (isdigit(station[station.length()-1])){
-	    snowloc = station[station.length()-1] - '0';
-	    if (mystation.length() > 2)
-		    mystation = mystation.substr(0, mystation.length()-1);
+		snowloc = station[station.length()-1] - '0';
+		if (mystation.length() > 2)
+			mystation = mystation.substr(0, mystation.length()-1);
 	}
 	
 
@@ -125,8 +125,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		Pdata[l].dendricity = EMS[e].dd;
 		Pdata[l].sphericity = EMS[e].sp;
 		Pdata[l].coordin_num = EMS[e].N3;
-		Pdata[l].grain_dia = 2. * EMS[e].rg;
-		Pdata[l].bond_dia = 2. * EMS[e].rb;
+		Pdata[l].grain_size = 2. * EMS[e].rg;
+		Pdata[l].bond_size = 2. * EMS[e].rb;
 		Pdata[l].marker = EMS[e].mk%100;
 		Pdata[l].hard = EMS[e].hard;
 		l++;
@@ -154,43 +154,48 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
 			   layer_date, Pdata[e].rho, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
 			   Pdata[e].theta_w, Pdata[e].theta_i, Pdata[e].dendricity, Pdata[e].sphericity, 
-			   Pdata[e].coordin_num, Pdata[e].grain_dia, Pdata[e].bond_dia, Pdata[e].grain_class);
+			   Pdata[e].coordin_num, Pdata[e].grain_size, Pdata[e].bond_size, Pdata[e].type);
 	}
 
 	//HACK: The condition nL < nE added by Egger: the aggregation of the layers in Aggregate::aggregate, 
 	//disregards the top layer only if nE > 5, otherwise nL might equal nE and the index e is invalid
 	//It's a hack because if the heighest layer is actually hoar then the former loop should only loop until
 	//nL - 1, that is if nL == nE
-	if ((NDS[nE].hoar > MM_TO_M(min_size_hoar_surf) * density_hoar_surf) && (nL < nE)) {
+	if ((NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) && (nL < nE)) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
 		const double profile_date = Pdata.at(e).date.getJulianDate() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata.at(e).layer_date - 2415021. + 0.5; //HACK
 
-		double gsz_SH = M_TO_MM(NDS[nE].hoar / density_hoar_surf);
+		double gsz_SH = M_TO_MM(NDS[nE].hoar / hoar_density_surf);
 		e=nL-1;
 		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-			   layer_date, density_hoar_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
-			   0., density_hoar_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
+						layer_date, hoar_density_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
+			0., hoar_density_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
 	}
 
 	fclose(PFile);
 }
 
-void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata, 
+bool ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata,
                                const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 	//HACK: num is incremented after each new data is added. It is therefore the index of the next element to write
 	if ((num <= 0) || (num > (int)Hdata.size())){
-		cout << "\tNo hazard data inserted or deleted from DB (" << num << " steps while Hdata.size="
-		     << Hdata.size() << ")" << endl;
-		return; //nothing to do
+		cout << "\tNo hazard data either deleted from or inserted into " << oracleDB << " :" << num << " steps while Hdata.size="
+		     << Hdata.size() << endl;
+		return false; //nothing to do
 	}
 
-	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == ""))
-		throw IOException("You must set the output database, username and password", AT);
+	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == "")){
+		//throw IOException("You must set the output database, username and password", AT);
+		if (num >= (int)Hdata.size()){
+			cout << "\tNo data written to DB " << oracleDB << "!\n\tTo do so you must set all of output database, username and password" << endl;
+		}
+		return false; //nothing to do
+	}
 
 	string stationName="", stationNumber="";
 	parseStationName(station, stationName, stationNumber);
@@ -216,6 +221,7 @@ void ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
 		          << Hdata[num-1].date.toString(mio::Date::ISO) << std::endl;
 		throw IOException("Oracle Error: " + string(e.what()), AT); //Translation of OCCI exception to IOException
 	}
+	return true;
 }
 
 /**
@@ -327,7 +333,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setDate(param++, hazarddate);
 		stmt->setString(param++, stationName);
 		stmt->setNumber(param++, statNum);
-		
+
 		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def); 
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].hoar_ind6 != -1)	stmt->setNumber(param++, Hdata[i].hoar_ind6);
@@ -336,28 +342,29 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].wind_trans != -1) stmt->setNumber(param++, Hdata[i].wind_trans);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns3 != -1)       stmt->setNumber(param++, Hdata[i].hns3);
+
+		if (Hdata_ind[i].hn3 != -1)       stmt->setNumber(param++, Hdata[i].hn3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns6 != -1)       stmt->setNumber(param++, Hdata[i].hns6);
+		if (Hdata_ind[i].hn6 != -1)       stmt->setNumber(param++, Hdata[i].hn6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns12 != -1)      stmt->setNumber(param++, Hdata[i].hns12);
+		if (Hdata_ind[i].hn12 != -1)      stmt->setNumber(param++, Hdata[i].hn12);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns24 != -1)      stmt->setNumber(param++, Hdata[i].hns24);
+		if (Hdata_ind[i].hn24 != -1)      stmt->setNumber(param++, Hdata[i].hn24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns72 != -1)      stmt->setNumber(param++, Hdata[i].hns72);
+		if (Hdata_ind[i].hn72 != -1)      stmt->setNumber(param++, Hdata[i].hn72);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hns72_24 != -1)   stmt->setNumber(param++, Hdata[i].hns72_24);
+		if (Hdata_ind[i].hn72_24 != -1)   stmt->setNumber(param++, Hdata[i].hn72_24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		
-		if (Hdata_ind[i].wc3 != -1)        stmt->setNumber(param++, Hdata[i].wc3);
+		if (Hdata_ind[i].hnw3 != -1)        stmt->setNumber(param++, Hdata[i].hnw3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wc6 != -1)        stmt->setNumber(param++, Hdata[i].wc6);
+		if (Hdata_ind[i].hnw6 != -1)        stmt->setNumber(param++, Hdata[i].hnw6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wc12 != -1)       stmt->setNumber(param++, Hdata[i].wc12);
+		if (Hdata_ind[i].hnw12 != -1)       stmt->setNumber(param++, Hdata[i].hnw12);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wc24 != -1)       stmt->setNumber(param++, Hdata[i].wc24);
+		if (Hdata_ind[i].hnw24 != -1)       stmt->setNumber(param++, Hdata[i].hnw24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wc72 != -1)       stmt->setNumber(param++, Hdata[i].wc72);
+		if (Hdata_ind[i].hnw72 != -1)       stmt->setNumber(param++, Hdata[i].hnw72);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		if (Hdata_ind[i].hoar_size != -1)  stmt->setNumber(param++, Hdata[i].hoar_size);

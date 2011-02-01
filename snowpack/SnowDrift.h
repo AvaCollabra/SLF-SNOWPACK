@@ -29,14 +29,14 @@
 #include <vector>
 
 class Saltation;
-struct SN_ELEM_DATA;
-struct SN_SURFACE_DATA;
+struct ElementData;
+struct SurfaceFluxes;
 struct SN_MET_DATA;
-struct SN_STATION_DATA;
+struct SnowStation;
 
 /**
  * @class SnowDrift
- * @brief This class contains the calculation of local snow drift and the associated erosion
+ * @brief This class contains the computation of local snow drift and the associated erosion
  * @version 10.02
  */
 class SnowDrift {
@@ -44,16 +44,16 @@ class SnowDrift {
 	public:
 		SnowDrift(const mio::Config& i_cfg);
 
-		void calcSnowDrift(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata, SN_SURFACE_DATA& Sdata, double& cumu_hnw);
+		void compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
 
  	private:
-		double calcMassFlux(const SN_ELEM_DATA& Edata, const double& ustar, const double& angle);	
+		double compMassFlux(const ElementData& Edata, const double& ustar, const double& angle);
 
-		mio::Config cfg;
+		const mio::Config& cfg;
 		bool enforce_measured_snow_heights, snow_redistribution; // Will be read from cfg object
 		Saltation saltation; // The saltation model used
 		double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-		int number_expo;
+		int nSlopes;
 
 		static const double schmidt_drift_fudge;
 		static const bool msg_erosion;

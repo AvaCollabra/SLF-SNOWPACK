@@ -110,10 +110,10 @@ class Radiation {
 
 		Radiation(const mio::Config& i_cfg);
 
-		void radiationOnSlope(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, SN_SURFACE_DATA& Sdata, 
+		void radiationOnSlope(const SnowStation& Xdata, SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, 
 		                      PositionSun& Psolar, RadiationData& Rdata);
 
-		void flatFieldRadiation(const SN_STATION_DATA& Xdata, SN_MET_DATA& Mdata, 
+		void flatFieldRadiation(const SnowStation& Xdata, SN_MET_DATA& Mdata, 
 		                        PositionSun& Psolar, RadiationData& Rdata);
 
 	private:
@@ -142,10 +142,9 @@ class Radiation {
 
 		//projection of incoming radiation for a given slope
 		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, SN_MET_DATA& Mdata, RadiationData& Rdata); 
-	private:
 
-		mio::Config cfg;
-		int sw_ref;
+		const mio::Config& cfg;
+		int sw_mode;
 
 		static const double thresh_sun_elevation;
 };

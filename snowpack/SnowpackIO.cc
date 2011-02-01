@@ -60,20 +60,21 @@ void SnowpackIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSd
 	asciiio.readSnowCover(station, SSdata, Zdata);
 }
 
-void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
-				const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata, 
+                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	asciiio.writeSnowCover(date, station, Xdata, Zdata, forbackup);
 }
 	
-void SnowpackIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-				 const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, const Q_PROCESS_DAT& Hdata)
+void SnowpackIO::writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
+                                 const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
+                                 const Q_PROCESS_DAT& Hdata, const double wind_trans24)
 {
-	asciiio.writeTimeSeries(station, Xdata, Sdata, Mdata, Hdata);
+	asciiio.writeTimeSeries(station, Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 	
 void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-						const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+                              SnowStation& Xdata, const Q_PROCESS_DAT& Hdata)
 {
 	if (outputprofile_as_ascii)
 		asciiio.writeProfile(date, station, expo, Xdata, Hdata);
@@ -85,10 +86,16 @@ void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station,
 	}
 }
 
-void SnowpackIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
+bool SnowpackIO::writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata,
 						   const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
 {
 #ifdef IMISDBIO
-	imisdbio.writeHazardData(station, Hdata, Hdata_ind, num);
+	if (imisdbio.writeHazardData(station, Hdata, Hdata_ind, num)){
+		return true;
+	} else {
+		return false;
+	}
+#elif
+	return false;
 #endif
 }

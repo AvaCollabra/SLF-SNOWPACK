@@ -72,7 +72,7 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * 		-# FIXED_RATES (\< T_INTERNAL-FIXED_HEIGHTS) double columns of measured values and positions given by
 	 *       fixed negative settling rates (d-1). Enter the initial position (pos or neg, see above) at the time
 	 *       the change is effective, followed by the rate. Additional such entries can be repeated when initial
-	 *       position and/or rate change again. Otherwise fill the column with -999.9 [NODATA]
+	 *       position and/or rate change again. Otherwise fill the column with -999.9 [IOUtils::nodata]
 	 * 		-# Up to T_INTERNAL-FIXED_HEIGHTS-FIXED_RATES double columns of measured values and positions
 	 * 	- FIXED_HEIGHTS, and FIXED_RATES are all set in Constants.h, T_INTERNAL is read from CONSTANTS_User.INI
 	 */
@@ -112,9 +112,12 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	perp_to_slope = cfg.get("PERP_TO_SLOPE", "Parameters");	
 
-	sw_ref = cfg.get("SW_REF", "Parameters");
+	sw_mode = cfg.get("SW_MODE", "Parameters");
+	sw_mode %= 10;
 	hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Parameters");
 	calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	ts_days_between = cfg.get("TS_DAYS_BETWEEN", "Parameters");
+	avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Parameters");
 	useCanopyModel = cfg.get("CANOPY", "Parameters");
 	useSnowLayers = cfg.get("SNP_SOIL", "Parameters");
 	t_internal = cfg.get("T_INTERNAL", "Parameters");
@@ -123,10 +126,10 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	research_mode = cfg.get("RESEARCH", "Parameters");
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	density_hoar_surf = cfg.get("DENSITY_HOAR_SURF", "Parameters");
+	hoar_density_surf = cfg.get("HOAR_DENSITY_SURF", "Parameters");
 
 	//Minimum size to show surface hoar on surface (mm)
-	min_size_hoar_surf = cfg.get("MIN_SIZE_HOAR_SURF", "Parameters");
+	hoar_min_size_surf = cfg.get("HOAR_MIN_SIZE_SURF", "Parameters");
 	
 	if (depth_of_sensors.size() != (unsigned)fixed_heights)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
@@ -186,7 +189,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, "\nAltitude=%lf", &SSdata.Alt);
 	fscanf(fin, "\nSlopeAngle=%lf", &SSdata.Angle);
 	fscanf(fin, "\nSlopeAzi=%lf", &SSdata.Azi);
-	if ( (sw_ref%10 == 2) && perp_to_slope && !(SSdata.Angle <= 3.) ) {
+	if ( (sw_mode == 2) && perp_to_slope && !(SSdata.Angle <= 3.) ) {
 		prn_msg(__FILE__, __LINE__, "wrn", -1., 
 			   "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
 	}
@@ -238,7 +241,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 
 	// Allocate Space for the Layers
 	if (SSdata.nLayers > 0)
-		SSdata.Ldata.resize(SSdata.nLayers, SN_LAYER_DATA(max_number_of_solutes));
+		SSdata.Ldata.resize(SSdata.nLayers, LayerData(max_number_of_solutes));
 
 	// Read the layer data
 	if ( fscanf(fin,"\nYYYY") < 0 ) {
@@ -260,17 +263,19 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 		}
 		fscanf(fin, "%lf %lf %lf", &SSdata.Ldata[l].SoilRho, &SSdata.Ldata[l].SoilK, &SSdata.Ldata[l].SoilC);
 		fscanf(fin, "%lf %lf %lf %lf %d %lf %d", &SSdata.Ldata[l].rg, &SSdata.Ldata[l].rb, &SSdata.Ldata[l].dd, &SSdata.Ldata[l].sp, &SSdata.Ldata[l].mk, &SSdata.Ldata[l].hr, &SSdata.Ldata[l].ne);
-		if ( SSdata.Ldata[l].rg>0. && SSdata.Ldata[l].rb >= SSdata.Ldata[l].rg ) {
+		if (SSdata.Ldata[l].rg>0. && SSdata.Ldata[l].rb >= SSdata.Ldata[l].rg) {
 			//HACK To avoid surprises in lwsn_ConcaveNeckRadius()
 			SSdata.Ldata[l].rb = Metamorphism::max_grain_bond_ratio * SSdata.Ldata[l].rg;
 			prn_msg(__FILE__, __LINE__, "wrn", -1., "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%lf (rb=%lf mm, rg=%lf mm)! Reset to Metamorphism::max_grain_bond_ratio", l+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[l].rb, SSdata.Ldata[l].rg);
 		}
+		//TODO CDot: enable to read additional parameters!
+		//fscanf(fin, "%lf %lf", &SSdata.Ldata[l].CDot, &SSdata.Ldata[l].Qmf, &SSdata.Ldata[l].metamo);
 		for (i = 0; i < N_SOLUTES; i++) {
 			fscanf(fin," %lf %lf %lf %lf ", &SSdata.Ldata[l].cIce[i], &SSdata.Ldata[l].cWater[i], &SSdata.Ldata[l].cVoids[i], &SSdata.Ldata[l].cSoil[i]);
 		}
 	}
 
-	// READ THE Zdata
+	// READ THE Zdata (needed for flat field only)
 	// Read the hoar hazard data info, contained in Zdata
 	fscanf(fin,"%*s ");
 	for (i = 0; i < 48; i++) {
@@ -290,7 +295,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	// Read the 3 hour new snowfall hazard data info, contained in Zdata
 	fscanf(fin,"%*s");
 	for (i = 0; i < 144; i++) {
-		if (fscanf(fin," %lf ", &Zdata.hns3[i]) != 1) {
+		if (fscanf(fin," %lf ", &Zdata.hn3[i]) != 1) {
 			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (hns3)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
@@ -298,14 +303,14 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	// Read the 24 hour new snowfall hazard data info, contained in Zdata
 	fscanf(fin,"%*s");
 	for (i = 0; i < 144; i++) {
-		if (fscanf(fin," %lf ", &Zdata.hns24[i]) != 1) {
+		if (fscanf(fin," %lf ", &Zdata.hn24[i]) != 1) {
 			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (hns24)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
 	}
 
 	/*
-	 * Loop over the number of layers to calculate the total height and total number of finite elements in the profile.
+	 * Loop over the number of layers to compute the total height and total number of finite elements in the profile.
 	 * NOTE: the number of nodes is one PLUS the number of elements.
 	*/
 	SSdata.nN = 1;
@@ -324,11 +329,11 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
  * @version 9Y.mm
  * @param JulianDate double
  * @param *station char
- * @param *Xdata SN_STATION_DATA
+ * @param *Xdata SnowStation
  * @param *Zdata SN_ZWISCHEN_DATA
  * @param *XFilename char
  */
-void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
+void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata, 
                              const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	FILE *fout=NULL;
@@ -342,7 +347,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 		filename += ss.str();
 	}
 
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata;
+	const vector<ElementData>& EMS = Xdata.Edata;
 	fout = fopen( filename.c_str(), "w");
 	if (fout == NULL) {
 		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(),"Cannot open profile OUTPUT file: %s", filename.c_str());
@@ -399,10 +404,11 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, hh, mm); 
 		fprintf(fout, " %7.5lf %8.4lf %7.5lf %7.5lf %7.5lf",  EMS[e].L,
 			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
-		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf 1",
+		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf",
 			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
-
+		//TODO CDot: enable to write additional parameters
+		//fprintf(fout," %10.3e %10.3e %lf", EMS[e].CDot, EMS[e].Qmf, EMS[e].metamo);
 		for (i = 0; i < N_SOLUTES; i++) {
 			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc(ICE,i), EMS[e].conc(WATER,i),
 				   EMS[e].conc(AIR,i), EMS[e].conc(SOIL,i));
@@ -424,13 +430,13 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	// Print out the 3 hour new snowfall hazard data info, contained in Zdata
 	fprintf(fout,"\nThreeHourNewSnow\n");
 	for (e = 0; e < 144; e++) {
-		fprintf(fout," %lf ", Zdata.hns3[e]);
+		fprintf(fout," %lf ", Zdata.hn3[e]);
 	}
 
 	// Print out the 24 hour new snowfall hazard data info, contained in Zdata
 	fprintf(fout,"\nTwentyFourHourNewSnow\n");
 	for (e = 0; e < 144; e++) {
-		fprintf(fout," %lf ", Zdata.hns24[e]);
+		fprintf(fout," %lf ", Zdata.hn24[e]);
 	}
 
 	// End of Data
@@ -455,13 +461,14 @@ std::string AsciiIO::getFilenamePrefix(const std::string& stationname, const std
  * NOTE Parameters marked by an asterisk are available in RESEARCH visualisation only!
  * @author Michael Lehning
  * @version 9Y.mm
- * @param filename string
- * @param i_date the date
- * @param Xdata SN_STATION_DATA
- * @param Hdata Q_PROCESS_DAT
+ * @param i_date the current date
+ * @param stationname 
+ * @param expo aspect of slope
+ * @param Xdata
+ * @param Hdata
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationname, const unsigned int& expo,
-                           const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata)
+                           SnowStation& Xdata, const Q_PROCESS_DAT& Hdata)
 {
 	stringstream ss;
 	ss << stationname;
@@ -474,8 +481,8 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 	int e, nN, nE, nz;
 	double cos_sl;
 
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
+	const vector<ElementData>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
+	const vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
 
 	//Check whether file exists, if so check whether data can be appended
 	//or file needs to be deleted
@@ -488,7 +495,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 		}
 	}
 
-	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", &Hdata, station, "pro", &Xdata) ) {
+	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, station, "pro", &Xdata) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),"Checking header in file %s", filename.c_str());
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	} 
@@ -563,7 +570,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 		fprintf(PFile,",%03d",EMS[e].type);
 	}
 	// surface hoar at surface? (depending on boundary conditions)
-	if ( M_TO_MM(NDS[nN-1].hoar/density_hoar_surf) > min_size_hoar_surf ) {
+	if ( M_TO_MM(NDS[nN-1].hoar/hoar_density_surf) > hoar_min_size_surf ) {
 		fprintf(PFile,",660");
 	} else {
 		fprintf(PFile,",0");
@@ -653,9 +660,9 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 	}
 
 	if (variant == "CALIBRATION"){
-		writeFreeProfilesCALIBRATION(Xdata, PFile);
+		writeFreeProfileCALIBRATION(Xdata, PFile);
 	} else {
-		writeFreeProfilesDEFAULT(Xdata, PFile);
+		writeFreeProfileDEFAULT(Xdata, PFile);
 	}
 
 	fclose(PFile);
@@ -665,15 +672,15 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
  * @brief Default: dump special profiles to *.pro output file
  * @author Charles Fierz
  * @version 10.04
- * @param *Xdata
+ * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfilesDEFAULT(const SN_STATION_DATA& Xdata, FILE *fout)
+void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 {
 	int e;
 	const int nE = Xdata.getNumberOfElements();
 
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata;
+	const vector<ElementData>& EMS = Xdata.Edata;
 	if ( out_load ) {
 		// *6nn: e.g. solute concentration
 		int i, j;
@@ -711,16 +718,16 @@ void AsciiIO::writeFreeProfilesDEFAULT(const SN_STATION_DATA& Xdata, FILE *fout)
  * @brief Calibration: dump special profiles to *.pro output file
  * @author Charles Fierz
  * @version 10.04
- * @param *Xdata
+ * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfilesCALIBRATION(const SN_STATION_DATA& Xdata, FILE *fout)
+void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 {
 	int e;
 	const int nE = Xdata.getNumberOfElements();
 
-	const vector<SN_ELEM_DATA>& EMS = Xdata.Edata;
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
+	const vector<ElementData>& EMS = Xdata.Edata;
+	const vector<NodeData>& NDS = Xdata.Ndata;
 	// 600-profile specials
 	// *601: snow shear strength (kPa)
 	fprintf(fout,"\n0601,%d",nE-Xdata.SoilNode);
@@ -741,30 +748,35 @@ void AsciiIO::writeFreeProfilesCALIBRATION(const SN_STATION_DATA& Xdata, FILE *f
 	fprintf(fout,",0.");
 
 	// 700-profile specials for settling comparison
-	// *701: SNOWPACK: total settling rate (% h-1)
+	// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
 	fprintf(fout,"\n0701,%d",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++) {
-		fprintf(fout,",%.2lf", -100.*H_TO_S(EMS[e].EvDot));
-	}
-	// *702: SNOWPACK: settling rate due to load (% h-1)
-	fprintf(fout,"\n0702,%d",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++) {
-		fprintf(fout, ",%.2lf", -100.*H_TO_S(NDS[e].udot));
-	}
-	// *703: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
-	fprintf(fout,"\n0703,%d",nE-Xdata.SoilNode);
 	for (e=Xdata.SoilNode; e<nE; e++) {
 		fprintf(fout, ",%.2lf", -100.*H_TO_S(NDS[e].f));
 	}
-	// *704: SNOWPACK: ratio -Sig0 to load EMS[e].C (1)
-	fprintf(fout,"\n0704,%d",nE-Xdata.SoilNode);
+	// *702: SNOWPACK: reaction to overload (% h-1) //ratio -Sig0 to load EMS[e].C (1)
+	fprintf(fout,"\n0702,%d",nE-Xdata.SoilNode);
 	for(e=Xdata.SoilNode; e<nE; e++) {
-		fprintf(fout,",%.2lf", EMS[e].EDot);
+		fprintf(fout,",%.2lf", -100.*H_TO_S(EMS[e].EDot));
+	}
+	// *703: SNOWPACK: settling rate due to load (% h-1)
+	fprintf(fout,"\n0703,%d",nE-Xdata.SoilNode);
+	for (e=Xdata.SoilNode; e<nE; e++) {
+		fprintf(fout, ",%.2lf", -100.*H_TO_S(NDS[e].udot));
+	}
+	// *704: SNOWPACK: total settling rate (% h-1)
+	fprintf(fout,"\n0704,%d",nE-Xdata.SoilNode);
+	for (e=Xdata.SoilNode; e<nE; e++) {
+		fprintf(fout,",%.2lf", -100.*H_TO_S(EMS[e].EvDot));
 	}
 	// *705: SNOWPACK: bond to grain ratio (1)
 	fprintf(fout,"\n0705,%d",nE-Xdata.SoilNode);
 	for (e=Xdata.SoilNode; e<nE; e++) {
 		fprintf(fout,",%.4lf", EMS[e].rb / EMS[e].rg);
+	}
+	// *706: SNOWPACK: addLoad to load (%)
+	fprintf(fout,"\n0706,%d",nE-Xdata.SoilNode);
+	for (e=Xdata.SoilNode; e<nE; e++) {
+		fprintf(fout,",%.4lf", 100.*EMS[e].S);
 	}
 	// SNTHERM.89
 	// *891: SNTHERM: settling rate due to load (% h-1)
@@ -807,34 +819,34 @@ void AsciiIO::writeFreeProfilesCALIBRATION(const SN_STATION_DATA& Xdata, FILE *f
  * @return Number of items dumped to file
  */
 int AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double& T, 
-                               const int& i, const SN_STATION_DATA& Xdata)
+                               const int& ii, const SnowStation& Xdata)
 {
-	int j=2;
+	int jj=2;
 	double perp_pos, temp;
 
 	//HACK:
 	/// @brief Initial height of snow needed to compute sensor position from ground if FIXED_RATES is set
 	double INITIAL_HS=0;
 
-	if ( i < fixed_heights ) {
-		perp_pos = calcPerpPosition(z_vert, Xdata.cH, Xdata.Ground, Xdata.SlopeAngle);
+	if (ii < fixed_heights) {
+		perp_pos = compPerpPosition(z_vert, Xdata.cH, Xdata.Ground, Xdata.SlopeAngle);
 	} else {
-		if ( (perp_pos = calcPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.SlopeAngle)) == NODATA ) {
+		if ((perp_pos = compPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.SlopeAngle)) == Constants::nodata) {
 			fprintf(fout, ",");
 		} else {
 			fprintf(fout, ",%.2lf", M_TO_CM(perp_pos)/cos(Xdata.SlopeAngle));
 		}
-		j++;
+		jj++;
 	}
 	temp = getModelledTemperature(perp_pos, Xdata);
 	fprintf(fout, ",%.2lf", temp);
-	if ( i < t_internal ) {
+	if (ii < t_internal) {
 		temp = checkMeasuredTemperature(T, perp_pos, Xdata.mH);
 		fprintf(fout,",%.2lf", temp);
 	} else {
 		fprintf(fout, ",");
 	}
-	return j;
+	return jj;
 }
 
 /**
@@ -848,34 +860,34 @@ int AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double& T
  * @param Ground Ground level (m)
  * @param SlopeAngle (rad)
  */
-double AsciiIO::calcPerpPosition(const double& z_vert, const double& hs_ref, const double& ground, const double& angleSlope)
+double AsciiIO::compPerpPosition(const double& z_vert, const double& hs_ref, const double& ground, const double& slope_angle)
 {
-	if ( z_vert == NODATA ) {
-		return NODATA;
+	if ( z_vert == Constants::nodata ) {
+		return Constants::nodata;
 	} else if ( !useSnowLayers && (z_vert < 0.) ) {
-		return (MAX(ground, hs_ref + z_vert * cos(angleSlope)));
+		return (MAX(ground, hs_ref + z_vert * cos(slope_angle)));
 	} else {
-		return (ground + z_vert * cos(angleSlope));
+		return (ground + z_vert * cos(slope_angle));
 	}
 }
 
 /**
  * @brief Checks whether measured internal snow or/and soil temperature (instantaneous value) is valid \n
- * The temperature defaults to NODATA if
+ * The temperature defaults to Constants::nodata if
  *  - the sensor is not covered by more than min_depth_subsurf snow (measured perpendicular to slope)
  * @author Charles Fierz
  * @version 10.01
  * @param T Measured temperature (K)
  * @param z Sensor position perpendicular to slope (m)
  * @param mH Measured snow height (m)
- * @return Measured temperature (degC) if OK, NODATA else
+ * @return Measured temperature (degC) if OK, Constants::nodata else
  */
 double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const double& mH)
 {
-	if ( (z <= (mH - min_depth_subsurf)) && (T != NODATA) ) {
+	if ( (z <= (mH - min_depth_subsurf)) && (T != Constants::nodata) ) {
 		return K_TO_C(T);
 	} else {
-		return NODATA;
+		return Constants::nodata;
 	}
 }
 
@@ -887,7 +899,7 @@ double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const
  * @param *Xdata
  * @return Index of tagged element, -1 if not found
  */
-int AsciiIO::findTaggedElement(const int& tag, const SN_STATION_DATA& Xdata)
+int AsciiIO::findTaggedElement(const int& tag, const SnowStation& Xdata)
 {
 	int e;
 	for ( e=0; e<Xdata.getNumberOfElements(); e++) {
@@ -908,7 +920,7 @@ int AsciiIO::findTaggedElement(const int& tag, const SN_STATION_DATA& Xdata)
  * @param *Xdata
  * @return Number of dumped values
  */
-int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_DATA& Mdata, const SN_STATION_DATA& Xdata)
+int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_DATA& Mdata, const SnowStation& Xdata)
 {
 	int e, j=2;
 	const int i = fixed_heights+fixed_rates + (tag-1);
@@ -917,11 +929,11 @@ int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_
 		perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
 		fprintf(fout,",%.2lf,%.2lf", M_TO_CM(perp_pos)/cos(Xdata.SlopeAngle), K_TO_C(Xdata.Edata[e].Te));
 	} else {
-		fprintf(fout,",,%.2lf", NODATA);
+		fprintf(fout,",,%.2lf", Constants::nodata);
 	}
 	if (i < t_internal) {
-		if ( (perp_pos = calcPerpPosition(Mdata.zv_ts[i], Xdata.cH, Xdata.Ground, Xdata.SlopeAngle)) == NODATA ) {
-			fprintf(fout,",,%.2lf", NODATA);
+		if ((perp_pos = compPerpPosition(Mdata.zv_ts[i], Xdata.cH, Xdata.Ground, Xdata.SlopeAngle)) == Constants::nodata) {
+			fprintf(fout,",,%.2lf", Constants::nodata);
 		} else {
 			fprintf(fout,",%.2lf", M_TO_CM(perp_pos)/cos(Xdata.SlopeAngle));
 			temp = checkMeasuredTemperature(Mdata.ts[i], perp_pos, Xdata.mH);
@@ -1021,7 +1033,7 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 			parseMetFile(eoln, currentdate, fin);
 		}
 			
-		if (currentdate < startdate) {
+		if (currentdate < startdate) { // TODO needs more subtelty ;-)
 			setAppendableFiles.insert(filename);
 			return true;
 		}
@@ -1039,13 +1051,13 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
  * @brief Write all Time Series results (*.met)
  * All depths and water equivalents (mass) are taken VERTICALLY. \n
  * If AVGSUM_TIME_SERIES is set, mean fluxes and cumulated masses since last dump are written, \n
- * else current energy fluxes, cumulated masses over last calculation_step_length (recommended setting in operational mode).
+ * else current energy fluxes, cumulated masses over last computation_step_length (recommended setting in operational mode).
  * If CUMSUM_MASS is set, current value of cumulated masses since begin of run are dumped. \n
  * Precipitations (rain& snow, rain) are always dumped as rates (kg m-2 h-1). \n
  * NOTE:
- * 	-# neither AVGSUM_TIME_SERIES nor CUMSUM_MASS can be set if NUMBER_EXPO > 1.
- * 	-# When running SNOW_REDISTRIBUTION on virtual slopes, the correct drift index will
- *     be contained in the windward and lee *.met files only!
+ * 	-# neither AVGSUM_TIME_SERIES nor CUMSUM_MASS can be set if NUMBER_SLOPES > 1.
+ * 	-# When running SNOW_REDISTRIBUTION on virtual slopes, eroded mass will be dumped
+ *     to the windward *.met file and added to the solid precipitations of the lee *.met file!
  * \li DO NOT change the order of parameters below! Additional parameters may be dumped at pos.
  *     93[94] to 100 in writeFreeSeriesXXX()
  * @author Michael Lehning \n Charles Fierz
@@ -1054,72 +1066,69 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
  * @param *Sdata
  * @param *Mdata
  * @param *Hdata
+ * @param wind_trans24 eroded snow from flat field (present time step) or virtual windward slope (previous time step)
  * @param *TFilename Name of file holding time series
  */
-void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-						const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, const Q_PROCESS_DAT& Hdata)
+void AsciiIO::writeTimeSeries(const std::string& station, const SnowStation& Xdata,
+                              const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
+                              const Q_PROCESS_DAT& Hdata, const double wind_trans24)
 {
 	FILE *TFile=NULL;
-	int    nE, nN; // Number of elements and nodes
-	int    i, j;
-	double cos_sl;
 
 	string filename = getFilenamePrefix(station, outpath) + ".met";
 
-	const vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
-	nN=Xdata.getNumberOfNodes();
-	nE=Xdata.getNumberOfElements();
-	cos_sl = cos(Xdata.SlopeAngle);
+	const vector<NodeData>& NDS = Xdata.Ndata;
+	const int nN = Xdata.getNumberOfNodes();
+	double cos_sl = cos(Xdata.SlopeAngle);
 
-	//Check whether file exists, if so check whether data can be appended
-	//or file needs to be deleted
-	if (IOUtils::fileExists(filename)){
+	//Check whether file exists, if so check whether data can be appended or file needs to be deleted
+	if (IOUtils::fileExists(filename)) {
 		bool append = appendFile(filename, Mdata.date, "met");
 
-		if (!append){
+		if (!append) {
 			if (remove(filename.c_str()) == 0)
 				cout << "[i] Restart of existing simulation, deleted file: " << filename << endl;
 		}
 	}
 
 	// Check file for header
-	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", &Hdata, station, "met", &Xdata) ) {
+	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, station, "met", &Xdata)) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), "Checking header in file %s", filename.c_str());
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	} 
 
-	if ( !(TFile = fopen(filename.c_str(), "a")) ) {
+	if (!(TFile = fopen(filename.c_str(), "a"))) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), 
 			   "Cannot open time series file: %s", filename.c_str());
 	     throw FileAccessException(filename, AT);
 	}
 	// Print time stamp
 	fprintf(TFile,"\n0203,%s", Mdata.date.toString(Date::DIN).c_str());
-	if ( out_heat ) {
+	if (out_heat) {
 		// 1-2: Turbulent fluxes (W m-2)
 		fprintf(TFile,",%lf,%lf", Sdata.qs, Sdata.ql);
 	} else {
 		fprintf(TFile,",,");
 	}
-	if ( out_lw ) {
+	if (out_lw) {
 		// 3-5: Longwave radiation fluxes (W m-2)
 		fprintf(TFile,",%lf,%lf,%lf", Sdata.lw_out, Sdata.lw_in, Sdata.lw_net);
 	} else {
 		fprintf(TFile,",,,");
 	}
-	if ( out_sw ) {
-		// 6-9: Shortwave radiation fluxes (W m-2) and calc. albedo (1)
+	if (out_sw) {
+		// 6-9: Shortwave radiation fluxes (W m-2) and computed albedo (1)
 		fprintf(TFile,",%lf,%lf,%lf,%lf", Sdata.sw_out, Sdata.sw_in, Sdata.qw, Sdata.cA);
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( out_meteo ) {
+	if (out_meteo) {
 		// 10-13: Air temperature, snow surface temperature (modeled and measured) (degC)
-		fprintf(TFile,",%lf,%lf,%lf,%lf", K_TO_C(Mdata.ta), K_TO_C(NDS[nE].T), K_TO_C(Mdata.tss), K_TO_C(NDS[0].T));
+		fprintf(TFile,",%lf,%lf,%lf,%lf", K_TO_C(Mdata.ta), K_TO_C(NDS[nN-1].T), K_TO_C(Mdata.tss), K_TO_C(NDS[0].T));
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( out_heat ) {
+	if (out_heat) {
 		// 14-17: soil heat fluxes (W m-2), ground surface temperature (degC), rain energy (W m-2)
 		fprintf(TFile,",%lf,%lf,%lf,%lf", Sdata.qg, K_TO_C(NDS[Xdata.SoilNode].T), Sdata.qg0, Sdata.qr);
 	} else {
@@ -1131,163 +1140,153 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SN_STATION_DATA&
 	} else {
 		fprintf(TFile,",,,,,");
 	}
-	if ( out_meteo ) {
-		// 23-26: rH (%), wind (m s-1), wind_max (m s-1), wind_dir (deg),
+	if (out_meteo) {
+		// 23-26: rH (%), wind (m s-1), wind_drift (m s-1), wind_dir (deg),
 		// 27: solid precipitation rate (kg m-2 h-1),
 		// 28-29: modeled and maesured vertical snow depth (cm)
-		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf,%lf,%lf", 100.*Mdata.rh, Mdata.vw, Mdata.vw_max, Mdata.dw, Sdata.mass[SN_SURFACE_DATA::MS_PRECIP]/cos_sl, M_TO_CM((Xdata.cH - Xdata.Ground)/cos(Xdata.SlopeAngle)), M_TO_CM(Mdata.hs1/cos(Xdata.SlopeAngle)));
+		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf,%lf,%lf", 100.*Mdata.rh, Mdata.vw, Mdata.vw_drift, Mdata.dw, Sdata.mass[SurfaceFluxes::MS_HNW], M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl), M_TO_CM(Mdata.hs1/cos_sl));
 	} else {
 		fprintf(TFile,",,,,,,,");
 	}
-	if ( out_haz ) {
+	if (out_haz) {
 		// 30-33: surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
-		if ( !perp_to_slope ) {
-			fprintf(TFile,",%lf,%lf,%lf,%lf", Hdata.hoar_size, Hdata.wind_trans24, Hdata.hns24, Hdata.hns72_24);
+		if (!perp_to_slope) {
+			fprintf(TFile,",%lf,%lf,%lf,%lf", Hdata.hoar_size, wind_trans24, Hdata.hn24, Hdata.hn72_24);
 		} else {
 			// dump vertical values if PERP_TO_SLOPE
-			fprintf(TFile,",%lf,%lf,%lf,%lf", Hdata.hoar_size, Hdata.wind_trans24, Hdata.hns24/cos_sl, Hdata.hns72_24/cos_sl);
+			fprintf(TFile,",%lf,%lf,%lf,%lf", Hdata.hoar_size, wind_trans24, Hdata.hn24/cos_sl, Hdata.hn72_24/cos_sl);
 		}
 	} else {
 		fprintf(TFile,",,,,");
 	}
-	if ( out_mass ) {
+	if (out_mass) {
 		// 34-39: total mass, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 51-52 & 93
-		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf,%lf", Sdata.mass[SN_SURFACE_DATA::MS_TOTALMASS]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_WIND]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_RAIN]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_RUNOFF]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_SUBLIMATION]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_EVAPORATION]/cos_sl);
+		fprintf(TFile,",%lf,%lf,%lf,%lf,%lf,%lf", Sdata.mass[SurfaceFluxes::MS_TOTALMASS]/cos_sl, Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl, Sdata.mass[SurfaceFluxes::MS_RAIN], Sdata.mass[SurfaceFluxes::MS_RUNOFF]/cos_sl, Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]/cos_sl, Sdata.mass[SurfaceFluxes::MS_EVAPORATION]/cos_sl);
 	} else{
 		fprintf(TFile,",,,,,,");
 	}
 	// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
-	if ( out_t && (fixed_heights || fixed_rates) ) {
-		j = 0;
-		for (i = 0; i < MIN(5, fixed_heights); i++) {
-			j += writeTemperatures(TFile, Mdata.zv_ts[i], Mdata.ts[i], i, Xdata);
+	if (out_t && (fixed_heights || fixed_rates)) {
+		int jj = 0;
+		for (int ii = 0; ii < MIN(5, fixed_heights); ii++) {
+			jj += writeTemperatures(TFile, Mdata.zv_ts[ii], Mdata.ts[ii], ii, Xdata);
 		}
-    for (; j < 10; j++) {
+    for (; jj < 10; jj++) {
       fprintf(TFile,",");
     }
 	} else {
 		fprintf(TFile,",,,,,,,,,,");
 	}
-	if ( max_number_sensors == 5 ) {
-		if ( out_load ) {
+	if (max_number_sensors == 5) {
+		if (out_load) {
 		// 50: Solute load at ground surface
 			fprintf(TFile,",%lf",Sdata.load[0]);
 		} else {
 			fprintf(TFile,",");
 		}
-		if ( out_mass ) {
+		if (out_mass) {
 		// 51-52: SWE (for checks) and LWC (kg m-2); see also 34-39
-			fprintf(TFile,",%lf,%lf", Sdata.mass[SN_SURFACE_DATA::MS_SWE]/cos_sl, Sdata.mass[SN_SURFACE_DATA::MS_WATER]/cos_sl);
+			fprintf(TFile,",%lf,%lf", Sdata.mass[SurfaceFluxes::MS_SWE]/cos_sl, Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl);
 		} else {
 			fprintf(TFile,",,");
 		}
-		if ( out_stab ) {
+		if (out_stab) {
 			// 53-64: Stability Time Series, heights in cm
 			fprintf(TFile,",%d,%d,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf,%.1lf,%.2lf", Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d, M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s, M_TO_CM(Xdata.z_S_4/cos_sl), Xdata.S_4, M_TO_CM(Xdata.z_S_5/cos_sl), Xdata.S_5);
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,");
 		}
-		if ( out_canopy && useCanopyModel ) {
+		if (out_canopy && useCanopyModel) {
 			// 65-92 (28 columns)
 			Canopy::cn_DumpCanopyData(TFile, &Xdata.Cdata, &Sdata, cos_sl);
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,,,,,,,,,,,,,,,,,");
 		}
-	} else if ( out_t ) {
+	} else if (out_t) {
 		// 50-93 (44 columns)
-		j = 0;
-		for (i = MIN(5, fixed_heights); i < fixed_heights+fixed_rates; i++) {
-			if ( (j += writeTemperatures(TFile, Mdata.zv_ts[i], Mdata.ts[i], i, Xdata)) > 44 ) {
-				prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), 
-					   "There is not enough space to accomodate your temperature sensors: j=%d > 44!", j);
+		int ii, jj = 0;
+		for (ii = MIN(5, fixed_heights); ii < fixed_heights+fixed_rates; ii++) {
+			if ( (jj += writeTemperatures(TFile, Mdata.zv_ts[ii], Mdata.ts[ii], ii, Xdata)) > 44 ) {
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(),
+								"There is not enough space to accomodate your temperature sensors: j=%d > 44!", jj);
 				throw IOException("Writing Time Series data failed", AT);
-      }
-		}
-		if ( Xdata.tag_low ) {
-			int tag = Xdata.tag_low, j_lim;
-			while ( (tag + i) <= number_sensors ) {
-			  if ( (tag + i) <= t_internal ) {
-			    j_lim = 41;
-			  } else {
-          j_lim = 43;
-        }
-        if ( j < j_lim ) {
-					j += writeHeightTemperatureTag(TFile, tag, Mdata, Xdata);
-          tag++;
-        } else {
-          break;
-        }
 			}
 		}
-    for (; j < 44; j++) {
-      fprintf(TFile,",");
-    }
+		if (Xdata.tag_low) {
+			int tag = Xdata.tag_low, j_lim;
+			while ( (tag + ii) <= number_sensors ) {
+				if ( (tag + ii) <= t_internal ) {
+					j_lim = 41;
+				} else {
+					j_lim = 43;
+				}
+				if ( jj < j_lim ) {
+					jj += writeHeightTemperatureTag(TFile, tag, Mdata, Xdata);
+					tag++;
+				} else {
+					break;
+				}
+			}
+		}
+		for (; jj < 44; jj++) {
+			fprintf(TFile,",");
+		}
 	} else {
 		fprintf(TFile,",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,");
 	}
 	// 93[94]-100 (8 or 7 free columns)
-
-	if (variant == "CALIBRATION"){
-		writeFreeSeriesCALIBRATION(&Xdata, &Sdata, &Mdata, &Hdata, TFile);
-	} else if (variant == "ANTARCTICA"){
-		writeFreeSeriesANTARCTICA(&Xdata, &Sdata, &Mdata, &Hdata, TFile);
+	unsigned int nCalcSteps = 1;
+	double crust = 0.;
+	if (!avgsum_time_series) nCalcSteps = (int)(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
+	if (out_haz) crust = Hdata.crust;
+	if (variant == "CALIBRATION") {
+		writeFreeSeriesCALIBRATION(Xdata, Sdata, Mdata, crust, nCalcSteps, TFile);
+	} else if (variant == "ANTARCTICA") {
+		writeFreeSeriesANTARCTICA(Xdata, Sdata, Mdata, crust, nCalcSteps, TFile);
 	} else {
-		writeFreeSeriesDEFAULT(&Xdata, &Sdata, &Mdata, &Hdata, TFile);
+		writeFreeSeriesDEFAULT(Xdata, Sdata, Mdata, crust, nCalcSteps, TFile);
 	}
 
 	fclose (TFile);
 }
 
-
 /**
  * @brief Default: last 8 time series (columns 93 to 100) dumped to *.met output file
  * @author Charles Fierz
  * @version 10.02
- * @param *Xdata
- * @param *Sdata
- * @param *Mdata
- * @param *Hdata
+ * @param Xdata
+ * @param Sdata
+ * @param Mdata
+ * @param crust Crust thickness
+ * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesDEFAULT(const SN_STATION_DATA *Xdata, const SN_SURFACE_DATA *Sdata, 
-							  const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout)
+void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
-	(void) *Mdata;
-	double cos_sl = cos(Xdata->SlopeAngle);
+	(void) Mdata;
+	double cos_sl = cos(Xdata.SlopeAngle);
 	// 93-100 (8 columns)
-	if ( useSnowLayers ) {
+	if (useSnowLayers) {
 		// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
-		fprintf(fout,",%lf",Sdata->mass[SN_SURFACE_DATA::MS_SOIL_RUNOFF]/cos_sl);
+		fprintf(fout,",%lf",Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF]/cos_sl);
 	} else {
 		fprintf(fout,",");
 	}
-	if ( out_heat ) {
+	if (out_heat) {
 		// 94-95: Measured Turbulent Fluxes (W m-2); see also 1-2
 		fprintf(fout,",%lf,%lf",0.0,0.0);
 	} else {
 		fprintf(fout,",,");
 	}
-	if ( out_haz ) {
-		// 96: crust thickness (S-slope) (cm)
-		fprintf(fout,",%lf", Hdata->crust); //lwsn_SnowpackEnergyInput(Xdata)); //
-		// 97:
-		if ( !research_mode ) { // energy input to surface (kJ m-2)
-			fprintf(fout,",%lf", Hdata->en_bal);
-		} else { // change of internal energy (kJ m-2)
-			fprintf(fout,",%lf", Sdata->dIntEnergy / 1000.);
-		}
-	} else {
-		fprintf(fout,",,");
-	}
+	// 96: crust thickness (S-slope) (cm)
+	fprintf(fout,",%lf", crust);
+	// 97: change of internal energy (kJ m-2)
+	fprintf(fout,",%lf", (Sdata.dIntEnergy * nCalcSteps) / 1000.);
 	// 98: sum of energy fluxes at surface (kJ m-2)
-	if ( !research_mode ) {
-		fprintf(fout,",%lf", ((Sdata->qw + Sdata->lw_net + Sdata->qs + Sdata->ql + Sdata->qr) * M_TO_S(calculation_step_length) * hazard_steps_between) / 1000.);
-	} else {
-		fprintf(fout,",%lf", ((Sdata->qw + Sdata->lw_net + Sdata->qs + Sdata->ql + Sdata->qr) * M_TO_S(calculation_step_length)) / 1000.);
-	}
+	fprintf(fout,",%lf", ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr) * D_TO_S(ts_days_between)) / 1000.);
 	if ( !research_mode ) {
 		// 99-100: snow depth and mass correction
-		fprintf(fout,",%lf,%lf", M_TO_CM(Sdata->dhs_corr), Sdata->mass[SN_SURFACE_DATA::MS_CORRECTION]);
+		fprintf(fout,",%lf,%lf", M_TO_CM(Sdata.dhs_corr), Sdata.mass[SurfaceFluxes::MS_CORRECTION]);
 	} else {
 		fprintf(fout,",,");
 	}
@@ -1297,27 +1296,27 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SN_STATION_DATA *Xdata, const SN_SURF
  * @brief Antarctic: last 7 time series (columns 94 to 100) dumped to *.met output file
  * @author Charles Fierz
  * @version 10.02
- * @param *Xdata
- * @param *Sdata
- * @param *Mdata
- * @param *Hdata
+ * @param Xdata
+ * @param Sdata
+ * @param Mdata
+ * @param crust Crust thickness
+ * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesANTARCTICA(const SN_STATION_DATA *Xdata, const SN_SURFACE_DATA *Sdata,
-								const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout)
+void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
-	(void) *Hdata;
-	if ( out_meteo ) {
+	(void) crust;
+	if (out_meteo) {
 		// 94-98: 6 Antarctic Special Time Series
-		fprintf(fout,",%.2lf,%.2lf,%.1lf,%.1lf,%.1lf", 100.*Mdata->rh_ave, Mdata->vw_ave, Xdata->rho_slope, 
-			   Mdata->rho_hn, M_TO_CM(Xdata->Ndata[Xdata->ErosionLevel+1].z - Xdata->cH));
+		fprintf(fout,",%.2lf,%.2lf,%.1lf,%.1lf,%.1lf", 100.*Mdata.rh_ave, Mdata.vw_ave, Xdata.rho_hn,
+			   Mdata.rho_hn, M_TO_CM(Xdata.Ndata[Xdata.ErosionLevel+1].z - Xdata.cH));
 	}
-	if ( out_heat ) {
+	if (out_heat) {
 		// 99: change of internal energy (kJ m-2)
-		fprintf(fout, ",%lf", Sdata->dIntEnergy / 1000.);
+		fprintf(fout, ",%lf", (Sdata.dIntEnergy * nCalcSteps) / 1000.);
 		// 100: sum of energy fluxes at surface (kJ m-2)
-		fprintf(fout,",%lf", ((Sdata->qw + Sdata->lw_net + Sdata->qs + Sdata->ql + Sdata->qr) * 
-						  M_TO_S(calculation_step_length)) / 1000.);
+		fprintf(fout,",%lf", ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr) *
+				D_TO_S(ts_days_between)) / 1000.);
 	}
 }
 
@@ -1325,29 +1324,29 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SN_STATION_DATA *Xdata, const SN_S
  * @brief Calibration: last 7 time series (columns 94 to 100) dumped to *.met output file
  * @author Charles Fierz
  * @version 10.04
- * @param *Xdata
- * @param *Sdata
- * @param *Mdata
- * @param *Hdata
+ * @param Xdata
+ * @param Sdata
+ * @param Mdata
+ * @param crust Crust thickness
+ * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_SURFACE_DATA *Sdata, 
-								 const SN_MET_DATA *Mdata, const Q_PROCESS_DAT *Hdata, FILE *fout)
+void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
-	(void) *Hdata; (void) *Sdata;
-	double rho;
-	const double t_surf = MIN(C_TO_K(-0.1), Xdata->Ndata[Xdata->getNumberOfNodes()-1].T);
+	(void) crust; (void) Sdata;
+	double rho_hn;
+	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	// 94-97: 5 new snow densities zwart, newLe, bellaire, crocus, hendrikx
-	if( Xdata->hn_slope > 0. ) {
+	if (Xdata.hn > 0.) {
 		for(unsigned int i=0; i<5; i++) {
 			if ( i != Snowpack::LEHNING_OLD ) {
-				rho = Snowpack::calculateNewSnowDensity(*Mdata, *Xdata, t_surf, 0., Snowpack::NewSnowDensityModel(i));
-				fprintf(fout,",%.1lf", rho);
+				rho_hn = Snowpack::NewSnowDensity(Mdata, Xdata, t_surf, 0., Snowpack::NewSnowDensityModel(i));
+				fprintf(fout,",%.1lf", rho_hn);
 			}
 		}
-		if ( Mdata->vw > 2.9 ) {
-			rho = Snowpack::sn_NewSnowDensityHendrikx(K_TO_C(Mdata->ta), K_TO_C(t_surf), 100.*Mdata->rh, Mdata->vw);
-			fprintf(fout,",%.1lf", rho);
+		if (Mdata.vw > 2.9) {
+			rho_hn = Snowpack::newSnowDensityHendrikx(K_TO_C(Mdata.ta), K_TO_C(t_surf), 100.*Mdata.rh, Mdata.vw);
+			fprintf(fout,",%.1lf", rho_hn);
 		} else {
 			fprintf(fout,",0.0");
 		}
@@ -1356,10 +1355,10 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_
 	}
 	if ( out_heat ) {
 		// 99: // change of internal energy (kJ m-2)
-		fprintf(fout, ",%lf", Sdata->dIntEnergy / 1000.);
+		fprintf(fout, ",%lf", (Sdata.dIntEnergy * nCalcSteps) / 1000.);
 		// 100: sum of energy fluxes at surface (kJ m-2)
-		fprintf(fout,",%lf", ((Sdata->qw + Sdata->lw_net + Sdata->qs + Sdata->ql + Sdata->qr) * 
-						  M_TO_S(calculation_step_length)) / 1000.);
+		fprintf(fout,",%lf", ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr) *
+				D_TO_S(ts_days_between)) / 1000.);
 	}
 }
 
@@ -1373,17 +1372,19 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SN_STATION_DATA *Xdata, const SN_
  * @version 10.02
  * @param *fnam Filename
  * @param *first_string First string to be found in header
+ * @param Hdata
+ * @param station name of
  * @param *ext File extension
  * @return status
  */
-bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PROCESS_DAT* Hdata, 
-					    const std::string& station, const char *ext, ...)
+bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PROCESS_DAT& Hdata,
+                          const std::string& station, const char *ext, ...)
 {
 	FILE *fin=NULL;
 	FILE *fout=NULL;
 	va_list argptr; // get an arg ptr
 	char *va_char;
-	SN_STATION_DATA *va_Xdata;
+	SnowStation *va_Xdata;
 	char dummy[MAX_STRING_LENGTH]="\000", dummy_l[MAX_LINE_LENGTH]="\000";
 	int  i, j;
 
@@ -1410,7 +1411,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "[SNOWPACK_ERROR_LOG]");
 			fprintf(fout, "\n          RUNTIME :  STN LOC LINE MSG [JULIAN]");
 		} else if ( (strcmp(ext, "met") == 0) ) {
-			va_Xdata = va_arg(argptr, SN_STATION_DATA *);
+			va_Xdata = va_arg(argptr, SnowStation *);
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",   station.c_str());
 			fprintf(fout, "\nLatitude= %.2lf",   va_Xdata->Lat);
@@ -1424,8 +1425,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			}
 			fprintf(fout, "\n\n[HEADER]");
 			if ( out_haz ) { // HACK To avoid troubles in A3D
-				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", Hdata->sn_computation_date,
-					   variant.c_str(),Hdata->sn_version,Hdata->sn_user);
+				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", Hdata.sn_computation_date,
+			          variant.c_str(), Hdata.sn_version, Hdata.sn_user);
 			}
 			fprintf(fout, "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100");
 			fprintf(fout, "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)");
@@ -1577,7 +1578,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout,"\tMA.nL\tMA.nHW\tMA.nRHO\tMA.nTH_W\tMA.nT\tMA.nTmD");
 			fprintf(fout,"\tSL.nL\tSL.nHW\tSL.nRHO\tSL.nTH_W\tSL.nT\tSL.nTmD\n");
 		} else if ( (strcmp(ext, "pro") == 0) ) {
-			va_Xdata = va_arg(argptr, SN_STATION_DATA *);
+			va_Xdata = va_arg(argptr, SnowStation *);
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",   station.c_str());
 			fprintf(fout, "\nLatitude= %.2lf",   va_Xdata->Lat);
@@ -1589,7 +1590,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\n\n[HEADER]");
 			if( out_haz ) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", 
-					   Hdata->sn_computation_date, variant.c_str(), Hdata->sn_version, Hdata->sn_user);
+					   Hdata.sn_computation_date, variant.c_str(), Hdata.sn_version, Hdata.sn_user);
 			}
 			fprintf(fout, "\n0500,Date");
 			fprintf(fout, "\n0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)");
@@ -1621,6 +1622,16 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			fprintf(fout, "\n0601,nElems,snow shear strength (kPa)");
 			fprintf(fout, "\n0602,nElems,grain size difference (mm)");
 			fprintf(fout, "\n0603,nElems,hardness difference (1)");
+			if (variant == "CALIBRATION"){
+				fprintf(fout, "\n0701,nElems,SNOWPACK: total settling rate (%% h-1)");
+				fprintf(fout, "\n0702,nElems,SNOWPACK: settling rate due to load (%% h-1)");
+				fprintf(fout, "\n0703,nElems,SNOWPACK: settling rate due to metamorphism (sig0) (%% h-1)");
+				fprintf(fout, "\n0704,nElems,SNOWPACK: ratio -Sig0 to load EMS[e].C (1)");
+				fprintf(fout, "\n0705,nElems,SNOWPACK: bond to grain ratio (1)");
+				fprintf(fout, "\n0891,nElems,SNTHERM: settling rate due to load (%% h-1)");
+				fprintf(fout, "\n0892,nElems,SNTHERM: settling rate due to metamorphism (%% h-1)");
+				fprintf(fout, "\n0893,nElems,SNTHERM: viscosity (GPa s)");
+			}
 			fprintf(fout, "\n\n[DATA]");
 		} else {
 			prn_msg(__FILE__, __LINE__, "wrn", -1., "No header defined for files *.%s", ext);
@@ -1632,7 +1643,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 	return true;
 }
 
-void AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<Q_PROCESS_DAT>& /*Hdata*/, 
+bool AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<Q_PROCESS_DAT>& /*Hdata*/,
                               const std::vector<Q_PROCESS_IND>& /*Hdata_ind*/, const int& /*num*/)
 {
 	/*
@@ -1678,5 +1689,6 @@ void AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<
 
 	cleanup();
 	*/
+	return true;
 }
 

@@ -101,7 +101,7 @@ Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg)
 	plastic = cfg.get("PLASTIC", "Parameters");
 
 	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
-	density_hoar_buried = cfg.get("DENSITY_HOAR_BURIED", "Parameters");
+	hoar_density_buried = cfg.get("HOAR_DENSITY_BURIED", "Parameters");
 }
 
 
@@ -116,7 +116,7 @@ Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg)
  * @param *Edata
  * @return hand hardness index (1)
  */
-double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
+double Stability::st_HandHardnessDEFAULT(const ElementData& Edata)
 {
 	int    F1, F2, F3; // grain shape
 	double hardness;
@@ -126,7 +126,7 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
 	gsz = 2.*Edata.rg;
 
 	// Decompose type in its constituents
-	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
+	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
 		double A, B;
@@ -161,9 +161,9 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
 				B = 0.0072;
 				break;
 			}
-			case 6: { // Surface hoar SH; empirical: index 1 to 2 from DENSITY_HOAR_BURIED to 250 kg m-3
-				A = 1. - density_hoar_buried/(250. - density_hoar_buried);
-				B = 1./(250. - density_hoar_buried);
+			case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
+				A = 1. - hoar_density_buried/(250. - hoar_density_buried);
+				B = 1./(250. - hoar_density_buried);
 				break;
 			}
 			case 7: { // Melt Forms MF
@@ -182,26 +182,25 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
 				break;
 			}
 			default: {
-				A = NODATA;
+				A = Constants::undefined;
 				B = 0.;
 				break;
 			}
 		}
 		hardness = A + B*Edata.Rho;
 		// Large surface hoar stays longer unstable! 1 dec 2007 (sb)
-		if ( (F1 == 6) && (gsz >= 5.) ) {
+		if ((F1 == 6) && (gsz >= 5.)) {
 			hardness = 1;
 		} else if ((F1 == 6 ) && (gsz < 5.)) {
 			hardness = MIN(hardness, 2.);
 		}
-	} else if ( Edata.theta[ICE] <= 0.7 ) { // Melt-freeze crust MFcr
-		double res_wat_cont;
-		res_wat_cont = lw_SnowResidualWaterContent(Edata.theta[ICE]);
-		if ( Edata.theta[WATER] < 0.3*res_wat_cont ) {
+	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
+		const double res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
+		if (Edata.theta[WATER] < 0.3*res_wat_cont) {
 			hardness = 5.;
-		} else if ( Edata.theta[WATER] < 0.6*res_wat_cont ) {
+		} else if (Edata.theta[WATER] < 0.6*res_wat_cont) {
 			hardness = 4.5;
-		} else if ( Edata.theta[WATER] < 0.85*res_wat_cont ) {
+		} else if (Edata.theta[WATER] < 0.85*res_wat_cont) {
 			hardness = 4.;
 		} else {
 			hardness = 3.;
@@ -211,7 +210,7 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
 	}
 	// Limit to range {1, 6}
 	hardness = MAX(1., MIN(6., hardness));
-	return(hardness);
+	return hardness;
 }
 
 /**
@@ -220,7 +219,7 @@ double Stability::st_HandHardnessDEFAULT(const SN_ELEM_DATA& Edata)
  * @param *Edata
  * @return hand hardness index (1)
  */
-double Stability::st_HandHardnessASARC(const SN_ELEM_DATA& Edata)
+double Stability::st_HandHardnessASARC(const ElementData& Edata)
 {
 	int    F1, F2, F3;
 	double A=0., B=0., C=0.;
@@ -231,7 +230,7 @@ double Stability::st_HandHardnessASARC(const SN_ELEM_DATA& Edata)
 	gsz     = 2.*Edata.rg;
 
 	// Decompose type in its constituents
-	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
+	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	// all types except MFcr
 	if( Edata.mk%100 < 20 ) {
@@ -284,9 +283,9 @@ double Stability::st_HandHardnessASARC(const SN_ELEM_DATA& Edata)
 				};
 				break;
 			}
-			case 6: { // Surface hoar SH; empirical: index 1 to 2 from DENSITY_HOAR_BURIED to 250 kg m-3
-				A = 1. - density_hoar_buried/(250. - density_hoar_buried);
-				B = 1./(250. - density_hoar_buried);
+			case 6: { // Surface hoar SH; empirical: index 1 to 2 from HOAR_DENSITY_BURIED to 250 kg m-3
+				A = 1. - hoar_density_buried/(250. - hoar_density_buried);
+				B = 1./(250. - hoar_density_buried);
 				C = 0.;
 				break;
 			}
@@ -315,15 +314,14 @@ double Stability::st_HandHardnessASARC(const SN_ELEM_DATA& Edata)
 				break;
 			}
 			default: {
-				A = NODATA;
+				A = Constants::undefined;
 				B = 0.;
 				C = 0.;
 				break;
 			}
 		}
 	} else if ( Edata.theta[ICE] <= 0.7 ) { // Melt-freeze crust MFcr
-		double res_wat_cont;
-		res_wat_cont = lw_SnowResidualWaterContent(Edata.theta[ICE]);
+		const double res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
 		if ( Edata.theta[WATER] < 0.3*res_wat_cont ) {
 			A = 5.;
 		} else if ( Edata.theta[WATER] < 0.6*res_wat_cont ) {
@@ -385,7 +383,7 @@ double Stability::st_CriticalStress(const double& epsNeckDot, const double& Ts)
  * @param *Edata
  * @return Deformation rate index
  */
-double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
+double Stability::st_DeformationRateIndex(ElementData& Edata)
 {
 	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
@@ -400,9 +398,9 @@ double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
 		return(0.1);
 	}
 	// First find the absolute neck stress
-	sigNeck = SnLaws::calcNeckStressEnhancement(Edata) * (sig);
+	sigNeck = Edata.neckStressEnhancement() * (sig);
 	// Now find the strain rate in the neck
-	epsNeckDot =  eps1Dot * SnLaws::calcSnowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
+	epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
 	// Return the stability index
 	return(MAX(0.1, MIN(st_CriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 } // End of st_DeformationRateIndex
@@ -415,7 +413,7 @@ double Stability::st_DeformationRateIndex(const SN_ELEM_DATA& Edata)
  * @param psi_ref Reference slope angle (deg)
  */
 void Stability::initStability(const double& psi_ref, StabilityData& STpar,
-                              SN_STATION_DATA& Xdata, vector<InstabilityData>& SIdata)
+                              SnowStation& Xdata, vector<InstabilityData>& SIdata)
 {
 	int e;
 
@@ -439,7 +437,7 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
  * @brief Returns the skier's penetration depth (Adapted from Canadian parameterization)
  * @param *Xdata
  */
-double Stability::st_PenetrationDepth(const SN_STATION_DATA& Xdata)
+double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 {
 	double rho_Pk=0., dz_Pk=0.;            // Penetration depth Pk, from mean slab density
 	double cos_sl;                         // Cosine of slope angle
@@ -467,7 +465,7 @@ double Stability::st_PenetrationDepth(const SN_STATION_DATA& Xdata)
 				if ( thick_crust > Stability::min_thick_crust ) {
 					crust = 1;
 				} else {
-					e_crust = INODATA;
+					e_crust = Constants::undefined;
 					top_crust = 0.;
 					thick_crust = 0.;
 				}
@@ -487,7 +485,7 @@ double Stability::st_PenetrationDepth(const SN_STATION_DATA& Xdata)
  * @param stress Overload perpendicular to slope (Pa)
  * @param cos_sl Cosine of slope angle (1)
  */
-void Stability::calcReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar)
+void Stability::compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar)
 {
 	STpar.sig_n = -stress*(STpar.cos_psi_ref*STpar.cos_psi_ref)/(cos_sl*cos_sl)/1000.;
 	STpar.sig_s = (STpar.sig_n)*STpar.sin_psi_ref/STpar.cos_psi_ref;
@@ -498,13 +496,13 @@ void Stability::calcReducedStresses(const double& stress, const double& cos_sl, 
  * @param *Edata Xdata->Edata[e+1]
  * @param *Ndata Xdata->Ndata[e+1]
  * @param STpar
- * @param cH Calculated height of snow (m)
+ * @param cH Computed height of snow (m)
  * @param cos_sl Cosine of slope angle (1)
  * @param date
  * @return return false on error, true otherwise
  */
 bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
-                                        SN_ELEM_DATA& Edata, SN_NODE_DATA& Ndata, StabilityData& STpar)
+                                        ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
 	int    F1, F2, F3;                    // Grain shape
 	double Sig_cC, Sig_c2, Sig_c3;        // Critical shear stress (kPa)
@@ -514,7 +512,7 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	// Snow density relative to ice
 	rho_ri = Edata.Rho/Constants::density_ice;
 	// Determine majority grain shape
-	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
+	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	// Determine critical shear stress of element (kPa)
 	// 1. Conway
@@ -608,13 +606,13 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
  * @param *Edata Xdata->Edata[e+1]
  * @param *Ndata Xdata->Ndata[e+1]
  * @param STpar
- * @param cH Calculated height of snow (m)
+ * @param cH Computed height of snow (m)
  * @param cos_sl Cosine of slope angle (1)
  * @param date
  * @return return false on error, true otherwise
  */
 bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
-                                              SN_ELEM_DATA& Edata, SN_NODE_DATA& Ndata, StabilityData& STpar)
+                                              ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
 	int    F1, F2, F3;             // Grain shape
 	double Sig_cC, Sig_c2, Sig_c3; // Critical shear stress (kPa)
@@ -625,7 +623,7 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	// Snow density relative to ice
 	rho_ri = Edata.Rho/Constants::density_ice;
 	// Determine majority grain shape
-	qr_TypeToCode(&F1, &F2, &F3, Edata.type);
+	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	// Determine critical shear stress of element (kPa)
   // 1. Conway
@@ -756,7 +754,7 @@ double Stability::st_SkierStabilityIndex(const double& depth_lay, const Stabilit
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
  * @param SIdata [e+1]
  */
-void Stability::setStructuralStabilityIndex(const SN_ELEM_DATA& Edata_low, const SN_ELEM_DATA& Edata_up,
+void Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
                                             const double& Sk, InstabilityData& SIdata)
 {
 	const double thresh_dhard=1.5, thresh_dgsz=0.50; // Thresholds for structural instabilities
@@ -781,7 +779,7 @@ void Stability::setStructuralStabilityIndex(const SN_ELEM_DATA& Edata_low, const
  * @param Xdata
  * @return false if error, true otherwise
  */
-bool Stability::classifyProfileStability(SN_STATION_DATA& Xdata)
+bool Stability::classifyProfileStability(SnowStation& Xdata)
 {
 	int S = 5, S0, e, nE, i, i_weak, count=0;
 	int F1, F2, F3;                            // Grain shape
@@ -790,11 +788,11 @@ bool Stability::classifyProfileStability(SN_STATION_DATA& Xdata)
 	double h_Slab;
 	double cos_sl;
 
-	SN_ELEM_DATA *EMS;   // Avoids dereferencing the element data pointer
+	ElementData *EMS;   // Avoids dereferencing the element data pointer
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
-	vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
+	vector<NodeData>& NDS = Xdata.Ndata;
 
 	// Initialize
 	S0 = S;
@@ -831,11 +829,11 @@ bool Stability::classifyProfileStability(SN_STATION_DATA& Xdata)
 			}
 
 			// Decompose grain type to determine majority shape F1
-			qr_TypeToCode(&F1, &F2, &F3, EMS[i_weak].type);
+			typeToCode(&F1, &F2, &F3, EMS[i_weak].type);
 
 			// Remember that S is initialized to 5!!!
 			// First consider wet weak layer
-			if ( EMS[i_weak].theta[WATER] > 0.75*lw_SnowResidualWaterContent(EMS[i_weak].theta[ICE]) ) {
+			if ( EMS[i_weak].theta[WATER] > 0.75*EMS[i_weak].snowResidualWaterContent() ) {
 				if ( EMS[i_weak].mk%100 < 20 ) {
 					S = 1;
 				}
@@ -913,9 +911,9 @@ bool Stability::classifyProfileStability(SN_STATION_DATA& Xdata)
  * @param date
  * @return false on error, true otherwise
  */
-bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xdata)
+bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 {
-	SN_ELEM_DATA *EMS;                              // Element pointer
+	ElementData *EMS;                              // Element pointer
 
 	int    prf_type=-1;                             // Profile type
 	vector<double> z_el;                            // Vertical element heigth (m)
@@ -931,7 +929,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 	double cos_sl;                                  // cos of slope angle
 	double cH;                                      // Vertical snow depth
 	double L_base_0=0.2, L_base, L_sum;             // Lengths (m)
-	double min_hard=19.472, slope_hard=150.;        // Constants to calculate reduced hardness,
+	double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
                                                      // (N) and (N m-1), respectively
 	double thresh_hard;                             // Hardness threshold (N)
 	double mean_hard, mean_red_hard, mean_gsz;      // Means
@@ -955,7 +953,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
 
 	// Dereference element and node pointers
 	EMS = &Xdata.Edata[0];
-	vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
+	vector<NodeData>& NDS = Xdata.Ndata;
 
 	try { // Allocate space for temporary vectors
 		z_el.resize(nE_s, 0.0);
@@ -1141,9 +1139,9 @@ bool Stability::recognizeProfileType(const mio::Date& date, SN_STATION_DATA& Xda
  * of the Schweizer - Wiesinger profile classification in combination with a more
  * conventional stability index based on critical shear strength values. Halleluja.
  * @param Mdata SN_MET_DATA
- * @param Xdata SN_STATION_DATA
+ * @param Xdata Profile
  */
-void Stability::checkStability(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
+void Stability::checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 {
 	int    e, nE, nN;                // Nodal and element counters
 	int    Swl_lemon;                // Temporary lemon counter
@@ -1153,11 +1151,11 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
 	double cos_sl=cos(Xdata.SlopeAngle); // Cosine of slope angle
 
 	StabilityData  STpar;        // Stability parameters
-	SN_ELEM_DATA   *EMS;         // Avoids dereferencing the element data pointer
+	ElementData   *EMS;         // Avoids dereferencing the element data pointer
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
-	vector<SN_NODE_DATA>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
+	vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
 
 	vector<InstabilityData> SIdata = vector<InstabilityData>(nN); // Parameters for structural instabilities
 
@@ -1176,7 +1174,7 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
 	}
 	EMS[nE-1].s_strength = 100.;
 	for (e=nE-2; e >= Xdata.SoilNode; e--) {
-		calcReducedStresses(EMS[e+1].C, cos_sl, STpar);
+		compReducedStresses(EMS[e+1].C, cos_sl, STpar);
 		STpar.strength_up = EMS[e+1].s_strength;
 
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,

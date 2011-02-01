@@ -37,14 +37,14 @@ class PhaseChange {
  	public:
 		PhaseChange(const mio::Config& i_cfg);
 
-		void runPhaseChange(const SN_SURFACE_DATA& Sdata, SN_STATION_DATA& Xdata);
+		void runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata);
 
 	private:
-	     void calcSubSurfaceMelt(SN_ELEM_DATA& Edata, const double& dt, double& ql_Rest);
-		void calcSubSurfaceFrze(SN_ELEM_DATA& Edata, const double& dt);
+		void compSubSurfaceMelt(ElementData& Edata, const double& dt, double& ql_Rest);
+		void compSubSurfaceFrze(ElementData& Edata, const double& dt);
 		
 		double sn_dt;
-		mio::Config cfg;
+		const mio::Config& cfg;
 
 		static const double theta_r; ///< Residual Water Content,  for now we say  0.0
 		static const double theta_s; ///< Saturated Water Content, for now we say  1.0

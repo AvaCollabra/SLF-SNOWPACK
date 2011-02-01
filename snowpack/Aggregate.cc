@@ -42,9 +42,8 @@ void Aggregate::shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 {
 	int l = 0;
 	for (int e=1; e<nE; e++) {
-		if ( Pdata[e].height != SNOWPACK_UNDEFINED ) {
+		if (Pdata[e].height != Constants::undefined) {
 			l++;
-
 			Pdata[l].height = Pdata[e].height;
 			Pdata[l].layer_date = Pdata[e].layer_date;
 			Pdata[l].rho = Pdata[e].rho;
@@ -56,8 +55,8 @@ void Aggregate::shift(const int& nE, std::vector<Q_PROFILE_DAT>& Pdata)
 			Pdata[l].dendricity = Pdata[e].dendricity;
 			Pdata[l].sphericity = Pdata[e].sphericity;
 			Pdata[l].coordin_num = Pdata[e].coordin_num;
-			Pdata[l].grain_dia = Pdata[e].grain_dia;
-			Pdata[l].bond_dia = Pdata[e].bond_dia;
+			Pdata[l].grain_size = Pdata[e].grain_size;
+			Pdata[l].bond_size = Pdata[e].bond_size;
 			Pdata[l].hard = Pdata[e].hard;
 			Pdata[l].marker = Pdata[e].marker;
 		}
@@ -81,7 +80,7 @@ bool Aggregate::doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 			return false;
 
 		// do not combine layers which are of quite different age
-		if (fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > 2 * diff_jul )
+		if (fabs(Pdata[e1].layer_date - Pdata[e2].layer_date) > 2 * diff_jul)
 			return false;
 
 		// do not combine layers with different grain classes
@@ -89,30 +88,29 @@ bool Aggregate::doJoin2(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 			return false;
 		}
 		// do not combine layers which are of quite different hardness
-		if ( fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.5 ) {
+		if (fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.5) {
 			return false;
 		}
 	}
 	// for two wet layers
 	else {
-		if ( (Pdata[e1].grain_dia < 0.75) || (Pdata[e1].sphericity < 0.5) ||
-			(Pdata[e2].grain_dia < 0.75) || (Pdata[e2].sphericity < 0.5) ) {
+		if ((Pdata[e1].grain_size < 0.75) || (Pdata[e1].sphericity < 0.5) ||
+			(Pdata[e2].grain_size < 0.75) || (Pdata[e2].sphericity < 0.5)) {
 			if (Pdata[e1].marker != Pdata[e2].marker) {
 				return false;
 			}
 		}
 		else {
-			if ( !( ( ((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
+			if (!((((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
 				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23)) ) &&
 				( ((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
-				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23)) ) ) ) {
+				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23))))) {
 				
 				if (Pdata[e1].marker != Pdata[e2].marker)
 					return false;
 			}
 		}
 	}
-
 	return true;
 } // End of doJoin2
 
@@ -148,7 +146,7 @@ bool Aggregate::doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 		if ( fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
 			return false;
 		
-		if (fabs(Pdata[e1].grain_dia - Pdata[e2].grain_dia) >	MAX(diff_dg, diff_dg_rel * Pdata[e1].grain_dia))
+		if (fabs(Pdata[e1].grain_size - Pdata[e2].grain_size) >	MAX(diff_dg, diff_dg_rel * Pdata[e1].grain_size))
 			return false;
 	} else {
 		if (fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
@@ -163,7 +161,7 @@ bool Aggregate::doJoin(const int& e1, std::vector<Q_PROFILE_DAT>& Pdata)
 
 
 /**
- * @brief Aggregate the Layers and calculate the grain class
+ * @brief Aggregate layers and compute the grain class
  * @param Pdata A vector of Q_PROFILE_DAT
  */
 int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
@@ -178,10 +176,9 @@ int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 	nL = nE;
 	if (nL > 5) {
 		// First Run -  leave top element alone
-
 		// keep track of the coordinates and length of elements
 		l2 = (Pdata[nE-2].height -  Pdata[nE-3].height);
-		for(e=nE-2; e>0; e--) {
+		for (e=nE-2; e>0; e--) {
 			l = e-1;
 			l1 = l2;
 			if (l>0) {
@@ -190,13 +187,12 @@ int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 				l2 = Pdata[l].height;
 			}
 			// if two layers are similar combine them
-			if ( doJoin(e, Pdata) && (Pdata[l].marker != 3) && (Pdata[e].marker != 3) ) {
+			if (doJoin(e, Pdata) && (Pdata[l].marker != 3) && (Pdata[e].marker != 3)) {
 				nL--;
 				Pdata[l].average(l1, l2, Pdata[e]);
-				Pdata[e].height = SNOWPACK_UNDEFINED;
+				Pdata[e].height = Constants::undefined;
 				l2 += l1;
 			}
-
 		}  // for all elements
 
 		shift(nE, Pdata);
@@ -213,14 +209,14 @@ int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 				} else {
 					l2 = Pdata[l].height;
 				}
-				if ( (Pdata[l].marker != 3) && (Pdata[e].marker != 3) ) {
+				if ((Pdata[l].marker != 3) && (Pdata[e].marker != 3)) {
 					// trick to try to join with upper or lower level -> use flag to mark thin layer
-					if ( flag || (l2 < (sqrt(Pdata[nE-1].height-Pdata[l].height)/4.)) || (l2 < min_l_element) ) {
+					if (flag || (l2 < (sqrt(Pdata[nE-1].height-Pdata[l].height)/4.)) || (l2 < min_l_element)) {
 						// if two layers are similar or one layer is very very small combine them
 						if (doJoin2(e, Pdata) || (l2 < min_l_element) || (l1 < min_l_element)){
 							nL--;
 							Pdata[l].average(l1, l2, Pdata[e]);
-							Pdata[e].height = SNOWPACK_UNDEFINED;
+							Pdata[e].height = Constants::undefined;
 							l2 += l1;
 							flag = false;
 						} else {
@@ -233,19 +229,16 @@ int Aggregate::aggregate(std::vector<Q_PROFILE_DAT>& Pdata)
 				else {
 					flag = false;
 				}
-
 			}  // for all elements
-
 			shift(nE, Pdata);
 		} // if nE > 2
 	} // if more than 5 layers
 
-	// Now Calculate the grain class. The grain class is coded according to the Matt&Sommer profile visualization
+	// Update snow type
 	for(e=0; e<nL; e++) {
-		Pdata[e].grain_class = ml_ag_Classify(Pdata[e].dendricity, Pdata[e].sphericity,
-                                                Pdata[e].grain_dia, Pdata[e].marker,
-                                                Pdata[e].theta_w/100., Pdata[e].theta_i/100.);
+		Pdata[e].type = ElementData::snowType(Pdata[e].dendricity, Pdata[e].sphericity,
+                                          Pdata[e].grain_size, Pdata[e].marker, Pdata[e].theta_w/100.,
+                                          ElementData::snowResidualWaterContent(Pdata[e].theta_i/100.));
 	}
-
 	return (nL);
 } // End of aggregate

@@ -23,7 +23,7 @@
 /**
  * @file Hazard.h
  * @version 10.02
- * This module contains the hazard calculation routines and structures
+ * This module contains the hazard computation routines and structures
 */
 
 #ifndef __HAZARD_H__
@@ -38,36 +38,46 @@
 #include <vector>
 
 class Hazard {
- 	public:
+	public:
 		Hazard(const mio::Config& i_cfg);
 
-		void initializeHazard(const double TimeEnd, double *OldDrift, double SlopeAngle, 
-						  std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind);
-	
-		static double driftIndex(double *OldDrift, double Drift, double rho, int nhour, int shift);
- 
-		double hoarIndex(double *OldHoar, double new_hoar, int nhour, int new_step);
+		void initializeHazard(const double TimeEnd, double *old_drift, double slope_angle,
+		                      std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind);
 
-		static void calculateMeltFreezeCrust(const SN_STATION_DATA& Xdata, 
-									  Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind);
+		static double driftIndex(double *old_drift, double drift, const double rho, const int nHours,
+		                         double slope_angle, const int shift);
 
-		void calculateHazard(const double& d_hs6, const double& d_hs24, const SN_STATION_DATA& Xdata,
-						 const SN_MET_DATA& Mdata, const int& nAvg, SN_ZWISCHEN_DATA& Zdata, 
-						 Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, SN_SURFACE_DATA&  Sdata);
+		void getDriftIndex(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+                       double *old_drift, double& drift, double slope_angle);
 
-		static const double typical_slope_length, wind_slab_density, minimum_drift, maximum_drift;
+		void getHazardData(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+		                   const double& delta_hs6, const double& delta_hs24,
+		                   SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
+		                   const unsigned int& nSlopes, const bool& virtual_slope);
+
 		static const bool r_in_n;
+		static const double typical_slope_length, wind_slab_density;
 
-	private:		
-		double calcDewPointDeficit(double TA, double TSS, double RH);
+	private:
+		double compDewPointDeficit(double TA, double TSS, double RH);
 
-		mio::Config cfg;
+		double compHoarIndex(double *OldHoar, double new_hoar, int nhour, int new_step);
+
+		static void compMeltFreezeCrust(const SnowStation& Xdata, Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind);
+
+		void compHazard(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, const double& d_hs6, const double& d_hs24,
+		                const SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		                const SnowStation& Xdata);
+
+		const mio::Config& cfg;
 		bool research_mode;
 		bool enforce_measured_snow_heights;
 		bool force_rh_water;
-		double sn_dt, calculation_step_length;
+		double sn_dt;
 		int hazard_steps_between;
-		double min_size_hoar_surf, density_hoar_surf;
+		double hoar_density_surf, hoar_min_size_surf;
+		static const double minimum_drift, maximum_drift;
 };
 
 #endif

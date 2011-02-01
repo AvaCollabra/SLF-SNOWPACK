@@ -130,7 +130,7 @@ double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS
 }
 
 /**
- * @brief Calculates a trajectory and returns the characteristics
+ * @brief Computes a trajectory and returns the characteristics
  * @param u0 double
  * @param angle_e double 
  * @param slope double 
@@ -198,7 +198,6 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e, const double
 		nt++;
 	} while (z > z0);
 	
-	// Calculate the return values
 	if (!((nt > 1) && (xdot > 0.0)) ) {
 		return false;
 	} else {
@@ -216,7 +215,7 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e, const double
 }
 
 /**
- * @brief Calculates the saltation flux for one bottom element
+ * @brief Computes the saltation flux for one bottom element
  * @param z0 double
  * @param tauS double
  * @param tauA double
@@ -241,7 +240,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	
 	// Initialize mass: Model Mass Flus is extremely sensitive to grain mass
 	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow( (dg / 2.), 3. );
-	// Calculate trajectories until stationary
+	// Compute trajectories until stationary
 	//  angle_e = Constants::pi/6.;
 	angle_e = Saltation::angle_ej * 2. * Constants::pi / 360.;
 	//  u0 = 0.63/sin(angle_e)*sqrt(tauS/DENSITY_AIR);
@@ -264,7 +263,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	// Number of rebounding grains
 	Nreb = (tauS - tauA) / tau1G_reb;
 	
-	// Now calculate the concentration
+	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ) {
 		hsalt = z0 + Saltation::hs_frac * 0.5 * pow((u0 * cos(angle_e)), 2) / 2. / Constants::g;
 		udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e), slope);
@@ -284,7 +283,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 } // End of MassFlux
 
 /**
- * @brief Calculates the saltation flux for one bottom element
+ * @brief Computes the saltation flux for one bottom element
  * @param z0 double
  * @param tauS double
  * @param slope double
@@ -315,7 +314,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	//  n_ae = 200000;
 	tauA = (tauS + tau_th) / 2;
 	
-	// Calculate trajectories until stationary
+	// Compute trajectories until stationary
 	//  u0 = 0.63/sin(angle_e)*sqrt(tauS/DENSITY_AIR);
 	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 	//  u0 = 3.7*sqrt(tauS-tau_th);
@@ -354,7 +353,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 			"Infinite Flux from Aero Entrain  mass:%lf Nae:%lf ubar:%lf",mass,Nae,ubar );
 	}
 	
-	// Now calculate the concentration
+	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ){
 		hsalt = z0 + Saltation::hs_frac * 0.5 * pow((u0 * cos(angle_e)), 2) / 2. / Constants::g;
 		udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e), slope);
@@ -369,7 +368,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 } // End of sa_AeroEntrain
 
 /**
- * @brief Calculates the saltation flux for one bottom element
+ * @brief Computes the saltation flux for one bottom element
  * @param z0 double
  * @param tauS double
  * @param tauA double
@@ -390,18 +389,18 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 	
 	// Initialize mass
 	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3);
-	// Calculate trajectories until stationary
+	// Compute trajectories until stationary
 	angle_e = Saltation::angle_ej * 2. * Constants::pi / 360.;
 	//  u0 = 0.63/sin(angle_e)*sqrt(tauS/DENSITY_AIR);
 	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 	
-	// Calculate the first trajectory
+	// Compute the first trajectory
 	sa_Traject(u0, angle_e, slope, dg, tauA, tauS, z0, ubar, u_i, angle_i, t_i, z_max);
 	hsalt1 = z_max;
 	u0 = Saltation::elas * u_i;
 	// u0 = sqrt(ELAS*DSQR(u_i)) ;
 	
-	// Calculate three trajectories to see whether they are growing
+	// Compute three trajectories to see whether they are growing
 	for (j = 0; j < 3; j++) {
 		sa_Traject(u0, angle_e, slope, dg, tauA, tauS, z0, ubar, u_i, angle_i, t_i, z_max);
 		hsalt2 = z_max;
@@ -418,7 +417,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 } // End of sa_TestSaltation
 
 /**
-* @brief Calculates the saltation flux for one bottom element
+ * @brief Computes the saltation flux for one bottom element
  * @param tauS double
  * @param tau_th double
  * @param slope double
@@ -427,7 +426,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
  * @param c_salt double
  * @return bool
 */
-bool Saltation::calculateSaltation(const double& i_tauS, const double& tau_th, const double& slope, const double& dg, 
+bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const double& slope, const double& dg,
                                   double& massflux, double& c_salt)
 {
 	int    j, k = 5;
@@ -486,8 +485,8 @@ bool Saltation::calculateSaltation(const double& i_tauS, const double& tau_th, c
 					tau_r = tauA_middle;
 	
 					/*
-					* Distinguish the different possibilities after Judith and calculate
-					* the flux; Start with calculation of tau_e: The surface shear stress 
+					* Distinguish the different possibilities after Judith and compute
+					* the flux; Start with computation of tau_e: The surface shear stress
 					* for the hypothetical case of aerodynamic entrainment only given a
 					* certain overall shear stress, tauS
 					*/
@@ -498,7 +497,7 @@ bool Saltation::calculateSaltation(const double& i_tauS, const double& tau_th, c
 					} else if (tau_e < tau_r) {
 						tauA = tau_e;
 					} else {
-						tauA = tau_r; // Flux calculation is wrong, must be redone
+						tauA = tau_r; // Flux computation is wrong, must be redone
 						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope, dg, tau_th, z_lower, ubar, cs);
 					}
 				} // else large rebound threshold
@@ -517,5 +516,5 @@ bool Saltation::calculateSaltation(const double& i_tauS, const double& tau_th, c
 	//  printf("Saltation Conc. %lf", c_salt);
 	
 	return true;
-} // End of sa_CalculateSaltation
+}
 

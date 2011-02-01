@@ -43,17 +43,14 @@
 #define MAX_STRING_LENGTH 256
 #define MAX_LINE_LENGTH 6000
 
-/// @name Flags and numbers
-//@{
-#define NODATA -999.
-#define INODATA 999
-#define SNOWPACK_UNDEFINED -77777777
-//@}
-
 /// @brief Initial value for stability parameter
 #define INIT_STABILITY 999.
 
 namespace Constants {
+	const double undefined = -999.; ///<This is the snowpack undefined value
+	const double nodata = -999.; ///<This is the snowpack nodata value, see also IOUtils::nodata
+	const int inodata = -999;
+	const double min_percent_values = 0.9;
 
 	const double pi = 3.14159265358979323846;
 	const double g  = 9.80665;
@@ -65,6 +62,12 @@ namespace Constants {
 	const double gas_constant_air = 287.0; ///< for air (J kg-1 K-1)
 	const double gas_constant_mol = 8.31;  ///< (J mol-1 K-1)
 
+	/// @name Albedo (1)
+	//@{
+	const double min_albedo = 0.3;
+	const double max_albedo = 0.99;
+	const double glacier_albedo = 0.3;
+	//@}
 	/// @name Density (kg m-3)
 	//@{
 	const double density_air = 1.1; ///< Approximation: use ideal gas law
@@ -115,13 +118,14 @@ namespace Constants {
 
 	///@name Numerical Constants
 	//@{
+	const double min_slopeangle = (3./180.)*pi; ///< Smallest angle a flat field may show (rad)
+	
 	/// @brief Small numbers for comparisons and to avoid divisions by zero
 	const double eps = 1.e-6;
 	const double eps2 = eps*eps;
 	const double big = 1.0e200; ///< used for Dirichlet boundary conditions
 	//@}
 }
-
 
 /**
  * @name MACRO definitions (to be replaced by proper functions some day)
@@ -136,27 +140,27 @@ namespace Constants {
 /// @name Conversion macros
 //@{
 /// @brief For temperatures
-#define C_TO_K( T ) ( T + 273.15 )   // Celsius to Kelvin
-#define K_TO_C( T ) ( T - 273.15 )   // Kelvin to Celsius
+#define C_TO_K( T ) ( T + 273.15 )   // degree Celsius to kelvin
+#define K_TO_C( T ) ( T - 273.15 )   // kelvin to degree Celsius
 /// @brief For lengths
-#define CM_TO_M( l ) ( (l) / 100. )  // centimeters to meters
-#define M_TO_CM( l ) ( (l) * 100. )  // meters to centimeters
-#define M_TO_MM( l ) ( (l) * 1000. ) // meters to millimeters
-#define MM_TO_M( l ) ( (l) / 1000. ) // millimeters to meters
-#define MM_TO_CM( l ) ( (l) / 10. )  // millimeters to meters
+#define M_TO_CM( l ) ( (l) * 100. )  // meter to centimeters
+#define M_TO_MM( l ) ( (l) * 1000. ) // meter to millimeters
+#define CM_TO_M( l ) ( (l) / 100. )  // centimeter to meter
+#define MM_TO_M( l ) ( (l) / 1000. ) // millimeter to meter
+#define MM_TO_CM( l ) ( (l) / 10. )  // millimeter to centimeter
 /// @brief For time
-#define D_TO_H( t ) ( (t) * 24. )    // days to hours
-#define D_TO_M( t ) ( (t) * 1440. )  // days to minutes
-#define D_TO_S( t ) ( (t) * 86400. ) // days to seconds
-#define H_TO_D( t ) ( (t) / 24.0 )   // hours to days
-#define H_TO_M( t ) ( (t) * 60. )    // hours to minutes
-#define H_TO_S( t ) ( (t) * 3600. )  // hours to seconds
-#define M_TO_D( t ) ( (t) / 1440. )  // minutes to days
-#define M_TO_H( t ) ( (t) / 60. )    // minutes to hours
-#define M_TO_S( t ) ( (t) * 60. )    // minutes to seconds
-#define S_TO_D( t ) ( (t) / 86400. ) // seconds to days
-#define S_TO_H( t ) ( (t) / 3600. )  // seconds to hours
-#define S_TO_M( t ) ( (t) / 60. )    // seconds to minutes
+#define D_TO_H( t ) ( (t) * 24. )    // day to hours
+#define D_TO_M( t ) ( (t) * 1440. )  // day to minutes
+#define D_TO_S( t ) ( (t) * 86400. ) // day to seconds
+#define H_TO_D( t ) ( (t) / 24.0 )   // hour to day
+#define H_TO_M( t ) ( (t) * 60. )    // hour to minutes
+#define H_TO_S( t ) ( (t) * 3600. )  // hour to seconds
+#define M_TO_D( t ) ( (t) / 1440. )  // minute to day
+#define M_TO_H( t ) ( (t) / 60. )    // minute to hour
+#define M_TO_S( t ) ( (t) * 60. )    // minute to seconds
+#define S_TO_D( t ) ( (t) / 86400. ) // second to day
+#define S_TO_H( t ) ( (t) / 3600. )  // second to hour
+#define S_TO_M( t ) ( (t) / 60. )    // second to minute
 /// @brief For angles
 #define DEG_TO_RAD(deg) ( deg *Constants::pi/180. )  // degree to radian
 #define RAD_TO_DEG(rad) ( rad *180./Constants::pi )  // radian to degree

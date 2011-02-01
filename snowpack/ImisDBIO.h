@@ -34,18 +34,18 @@ class ImisDBIO : public SnowpackIOInterface{
 
 		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
-		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SN_STATION_DATA& Xdata, 
-							   const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata, 
+		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 	
-		virtual void writeTimeSeries(const std::string& station, const SN_STATION_DATA& Xdata, 
-							    const SN_SURFACE_DATA& Sdata, const SN_MET_DATA& Mdata, 
-							    const Q_PROCESS_DAT& Hdata);
+		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
+		                             const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
+		                             const Q_PROCESS_DAT& Hdata, const double wind_trans24);
 
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-							 const SN_STATION_DATA& Xdata, const Q_PROCESS_DAT& Hdata);
+		                          SnowStation& Xdata, const Q_PROCESS_DAT& Hdata);
 
-		virtual void writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata, 
-							    const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
+		virtual bool writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata,
+		                             const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
 
 	private:
 		void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
@@ -58,10 +58,10 @@ class ImisDBIO : public SnowpackIOInterface{
 					  const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind, 
 					  const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
-		mio::Config cfg;
+		const mio::Config& cfg;
 		static bool research_mode;
 		static std::string oracleDB, oracleUser, oraclePassword;
-		static double min_size_hoar_surf, density_hoar_surf;
+		static double hoar_density_surf, hoar_min_size_surf;
 
 		static const double in_tz; //All IMIS data is in gmt+1
 		static const std::string sqlDeleteHdata; //Delete statement for Hdata from snowpack.ams_pmod

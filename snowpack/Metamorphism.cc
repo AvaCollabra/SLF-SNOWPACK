@@ -43,7 +43,7 @@
  * we need saturation vapor pressure not only for Metamorphism.......
  * Definition of some of the essential variables:
  *
- * PRIMARY micro-structure parameters calculated by Metamorphism routine:
+ * PRIMARY micro-structure parameters computed by Metamorphism routine:
  *
  * - rb : bond radius in [mm]
  * - rg : grain radius in [mm]
@@ -61,16 +61,16 @@
  *                            - mk < 20, mk=mk+10 : first melt-freeze cycle completed
  *                            - mk / 100 >= 1     : tagged snow layer
  *
- * SECONDARY micro-structure parameters calculated by Metamorphism routine:
+ * SECONDARY micro-structure parameters computed by Metamorphism routine:
  * - N3   : coordination number (1)
  *
- * SECONDARY micro-structure parameters calculated by routines found in Laws_sn.c:
+ * SECONDARY micro-structure parameters computed by routines found in Laws_sn.c:
  * - keff : effective conductivity (W m-1 K-1)
  * - E    : modulus of elasticity  (Pa)
  * - eta  : viscosity (Pa s)
  *
- * These are the variables needed to calculate these values, contained in the
- * SN_ELEM_DATA of the sn_Xdata structure:
+ * These are the variables needed to compute these values, contained in the
+ * ElementData of the sn_Xdata structure:
  * - theta[ICE]   : volumetric ice content (1)
  * - theta[WATER] : volumetric water  (1)
  * - Te           : temperature (K)
@@ -136,11 +136,11 @@ const double Metamorphism::max_grain_bond_ratio = 0.95;
 
 ///@name Thresholds for wind slab formation
 //@
-///For no action at all, set strength factor for wind slab formation to 0.0
+///For no action, set strength factor for wind slab formation to 0.0
 const double Metamorphism::wind_slab_enhance = 5.;
 
 ///Wind slab forms for winds stronger than Metamorphism::wind_slab_vw (m s-1)
-const double Metamorphism::wind_slab_vw = 3.;
+const double Metamorphism::wind_slab_vw = 5.;
 
 /// Wind slab formation down to Metamorphism::wind_slab_depth (m)
 const double Metamorphism::wind_slab_depth = 0.07;
@@ -169,7 +169,7 @@ bool Metamorphism::initStaticData()
  * @param Edata
  * @return area (mm2)
  */
-double Metamorphism::csPoreArea(const SN_ELEM_DATA& Edata)
+double Metamorphism::csPoreArea(const ElementData& Edata)
 {
 	const double rg = MM_TO_M(Edata.rg); // Grain and bond radius (m)
 
@@ -236,34 +236,26 @@ double Metamorphism::getCoordinationNumberN3(const double& Rho)
 }
 
 /**
- * @brief The following routine calculates the rate of change of dendricity according to
- * the Montana State Model. This routine was programmed on a foggy day in middle
- * March 1998 by Perry and Bob in Michael's office.
- * @param Edata const SN_ELEM_DATA
+ * @brief Compute the rate of change of dendricity according to the Crocus model. \n
+ * @version 10.11
+ * @param Edata const ElementData
  * @return Rate of change (d-1)
  */
-double Metamorphism::ddRate(const SN_ELEM_DATA& Edata)
+double Metamorphism::ddRate(const ElementData& Edata)
 {
 	double ddDot;
-	double Tk, dTdZ;
-	double c, f;
 
-	// Get the data at time t from the element data structures
-	dTdZ = fabs(Edata.gradT);
-	Tk = Edata.Te;
-	c = exp (-6000. / Tk); // original CROCUS: -6000.; set to -5800. by Bellaire 2004; back to ori 2007
-	f = c * dTdZ / 7.; // Introduced by Ml on 11 Oct 2004; original CROCUS: c*pow(dTdZ, 0.4)
+	const double Ts = Edata.Te;
+	const double dTsdz = fabs(Edata.gradT);
+	const double c = exp (-6000. / Ts); // original CROCUS: -6000.; set to -5800. by Bellaire 2004; back to ori 2007
+	const double f = c * sqrt(dTsdz); // factor 1./7., version 98.03; original CROCUS: c*pow(dTdZ, 0.4)
 
-	// Calculate the change in dendricity
-	if ( dTdZ < 5.0 ) {
-		ddDot = -2.5e8*c;   // Ml: ori -2.0; set to -5.0e8 by Bellaire 2004, then to -2.5e8 2007;
-	} else if( dTdZ < 15.0 ) {
-		ddDot = -3.5e8*f;   // Ml: ori -4.0; set to -1.5e8 by Bellaire 2004, then to -3.5e8 2007;
-	} else {
-		ddDot = -3.0e8*f;
+	if (dTsdz < 5.0) {
+		ddDot = -3.0e8 * c;   // Ml: ori -2.0; set to -5.0e8 by Bellaire 2004, then to -2.5e8 2007;
+	} else {                // Ml: additional range DTsdz < 15, version 98.03
+		ddDot = -1.5e8 * f;   // Ml: ori -4.0; set to -1.5e8 by Bellaire 2004, then to -3.5e8 2007;
 	}
-
-	return(ddDot);
+	return MAX(-1., ddDot);
 }
 
 /************************************************************
@@ -297,7 +289,7 @@ Metamorphism::Metamorphism(const mio::Config& i_cfg) : cfg(i_cfg)
  * @param Edata
  * @return Rate of change (d-1)
  */
-double Metamorphism::spRateDEFAULT(const SN_ELEM_DATA& Edata)
+double Metamorphism::spRateDEFAULT(const ElementData& Edata)
 {
 	double spDot;
 	double dTdZ;
@@ -330,7 +322,7 @@ double Metamorphism::spRateDEFAULT(const SN_ELEM_DATA& Edata)
  * @param *Edata
  * @return Rate of change (d-1)
  */
-double Metamorphism::spRateNIED(const SN_ELEM_DATA& Edata)
+double Metamorphism::spRateNIED(const ElementData& Edata)
 {
 	double spDot;
 	double dTdZ;
@@ -364,7 +356,7 @@ double Metamorphism::spRateNIED(const SN_ELEM_DATA& Edata)
  * @param *Edata
  * @return Bond radius growth rate (mm d-1)
  */
-double Metamorphism::TGBondRate(const SN_ELEM_DATA& Edata)
+double Metamorphism::TGBondRate(const ElementData& Edata)
 {
 	double A;          // average cross sectional area (m2)
 	double TGradBond;  // micro temp gradient across bonds (K m-1)
@@ -386,7 +378,7 @@ double Metamorphism::TGBondRate(const SN_ELEM_DATA& Edata)
 }
 
 /**
- * @brief This function calculates the lattice constant (mm)
+ * @brief This function computes the lattice constant (mm)
  * Note there is one source and one sink grain (1+1)
  * @param th_ice Volumetric ice content (1)
  * @return Lattice constant (mm)
@@ -418,7 +410,7 @@ double Metamorphism::LatticeConstant0(const double& th_ice)
  * @param gradTSup Temperature gradient at upper node (K m-1)
  * @return Grain radius growth rate (mm d-1)
  */
-double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, const double& Ttop,
+double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, const double& Ttop,
                                  const double& gradTSub, const double& gradTSup)
 {
 	double intraFlux;                      // Intra-layer vapor flux
@@ -444,7 +436,7 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
 	gsz        = 2 * (Edata.rg);
 	hElem      = M_TO_MM(Edata.L);
 
-	// Calculate the lattice constant a at time t but a <= hElem;  Units : mm
+	// Compute the lattice constant a at time t but a <= hElem;  Units : mm
 	a0 = LatticeConstant0( th_i );
 	if ( gsz > 2*new_snow_grain_rad ) {
 		// Use an empirical estimation of the lattice constant
@@ -465,7 +457,7 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
 	topFlux = - Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Ttop*Ttop) * (Constants::lh_sublimation / (Constants::gas_constant * Ttop) - 1.) * gradTtop;
 	topFlux *= lw_SaturationPressure(Ttop);
 	dFluxL2L = -(topFlux - botFlux);
-	// Calculate the rate in m s-1
+	// Compute the rate in m s-1
 	rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::density_ice * (2 * new_snow_grain_rad) * gsz);
 	// Conversion to mm d-1
 	rgDot = M_TO_MM(D_TO_S(rgDot));
@@ -482,10 +474,10 @@ double Metamorphism::TGGrainRate(const SN_ELEM_DATA& Edata, const double& Tbot, 
  * @param *Edata
  * @return Bond radius growth rate (mm d-1)
  */
-double Metamorphism::ETBondRate(const SN_ELEM_DATA& Edata)
+double Metamorphism::ETBondRate(ElementData& Edata)
 {
 	/*
-	* B_1...B_3 are  constants calculated with Brown's advanced and sophisticated
+	* B_1...B_3 are  constants computed with Brown's advanced and sophisticated
 	* mixture theory. Bartelt is so jealous of that fine piece of work.   Please note
 	* hist sarcastic tirade later in this  unreadable program.
 	*/
@@ -493,7 +485,7 @@ double Metamorphism::ETBondRate(const SN_ELEM_DATA& Edata)
 	const double B_2 = -1.8850e-6;        //  in mm
 	const double B_3 = 4.6690e+3;         //  deg K
 	const double B_R = 273.;
-	const double rc = SnLaws::calcConcaveNeckRadius(Edata.rg, Edata.rb);
+	const double rc = Edata.concaveNeckRadius();
 	double rbDot; // Bond radius growth rate (mm s-1)
 
 	if ( fabs(rc - Edata.rb) < Constants::eps ) {	//special case: thermodynamic neck radius rn is infinite
@@ -516,7 +508,7 @@ double Metamorphism::ETBondRate(const SN_ELEM_DATA& Edata)
  * @param *Edata
  * @return Grain radius growth rate (mm s-1)
  */
-double Metamorphism::ETGrainRate(const SN_ELEM_DATA& Edata)
+double Metamorphism::ETGrainRate(const ElementData& Edata)
 {
 	double rgDot; // Grain radius growth rate (mm s-1)
 
@@ -535,52 +527,28 @@ double Metamorphism::ETGrainRate(const SN_ELEM_DATA& Edata)
 
 
 /**
- * @brief Below  is Borolo Bob's UNIVERSAL LAW  (equivalent to Einstein's UNIVERSAL
- * FIELD LAW, Bob made  me  type this in to impress people.)
- * @param *Edata
- * @return Additional bond radius growth rate (mm s-1)
+ * @brief Bond radius growth due to pressure sintering \n
+ * Relate bond growth to total deformation computed with actual (partly empirical) viscosity;
+ * Previously this was done with microstructure viscosity, which is only used for main part of
+ * settling, however.
+ * @version 04.10
+ * @param Edata
+ * @return Additional bond radius growth rate (mm d-1)
  */
-double Metamorphism::PressureSintering(const SN_ELEM_DATA& Edata)
+double Metamorphism::PressureSintering(ElementData& Edata)
 {
 	double rbdot; // Bond radius growth rate (mm s-1)
 
-	/*
-	 * If there is little or no ice, then RETURN
-	 *    There are several reasons for setting the limit at 0.05. First, if we have
-	 *    dry snow with an ice fraction less than 5%, this is NEW snow which the
-	 *    current program does not model and for which the dendricity is high and the
-	 *    sphericity is low. If it is not new snow, the only other case would be
-	 *    when it is WET, and by the time the ice fraction is this low, the bonding
-	 *    between grains should be negligible, since grain-to-grain contacts of
-	 *    spherical ice grains (by the time they have been wet long enough to reduce
-	 *    the ice mass to this low value, the grains are spherical) has disappeared.
-	*/
-	if ( Edata.theta[ICE] <= Constants::min_ice_content ) {
-		return (0.0);
+	if (Edata.theta[ICE] <= Constants::min_ice_content) {
+		return 0.;
+	}
+	if (Edata.Te > Constants::melting_tk) {
+		return 0.;
 	}
 
-	/*
-	 * If the temperatures are over zero, then also RETURN (this should not occur, but
-	 * to be SAFE .... in fact the only time it can occur is when theta_i=00. (Actually
-	 * it can occur that theta_i > 0 and T == 0. The next piece of code picks this
-	 * case up....
-	*/
-	if ( Edata.Te > Constants::melting_tk ) {
-		return (0.0);
-	}
-
-	/*
-	 * Introduced by Ml 11 Oct 2004:
-	 * Relate bond growth to total deformation calculated with actual (partly empirical) viscosity;
-	 * Previously this was done with microstructure viscosity, which is only used for main part of
-	 * settling, however.
-	*/
-	rbdot = -0.1 * Edata.rb * Edata.EvDot / SnLaws::calcNeck2VolumetricStrain(Edata);
-
+	rbdot = -0.1 * Edata.rb * Edata.EvDot / Edata.neck2VolumetricStrain();
 	// Convert from (mm s-1) to (mm d-1)
-	rbdot = D_TO_S(rbdot);
-
-	return(rbdot);
+	return D_TO_S(rbdot);
 }
 
 
@@ -590,10 +558,10 @@ double Metamorphism::PressureSintering(const SN_ELEM_DATA& Edata)
  * @param Mdata
  * @param Xdata
  */
-void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
+void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 {
 	int e, nE;
-	SN_ELEM_DATA *EMS;   // Avoids dereferencing the element data pointer
+	ElementData *EMS;   // Avoids dereferencing the element data pointer
 
 	double rgDot;        // Grain growth rate (mm d-1)
 	double rbDot;        // Bond growth rate (mm d-1)
@@ -610,13 +578,12 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0];
-	//vector<SN_ELEM_DATA>& EMS = Xdata.Edata;
-	vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
+	//vector<ElementData>& EMS = Xdata.Edata;
+	vector<NodeData>& NDS = Xdata.Ndata;
 	nE = Xdata.getNumberOfElements();
 
 	const double cw = 1.e8 * exp(-6000. / 273.15);
 
-	// Calculate for each snow element within the mesh the micro-structure changes
 	for (e = Xdata.SoilNode; e < nE; e++) {
 		// Set all rates of change to zero for element e
 		ddDot = spDot = rbDot = rgDot = 0.0;
@@ -642,7 +609,7 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
 		splim3 = -0.7;
 		marker = EMS[e].mk%100;  // untag EMS[e].mk
 
-		// Calculate the pressure gradient (kinetic or equilibrium growth metamorphism??)
+		// Compute the pressure gradient (kinetic or equilibrium growth metamorphism??)
 		T1 = NDS[e].T;
 		T2 = NDS[e+1].T;
 		P1 = lw_SaturationPressure(T1);
@@ -781,35 +748,35 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
 			EMS[e].ps2rb = 0.0;
 		}
 		// Update the microstructure marker
-		if ( EMS[e].dd < 0.001 ) { //NIED EMS[e].dd < 0.001
-			if ( (EMS[e].sp < 0.1) && (marker % 10 == 0) ) {
+		if (EMS[e].dd < 0.001) { //NIED EMS[e].dd < 0.001
+			if ((EMS[e].sp < 0.1) && (marker % 10 == 0)) {
 				EMS[e].mk += 1;  // grains become fully faceted
 			}
-			if ( (EMS[e].sp > 0.999) && (marker % 10 == 0) ) {
+			if ((EMS[e].sp > 0.999) && (marker % 10 == 0)) {
 				EMS[e].mk += 2;  // grains become fully rounded
 			}
-			if ( (EMS[e].theta[ICE] > 0.763) && (marker % 10 != 8) ) {
+			if ((EMS[e].theta[ICE] > 0.763) && (marker % 10 != 8)) {
 				EMS[e].mk = (EMS[e].mk / 10) * 10 + 8;
 				// There is an ice layer forming for dry densities above 700 kg m-3!
 			}
 		}
 
 		// First wetting
-		if ( (EMS[e].theta[WATER] > 0.015) && (marker < 10) ) {
+		if ((EMS[e].theta[WATER] > 0.015) && (marker < 10)) {
 			// Non-dendritic snow: thrsh ori 0.3 changed by S.Bellaire to get thinner crusts (13.03.2006)
 			// Dendritic snow: very rapid change to melt forms
-			if ( (EMS[e].theta[WATER] > 0.35*lw_SnowResidualWaterContent(EMS[e].theta[ICE])) || (marker < 1) ) {
+			if ((EMS[e].theta[WATER] > 0.35*EMS[e].snowResidualWaterContent()) || (marker < 1)) {
 				EMS[e].mk += 10;
 			}
 		}
     // First melt-freeze cycle completed
-		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3) ) {
+		else if ((marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3)) {
 			EMS[e].mk += 10;
 		}
 
-		// Update the calculation of grain class.
-		EMS[e].type = ml_ag_Classify(EMS[e].dd, EMS[e].sp, 2. * EMS[e].rg, EMS[e].mk % 100, EMS[e].theta[WATER], EMS[e].theta[ICE]);
-	} // end of loop over snow elements
+		// Update the snow type
+		EMS[e].snowType();
+	}
 }
 
 /**
@@ -817,10 +784,10 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SN_STATION_DATA
  * @param Mdata
  * @param Xdata
  */
-void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata)
+void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 {
 	int e, nE;
-	SN_ELEM_DATA *EMS;   // Avoids dereferencing the element data pointer
+	ElementData *EMS;   // Avoids dereferencing the element data pointer
 
 	double rgDot;        // Grain growth rate (mm d-1)
 	double rbDot;        // Bond growth rate (mm d-1)
@@ -834,17 +801,15 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 	double dPdZ;         // Vapor pressure gradient within element
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
 	double cw, thetam_w; // local variables
-	// double res_wat_cont; //NIED local variable not used
 	int    marker;       // local variable
 	double dhfDot;       //NIED (H. Hirashima) Depth hoar factor ... //Fz HACK needs to be initialized! see line 894!
 	double DenFact, Diffus, gradV; //NIED (H. Hirashima) //Fz HACK please describe variables
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0];
-	vector<SN_NODE_DATA>& NDS = Xdata.Ndata;
+	vector<NodeData>& NDS = Xdata.Ndata;
 	nE = Xdata.getNumberOfElements();
 
-	// Calculate for each snow element within the mesh the micro-structure changes
 	for (e = Xdata.SoilNode; e < nE; e++) {
 		// Set all rates of change to zero for element e
 		ddDot = spDot = rbDot = rgDot = 0.0;
@@ -870,7 +835,7 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 		splim3 = -0.7;
 		marker = EMS[e].mk % 100;  // untag EMS[e].mk
 
-		// Calculate the pressure gradient (kinetic or equilibrium growth metamorphism??)
+		// Compute the pressure gradient (kinetic or equilibrium growth metamorphism??)
 		T1 = NDS[e].T;
 		T2 = NDS[e+1].T;
 		P1 = lw_SaturationPressure(T1);
@@ -1058,23 +1023,20 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SN_STATION_DATA& X
 		}
 
 		// First wetting //NIED (H. Hirashima)
-		if ( (marker < 10) && (EMS[e].theta[WATER] > 0.99*lw_SnowResidualWaterContent(EMS[e].theta[ICE])) ) {
+		if ((marker < 10) && (EMS[e].theta[WATER] > 0.99*EMS[e].snowResidualWaterContent()) ) {
 			EMS[e].mk += 10;
 		}
     // First melt-freeze cycle completed
-		else if ( (marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3) ) {
+		else if ((marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3)) {
 			EMS[e].mk += 10;
 		}
 
-		// Update the calculation of grain class.
-		EMS[e].type = ml_ag_Classify(EMS[e].dd, EMS[e].sp, 2. * EMS[e].rg, EMS[e].mk % 100, EMS[e].theta[WATER], EMS[e].theta[ICE]);
-//Fz Structure has no longer members named ng, nb; also note that mg and mb are both (hopefully) 0., so what!
-//	  EMS[e].ng = (EMS[e].M - Constants::density_water * EMS[e].theta[WATER] * EMS[e].L) / (mg + 0.5 * EMS[e].N3 * mb);
-//	  EMS[e].nb = 0.5 * N3 * EMS[e].ng;
-	} // end of loop over snow elements
+		// Update the snow type
+		EMS[e].snowType();
+	}
 }
 
-void Metamorphism::runMetamorphismModel(const SN_MET_DATA& Mdata, SN_STATION_DATA& Xdata) throw()
+void Metamorphism::runMetamorphismModel(const SN_MET_DATA& Mdata, SnowStation& Xdata) throw()
 {
 	CALL_MEMBER_FN(*this, mapMetamorphismModel[metamorphism_model])(Mdata, Xdata);
 }

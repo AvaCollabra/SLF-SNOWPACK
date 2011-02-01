@@ -43,7 +43,7 @@ class Saltation {
 	public:
 		Saltation(const mio::Config& i_cfg);
 
-		bool calculateSaltation(const double& tauS, const double& tau_th, const double& slope, const double& dg, 
+		bool compSaltation(const double& tauS, const double& tau_th, const double& slope, const double& dg,
 		                        double& massflux, double& c_salt);
 
 	private:
@@ -66,7 +66,7 @@ class Saltation {
 		                     const double& dg, const double& tau_th, double& z_max, double& ubar);
 
 	private:
-		mio::Config cfg;
+		const mio::Config& cfg;
 		int doorschot;
 
 		static const double hs_frac, karman, elas, angle_ej, ratio_ve_ustar, z0_salt, salt_height;
