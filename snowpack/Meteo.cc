@@ -40,28 +40,28 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 *         recommended with Neumann b.c., i.e., BC_CHANGE=0
 	 * - (-1): Simplified Richardson number stability correction
 	 */
-	neutral = cfg.get("NEUTRAL", "Parameters");
+	cfg.getValue("NEUTRAL", "Parameters", neutral);
 
 	/**
 	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
 	 * Default value and operational mode: 0.002 m
 	 */
-	roughness_length = cfg.get("ROUGHNESS_LENGTH", "Parameters");
+	cfg.getValue("ROUGHNESS_LENGTH", "Parameters", roughness_length);
 
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
-	useCanopyModel = cfg.get("CANOPY", "Parameters");
+	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
 
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
 	 * Required for surface energy exchange computation and for drifting and blowing snow.
 	 */
-	height_of_wind_value = cfg.get("HEIGHT_OF_WIND_VALUE", "Parameters");
+	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Parameters", height_of_wind_value);
 
-	research_mode = cfg.get("RESEARCH", "Parameters");
+	cfg.getValue("RESEARCH", "Parameters", research_mode);
 }
 
 
@@ -82,7 +82,7 @@ void Meteo::projectPrecipitations(const double& SlopeAngle, double& precips, dou
  * @param Mdata
  * @param Xdata
  */
-void Meteo::MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata)
+void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 {
 	int e, iter = 1, max_iter = 100;
 	const double eps1 = 1.e-3, eps2 = 1.e-5;
@@ -140,7 +140,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata)
 			Mdata.z0 = z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
-			prn_msg ( __FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
 			return;
 		}
 		ustar_old = ustar;
@@ -240,7 +240,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata)
  * @param *Mdata
  * @param *Xdata
  */
-void Meteo::compMeteo(SN_MET_DATA *Mdata, SnowStation *Xdata)
+void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
 	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);

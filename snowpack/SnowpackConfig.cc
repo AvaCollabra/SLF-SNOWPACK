@@ -26,17 +26,11 @@ using namespace std;
 /************************************************************
  * static section                                           *
  ************************************************************/
-vector<string> SnowpackConfig::variants;
 map<string,string> SnowpackConfig::defaultConfig;
 const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 
 bool SnowpackConfig::initStaticData()
 {
-	variants.push_back("DEFAULT");
-	variants.push_back("ANTARCTICA");
-	variants.push_back("JAPAN");
-	variants.push_back("CALIBRATION");
-
 	defaultConfig["ALPINE3D"] = "0";
 	defaultConfig["BACKUP_DAYS_BETWEEN"] = "365";
 	defaultConfig["CHECK_SW_MODE"] = "0";
@@ -86,7 +80,8 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["THRESH_RH"] = "0.5";
 	defaultConfig["T_CRAZY_MAX"] = "340.";
 	defaultConfig["T_CRAZY_MIN"] = "210.";
-	defaultConfig["VARIANT"] = variants.at(0);
+	defaultConfig["TIME_ZONE"] = "0.";
+	defaultConfig["VARIANT"] = "default";
 	defaultConfig["VISCOSITY_MODEL"] = "default";
 	defaultConfig["WET_LAYER"] = "1";
 	defaultConfig["PREVAILING_WIND_DIR"] = "0.";
@@ -104,6 +99,7 @@ SnowpackConfig::~SnowpackConfig() {}
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
 {
 	string variant = get("VARIANT", "Parameters", Config::nothrow);
+	IOUtils::toUpper(variant);
 	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
 
 	addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0025"); //Minimum element length (m)
@@ -118,29 +114,33 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("HEIGHT_NEW_ELEM", "Parameters", ss.str());
 	}
 
-	if ((variant == "") || (variant == "DEFAULT")){
+	string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow);
+	string metamorphism_model = get("METAMORPHISM_MODEL", "Parameters", Config::nothrow);
+	string strength_model = get("STRENGTH_MODEL", "Parameters", Config::nothrow);
 
-	} else if (variant == "JAPAN"){
+	if ((variant == "") || (variant == "DEFAULT")) {
 
-		string strength_model = get("STRENGTH_MODEL", "Parameters", Config::nothrow); 
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "DEFAULT");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
+
+	} else if (variant == "JAPAN") {
+
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_KOJIMA");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "NIED");
 
-		string metamorphism_model = get("METAMORPHISM_MODEL", "Parameters", Config::nothrow); 
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "NIED");
+	} else if (variant == "ANTARCTICA") {
 
-		string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow); 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_KOJIMA");
-
-	} else if (variant == "ANTARCTICA"){
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "DEFAULT");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
 
 		addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "Parameters");
 
 		string hoar_density_buried = get("HOAR_DENSITY_BURIED", "Parameters", Config::nothrow);
 		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "Parameters", "200.0");
-
-		string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow); 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_CALIBRATION");
 
 		string fixed_hn_density = get("FIXED_HN_DENSITY", "Parameters", Config::nothrow);
 		if (fixed_hn_density == "") addKey("FIXED_HN_DENSITY", "Parameters", "300.");
@@ -167,15 +167,20 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("T_CRAZY_MAX", "Parameters", "300.");
 		addKey("NEW_SNOW_GRAIN_RAD", "Parameters", "0.1");
 
-	} else if (variant == "CALIBRATION"){
+	} else if (variant == "CALIBRATION") {
 
-		string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow); 
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_CALIBRATION");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
 
-		addKey("FIXED_HEIGHTS", "Parameters", "5");
-		addKey("FIXED_RATES", "Parameters", "0");
-		addKey("MAX_NUMBER_SENSORS", "Parameters", "8");
-		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
+		string fixed_heights = get("FIXED_HEIGHTS", "Parameters", Config::nothrow);
+		if (fixed_heights == "") addKey("FIXED_HEIGHTS", "Parameters", "5");
+		string fixed_rates = get("FIXED_RATES", "Parameters", Config::nothrow);
+		if (fixed_rates == "") addKey("FIXED_RATES", "Parameters", "0");
+		string max_number_sensors = get("MAX_NUMBER_SENSORS", "Parameters", Config::nothrow);
+		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "Parameters", "8");
+		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "Parameters", Config::nothrow);
+		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
 
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
@@ -227,35 +232,35 @@ void checkUserConfiguration(mio::Config& /*cfg*/)
 {
 	/*
 	if ( !((T_INTERNAL > -1) && (T_INTERNAL <= MAX_NUMBER_SENSORS)) ) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "T_INTERNAL=%d out of range (0, %d)", T_INTERNAL, MAX_NUMBER_SENSORS);
+	prn_msg(__FILE__, __LINE__, "err", Date(), "T_INTERNAL=%d out of range (0, %d)", T_INTERNAL, MAX_NUMBER_SENSORS);
 		return ERROR;
 	}
 	NUMBER_SENSORS = FIXED_HEIGHTS + FIXED_RATES;
 	if ( !((NUMBER_SENSORS > -1) && (NUMBER_SENSORS <= MAX_NUMBER_SENSORS)) ) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "%d FIXED_HEIGHTS + %d FIXED_RATES out of range (0, %d)", FIXED_HEIGHTS, FIXED_RATES, MAX_NUMBER_SENSORS);
+	prn_msg(__FILE__, __LINE__, "err", Date(), "%d FIXED_HEIGHTS + %d FIXED_RATES out of range (0, %d)", FIXED_HEIGHTS, FIXED_RATES, MAX_NUMBER_SENSORS);
 		return ERROR;
 	}
 
 
 	// Print some infos to stdout: research mode
 	if ( !MEAS_TSS && CHANGE_BC ){
-		prn_msg(__FILE__, __LINE__, "wrn",	-1., "(!MEAS_TSS && CHANGE_BC) == 1");
-		prn_msg(__FILE__, __LINE__, "msg",	-1., "Using Neumann boundary conditions because no measured TSS is available");
+	prn_msg(__FILE__, __LINE__, "wrn", Date(), "(!MEAS_TSS && CHANGE_BC) == 1");
+	prn_msg(__FILE__, __LINE__, "msg", Date(), "Using Neumann boundary conditions because no measured TSS is available");
 		CHANGE_BC = 0;
 	}
 	if ( !SNP_SOIL && CANOPY ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "Canopy Model is used WITHOUT soil data!");
+	prn_msg(__FILE__, __LINE__, "wrn", Date(), "Canopy Model is used WITHOUT soil data!");
 	}
 
 
 	// Check a few settings - operational mode
 	if ( SNOW_REDISTRIBUTION && ((NUMBER_SLOPES > 5) || ((NUMBER_SLOPES-1)%4 != 0)) ) {
-	prn_msg(__FILE__, __LINE__, "err", -1., "NUMBER_SLOPES (%d) not compatible with SNOW_REDISTRIBUTION", NUMBER_SLOPES);
+	prn_msg(__FILE__, __LINE__, "err", Date(), "NUMBER_SLOPES (%d) not compatible with SNOW_REDISTRIBUTION", NUMBER_SLOPES);
 		exit(EXIT_FAILURE);
 	}
 	if ( CANOPY ) {
 		CANOPY = 0;
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "CANOPY was set! You may have run into troubles! Reset to 0");
+	prn_msg(__FILE__, __LINE__, "wrn", Date(), "CANOPY was set! You may have run into troubles! Reset to 0");
 	}
 
 

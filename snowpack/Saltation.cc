@@ -61,7 +61,7 @@ const double Saltation::salt_height = 0.07;
 Saltation::Saltation(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
   //Use Doorschots Saltation model instead of Sorenson (much slower)
-  doorschot = cfg.get("DOORSCHOT", "Parameters");
+	cfg.getValue("DOORSCHOT", "Parameters", doorschot);
 }
 
 /**
@@ -274,8 +274,8 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	}
 	
 	if ( !(mass*Nreb*ubar > 0. && mass*Nreb*ubar < 1e10) ) {
-		prn_msg ( __FILE__, __LINE__, "msg+", -1,
-			"Infinite Flux from Mass Flux  mass:%lf NrebG:%lf ubar:%lf", mass, Nreb, ubar );
+		prn_msg(__FILE__, __LINE__, "msg+", Date(),
+			"Infinite Flux from Mass Flux  mass:%lf NrebG:%lf ubar:%lf", mass, Nreb, ubar);
 	}
 	
 	return (mass*Nreb*ubar);
@@ -337,20 +337,20 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	} while ( (fabs((tauA - tauA_old)/tauA) > eps) && (iter < maxit) );
 	
 	if (iter == maxit) {
-		prn_msg ( __FILE__, __LINE__, "wrn", -1, "Airborne shear stress Iteration did not converge" ); 
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Airborne shear stress Iteration did not converge");
 		tauA = 0.5 * tauS;
 		Nae = n_ae * (tauA - tau_th);
 	}
 	if (tauA < tau_th) {
-		prn_msg ( __FILE__, __LINE__, "wrn", -1, "Airborne shear stress smaller than threshold" ); 
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Airborne shear stress smaller than threshold");
 		Nae = 0.; 
 	}
 	
 	flux = mass * Nae * ubar;
 	
 	if ( !((flux > 0.) && (flux < 1e10)) ) {
-		prn_msg ( __FILE__, __LINE__, "msg+", -1, 
-			"Infinite Flux from Aero Entrain  mass:%lf Nae:%lf ubar:%lf",mass,Nae,ubar );
+		prn_msg(__FILE__, __LINE__, "msg+", Date(),
+			"Infinite Flux from Aero Entrain  mass:%lf Nae:%lf ubar:%lf",mass,Nae,ubar);
 	}
 	
 	// Now compute the concentration

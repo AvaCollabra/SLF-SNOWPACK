@@ -41,23 +41,23 @@
  * FUNCTION PROTOTYPES
  */
 #ifdef GNU	//in this case, GCC can check the format arguments for types, number, ...
-void prn_msg(const char *theFile, int theLine, const char *msg_type, double JulianDate, const char *format, ...)
+void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...)
 __attribute__ ((format (printf, 5, 6)));
 #else
-void prn_msg(const char *theFile, int theLine, const char *msg_type, double JulianDate, const char *format, ...);
+void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...);
 #endif
 
 int booleanTime(const double& JulianDate, double days_between,
-			    const double& start, const double& calculation_step_length);
+                const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
                           const std::string& station, const int& nSlopes);
 
-void versionUserRuntime(char *version, char *computation_date, double *jul_computation_date,
-					  char *user, mio::Date& date);
+void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
+                        char *compile_date, char *user);
 
 void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
-						SurfaceFluxes& Sdata, SnowStation& Xdata);
+                           SurfaceFluxes& Sdata, SnowStation& Xdata);
 
 void typeToCode(int *F1, int *F2, int *F3, int type);
 
@@ -69,7 +69,7 @@ int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int
 
 double forcedErosion(const double hs1, SnowStation& Xdata);
 
-void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr);
+void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr);
 
 double logisticFunction(const double input, const double threshold, const double width);
 

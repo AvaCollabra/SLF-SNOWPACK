@@ -43,7 +43,7 @@
 class SnowStation;
 class Metamorphism;
 
-typedef void (Metamorphism::*MetaModelFn)(const SN_MET_DATA&, SnowStation&); 
+typedef void (Metamorphism::*MetaModelFn)(const CurrentMeteo&, SnowStation&); 
 typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 
 class Metamorphism {
@@ -51,7 +51,7 @@ class Metamorphism {
 	public:
 		Metamorphism(const mio::Config& i_cfg);
 
-		void runMetamorphismModel(const SN_MET_DATA& Mdata, SnowStation& Xdata) throw();
+		void runMetamorphismModel(const CurrentMeteo& Mdata, SnowStation& Xdata) throw();
 
 		static double csPoreArea(const ElementData& Edata);
 
@@ -75,8 +75,8 @@ class Metamorphism {
 
 		double PressureSintering(ElementData& Edata);
 
-		void metamorphismDEFAULT(const SN_MET_DATA& Mdata, SnowStation& Xdata);
-		void metamorphismNIED(const SN_MET_DATA& Mdata, SnowStation& Xdata);
+		void metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& Xdata);
+		void metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdata);
 		
 
 		double spRateDEFAULT(const ElementData& Edata);

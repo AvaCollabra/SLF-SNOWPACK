@@ -62,7 +62,7 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
+	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
@@ -73,20 +73,22 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * WARNING: In operational mode, this has to result in a 30 min interval!
 	 * It is a matter of consitency. If you change this, a big mess will result!!!
 	 */
-	hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Parameters");
+	cfg.getValue("HAZARD_STEPS_BETWEEN", "Parameters", hazard_steps_between);
 
 	/* Dew point relative to water or ice
 	 * - default: 1
 	 * - Antarctica: 0 */
-	force_rh_water = cfg.get("FORCE_RH_WATER", "Parameters");
+	cfg.getValue("FORCE_RH_WATER", "Parameters", force_rh_water);
 
-	research_mode = cfg.get("RESEARCH", "Parameters");
+	cfg.getValue("RESEARCH", "Parameters", research_mode);
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	hoar_density_surf = cfg.get("HOAR_DENSITY_SURF", "Parameters");
+	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
 
 	//Minimum size to show surface hoar on surface (mm)
-	hoar_min_size_surf = cfg.get("HOAR_MIN_SIZE_SURF", "Parameters");
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
+
+	cfg.getValue("TIME_ZONE", "Input", time_zone);
 }
 
 /**
@@ -95,27 +97,27 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
  * - Computes a zeroth order drift index for the first time step w/o shifting old_drift!
  * @author Michael Lehning
  * @version 10.03
- * @param TimeEnd
+ * @param duration of run (s)
  * @param *old_drift
  * @param cos_sl Cosine of slope angle
  */
-void Hazard::initializeHazard(const double TimeEnd, double *old_drift, double slope_angle,
-                              std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind)
+void Hazard::initializeHazard(const double duration, double *old_drift, double slope_angle,
+                              std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
 {
-	int nHz = (int)(TimeEnd / (hazard_steps_between * sn_dt)) + 2;
+	int nHz = (int)floor( (duration / (hazard_steps_between * sn_dt)) ) + 2;
 	if (nHz <= 0) nHz = 1;
 
-	Hdata = vector<Q_PROCESS_DAT>(nHz);
-	Hdata_ind = vector<Q_PROCESS_IND>(nHz);
+	Hdata = vector<ProcessDat>((unsigned)nHz);
+	Hdata_ind = vector<ProcessInd>((unsigned)nHz);
 
-	memset(&Hdata[0], 0, sizeof(Q_PROCESS_DAT)*nHz);
-	memset(&Hdata_ind[0], 0, sizeof(Q_PROCESS_IND)*nHz);
+	memset(&Hdata[0], 0, sizeof(ProcessDat)*nHz);
+	memset(&Hdata_ind[0], 0, sizeof(ProcessInd)*nHz);
 
-	Hdata[0].nHz = nHz;
-	Hdata[nHz-1].nHz = nHz;
+	Hdata[0].nHz = (signed)nHz;
+	Hdata[nHz-1].nHz = (signed)nHz;
 
-	versionUserRuntime(Hdata[0].sn_version, Hdata[0].sn_computation_date,
-	                      &Hdata[0].sn_jul_computation_date, Hdata[0].sn_user, Hdata[0].sn_compile_date); //HACK: compile_date is NOT the compilation date
+	versionUserRuntime(time_zone, Hdata[0].sn_version, Hdata[0].sn_computation_date,
+                     &Hdata[0].sn_jul_computation_date, Hdata[0].sn_compilation_date, Hdata[0].sn_user);
 
 	Hdata[0].wind_trans = driftIndex(old_drift, 0., Hazard::wind_slab_density, 6, slope_angle, -1);
 	Hdata[0].wind_trans24 = driftIndex(old_drift, 0., Hazard::wind_slab_density, 24, slope_angle, -1);
@@ -167,11 +169,12 @@ double Hazard::driftIndex(double *old_drift, double drift, const double rho, con
 		flux = H_TO_S(MAX(0,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
 		ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
 		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle));
-		return ero_depo / cos(slope_angle);
+		ero_depo /= cos(slope_angle);
+		return ero_depo;
 	}
 }
 
-void Hazard::getDriftIndex(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                            double *old_drift, double& drift, double slope_angle)
 {
 	Hdata_ind.wind_trans = 0;
@@ -230,7 +233,7 @@ double Hazard::compHoarIndex(double *OldHoar, double new_hoar, int nhour, int ne
 	return(hoar_ind);
 }
 
-void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind)
+void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
 	double crust_dep=0., crust_thick=0.;
 	double cos_sl = cos(Xdata.SlopeAngle);
@@ -266,8 +269,8 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, Q_PROCESS_DAT& Hdata,
  * @param Zdata
  * @param Xdata
  */
-void Hazard::compHazard(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, const double& d_hs6, const double& d_hs24,
-                        const SN_MET_DATA& Mdata,SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
+                        const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
                         const SnowStation& Xdata)
 {
 	int    nE = Xdata.getNumberOfElements();
@@ -328,7 +331,7 @@ void Hazard::compHazard(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, const do
 	double sum_hn = 0., sum_hnw = 0.;
 	int e = nE-1;
 	for (unsigned int k = 0; k <= 5; k++) {
-		while ((e >= Xdata.SoilNode) && ((Mdata.date.getJulianDate() - EMS[e].date.getJulianDate()) < (H_TO_D(t_hn[k])))) {
+		while ((e >= Xdata.SoilNode) && ((Mdata.date - EMS[e].depositionDate).getJulianDate() < (H_TO_D(t_hn[k])))) {
 			sum_hn  += EMS[e].L;
 			sum_hnw += EMS[e].L * EMS[e].Rho;
 			e--;
@@ -524,9 +527,9 @@ void Hazard::compHazard(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, const do
 	}
 }
 
-void Hazard::getHazardData(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                            const double& delta_hs6, const double& delta_hs24,
-                           SN_MET_DATA& Mdata, SurfaceFluxes& Sdata,
+                           CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
                            SN_ZWISCHEN_DATA& Zdata, SnowStation& Xdata_station, SnowStation& Xdata_south,
                            const unsigned int& nSlopes, const bool& virtual_slope)
 {

@@ -30,24 +30,24 @@ using namespace mio;
 
 /**
  * @brief Print a message to screen (see p.351-352[,469] in C: The Complete Reference) \n
- * If JulianDate < 0., no running date will be written \n
- * If JulianDate >= 0., compute current date and write it (\<t>) \n
+ * If date_in is Date(), no running date will be written, \n
+ * otherwise write date_in to (\<t>) \n
  * The output format depends on message type:
- * - "err"  : [E] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
- * - "wrn"  : [W] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
- * - "msg+" : [I] [\<t>] [\<file>:\<line>] \<on JulianDate> \<msg> \\n
+ * - "err"  : [E] [\<t>] [\<file>:\<line>] \<on date_in> \<msg> \\n
+ * - "wrn"  : [W] [\<t>] [\<file>:\<line>] \<on date_in> \<msg> \\n
+ * - "msg+" : [I] [\<t>] [\<file>:\<line>] \<on date_in> \<msg> \\n
  * - "msg"  : [i] [\<t>] ---> \<msg> \<n>
  * - "msg-" : [i] []      \<msg> \<n>
  * @author Charles Fierz \n Mathias Bavay
- * @version 9.mm
+ * @version 11.02
  * @param *theFile
  * @param theLine
  * @param *msg_type See above
- * @param JulianDate Set to -1. if JulianDate is not available.
+ * @param date_in Use Date() if date_in is not available.
  * @param *format Format for message
  * @param ... Variable number of parameters to format
  */
-void prn_msg(const char *theFile, int theLine, const char *msg_type, double JulianDate, const char *format, ...)
+void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...)
 {
 	va_list argptr; // get an arg ptr
 
@@ -57,35 +57,39 @@ void prn_msg(const char *theFile, int theLine, const char *msg_type, double Juli
 	va_start(argptr, format);
 
 	//compute time stamp
-	string currentdate = Date(time(NULL), 1.).toString(Date::ISO); //default HACK: we should read TZ from io.ini
-	if ( JulianDate > 0. ) currentdate = Date(JulianDate).toString(Date::ISO);
-   	if ( JulianDate < 0. ) currentdate = "";
-
+	string currentdate;
+	if (date_in.isUndef()) {
+		Date msg_date;
+		msg_date.setFromSys(); //HACK: we don't put the timezone...
+		currentdate = msg_date.toString(Date::ISO);
+	} else {
+		currentdate = date_in.toString(Date::ISO);
+	}
 
 	//print message
 	//printf("¬"); //if we need multiline output, use a special char as bloc delimiter
-	if ( strcmp(msg_type, "err") == 0 ) {
-		fprintf(stdout, "[E] [%s] [%s:%d] ",currentdate.c_str(), theFile, theLine);
+	if (strcmp(msg_type, "err") == 0) {
+		fprintf(stdout, "[E] [%s] [%s:%d] ", currentdate.c_str(), theFile, theLine);
 		msg_ok=1;
 	}
-	if ( strcmp(msg_type, "wrn") == 0 ) {
-		fprintf(stdout, "[W] [%s] [%s:%d] ",currentdate.c_str(), theFile, theLine);
+	if (strcmp(msg_type, "wrn") == 0) {
+		fprintf(stdout, "[W] [%s] [%s:%d] ", currentdate.c_str(), theFile, theLine);
 		msg_ok=1;
 	}
-	if ( strcmp(msg_type, "msg+") == 0 ) {
-		fprintf(stdout, "[I] [%s] [%s:%d] ",currentdate.c_str(), theFile, theLine);
+	if (strcmp(msg_type, "msg+") == 0) {
+		fprintf(stdout, "[I] [%s] [%s:%d] ", currentdate.c_str(), theFile, theLine);
 		msg_ok=1;
 	}
-	if ( strcmp(msg_type, "msg-") == 0 ) {
-		fprintf(stdout, "[i] []      ");
+	if (strcmp(msg_type, "msg-") == 0) {
+		fprintf(stdout, "[i] []                 ");
 		msg_ok=1;
 	}
-	if ( strcmp(msg_type, "msg") == 0 ) {
-		fprintf(stdout, "[i] [%s] ---> ",currentdate.c_str());
+	if (strcmp(msg_type, "msg") == 0) {
+		fprintf(stdout, "[i] [%s] ---> ", currentdate.c_str());
 		msg_ok=1;
 	}
 
-	if ( msg_ok ) {
+	if (msg_ok) {
 		vfprintf(stdout, format, argptr);
 	} else {
 		fprintf(stdout, "[W] [%s] [%s:%d] Message type '%s' unknown!", currentdate.c_str(), theFile, theLine, msg_type);
@@ -127,7 +131,7 @@ int booleanTime(const double& JulianDate, double days_between,
 	//days_between = round(days_between/step) * step; //only in C99
 	days_between = floor(days_between / step + 0.5) * step;//how to implement a replacement to round() using only floor()!
 	if (days_between == 0.) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Days_between is zero. Please consider changing data output intervals!");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Days_between is zero. Please consider changing data output intervals!");
 		return 0;
 	}
 	jul_frc = (JulianDate - start) / days_between - floor((JulianDate - start) / days_between);
@@ -153,10 +157,9 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	char fp[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
 	int j, n_files;
 
-	if (experiment != "none"){
+	if (experiment != "none") {
 		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", station.c_str(), experiment.c_str());
 	}
-	prn_msg(__FILE__, __LINE__, "msg+", -1., "Erasing old result file(s) %s*%s*", outdir.c_str(), exp);
 	for (unsigned int ii=0; ii<vecExtension.size(); ii++){
 		const string& ext = vecExtension[ii];
 		n_files = 0;
@@ -172,21 +175,21 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 					n_files++;
 				}
 			}
-			if ( n_files > 0 ) {
-				prn_msg(__FILE__, __LINE__, "msg-", -1., "Erased %d *.%s file(s)", n_files, ext.c_str());
+			if (n_files > 0) {
+				prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
 			} else {
-				prn_msg(__FILE__, __LINE__, "msg-", -1., "No *.%s file(s) to erase", ext.c_str());
+				prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
 			}
-		} else if (ext == "ini"){
-			if (station != "IMIS"){
+		} else if (ext == "ini") {
+			if (station != "IMIS") {
 				snprintf(fp, MAX_STRING_LENGTH-2, "%s%s.%s", outdir.c_str(), exp, ext.c_str());
 				if (nSlopes > 1) {
 					snprintf(fp, MAX_STRING_LENGTH-3, "%s%s-%d.%s", outdir.c_str(), exp, nSlopes-1, ext.c_str());
 				}
 				if (remove(fp) == 0) {
-					prn_msg(__FILE__, __LINE__, "msg-", -1., "Erased %s", fp);
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %s", fp);
 				} else {
-					prn_msg(__FILE__, __LINE__, "msg-", -1., "No file %s to erase", fp);
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "No file %s to erase", fp);
 				}
 			}
 		}
@@ -248,24 +251,19 @@ int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
  * @param *jul_computation_date Julian Date
  * @param *user
  */
-void versionUserRuntime(char *version, char *computation_date, double *jul_computation_date,
-                           char *user, mio::Date& date)
+void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
+                        char *compilation_date, char *user)
 {
 	char *logname;
 
-	time_t rawtime; // time in seconds since EPOC
-	struct tm * timeinfo; // local time structure
+	Date localdate;
+	localdate.setFromSys();
+	localdate.setTimeZone(time_zone);
 
-	time (&rawtime);
-	timeinfo = localtime (&rawtime);
-	time_t ltime = mktime(timeinfo);
-	Date localdate(ltime, 1.); //HACK: use TZ from io.ini
-	
-	date = localdate;
-
-	// version and computation time
+	// version as well as computation and compilation time
 	snprintf(version, MAX_STRING_LENGTH-1, "%lf", SN_VERSION);
 	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());
+	snprintf(compilation_date, MAX_STRING_LENGTH-1, "%s, %s", __DATE__, __TIME__);
 
 	*jul_computation_date = localdate.getJulianDate();
 	//logname=getlogin(); //other options possible, see man
@@ -371,20 +369,20 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 		tot_swe  += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
 		dmassE = Xdata.Edata[e].M - (Xdata.Edata[e].L * Xdata.Edata[e].Rho);
 		if ( fabs(dmassE) > Constants::eps ) {
-			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass error at element e=%d (nE=%d): mass(now)=%lf swe(now)=%lf dmassE=%lf", e, Xdata.getNumberOfElements(), tot_mass, tot_swe, dmassE);
+			prn_msg(__FILE__, __LINE__, "msg", Date(), "Mass error at element e=%d (nE=%d): mass(now)=%lf swe(now)=%lf dmassE=%lf", e, Xdata.getNumberOfElements(), tot_mass, tot_swe, dmassE);
 			mass_error = false;
 		}
 	}
 	// Mass balance check
 	if ( tot_mass > Constants::eps ) {
 		if ( (fabs(tot_swe/tot_mass) - 1.) > 0.5e-2 ) {
-			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance (theta): mass(now)=%lf swe(now)=%lf swe/mass=%lf mass-swe=%lf", tot_mass, tot_swe, tot_swe/tot_mass, tot_mass - tot_swe);
+			prn_msg(__FILE__, __LINE__, "msg", Date(), "Mass balance (theta): mass(now)=%lf swe(now)=%lf swe/mass=%lf mass-swe=%lf", tot_mass, tot_swe, tot_swe/tot_mass, tot_mass - tot_swe);
 			mass_error = false;
 		}
 		if ( tot_mass_in > Constants::eps ) {
 			if ( (fabs(tot_mass - (tot_mass_in + mass_change))/tot_mass) > 0.5e-4 ) {
-				prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance: mass_err(now)=%lf", tot_mass - (tot_mass_in + mass_change));
-				prn_msg(__FILE__, __LINE__, "msg", -1., "tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
+				prn_msg(__FILE__, __LINE__, "msg", Date(), "Mass balance: mass_err(now)=%lf", tot_mass - (tot_mass_in + mass_change));
+				prn_msg(__FILE__, __LINE__, "msg", Date(), "tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
 				mass_error = false;
 			}
 		} else {
@@ -392,7 +390,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 		}
 	} else if ( tot_mass_in > Constants::eps ) {
 		if ( fabs(tot_mass_in + mass_change) > 1.0e-3 ) {
-			prn_msg(__FILE__, __LINE__, "msg", -1., "Mass balance error: tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
+			prn_msg(__FILE__, __LINE__, "msg", Date(), "Mass balance error: tot_mass_in=%lf tot_mass_now=%lf mass_change=%lf", tot_mass_in, tot_mass, mass_change);
 			mass_error = false;
 		}
 	}
@@ -440,7 +438,7 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  * @param *dhs_corr Correction on snow depth (m)
  * @param *mass_corr Mass correction (kg m-2)
  */
-void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr)
+void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr)
 {
 	int    e, nE, nSoil;                         // Element counter
 	double factor_corr, sum_total_correction=0.; // Correction factor
@@ -461,8 +459,8 @@ void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_co
 		*dhs_corr = Mdata.hs1 - cH;
 		*mass_corr = forcedErosion(Mdata.hs1, Xdata);
 		if ( 0 ) {
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(), "Missed erosion event detected");
-			prn_msg(__FILE__, __LINE__, "msg-", -1., "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
+			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 	} else {
 		// assume settling error
@@ -471,21 +469,21 @@ void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_co
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
-		if (EMS[nE-1].date.getJulianDate() <= EMS[nSoil].date.getJulianDate())
+		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[nSoil].depositionDate.getJulianDate())
 			return;
 
 		if ( 0 ) {
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(),
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 				   "Small correction due to assumed settling error\n");
-			prn_msg(__FILE__, __LINE__, "msg-", -1., 
+			prn_msg(__FILE__, __LINE__, "msg-", Date(),
 							"Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3))&&(Mdata.date.getJulianDate() > EMS[e].date.getJulianDate())){
+			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3))&&(Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
 				sum_total_correction += EMS[e].L
-					* (1. - sqrt((EMS[nE-1].date.getJulianDate() - EMS[e].date.getJulianDate()) 
-							   / (EMS[nE-1].date.getJulianDate() - EMS[nSoil].date.getJulianDate())));
+						* (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
+							   / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())));
 			}
 		}
 		if ( sum_total_correction > 0. ) {
@@ -497,11 +495,11 @@ void deflateInflate(const SN_MET_DATA& Mdata, SnowStation& Xdata, double *dhs_co
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3)) && (Mdata.date.getJulianDate() > EMS[e].date.getJulianDate())){
+			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3)) && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
 				ddL = EMS[e].L 
 					* MAX(-0.9, MIN(0.9, factor_corr 
-								 * (1. - sqrt((EMS[nE-1].date.getJulianDate() - EMS[e].date.getJulianDate()) 
-										    / (EMS[nE-1].date.getJulianDate() - EMS[nSoil].date.getJulianDate())))));
+						* (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
+										    / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())))));
 			} else {
 				ddL = 0.;
 			}

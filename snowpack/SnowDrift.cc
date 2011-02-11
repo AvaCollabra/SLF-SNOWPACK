@@ -49,13 +49,13 @@ SnowDrift::SnowDrift(const mio::Config& i_cfg) : cfg(i_cfg), saltation(cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
+	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
 
 	/**
 	 * @brief Defines whether real snow erosion and redistribution should happen under
 	 * blowing snow conditions. Set in operational mode.
 	 */
-	snow_redistribution = cfg.get("SNOW_REDISTRIBUTION", "Parameters");
+	cfg.getValue("SNOW_REDISTRIBUTION", "Parameters", snow_redistribution);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
@@ -67,7 +67,7 @@ SnowDrift::SnowDrift(const mio::Config& i_cfg) : cfg(i_cfg), saltation(cfg)
 	 * - 5 real simulation on flat field plus 4 virtual slopes
 	 * - 9 real simulation on flat field plus 8 virtual slopes
 	 */
-	nSlopes = cfg.get("NUMBER_SLOPES", "Parameters");
+	cfg.getValue("NUMBER_SLOPES", "Parameters", nSlopes);
 }
 
 /**
@@ -100,7 +100,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 	}
 	// Compute the saltation mass flux (after Pomeroy and Gray)
 	if (!saltation.compSaltation(tau, tau_thresh, angle, MM_TO_M(2.*Edata.rg), Qsalt, c_salt)) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Saltation computation failed");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Saltation computation failed");
 		throw IOException("Saltation computation failed", AT);
 	}
 
@@ -127,7 +127,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
  * @param Sdata
  * @param cumu_hnw transfer of eroded mass from ALPINE3D
 */
-void SnowDrift::compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw)
+void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw)
 {
 	int nE, nE_old;                           // number of new and old elements
 	int nErode = 0;                           // number of eroded elements and erosion level
@@ -157,7 +157,7 @@ void SnowDrift::compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, Surf
 	}
 
 	if (Xdata.ErosionLevel > nE-1) {
-		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "ErosionLevel=%d did get messed up (nE-1=%d)", Xdata.ErosionLevel, nE-1);
+		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "ErosionLevel=%d did get messed up (nE-1=%d)", Xdata.ErosionLevel, nE-1);
 	}
 	if (!ALPINE3D && (Xdata.SlopeAngle > Constants::min_slopeangle) && Xdata.windward) {
 		windward = true;
@@ -179,7 +179,7 @@ void SnowDrift::compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, Surf
 				real_flux = compMassFlux(EMS[nE-1], ustar_max, Xdata.SlopeAngle); // Windward slope && vw_drift && nE-1
 			}
 		} catch(exception& ex){
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), "SnowDrift");
+			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "SnowDrift");
 			throw;
 		}
 		massErode = (real_flux * sn_dt / Hazard::typical_slope_length);
@@ -207,7 +207,7 @@ void SnowDrift::compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, Surf
 			double dL;
 
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Inconsistent Mass:%lf   L*Rho:%lf", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho);
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Inconsistent Mass:%lf   L*Rho:%lf", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho);
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
 			}
 			if (windward) {
@@ -261,9 +261,9 @@ void SnowDrift::compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, Surf
 	if ( nErode > 0 ) {
 		if (SnowDrift::msg_erosion && (Xdata.ErosionMass > 0.) && !ALPINE3D) {
 			if ( windward ) {
-				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(), "Eroding %d layer(s) w/ total mass %.3lf kg/m2 (windward: azi=%.0lf, slope=%.0lf)", nErode, Xdata.ErosionMass, RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Eroding %d layer(s) w/ total mass %.3lf kg/m2 (windward: azi=%.0lf, slope=%.0lf)", nErode, Xdata.ErosionMass, RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
 			} else {
-				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date.getJulianDate(), "Eroding %d layer(s) w/ total mass %.3lf kg/m2 (azi=%.0lf, slope=%.0lf)", nErode, Xdata.ErosionMass, RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Eroding %d layer(s) w/ total mass %.3lf kg/m2 (azi=%.0lf, slope=%.0lf)", nErode, Xdata.ErosionMass, RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
 			}
 		}
 		Xdata.resize(nE);

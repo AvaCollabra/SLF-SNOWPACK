@@ -25,7 +25,7 @@ using namespace mio;
 using namespace oracle;
 using namespace oracle::occi;
 
-const double ImisDBIO::in_tz = 1.; //All IMIS data is in gmt+1
+const double ImisDBIO::time_zone = 1.; //All IMIS data is in gmt+1
 
 bool ImisDBIO::research_mode = true;
 double ImisDBIO::hoar_density_surf = 0.0;
@@ -47,13 +47,13 @@ ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("DBUSER", "Output", oracleUser, Config::nothrow);
 	cfg.getValue("DBPASS", "Output", oraclePassword, Config::nothrow);
 
-	research_mode = cfg.get("RESEARCH", "Parameters");
+	cfg.getValue("RESEARCH", "Parameters", research_mode);
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	hoar_density_surf = cfg.get("HOAR_DENSITY_SURF", "Parameters");
+	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
 
 	//Minimum size to show surface hoar on surface (mm)
-	hoar_min_size_surf = cfg.get("HOAR_MIN_SIZE_SURF", "Parameters");
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
 }
 
 void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /*SSdata*/, SN_ZWISCHEN_DATA& /*Zdata*/)
@@ -68,8 +68,8 @@ void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*st
 }
 	
 void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SnowStation& /*Xdata*/,
-                               const SurfaceFluxes& /*Sdata*/, const SN_MET_DATA& /*Mdata*/,
-                               const Q_PROCESS_DAT& /*Hdata*/, const double /*wind_trans24*/)
+                               const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
+                               const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
@@ -78,14 +78,14 @@ void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SnowStation
  * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
  */
 void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                            SnowStation& Xdata, const Q_PROCESS_DAT& Hdata)
+                            SnowStation& Xdata, const ProcessDat& Hdata)
 {
 	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
 		return;
 
 	FILE *PFile=NULL;
 	int n1, e, l = 0,  nL = 0, nE ;
-	vector<Q_PROFILE_DAT> Pdata;
+	vector<SnowProfileLayer> Pdata;
 
 	const vector<ElementData>& EMS = Xdata.Edata; nE = Xdata.getNumberOfElements();
 	const vector<NodeData>& NDS = Xdata.Ndata; 
@@ -104,7 +104,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	
 
 	for(e=0; e<nE; e++) {
-		Pdata[l].date = date;
+		Pdata[l].profileDate = date;
 		Pdata[l].stationname = mystation;
 		Pdata[l].loc_for_snow = snowloc;
 		Pdata[l].loc_for_wind = 1;
@@ -115,7 +115,7 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 		Pdata[l].sn_jul_computation_date=Hdata.sn_jul_computation_date;
 		n1=e+1;
 		Pdata[l].height = M_TO_CM(NDS[n1].z + NDS[n1].u);
-		Pdata[l].layer_date = EMS[e].date.getJulianDate();
+		Pdata[l].layerDate = EMS[e].depositionDate;
 		Pdata[l].rho = EMS[e].Rho;
 		Pdata[l].tem = K_TO_C(EMS[e].Te);
 		Pdata[l].tem_grad = EMS[e].gradT;
@@ -133,12 +133,12 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	}
 
 	if ( (nL = Aggregate::aggregate(Pdata) ) < 0 ) {
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot aggregate layers");
+		prn_msg(__FILE__, __LINE__, "err", date, "Cannot aggregate layers");
 		throw IOException("Cannot aggregate layers", AT);
 	}
 
 	if ( !(PFile = fopen(profile_filename.c_str(), "a")) ) {
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(), "Cannot open Profile file: %s", 
+		prn_msg(__FILE__, __LINE__, "err", date, "Cannot open Profile file: %s", 
 			   profile_filename.c_str());
 		throw FileAccessException(profile_filename, AT);
 	}
@@ -146,8 +146,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	for(e=0; e<nL; e++) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[e].date.getJulianDate() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[e].layer_date - 2415021. + 0.5; //HACK
+		const double profile_date = Pdata[e].profileDate.getJulianDate() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata[e].layerDate.getJulianDate() - 2415021. + 0.5; //HACK
 
 		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].height);
@@ -164,35 +164,35 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 	if ((NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) && (nL < nE)) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata.at(e).date.getJulianDate() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata.at(e).layer_date - 2415021. + 0.5; //HACK
+		const double profile_date = Pdata.at(e).profileDate.getJulianDate() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata.at(e).layerDate.getJulianDate() - 2415021. + 0.5; //HACK
 
 		double gsz_SH = M_TO_MM(NDS[nE].hoar / hoar_density_surf);
 		e=nL-1;
 		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[e].stationname.c_str(),
 			   Pdata[e].loc_for_snow, Pdata[e].height + MM_TO_CM(gsz_SH));
 		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
-						layer_date, hoar_density_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
-			0., hoar_density_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
+		        layer_date, hoar_density_surf, Pdata[e].tem, Pdata[e].tem_grad, Pdata[e].strain_rate,
+		        0., hoar_density_surf/Constants::density_ice, 0., 0., 2., gsz_SH, 0.6667*gsz_SH, 660);
 	}
 
 	fclose(PFile);
 }
 
-bool ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCESS_DAT>& Hdata,
-                               const vector<Q_PROCESS_IND>& Hdata_ind, const int& num)
+bool ImisDBIO::writeHazardData(const std::string& station, const vector<ProcessDat>& Hdata,
+                               const vector<ProcessInd>& Hdata_ind, const int& num)
 {
 	//HACK: num is incremented after each new data is added. It is therefore the index of the next element to write
 	if ((num <= 0) || (num > (int)Hdata.size())){
-		cout << "\tNo hazard data either deleted from or inserted into " << oracleDB << " :" << num << " steps while Hdata.size="
-		     << Hdata.size() << endl;
+		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No hazard data either deleted from or inserted into %s: %d steps while Hdata.size=%d", oracleDB.c_str(), num, Hdata.size());
 		return false; //nothing to do
 	}
 
 	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == "")){
 		//throw IOException("You must set the output database, username and password", AT);
 		if (num >= (int)Hdata.size()){
-			cout << "\tNo data written to DB " << oracleDB << "!\n\tTo do so you must set all of output database, username and password" << endl;
+			prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No data written to %s!", oracleDB.c_str());
+			prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "You must set all of output database, username and password first");
 		}
 		return false; //nothing to do
 	}
@@ -216,9 +216,10 @@ bool ImisDBIO::writeHazardData(const std::string& station, const vector<Q_PROCES
 
 	} catch (exception& e){
 		Environment::terminateEnvironment(env); // static OCCI function
-		std::cout << "[E] error when writing " << station << " hazard data to db, between "
-		          << Hdata[0].date.toString(mio::Date::ISO) << " and "
-		          << Hdata[num-1].date.toString(mio::Date::ISO) << std::endl;
+		prn_msg(__FILE__, __LINE__, "err", mio::Date(), "while writing hazard data for %s to %s,",
+		        station.c_str(), oracleDB.c_str());
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "between %s and %s",
+		        Hdata[0].date.toString(mio::Date::ISO).c_str(), Hdata[num-1].date.toString(mio::Date::ISO).c_str());
 		throw IOException("Oracle Error: " + string(e.what()), AT); //Translation of OCCI exception to IOException
 	}
 	return true;
@@ -249,22 +250,20 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	vector<int> datestart = vector<int>(5);
 	vector<int> dateend   = vector<int>(5);
 
-	//IMIS is in TZ=+1, so moving back to this timezone
+	//IMIS is in TIME_ZONE=+1, so moving back to this time_zone
 	mio::Date dateS(dateStart), dateE(dateEnd);
-	//dateS.setTimeZone(in_tz);
-	//dateE.setTimeZone(in_tz);
+	dateS.setTimeZone(time_zone);
+	dateE.setTimeZone(time_zone);
 	dateS.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	dateE.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 
 	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 	if (datestart[3] == 24){
-		mio::Date tmpDate = dateStart + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		//tmpDate.setTimeZone(in_tz);
+		mio::Date tmpDate = dateS + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	}
 	if (dateend[3] == 24){
-		mio::Date tmpDate = dateEnd + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		//tmpDate.setTimeZone(in_tz);
+		mio::Date tmpDate = dateEnd + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	}
 
@@ -281,11 +280,11 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	unsigned int rows_deleted = stmt->executeUpdate();
 	conn->terminateStatement(stmt);
 
-	cout << "\tDeleted " << rows_deleted << " rows in DB " << oracleDB << endl;
+	prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
-                           const std::vector<Q_PROCESS_DAT>& Hdata, const std::vector<Q_PROCESS_IND>& Hdata_ind,
+                           const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
                            const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn)
 {
 	vector<int> sndate = vector<int>(5);
@@ -293,12 +292,10 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	double sn_version;
 	IOUtils::convertString(sn_version, Hdata[0].sn_version);
 
-	mio::Date dateSn( Hdata[0].sn_compile_date ); //HACK compile_date is NOT the compilation date
-	//dateSn.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
+	mio::Date dateSn( Hdata[0].sn_jul_computation_date, time_zone );
 	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){
-		mio::Date tmpDate = dateSn + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-		//tmpDate.setTimeZone(in_tz);
+		mio::Date tmpDate = dateSn + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
@@ -307,13 +304,12 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		
 		vector<int> hzdate = vector<int>(5);
 		mio::Date dateH(Hdata[i].date);
-		//dateH.setTimeZone(in_tz); //IMIS is in TZ=+1, so moving back to this timezone
+		dateH.setTimeZone(time_zone);
 		dateH.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 
 		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 		if (hzdate[3] == 24){
-			mio::Date tmpDate = dateH + mio::Date(3.0/(60*60*24)); //add three seconds to omit 24 for 00 
-			//tmpDate.setTimeZone(in_tz);
+			mio::Date tmpDate = dateH + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 			tmpDate.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 		}
 
@@ -425,6 +421,5 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		conn->terminateStatement(stmt);
 	}
-
-	cout << "\tInserted " << rows_inserted << " rows in DB " << oracleDB << endl;
+	prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
 }

@@ -93,12 +93,12 @@ class Snowpack {
 
 		Snowpack(const mio::Config& i_cfg);
 
-		void runSnowpackModel(SN_MET_DATA& Mdata, SnowStation& Xdata, double& cumu_hnw, 
-                          SN_BOUNDARY_DATA& Bdata, SurfaceFluxes& Sdata);
+		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw, 
+                          BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		static double newSnowDensityHendrikx(const double ta, const double tss, const double rh, const double vw);
 
-		static double NewSnowDensity(const SN_MET_DATA& Mdata, const SnowStation& Xdata,
+		static double NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xdata,
                                  const double& tss, const double& hnw, const NewSnowDensityModel& model);
 
 		const static double new_snow_albedo;
@@ -124,35 +124,35 @@ class Snowpack {
 
 		static double newSnowDensityPara(double TA, double TSS, double RH, double VW, double HH);
 
-		static double newSnowDensityEvent(const SN_MET_DATA& Mdata, const EventType& i_event_type);
+		static double newSnowDensityEvent(const CurrentMeteo& Mdata, const EventType& i_event_type);
 
 		bool compSnowForces(ElementData *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
 		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
 
-		void compSnowCreep(const SN_MET_DATA& Mdata, SnowStation& Xdata);
+		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		bool sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], 
 		                        double Tn[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                        double Fe[ N_OF_INCIDENCES ], char *SubSurfaceMelt, char *SubSurfaceFrze,
 		                        double VaporEnhance);
 		
-		void updateMeteoHeatFluxes(const SN_MET_DATA& Mdata, SnowStation& Xdata,
-                               SN_BOUNDARY_DATA& Bdata, SurfaceFluxes& Sdata);
+		void updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xdata,
+                               BoundCond& Bdata, SurfaceFluxes& Sdata);
 
-		void neumannBoundaryConditions(const SN_MET_DATA& Mdata, SN_BOUNDARY_DATA& Bdata, const SnowStation& Xdata,
+		void neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& Bdata, const SnowStation& Xdata,
 					const double& T_snow, const double& T_iter, 
 					double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
 
 		void neumannBoundaryConditionsSoil(const double& flux, const double& T_snow,
 						double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
 
-		void compSnowTemperature(SnowStation& Xdata, SN_MET_DATA& Mdata, SN_BOUNDARY_DATA& Bdata, double& mAlb);
+		void compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata, double& mAlb);
 
-		void assignSomeFluxes(SnowStation& Xdata, const SN_MET_DATA& Mdata, const double& mAlb,
+		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 						  SurfaceFluxes& Sdata);
 
-		void compSnowFall(const SN_MET_DATA& Mdata, SnowStation& Xdata, double& cumu_hnw);
+		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw);
 
 		std::string viscosity_model, variant;
 		const mio::Config& cfg;

@@ -72,14 +72,14 @@ class SnLaws {
 		};
 
 		static double compWindPumpingDisplacement(const SnowStation& Xdata);
-		static double compWindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump);
+		static double compWindPumpingVelocity(const CurrentMeteo& Mdata, const double& d_pump);
 		static double compWindGradientSnow(const ElementData& Edata, double& v_pump);
 
-		static double compSensibleHeatCoefficient(const SN_MET_DATA& Mdata, const SnowStation& Xdata,
+		static double compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const SnowStation& Xdata,
 		                                          const double& height_of_meteo_values);
-		static double compLatentHeat_Rh(const SN_MET_DATA& Mdata, SnowStation& Xdata,
+		static double compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata,
 		                                const double& height_of_meteo_values);
-		static double compLatentHeat(const SN_MET_DATA& Mdata, SnowStation& Xdata,
+		static double compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata,
 		                             const double& height_of_meteo_values);
 
 		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz);
@@ -90,7 +90,7 @@ class SnLaws {
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
 		static double compAlbedo(const std::string& variant, const ElementData& Edata, const double& Tss,
-		                         const SN_MET_DATA& Mdata, const double& age);
+		                         const CurrentMeteo& Mdata, const double& age);
 		static void compShortWaveAbsorption(const double& I0, const bool& useSnowLayers,
 		                                    const bool& multistream,SnowStation& Xdata);
 

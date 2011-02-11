@@ -265,7 +265,7 @@ bool SnLaws::setStaticData(const std::string& variant)
  * @return Snow surface albedo (1)
  */
 double SnLaws::compAlbedo(const std::string& variant, const ElementData& Edata, const double& Tss,
-                          const SN_MET_DATA& Mdata, const double& age)
+                          const CurrentMeteo& Mdata, const double& age)
 {
 	if (variant != SnLaws::current_variant)
 		setStaticData(variant);
@@ -326,7 +326,7 @@ double SnLaws::compAlbedo(const std::string& variant, const ElementData& Edata, 
 				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 			} else {
 				Alb = Constants::min_albedo;
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Alb1=%lf set Alb to %lf", Alb1, Alb);
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 			}
 			break;
 		}
@@ -344,12 +344,12 @@ double SnLaws::compAlbedo(const std::string& variant, const ElementData& Edata, 
 				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 			} else {
 				Alb = Constants::min_albedo;
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Alb1=%lf set Alb to %lf", Alb1, Alb);
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 			}
 			break;
 		}
 		default: {
-			prn_msg ( __FILE__, __LINE__, "err", -1., "ALB=%d not implemented yet!", currentAlbedoModel);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "ALB=%d not implemented yet!", currentAlbedoModel);
 			throw IOException("The albedo model configured not implemented yet!", AT);
 			break;
 		}
@@ -416,7 +416,7 @@ void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSnowLayers
 
 	for (e = nE-1; e >= bottom_element; e--) {
 		if ( EMS[e].sw_abs < 0. ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "NEGATIVE Shortwave Radiation %lf absorbed by element %d (nE=%d)", 
+			prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %lf absorbed by element %d (nE=%d)",
 				   EMS[e].sw_abs, e, nE);
 			throw IOException("SnLaws::compShortWaveAbsorption did not complete successfully", AT);
 		}
@@ -456,7 +456,7 @@ double SnLaws::compWindPumpingDisplacement(const SnowStation& Xdata)
  * @param d_pump Displacement depth (m)
  * @return Wind pumping velocity (m s-1)
  */
-double SnLaws::compWindPumpingVelocity(const SN_MET_DATA& Mdata, const double& d_pump)
+double SnLaws::compWindPumpingVelocity(const CurrentMeteo& Mdata, const double& d_pump)
 {
 	//TODO Limit v_pump?
 	return (Mdata.ustar / 0.4 * log((Mdata.z0 + d_pump) / Mdata.z0));
@@ -530,7 +530,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 
 	// Now check for possible ERRORS
 	if (!(C_eff_soil >= 0.1*Edata.soil[SOIL_K] && C_eff_soil < 10.))
-		prn_msg ( __FILE__, __LINE__, "wrn", -1., "Thermal Conductivity of Soil: %lf", C_eff_soil );
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Thermal Conductivity of Soil: %lf", C_eff_soil);
 
 	// In case of dry soil, simply use the given conductivity with a possible ventilation part
 	if (SnLaws::wind_pump_soil){
@@ -662,11 +662,11 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	C_eff  = SnLaws::montana_c_fudge * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (Constants::melting_tk*Constants::melting_tk));
 
 	if ( !((C_eff < 5.*Constants::conductivity_ice) && (C_eff > 0.2*Constants::conductivity_air)) && !ALPINE3D ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "Conductivity out of range (0.2*Constants::conductivity_air=%.3lf, 5.*Constants::conductivity_ice=%.3lf):", 0.2 * Constants::conductivity_air, 5. * Constants::conductivity_ice);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "C_eff: %lf  C_1: %lf  C_2: %lf  C_3: %lf  C_4: %lf  C_5: %lf", C_eff, C1, C2, C3, C4, C5);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "C_Air: %lf  C_Water: %lf  C_Ice: %lf", Constants::conductivity_air, Constants::conductivity_water, Constants::conductivity_ice);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "Ap: %lf  kap: %lf  Thet_i: %lf  Thet_w: %lf  T: %lf", Ap, kap, Edata.theta[ICE], Edata.theta[WATER], Te );
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "type: %3d  rg: %.3lf mm  rb: %.3lf mm N3: %lf  Lel: %.3lf mm", Edata.type, Edata.rg, Edata.rb, Edata.N3, M_TO_MM(Edata.L));
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Conductivity out of range (0.2*Constants::conductivity_air=%.3lf, 5.*Constants::conductivity_ice=%.3lf):", 0.2 * Constants::conductivity_air, 5. * Constants::conductivity_ice);
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "C_eff: %lf  C_1: %lf  C_2: %lf  C_3: %lf  C_4: %lf  C_5: %lf", C_eff, C1, C2, C3, C4, C5);
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "C_Air: %lf  C_Water: %lf  C_Ice: %lf", Constants::conductivity_air, Constants::conductivity_water, Constants::conductivity_ice);
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Ap: %lf  kap: %lf  Thet_i: %lf  Thet_w: %lf  T: %lf", Ap, kap, Edata.theta[ICE], Edata.theta[WATER], Te );
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "type: %3d  rg: %.3lf mm  rb: %.3lf mm N3: %lf  Lel: %.3lf mm", Edata.type, Edata.rg, Edata.rb, Edata.N3, M_TO_MM(Edata.L));
 	}
 
 	if ( !(C_eff < Constants::conductivity_ice) ) {
@@ -690,7 +690,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
  * @param Xdata
  * @return Exchange coefficient for sensible heat (1)
 */
-double SnLaws::compSensibleHeatCoefficient(const SN_MET_DATA& Mdata, const SnowStation& Xdata, const double& height_of_meteo_values)
+double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	double c;
 	double z, karman = 0.4, lrat;
@@ -721,7 +721,7 @@ double SnLaws::compSensibleHeatCoefficient(const SN_MET_DATA& Mdata, const SnowS
  * @param Xdata
  * @return Latent heat flux (W m-2)
  */
-double SnLaws::compLatentHeat_Rh(const SN_MET_DATA& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
+double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	double beta, eA, eS;
 	double Vp1, Vp2;
@@ -783,7 +783,7 @@ double SnLaws::compLatentHeat_Rh(const SN_MET_DATA& Mdata, SnowStation& Xdata, c
  * @param Xdata
  * @return Latent heat flux (W m-2)
  */
-double SnLaws::compLatentHeat(const SN_MET_DATA& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
+double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	double c, eS, eA;
 	double z, karman = 0.4, lrat;
@@ -896,16 +896,18 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
  * @param date current
  * @return Initial stress (Pa)
  */
-double SnLaws::compInitialStress(const std::string& variant, ElementData& Edata, const mio::Date& date)
+double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementData& Edata, const mio::Date& date)
 {
-	if (variant == "CALIBRATION") {
+	string viscosity_model(i_viscosity_model);
+	IOUtils::toUpper(viscosity_model);
+
+	if (viscosity_model == "VS_CALIBRATION") {
 		return initialStressCALIBRATION(Edata, date);
 	} else {
 		return initialStressDEFAULT(Edata, date);
 	}
 }
 
-/// default r897: TODO name parameters?
 double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
 {
 	//TODO CDot: uncomment
@@ -919,7 +921,7 @@ double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
 	//return sigReac + sigMetamo;
 
 	// default r837
-	//(void) date;
+	(void) date;
 	const double sigTension = 0.11;  // Ice surface tension (N m-2)
 	if ((Edata.dd < 0.9) && (Edata.dd > 0.3)) { // default r837, factor -3. from r712
 		return (-3. * Metamorphism::ddRate(Edata) * sigTension / MM_TO_M(Edata.rg));
@@ -945,7 +947,7 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 		break;
 	default: // new calibration, currently r987
 		double sigReac=0., sigMetamo=0.;
-		const double age = MAX(0., date.getJulianDate() - Edata.date.getJulianDate());
+		const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 		//09-24: sig0 = 33.7 * Edata.CDot * exp(-age/553.); //3.5 //5. //2.7 //1.e3 * exp(-age/77.) * Edata.CDot / Edata.C;
 		sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
 		//if ( 1 && (Edata.dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/ ) {
@@ -981,7 +983,7 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Date& date)
 {
 	double visc_fudge=0., sp_fudge;
-	double age = MAX(0., date.getJulianDate() - Edata.date.getJulianDate());
+	double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 	const double thresh_rho1=0.5, thresh_rho2=0.7; // Thresholds for enhanced viscosity
 
 	if ( Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005 ) {
@@ -1014,7 +1016,7 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Da
 double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date)
 {
 	double visc_fudge, sp_fudge;
-	double age = MAX(0., date.getJulianDate() - Edata.date.getJulianDate());
+	double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 	double thresh_rho1, thresh_rho2=0.7; // Thresholds for enhanced viscosity
 	bool use_thresh=false;
 
@@ -1111,7 +1113,6 @@ double SnLaws::compSnowViscosity(const std::string& variant, const std::string& 
 {
 	if (variant != SnLaws::current_variant)
 		setStaticData(variant);
-
 	string viscosity_model(i_viscosity_model);
 	IOUtils::toUpper(viscosity_model);
 
@@ -1258,7 +1259,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 		eta /= visc_micro*visc_micro*visc_micro * sig*sig;
 	}
   //ANT Quickfix for Antarctica only
-	if (SnLaws::setfix && ((date.getJulianDate() - Edata.date.getJulianDate()) > 60.)) {
+	if (SnLaws::setfix && ((date.getJulianDate() - Edata.depositionDate.getJulianDate()) > 60.)) {
 		eta /= 0.06;
 	}
 	return eta;

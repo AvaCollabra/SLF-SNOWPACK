@@ -92,7 +92,7 @@ class Stability {
 	public:
 		Stability (const mio::Config& i_cfg);
 
-		void checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata);
+		void checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		static const double psi_ref, max_stability, minimum_slab, ground_rough;
 		static const double min_depth_ssi, skier_depth, min_thick_crust;

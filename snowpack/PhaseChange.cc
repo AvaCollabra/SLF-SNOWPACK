@@ -138,7 +138,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const double& dt, doubl
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] + (Constants::density_water * Edata.theta[WATER] ) + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		if ( (Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= Constants::max_rho) ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Rho(snow)=%lf (SubSurfaceMelt)", Edata.Rho);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%lf (SubSurfaceMelt)", Edata.Rho);
 			throw IOException("Error in compSubSurfaceMelt()", AT);
 		}
 		Edata.heatCapacity();
@@ -225,12 +225,12 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const double& dt)
 		}
 		// State when the water content has disappeared (PERMAFROST)
 		if (Edata.theta[WATER] >= 1.0) {
-			prn_msg(__FILE__, __LINE__, "msg+", -1., "Wet Element! (dth_w=%e)", dth_w);
+			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Wet Element! (dth_w=%e)", dth_w);
 			Edata.theta[WATER] = 1.0;
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] + (Constants::density_water * Edata.theta[WATER]) + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		if ((Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= Constants::max_rho)) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Rho(snow)=%lf (SubSurfaceFrze)", Edata.Rho);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%lf (SubSurfaceFrze)", Edata.Rho);
 			throw IOException("Error in compSubSurfaceFrze()", AT);
 		}
 		Edata.heatCapacity();
@@ -269,12 +269,12 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 		for (e = 0; e < nE; e++) {
 			if ( EMS[e].theta[SOIL] == 0.0) {
 				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho) ) {
-					prn_msg(__FILE__, __LINE__, "wrn", -1., "Phase Change Begin: rho[%d]=%lf", e, EMS[e].Rho);
+					prn_msg(__FILE__, __LINE__, "wrn", Date(), "Phase Change Begin: rho[%d]=%lf", e, EMS[e].Rho);
 				}
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "msg+", -1., "Phase Change Begin: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
+				prn_msg(__FILE__, __LINE__, "msg+", Date(), "Phase Change Begin: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
 					   e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 		}
@@ -285,7 +285,7 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 				try {
 					compSubSurfaceMelt(EMS[e], sn_dt, ql_Rest);
 				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "err", -1., "SubSurfaceMelt at element [%d], nE=%d", e, nE);
+					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceMelt at element [%d], nE=%d", e, nE);
 					throw;
 				}
 
@@ -322,7 +322,7 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 				try {
 					compSubSurfaceFrze(EMS[e], sn_dt);
 				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "err", -1., "SubSurfaceFrze at element [%d], nE=%d", e, nE);
+					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceFrze at element [%d], nE=%d", e, nE);
 					throw;
 				}
 
@@ -353,13 +353,13 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
 			if (EMS[e].theta[SOIL] == 0.) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
-					prn_msg(__FILE__, __LINE__, "err", -1., "Phase Change End: rho[%d]=%lf", e, EMS[e].Rho);
+					prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: rho[%d]=%lf", e, EMS[e].Rho);
 					throw IOException("Runtime error in runPhaseChange()", AT);
 				}
 			}
 			// Also make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "err", -1., "Phase Change End: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
+				prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
 								e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 				throw IOException("Runtime error in runPhaseChange()", AT);
 			}
@@ -367,14 +367,14 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 			sum_Qmf += EMS[e].Qmf * EMS[e].L;
 		}
 		if (0 && (sum_Qmf > Constants::eps)) {
-			prn_msg(__FILE__, __LINE__, "msg+", -1., "Checking energy balance  (W/m2):");
-			prn_msg(__FILE__, __LINE__, "msg+", -1., " E1: %lf   E0: %lf  E1-E0: %lf  sum_Qmf: %lf  Surface EB : %lf",
+			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Checking energy balance  (W/m2):");
+			prn_msg(__FILE__, __LINE__, "msg+", Date(), " E1: %lf   E0: %lf  E1-E0: %lf  sum_Qmf: %lf  Surface EB : %lf",
 				   (cold_content_out) / sn_dt, (cold_content_in) / sn_dt,
 				   (cold_content_out - cold_content_in) / sn_dt, sum_Qmf,
 				   Sdata.qs + Sdata.ql + Sdata.lw_net + Sdata.qr + Sdata.qw);
 		}
 	} catch (exception& ex) {
-		prn_msg(__FILE__, __LINE__, "err", -1, "Runtime error in runPhaseChange()");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Runtime error in runPhaseChange()");
 		throw;
 	}
 }

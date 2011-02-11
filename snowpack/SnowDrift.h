@@ -31,7 +31,7 @@
 class Saltation;
 struct ElementData;
 struct SurfaceFluxes;
-struct SN_MET_DATA;
+struct CurrentMeteo;
 struct SnowStation;
 
 /**
@@ -44,7 +44,7 @@ class SnowDrift {
 	public:
 		SnowDrift(const mio::Config& i_cfg);
 
-		void compSnowDrift(const SN_MET_DATA& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
+		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
 
  	private:
 		double compMassFlux(const ElementData& Edata, const double& ustar, const double& angle);

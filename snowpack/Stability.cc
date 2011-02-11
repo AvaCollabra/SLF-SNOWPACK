@@ -81,13 +81,9 @@ bool Stability::initStaticData()
 
 Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
-	string tmp_strength_model = cfg.get("STRENGTH_MODEL", "Parameters");
-	strength_model = tmp_strength_model;
-
-	string tmp_hardness_model = cfg.get("HARDNESS_MODEL", "Parameters");
-	hardness_model = tmp_hardness_model;
-
+	cfg.getValue("STRENGTH_MODEL", "Parameters", strength_model);
 	IOUtils::toUpper(strength_model);
+	cfg.getValue("HARDNESS_MODEL", "Parameters", hardness_model);
 	IOUtils::toUpper(hardness_model);
 
 	map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
@@ -98,10 +94,10 @@ Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	//To build a sandwich with a non-snow layer (plastic or wood chips) on top; 
 	//originally introduced for snow farming applications
-	plastic = cfg.get("PLASTIC", "Parameters");
+	cfg.getValue("PLASTIC", "Parameters", plastic);
 
 	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
-	hoar_density_buried = cfg.get("HOAR_DENSITY_BURIED", "Parameters");
+	cfg.getValue("HOAR_DENSITY_BURIED", "Parameters", hoar_density_buried);
 }
 
 
@@ -542,21 +538,21 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 		case 6: // SH
 			switch(Stability::sh_mod) {
 				case 0: // original T. Chalmers
-					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
-					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
-					Sig_c2 = 0.429 + 0.0138*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.429 + 0.0138*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.12*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
@@ -593,8 +589,8 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 
 	// Warning message may be enabled for large differences in snow shear stength models
 	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
-		prn_msg( __FILE__, __LINE__, "wrn", date.getJulianDate(),"Large difference in Snow Shear Stength (type=%d)", F1);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
+		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
 	} else {
 		return true;
@@ -649,21 +645,21 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 		case 6: // SH
 			switch(Stability::sh_mod) {
 				case 0: // original T. Chalmers
-					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
-					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.336 + 0.0139*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
-					Sig_c2 = 0.429 + 0.0138*(date.getJulianDate() - Edata.date.getJulianDate()) +
+					Sig_c2 = 0.429 + 0.0138*(date.getJulianDate() - Edata.depositionDate.getJulianDate()) +
 							1.12*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
@@ -704,8 +700,8 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 
 	// Warning message may be enabled for large differences in snow shear stength models
 	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
-		prn_msg( __FILE__, __LINE__, "wrn", date.getJulianDate(),"Large difference in Snow Shear Stength (type=%d)", F1);
-		prn_msg(__FILE__, __LINE__, "msg-", -1., "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
+		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
+		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
 	} else {
 		return true;
@@ -962,7 +958,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 		red_hard.resize(nE_s, 0.0);
 		deltaN.resize(nE_s, 0.0);
 	} catch(exception& e){
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(),
+		prn_msg(__FILE__, __LINE__, "err", date,
 			   "Cannot allocate space for temporary objects in Stability::recognizeProfileType");
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
@@ -1138,10 +1134,10 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
  * complemented by the Conway approach. The latter will be handled by an adaptation
  * of the Schweizer - Wiesinger profile classification in combination with a more
  * conventional stability index based on critical shear strength values. Halleluja.
- * @param Mdata SN_MET_DATA
+ * @param Mdata CurrentMeteo
  * @param Xdata Profile
  */
-void Stability::checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata)
+void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	int    e, nE, nN;                // Nodal and element counters
 	int    Swl_lemon;                // Temporary lemon counter
@@ -1179,7 +1175,7 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
 		                                                               EMS[e], NDS[e+1], STpar))) {
-			prn_msg(__FILE__, __LINE__, "msg-", -1., "Node %03d of %03d", e+1, nE+1);
+			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nE+1);
 		}
 	}
 
@@ -1315,7 +1311,7 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 		case 3:
 			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
 			if ( !classifyProfileStability(Xdata) ) {
-				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(),
+				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
 					    "Profile classification failed! (classifyProfileStability)");
 			}
 			break;
@@ -1325,7 +1321,7 @@ void Stability::checkStability(const SN_MET_DATA& Mdata, SnowStation& Xdata)
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
 		if ( !recognizeProfileType(Mdata.date, Xdata) ) {
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date.getJulianDate(), "Profile not classifiable! (recognizeProfileType)");
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (recognizeProfileType)");
 		}
 	}
 } // End checkStability

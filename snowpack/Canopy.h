@@ -35,7 +35,7 @@ class Canopy {
 
 		static void cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		
-		void runCanopyModel(SN_MET_DATA *Mdata, SnowStation *Xdata, double roughness_length,
+		void runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length,
 						double height_of_wind_val);
 
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
@@ -72,7 +72,7 @@ class Canopy {
 
 		double cn_CanopyTransmissivity(const double& lai, const double& elev);
 
-		void cn_LineariseNetRadiation(const SN_MET_DATA& Mdata,const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
+		void cn_LineariseNetRadiation(const CurrentMeteo& Mdata,const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
 								double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
 								const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
 								const double& sigfdirect, double& r1p);
@@ -105,12 +105,12 @@ class Canopy {
 
 		double cn_RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
 
-		void cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& refheight, const double& zomg, 
+		void cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg, 
 								  const double& wetfraction, SnowStation& Xdata, double& ch_canopy, 
 								  double& ce_canopy, double& ce_transpiration, 
 								  double& ce_interception, double& ce_condensation);
 		
-		void cn_CanopyRadiationOutput(SnowStation& Xdata, SN_MET_DATA& Mdata, double ac,
+		void cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
 								double *iswrac, double *rswrac,
 								double *iswrbc, double *rswrbc, double *ilwrac,
 								double *rlwrac, double *ilwrbc, double *rlwrbc,

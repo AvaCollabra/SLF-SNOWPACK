@@ -268,11 +268,9 @@ Metamorphism::Metamorphism(const mio::Config& i_cfg) : cfg(i_cfg)
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
 	sn_dt = M_TO_S(calculation_step_length);
 
-	new_snow_grain_rad = cfg.get("new_snow_grain_rad", "Parameters");
+	cfg.getValue("new_snow_grain_rad", "Parameters", new_snow_grain_rad);
 
-	string tmp_metamorphism_model = cfg.get("METAMORPHISM_MODEL", "Parameters");
-	metamorphism_model = tmp_metamorphism_model;
-
+	cfg.getValue("METAMORPHISM_MODEL", "Parameters", metamorphism_model);
 	IOUtils::toUpper(metamorphism_model);
 
 	map<string, MetaModelFn>::const_iterator it1 = mapMetamorphismModel.find(metamorphism_model);
@@ -558,7 +556,7 @@ double Metamorphism::PressureSintering(ElementData& Edata)
  * @param Mdata
  * @param Xdata
  */
-void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SnowStation& Xdata)
+void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	int e, nE;
 	ElementData *EMS;   // Avoids dereferencing the element data pointer
@@ -784,7 +782,7 @@ void Metamorphism::metamorphismDEFAULT(const SN_MET_DATA& Mdata, SnowStation& Xd
  * @param Mdata
  * @param Xdata
  */
-void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SnowStation& Xdata)
+void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	int e, nE;
 	ElementData *EMS;   // Avoids dereferencing the element data pointer
@@ -1036,7 +1034,7 @@ void Metamorphism::metamorphismNIED(const SN_MET_DATA& Mdata, SnowStation& Xdata
 	}
 }
 
-void Metamorphism::runMetamorphismModel(const SN_MET_DATA& Mdata, SnowStation& Xdata) throw()
+void Metamorphism::runMetamorphismModel(const CurrentMeteo& Mdata, SnowStation& Xdata) throw()
 {
 	CALL_MEMBER_FN(*this, mapMetamorphismModel[metamorphism_model])(Mdata, Xdata);
 }

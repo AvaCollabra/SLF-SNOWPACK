@@ -76,63 +76,62 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * 		-# Up to T_INTERNAL-FIXED_HEIGHTS-FIXED_RATES double columns of measured values and positions
 	 * 	- FIXED_HEIGHTS, and FIXED_RATES are all set in Constants.h, T_INTERNAL is read from CONSTANTS_User.INI
 	 */
-	fixed_heights = cfg.get("FIXED_HEIGHTS", "Parameters");
-	fixed_rates = cfg.get("FIXED_RATES", "Parameters");
-	max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "Parameters");
-	max_number_of_solutes = cfg.get("MAX_N_SOLUTES", "Parameters"); //The maximum number of solutes to be treated
-	min_depth_subsurf = cfg.get("MIN_DEPTH_SUBSURF", "Parameters");
-
+	cfg.getValue("FIXED_HEIGHTS", "Parameters", fixed_heights);
+	cfg.getValue("FIXED_RATES", "Parameters", fixed_rates);
 	number_sensors = fixed_heights + fixed_rates;
+	cfg.getValue("MAX_NUMBER_SENSORS", "Parameters", max_number_sensors);
+	cfg.getValue("MIN_DEPTH_SUBSURF", "Parameters", min_depth_subsurf);
 
-	string tmp_variant = cfg.get("VARIANT", "Parameters"); 
-	variant=tmp_variant;
-	string tmp_experiment = cfg.get("EXPERIMENT", "Parameters");
-	experiment = tmp_experiment;
-	string tmp_outpath = cfg.get("OUTPATH", "Parameters");
-	outpath = tmp_outpath;
+	cfg.getValue("MAX_N_SOLUTES", "Parameters", max_number_of_solutes); //The maximum number of solutes to be treated
+
+	cfg.getValue("VARIANT", "Parameters", variant);
+	IOUtils::toUpper(variant);
+	cfg.getValue("EXPERIMENT", "Parameters", experiment);
 
 	i_snopath = "input";
-	string tmp_snopath = cfg.get("SNOWPATH", "INPUT", Config::nothrow);
-	if (tmp_snopath != "") i_snopath = tmp_snopath;
+	string snopath = cfg.get("SNOWPATH", "INPUT", Config::nothrow);
+	if (snopath != "") i_snopath = snopath;
 
+	cfg.getValue("OUTPATH", "Parameters", outpath);
 	o_snopath = outpath;
-	string tmp_snopath_out = cfg.get("SNOWPATH", "OUTPUT", Config::nothrow);
-	if (tmp_snopath_out != "") o_snopath = tmp_snopath_out;
+	string snopath_out = cfg.get("SNOWPATH", "OUTPUT", Config::nothrow);
+	if (snopath_out != "") o_snopath = snopath_out;
 
-	out_heat = cfg.get("OUT_HEAT", "Parameters");
-	out_lw = cfg.get("OUT_LW", "Parameters");
-	out_sw = cfg.get("OUT_SW", "Parameters");
-	out_meteo = cfg.get("OUT_METEO", "Parameters");
-	out_haz = cfg.get("OUT_HAZ", "Parameters");
-	out_mass = cfg.get("OUT_MASS", "Parameters");
-	out_t = cfg.get("OUT_T", "Parameters");
-	out_load = cfg.get("OUT_LOAD", "Parameters");
-	out_stab = cfg.get("OUT_STAB", "Parameters");
-	out_canopy = cfg.get("OUT_CANOPY", "Parameters");
+	cfg.getValue("OUT_HEAT", "Parameters", out_heat);
+	cfg.getValue("OUT_LW", "Parameters", out_lw);
+	cfg.getValue("OUT_SW", "Parameters", out_sw);
+	cfg.getValue("OUT_METEO", "Parameters", out_meteo);
+	cfg.getValue("OUT_HAZ", "Parameters", out_haz);
+	cfg.getValue("OUT_MASS", "Parameters", out_mass);
+	cfg.getValue("OUT_T", "Parameters", out_t);
+	cfg.getValue("OUT_LOAD", "Parameters", out_load);
+	cfg.getValue("OUT_STAB", "Parameters", out_stab);
+	cfg.getValue("OUT_CANOPY", "Parameters", out_canopy);
 
-	perp_to_slope = cfg.get("PERP_TO_SLOPE", "Parameters");	
+	cfg.getValue("PERP_TO_SLOPE", "Parameters", perp_to_slope);
 
-	sw_mode = cfg.get("SW_MODE", "Parameters");
+	cfg.getValue("SW_MODE", "Parameters", sw_mode);
 	sw_mode %= 10;
-	hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Parameters");
-	calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
-	ts_days_between = cfg.get("TS_DAYS_BETWEEN", "Parameters");
-	avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Parameters");
-	useCanopyModel = cfg.get("CANOPY", "Parameters");
-	useSnowLayers = cfg.get("SNP_SOIL", "Parameters");
-	t_internal = cfg.get("T_INTERNAL", "Parameters");
-	depth_of_sensors = cfg.get("DEPTH", "Parameters");
-
-	research_mode = cfg.get("RESEARCH", "Parameters");
-
-	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	hoar_density_surf = cfg.get("HOAR_DENSITY_SURF", "Parameters");
-
-	//Minimum size to show surface hoar on surface (mm)
-	hoar_min_size_surf = cfg.get("HOAR_MIN_SIZE_SURF", "Parameters");
-	
+	cfg.getValue("HAZARD_STEPS_BETWEEN", "Parameters", hazard_steps_between);
+	cfg.getValue("CALCULATION_STEP_LENGTH", "Parameters", calculation_step_length);
+	cfg.getValue("TS_DAYS_BETWEEN", "Parameters", ts_days_between);
+	cfg.getValue("AVGSUM_TIME_SERIES", "Parameters", avgsum_time_series);
+	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
+	cfg.getValue("SNP_SOIL", "Parameters", useSnowLayers);
+	cfg.getValue("T_INTERNAL", "Parameters", t_internal);
+	cfg.getValue("DEPTH", "Parameters", depth_of_sensors);
 	if (depth_of_sensors.size() != (unsigned)fixed_heights)
 		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
+
+	cfg.getValue("RESEARCH", "Parameters", research_mode);
+
+	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
+	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
+
+	//Minimum size to show surface hoar on surface (mm)
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
+
+	cfg.getValue("TIME_ZONE", "Input", time_zone);
 }
 /*
 AsciiIO::~AsciiIO() throw()
@@ -150,12 +149,11 @@ void AsciiIO::cleanup() throw()
 
 /**
  * @brief This routine reads the status of the snow cover at program start
- * @author Perry Bartelt \n Michael Lehning
- * @version 9Y.mm
- * @param *SSdata
- * @param *Zdata
- * @param *XFilename Input file containing info about snow-cover structure (layers)
- */
+ * @version 10.02
+ * @param station name
+ * @param SSdata
+ * @param Zdata
+*/
 void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
 	string filename = getFilenamePrefix(station, i_snopath) + ".sno";
@@ -166,12 +164,11 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	}
 
 	FILE *fin=NULL;
-	int l,i; // Counters
 	int YYYY,MM,DD,HH,MI,dum;
 	
 	fin = fopen(filename.c_str(), "r");
 	if (fin == NULL) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Cannot open profile INPUT file: %s", filename.c_str());
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Cannot open profile INPUT file: %s", filename.c_str());
 		throw IOException("Cannot generate Xdata from file " + filename, AT);
 	}
 
@@ -179,7 +176,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, " %*s");
 	fscanf(fin, "\nStationName= %*s");
 	fscanf(fin, "\nProfileDate= %4d %2d %2d %2d %2d", &YYYY, &MM, &DD, &HH, &MI);
-	SSdata.date = Date(YYYY, MM, DD, HH, MI);
+	SSdata.profileDate = Date(YYYY, MM, DD, HH, MI, time_zone);
 
 	// Last checked measured Snow Height used for data Control of next run
 	fscanf(fin, "\nHS_Last=%lf", &SSdata.Hslast);
@@ -190,17 +187,17 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, "\nSlopeAngle=%lf", &SSdata.Angle);
 	fscanf(fin, "\nSlopeAzi=%lf", &SSdata.Azi);
 	if ( (sw_mode == 2) && perp_to_slope && !(SSdata.Angle <= 3.) ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., 
+		prn_msg(__FILE__, __LINE__, "wrn", Date(),
 			   "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
 	}
 	// Number of Soil Layers
 	if (fscanf(fin, "\nnSoilLayerData=%d", &SSdata.nLayers) != 1) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Missing 'nSoilLayerData' in Snowfile (*.sno)");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSoilLayerData' in Snowfile (*.sno)");
 		throw IOException("Cannot generate Xdata", AT);
 	}
 	// Check Consistency of Soil Data with Switch
 	if ( useSnowLayers && (SSdata.nLayers < 1) ) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Missing 'nSoilLayerData' in Snowfile (*.sno), but SNP_SOIL set");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSoilLayerData' in Snowfile (*.sno), but SNP_SOIL set");
 		throw IOException("Cannot generate Xdata", AT);
 	}
 	// Use this to mask the Erosion Level in operational mode -- use negative sign
@@ -212,21 +209,21 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	}
 	// Number of Snow Layers
 	if (fscanf(fin, "\nnSnowLayerData=%d", &dum) != 1) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Missing 'nSnowLayerData' in Snowfile (*.sno)");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSnowLayerData' in Snowfile (*.sno)");
 		throw IOException("Cannot generate Xdata", AT);
 	}
 	SSdata.nLayers += dum;
 	// Ground Characteristics (June 2006: corresponds to former SOIL_ALBEDO and BARE_SOIL_z0)
 	if ( fscanf(fin, "\nSoilAlbedo=%lf", &SSdata.SoilAlb) != 1 ) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Missing 'SoilAlbedo' in Snowfile (*.sno)");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'SoilAlbedo' in Snowfile (*.sno)");
 		throw IOException("Cannot generate Xdata", AT);
 	}
 	if ( fscanf(fin, "\nBareSoil_z0=%lf", &SSdata.BareSoil_z0) != 1 ) {
 		//BUG HACK: we should prevent it from being 0!!
-		prn_msg(__FILE__, __LINE__, "err", -1., "Missing 'BareSoil_z0' in Snowfile (*.sno)");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'BareSoil_z0' in Snowfile (*.sno)");
 	}
 	if ( SSdata.BareSoil_z0==0. ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "'BareSoil_z0'=0 from Snowfile, setting it to 0.02");
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "'BareSoil_z0'=0 from Snowfile, setting it to 0.02");
 		SSdata.BareSoil_z0=0.02;
 	}
 	if (SSdata.Hslast > 0.05) {
@@ -245,66 +242,65 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 
 	// Read the layer data
 	if ( fscanf(fin,"\nYYYY") < 0 ) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "Failed reading layer header in Snowfile (*.sno)");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading layer header in Snowfile (*.sno)");
 		throw IOException("Cannot generate Xdata", AT);
 	}
 	fscanf(fin, "%*[^\n]");
-	for (l = 0; l < SSdata.nLayers; l++) {
+	for (int ll = 0; ll < SSdata.nLayers; ll++) {
 		fscanf(fin, " %d %d %d %d %d", &YYYY, &MM, &DD, &HH, &MI);
-		SSdata.Ldata[l].date = Date(YYYY, MM, DD, HH, MI);
+		SSdata.Ldata[ll].layerDate = Date(YYYY, MM, DD, HH, MI, time_zone);
 
-		if ( SSdata.Ldata[l].date > SSdata.date ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) in Snowfile (*.sno)", l+1, SSdata.Ldata[l].date.getJulianDate(), SSdata.date.getJulianDate());
+		if ( SSdata.Ldata[ll].layerDate > SSdata.profileDate ) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) in Snowfile (*.sno)", ll+1, SSdata.Ldata[ll].layerDate.getJulianDate(), SSdata.profileDate.getJulianDate());
 			throw IOException("Cannot generate Xdata", AT);
 		}
-		fscanf(fin, " %lf %lf %lf %lf %lf %lf", &SSdata.Ldata[l].hl, &SSdata.Ldata[l].tl, &SSdata.Ldata[l].phiIce, &SSdata.Ldata[l].phiWater, &SSdata.Ldata[l].phiVoids, &SSdata.Ldata[l].phiSoil);
-		if (SSdata.Ldata[l].tl < 100.) {
-			SSdata.Ldata[l].tl = C_TO_K(SSdata.Ldata[l].tl);
+		fscanf(fin, " %lf %lf %lf %lf %lf %lf", &SSdata.Ldata[ll].hl, &SSdata.Ldata[ll].tl, &SSdata.Ldata[ll].phiIce, &SSdata.Ldata[ll].phiWater, &SSdata.Ldata[ll].phiVoids, &SSdata.Ldata[ll].phiSoil);
+		if (SSdata.Ldata[ll].tl < 100.) {
+			SSdata.Ldata[ll].tl = C_TO_K(SSdata.Ldata[ll].tl);
 		}
-		fscanf(fin, "%lf %lf %lf", &SSdata.Ldata[l].SoilRho, &SSdata.Ldata[l].SoilK, &SSdata.Ldata[l].SoilC);
-		fscanf(fin, "%lf %lf %lf %lf %d %lf %d", &SSdata.Ldata[l].rg, &SSdata.Ldata[l].rb, &SSdata.Ldata[l].dd, &SSdata.Ldata[l].sp, &SSdata.Ldata[l].mk, &SSdata.Ldata[l].hr, &SSdata.Ldata[l].ne);
-		if (SSdata.Ldata[l].rg>0. && SSdata.Ldata[l].rb >= SSdata.Ldata[l].rg) {
+		fscanf(fin, "%lf %lf %lf", &SSdata.Ldata[ll].SoilRho, &SSdata.Ldata[ll].SoilK, &SSdata.Ldata[ll].SoilC);
+		fscanf(fin, "%lf %lf %lf %lf %d %lf %d", &SSdata.Ldata[ll].rg, &SSdata.Ldata[ll].rb, &SSdata.Ldata[ll].dd, &SSdata.Ldata[ll].sp, &SSdata.Ldata[ll].mk, &SSdata.Ldata[ll].hr, &SSdata.Ldata[ll].ne);
+		if (SSdata.Ldata[ll].rg>0. && SSdata.Ldata[ll].rb >= SSdata.Ldata[ll].rg) {
 			//HACK To avoid surprises in lwsn_ConcaveNeckRadius()
-			SSdata.Ldata[l].rb = Metamorphism::max_grain_bond_ratio * SSdata.Ldata[l].rg;
-			prn_msg(__FILE__, __LINE__, "wrn", -1., "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%lf (rb=%lf mm, rg=%lf mm)! Reset to Metamorphism::max_grain_bond_ratio", l+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[l].rb, SSdata.Ldata[l].rg);
+			SSdata.Ldata[ll].rb = Metamorphism::max_grain_bond_ratio * SSdata.Ldata[ll].rg;
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%lf (rb=%lf mm, rg=%lf mm)! Reset to Metamorphism::max_grain_bond_ratio", ll+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[ll].rb, SSdata.Ldata[ll].rg);
 		}
 		//TODO CDot: enable to read additional parameters!
-		//fscanf(fin, "%lf %lf", &SSdata.Ldata[l].CDot, &SSdata.Ldata[l].Qmf, &SSdata.Ldata[l].metamo);
-		for (i = 0; i < N_SOLUTES; i++) {
-			fscanf(fin," %lf %lf %lf %lf ", &SSdata.Ldata[l].cIce[i], &SSdata.Ldata[l].cWater[i], &SSdata.Ldata[l].cVoids[i], &SSdata.Ldata[l].cSoil[i]);
+		//fscanf(fin, "%lf %lf", &SSdata.Ldata[ll].CDot, &SSdata.Ldata[ll].Qmf, &SSdata.Ldata[ll].metamo);
+		for (int ii = 0; ii < N_SOLUTES; ii++) {
+			fscanf(fin," %lf %lf %lf %lf ", &SSdata.Ldata[ll].cIce[ii], &SSdata.Ldata[ll].cWater[ii], &SSdata.Ldata[ll].cVoids[ii], &SSdata.Ldata[ll].cSoil[ii]);
 		}
 	}
 
-	// READ THE Zdata (needed for flat field only)
-	// Read the hoar hazard data info, contained in Zdata
+	// Read the hoar hazard data info, contained in Zdata (needed for flat field only)
 	fscanf(fin,"%*s ");
-	for (i = 0; i < 48; i++) {
-		if (fscanf(fin," %lf ", &Zdata.hoar24[i]) != 1) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (hoar)");
+	for (int unsigned ii = 0; ii < 48; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hoar24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Reading Zdata (hoar)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
 	}
-	// Read the drift hazard data info, contained in Zdata
+	// Read the drift hazard data info
 	fscanf(fin,"%*s");
-	for (i = 0; i < 48; i++) {
-		if (fscanf(fin," %lf ", &Zdata.drift24[i]) != 1) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (drift)");
+	for (int unsigned ii = 0; ii < 48; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.drift24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Reading Zdata (drift)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
 	}
-	// Read the 3 hour new snowfall hazard data info, contained in Zdata
+	// Read the 3 hour new snowfall hazard data info
 	fscanf(fin,"%*s");
-	for (i = 0; i < 144; i++) {
-		if (fscanf(fin," %lf ", &Zdata.hn3[i]) != 1) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (hns3)");
+	for (int unsigned ii = 0; ii < 144; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hn3[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Reading Zdata (hns3)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
 	}
-	// Read the 24 hour new snowfall hazard data info, contained in Zdata
+	// Read the 24 hour new snowfall hazard data info
 	fscanf(fin,"%*s");
-	for (i = 0; i < 144; i++) {
-		if (fscanf(fin," %lf ", &Zdata.hn24[i]) != 1) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Reading Zdata (hns24)");
+	for (int unsigned ii = 0; ii < 144; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hn24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Reading Zdata (hns24)");
 			throw IOException("Cannot generate Xdata", AT);
 		}
 	}
@@ -315,9 +311,9 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	*/
 	SSdata.nN = 1;
 	SSdata.Height = 0.;
-	for (l = 0; l < SSdata.nLayers;l++) {
-		SSdata.nN    += SSdata.Ldata[l].ne;
-		SSdata.Height += SSdata.Ldata[l].hl;
+	for (int ll = 0; ll < SSdata.nLayers;ll++) {
+		SSdata.nN    += SSdata.Ldata[ll].ne;
+		SSdata.Height += SSdata.Ldata[ll].hl;
 	}
 
 	fclose(fin);
@@ -325,19 +321,17 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 
 /**
  * @brief This routine writes the status of the snow cover at program termination and at specified backup times
- * @author Perry Bartelt \n Michael Lehning
- * @version 9Y.mm
- * @param JulianDate double
- * @param *station char
- * @param *Xdata SnowStation
- * @param *Zdata SN_ZWISCHEN_DATA
- * @param *XFilename char
+ * @version 11.02
+ * @param date current
+ * @param station name
+ * @param Xdata
+ * @param Zdata
+ * @param forbackup dump Xdata on the go
  */
-void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata, 
+void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
                              const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	FILE *fout=NULL;
-	int  e, i;
 
 	string filename = getFilenamePrefix(station, o_snopath) + ".sno";
 
@@ -350,7 +344,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	const vector<ElementData>& EMS = Xdata.Edata;
 	fout = fopen( filename.c_str(), "w");
 	if (fout == NULL) {
-		prn_msg(__FILE__, __LINE__, "err", date.getJulianDate(),"Cannot open profile OUTPUT file: %s", filename.c_str());
+		prn_msg(__FILE__, __LINE__, "err", date,"Cannot open profile OUTPUT file: %s", filename.c_str());
 		throw FileAccessException("Cannot dump final Xdata to file " + filename, AT);
 	}
 
@@ -395,52 +389,48 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	// Layer Data
 	fprintf(fout, "\nYYYY MM DD HH MI Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V ");
 	fprintf(fout, " Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne");
-	for (i = 0; i < N_SOLUTES; i++) {
+	for (int ii = 0; ii < N_SOLUTES; ii++) {
 		fprintf(fout, " cIce cWater cAir  cSoil");
 	}
-	for (e = 0; e < Xdata.getNumberOfElements(); e++) {
+	for (int e = 0; e < Xdata.getNumberOfElements(); e++) {
 		int YYYY, MM, DD, hh, mm;
-		EMS[e].date.getDate(YYYY, MM, DD, hh, mm);
+		EMS[e].depositionDate.getDate(YYYY, MM, DD, hh, mm);
 		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, hh, mm); 
 		fprintf(fout, " %7.5lf %8.4lf %7.5lf %7.5lf %7.5lf",  EMS[e].L,
 			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
-		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf",
+		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf 1",
 			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
 		//TODO CDot: enable to write additional parameters
 		//fprintf(fout," %10.3e %10.3e %lf", EMS[e].CDot, EMS[e].Qmf, EMS[e].metamo);
-		for (i = 0; i < N_SOLUTES; i++) {
-			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc(ICE,i), EMS[e].conc(WATER,i),
-				   EMS[e].conc(AIR,i), EMS[e].conc(SOIL,i));
+		for (int ii = 0; ii < N_SOLUTES; ii++) {
+			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc(ICE,ii), EMS[e].conc(WATER,ii),
+			        EMS[e].conc(AIR,ii), EMS[e].conc(SOIL,ii));
 		}
 	}
 
-	// Print out the hoar hazard data info, contained in Zdata
+	// Print out the hoar hazard data info, contained in Zdata (needed for flat field only)
 	fprintf(fout,"\nSurfaceHoarIndex\n");
-	for(e = 0; e < 48; e++) {
-		fprintf(fout," %lf ", Zdata.hoar24[e]);
+	for (int unsigned ii = 0; ii < 48; ii++) {
+		fprintf(fout," %lf ", Zdata.hoar24[ii]);
 	}
-
-	// Print out the drift hazard data info, contained in Zdata
+	// Print out the drift hazard data info
 	fprintf(fout,"\nDriftIndex\n");
-	for (e = 0; e < 48; e++) {
-		fprintf(fout," %lf ", Zdata.drift24[e]);
+	for (int unsigned ii = 0; ii < 48; ii++) {
+		fprintf(fout," %lf ", Zdata.drift24[ii]);
 	}
-
-	// Print out the 3 hour new snowfall hazard data info, contained in Zdata
+	// Print out the 3 hour new snowfall hazard data info
 	fprintf(fout,"\nThreeHourNewSnow\n");
-	for (e = 0; e < 144; e++) {
-		fprintf(fout," %lf ", Zdata.hn3[e]);
+	for (int unsigned ii = 0; ii < 144; ii++) {
+		fprintf(fout," %lf ", Zdata.hn3[ii]);
 	}
-
-	// Print out the 24 hour new snowfall hazard data info, contained in Zdata
+	// Print out the 24 hour new snowfall hazard data info
 	fprintf(fout,"\nTwentyFourHourNewSnow\n");
-	for (e = 0; e < 144; e++) {
-		fprintf(fout," %lf ", Zdata.hn24[e]);
+	for (int unsigned ii = 0; ii < 144; ii++) {
+		fprintf(fout," %lf ", Zdata.hn24[ii]);
 	}
-
-	// End of Data
 	fprintf(fout, "\nEnd");
+
 	fclose(fout);
 }
 
@@ -468,7 +458,7 @@ std::string AsciiIO::getFilenamePrefix(const std::string& stationname, const std
  * @param Hdata
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationname, const unsigned int& expo,
-                           SnowStation& Xdata, const Q_PROCESS_DAT& Hdata)
+                           SnowStation& Xdata, const ProcessDat& Hdata)
 {
 	stringstream ss;
 	ss << stationname;
@@ -490,18 +480,18 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
 		bool append = appendFile(filename, i_date, "pro");
 
 		if (!append){
-			if (remove(filename.c_str()) == 0)
-				cout << "[i] Restart of existing simulation, deleted file: " << filename << endl;
+			if ((expo == 0) && (remove(filename.c_str()) == 0))
+				prn_msg(__FILE__, __LINE__, "msg-", Date(), "Restart of existing simulation, delete file(s) %s", filename.c_str());
 		}
 	}
 
 	if ( !checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, station, "pro", &Xdata) ) {
-		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),"Checking header in file %s", filename.c_str());
+		prn_msg(__FILE__, __LINE__, "err", i_date,"Checking header in file %s", filename.c_str());
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	} 
 
 	if ( !(PFile = fopen(filename.c_str(), "a")) ) {
-		prn_msg(__FILE__, __LINE__, "err", i_date.getJulianDate(),
+		prn_msg(__FILE__, __LINE__, "err", i_date,
 			   "Cannot open profile series file: %s", filename.c_str());
 		throw IOException("Cannot dum profile " + filename + "for Java Visualisation", AT);
 	}
@@ -677,18 +667,16 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const std::string& stationna
  */
 void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 {
-	int e;
 	const int nE = Xdata.getNumberOfElements();
 
 	const vector<ElementData>& EMS = Xdata.Edata;
 	if ( out_load ) {
 		// *6nn: e.g. solute concentration
-		int i, j;
-		for (j = 2; j < N_COMPONENTS-1; j++) {
-			for (i = 0; i < N_SOLUTES; i++) {
-				fprintf(fout,"\n06%02d,%d" , 10*j + i,nE-Xdata.SoilNode);
-				for (e = Xdata.SoilNode; e < nE; e++) {
-					fprintf(fout,",%.1lf",EMS[e].conc(i,j));
+		for (int unsigned jj = 2; jj < N_COMPONENTS-1; jj++) {
+			for (int ii = 0; ii < N_SOLUTES; ii++) {
+				fprintf(fout,"\n06%02d,%d" , 10*jj + ii,nE-Xdata.SoilNode);
+				for (int e = Xdata.SoilNode; e < nE; e++) {
+					fprintf(fout,",%.1lf",EMS[e].conc(ii,jj));
 				}
 			}
 		}
@@ -696,18 +684,18 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		// 600-profile specials
 		// *601: snow shear strength (kPa)
 		fprintf(fout,"\n0601,%d" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE; e++) {
+		for (int e = Xdata.SoilNode; e < nE; e++) {
 			fprintf(fout,",%.2lf",EMS[e].s_strength);
 		}
 		// *602: grain size difference (mm)
 		fprintf(fout,"\n0602,%d" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE-1; e++) {
+		for (int e = Xdata.SoilNode; e < nE-1; e++) {
 			fprintf(fout,",%.2lf",2.*fabs(EMS[e].rg - EMS[e+1].rg));
 		}
 		fprintf(fout,",0.");
 		// *603: hardness difference (1)
 		fprintf(fout,"\n0603,%d" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE-1; e++) {
+		for (int e = Xdata.SoilNode; e < nE-1; e++) {
 			fprintf(fout,",%.2lf",fabs(EMS[e].hard - EMS[e+1].hard));
 		}
 		fprintf(fout,",0.");
@@ -920,7 +908,7 @@ int AsciiIO::findTaggedElement(const int& tag, const SnowStation& Xdata)
  * @param *Xdata
  * @return Number of dumped values
  */
-int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const SN_MET_DATA& Mdata, const SnowStation& Xdata)
+int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const CurrentMeteo& Mdata, const SnowStation& Xdata)
 {
 	int e, j=2;
 	const int i = fixed_heights+fixed_rates + (tag-1);
@@ -965,7 +953,7 @@ void AsciiIO::parseMetFile(const char& eoln, mio::Date& currentdate, std::istrea
 		if ((vecTmp.size() >= 2) && (vecTmp[1].length() >= 16)){
 			string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
 				+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
-			IOUtils::convertString(currentdate, tmpdate);
+			IOUtils::convertString(currentdate, tmpdate, time_zone);
 		}
 	}
 }
@@ -991,7 +979,7 @@ void AsciiIO::parseProFile(const char& eoln, mio::Date& currentdate, std::istrea
 					string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) 
 						+ "-" + vecTmp[1].substr(0,2)
 						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
-					IOUtils::convertString(currentdate, tmpdate);
+					IOUtils::convertString(currentdate, tmpdate, time_zone);
 				}					
 			}
 		}
@@ -1070,8 +1058,8 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
  * @param *TFilename Name of file holding time series
  */
 void AsciiIO::writeTimeSeries(const std::string& station, const SnowStation& Xdata,
-                              const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
-                              const Q_PROCESS_DAT& Hdata, const double wind_trans24)
+                              const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+                              const ProcessDat& Hdata, const double wind_trans24)
 {
 	FILE *TFile=NULL;
 
@@ -1086,20 +1074,19 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SnowStation& Xda
 		bool append = appendFile(filename, Mdata.date, "met");
 
 		if (!append) {
-			if (remove(filename.c_str()) == 0)
-				cout << "[i] Restart of existing simulation, deleted file: " << filename << endl;
+			if ((Xdata.SlopeAngle < Constants::eps) && (remove(filename.c_str()) == 0))
+				prn_msg(__FILE__, __LINE__, "msg-", Date(), "Restart of existing simulation, delete file(s) %s", filename.c_str());
 		}
 	}
 
 	// Check file for header
 	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, station, "met", &Xdata)) {
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), "Checking header in file %s", filename.c_str());
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	} 
 
 	if (!(TFile = fopen(filename.c_str(), "a"))) {
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(), 
-			   "Cannot open time series file: %s", filename.c_str());
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Cannot open time series file: %s", filename.c_str());
 	     throw FileAccessException(filename, AT);
 	}
 	// Print time stamp
@@ -1207,7 +1194,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SnowStation& Xda
 		int ii, jj = 0;
 		for (ii = MIN(5, fixed_heights); ii < fixed_heights+fixed_rates; ii++) {
 			if ( (jj += writeTemperatures(TFile, Mdata.zv_ts[ii], Mdata.ts[ii], ii, Xdata)) > 44 ) {
-				prn_msg(__FILE__, __LINE__, "err", Mdata.date.getJulianDate(),
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date,
 								"There is not enough space to accomodate your temperature sensors: j=%d > 44!", jj);
 				throw IOException("Writing Time Series data failed", AT);
 			}
@@ -1261,7 +1248,7 @@ void AsciiIO::writeTimeSeries(const std::string& station, const SnowStation& Xda
  * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
+void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
 	(void) Mdata;
 	double cos_sl = cos(Xdata.SlopeAngle);
@@ -1303,7 +1290,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
  * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
+void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
 	(void) crust;
 	if (out_meteo) {
@@ -1331,7 +1318,7 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
  * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
+void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout)
 {
 	(void) crust; (void) Sdata;
 	double rho_hn;
@@ -1377,7 +1364,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
  * @param *ext File extension
  * @return status
  */
-bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PROCESS_DAT& Hdata,
+bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata,
                           const std::string& station, const char *ext, ...)
 {
 	FILE *fin=NULL;
@@ -1393,7 +1380,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 		fgets(dummy_l, MAX_LINE_LENGTH, fin);
 		sscanf(dummy_l, "%s", dummy);
 		if ( (strcmp(dummy, first_string) != 0) ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Header in %s should read %s, not %s", fnam, first_string, dummy);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Header in %s should read %s, not %s", fnam, first_string, dummy);
 			return false;
 		}
 		fclose(fin);
@@ -1634,7 +1621,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 			}
 			fprintf(fout, "\n\n[DATA]");
 		} else {
-			prn_msg(__FILE__, __LINE__, "wrn", -1., "No header defined for files *.%s", ext);
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "No header defined for files *.%s", ext);
 		}
 		va_end(argptr);
 		fclose(fout);
@@ -1643,8 +1630,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Q_PR
 	return true;
 }
 
-bool AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<Q_PROCESS_DAT>& /*Hdata*/,
-                              const std::vector<Q_PROCESS_IND>& /*Hdata_ind*/, const int& /*num*/)
+bool AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<ProcessDat>& /*Hdata*/,
+                              const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
 {
 	/*
 	fout.open(name.c_str());

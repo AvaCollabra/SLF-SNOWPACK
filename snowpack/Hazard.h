@@ -42,17 +42,17 @@ class Hazard {
 		Hazard(const mio::Config& i_cfg);
 
 		void initializeHazard(const double TimeEnd, double *old_drift, double slope_angle,
-		                      std::vector<Q_PROCESS_DAT>& Hdata, std::vector<Q_PROCESS_IND>& Hdata_ind);
+		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
 
 		static double driftIndex(double *old_drift, double drift, const double rho, const int nHours,
 		                         double slope_angle, const int shift);
 
-		void getDriftIndex(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+		void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                        double *old_drift, double& drift, double slope_angle);
 
-		void getHazardData(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind,
+		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 		                   const double& delta_hs6, const double& delta_hs24,
-		                   SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		                   CurrentMeteo& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
 		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
 		                   const unsigned int& nSlopes, const bool& virtual_slope);
 
@@ -64,10 +64,10 @@ class Hazard {
 
 		double compHoarIndex(double *OldHoar, double new_hoar, int nhour, int new_step);
 
-		static void compMeltFreezeCrust(const SnowStation& Xdata, Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind);
+		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
-		void compHazard(Q_PROCESS_DAT& Hdata, Q_PROCESS_IND& Hdata_ind, const double& d_hs6, const double& d_hs24,
-		                const SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
+		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
 		                const SnowStation& Xdata);
 
 		const mio::Config& cfg;
@@ -75,6 +75,7 @@ class Hazard {
 		bool enforce_measured_snow_heights;
 		bool force_rh_water;
 		double sn_dt;
+		double time_zone;
 		int hazard_steps_between;
 		double hoar_density_surf, hoar_min_size_surf;
 		static const double minimum_drift, maximum_drift;

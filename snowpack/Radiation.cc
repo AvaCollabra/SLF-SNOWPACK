@@ -39,7 +39,7 @@ const double Radiation::thresh_sun_elevation = 1.e-2;
 
 Radiation::Radiation(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
-	sw_mode = cfg.get("SW_MODE", "Parameters");
+	cfg.getValue("SW_MODE", "Parameters", sw_mode);
 	sw_mode %= 10;
 }
 
@@ -94,18 +94,18 @@ void Radiation::angleOfIncidence(const double& sx, const double& sy, const doubl
  * day_number_equi: 1. == Spring equinox, that is, 20 March
  * @param *day_number
  * @param *day_number_equi
- * @param date
+ * @param date_in
  * @return
  */
-void Radiation::computeDayNumbers(const mio::Date& date, double& day_number, double& day_number_equi)
+void Radiation::computeDayNumbers(const mio::Date& date_in, double& day_number, double& day_number_equi)
 {
 	int    YYYY,MM,DD,HH,MI;
 	double spring_equi;
 
 	// Compute the day-of-the-year (DOY) from the Julian Date
-	date.getDate(YYYY, MM, DD, HH, MI);
-	Date year_end(YYYY-1, 12, 31, 0, 0);
-	day_number = (int)(date.getJulianDate() - year_end.getJulianDate());
+	date_in.getDate(YYYY, MM, DD, HH, MI);
+	Date year_end(YYYY-1, 12, 31, 0, 0, date_in.getTimeZone());
+	day_number = (int)(date_in.getJulianDate() - year_end.getJulianDate());
 
 	// Compute the day-of-the-year (DOY) from the Julian Date starting at spring equinox
 	// spring equinox time in days from the beginning of the year (Bourges (1985))
@@ -132,15 +132,15 @@ void Radiation::computeDayNumbers(const mio::Date& date, double& day_number, dou
  * the solar declination
  * the equation of time
  * @param *Psolar
- * @param date
+ * @param date_in
  * @return int
  */
-void Radiation::computeSolarDailyParameters(const mio::Date& date, PositionSun& Psolar)
+void Radiation::computeSolarDailyParameters(const mio::Date& date_in, PositionSun& Psolar)
 {
 	double day_angle, day_angle_decl;
 	double day_number, day_number_equi;
 
-	computeDayNumbers(date, day_number, day_number_equi);
+	computeDayNumbers(date_in, day_number, day_number_equi);
 	// day_angle_decl in radians analog to Iqbal (1983); with day_number_equi as day_number
 	// starting from spring equinox
 	// using the Gregorian calendar mean number of days in a year = 365.2425
@@ -191,7 +191,7 @@ void Radiation::computePositionSun(const double& local_time, const double& Lat, 
 	// Duffie (2006): Lon in degrees west: 0 < Lon < 360 -> (360 - Lst - (360 - Llo))
 	// local standard time + 4min * (Lon_local - Lon_standameridian)          + equation of time
 	// 4min for every degree, accounts for the difference between the local and standard meridians (longitude)
-	// standard meridian: longitude of the center of my local timezone, 15*time difference to UTC
+	// standard meridian: longitude of the center of my local time zone, 15*time difference to UTC
 	// local standard time:
 	// meteo input always has to be in local standard time (winter in Davos: UTC+1) to avoid confusion
 	// with daylight saving time and for the computation of the hour_angle
@@ -420,14 +420,14 @@ void Radiation::computeSplittingCoefficient(const PositionSun& Psolar, const dou
  * radiation and diffuse radiation.
  * Use is made of equation A1.8 found in Oke, p. 346, but for sun elevation larger than
  * 9 deg only (see caveat in Iqbal on p. 77)
- * @param *Mdata SN_MET_DATA
+ * @param *Mdata CurrentMeteo
  * @param *Rdata RadiationData
  * @param *Psolar const PositionSun
  * @param Alb const double
  * @return int
  */
 void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, 
-                                        SN_MET_DATA& Mdata, RadiationData& Rdata)
+                                        CurrentMeteo& Mdata, RadiationData& Rdata)
 {
 	if ( Psolar.elev > 0.157 ) { // 9 deg = 0.157 rad
 		Rdata.dir_slope = Rdata.dir_hor*cos(Psolar.ang_inc)/sin(Psolar.elev);
@@ -449,13 +449,13 @@ void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double&
 /**
  * @brief Compute global, direct and diffuse radiation on flat field, including potential radiation
  * ATTENTION: This function should NOT be called by Alpine3D !!!
- * @param *Mdata SN_MET_DATA
+ * @param *Mdata CurrentMeteo
  * @param *Xdata Profile
  * @param *Psolar PositionSun
  * @param *Rdata RadiationData
  * @return int
  */
-void Radiation::flatFieldRadiation(const SnowStation& Xdata, SN_MET_DATA& Mdata,
+void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata,
                                    PositionSun& Psolar, RadiationData& Rdata)
 {
 	// SOLAR PARAMETERS have to be computed
@@ -520,13 +520,13 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, SN_MET_DATA& Mdata,
  *  Note: Assume the reference station is not shaded (horizont) at any time!
  *        Otherwise one should use a mask (not implemented yet TODO)
  * ATTENTION: This function should NOT be called by Alpine3D !!!
- * @param Mdata SN_MET_DATA
+ * @param Mdata CurrentMeteo
  * @param Xdata Profile
  * @param Sdata SurfaceFluxes
  * @param Psolar PositionSun
  * @param Rdata RadiationData
  */
-void Radiation::radiationOnSlope(const SnowStation& Xdata, SN_MET_DATA& Mdata, SurfaceFluxes& Sdata,
+void Radiation::radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
                                  PositionSun& Psolar, RadiationData& Rdata)
 {
 	if ( Xdata.SlopeAngle > Constants::min_slopeangle ) {

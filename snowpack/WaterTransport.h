@@ -43,17 +43,17 @@ class WaterTransport {
 	public:
 		WaterTransport(const mio::Config& i_cfg);
 
-		void compTransportMass(const SN_MET_DATA& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void compTransportMass(const CurrentMeteo& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 	private:
 
-		void compSurfaceSublimation(const SN_MET_DATA& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		void removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		void adjustDensity(SnowStation& Xdata);
 
-		void transportWater(const SN_MET_DATA& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		std::string variant;
 		const mio::Config& cfg;

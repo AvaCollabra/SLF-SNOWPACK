@@ -41,7 +41,6 @@ class SnowpackConfig : public mio::Config {
 	private:
 		static const bool __init;     ///<helper variable to enable the init of static collection data
 		static bool initStaticData(); ///<initialize the static containers
-		static std::vector<std::string> variants;
 		static std::map<std::string, std::string> defaultConfig;
 };
 

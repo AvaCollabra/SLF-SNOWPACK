@@ -41,14 +41,14 @@ class SnowpackIO : public SnowpackIOInterface {
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 	
 		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata,
-		                             const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
-		                             const Q_PROCESS_DAT& Hdata, const double wind_trans24);
+		                             const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+		                             const ProcessDat& Hdata, const double wind_trans24);
 
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                              SnowStation& Xdata, const Q_PROCESS_DAT& Hdata);
+                              SnowStation& Xdata, const ProcessDat& Hdata);
 
-		virtual bool writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata,
-                                 const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
+		virtual bool writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
+                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		const mio::Config& cfg;

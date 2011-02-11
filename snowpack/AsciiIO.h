@@ -49,14 +49,14 @@ class AsciiIO : public SnowpackIOInterface {
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 		
 		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
-		                             const SurfaceFluxes& Sdata, const SN_MET_DATA& Mdata,
-		                             const Q_PROCESS_DAT& Hdata, const double wind_trans24);
+		                             const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+		                             const ProcessDat& Hdata, const double wind_trans24);
 		
 		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                              SnowStation& Xdata, const Q_PROCESS_DAT& Hdata);
+                              SnowStation& Xdata, const ProcessDat& Hdata);
 
-		virtual bool writeHazardData(const std::string& station, const std::vector<Q_PROCESS_DAT>& Hdata,
-                                 const std::vector<Q_PROCESS_IND>& Hdata_ind, const int& num);
+		virtual bool writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
+                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& type);
@@ -65,7 +65,7 @@ class AsciiIO : public SnowpackIOInterface {
 
 		std::string getFilenamePrefix(const std::string& stationname, const std::string& path);
 
-		bool checkHeader(const char *fnam, const char *first_string, const Q_PROCESS_DAT& Hdata,
+		bool checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata,
 		                 const std::string& station, const char *ext, ...);
 
 		void writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout);
@@ -79,18 +79,19 @@ class AsciiIO : public SnowpackIOInterface {
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 		
 		int findTaggedElement(const int& tag, const SnowStation& Xdata);
-		int writeHeightTemperatureTag(FILE *fout,const int& tag,const SN_MET_DATA& Mdata,const SnowStation& Xdata);
+		int writeHeightTemperatureTag(FILE *fout,const int& tag,const CurrentMeteo& Mdata,const SnowStation& Xdata);
 		
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-																const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
+																const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
 		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-																	 const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
+																	 const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
 		void writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-																		const SN_MET_DATA& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
+																		const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
 
 		static const bool r_in_n, t_srf, t_gnd;
 
 		const mio::Config& cfg;
+		double time_zone; ///< input data time zone
 
 		double calculation_step_length, hazard_steps_between, ts_days_between;
 		double avgsum_time_series;

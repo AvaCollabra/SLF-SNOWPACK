@@ -46,29 +46,31 @@ const double SnowStation::join_thresh_rg = 0.125;   ///< Grain radius (mm)
 
 /**
  * @brief Determines the averaged quantities for the current layer with another layer
- * @param w1 Weight of layer Pdata
- * @param w2 Weight of this layer 
- * @param Pdata layer to average with
+ * @param Lp1 Thickness (weight) of layer Pdata
+ * @param Lp0 Thickness (weight) of this layer
+ * @param profile_layer to average with
  */
-void Q_PROFILE_DAT::average(const double& w1, const double& w2, const Q_PROFILE_DAT& profile_data)
+void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowProfileLayer& profile_layer)
 {
-	const double weightsum = w1 + w2;
+	const double layerThickness = Lp0 + Lp1;
 
-	height     += w1;
-	layer_date  = (w1*profile_data.layer_date + w2*layer_date) / weightsum;
-	rho         = (w1*profile_data.rho + w2*rho) / weightsum;
-	tem         = (w1*profile_data.tem + w2*tem) / weightsum;
-	tem_grad    = (w1*profile_data.tem_grad + w2*tem_grad) / weightsum;
-	strain_rate = (w1*profile_data.strain_rate + w2*strain_rate) / weightsum;
-	theta_w     = (w1*profile_data.theta_w + w2*theta_w) / weightsum;
-	theta_i     = (w1*profile_data.theta_i + w2*theta_i) / weightsum;
-	dendricity  = (w1*profile_data.dendricity + w2*dendricity) / weightsum;
-	sphericity  = (w1*profile_data.sphericity + w2*sphericity) / weightsum;
-	coordin_num = (w1*profile_data.coordin_num + w2*coordin_num) / weightsum;
-	grain_size  = (w1*profile_data.grain_size + w2*grain_size) / weightsum;
-	bond_size    = (w1*profile_data.bond_size + w2*bond_size) / weightsum;
-	hard        = (w1*profile_data.hard + w2*hard) / weightsum;
-	marker      = MAX(profile_data.marker, marker);
+	height += Lp1;
+	if (Lp1 > Lp0) {
+		layerDate = profile_layer.layerDate;
+	}
+	rho         = (Lp1*profile_layer.rho + Lp0*rho) / layerThickness;
+	tem         = (Lp1*profile_layer.tem + Lp0*tem) / layerThickness;
+	tem_grad    = (Lp1*profile_layer.tem_grad + Lp0*tem_grad) / layerThickness;
+	strain_rate = (Lp1*profile_layer.strain_rate + Lp0*strain_rate) / layerThickness;
+	theta_w     = (Lp1*profile_layer.theta_w + Lp0*theta_w) / layerThickness;
+	theta_i     = (Lp1*profile_layer.theta_i + Lp0*theta_i) / layerThickness;
+	dendricity  = (Lp1*profile_layer.dendricity + Lp0*dendricity) / layerThickness;
+	sphericity  = (Lp1*profile_layer.sphericity + Lp0*sphericity) / layerThickness;
+	coordin_num = (Lp1*profile_layer.coordin_num + Lp0*coordin_num) / layerThickness;
+	grain_size  = (Lp1*profile_layer.grain_size + Lp0*grain_size) / layerThickness;
+	bond_size   = (Lp1*profile_layer.bond_size + Lp0*bond_size) / layerThickness;
+	hard        = (Lp1*profile_layer.hard + Lp0*hard) / layerThickness;
+	marker      = MAX(profile_layer.marker, marker);
 }
 
 
@@ -168,10 +170,11 @@ void SN_CANOPY_DATA::initializeSurfaceExchangeData()
 	intcapacity = 0.0;
 }
 
-ElementData::ElementData(const unsigned int& i_max_number_of_solutes) : date(0.), L0(0.), L(0.), Te(0.), gradT(0.),
-													 Rho(0.), M(0.), sw_abs(0.), rg(0.), dd(0.), sp(0.), rb(0.), ps2rb(0.), N3(0.), mk(0), type(0),
-															 dth_w(0.), Qmf(0.), dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.), S(0.), C(0.), S_dr(0.),
-																		 s_strength(0.), hard(0.), dhf(0.), max_number_of_solutes(i_max_number_of_solutes)
+ElementData::ElementData(const unsigned int& i_max_number_of_solutes) : depositionDate(), L0(0.), L(0.),
+                         Te(0.), gradT(0.), Rho(0.), M(0.), sw_abs(0.), rg(0.), dd(0.), sp(0.), rb(0.), ps2rb(0.),
+                         N3(0.), mk(0), type(0), dth_w(0.), Qmf(0.), dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
+                         S(0.), C(0.), S_dr(0.), s_strength(0.), hard(0.), dhf(0.),
+                         max_number_of_solutes(i_max_number_of_solutes)
 {
 	theta.resize(N_COMPONENTS);
 	conc.resize(N_COMPONENTS, max_number_of_solutes);
@@ -193,11 +196,11 @@ bool ElementData::checkVolContent()
 		sum += theta[i];
 	}
 	if (sum <= 0.99 || sum >= 1.01) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "SUM of volumetric contents = %1.4f", sum);
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.4f", sum);
 		ret = false;
 	}
 	if ((theta[SOIL]  < -Constants::eps) || (theta[ICE]   < -0.01) || (theta[WATER] < -0.01) || (theta[AIR]   < -0.01) ) {
-		prn_msg(__FILE__, __LINE__, "wrn", -1., "Negative volumetric content!");
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative volumetric content!");
 		ret = false;
 	}
 	return ret;
@@ -339,7 +342,7 @@ double ElementData::neckStressEnhancement()
 double ElementData::concaveNeckRadius()
 {
 	if ( (rg - rb) < Constants::eps ) {
-		prn_msg (__FILE__, __LINE__, "wrn", -1., "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb );
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb);
 		return (Constants::big);
 	} else {
 		return (rb*rb / (2. * (rg - rb) ));
@@ -606,7 +609,7 @@ void SnowStation::joinElements(const int& number_top_elements)
 	  if (SnowStation::sn_joinCondition(Edata[e0], Edata[e1])) {
 	    SnowStation::mergeElements(Edata[e0], Edata[e1], true);
 			nJoin++;
-			Edata[e1].Rho *= -1.;
+			Edata[e1].Rho = Constants::undefined;
 			e0++; e1++;
 		}
 	}
@@ -619,10 +622,10 @@ void SnowStation::joinElements(const int& number_top_elements)
 /**
  * @brief Remove the upper "marked" element of two (snow only) \n
  * -# Joining two elements:
- *  - make density negative (*= -1.)
+ *  - density is undefined
  *  - take the uppermost node of both
  * -# Removing melted or thin elements
- *  - make both density AND length negative (*= -1.) as the latter will be used!
+ *  - density is undefined AND length negative (*= -1.) as the latter will be used!
  *  - keep upper node of lowest element
  * @param rnE Reduced number of elements
  */
@@ -633,8 +636,8 @@ void SnowStation::reduceNumberOfElements(const int& rnE)
 	double cH_old, dL=0.;
 	
 	for (e0 = SoilNode, eNew = SoilNode; e0 < nElems; e0++) {
-		if ( Edata[e0].Rho < 0.0 ) {
-			if ( Edata[e0].L > 0.0 ) { // Joining elements
+		if (Edata[e0].Rho == Constants::undefined) {
+			if (Edata[e0].L > 0.0) { // Joining elements
 				Ndata[eNew] = Ndata[e0+1];
 				Ndata[eNew].z = Ndata[e0+1].z + Ndata[e0+1].u + dL;
 				Ndata[eNew].u = Ndata[e0].udot = 0.;
@@ -642,7 +645,7 @@ void SnowStation::reduceNumberOfElements(const int& rnE)
 				dL += Edata[e0].L;
 			}
 		} else {
-			if ( eNew < e0 ) {
+			if (eNew < e0) {
 				Edata[eNew] = Edata[e0];
 				Ndata[eNew+1] = Ndata[e0+1];
 			}
@@ -734,7 +737,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 	}
 
 	if (SoilNode == 0 && useSnowLayers) {
-		prn_msg(__FILE__, __LINE__, "err", -1., "SNP_SOIL set but no soil layers given");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "SNP_SOIL set but no soil layers given");
 		throw IOException("Snowpack Initialization failed", AT);
 	}
 
@@ -742,7 +745,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 	for (l = 0, e = 0; l<SSdata.nLayers; l++) {
 		for (le = 0; le < SSdata.Ldata[l].ne; le++, e++) {
 			// Element's JulianQ Date
-			Edata[e].date = SSdata.Ldata[l].date;
+			Edata[e].depositionDate = SSdata.Ldata[l].layerDate;
 			// Temperature data
 			Edata[e].Te=(Ndata[e].T+Ndata[e+1].T)/2.;
 			Edata[e].L0=Edata[e].L=(Ndata[e+1].z-Ndata[e].z);
@@ -826,7 +829,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 		Cdata.zdispl=Cdata.height*0.66;
 		Cdata.direct_throughfall=SSdata.Canopy_Direct_Throughfall;
 		if ( !(SSdata.Canopy_Direct_Throughfall >= 0. && SSdata.Canopy_Direct_Throughfall <= 1.) ) {
-			prn_msg(__FILE__, __LINE__, "err", -1., "Given Canopy Throughfall (*.sno file) = %lf but Canopy is set", 
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Given Canopy Throughfall (*.sno file) = %lf but Canopy is set",
 				   SSdata.Canopy_Direct_Throughfall);
 			throw IOException("Snowpack Initialization failed", AT);
 		}
@@ -936,7 +939,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 
 	if ( join ) {
 		LNew += L1;
-		Edata0.date = Edata1.date;
+		Edata0.depositionDate = Edata1.depositionDate;
 		Edata0.rg = 0.5 * ( Edata0.rg + Edata1.rg );
 		Edata0.dd = 0.5 * ( Edata0.dd + Edata1.dd );
 		Edata0.sp = 0.5 * ( Edata0.sp + Edata1.sp );
@@ -968,7 +971,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 }
 
 
-SN_MET_DATA::SN_MET_DATA(const unsigned int& i_max_number_of_sensors, const unsigned int& i_max_number_of_solutes) 
+CurrentMeteo::CurrentMeteo(const unsigned int& i_max_number_of_sensors, const unsigned int& i_max_number_of_solutes) 
 	: n(0), date(), ta(0.), rh(0.), rh_ave(0.), vw(0.), vw_ave(0.), vw_max(0.), dw(0.), vw_drift(0.), dw_drift(0.),
     ustar(0.), z0(0.), psi_s(0.),
     iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
@@ -979,13 +982,13 @@ SN_MET_DATA::SN_MET_DATA(const unsigned int& i_max_number_of_sensors, const unsi
 	conc  = vector<double>(max_number_of_solutes, 0.);
 }
 
-void SN_MET_DATA::reset()
+void CurrentMeteo::reset()
 {
-	*this = SN_MET_DATA(max_number_of_sensors, max_number_of_solutes);
+	*this = CurrentMeteo(max_number_of_sensors, max_number_of_solutes);
 }
 
 
-std::ostream& operator<<(std::ostream &os, const SN_MET_DATA& mdata)
+std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
 {
 	os << "<InterpolatedMeteoData>" << endl;
 
@@ -1019,9 +1022,9 @@ std::ostream& operator<<(std::ostream &os, const SN_MET_DATA& mdata)
 }
 
 
-LayerData::LayerData(const unsigned int& i_max_number_of_solutes) : date(0.), hl(0.), ne(0), tl(0.), phiIce(0.), 
-					    phiWater(0.), phiVoids(0.), phiSoil(0.), SoilRho(0.), SoilK(0.), SoilC(0.), rg(0.), sp(0.), 
-                             dd(0.), rb(0.), mk(0), hr(0.), max_number_of_solutes(i_max_number_of_solutes)
+LayerData::LayerData(const unsigned int& i_max_number_of_solutes) : layerDate(), hl(0.), ne(0), tl(0.),
+                     phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.), SoilRho(0.), SoilK(0.), SoilC(0.),
+                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), max_number_of_solutes(i_max_number_of_solutes)
 {
 	cIce.resize(max_number_of_solutes);
 	cWater.resize(max_number_of_solutes);

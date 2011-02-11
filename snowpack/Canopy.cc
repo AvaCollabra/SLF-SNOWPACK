@@ -278,12 +278,12 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const
 Canopy::Canopy(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
 	// Defines whether soil layers are used
-	snp_soil = cfg.get("snp_soil", "Parameters");
+	cfg.getValue("snp_soil", "Parameters", snp_soil);
 
 	//Rain only for air temperatures warmer than threshold (degC)
-	thresh_rain = cfg.get("THRESH_RAIN", "Parameters");
+	cfg.getValue("THRESH_RAIN", "Parameters", thresh_rain);
 
-	calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	cfg.getValue("CALCULATION_STEP_LENGTH", "Parameters", calculation_step_length);
 }
 
 /**
@@ -409,7 +409,7 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 	// Check if water content is below wilting point in last layer
 	if ( waterresidual_real > 0.5 ) {
 		// modify by Moustapha if there is problem .
-		prn_msg ( __FILE__, __LINE__, "wrn", -1., "Transpiration Error [mm]: %lf", waterresidual_real);
+		prn_msg(__FILE__, __LINE__, "wrn", mio::Date(), "Transpiration Error [mm]: %lf", waterresidual_real);
 	}
 }
 
@@ -685,7 +685,7 @@ double Canopy::cn_CanopyTransmissivity(const double& lai, const double& elev)
  * @param sigfdirect
  * @param *r1p
  */
-void Canopy::cn_LineariseNetRadiation(const SN_MET_DATA& Mdata, const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
+void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
 							   double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
 							   const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
 							   const double& sigfdirect, double& r1p)
@@ -1117,7 +1117,7 @@ double Canopy::cn_RichardsonToAeta(double za, double TempAir, double DiffTemp,
  * @param *ce_interception
  * @param *ce_condensation
  */
-void Canopy::cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& refheight, const double& zomg, 
+void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg, 
                                         const double& wetfraction, SnowStation& Xdata, double& ch_canopy,
                                         double& ce_canopy, double& ce_transpiration,
                                         double& ce_interception, double& ce_condensation)
@@ -1330,7 +1330,7 @@ void Canopy::cn_CanopyTurbulentExchange(const SN_MET_DATA& Mdata, const double& 
  * @param RadFracDirect
  * @param sigfdirect
  */
-void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, SN_MET_DATA& Mdata, double ac, double *iswrac, double *rswrac, double *iswrbc, double *rswrbc, double *ilwrac, double *rlwrac, double *ilwrbc, double *rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect)
+void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac, double *iswrac, double *rswrac, double *iswrbc, double *rswrbc, double *ilwrac, double *rlwrac, double *ilwrbc, double *rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect)
 {
 	double TC, TG, ag, sigf, ec, eg, RAG, RAV, CanopyClosureDiffuse, rswrac_loc;
 	double rswrbc_loc, rswrac_loc2, iswrbc_loc2, rswrbc_loc2, iswrbc_loc;
@@ -1395,13 +1395,13 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, SN_MET_DATA& Mdata, do
  * heat fluxes)
  * 3. Final mass balance (evaporation of intercepted water, and
  * transpiration
- * @param Mdata SN_MET_DATA
+ * @param Mdata CurrentMeteo
  * @param Xdata Profile
  * @param roughness_length
  * @param height_of_wind_value
  */
 
-void Canopy::runCanopyModel(SN_MET_DATA *Mdata, SnowStation *Xdata, double roughness_length, double height_of_wind_val)
+void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length, double height_of_wind_val)
 {
 
 	// local mass flux variables
@@ -1455,7 +1455,7 @@ void Canopy::runCanopyModel(SN_MET_DATA *Mdata, SnowStation *Xdata, double rough
 	unload = cn_IntUnload(intcapacity, Xdata->Cdata.storage);
 
 	if ( unload < 0.0 ) {
-		prn_msg(__FILE__, __LINE__, "wrn", Mdata->date.getJulianDate(), "Negative unloading!!!");
+		prn_msg(__FILE__, __LINE__, "wrn", Mdata->date, "Negative unloading!!!");
 		unload = 0.0;
 	}
 	Xdata->Cdata.storage -= unload;

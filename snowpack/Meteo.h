@@ -42,10 +42,10 @@ class Meteo {
 		Meteo(const mio::Config& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
-		void compMeteo(SN_MET_DATA *Mdata, SnowStation *Xdata);
+		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
 
  	private:
-		void MicroMet(const SnowStation& Xdata, SN_MET_DATA& Mdata);
+		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata);
 		
 		const mio::Config& cfg;
 		int neutral;

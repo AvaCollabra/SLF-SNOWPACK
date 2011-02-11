@@ -110,10 +110,10 @@ class Radiation {
 
 		Radiation(const mio::Config& i_cfg);
 
-		void radiationOnSlope(const SnowStation& Xdata, SN_MET_DATA& Mdata, SurfaceFluxes& Sdata, 
+		void radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, SurfaceFluxes& Sdata, 
 		                      PositionSun& Psolar, RadiationData& Rdata);
 
-		void flatFieldRadiation(const SnowStation& Xdata, SN_MET_DATA& Mdata, 
+		void flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata, 
 		                        PositionSun& Psolar, RadiationData& Rdata);
 
 	private:
@@ -126,10 +126,10 @@ class Radiation {
 		                      const double& slope_azi, PositionSun& Psolar); 
 
 		//day_number=day of year day_number_equi=days since March equinox
-		void computeDayNumbers(const mio::Date& date, double& day_number, double& day_number_equi);
+		void computeDayNumbers(const mio::Date& date_in, double& day_number, double& day_number_equi);
 
 		//filling PositionSun's daily parameters
-		void computeSolarDailyParameters(const mio::Date& date, PositionSun& Psolar);
+		void computeSolarDailyParameters(const mio::Date& date_in, PositionSun& Psolar);
 
 		//filling PositionSun's hourly parameters
 		void computePositionSun(const double& local_time, const double& Lat, const double& Lon, PositionSun& Psolar);
@@ -141,7 +141,7 @@ class Radiation {
 		                               const double& pressure, const double& rh, const double& ta, RadiationData& Rdata);
 
 		//projection of incoming radiation for a given slope
-		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, SN_MET_DATA& Mdata, RadiationData& Rdata); 
+		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, CurrentMeteo& Mdata, RadiationData& Rdata); 
 
 		const mio::Config& cfg;
 		int sw_mode;
