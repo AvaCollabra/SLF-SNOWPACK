@@ -95,7 +95,7 @@ bool SnowpackIO::writeHazardData(const std::string& station, const std::vector<P
 	} else {
 		return false;
 	}
-#elif
+#else
 	return false;
 #endif
 }
