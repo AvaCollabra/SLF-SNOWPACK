@@ -780,7 +780,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 			// Set the initial short wave radiation to zero
 			Edata[e].sw_abs = 0.;
 			// Phase change variables
-			Edata[e].Qmf = SSdata.Ldata[l].metamo;
+			Edata[e].Qmf = 0.;
 			Edata[e].dth_w = 0.;
 			// Micro-structure data
 			Edata[e].dd = SSdata.Ldata[l].dd;

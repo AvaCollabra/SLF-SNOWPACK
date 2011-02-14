@@ -280,7 +280,7 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	unsigned int rows_deleted = stmt->executeUpdate();
 	conn->terminateStatement(stmt);
 
-	prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
@@ -421,5 +421,5 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		conn->terminateStatement(stmt);
 	}
-	prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
 }

@@ -244,7 +244,6 @@ class LayerData {
 		int    mk;                  ///< Micro-structure : Marker
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
-		double Qmf;                 ///< Energy due to phase changes (melt-freeze)
 		double metamo;              ///< keep track of metamorphism
 
 	private:
@@ -484,15 +483,15 @@ class SnowStation {
 		double Lat;           ///< Latitude in rad
 		double Lon;           ///< Longitude in rad
 		double Alt;           ///< Altidude above sea level
-		double SlopeAzi;      ///< slope aspect in rad(!), clockwise from north N = 0
-		double SlopeAngle;    ///< slope angle in rad(!)
+		double SlopeAzi;      ///< Slope aspect in rad(!), clockwise from north N = 0
+		double SlopeAngle;    ///< Slope angle in rad(!)
 		double Albedo;        ///< Snow albedo
 		double SoilAlb;       ///< Soil albedo
 		double BareSoil_z0;   ///< Bare soil roughness in m
-		int    SoilNode;      ///< the top soil node, 0 in case of SNP_SOIL == 0
-		double cH;            ///< the CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
-		double mH;            ///< the MEASURED snowpack height, including soil depth if SNP_SOIL == 1
-		double Ground;        ///< the ground height -- meaning the height of the top soil node
+		int    SoilNode;      ///< The top soil node, 0 in case of SNP_SOIL == 0
+		double cH;            ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
+		double mH;            ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
+		double Ground;        ///< The ground height -- meaning the height of the top soil node
 		double hn;            ///< Depth of new snow to be used on slopes
 		double rho_hn;        ///< Density of new snow to be used on slopes
 		bool   windward;      ///< True for windward (luv) slope
@@ -512,12 +511,12 @@ class SnowStation {
 		double z_S_5;         ///< Depth of stab_index5
 		std::vector<NodeData> Ndata;  ///< pointer to nodal data array (e.g. T, z, u etc..)
 		std::vector<ElementData> Edata;
-		void *Kt, *Ks;        ///< pointer to pseudo-conductivity and stiffnes matrix
-		double ColdContent;   ///< immediate cold content of snowpack (J m-2)
-		char SubSurfaceMelt;  ///< subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;  ///< subsurface refreezing flag ( yes/no ) for exposition
-		SN_CANOPY_DATA Cdata; ///< pointer to canopy data
-		int tag_low;          ///< lowest tag to dump, 0 means no tags at all
+		void *Kt, *Ks;        ///< Pointer to pseudo-conductivity and stiffnes matrix
+		double ColdContent;   ///< Cold content of snowpack (J m-2)
+		char SubSurfaceMelt;  ///< Subsurface melting flag ( yes/no ) for exposition
+		char SubSurfaceFrze;  ///< Subsurface refreezing flag ( yes/no ) for exposition
+		SN_CANOPY_DATA Cdata; ///< Pointer to canopy data
+		int tag_low;          ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
