@@ -1,13 +1,13 @@
 Begin4
 Title:          libsnowpack
-Version:        1.0.0
-Entered-date:   2010-10-22
+Version:        2.0.0
+Entered-date:   2011-02-15
 Description:    SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.
 Keywords:       snow pack model
 Author:         bavay@slf.ch (Mathias Bavay)
 Maintained-by:  bavay@slf.ch (Mathias Bavay)
 Primary-site:   http://slfsmm.indefero.net p/libsnowpack/downloads/1/get/
-                0.00 M libsnowpack-1.0.0-src.tgz
+                278 k libsnowpack-2.0.0-src.tgz
 Home-page:      http://slfsmm.indefero.net/p/libsnowpack/
 Platforms:      Linux and other Unices, Windows, OsX
 Copying-policy: GNU Lesser Public License version 3
