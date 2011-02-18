@@ -60,10 +60,10 @@ void SnowpackIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSd
 	asciiio.readSnowCover(station, SSdata, Zdata);
 }
 
-void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata, 
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
+                                const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
-	asciiio.writeSnowCover(date, station, Xdata, Zdata, forbackup);
+	asciiio.writeSnowCover(date, station, Xdata, SSdata, Zdata, forbackup);
 }
 	
 void SnowpackIO::writeTimeSeries(const std::string& station, const SnowStation& Xdata, 

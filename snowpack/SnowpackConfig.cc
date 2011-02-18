@@ -31,22 +31,23 @@ const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 
 bool SnowpackConfig::initStaticData()
 {
+	defaultConfig["AVGSUM_TIME_SERIES"] = "1";
 	defaultConfig["ALPINE3D"] = "0";
-	defaultConfig["BACKUP_DAYS_BETWEEN"] = "365";
-	defaultConfig["CHECK_SW_MODE"] = "0";
+	defaultConfig["BACKUP_DAYS_BETWEEN"] = "365.";
 	defaultConfig["CUMSUM_MASS"] = "0";
 	defaultConfig["DOORSCHOT"] = "0";
-	defaultConfig["ERROR_FILE"] = "./snowpack.err"; // deprecated??
+	defaultConfig["EXPERIMENT"] = "NO_EXP";
 	defaultConfig["FIRST_BACKUP"] = "400.";
 	defaultConfig["FIXED_HEIGHTS"] = "5";
 	defaultConfig["FIXED_HN_DENSITY"] = "100.";
 	defaultConfig["FIXED_RATES"] = "0";
+	defaultConfig["FIXED_SENSOR_DEPTH"] = "0.25 0.50 1.0 1.5 -0.1";
 	defaultConfig["FORCE_RH_WATER"] = "1";
-	defaultConfig["HARDNESS_MODEL"] = "default";
+	defaultConfig["HARDNESS_MODEL"] = "DEFAULT";
 	defaultConfig["HEIGHT_NEW_ELEM"] = "0.02";
-	defaultConfig["HOAR_DENSITY_BURIED"] = "125.0";
-	defaultConfig["HOAR_DENSITY_SURF"] = "100.0";
-	defaultConfig["HOAR_MIN_SIZE_BURIED"] = "2.0";
+	defaultConfig["HOAR_DENSITY_BURIED"] = "125.";
+	defaultConfig["HOAR_DENSITY_SURF"] = "100.";
+	defaultConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
 	defaultConfig["HOAR_MIN_SIZE_SURF"] = "0.5";
 	defaultConfig["HOAR_THRESH_RH"] = "0.97";
 	defaultConfig["HOAR_THRESH_VW"] = "3.5";
@@ -55,11 +56,10 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["MASS_BALANCE"] = "0";
 	defaultConfig["MAX_NUMBER_SENSORS"] = "5";
 	defaultConfig["MAX_N_SOLUTES"] = "10";
-	defaultConfig["METAMORPHISM_MODEL"] = "default";
+	defaultConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	defaultConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	defaultConfig["MULTISTREAM"] = "1";
 	defaultConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
-	defaultConfig["NUMBER_SLOPES"] = "1";
 	defaultConfig["OUT_CANOPY"] = "0";
 	defaultConfig["OUT_HAZ"] = "1";
 	defaultConfig["OUT_HEAT"] = "1";
@@ -74,15 +74,16 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["PLASTIC"] = "0";
 	defaultConfig["PRECIP_RATES"] = "1";
 	defaultConfig["RESEARCH"] = "1";
-	defaultConfig["STRENGTH_MODEL"] = "default";
+	defaultConfig["RESEARCH_STATION"] = "STN";
+	defaultConfig["STRENGTH_MODEL"] = "DEFAULT";
 	defaultConfig["SURFACECODE"] = "NEUMANN_BC";
+	defaultConfig["SW_MODE_CHANGE"] = "0";
 	defaultConfig["THRESH_RAIN"] = "1.2";
 	defaultConfig["THRESH_RH"] = "0.5";
 	defaultConfig["T_CRAZY_MAX"] = "340.";
 	defaultConfig["T_CRAZY_MIN"] = "210.";
-	defaultConfig["TIME_ZONE"] = "0.";
-	defaultConfig["VARIANT"] = "default";
-	defaultConfig["VISCOSITY_MODEL"] = "default";
+	defaultConfig["VARIANT"] = "DEFAULT";
+	defaultConfig["VISCOSITY_MODEL"] = "DEFAULT";
 	defaultConfig["WET_LAYER"] = "1";
 	defaultConfig["PREVAILING_WIND_DIR"] = "0.";
 	defaultConfig["WIND_SCALING_FACTOR"] = "1.0";
@@ -126,13 +127,13 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 	} else if (variant == "JAPAN") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_KOJIMA");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "KOJIMA");
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "NIED");
 
 	} else if (variant == "ANTARCTICA") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "DEFAULT");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "CALIBRATION");
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
 
@@ -158,27 +159,29 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 			addKey("HEIGHT_NEW_ELEM", "Parameters", ss.str());
 		}
 		addKey("FIRST_BACKUP", "Parameters", "1200.");
-
 		addKey("FIXED_HEIGHTS", "Parameters", "7");
 		addKey("FIXED_RATES", "Parameters", "7");
 		addKey("MAX_NUMBER_SENSORS", "Parameters", "23");
-		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
+		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.");
 		addKey("T_CRAZY_MIN", "Parameters", "165.");
 		addKey("T_CRAZY_MAX", "Parameters", "300.");
 		addKey("NEW_SNOW_GRAIN_RAD", "Parameters", "0.1");
 
 	} else if (variant == "CALIBRATION") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "VS_CALIBRATION");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "CALIBRATION");
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
 
 		string fixed_heights = get("FIXED_HEIGHTS", "Parameters", Config::nothrow);
 		if (fixed_heights == "") addKey("FIXED_HEIGHTS", "Parameters", "5");
+
 		string fixed_rates = get("FIXED_RATES", "Parameters", Config::nothrow);
 		if (fixed_rates == "") addKey("FIXED_RATES", "Parameters", "0");
+
 		string max_number_sensors = get("MAX_NUMBER_SENSORS", "Parameters", Config::nothrow);
-		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "Parameters", "8");
+		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "Parameters", "5");
+
 		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "Parameters", Config::nothrow);
 		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
 
@@ -206,11 +209,10 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 */
 	//@{
 	int nSlopes = get("NUMBER_SLOPES", "Parameters");
-	if (nSlopes < 2){
-		addKey("AVGSUM_TIME_SERIES", "Parameters", "1");
-	} else {
+	if (nSlopes > 1) {
 		addKey("AVGSUM_TIME_SERIES", "Parameters", "0");
-	} 
+		addKey("CUMSUM_MASS", "Parameters", "0");
+	}
 
 	/**
 	 * @brief Hazard data interval in units of CALCULATION_STEP_LENGTH \n

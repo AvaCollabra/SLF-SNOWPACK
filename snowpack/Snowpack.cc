@@ -114,9 +114,6 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 */
 	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Parameters", height_of_meteo_values);
 
-	/// @brief Time resolution of input data (min; oper: 30.)
-	cfg.getValue("METEO_STEP_LENGTH", "Parameters", meteo_step_length);
-
 	/**
 	 * @brief Defines whether the measured shortwave radiation is incoming
 	 * - (SW_MODE 0 || 10) only incoming SW used
@@ -360,6 +357,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		if (EMS[e].Rho > 910. ||  EMS[e].theta[SOIL] > 0. || EMS[e].theta[ICE] < Constants::eps) {
 			EMS[e].k[SETTLEMENT] = eta = 1.0e99;
 		} else {
+			if ((e > Xdata.SoilNode) && (e < nE-1) && ((EMS[e].Te - Constants::melting_tk) > 0.1)) {
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Temperature above melting (%lf) in snow element %d (nE=%d)", EMS[e].Te, e, nE);
+			}
 			EMS[e].k[SETTLEMENT] = eta = SnLaws::compSnowViscosity(variant, viscosity_model, EMS[e], Mdata.date);
 			if ( !(eta > 0.01 * SnLaws::smallest_viscosity && eta <= 1.e11 * SnLaws::smallest_viscosity) 
 				&& (EMS[e].theta[ICE] > 2. * Constants::min_ice_content) && (EMS[e].theta[ICE] < 0.6) ) {
@@ -380,8 +380,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			if ( (EMS[e].theta[WATER] < 0.01) && (Mdata.vw > Metamorphism::wind_slab_vw) && ((NDS[nE].z - NDS[e].z < Metamorphism::wind_slab_depth) || e==nE-1) ) {
 				wind_slab += Metamorphism::wind_slab_enhance * (Mdata.vw - Metamorphism::wind_slab_vw);
 			}
-			//EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0 ) / eta; //TODO CDOt: new formulation changes sign!
-			EMS[e].EvDot = wind_slab * (EMS[e].C - Sig0 ) / eta;
+			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0 ) / eta;
 			dL = L0 * sn_dt * EMS[e].EvDot;
 			if ( (L0 + dL) < minimum_l_element ) {
 				dL = MIN(0., minimum_l_element - L0);
@@ -569,7 +568,7 @@ void Snowpack::updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xda
 	Sdata.ql += Bdata.ql;
 
 	if ( T_air > C_TO_K(thresh_rain) ) {
-		gamma = Mdata.hnw / M_TO_S(meteo_step_length) * Constants::specific_heat_water;
+		gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (T_air - Tss);
 	} else {
 		Bdata.qr = 0.;
@@ -640,7 +639,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		Fe[1] += Bdata.ql;
 		// Rain Energy
 		if ( T_air > C_TO_K(thresh_rain) ) {
-			gamma = Mdata.hnw / M_TO_S(meteo_step_length) * Constants::specific_heat_water;
+			gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
 			Se[1][1] += gamma;
 			Fe[1] += gamma * T_air;
 		}
@@ -1660,7 +1659,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	WaterTransport watertransport(cfg);
 	Metamorphism metamorphism(cfg);
 	SnowDrift snowdrift(cfg);
-	PhaseChange pc(cfg);
+	PhaseChange phasechange(cfg);
 
 	try {
 
@@ -1707,7 +1706,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		assignSomeFluxes(Xdata, Mdata, mAlb, Sdata);
 		
 		// See if any SUBSURFACE phase changes are occuring
-		pc.runPhaseChange(Sdata, Xdata);
+		phasechange.compPhaseChange(Sdata, Xdata);
 
 		/*
 		 * The water transport routines must be place here, otherwise the temperature

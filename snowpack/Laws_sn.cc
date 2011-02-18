@@ -80,7 +80,7 @@ using namespace mio;
  * static section                                           *
  ************************************************************/
 
-std::string SnLaws::current_variant = "DEFAULT"; //the default variant for SnLaws
+std::string SnLaws::current_variant = "DEFAULT"; // The default variant for SnLaws
 
 /// @brief Switch on or off wind pumping in snow
 const bool SnLaws::wind_pump = true;
@@ -156,21 +156,23 @@ const double SnLaws::smallest_viscosity = 1.0e6;
  * @brief Defines the constants and parameters for computing the snow viscosity \n
  * NOTE The Japanese variant uses a viscosity parametrization by Kojima
  * - t_term Temperature dependence
- * - visc_time_fudge: Empirical constant related to age of snow
- * - visc_ice_fudge : Empirical constant related to volumetric ice content; ori: 0.4
- * - visc_sp_fudge  : Empirical constant related to sphericity of snow grains
- */	
-double SnLaws::visc_time_fudge = 11.;
-double SnLaws::visc_ice_fudge = 0.5;
-double SnLaws::visc_sp_fudge = 0.3;
+ * - visc_time_fudge  : Empirical constant related to age of snow
+ * - visc_ice_fudge   : Empirical constant related to volumetric ice content; ori: 0.4
+ * - visc_sp_fudge    : Empirical constant related to sphericity of snow grains
+ * - visc_water_fudge : Empirical constant related to volumetric water content
+ * - setfix           : Quickfix to "harden" antarctic snow
+ * - vis_cal          : which viscosity fudge to use (calibration)
+ */
+SnLaws::TempDependence SnLaws::t_term = SnLaws::t_term_arrhenius_critical;
+double SnLaws::visc_time_fudge = 0.;
+double SnLaws::visc_ice_fudge = 0.51;
+double SnLaws::visc_sp_fudge = 1.19;
 double SnLaws::visc_water_fudge = 31.;
-bool SnLaws::setfix = false;
-
-double SnLaws::albedoCage = -0.000575;
+bool   SnLaws::setfix;
+SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_new;
 
 SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
-SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_default;
-SnLaws::TempDependence SnLaws::t_term = SnLaws::default_term;
+double SnLaws::albedoCage = -0.000575;
 
 /************************************************************
  * non-static section                                       *
@@ -180,9 +182,10 @@ const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
 bool SnLaws::setStaticData(const std::string& variant)
 {
 	current_variant = variant;
+	IOUtils::toUpper(current_variant);
 
 	if (current_variant == "ANTARCTICA") {
-		t_term = SnLaws::arrhenius_critical;
+		t_term = SnLaws::t_term_arrhenius_critical;
 		visc_time_fudge = 0.;
 		visc_ice_fudge = 0.51;
 		visc_sp_fudge = 1.19;
@@ -190,20 +193,28 @@ bool SnLaws::setStaticData(const std::string& variant)
 		visc_cal = SnLaws::visc_cal_ant;
 		setfix = false;
 	} else if (current_variant == "CALIBRATION") {
-		t_term = SnLaws::arrhenius_critical;
-		visc_time_fudge = 0.;
-		visc_ice_fudge = 0.51;
-		visc_sp_fudge = 1.19; //see factors in Laws_sn.cc
-		visc_water_fudge = 31.;
-		visc_cal = SnLaws::visc_cal_2010;
+		if (true) {
+			t_term = SnLaws::t_term_arrhenius_critical;
+			visc_time_fudge = 0.;
+			visc_ice_fudge = 0.51;
+			visc_sp_fudge = 1.19; //see factors in Laws_sn.cc
+			visc_water_fudge = 31.;
+			visc_cal = SnLaws::visc_cal_2010;
+		} else { // from revision 837
+			t_term = SnLaws::t_term_deprecated;
+			visc_time_fudge = 11.;
+			visc_ice_fudge = 0.5;
+			visc_sp_fudge = 0.3;
+			visc_water_fudge = 31.;
+			visc_cal = SnLaws::visc_cal_deprecated;
+		}
 		setfix = false;
 	} else {
-		t_term = SnLaws::default_term;
-		visc_time_fudge = 11.;
-		visc_ice_fudge = 0.5;
-		visc_sp_fudge = 0.3;
+		t_term = SnLaws::t_term_arrhenius_critical;
+		visc_time_fudge = 0.;
+		visc_ice_fudge = 0.51;
+		visc_sp_fudge = 1.19;
 		visc_water_fudge = 31.;
-		visc_cal = SnLaws::visc_cal_default;
 		setfix = false;
 	}
 
@@ -354,7 +365,6 @@ double SnLaws::compAlbedo(const std::string& variant, const ElementData& Edata, 
 			break;
 		}
 	}
-
 	return(Alb);
 }
 
@@ -878,20 +888,8 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 
 /**
  * @brief Computes the additional stress during initial metamorphic settling process. Note the negative sign!
- * - TODO rewrite description!
- * - Once upon a time: \n
- *   meaning that the strain rate is purely a function of the overburden stress. Experiments, for
- *   example De Quervain's creep experiments, CLEARLY show that snow will settle in the ABSENCE
- *   of a pressure.  This effect is included in ALL the viscosity computations using an INITIAL
- *   STRESS.  This routine finds this stress which is superimposed on the overburden pressure.
- *   Helps predict settlement of NEW snow better.
- * - Now: \n
- *   Added stress sig0 due to surface tension is significant at LOW densities only and when
- *   applied stresses are very small. This formulation differs markedly from the original formulation
- *   which was proposed by Bob Brown and used up to research version r8.0 (see above).
- * @author Michael Lehning
- * @version 9Y.mm
- * @param i_viscosity_model Set the viscosity model to use ("VS_CALIBRATION", "DEFAULT" are relevant)
+ * @version 11.02
+ * @param i_viscosity_model Set the viscosity model to use ("DEFAULT", "KOJIMA", "CALIBRATION" are relevant)
  * @param Edata
  * @param date current
  * @return Initial stress (Pa)
@@ -901,7 +899,7 @@ double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementDa
 	string viscosity_model(i_viscosity_model);
 	IOUtils::toUpper(viscosity_model);
 
-	if (viscosity_model == "VS_CALIBRATION") {
+	if (viscosity_model == "CALIBRATION") {
 		return initialStressCALIBRATION(Edata, date);
 	} else {
 		return initialStressDEFAULT(Edata, date);
@@ -910,31 +908,21 @@ double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementDa
 
 double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
 {
-	//TODO CDot: uncomment
-	//double sigReac=0., sigMetamo=0.;
-	//const double age = MAX(0., date.getJulianDate() - Edata.date.getJulianDate());
+	double sigReac=0., sigMetamo=0.;
+	const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 
-	//sigReac = 15.9 * Edata.CDot * exp(-age / 101.);
-	//if (Edata.dd > Constants::eps) {
-	//	sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata);
-	//}
-	//return sigReac + sigMetamo;
-
-	// default r837
-	(void) date;
-	const double sigTension = 0.11;  // Ice surface tension (N m-2)
-	if ((Edata.dd < 0.9) && (Edata.dd > 0.3)) { // default r837, factor -3. from r712
-		return (-3. * Metamorphism::ddRate(Edata) * sigTension / MM_TO_M(Edata.rg));
-	} else {
-		return 0.;
+	sigReac = 15.9 * Edata.CDot * exp(-age / 101.);
+	if (Edata.dd > Constants::eps) {
+		sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata);
 	}
+	return sigReac + sigMetamo;
 }
 
 double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& date)
 {
-	const unsigned int version = 0;
 	const double sigTension = 0.11;  // Ice surface tension (N m-2)
 
+	const unsigned int version = 0;
 	switch (version) {
 	case 837: // as of revision 837
 		if ((Edata.dd < 0.9) && (Edata.dd > 0.3)) {
@@ -975,16 +963,14 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 /**
  * @brief Determines the fudge factor for viscosity \n
  * This fudge factor takes into account bond-ice imperfections and the effect of liquid water
- * @version 9.10
+ * @version 11.02
  * @param Edata
  * @param date current date
  * @return Fudge factor for snow viscosity
  */
-double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Date& date)
+double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
 {
-	double visc_fudge=0., sp_fudge;
-	double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
-	const double thresh_rho1=0.5, thresh_rho2=0.7; // Thresholds for enhanced viscosity
+	double visc_fudge, sp_fudge;
 
 	if ( Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005 ) {
 		sp_fudge = 0.;
@@ -992,16 +978,11 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Da
 		sp_fudge = SnLaws::visc_sp_fudge;
 	}
 
-	visc_fudge += SnLaws::visc_time_fudge * (1. - sqrt(MIN(1., age / 77.))) * (1. + MIN(0.3, (263.15 - Edata.Te) / 17.));
-	visc_fudge += (SnLaws::visc_ice_fudge / Edata.theta[ICE]) + (sp_fudge * sqrt(Edata.sp))
-		+ (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5 * (1. - Edata.theta[ICE]));
-
-	if ( Edata.theta[ICE] > thresh_rho1 ) {
-		visc_fudge *= (1. - Edata.theta[ICE]);
-	}
-	if ( Edata.theta[ICE] > thresh_rho2 ) {
-		visc_fudge *= (1. - Edata.theta[ICE]);
-	}
+	double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
+	ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
+	sp_fudge *= (1. - logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
+	visc_fudge = ice_fudge * (1. + sp_fudge) + 0.1;
+	visc_fudge *= (1. + SnLaws::visc_water_fudge * Edata.theta[WATER] * (1. - Edata.theta[ICE]*Edata.theta[ICE]));
 	return visc_fudge;
 }
 
@@ -1027,12 +1008,12 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 	}
 
 	switch (SnLaws::visc_cal) {
-		case SnLaws::visc_cal_new: {} // Calibration currently under test
-		case SnLaws::visc_cal_2010: case SnLaws::visc_cal_ant: { // Calibration fall 2010 & adaptation to Antarctica TODO by Fierz
+		case SnLaws::visc_cal_new: // Calibration currently under test
+		case SnLaws::visc_cal_2010: case SnLaws::visc_cal_ant: { // Calibration fall 2010 & adaptation to Antarctica; see revision xxx TODO by Fierz
 			double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
 			if ( SnLaws::visc_cal != SnLaws::visc_cal_ant ) {
 				ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
-			} else {  // TODO doit!
+			} else {  // antarctic
 				ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.351, 0.097) * Edata.theta[ICE] * (1. - Edata.theta[ICE]);
 			}
 			sp_fudge *= (1. - logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
@@ -1048,7 +1029,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 			use_thresh=true;
 			break;
 		}
-		default: { // calibrated version r837
+		default: { // deprecated, see revision 837
 			visc_fudge += SnLaws::visc_time_fudge * (1. - sqrt(MIN(1., age / 77.))) * (1. + MIN(0.3, (263.15 - Edata.Te) / 17.));
 			visc_fudge += (SnLaws::visc_ice_fudge / Edata.theta[ICE]) + (sp_fudge * sqrt(Edata.sp))
 				+ (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5 * (1. - Edata.theta[ICE]));
@@ -1070,39 +1051,35 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 
 /**
  * @brief Computes the temperature term of viscosity
- * @author Charles Fierz
- * @version 9.10
+ * @version 11.02
  * @param Te Element temperature
  * @return Temperature term of snow viscosity
  */
 double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 {
-	const double Q = 67000.; // Activation energy for defects in ice J mol-1
+	const double Q = 67000.; // Activation energy for defects in ice (J mol-1)
 
 	switch (SnLaws::t_term) {
-		case SnLaws::arrhenius:
+		case SnLaws::t_term_arrhenius:
 			return (1. / lw_ArrheniusLaw(Q, Te, 263.));
 			break;
-			case SnLaws::arrhenius_critical: {
-				const double Q_fac=0.39; // Adjust Q to snow. from Sz: 0.24; Ml: 0.39; Fz: 0.31
-				const double T_r=265.15; // Reference temperature (K); ori: 265.15 + 2.15
-				return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r)) * (0.3 * sqrt(Constants::melting_tk - Te) + 0.4));
-				break;
-			}
-			case SnLaws::steinkogler: { // Master thesis, September 2009
-				return (0.35 * pow((274.15 - Te), 0.5));
-				break;
-			}
-			default: { // from r243
-				return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
-				break;
-			}
+		case SnLaws::t_term_arrhenius_critical: {
+			const double Q_fac=0.39; // Adjust Q to snow; from Schweizer et al. (20??): 0.24
+			const double T_r=265.15; // Reference temperature (K), from Schweizer et al. (20??)
+			return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r)) * (0.3 * sqrt(Constants::melting_tk - Te) + 0.4));
+			break;
+		}
+		case SnLaws::t_term_steinkogler: // Master thesis, September 2009
+			return (0.35 * pow((274.15 - Te), 0.5));
+			break;
+		default: // deprecated from revision 243
+			return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
+			break;
 	}
 }
 
 /**
  * @brief SNOW VISCOSITY (all types of snow)
- * TODO revise description
  * @param variant current
  * @param i_viscosity_model to use
  * @param Edata
@@ -1116,12 +1093,12 @@ double SnLaws::compSnowViscosity(const std::string& variant, const std::string& 
 	string viscosity_model(i_viscosity_model);
 	IOUtils::toUpper(viscosity_model);
 
-	if (viscosity_model == "VS_KOJIMA"){
-		return snowViscosityKOJIMA(Edata, date);
-	} else if (viscosity_model == "VS_CALIBRATION"){
+	if (viscosity_model == "KOJIMA") {
+		return snowViscosityKOJIMA(Edata);
+	} else if (viscosity_model == "CALIBRATION") {
 		return snowViscosityCALIBRATION(Edata, date);
-	} else if (viscosity_model == "DEFAULT"){
-		return snowViscosityDEFAULT(Edata, date);
+	} else if (viscosity_model == "DEFAULT") {
+		return snowViscosityDEFAULT(Edata);
 	} else {
 		throw InvalidArgumentException("Unknown viscosity model: "+viscosity_model, AT);
 	}
@@ -1130,56 +1107,34 @@ double SnLaws::compSnowViscosity(const std::string& variant, const std::string& 
 /**
  * @brief SNOW VISCOSITY (all types of snow)
  * TODO revise description
- * - bb_lw_VS_Montana from r7.7
- * - Fudge : according to Ml (8.1)
- * - Bob Brown's MICRO-STRUCTURE law Clearly the BEST law we have right now
- *   but also the most UNSTABLE:  note that the viscosity is not only a function of the grain
- *   dimensions, but also a function of the overburden stress.
- *   A series of equations that collectively give the viscosity Vis = S/eDot.
- *   The microstructure parameters rb and rg are obtained through Edata pointer and are in mm.
- *   The secondary microstructure parameters  L and rc are also computed in mm. This means that
- *   the dimensions of rg, rb, L, &  rc are in mm since they show up in the following  equations
- *   as ratios to give dimensionless numbers.
- * 	- LINEAR:
- *    This viscosity is not a function of stress and is therefore a linear viscosity.  Its value
- *    depends on rb, rg, N3, Edata.theta[ICE] and T. The expression  ((N3*Edata.theta[ICE])/(4.))*((rb*rb)/(rg*rg))
- *    determines the neck stress relative to the snow stress.
- * 	- NON-LINEAR:
- *    The units here are in m, s and Pa. Vis has dimensions of Pa s.
- *    Note that the viscosity is a function of the square of the applied stress.
- *    Density does not show up explicitly, but is buried implicitly in the equation
- *    because N3, L, rg and rb all change with time as the material deforms.
- * @author Michael Lehning \n Charles Fierz
- * @version 9.10
- * @param *Edata
+ * @version 11.02
+ * @param Edata
  * @return Snow viscosity (Pa s)
  */
-double SnLaws::snowViscosityDEFAULT(ElementData& Edata, const mio::Date& date)
+double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 {
 	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
 	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
-	const double sig = -Edata.C;      // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	double Te;                         // Element temperature (K)
-	double visc_macro, visc_micro;           // Structure related multiplying factors
-	double visc_fudge, visc_factor;          // Fit and reference parameters
+	const double sig = -Edata.C;       // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+	double visc_macro, visc_micro;     // Structure related multiplying factors
+	double visc_fudge, visc_factor;    // Fit and reference parameters
 	double eta;                        // Viscosity (Pa s)
 
-	Te = MIN(Edata.Te, Constants::melting_tk);
-
 	// Check needed while JAM set!
-	if ( Edata.theta[WATER] > 0.3 ) {
+	if (Edata.theta[WATER] > 0.3) {
 		return (1.e9 * SnLaws::smallest_viscosity);
 	}
 	// Check that you are not in a ice or/and water layer
-	if ( Edata.theta[ICE] + Edata.theta[WATER] > 0.99 ) {
+	if (Edata.theta[ICE] + Edata.theta[WATER] > 0.99) {
 		return (1.e9 * SnLaws::smallest_viscosity);
 	}
 
-	visc_fudge = SnLaws::snowViscosityFudgeDEFAULT(Edata, date);
+	visc_fudge = SnLaws::snowViscosityFudgeDEFAULT(Edata);
 	visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
 	visc_macro = Edata.neck2VolumetricStrain();
 	visc_micro = Edata.neckStressEnhancement();
+	double Te = MIN(Edata.Te, Constants::melting_tk);
 	eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
 	if ( (visc_micro * sig) <= 100. * sigNeckYield ) {
@@ -1195,12 +1150,11 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata, const mio::Date& date)
  * @brief SNOW VISCOSITY according to formulation by Kojima
  * @version 9.10
  * @param Edata
- * @param date current date
+ * @param date current
  * @return Snow viscosity (Pa s)
  */
-double SnLaws::snowViscosityKOJIMA(const ElementData& Edata, const mio::Date& date)
+double SnLaws::snowViscosityKOJIMA(const ElementData& Edata)
 {
-	(void)(date);
 	return (8.64e6 * exp(0.021*Edata.Rho));
 }
 
@@ -1209,7 +1163,7 @@ double SnLaws::snowViscosityKOJIMA(const ElementData& Edata, const mio::Date& da
  * NOTE This is the test or playground version for calibrating settling
  * @version 10.11
  * @param Edata
- * @param date current date
+ * @param date current
  * @return Snow viscosity (Pa s)
  */
 double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date)
@@ -1239,7 +1193,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	if (true && Edata.theta[WATER] > 0.3) {
 		return (1.e9 * SnLaws::smallest_viscosity);
 	} else if (false && Edata.theta[WATER] >= 0.005) {
-		return SnLaws::snowViscosityKOJIMA(Edata, date);
+		return SnLaws::snowViscosityKOJIMA(Edata);
 	}
 	// Check that you are not in a ice or/and water layer
 	if (Edata.theta[ICE] + Edata.theta[WATER] > 0.99) {

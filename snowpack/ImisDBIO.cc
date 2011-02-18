@@ -62,7 +62,7 @@ void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /
 }
 
 void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
-                              const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
+                              const SN_SNOWSOIL_DATA& /*SSdata*/, const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
@@ -216,9 +216,10 @@ bool ImisDBIO::writeHazardData(const std::string& station, const vector<ProcessD
 
 	} catch (exception& e){
 		Environment::terminateEnvironment(env); // static OCCI function
-		prn_msg(__FILE__, __LINE__, "err", mio::Date(), "while writing hazard data for %s to %s,",
+		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
+		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing hazard data for %s to %s,",
 		        station.c_str(), oracleDB.c_str());
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "between %s and %s",
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "from %s to %s",
 		        Hdata[0].date.toString(mio::Date::ISO).c_str(), Hdata[num-1].date.toString(mio::Date::ISO).c_str());
 		throw IOException("Oracle Error: " + string(e.what()), AT); //Translation of OCCI exception to IOException
 	}

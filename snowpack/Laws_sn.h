@@ -41,19 +41,18 @@ class SnLaws {
 
 		/// To define which version to use while calibrating
 		enum ViscosityCalVersion {
-			visc_cal_default=0,       ///< version currently in use
 			visc_cal_new=111,         ///< version currently under test
 			visc_cal_2010=333,        ///< calibration fall 2010 by Fierz
 			visc_cal_ant=555,         ///< calibration fall 2010 adapted to Antarctica
-			visc_cal_steinkogler=999  ///< calibration 2009 by Walter Steinkogler (MSc thesis)
+			visc_cal_steinkogler=777, ///< calibration 2009 by Walter Steinkogler (MSc thesis)
+			visc_cal_deprecated=999   ///< deprecated version
 		};
 		/// To define which temeperature dependence to use for snow viscosity
 		enum TempDependence {
-			default_term,
-			arrhenius,
-			arrhenius_critical,
-			steinkogler,
-			n_t_term
+			t_term_arrhenius_critical,
+			t_term_arrhenius,
+			t_term_steinkogler,
+			t_term_deprecated=999
 		};
 
 		/**
@@ -98,13 +97,13 @@ class SnLaws {
 		static double compInitialStress(const std::string& variant, ElementData& Edata, const mio::Date& date);
 		static double initialStressDEFAULT(ElementData& Edata, const mio::Date& date);
 		static double initialStressCALIBRATION(ElementData& Edata, const mio::Date& date);
-		static double snowViscosityFudgeDEFAULT(const ElementData& Edata, const mio::Date& date);
+		static double snowViscosityFudgeDEFAULT(const ElementData& Edata);
 		static double snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date);
 		static double snowViscosityTemperatureTerm(const double& Te);
 		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model,
 		                                ElementData& Edata, const mio::Date& date);
-		static double snowViscosityDEFAULT(ElementData& Edata, const mio::Date& date);
-		static double snowViscosityKOJIMA(const ElementData& Edata, const mio::Date& date);
+		static double snowViscosityDEFAULT(ElementData& Edata);
+		static double snowViscosityKOJIMA(const ElementData& Edata);
 		static double snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date);
 
 		static const double smallest_viscosity, field_capacity_soil;

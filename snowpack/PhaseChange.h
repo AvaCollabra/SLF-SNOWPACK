@@ -37,7 +37,7 @@ class PhaseChange {
  	public:
 		PhaseChange(const mio::Config& i_cfg);
 
-		void runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata);
+		void compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata);
 
 	private:
 		void compSubSurfaceMelt(ElementData& Edata, const double& dt, double& ql_Rest);

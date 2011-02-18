@@ -46,9 +46,9 @@ class AsciiIO : public SnowpackIOInterface {
 		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+                                const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 		
-		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
+		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata,
 		                             const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 		
@@ -108,7 +108,7 @@ class AsciiIO : public SnowpackIOInterface {
 		std::string variant, experiment, outpath, i_snopath, o_snopath;
 
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
-		std::vector<double> depth_of_sensors;
+		std::vector<double> fixed_sensor_depth;
 
 		int CHANGE_BC, MEAS_TSS;
 

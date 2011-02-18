@@ -251,7 +251,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const double& dt)
  * A = c_p(T) * th(i) * Q_f
  * @param *Xdata
  */
-void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
+void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 {
 	int e, nE;
 	double ql_Rest; // Energy that is transferred from the upper element to the lower one in case of complete melting of the former
@@ -279,7 +279,7 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 			}
 		}
 		
-		if ( Xdata.SubSurfaceMelt ) {
+		if (Xdata.SubSurfaceMelt) {
 			double thresh_th_w;
 			for (e = nE-1, ql_Rest = 0.; e >= 0; e--) {
 				try {
@@ -354,14 +354,14 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 			if (EMS[e].theta[SOIL] == 0.) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
 					prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: rho[%d]=%lf", e, EMS[e].Rho);
-					throw IOException("Runtime error in runPhaseChange()", AT);
+					throw IOException("Run-time error in compPhaseChange()", AT);
 				}
 			}
 			// Also make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
 				prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
 								e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
-				throw IOException("Runtime error in runPhaseChange()", AT);
+				throw IOException("Run-time error in compPhaseChange()", AT);
 			}
 			cold_content_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - Constants::melting_tk) * EMS[e].L;
 			sum_Qmf += EMS[e].Qmf * EMS[e].L;
@@ -374,11 +374,10 @@ void PhaseChange::runPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 				   Sdata.qs + Sdata.ql + Sdata.lw_net + Sdata.qr + Sdata.qw);
 		}
 	} catch (exception& ex) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "Runtime error in runPhaseChange()");
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Run-time error in compPhaseChange()");
 		throw;
 	}
 }
-
 
 /*
  * END of Phase Change

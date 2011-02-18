@@ -159,7 +159,7 @@ class Snowpack {
 		BoundaryCondition surfaceCode;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSnowLayers;
 		int sw_mode;
-		double thresh_change_bc, geo_heat, height_of_meteo_values, meteo_step_length, height_new_elem, thresh_rain, sn_dt;
+		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh;
 		bool multistream, join_elements, change_bc, meas_tss;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;

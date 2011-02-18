@@ -157,7 +157,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	char fp[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
 	int j, n_files;
 
-	if (experiment != "none") {
+	if (experiment != "NO_EXP") {
 		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", station.c_str(), experiment.c_str());
 	}
 	for (unsigned int ii=0; ii<vecExtension.size(); ii++){

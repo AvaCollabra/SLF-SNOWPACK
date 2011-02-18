@@ -155,7 +155,7 @@ class CurrentMeteo {
 		double ea;     ///< Atmospheric emissivity (1)
 		double tss;    ///< Snow surface temperature (K)
 		double ts0;    ///< Bottom temperatures of snow/soil pack (K)
-		double hnw;    ///< The water equivalent of snowfall. Presently used in research mode only and given in mm w.e. (kg m-2) per METEO_STEP_LENGTH
+		double hnw;    ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
 		double hs1;    ///< The measured height of snow (m), corrected for spikes etc. in ml_co_Control()
 	
 		std::vector<double> ts;        ///< Snowpack and/or Soil temperatures (K)
@@ -259,10 +259,11 @@ class SN_SNOWSOIL_DATA {
 
 	public:
 
-		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : profileDate(0., 0.), nN(0), Height(0.0),
-                     ErosionLevel(0), nLayers(0), Hslast(0.0), Albedo(0.0), SoilAlb(0.0),
-                     BareSoil_z0(0.0), Lat(0.0), Lon(0.0), Alt(0.0), Azi(0.0), Angle(0.0),
-                     Canopy_Height(0.0), Canopy_LAI(0.0), Canopy_Direct_Throughfall(0.0),
+		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : profileDate(0., 0.), nN(0), Height(0.),
+                     nLayers(0), Hslast(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
+                     Lat(0.), Lon(0.), Alt(0.), Azi(0.), Angle(0.),
+                     Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
+                     WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.),
                      max_number_of_solutes(i_max_number_of_solutes)
 		{
 			Ldata.clear();
@@ -271,7 +272,6 @@ class SN_SNOWSOIL_DATA {
 		mio::Date profileDate;            ///< Date of profile
 		int nN;                           ///< Total number of FE nodes
 		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
-		int ErosionLevel;                 ///< Indicates the initial erosion level for the flat field
 		int nLayers;                      ///< Total number of snowpack layers
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
 		double Hslast;                    ///< Last checked measured Snow Height
@@ -286,6 +286,9 @@ class SN_SNOWSOIL_DATA {
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
+		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
+		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
+		double TimeCountDeltaHS;          ///< Time counter tracking erroneous settlement in operational mode
 
 	private:
 		unsigned int max_number_of_solutes;

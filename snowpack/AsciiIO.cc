@@ -119,9 +119,9 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
 	cfg.getValue("SNP_SOIL", "Parameters", useSnowLayers);
 	cfg.getValue("T_INTERNAL", "Parameters", t_internal);
-	cfg.getValue("DEPTH", "Parameters", depth_of_sensors);
-	if (depth_of_sensors.size() != (unsigned)fixed_heights)
-		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key DEPTH must match", AT);
+	cfg.getValue("FIXED_SENSOR_DEPTH", "Parameters", fixed_sensor_depth);
+	if (fixed_sensor_depth.size() != (unsigned)fixed_heights)
+		throw InvalidArgumentException("FIXED_HEIGHTS and the number of values for key FIXED_SENSOR_DEPTH must match", AT);
 
 	cfg.getValue("RESEARCH", "Parameters", research_mode);
 
@@ -153,7 +153,7 @@ void AsciiIO::cleanup() throw()
  * @param station name
  * @param SSdata
  * @param Zdata
-*/
+ */
 void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
 	string filename = getFilenamePrefix(station, i_snopath) + ".sno";
@@ -200,13 +200,6 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSoilLayerData' in Snowfile (*.sno), but SNP_SOIL set");
 		throw IOException("Cannot generate Xdata", AT);
 	}
-	// Use this to mask the Erosion Level in operational mode -- use negative sign
-	if ( SSdata.nLayers < 0 ) {
-		SSdata.ErosionLevel = -SSdata.nLayers;
-		SSdata.nLayers = 0;
-	} else {
-		SSdata.ErosionLevel = 0;
-	}
 	// Number of Snow Layers
 	if (fscanf(fin, "\nnSnowLayerData=%d", &dum) != 1) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSnowLayerData' in Snowfile (*.sno)");
@@ -235,13 +228,17 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	fscanf(fin, "\nCanopyHeight=%lf",&SSdata.Canopy_Height);
 	fscanf(fin, "\nCanopyLeafAreaIndex=%lf",&SSdata.Canopy_LAI);
 	fscanf(fin, "\nCanopyDirectThroughfall=%lf",&SSdata.Canopy_Direct_Throughfall);
+	// Additional parameters
+	fscanf(fin, "\nWindScalingFactor=%lf",&SSdata.WindScalingFactor);
+	fscanf(fin, "\nErosionLevel=%d",&SSdata.ErosionLevel);
+	fscanf(fin, "\nTimeCountDeltaHS=%lf",&SSdata.TimeCountDeltaHS);
 
 	// Allocate Space for the Layers
 	if (SSdata.nLayers > 0)
 		SSdata.Ldata.resize(SSdata.nLayers, LayerData(max_number_of_solutes));
 
 	// Read the layer data
-	if ( fscanf(fin,"\nYYYY") < 0 ) {
+	if (fscanf(fin,"\nYYYY") < 0) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading layer header in Snowfile (*.sno)");
 		throw IOException("Cannot generate Xdata", AT);
 	}
@@ -250,7 +247,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 		fscanf(fin, " %d %d %d %d %d", &YYYY, &MM, &DD, &HH, &MI);
 		SSdata.Ldata[ll].layerDate = Date(YYYY, MM, DD, HH, MI, time_zone);
 
-		if ( SSdata.Ldata[ll].layerDate > SSdata.profileDate ) {
+		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) in Snowfile (*.sno)", ll+1, SSdata.Ldata[ll].layerDate.getJulianDate(), SSdata.profileDate.getJulianDate());
 			throw IOException("Cannot generate Xdata", AT);
 		}
@@ -265,8 +262,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 			SSdata.Ldata[ll].rb = Metamorphism::max_grain_bond_ratio * SSdata.Ldata[ll].rg;
 			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%lf (rb=%lf mm, rg=%lf mm)! Reset to Metamorphism::max_grain_bond_ratio", ll+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[ll].rb, SSdata.Ldata[ll].rg);
 		}
-		//TODO CDot: enable to read additional parameters!
-		//fscanf(fin, "%lf %lf", &SSdata.Ldata[ll].CDot, &SSdata.Ldata[ll].Qmf, &SSdata.Ldata[ll].metamo);
+		fscanf(fin, "%lf %lf", &SSdata.Ldata[ll].CDot, &SSdata.Ldata[ll].metamo);
 		for (int ii = 0; ii < N_SOLUTES; ii++) {
 			fscanf(fin," %lf %lf %lf %lf ", &SSdata.Ldata[ll].cIce[ii], &SSdata.Ldata[ll].cWater[ii], &SSdata.Ldata[ll].cVoids[ii], &SSdata.Ldata[ll].cSoil[ii]);
 		}
@@ -317,7 +313,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
 	}
 
 	fclose(fin);
-} // End readXData
+}
 
 /**
  * @brief This routine writes the status of the snow cover at program termination and at specified backup times
@@ -329,7 +325,7 @@ void AsciiIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata
  * @param forbackup dump Xdata on the go
  */
 void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
-                             const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+                             const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	FILE *fout=NULL;
 
@@ -368,27 +364,26 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 	fprintf(fout, "\nSlopeAzi= %.2lf",   RAD_TO_DEG(Xdata.SlopeAzi));
 
 	// Number of Soil Layer Data; in case of no soil used to store the erosion level
-	if ( Xdata.SoilNode > 0 ) {
-		fprintf(fout, "\nnSoilLayerData= %d", Xdata.SoilNode);
-	} else {
-		fprintf(fout, "\nnSoilLayerData= %d", -Xdata.ErosionLevel);
-	}
-
+	fprintf(fout, "\nnSoilLayerData= %d", Xdata.SoilNode);
 	// Number of Snow Layer Data
 	fprintf(fout, "\nnSnowLayerData= %d", Xdata.getNumberOfElements() - Xdata.SoilNode);
 
 	// Ground Characteristics (introduced June 2006)
 	fprintf(fout, "\nSoilAlbedo= %.2lf", Xdata.SoilAlb);
 	fprintf(fout, "\nBareSoil_z0= %.3lf", Xdata.BareSoil_z0);
-
 	// Canopy Characteristics
 	fprintf(fout, "\nCanopyHeight= %.2lf",Xdata.Cdata.height);
 	fprintf(fout, "\nCanopyLeafAreaIndex= %.6lf",Xdata.Cdata.lai);
 	fprintf(fout, "\nCanopyDirectThroughfall= %.2lf",Xdata.Cdata.direct_throughfall);
+	// Additional parameters
+	fprintf(fout,"\nWindScalingFactor= %lf",SSdata.WindScalingFactor);
+	fprintf(fout,"\nErosionLevel= %d",Xdata.ErosionLevel);
+	fprintf(fout,"\nTimeCountDeltaHS= %lf",SSdata.TimeCountDeltaHS);
 
 	// Layer Data
 	fprintf(fout, "\nYYYY MM DD HH MI Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V ");
 	fprintf(fout, " Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne");
+	fprintf(fout, " CDot metamo");
 	for (int ii = 0; ii < N_SOLUTES; ii++) {
 		fprintf(fout, " cIce cWater cAir  cSoil");
 	}
@@ -401,8 +396,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const std::string& station, 
 		fprintf(fout," %7.4lf %6.1lf %4.1lf %6.1lf %5.2lf %5.2lf %5.2lf %5.2lf %4d %7.5lf 1",
 			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
-		//TODO CDot: enable to write additional parameters
-		//fprintf(fout," %10.3e %10.3e %lf", EMS[e].CDot, EMS[e].Qmf, EMS[e].metamo);
+		fprintf(fout," %10.3e %lf", EMS[e].CDot, EMS[e].metamo);
 		for (int ii = 0; ii < N_SOLUTES; ii++) {
 			fprintf(fout, "  %lf %9.7lf %9.7lf %9.7lf", EMS[e].conc(ICE,ii), EMS[e].conc(WATER,ii),
 			        EMS[e].conc(AIR,ii), EMS[e].conc(SOIL,ii));
@@ -439,7 +433,7 @@ std::string AsciiIO::getFilenamePrefix(const std::string& stationname, const std
 	//TODO: read only once (in constructor)
 	string filename_prefix = path + "/" + stationname;
 
-	if ((experiment != "none") && (experiment != "opera")) //in operational mode, nothing is appended
+	if ((experiment != "NO_EXP") /*&& (experiment != "opera")*/) //in operational mode, nothing is appended
 		filename_prefix += "_" + experiment; // complete filename_prefix
 
 	return filename_prefix;
@@ -1408,7 +1402,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\nSlopeAzi= %.2lf",   RAD_TO_DEG(va_Xdata->SlopeAzi));
 			fprintf(fout, "\nDepthTemp= %1d",    useSnowLayers);
 			for (i = 0; i < fixed_heights; i++) {
-				fprintf(fout, ",%.3lf", depth_of_sensors[i]);
+				fprintf(fout, ",%.3lf", fixed_sensor_depth[i]);
 			}
 			fprintf(fout, "\n\n[HEADER]");
 			if ( out_haz ) { // HACK To avoid troubles in A3D

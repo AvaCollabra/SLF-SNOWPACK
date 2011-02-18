@@ -32,7 +32,7 @@ class SnowpackIOInterface {
 		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata) = 0;
 	  
 		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
-		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false) = 0;
+                                const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false) = 0;
 		
 		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
 		                             const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,

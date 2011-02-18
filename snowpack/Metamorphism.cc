@@ -180,7 +180,7 @@ double Metamorphism::csPoreArea(const ElementData& Edata)
  * @brief This routine estimates the coordination number as a function of the snow density,
  * used for both the FRENCH and MONTANA metamorphism models.  The MONTANA model
  * uses the coordination number to determine the thermal conductivity of snow. The
- * constants are based on EXPERIMENTAL results. This is  a TYPICAL MONTANA State
+ * constants are based on experimental results. This is  a typical montana State
  * University routine -- a bunch of defines with a lot of unusual constants, a bunch
  * of multiplications and then a return.  And they expect us to believe this stuff.
  * @param Rho Snow density (kg m-3)
