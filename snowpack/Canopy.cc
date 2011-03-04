@@ -1437,6 +1437,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	}
 	if ( Xdata->Cdata.lai <= 0.0 ) {
 		Xdata->Cdata.lai = 0.0;
+		return; //abort function execution, there is no canopy at this point
 	}
 	if ( Xdata->Cdata.height <= 0.0 ) {
 		Xdata->Cdata.height = 0.0;
