@@ -403,7 +403,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
  * @author Michael Lehning \n Mathis Bavay
  * @date 2008-03-07
  * @param hs1 Snow depth to correct
- * @param *Xdata
+ * @param Xdata
  * @return Eroded mass (kg m-2)
  */
 double forcedErosion(const double hs1, SnowStation& Xdata)
@@ -432,13 +432,12 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  * feature. But it will make the operational users happy, I hope. \n
  * Implemented on 2 Feb 2008 (and 7 Mar 2008: back to erosion) by Mathias Bavay
  * and Michi, who should be home with Leo being sick ...
- * @param *Mdata
- * @param *Xdata
- * @param *time_counter
- * @param *dhs_corr Correction on snow depth (m)
- * @param *mass_corr Mass correction (kg m-2)
+ * @param Mdata
+ * @param Xdata
+ * @param dhs_corr Correction on snow depth (m)
+ * @param mass_corr Mass correction (kg m-2)
  */
-void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr)
+void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
 {
 	int    e, nE, nSoil;                         // Element counter
 	double factor_corr, sum_total_correction=0.; // Correction factor
@@ -456,16 +455,16 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_c
 	 * wrong with the model. For now assume erosion if more than 3 cm are missing
 	 */
 	if ( (Mdata.hs1 + 0.03) < cH ) {
-		*dhs_corr = Mdata.hs1 - cH;
-		*mass_corr = forcedErosion(Mdata.hs1, Xdata);
+		dhs_corr = Mdata.hs1 - cH;
+		mass_corr += forcedErosion(Mdata.hs1, Xdata);
 		if ( 0 ) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 	} else {
 		// assume settling error
-		*dhs_corr = Mdata.hs1 - cH;
-		*mass_corr = 0.;
+		dhs_corr = Mdata.hs1 - cH;
+		mass_corr += 0.;
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
@@ -489,7 +488,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_c
 		if ( sum_total_correction > 0. ) {
 			factor_corr = (Mdata.hs1 - cH) / sum_total_correction;
 		} else {
-			*dhs_corr = 0.;
+			dhs_corr = 0.;
 			return;
 		}
 		// ... above marked element (translation only) ...
@@ -504,7 +503,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_c
 				ddL = 0.;
 			}
 			dL += ddL;
-			*mass_corr += ddL*EMS[e].Rho;
+			mass_corr += ddL*EMS[e].Rho;
 			NDS[e+1].z += dL + NDS[e+1].u;
 			NDS[e+1].u  = 0.0;
 			EMS[e].M += ddL*EMS[e].Rho;

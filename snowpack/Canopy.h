@@ -33,7 +33,7 @@ class Canopy {
  	public:
 		Canopy(const mio::Config& i_cfg);
 
-		static void cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
+		static void cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		
 		void runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length,
 						double height_of_wind_val);
@@ -72,7 +72,7 @@ class Canopy {
 
 		double cn_CanopyTransmissivity(const double& lai, const double& elev);
 
-		void cn_LineariseNetRadiation(const CurrentMeteo& Mdata,const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
+		void cn_LineariseNetRadiation(const CurrentMeteo& Mdata,const CanopyData& Cdata, const SnowStation& Xdata,
 								double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
 								const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
 								const double& sigfdirect, double& r1p);

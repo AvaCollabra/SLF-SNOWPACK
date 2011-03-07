@@ -60,34 +60,32 @@ void SnowpackIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSd
 	asciiio.readSnowCover(station, SSdata, Zdata);
 }
 
-void SnowpackIO::writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
-                                const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
+                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
-	asciiio.writeSnowCover(date, station, Xdata, SSdata, Zdata, forbackup);
+	asciiio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
 }
-	
-void SnowpackIO::writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
-                                 const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+
+void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                  const ProcessDat& Hdata, const double wind_trans24)
 {
-	asciiio.writeTimeSeries(station, Xdata, Sdata, Mdata, Hdata, wind_trans24);
+	asciiio.writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
-	
-void SnowpackIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                              SnowStation& Xdata, const ProcessDat& Hdata)
+
+void SnowpackIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
 	if (outputprofile_as_ascii)
-		asciiio.writeProfile(date, station, expo, Xdata, Hdata);
+		asciiio.writeProfile(date, Xdata, Hdata);
 
 	if (outputprofile_as_imis){
 #ifdef IMISDBIO
-		imisdbio.writeProfile(date, station, expo, Xdata, Hdata);
+		imisdbio.writeProfile(date, Xdata, Hdata);
 #endif
 	}
 }
 
 bool SnowpackIO::writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
-						   const std::vector<ProcessInd>& Hdata_ind, const int& num)
+                                 const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
 #ifdef IMISDBIO
 	if (imisdbio.writeHazardData(station, Hdata, Hdata_ind, num)){

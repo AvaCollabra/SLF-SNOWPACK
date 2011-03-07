@@ -17,8 +17,11 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
+#include <meteoio/MeteoIO.h>
 #include <snowpack/Laws.h>
 #include <snowpack/Constants.h>
+
+using namespace mio;
 
 /**
  * @file Laws.c
@@ -335,6 +338,9 @@ double lw_AirEmissivity(const double input, const double ta, const double rh, co
  * @brief Computes an Arrhenius-type temperature dependency
  * @author Charles Fierz
  * @version 9.11
+ * @param ActEnergy (J mol-1)
+ * @param T snow temperature (K)
+ * @param T_ref a reference temperature (K)
  */
 double lw_ArrheniusLaw(const double ActEnergy, const double T, const double T_ref)
 {

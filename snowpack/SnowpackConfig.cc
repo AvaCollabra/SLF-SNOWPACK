@@ -38,10 +38,8 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["DOORSCHOT"] = "0";
 	defaultConfig["EXPERIMENT"] = "NO_EXP";
 	defaultConfig["FIRST_BACKUP"] = "400.";
-	defaultConfig["FIXED_HEIGHTS"] = "5";
 	defaultConfig["FIXED_HN_DENSITY"] = "100.";
-	defaultConfig["FIXED_RATES"] = "0";
-	defaultConfig["FIXED_SENSOR_DEPTH"] = "0.25 0.50 1.0 1.5 -0.1";
+	defaultConfig["FIXED_SENSOR_DEPTHS"] = "0.25 0.50 1.0 1.5 -0.1";
 	defaultConfig["FORCE_RH_WATER"] = "1";
 	defaultConfig["HARDNESS_MODEL"] = "DEFAULT";
 	defaultConfig["HEIGHT_NEW_ELEM"] = "0.02";
@@ -60,6 +58,9 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	defaultConfig["MULTISTREAM"] = "1";
 	defaultConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
+	defaultConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
+	defaultConfig["NUMBER_FIXED_HEIGHTS"] = "5";
+	defaultConfig["NUMBER_FIXED_RATES"] = "0";
 	defaultConfig["OUT_CANOPY"] = "0";
 	defaultConfig["OUT_HAZ"] = "1";
 	defaultConfig["OUT_HEAT"] = "1";
@@ -82,6 +83,7 @@ bool SnowpackConfig::initStaticData()
 	defaultConfig["THRESH_RH"] = "0.5";
 	defaultConfig["T_CRAZY_MAX"] = "340.";
 	defaultConfig["T_CRAZY_MIN"] = "210.";
+	defaultConfig["USEANETZ"] = "0";
 	defaultConfig["VARIANT"] = "DEFAULT";
 	defaultConfig["VISCOSITY_MODEL"] = "DEFAULT";
 	defaultConfig["WET_LAYER"] = "1";
@@ -100,7 +102,7 @@ SnowpackConfig::~SnowpackConfig() {}
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
 {
 	string variant = get("VARIANT", "Parameters", Config::nothrow);
-	IOUtils::toUpper(variant);
+
 	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
 
 	addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0025"); //Minimum element length (m)
@@ -159,8 +161,9 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 			addKey("HEIGHT_NEW_ELEM", "Parameters", ss.str());
 		}
 		addKey("FIRST_BACKUP", "Parameters", "1200.");
-		addKey("FIXED_HEIGHTS", "Parameters", "7");
-		addKey("FIXED_RATES", "Parameters", "7");
+		addKey("NUMBER_FIXED_HEIGHTS", "Parameters", "7");
+		addKey("FIXED_RATES", "Parameters", "1");
+		addKey("NUMBER_FIXED_RATES", "Parameters", "7");
 		addKey("MAX_NUMBER_SENSORS", "Parameters", "23");
 		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.");
 		addKey("T_CRAZY_MIN", "Parameters", "165.");
@@ -173,15 +176,12 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
 
-		string fixed_heights = get("FIXED_HEIGHTS", "Parameters", Config::nothrow);
-		if (fixed_heights == "") addKey("FIXED_HEIGHTS", "Parameters", "5");
-
-		string fixed_rates = get("FIXED_RATES", "Parameters", Config::nothrow);
-		if (fixed_rates == "") addKey("FIXED_RATES", "Parameters", "0");
-
+		string number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "Parameters", Config::nothrow);
+		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "Parameters", "5");
+		string number_fixed_rates = get("NUMBER_FIXED_RATES", "Parameters", Config::nothrow);
+		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "Parameters", "0");
 		string max_number_sensors = get("MAX_NUMBER_SENSORS", "Parameters", Config::nothrow);
 		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "Parameters", "5");
-
 		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "Parameters", Config::nothrow);
 		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
 
@@ -233,13 +233,13 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 void checkUserConfiguration(mio::Config& /*cfg*/)
 {
 	/*
-	if ( !((T_INTERNAL > -1) && (T_INTERNAL <= MAX_NUMBER_SENSORS)) ) {
-	prn_msg(__FILE__, __LINE__, "err", Date(), "T_INTERNAL=%d out of range (0, %d)", T_INTERNAL, MAX_NUMBER_SENSORS);
+	if ( !((NUMBER_MEAS_TEMP > -1) && (NUMBER_MEAS_TEMPERATURES <= MAX_NUMBER_SENSORS)) ) {
+	prn_msg(__FILE__, __LINE__, "err", Date(), "NUMBER_MEAS_TEMPERATURES=%d out of range (0, %d)", NR_MEAS_TEMP, MAX_NUMBER_SENSORS);
 		return ERROR;
 	}
-	NUMBER_SENSORS = FIXED_HEIGHTS + FIXED_RATES;
+	NUMBER_SENSORS = NUMBER_FIXED_HEIGHTS + NUMBER_FIXED_RATES;
 	if ( !((NUMBER_SENSORS > -1) && (NUMBER_SENSORS <= MAX_NUMBER_SENSORS)) ) {
-	prn_msg(__FILE__, __LINE__, "err", Date(), "%d FIXED_HEIGHTS + %d FIXED_RATES out of range (0, %d)", FIXED_HEIGHTS, FIXED_RATES, MAX_NUMBER_SENSORS);
+	prn_msg(__FILE__, __LINE__, "err", Date(), "%d NUMBER_FIXED_HEIGHTS + %d NUMBER_FIXED_RATES out of range (0, %d)", NUMBER_FIXED_HEIGHTS, NUMBER_FIXED_RATES, MAX_NUMBER_SENSORS);
 		return ERROR;
 	}
 

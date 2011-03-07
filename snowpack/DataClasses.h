@@ -133,9 +133,9 @@ class CurrentMeteo {
 
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
 
-		int    n;      ///< Index of basic meteo input Q_STA_DAT qr_Mdata
-		mio::Date date; ///< Date of current meteo data
-		
+		int    n;      ///< record number of basic meteo input data
+
+		mio::Date date;        ///< Date of current meteo data
 		double ta;     ///< Air temperature (K)
 		double rh;     ///< Relative humidity (% or 1)
 		double rh_ave; ///< Running mean of relative humidity (1)
@@ -157,7 +157,7 @@ class CurrentMeteo {
 		double ts0;    ///< Bottom temperatures of snow/soil pack (K)
 		double hnw;    ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
 		double hs1;    ///< The measured height of snow (m), corrected for spikes etc. in ml_co_Control()
-	
+
 		std::vector<double> ts;        ///< Snowpack and/or Soil temperatures (K)
 		std::vector<double> zv_ts;     ///< Depth of temperature sensors (m)
 		std::vector<double> conc;      ///< Solute concentrations in precipitation
@@ -259,9 +259,8 @@ class SN_SNOWSOIL_DATA {
 
 	public:
 
-		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : profileDate(0., 0.), nN(0), Height(0.),
-                     nLayers(0), Hslast(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
-                     Lat(0.), Lon(0.), Alt(0.), Azi(0.), Angle(0.),
+		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : meta(), profileDate(0., 0.), nN(0), Height(0.),
+                     nLayers(0), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
                      Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
                      WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.),
                      max_number_of_solutes(i_max_number_of_solutes)
@@ -269,20 +268,16 @@ class SN_SNOWSOIL_DATA {
 			Ldata.clear();
 		}
 
+		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
 		int nN;                           ///< Total number of FE nodes
 		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
 		int nLayers;                      ///< Total number of snowpack layers
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
-		double Hslast;                    ///< Last checked measured Snow Height
+		double HS_last;                   ///< Last checked measured Snow Height
 		double Albedo;                    ///< Snow albedo
 		double SoilAlb;                   ///< Soil albedo; default 0.2
 		double BareSoil_z0;               ///< Bare soil roughness in m; default 0.02 m
-		double Lat;                       ///< Latitude in deg
-		double Lon;                       ///< Longitude in deg
-		double Alt;                       ///< Altidude above sea level in m
-		double Azi;                       ///< slope aspect in degree(!), clockwise from north N = 0
-		double Angle;                     ///< Slope angle in degree(!)
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
@@ -388,7 +383,7 @@ class NodeData {
 };
 
 /**
- * @brief CANOPY DATA used as a pointer in the SnowStation structure
+ * @brief Canopy data used as a pointer in the SnowStation structure
  * -# INSTANTANEOUS VARIABLES
  * 	-# Canopy "state" variables, and some auxiliaries
  * 	-# Properties which could be given here or as a parameter field
@@ -401,9 +396,9 @@ class NodeData {
  * 	-# Canopy evaporative fluxes
  * 	-# Canopy mass fluxes
  */
-class SN_CANOPY_DATA {
+class CanopyData {
 	public:
-		SN_CANOPY_DATA() : storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), z0m(0.), z0h(0.), zdispl(0.),
+		CanopyData() : storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), z0m(0.), z0h(0.), zdispl(0.),
 		     height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
 		     totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.),
 		     iswrbc(0.), ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.),
@@ -468,7 +463,7 @@ class SN_CANOPY_DATA {
 class SnowStation {
 
 	public:
-		SnowStation(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes);
+		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers, const unsigned int& i_max_n_solutes);
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata);
 		void resize(const int& number_of_elements);
@@ -483,11 +478,7 @@ class SnowStation {
 		int getNumberOfElements() const;
 		int getNumberOfNodes() const;
 
-		double Lat;           ///< Latitude in rad
-		double Lon;           ///< Longitude in rad
-		double Alt;           ///< Altidude above sea level
-		double SlopeAzi;      ///< Slope aspect in rad(!), clockwise from north N = 0
-		double SlopeAngle;    ///< Slope angle in rad(!)
+		mio::StationData meta; ///< Station meta data
 		double Albedo;        ///< Snow albedo
 		double SoilAlb;       ///< Soil albedo
 		double BareSoil_z0;   ///< Bare soil roughness in m
@@ -518,7 +509,7 @@ class SnowStation {
 		double ColdContent;   ///< Cold content of snowpack (J m-2)
 		char SubSurfaceMelt;  ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;  ///< Subsurface refreezing flag ( yes/no ) for exposition
-		SN_CANOPY_DATA Cdata; ///< Pointer to canopy data
+		CanopyData Cdata; ///< Pointer to canopy data
 		int tag_low;          ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
@@ -526,7 +517,7 @@ class SnowStation {
 		static const int number_top_elements;
 
 	private:
-		bool useCanopyModel, useSnowLayers;
+		bool useCanopyModel, useSoilLayers;
 		unsigned int max_number_of_solutes;
 		int nNodes; ///< actual number of nodes; different for each exposition
 		int nElems; ///< actual number of elements (nElems=nNodes-1)

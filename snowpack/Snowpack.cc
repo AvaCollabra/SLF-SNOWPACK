@@ -72,7 +72,6 @@ void Snowpack::initStaticData(const std::string& variant)
 Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 {
 	cfg.getValue("VARIANT", "Parameters", variant);
-	IOUtils::toUpper(variant);
 	initStaticData(variant);
 
 	/** Defines the management of the bottom boundary conditions with soil layers
@@ -135,12 +134,11 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("MINIMUM_L_ELEMENT", "Parameters", minimum_l_element);
 
 	// Defines whether soil layers are used
-	cfg.getValue("SNP_SOIL", "Parameters", useSnowLayers);
+	cfg.getValue("SNP_SOIL", "Parameters", useSoilLayers);
 
 	cfg.getValue("RESEARCH", "Parameters", research_mode);
 
 	cfg.getValue("VISCOSITY_MODEL", "Parameters", viscosity_model);
-	IOUtils::toUpper(viscosity_model);
 
 	//Rain only for air temperatures warmer than threshold (degC)
 	cfg.getValue("THRESH_RAIN", "Parameters", thresh_rain);
@@ -338,7 +336,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
 	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
 	for (e = nE-1, SigC = 0.0; e >= 0; e--) {
-		SigC += -EMS[e].M * Constants::g * cos(Xdata.SlopeAngle);
+		SigC += -EMS[e].M * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 		if (EMS[e].CDot / SigC > 0.05) { //TODO name parameters?
 			EMS[e].CDot *= exp(-0.037 * S_TO_D(sn_dt));
 		} else {
@@ -741,7 +739,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// What snow depth should be used?
-	if ( enforce_measured_snow_heights && (Xdata.SlopeAngle <= Constants::min_slopeangle) ) {
+	if ( enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle) ) {
 		hs = Mdata.hs1;
 	} else {
 		hs = Xdata.cH;
@@ -820,7 +818,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
-		SnLaws::compShortWaveAbsorption(I0, useSnowLayers, multistream, Xdata);
+		SnLaws::compShortWaveAbsorption(I0, useSoilLayers, multistream, Xdata);
 	} catch(exception& ex){
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
 		throw;
@@ -834,7 +832,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 
 	// Set ground surface temperature
 	if ( nN == 1 ) {
-		// No snow on the ground and !useSnowLayers
+		// No snow on the ground and !useSoilLayers
 		if ( (Mdata.ts0 - Mdata.ta) > 10. ) {
 			NDS[0].T = (Mdata.ts0 + Mdata.ta) / 2.;
 		} else {
@@ -897,11 +895,11 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	 * NOTE if there is water in the base element then the base temperature MUST be 0 degC
 	 * NOTE ts0 no longer set to 0 degC in Control.c
 	*/
-	if ( !(useSnowLayers && soil_flux) ) {
+	if ( !(useSoilLayers && soil_flux) ) {
 		if ( (EMS[0].theta[ICE] >= Constants::min_ice_content) ) {
 			if ( (EMS[0].theta[WATER] > 0.003) ) {
 				NDS[0].T = C_TO_K(0.0); /*Mdata.ts0 = C_TO_K(0.0);*/
-			} else if ( !useSnowLayers ) {
+			} else if ( !useSoilLayers ) {
 				// To avoid temperatures above freezing while snow covered
 				NDS[0].T = MIN(Mdata.ts0, C_TO_K(0.0));
 			} else {
@@ -991,7 +989,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 		}
 		// Bottom node
 		// Neumann boundary conditions at bottom: The lower boundary is now a heat flux -- put the heat flux in dU[0]
-		if ( useSnowLayers && soil_flux ) {
+		if ( useSoilLayers && soil_flux ) {
 			EL_INCID(0, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			neumannBoundaryConditionsSoil(geo_heat, T0[1], Se, Fe);
@@ -1042,7 +1040,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 		}
 		NotConverged = ( MaxTDiff > ConTolTemp );
 		if ( iteration > MaxItnTemp ) {
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature did not converge (azi=%.0lf, slope=%.0lf)!", RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature did not converge (azi=%.0lf, slope=%.0lf)!", RAD_TO_DEG(Xdata.meta.getAzimuth()), RAD_TO_DEG(Xdata.meta.getSlopeAngle()));
 			prn_msg(__FILE__, __LINE__, "msg", Date(), "%d iterations > MaxItnTemp=%d; ConTolTemp=%.4lf; nN=%d", iteration, MaxItnTemp, ConTolTemp, nN);
 			for (n = 0; n < nN; n++) {
 				if ( n > 0 ) {
@@ -1066,9 +1064,9 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 			NDS[n].T = U[n];
 		} else { // Correct for - hopefully transient - crazy temperatures!
 			if ( !crazy && !ALPINE3D && (nN > Xdata.SoilNode + 3) ) {
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)! T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf", t_crazy_min, t_crazy_max, nN, Xdata.cH, RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)! T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf", t_crazy_min, t_crazy_max, nN, Xdata.cH, RAD_TO_DEG(Xdata.meta.getAzimuth()), RAD_TO_DEG(Xdata.meta.getSlopeAngle()));
 			}
-			if ( useSnowLayers && (n <= Xdata.SoilNode) ) {
+			if ( useSoilLayers && (n <= Xdata.SoilNode) ) {
 				if ( !ALPINE3D ) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(), "SOIL node n=%3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf", n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
 				}
@@ -1134,7 +1132,7 @@ void Snowpack::assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, c
 			Sdata.qg0 += Constants::undefined;
 		}
 		// 2b) qg : geothermal heat flux or heat flux at bottom of snow in case of no soil
-		if ( useSnowLayers && soil_flux ) {
+		if ( useSoilLayers && soil_flux ) {
 			Sdata.qg += geo_heat;
 		} else if ( (Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * res_wat_cont) ) {
 			Sdata.qg += 0.;
@@ -1310,7 +1308,7 @@ double Snowpack::NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xd
 		}
 	default:
 		{
-			rho = newSnowDensityPara(Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.Alt);
+			rho = newSnowDensityPara(Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
 			return rho;
 		}
 	}
@@ -1342,7 +1340,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	nOldN = Xdata.getNumberOfNodes();
 	nOldE = Xdata.getNumberOfElements();
-	cos_sl = cos(Xdata.SlopeAngle);
+	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	if ( surfaceCode == DIRICHLET_BC ) {
 		t_surf = MIN(C_TO_K(-0.1), Mdata.tss);
 	} else {
@@ -1368,24 +1366,24 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	if (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0)) ||  !enforce_measured_snow_heights || (Xdata.hn > 0.)) {
 		if (Xdata.cH < (Xdata.mH - (height_new_elem*cos_sl)) || (Xdata.hn > 0.)) {
 			// In case of virtual slope use new snow depth and density from either flat field or luv slope
-			if (Xdata.rho_hn > 0. && (Xdata.SlopeAngle > Constants::min_slopeangle)) {
+			if (Xdata.rho_hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
 			} else { // in case of flat field
 				hn = Xdata.mH - Xdata.cH;
 				// Store flat field new snow depth and density for virtual slope simulations
-				if (!ALPINE3D && (Xdata.SlopeAngle <= Constants::min_slopeangle)) {
+				if (!ALPINE3D && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle)) {
 					Xdata.hn = hn;
 					Xdata.rho_hn = rho_hn;
 				}
 			}
 			if ( hn > Snowpack::snowfall_warning ) {
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Large snowfall! hn=%.3lf cm (azi=%.0lf, slope=%.0lf)", M_TO_CM(hn), RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Large snowfall! hn=%.3lf cm (azi=%.0lf, slope=%.0lf)", M_TO_CM(hn), RAD_TO_DEG(Xdata.meta.getAzimuth()), RAD_TO_DEG(Xdata.meta.getSlopeAngle()));
 			}
 			nNewE = (int)(hn/(height_new_elem*cos_sl));
 			if ( nNewE < 1 ) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
-				if ( !ALPINE3D && ((Xdata.SlopeAngle > Constants::min_slopeangle) || (Snowpack::hn_density_model == MEASURED) || (Snowpack::hn_density_model == EVENT)) ) {
+				if ( !ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle) || (Snowpack::hn_density_model == MEASURED) || (Snowpack::hn_density_model == EVENT)) ) {
 					nNewE = 1;
 				} else {
 					Xdata.hn = 0.;
@@ -1457,7 +1455,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				NDS[nOldN-1].hoar = 0.0;
 			}
 			// Fill the nodal data
-			if ( !useSnowLayers && (nOldN-1 == Xdata.SoilNode) ) { // New snow on bare ground w/o soil
+			if ( !useSoilLayers && (nOldN-1 == Xdata.SoilNode) ) { // New snow on bare ground w/o soil
 				NDS[nOldN-1].T = (t_surf + Mdata.ta)/2.;
 			}
 			Ln = (hn / nNewE);

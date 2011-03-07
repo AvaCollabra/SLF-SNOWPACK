@@ -131,14 +131,14 @@ void Hazard::initializeHazard(const double duration, double *old_drift, double s
  * 	- -1 : no action at all
  * @author Charles Fierz, based on the original by Michael Lehning
  * @version 11.01
- * @param *old_drift double
- * @param drift double
- * @param rho double
- * @param nhour double
- * @param slope_angle
- * @param shift double
+ * @param *vecDrift vector of previous 48 half-hourly eroded masses (kg m-1)
+ * @param drift last eroded mass (kg m-1)
+ * @param rho snow density (kg m-3)
+ * @param nHours (1)
+ * @param slope_angle (deg)
+ * @param shift shift first element of *vecDrift
  */
-double Hazard::driftIndex(double *old_drift, double drift, const double rho, const int nHours,
+double Hazard::driftIndex(double *vecDrift, double drift, const double rho, const int nHours,
                           double slope_angle, const int shift)
 {
 	int    i, nValues;
@@ -147,19 +147,19 @@ double Hazard::driftIndex(double *old_drift, double drift, const double rho, con
 	switch (shift) {
 		case 1: // Shift drift data
 			for(i=47; i>0; i--) {
-				old_drift[i] = old_drift[i-1];
+				vecDrift[i] = vecDrift[i-1];
 			}
 		case 0: // Overwrite old_drift[0]
-			old_drift[0] = drift;
+			vecDrift[0] = drift;
 		default:
 			break;
 	}
 
 	for (i = 0, nValues = 0; i < 2*nHours; i++ ) {
-		if (old_drift[i] == Constants::undefined){
+		if (vecDrift[i] == Constants::undefined){
 			continue;
 		} else {
-			sumindex += old_drift[i];
+			sumindex += vecDrift[i];
 			nValues++;
 		}
 	}
@@ -168,8 +168,8 @@ double Hazard::driftIndex(double *old_drift, double drift, const double rho, con
 	} else {
 		flux = H_TO_S(MAX(0,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
 		ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
-		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle));
-		ero_depo /= cos(slope_angle);
+		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(DEG_TO_RAD(slope_angle)));
+		ero_depo /= cos(DEG_TO_RAD(slope_angle));
 		return ero_depo;
 	}
 }
@@ -236,7 +236,7 @@ double Hazard::compHoarIndex(double *OldHoar, double new_hoar, int nhour, int ne
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
 	double crust_dep=0., crust_thick=0.;
-	double cos_sl = cos(Xdata.SlopeAngle);
+	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	int e = Xdata.getNumberOfElements()-1;
 
 	while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
@@ -274,7 +274,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
                         const SnowStation& Xdata)
 {
 	int    nE = Xdata.getNumberOfElements();
-	double cos_sl = cos(Xdata.SlopeAngle);
+	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	double hs = Xdata.cH / cos_sl;
 
 	const ElementData *EMS;  // Pointer to element data
@@ -538,7 +538,7 @@ void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	// Compute snow transport on flat fiels if needed
 	if (!virtual_slope) {
 		getDriftIndex(Hdata, Hdata_ind, &(Zdata.drift24[0]), Sdata.drift,
-                  Xdata_station.SlopeAngle);
+                  Xdata_station.meta.getSlopeAngle());
 	}
 
 	// ... determine vertical thickness of melt-freeze crust, not buried deeper than 3 cm ...

@@ -118,7 +118,7 @@ namespace Constants {
 
 	///@name Numerical Constants
 	//@{
-	const double min_slopeangle = (3./180.)*pi; ///< Smallest angle a flat field may show (rad)
+	const double min_slope_angle = 3.; ///< Smallest angle a flat field may show (deg)
 	
 	/// @brief Small numbers for comparisons and to avoid divisions by zero
 	const double eps = 1.e-6;
@@ -139,9 +139,6 @@ namespace Constants {
 //@}
 /// @name Conversion macros
 //@{
-/// @brief For temperatures
-#define C_TO_K( T ) ( T + 273.15 )   // degree Celsius to kelvin
-#define K_TO_C( T ) ( T - 273.15 )   // kelvin to degree Celsius
 /// @brief For lengths
 #define M_TO_CM( l ) ( (l) * 100. )  // meter to centimeters
 #define M_TO_MM( l ) ( (l) * 1000. ) // meter to millimeters
@@ -162,8 +159,8 @@ namespace Constants {
 #define S_TO_H( t ) ( (t) / 3600. )  // second to hour
 #define S_TO_M( t ) ( (t) / 60. )    // second to minute
 /// @brief For angles
-#define DEG_TO_RAD(deg) ( deg *Constants::pi/180. )  // degree to radian
-#define RAD_TO_DEG(rad) ( rad *180./Constants::pi )  // radian to degree
+#define DEG_TO_RAD(deg) ( deg * Constants::pi / 180. )  // degree to radian
+#define RAD_TO_DEG(rad) ( rad * 180. / Constants::pi )  // radian to degree
 //@}
 //@}
 

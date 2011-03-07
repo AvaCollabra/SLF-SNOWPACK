@@ -142,6 +142,7 @@
 #include <snowpack/Snowpack.h>
 
 using namespace std;
+using namespace mio;
 
 /************************************************************
  * static section                                           *
@@ -225,7 +226,7 @@ const double Canopy::wp_fraction = 0.17;
  * @param *Sdata
  * @param cos_sl Cosine of slope angle
  */
-void Canopy::cn_DumpCanopyData(FILE *OutFile, const SN_CANOPY_DATA *Cdata, const SurfaceFluxes *Sdata, const double cos_sl)
+void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl)
 {
 	fprintf(OutFile, ",%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
 	// PRIMARY "STATE" VARIABLES
@@ -685,7 +686,7 @@ double Canopy::cn_CanopyTransmissivity(const double& lai, const double& elev)
  * @param sigfdirect
  * @param *r1p
  */
-void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const SN_CANOPY_DATA& Cdata, const SnowStation& Xdata,
+void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
 							   double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
 							   const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
 							   const double& sigfdirect, double& r1p)
@@ -1149,7 +1150,7 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	double vw_zdisplcan;
 	int i;
 
-	SN_CANOPY_DATA *Cdata;
+	CanopyData *Cdata;
 
 	// Dereference Cdata from Xdata
 	Cdata = &Xdata.Cdata;

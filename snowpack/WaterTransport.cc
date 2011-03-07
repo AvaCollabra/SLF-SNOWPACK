@@ -27,7 +27,6 @@ using namespace mio;
 WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
 	cfg.getValue("VARIANT", "Parameters", variant);
-	IOUtils::toUpper(variant);
 
 	// Defines whether soil layers are used
 	cfg.getValue("SNP_SOIL", "Parameters", snp_soil);
@@ -480,7 +479,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			// Temperature of the upper hoar node
 				NDS[nN-1].T = Mdata.ta;
 			// The new nodal position
-				z_water = MIN(Store,MAX(0.001,0.01*cos(Xdata.SlopeAngle)));
+				z_water = MIN(Store,MAX(0.001,0.01*cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))));
 				NDS[nN-1].z = NDS[nN-2].z + NDS[nN-2].u + z_water;
 				Store -= z_water;
 			// Fill the element data
@@ -500,7 +499,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			} else if (wet_layer && (( snp_soil && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95)) || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95))) && (Store > 0.)) {
 			// Put rain water in existing wet layer
-				z_water = MIN(Store, MAX(0.0, (0.01*cos(Xdata.SlopeAngle)-EMS[nE-1].L)));
+				z_water = MIN(Store, MAX(0.0, (0.01*cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))-EMS[nE-1].L)));
 				NDS[nN-1].z += z_water;
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);

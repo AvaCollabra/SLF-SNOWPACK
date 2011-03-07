@@ -47,7 +47,7 @@ class SnowDrift {
 		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
 
  	private:
-		double compMassFlux(const ElementData& Edata, const double& ustar, const double& angle);
+		double compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle);
 
 		const mio::Config& cfg;
 		bool enforce_measured_snow_heights, snow_redistribution; // Will be read from cfg object

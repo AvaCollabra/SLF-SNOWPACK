@@ -90,7 +90,7 @@ class SnLaws {
 
 		static double compAlbedo(const std::string& variant, const ElementData& Edata, const double& Tss,
 		                         const CurrentMeteo& Mdata, const double& age);
-		static void compShortWaveAbsorption(const double& I0, const bool& useSnowLayers,
+		static void compShortWaveAbsorption(const double& I0, const bool& useSoilLayers,
 		                                    const bool& multistream,SnowStation& Xdata);
 
 		static double NewSnowViscosityLehning(const ElementData& Edata);

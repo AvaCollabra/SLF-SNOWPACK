@@ -27,7 +27,6 @@ using namespace oracle::occi;
 
 const double ImisDBIO::time_zone = 1.; //All IMIS data is in gmt+1
 
-bool ImisDBIO::research_mode = true;
 double ImisDBIO::hoar_density_surf = 0.0;
 double ImisDBIO::hoar_min_size_surf = 0.0;
 
@@ -47,8 +46,6 @@ ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("DBUSER", "Output", oracleUser, Config::nothrow);
 	cfg.getValue("DBPASS", "Output", oraclePassword, Config::nothrow);
 
-	cfg.getValue("RESEARCH", "Parameters", research_mode);
-
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
 	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
 
@@ -61,14 +58,14 @@ void ImisDBIO::readSnowCover(const std::string& /*station*/, SN_SNOWSOIL_DATA& /
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
+//void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
+void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xdata*/,
                               const SN_SNOWSOIL_DATA& /*SSdata*/, const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 	
-void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SnowStation& /*Xdata*/,
-                               const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
+void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
@@ -77,12 +74,8 @@ void ImisDBIO::writeTimeSeries(const std::string& /*station*/, const SnowStation
 /**
  * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
  */
-void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-                            SnowStation& Xdata, const ProcessDat& Hdata)
+void ImisDBIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
-	if ((research_mode) || (expo != 0)) //write output only for the flat field (expo == 0)
-		return;
-
 	FILE *PFile=NULL;
 	int n1, e, l = 0,  nL = 0, nE ;
 	vector<SnowProfileLayer> Pdata;
@@ -95,13 +88,12 @@ void ImisDBIO::writeProfile(const mio::Date& date, const std::string& station, c
 
 	// Generate the profile data from the element data (1 layer = 1 element)
 	int snowloc = 1;
-	string mystation = station;
-	if (isdigit(station[station.length()-1])){
-		snowloc = station[station.length()-1] - '0';
+	string mystation = Xdata.meta.getStationName();
+	if (isdigit(mystation[mystation.length()-1])) {
+		snowloc = mystation[mystation.length()-1] - '0';
 		if (mystation.length() > 2)
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
-	
 
 	for(e=0; e<nE; e++) {
 		Pdata[l].profileDate = date;

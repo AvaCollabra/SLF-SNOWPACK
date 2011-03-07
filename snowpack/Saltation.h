@@ -43,26 +43,26 @@ class Saltation {
 	public:
 		Saltation(const mio::Config& i_cfg);
 
-		bool compSaltation(const double& tauS, const double& tau_th, const double& slope, const double& dg,
+		bool compSaltation(const double& tauS, const double& tau_th, const double& slope_angle, const double& dg,
 		                        double& massflux, double& c_salt);
 
 	private:
 		double sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0, 
-		             const double& u_start, const double& slope);
+								 const double& u_start, const double& slope_angle);
 		double sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0, 
-		              const double& u_start, const double& slope);
+									const double& u_start, const double& slope_angle);
 
-		bool sa_Traject(const double& u0, const double& angle_e, const double& slope, const double& dg,
+		bool sa_Traject(const double& u0, const double& angle_e_rad, const double& slope_angle, const double& dg,
 		                const double& tauA, const double& tauS, const double& z0, 
-		                double& ubar, double& u_i, double& angle_i, double& t_i, double& z_max);
+		                double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max);
 
-		double sa_MassFlux(const double& z0, const double& tauS, const double& tauA, const double& slope,
+		double sa_MassFlux(const double& z0, const double& tauS, const double& tauA, const double& slope_angle,
 		                   const double& dg, const double& tau_th, double& z_max, double& ubar, double& cs);
 
-		double sa_AeroEntrain(const double& z0, const double& tauS, const double& slope, const double& dg, 
+		double sa_AeroEntrain(const double& z0, const double& tauS, const double& slope_angle, const double& dg,
 		                      const double& tau_th, double& flux, double& z_max, double& ubar, double& cs);
 
-		int sa_TestSaltation(const double& z0, const double& tauS, const double& tauA, const double& slope, 
+		int sa_TestSaltation(const double& z0, const double& tauS, const double& tauA, const double& slope_angle, 
 		                     const double& dg, const double& tau_th, double& z_max, double& ubar);
 
 	private:
@@ -75,5 +75,5 @@ class Saltation {
 
 #include <snowpack/Constants.h>
 
-#endif //__SALTATION_H__
+#endif
 

@@ -82,9 +82,7 @@ bool Stability::initStaticData()
 Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg) 
 {
 	cfg.getValue("STRENGTH_MODEL", "Parameters", strength_model);
-	IOUtils::toUpper(strength_model);
 	cfg.getValue("HARDNESS_MODEL", "Parameters", hardness_model);
-	IOUtils::toUpper(hardness_model);
 
 	map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
 	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
@@ -413,16 +411,16 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 {
 	int e;
 
-	STpar.cos_psi_ref = cos(psi_ref*Constants::pi/180.);
-	STpar.sin_psi_ref = sin(psi_ref*Constants::pi/180.);
+	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
+	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
 	STpar.sig_n = 999.;
 	STpar.sig_s = 999.;
-	STpar.alpha_max = 54.3*Constants::pi/180.; // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
+	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
 	for (e=Xdata.getNumberOfNodes()-1; e>=Xdata.SoilNode; e--) {
 		SIdata[e].ssi        = Stability::max_stability;
-		Xdata.Ndata[e].S_n  = Stability::max_stability;
-		Xdata.Ndata[e].S_s  = Stability::max_stability;
+		Xdata.Ndata[e].S_n   = Stability::max_stability;
+		Xdata.Ndata[e].S_s   = Stability::max_stability;
 		if (e < Xdata.getNumberOfNodes()-1 ) {
 			Xdata.Edata[e].S_dr = Stability::max_stability;
 		}
@@ -441,7 +439,7 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 	int    crust=0;                        // Checks for crust
 	int    e=Xdata.getNumberOfElements()-1, e_crust=-99; // Counters
 
-	cos_sl = cos(Xdata.SlopeAngle);
+	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	while ( (e >= Xdata.SoilNode) && (((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) ) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
 		dz_Pk  += Xdata.Edata[e].L;
@@ -732,7 +730,7 @@ double Stability::st_SkierStabilityIndex(const double& depth_lay, const Stabilit
 	double delta_sig; // Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
 
 	if ( depth_lay > Constants::eps ) {
-		delta_sig = (2.*0.5*cos(STpar.alpha_max)*sin(STpar.alpha_max)*sin(STpar.alpha_max)*sin(STpar.alpha_max + (STpar.psi_ref*Constants::pi/180.)));
+		delta_sig = (2.*0.5*cos(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad + DEG_TO_RAD(STpar.psi_ref)));
 		delta_sig /= Constants::pi*STpar.cos_psi_ref*depth_lay;
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
@@ -792,7 +790,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 
 	// Initialize
 	S0 = S;
-	cos_sl = cos(Xdata.SlopeAngle);
+	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	h_Slab = EMS[nE-1].L/cos_sl;
 
 	// Classify only for Snowpacks thicker than Stability::minimum_slab (vertically)
@@ -935,7 +933,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 	double pos_min, pos_max, pos_max_deltaN;                   // Extremes' rel. heights
 
 	// cos of slope angle to convert height and thickness to vertical values
-	cos_sl = cos(Xdata.SlopeAngle);
+	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	// Vertical snow depth
 	cH = (Xdata.cH - Xdata.Ground)/cos_sl;
 
@@ -1144,7 +1142,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
 	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
 	double Pk;                       // Penetration depth
-	double cos_sl=cos(Xdata.SlopeAngle); // Cosine of slope angle
+	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
 
 	StabilityData  STpar;        // Stability parameters
 	ElementData   *EMS;         // Avoids dereferencing the element data pointer

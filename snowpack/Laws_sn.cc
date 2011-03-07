@@ -182,7 +182,6 @@ const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
 bool SnLaws::setStaticData(const std::string& variant)
 {
 	current_variant = variant;
-	IOUtils::toUpper(current_variant);
 
 	if (current_variant == "ANTARCTICA") {
 		t_term = SnLaws::t_term_arrhenius_critical;
@@ -375,11 +374,11 @@ double SnLaws::compAlbedo(const std::string& variant, const ElementData& Edata, 
  * @author Helene le Vesconte
  * @version Y.mm
  * @param I0 net shortwave radiation (W m-2)
- * @param useSnowLayers
+ * @param useSoilLayers
  * @param multistream
  * @param Xdata
  */
-void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSnowLayers, const bool& multistream, SnowStation& Xdata)
+void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSoilLayers, const bool& multistream, SnowStation& Xdata)
 {
 	int nE, e, bottom_element;
 	double I0_band, dI, Ks;
@@ -392,7 +391,7 @@ void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSnowLayers
 		return;
 	}
 
-	if ( useSnowLayers ){
+	if ( useSoilLayers ){
 		bottom_element = Xdata.SoilNode - 1;
 	} else {
 		bottom_element = 0;
@@ -897,7 +896,6 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementData& Edata, const mio::Date& date)
 {
 	string viscosity_model(i_viscosity_model);
-	IOUtils::toUpper(viscosity_model);
 
 	if (viscosity_model == "CALIBRATION") {
 		return initialStressCALIBRATION(Edata, date);
@@ -1091,7 +1089,6 @@ double SnLaws::compSnowViscosity(const std::string& variant, const std::string& 
 	if (variant != SnLaws::current_variant)
 		setStaticData(variant);
 	string viscosity_model(i_viscosity_model);
-	IOUtils::toUpper(viscosity_model);
 
 	if (viscosity_model == "KOJIMA") {
 		return snowViscosityKOJIMA(Edata);

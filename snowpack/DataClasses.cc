@@ -110,7 +110,7 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 	}
 }
 
-void SN_CANOPY_DATA::reset(const bool& cumsum_mass)
+void CanopyData::reset(const bool& cumsum_mass)
 {
 	if (cumsum_mass) { // Do not reset cumulated mass balance
 		// radiation
@@ -141,7 +141,7 @@ void SN_CANOPY_DATA::reset(const bool& cumsum_mass)
  * @brief Function called to initialize the canopy "Surface" exchange
  * data (to enable accumulated mass and energy fluxes)
  */
-void SN_CANOPY_DATA::initializeSurfaceExchangeData()
+void CanopyData::initializeSurfaceExchangeData()
 {
 	// radiation
 	rswrac=0.; // upward shortwave above canopy
@@ -521,16 +521,14 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	return (a*100 + b*10 + c);
 }
 
-
-SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSnowLayers, const unsigned int& max_n_solutes) :
-	Lat(0.), Lon(0.), Alt(0.), 
-	SlopeAzi(0.), SlopeAngle(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
+SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers, const unsigned int& i_max_n_solutes) :
+	meta(), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn(0.), rho_hn(0.), windward(false), ErosionLevel(0), ErosionMass(0.),
-	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.), 
-	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), Ks(NULL), ColdContent(0.), 
+	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
+	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), Ks(NULL), ColdContent(0.),
 	SubSurfaceMelt('x'), SubSurfaceFrze('x'), Cdata(), tag_low(0),
-	useCanopyModel(i_useCanopyModel), useSnowLayers(i_useSnowLayers), 
-     max_number_of_solutes(max_n_solutes), nNodes(0), nElems(0)
+	useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
+	max_number_of_solutes(i_max_n_solutes), nNodes(0), nElems(0)
 {
 	Edata = vector<ElementData>();
 	Ndata = vector<NodeData>();
@@ -685,11 +683,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
-	SlopeAngle = DEG_TO_RAD(SSdata.Angle);
-	SlopeAzi   = DEG_TO_RAD(SSdata.Azi);
-	Alt = SSdata.Alt;
-	Lat = SSdata.Lat;
-	Lon = SSdata.Lon;
+	
+	meta = SSdata.meta;
+
 	mH = cH = SSdata.Height;
 
 	nElems=0;
@@ -736,7 +732,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 		}
 	}
 
-	if (SoilNode == 0 && useSnowLayers) {
+	if (SoilNode == 0 && useSoilLayers) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "SNP_SOIL set but no soil layers given");
 		throw IOException("Snowpack Initialization failed", AT);
 	}
@@ -806,7 +802,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 	}
 	// Find the real Cauchy stresses
 	for (double SigC = 0., e = nE-1; e >=0; e--) {
-		SigC += -(Edata[e].M)*Constants::g*cos(SlopeAngle);
+		//SigC += -(Edata[e].M)*Constants::g*cos(DEG_TO_RAD(meta.getSlopeAngle())); TODO
+		SigC += -(Edata[e].M)*Constants::g*cos(DEG_TO_RAD(meta.getSlopeAngle()));
 		Edata[e].C = SigC;
 	}
 	// Cold content
@@ -971,11 +968,11 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 }
 
 
-CurrentMeteo::CurrentMeteo(const unsigned int& i_max_number_of_sensors, const unsigned int& i_max_number_of_solutes) 
-	: n(0), date(), ta(0.), rh(0.), rh_ave(0.), vw(0.), vw_ave(0.), vw_max(0.), dw(0.), vw_drift(0.), dw_drift(0.),
-    ustar(0.), z0(0.), psi_s(0.),
-    iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
-    max_number_of_sensors(i_max_number_of_sensors), max_number_of_solutes(i_max_number_of_solutes)
+CurrentMeteo::CurrentMeteo(const unsigned int& i_max_number_of_sensors, const unsigned int& i_max_number_of_solutes)
+	: n(0), date(), ta(0.), rh(0.), rh_ave(0.), vw(0.), vw_ave(0.), vw_max(0.), dw(0.),
+	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
+	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
+	  max_number_of_sensors(i_max_number_of_sensors), max_number_of_solutes(i_max_number_of_solutes)
 {
 	ts    = vector<double>(max_number_of_sensors, 0.);
 	zv_ts = vector<double>(max_number_of_sensors, 0.);

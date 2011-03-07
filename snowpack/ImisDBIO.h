@@ -34,25 +34,23 @@ class ImisDBIO : public SnowpackIOInterface{
 
 		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
-		virtual void writeSnowCover(const mio::Date& date, const std::string& station, const SnowStation& Xdata,
-                                const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
+                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 	
-		virtual void writeTimeSeries(const std::string& station, const SnowStation& Xdata, 
-		                             const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 
-		virtual void writeProfile(const mio::Date& date, const std::string& station, const unsigned int& expo,
-															SnowStation& Xdata, const ProcessDat& Hdata);
+		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
-																 const std::vector<ProcessInd>& Hdata_ind, const int& num);
+                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
 
 		void deleteHdata(const std::string& stationName, const std::string& stationNumber,
-					  const mio::Date& dateStart, const mio::Date& dateEnd, 
-					  oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
+                     const mio::Date& dateStart, const mio::Date& dateEnd,
+                     oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
 		void insertHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
@@ -62,7 +60,6 @@ class ImisDBIO : public SnowpackIOInterface{
 		//double time_zone; ///< input data time zone
 		static const double time_zone; //All IMIS data is in gmt+1
 
-		static bool research_mode;
 		static std::string oracleDB, oracleUser, oraclePassword;
 		static double hoar_density_surf, hoar_min_size_surf;
 

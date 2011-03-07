@@ -67,14 +67,14 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 
 /**
  * @brief Projects precipitations and snow height perpendicular to slope
- * @param precips 
  * @param hs Height of snow (m)
- * @param SlopeAngle Slope angle
+ * @param precips precipitations (kg m-2)
+ * @param slope_angle (deg)
  */
-void Meteo::projectPrecipitations(const double& SlopeAngle, double& precips, double& hs)
+void Meteo::projectPrecipitations(const double& slope_angle, double& precips, double& hs)
 {
-	precips *= cos(SlopeAngle);
-	hs *= cos(SlopeAngle);
+	precips *= cos(DEG_TO_RAD(slope_angle));
+	hs *= cos(DEG_TO_RAD(slope_angle));
 }
 
 /**
@@ -99,7 +99,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 
 	// Ideal approximation of pressure and vapor pressure
-	p0 = lw_AirPressure(Xdata.Alt);
+	p0 = lw_AirPressure(Xdata.meta.position.getAltitude());
 	if (Mdata.ta > Constants::melting_tk) {
 		LH = Constants::lh_vaporization;
 	} else {
@@ -140,7 +140,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 			Mdata.z0 = z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.SlopeAzi), RAD_TO_DEG(Xdata.SlopeAngle));
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.meta.getAzimuth()), RAD_TO_DEG(Xdata.meta.getSlopeAngle()));
 			return;
 		}
 		ustar_old = ustar;

@@ -48,7 +48,7 @@ double Radiation::ProjectToHorizontal(const double& slope_component, const doubl
 { // Project a radiation component that was computed on slope back to horizontal
 	//HACK: this method does not work for angles of incidence = 90 deg
 	//HACK: do it using local slope/azimuth in order to be safer
-	const double rad_to_sun_vector = slope_component / cos(ang_inc);
+	const double rad_to_sun_vector = slope_component / cos( ang_inc );
 	const double sun_vector_to_hor = sunz / sqrt( sunx*sunx + suny*suny + sunz*sunz );
 
 	return ( rad_to_sun_vector * sun_vector_to_hor );
@@ -57,15 +57,14 @@ double Radiation::ProjectToHorizontal(const double& slope_component, const doubl
 /**
  * @brief Compute the solar incidence (rad), i.e. the angle between the incident sun beam
  *   and the normal to the slope
- * @param sx double
- * @param sy double
- * @param slope_angle double
- * @param slope_azi double
+ * @param sx
+ * @param sy
+ * @param slope_angle (deg)
+ * @param azi (deg)
  * @param Psolar PositionSun
- * @return int
  */
 void Radiation::angleOfIncidence(const double& sx, const double& sy, const double& slope_angle,
-                                 const double& slope_azi, PositionSun& Psolar)
+                                 const double& azi, PositionSun& Psolar)
 {
 	double cos_ang_inc;
 
@@ -73,8 +72,8 @@ void Radiation::angleOfIncidence(const double& sx, const double& sy, const doubl
 	if ( slope_angle > 0. ) {
 		// From Oke pp.345-346, use solar azimuth clockwise from N
 		if ( Psolar.elev > 0. ) {
-			cos_ang_inc = (cos(slope_angle)*sin(Psolar.elev)) +
-					(sin(slope_angle)*cos(Psolar.elev)*cos(Psolar.azi_Ncw - slope_azi));
+			cos_ang_inc = (cos(DEG_TO_RAD(slope_angle))*sin( Psolar.elev )) +
+					(sin(DEG_TO_RAD(slope_angle))*cos( Psolar.elev )*cos( Psolar.azi_Ncw - DEG_TO_RAD(azi) ));
 		} else {
 			cos_ang_inc = 0.;
 		}
@@ -85,7 +84,7 @@ void Radiation::angleOfIncidence(const double& sx, const double& sy, const doubl
 	}
 
 	cos_ang_inc = MAX(0., cos_ang_inc);
-	Psolar.ang_inc = acos(cos_ang_inc);
+	Psolar.ang_inc = acos( cos_ang_inc );
 } // End of AngleOfIncidence
 
 /**
@@ -95,7 +94,6 @@ void Radiation::angleOfIncidence(const double& sx, const double& sy, const doubl
  * @param *day_number
  * @param *day_number_equi
  * @param date_in
- * @return
  */
 void Radiation::computeDayNumbers(const mio::Date& date_in, double& day_number, double& day_number_equi)
 {
@@ -157,7 +155,7 @@ void Radiation::computeSolarDailyParameters(const mio::Date& date_in, PositionSu
 	// and day number starting from 20.3. = 0 ...
 	// and errors smaller than 0.02 degree
 	// solar declination in degree
-	Psolar.decl = 0.3723 + 23.2567 * sin (      day_angle_decl ) - 0.758   * cos (      day_angle_decl )
+	Psolar.decl = 0.3723 + 23.2567 * sin ( day_angle_decl ) - 0.758   * cos ( day_angle_decl )
 			+ 0.1149  * sin ( 2. * day_angle_decl ) + 0.3656  * cos ( 2. * day_angle_decl )
 			- 0.1712  * sin ( 3. * day_angle_decl ) + 0.0201  * cos ( 3. * day_angle_decl );
 
@@ -357,7 +355,7 @@ void Radiation::computePotentialRadiation(const PositionSun& Psolar, const doubl
 		beta_z = 2.2 * 1.e-5 * 3000.;
 	}
 	Rdata.pot_dir = 0.9751 * Constants::solcon * Psolar.ecc_corr * (taur * tauoz * taug * tauw * taua + beta_z);
-	Rdata.pot_dir *= cos(Psolar.ang_inc);
+	Rdata.pot_dir *= cos( Psolar.ang_inc );
 
 	// Diffuse radiation from the sky
 	// Rayleigh-scattered diffuse radiation after the first pass through atmosphere (Iqbal (1983), p.190)
@@ -430,9 +428,9 @@ void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double&
                                         CurrentMeteo& Mdata, RadiationData& Rdata)
 {
 	if ( Psolar.elev > 0.157 ) { // 9 deg = 0.157 rad
-		Rdata.dir_slope = Rdata.dir_hor*cos(Psolar.ang_inc)/sin(Psolar.elev);
+		Rdata.dir_slope = Rdata.dir_hor*cos( Psolar.ang_inc )/sin( Psolar.elev );
 	} else {
-		Rdata.dir_slope = Rdata.dir_hor*cos(Psolar.ang_inc)/sin(0.157);
+		Rdata.dir_slope = Rdata.dir_hor*cos( Psolar.ang_inc )/sin( 0.157 );
 	}
 	Rdata.dir_slope = MAX(0., Rdata.dir_slope);
 
@@ -466,9 +464,9 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 		computeSolarDailyParameters(Mdata.date, Psolar);
 	}
 	// Hourly position of the sun
-	computePositionSun(D_TO_H(local_time), Xdata.Lat, Xdata.Lon, Psolar);
+	computePositionSun(D_TO_H(local_time), Xdata.meta.position.getLat(), Xdata.meta.position.getLon(), Psolar);
 	// Angle of incidence
-	angleOfIncidence(0., 0., Xdata.SlopeAngle, Xdata.SlopeAzi, Psolar);
+	angleOfIncidence(0., 0., Xdata.meta.getSlopeAngle(), Xdata.meta.getAzimuth(), Psolar);
 
 	// Incoming global solar radiation on horizontal surface
 	if (sw_mode == 1) {
@@ -483,7 +481,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 	}
 	// Compute potential radiation only for Psolar.elev > THRESH_SUN_ELEVATION ...
 	if (Psolar.elev >= Radiation::thresh_sun_elevation) {
-		computePotentialRadiation(Psolar, Xdata.Albedo, Xdata.Alt, lw_AirPressure(Xdata.Alt), Mdata.rh, Mdata.ta, Rdata);
+		computePotentialRadiation(Psolar, Xdata.Albedo, Xdata.meta.position.getAltitude(), lw_AirPressure(Xdata.meta.position.getAltitude()), Mdata.rh, Mdata.ta, Rdata);
 	} else {// ... because radiation is only diffuse otherwise
 		Rdata.pot_dir = 0.;
 		Rdata.pot_diffsky = Rdata.global_hor;
@@ -529,9 +527,9 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 void Radiation::radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
                                  PositionSun& Psolar, RadiationData& Rdata)
 {
-	if ( Xdata.SlopeAngle > Constants::min_slopeangle ) {
+	if ( Xdata.meta.getSlopeAngle() > Constants::min_slope_angle ) {
 		// Angle of incidence
-		angleOfIncidence(0., 0., Xdata.SlopeAngle, Xdata.SlopeAzi, Psolar);
+		angleOfIncidence(0., 0., Xdata.meta.getSlopeAngle(), Xdata.meta.getAzimuth(), Psolar);
 		// Project radiation
 		projectRadiationOnSlope(Psolar, Xdata.Albedo, Mdata, Rdata);
 	} else {

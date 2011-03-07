@@ -28,9 +28,7 @@
 #define __UTILS_H__
 
 #include <snowpack/DataClasses.h>
-#include <snowpack/Constants.h> 
 #include <snowpack/Laws.h>
-#include <meteoio/MeteoIO.h>
 
 #include <cstdarg> // needed for va_list
 #include <string>
@@ -69,10 +67,13 @@ int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int
 
 double forcedErosion(const double hs1, SnowStation& Xdata);
 
-void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double *dhs_corr, double *mass_corr);
+void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr);
 
 double logisticFunction(const double input, const double threshold, const double width);
 
 void cumulate(double& accu, const double value);
+
+void checkOldOutputFiles(const mio::Date& i_date, const std::string& stationID);
+
 
 #endif //End of Utils.h

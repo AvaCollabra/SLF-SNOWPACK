@@ -271,7 +271,6 @@ Metamorphism::Metamorphism(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("new_snow_grain_rad", "Parameters", new_snow_grain_rad);
 
 	cfg.getValue("METAMORPHISM_MODEL", "Parameters", metamorphism_model);
-	IOUtils::toUpper(metamorphism_model);
 
 	map<string, MetaModelFn>::const_iterator it1 = mapMetamorphismModel.find(metamorphism_model);
 	if (it1 == mapMetamorphismModel.end()) throw InvalidArgumentException("Unknown metamorphism model: "
