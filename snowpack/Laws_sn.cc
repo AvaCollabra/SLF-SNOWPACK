@@ -262,6 +262,35 @@ bool SnLaws::setStaticData(const std::string& variant)
 }
 
 /**
+ * @name THERMAL CONDUCTIVITY ICE
+ * @brief Based on master thesis of Tobias Hipp, who used relationships by Ling & Yhang (2005).
+ * @author Nander Wever
+ * @version 11.03
+ * @param Temperature Temperature (K)
+ * @return Thermal conductivity of ice
+ */
+double SnLaws::conductivity_ice(const double& Temperature)
+{
+	double ki = 0.4685 + (488.19)/(Temperature + 273.15);
+	return ki;
+}
+
+/**
+ * @name THERMAL CONDUCTIVITY WATER
+ * @brief Based on master thesis of Tobias Hipp, who used relationships by Ling & Yhang (2005).
+ * @author Nander Wever
+ * @version 11.03
+ * @param Temperature Temperature (K)
+ * @return Thermal conductivity of water
+ */
+double SnLaws::conductivity_water(const double& Temperature)
+{
+	double kw = 0.11455 + 1.6318E-3 * (Temperature + 273.15);
+	return kw;
+}
+
+
+/**
  * @name SNOW ALBEDO (defined as an absolute value--and not as a rate of change)
  * @brief Statistical models of surface snow albedo based on measurements (SWin and SWout, K&Z CM21)
  * from the Weissfluhjoch study plot.
@@ -493,6 +522,7 @@ double SnLaws::compWindGradientSnow(const ElementData& Edata, double& v_pump)
  * @brief Heat conduction in soil
  * @author Michael Lehning
  * @version 9Y.mm
+ * @version 11.03: thermal conductivity made temperature dependent.
  * @param *Edata const ElementData
  * @param dvdz Wind velocity gradient (s-1)
  * @return Soil thermal conductivity (W K-1 m-1)
@@ -514,7 +544,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 	*/
 	if ( (Edata.rg > 0.) && (Edata.rg < 10000.) ) {
 		C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
-                           * Constants::conductivity_water + Edata.theta[ICE] * Constants::conductivity_ice;
+                           * SnLaws::conductivity_water(Edata.Te) + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);
 
 		/*
 		 * This nice formulation is based on some tedious curve fitting by
@@ -533,8 +563,8 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		}
 		C_eff_soil = MIN (C_eff_soil_max, C_eff_soil);
 	} else {
-		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * Constants::conductivity_water 
-                       + Edata.theta[ICE] * Constants::conductivity_ice;
+		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te) 
+                       + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);
 	}
 
 	// Now check for possible ERRORS

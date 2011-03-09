@@ -69,6 +69,11 @@ class SnLaws {
 			alb_nied,
 			nAlbedoModel
 		};
+		
+		static double conductivity_ice(const double& Temperature);
+		static double conductivity_water(const double& Temperature);
+		static double conductivity_air(void);
+
 
 		static double compWindPumpingDisplacement(const SnowStation& Xdata);
 		static double compWindPumpingVelocity(const CurrentMeteo& Mdata, const double& d_pump);
