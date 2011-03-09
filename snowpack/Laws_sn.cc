@@ -271,7 +271,7 @@ bool SnLaws::setStaticData(const std::string& variant)
  */
 double SnLaws::conductivity_ice(const double& Temperature)
 {
-	double ki = 0.4685 + (488.19)/(Temperature + 273.15);
+	double ki = 0.4685 + (488.19)/(Temperature);
 	return ki;
 }
 
@@ -285,7 +285,7 @@ double SnLaws::conductivity_ice(const double& Temperature)
  */
 double SnLaws::conductivity_water(const double& Temperature)
 {
-	double kw = 0.11455 + 1.6318E-3 * (Temperature + 273.15);
+	double kw = 0.11455 + 1.6318E-3 * (Temperature);
 	return kw;
 }
 
