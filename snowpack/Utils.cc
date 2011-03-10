@@ -139,6 +139,7 @@ int booleanTime(const double& JulianDate, double days_between,
 	return ret;
 }
 
+
 /**
  * @brief Delete outdir.ext_n[ext] from outdir
  * @author Michael Lehning
@@ -150,8 +151,8 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 {
 	vector<string> vecExtension;
 	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
-	vecExtension.push_back("met"); //Meteo data input
-	vecExtension.push_back("pro"); //Time series of modeled profile-type data
+	//vecExtension.push_back("met"); //Meteo data input
+	//vecExtension.push_back("pro"); //Time series of modeled profile-type data
 	vecExtension.push_back("ini"); //Record of run configuration
 
 	char fp[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";

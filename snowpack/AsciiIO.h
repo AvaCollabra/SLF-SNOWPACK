@@ -58,8 +58,8 @@ class AsciiIO : public SnowpackIOInterface {
 
 	private:
 		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& type);
-		void parseMetFile(const char& eoln, mio::Date& currentdate, std::istream& fin);
-		void parseProFile(const char& eoln, mio::Date& currentdate, std::istream& fin);
+		bool parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
+		bool parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 
 		std::string getFilenamePrefix(const std::string& stationname, const std::string& path);
 

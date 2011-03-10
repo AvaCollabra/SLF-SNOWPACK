@@ -926,62 +926,116 @@ int AsciiIO::writeHeightTemperatureTag(FILE *fout, const int& tag, const Current
 }
 
 /**
- * @brief Parse through a met file and read the last date for which meteo data has been written
+ * @brief Parse through a met file and check whether it can be appended for current simulation
  * @param eoln A char that represents the end of line character
- * @param currentdate An object to save the dates into (only the last one in the file will be returned)
+ * @param start_date Holds the start date of this simulation
  * @param fin The file input stream to use
+ * @param fout The output stream of a temporary file
+ * @return TRUE if file may be appended, false if file needs to be overwritten
  */
-void AsciiIO::parseMetFile(const char& eoln, mio::Date& currentdate, std::istream& fin)
+bool AsciiIO::parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp)
 {
 	string tmpline = "";
 	vector<string> vecTmp;
+	Date current_date;
+
+	bool append       = false; //true if file may be appended and false otherwise
+	bool insert_endl  = false;
+	bool data_started = false;
 
 	do { //Loop going through the lines of the file
 		getline(fin, tmpline, eoln); //read complete line
+
+		if (data_started){
+			if (tmpline.length() > 20){//the last line is without a carriage return
+				IOUtils::trim(tmpline);
+				IOUtils::readLineToVec(tmpline, vecTmp, ',');
+				if ((vecTmp.size() >= 2) && (vecTmp[1].length() >= 16)){
+					string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
+						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
+					IOUtils::convertString(current_date, tmpdate, time_zone);
+					
+					if (current_date.getJulianDate() < (start_date.getJulianDate()-0.00001)){
+						append=true;
+					} else {
+						break; //the start date of the simulation is newer/equal than current_date
+					}				
+				}
+			}
+		} else {
+			IOUtils::trim(tmpline);
+			if (tmpline == "[DATA]") data_started = true;
+		}
+
+		if (insert_endl) {
+			ftmp << endl;
+		} else {
+			insert_endl = true;
+		}
+
+		ftmp << tmpline; //copy line to tmpfile
+
 	} while(!fin.eof());
 
-	if (tmpline.length() > 20){//the last line is without a carriage return
-		IOUtils::trim(tmpline);
-		IOUtils::readLineToVec(tmpline, vecTmp, ',');
-		if ((vecTmp.size() >= 2) && (vecTmp[1].length() >= 16)){
-			string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
-				+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
-			IOUtils::convertString(currentdate, tmpdate, time_zone);
-		}
-	}
+	return append;
 }
 
 /**
- * @brief Parse through a pro file and read in all the dates on the way
+ * @brief Parse through a pro file and check whether it can be appended for current simulation
  * @param eoln A char that represents the end of line character
- * @param currentdate An object to save the dates into (only the last one in the file will be returned)
+ * @param start_date Holds the start date of this simulation
  * @param fin The file input stream to use
+ * @param fout The output stream of a temporary file
+ * @return TRUE if file may be appended, false if file needs to be overwritten
  */
-void AsciiIO::parseProFile(const char& eoln, mio::Date& currentdate, std::istream& fin)
+bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp)
 {
 	string tmpline = "";
 	vector<string> vecTmp;
+	Date current_date;
 
-	IOUtils::skipLines(fin, 20, eoln); //skip 20 lines
+	bool append = false; //true if file may be appended and false otherwise
+	bool insert_endl = false;
+
 	do { //Loop going through the lines of the file
 		getline(fin, tmpline, eoln); //read complete line
 		IOUtils::readLineToVec(tmpline, vecTmp, ',');
+
 		if (vecTmp.size() >= 2){
 			if (vecTmp[0] == "0500"){ //The date tag
 				if (vecTmp[1].length() >= 16){
 					string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) 
 						+ "-" + vecTmp[1].substr(0,2)
 						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
-					IOUtils::convertString(currentdate, tmpdate, time_zone);
+					IOUtils::convertString(current_date, tmpdate, time_zone);
+					
+					if (current_date.getJulianDate() < (start_date.getJulianDate()-0.00001)){
+						append=true;
+					} else {
+						break; //the start date of the simulation is newer/equal than current_date
+					}
 				}
 			}
 		}
-	} while(!fin.eof());
+
+		if (insert_endl) {
+			ftmp << endl;
+		} else {
+			insert_endl = true;
+		}
+
+		ftmp << tmpline; //copy line to tmpfile
+	} while( !fin.eof() );
+
+	return append;
 }
 
 /**
- * @brief Check whether data can be appended to a file, or whether
- *        file needs to be deleted and recreated
+ * @brief Check whether data can be appended to a file, or whether file needs to be deleted and recreated
+ *        The following logic is implemented if the file already contains data:
+ *        - if the startdate lies before the data written in the file, overwrite the file
+ *        - if the startdate lies within the data in the file then append from that date on, delete the rest
+ *        - if the startdate is after the data in the file then simply append
  * @param filename The file to check (must exist)
  * @param startdate The start date of the data to be written
  * @param type A string representing the type of file, i.e. "pro" or "met"
@@ -998,32 +1052,41 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	 * is newer than the last one in the file, appending is possible
 	 */
 	ifstream fin;
+	ofstream fout; //for the tmp file
+	const string filename_tmp = filename + ".tmp";
 
 	fin.open (filename.c_str());
-	if (fin.fail())
-		throw FileAccessException(filename, AT);
+	fout.open(filename_tmp.c_str());
+	
+	if (fin.fail()) throw FileAccessException(filename, AT);
+	if (fout.fail()) throw FileAccessException(filename_tmp, AT);
 
 	char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
 
 	try {
-		Date currentdate; //To store the last appearing date in the file
+		bool append_possible = false; //the temporary file will be copied
 
 		if (type == "pro"){
-			parseProFile(eoln, currentdate, fin);
+			append_possible = parseProFile(eoln, startdate, fin, fout);
 		} else if (type == "met"){
-			parseMetFile(eoln, currentdate, fin);
+			append_possible = parseMetFile(eoln, startdate, fin, fout);
 		}
-			
-		if (currentdate < startdate) { // TODO needs more subtelty ;-)
-			setAppendableFiles.insert(filename);
-			return true;
-		}
-	} catch(...) {
+
 		fin.close();
+		fout.close();
+
+		if (append_possible) IOUtils::copy_file(filename_tmp, filename);
+		
+		remove(filename_tmp.c_str()); //delete temporary file
+		
+		setAppendableFiles.insert(filename); //remember, that this file has been checked already
+		return append_possible;
+	} catch(...) {
+		if (fin.is_open())  fin.close();
+		if (fout.is_open()) fout.close();
 		return false;
 	}
 	
-	fin.close();
 
 	return false;
 }
