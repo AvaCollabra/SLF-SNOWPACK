@@ -523,10 +523,18 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	}
 	// Now treat a couple of exceptions - note that the order is important
 	if (b < 0) b = a;
-	if ((marker >= 20) && (theta_w < 0.1*res_wat_cont)) c = 2; // MFcr Melt-Freeze
-	if (marker == 3) a = 6; b = 6; c = 0;                      // SH   Surface Hoar
-	if (marker == 4) a = 0; b = 0; c = 0;                      // PPgp Graupel
-	if (marker % 10 == 8) a = 8; b = 8; c = 0;                 // IFil Ice Layer
+	if ((marker >= 20) && (theta_w < 0.1*res_wat_cont)) { // MFcr Melt-Freeze
+		c = 2;
+	}
+	if (marker == 3) { // SH   Surface Hoar
+		a = 6; b = 6; c = 0;
+	}
+	if (marker == 4) { // PPgp Graupel
+		a = 0; b = 0; c = 0;
+	}
+	if (marker % 10 == 8) { // IFil Ice Layer
+		a = 8; b = 8; c = 0;
+	}
 
 	return (a*100 + b*10 + c);
 }
