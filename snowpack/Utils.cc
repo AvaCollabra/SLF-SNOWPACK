@@ -188,10 +188,12 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 					if (remove(fname) == 0) {
 						n_files++;
 					}
-					if (n_files > 0) {
-						prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
-					} else {
-						prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
+					if (j == nSlopes-1) {
+						if (n_files > 0) {
+							prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
+						} else {
+							prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
+						}
 					}
 				} else if ((j == 0) && IOUtils::fileExists(fname)) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Data in *.%s file(s) may be overwritten", ext.c_str());
