@@ -409,7 +409,7 @@ double Stability::st_DeformationRateIndex(ElementData& Edata)
 void Stability::initStability(const double& psi_ref, StabilityData& STpar,
                               SnowStation& Xdata, vector<InstabilityData>& SIdata)
 {
-	int e;
+	unsigned int nN = Xdata.getNumberOfNodes();
 
 	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
 	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
@@ -417,11 +417,12 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 	STpar.sig_s = 999.;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
-	for (e=Xdata.getNumberOfNodes()-1; e>=Xdata.SoilNode; e--) {
-		SIdata[e].ssi        = Stability::max_stability;
-		Xdata.Ndata[e].S_n   = Stability::max_stability;
-		Xdata.Ndata[e].S_s   = Stability::max_stability;
-		if (e < Xdata.getNumberOfNodes()-1 ) {
+	unsigned int e = nN;
+	while (e-- > Xdata.SoilNode) {
+		SIdata[e].ssi      = Stability::max_stability;
+		Xdata.Ndata[e].S_n = Stability::max_stability;
+		Xdata.Ndata[e].S_s = Stability::max_stability;
+		if (e < nN-1) {
 			Xdata.Edata[e].S_dr = Stability::max_stability;
 		}
 	}
@@ -433,21 +434,22 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
  */
 double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 {
-	double rho_Pk=0., dz_Pk=0.;            // Penetration depth Pk, from mean slab density
-	double cos_sl;                         // Cosine of slope angle
-	double top_crust=0., thick_crust=0.;   // Crust properties
-	int    crust=0;                        // Checks for crust
-	int    e=Xdata.getNumberOfElements()-1, e_crust=-99; // Counters
+	double rho_Pk = 0., dz_Pk = 0.;           // Penetration depth Pk, from mean slab density
+	double cos_sl;                            // Cosine of slope angle
+	double top_crust = 0., thick_crust = 0.;  // Crust properties
+	bool crust = false;                       // Checks for crust
+	int e_crust = Constants::inodata;
 
 	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	while ( (e >= Xdata.SoilNode) && (((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) ) {
+	unsigned int e = Xdata.getNumberOfElements();
+	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3))) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
 		dz_Pk  += Xdata.Edata[e].L;
 		// Test for strong mf-crusts MFcr.
 		// Look for the first (from top) with thickness perp to slope > 3cm
-		if ( !crust ) {
+		if (!crust) {
 			if ( (Xdata.Edata[e].mk%100 >= 20) && (Xdata.Edata[e].Rho > 500.) ) {
-				if ( e_crust < 0 ) {
+				if (e_crust < 0) {
 					e_crust = e;
 					top_crust = (Xdata.Ndata[e+1].z + Xdata.Ndata[e+1].u)/cos_sl;
 					thick_crust += Xdata.Edata[e].L;
@@ -455,9 +457,9 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 					thick_crust += Xdata.Edata[e].L;
 					e_crust = e;
 				}
-			} else if ( e_crust > 0 ) {
-				if ( thick_crust > Stability::min_thick_crust ) {
-					crust = 1;
+			} else if (e_crust > 0) {
+				if (thick_crust > Stability::min_thick_crust) {
+					crust = true;
 				} else {
 					e_crust = Constants::undefined;
 					top_crust = 0.;
@@ -465,7 +467,6 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 				}
 			}
 		}
-		e--;
 	}
 	rho_Pk /= (dz_Pk + 1.e-12);
 
@@ -775,17 +776,17 @@ void Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const 
  */
 bool Stability::classifyProfileStability(SnowStation& Xdata)
 {
-	int S = 5, S0, e, nE, i, i_weak, count=0;
+	unsigned int e, e_weak, count=0;
+	int S = 5, S0;
 	int F1, F2, F3;                            // Grain shape
 	double mH = 0., thH, maxH = 0., minH = 7.; // Mean Hardness and Threshold
 	double mH_u, delta_H;
 	double h_Slab;
 	double cos_sl;
 
-	ElementData *EMS;   // Avoids dereferencing the element data pointer
-
 	// Dereference the element pointer containing micro-structure data
-	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
+	unsigned int nE = Xdata.getNumberOfElements();
+	vector<ElementData>& EMS = Xdata.Edata;
 	vector<NodeData>& NDS = Xdata.Ndata;
 
 	// Initialize
@@ -817,26 +818,26 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 		if ( fabs(delta_H) > thH ) {
 			count++;
 			if ( delta_H < 0. ) {
-				i_weak = e+1;
+				e_weak = e+1;
 			} else {
-				i_weak = e;
+				e_weak = e;
 			}
 
 			// Decompose grain type to determine majority shape F1
-			typeToCode(&F1, &F2, &F3, EMS[i_weak].type);
+			typeToCode(&F1, &F2, &F3, EMS[e_weak].type);
 
 			// Remember that S is initialized to 5!!!
 			// First consider wet weak layer
-			if ( EMS[i_weak].theta[WATER] > 0.75*EMS[i_weak].snowResidualWaterContent() ) {
-				if ( EMS[i_weak].mk%100 < 20 ) {
+			if ( EMS[e_weak].theta[WATER] > 0.75*EMS[e_weak].snowResidualWaterContent() ) {
+				if ( EMS[e_weak].mk%100 < 20 ) {
 					S = 1;
 				}
 			} else { // Then do some stuff for dry snow
 				mH_u = 0.;
-				for (i = i_weak; i < nE; i++) {
+				for (unsigned int ii = e_weak; ii < nE; ii++) {
 					mH_u += EMS[e].hard;
 				}
-				mH_u /= (nE - i_weak);
+				mH_u /= (nE - e_weak);
 				if ( mH > 2. ) {
 					if ( delta_H < 0. ) {
 						// Proposal Fz; (see original in version 7.4
@@ -855,8 +856,8 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 						}
 					}
 				} else if ( mH < 1.5 ) {
-					if ( (EMS[i_weak].rg > 0.5) && ((F1 > 3) && (F1 < 7)) ) {
-						if ( (EMS[i_weak].rg > 0.75) && ((mH_u < 1.5) && (maxH < 2.5)) ) {
+					if ( (EMS[e_weak].rg > 0.5) && ((F1 > 3) && (F1 < 7)) ) {
+						if ( (EMS[e_weak].rg > 0.75) && ((mH_u < 1.5) && (maxH < 2.5)) ) {
 							S = 1;
 						} else {
 							S = MIN (S, 2);
@@ -1137,19 +1138,20 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
  */
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	int    e, nE, nN;                // Nodal and element counters
-	int    Swl_lemon;                // Temporary lemon counter
+	unsigned int e;                // Counters
+	int    Swl_lemon;              // Lemon counter
 	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
 	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
 	double Pk;                       // Penetration depth
 	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
 
 	StabilityData  STpar;        // Stability parameters
-	ElementData   *EMS;         // Avoids dereferencing the element data pointer
 
 	// Dereference the element pointer containing micro-structure data
-	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
-	vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
+	unsigned int nN = Xdata.getNumberOfNodes();
+	unsigned int nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
 
 	vector<InstabilityData> SIdata = vector<InstabilityData>(nN); // Parameters for structural instabilities
 
@@ -1167,7 +1169,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
 	}
 	EMS[nE-1].s_strength = 100.;
-	for (e=nE-2; e >= Xdata.SoilNode; e--) {
+	e=nE-1;
+	while (e-- > Xdata.SoilNode) {
 		compReducedStresses(EMS[e+1].C, cos_sl, STpar);
 		STpar.strength_up = EMS[e+1].s_strength;
 
@@ -1185,16 +1188,14 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	// Natural and "deformation rate" Stability Index
 	// Discard Stability::minimum_slab (in m) at surface
-	e = nE-1;
-	while ( (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab) && (e > Xdata.SoilNode) ) {
-		e--;
-	}
-	if ( e > Xdata.SoilNode ) {
+	e = nE;
+	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab));
+	if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 		// Slab must be thicker than Stability::ground_rough (m)  for an avalanche to release.
-		while ( (NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough && (e >= Xdata.SoilNode) ) {
+		while ((e-- > Xdata.SoilNode) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 			// "deformation rate" Stability Index: find minimum ...
 			EMS[e].S_dr = st_DeformationRateIndex(EMS[e]);
-			if ( Swl_d > EMS[e].S_dr ) {
+			if (Swl_d > EMS[e].S_dr) {
 				Swl_d = EMS[e].S_dr;
 				zwl_d = (NDS[e].z + NDS[e+1].z + NDS[e].u + NDS[e+1].u)/2.;
 			}
@@ -1204,7 +1205,6 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 				Swl_n = NDS[e+1].S_n;
 				zwl_n = NDS[e+1].z + NDS[e+1].u;
 			}
-			e--;
 		}
 		// Assign minimum to stability indices
 		Xdata.S_d = Swl_d;    Xdata.z_S_d = zwl_d - Xdata.Ground;
@@ -1218,15 +1218,13 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	// Skier Stability Index
 	//   Snow depth must be larger than Stability::ground_rough (m) and at least Stability::min_depth_ssi (m)
 	//   snow must be left after discarding Pk for a SSI value to be searched.
-	if ( (Xdata.cH/cos_sl > Stability::ground_rough) && ((Xdata.cH/cos_sl - Pk) > Stability::min_depth_ssi) ) {
+	if ((Xdata.cH/cos_sl > Stability::ground_rough) && ((Xdata.cH/cos_sl - Pk) > Stability::min_depth_ssi)) {
 		// Discard penetration depth Pk (in m) at surface
-		e = nE-1;
-		while ( (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk) && (e > Xdata.SoilNode) ) {
-			e--;
-		}
-		if ( e > Xdata.SoilNode ) {
+		e = nE;
+		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk));
+		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)
-			while ( (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough) && (e >= Xdata.SoilNode) ) {
+			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
 				const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
 				NDS[e+1].S_s = st_SkierStabilityIndex(depth_lay, STpar);
@@ -1238,7 +1236,6 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 					Swl_Sk38 = NDS[e+1].S_s;
 					zwl_Sk38 = NDS[e+1].z + NDS[e+1].u;
 				}
-				e--;
 			}
 			// Assign minimum to stability indices
 			Xdata.S_s = Swl_Sk38; Xdata.z_S_s = zwl_Sk38 - Xdata.Ground;
@@ -1254,13 +1251,13 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		Xdata.S_4 = SIdata[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
 	}
 
-	switch ( Stability::prof_classi ) {
+	switch (Stability::prof_classi) {
 		case 0:
 			// Classify in poor, fair and good based on master thesis of S. Bellaire (September 2005)
-			if ( (Swl_ssi > 0.) && (Swl_ssi < 100.) ) {
-				if ( Swl_ssi >= 1.55 ) {
+			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
+				if (Swl_ssi >= 1.55) {
 					Xdata.S_class2 = 5;
-				} else if ( Swl_ssi >= 1.25 ) {
+				} else if (Swl_ssi >= 1.25) {
 					Xdata.S_class2 = 3;
 				} else {
 					Xdata.S_class2 = 1;
@@ -1271,7 +1268,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			break;
 		case 1:
 		// Classify in poor, fair and good based on re-analysis by Schweizer/Bellaire (paper CRST 46 (2006) 52-59)
-			if ( (Swl_ssi > 0.) && (Swl_ssi < 100.) ) {
+			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
 				if ( Swl_Sk38 >= 0.45 ) {
 					Xdata.S_class2 = 5;
 				} else if ( Swl_ssi >= 1.32 ) {
@@ -1286,14 +1283,14 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		case 2:
 			// Classify in poor, fair and good based on re-analysis after recalibration of settling,
 			// Nov 2007(see rev 250/251)
-			if ( (Swl_ssi > 0.) && (Swl_ssi < 100.) ) {
+			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
 				if ( Swl_lemon >= 2 ) {
 					Xdata.S_class2 = 1;
-				} else if ( Swl_lemon == 1 ) {
-					if ( Swl_Sk38 < 0.48 ) {
+				} else if (Swl_lemon == 1) {
+					if (Swl_Sk38 < 0.48) {
 						Xdata.S_class2 = 1;
 					} else {
-						if ( Swl_Sk38 < 0.71 ) {
+						if (Swl_Sk38 < 0.71) {
 							Xdata.S_class2 = 3;
 						} else {
 							Xdata.S_class2 = 5;
@@ -1308,17 +1305,17 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			break;
 		case 3:
 			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
-			if ( !classifyProfileStability(Xdata) ) {
+			if (!classifyProfileStability(Xdata)) {
 				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
 					    "Profile classification failed! (classifyProfileStability)");
 			}
 			break;
 	}
 
-	if ( !ALPINE3D ) {
+	if (!ALPINE3D) {
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
-		if ( !recognizeProfileType(Mdata.date, Xdata) ) {
+		if (!recognizeProfileType(Mdata.date, Xdata)) {
 			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (recognizeProfileType)");
 		}
 	}

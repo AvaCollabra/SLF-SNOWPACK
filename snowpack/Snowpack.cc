@@ -327,16 +327,21 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
  */
 void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	int nE, nN;             // Number of elements and nodes
-	int e;                  // Element counter
+	unsigned int e;         // Element counter
 	double L0, dL, cH_old;  // Element length and change of length
 	double Sig0=0., SigC, eta; // Initial and Cauchy stress, resp.; snow viscosity
-	ElementData *EMS;      // Dereferenced element pointer
 
-	vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
-	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
-	for (e = nE-1, SigC = 0.0; e >= 0; e--) {
-		SigC += -EMS[e].M * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	unsigned int nN = Xdata.getNumberOfNodes();
+	if (nN == (Xdata.SoilNode + 1)) {
+		return;
+	}
+	vector<NodeData>& NDS = Xdata.Ndata;
+	unsigned int nE = Xdata.getNumberOfElements();
+	vector<ElementData>& EMS = Xdata.Edata;
+	e = nE; SigC = 0.0;
+	while (e-- > 0) {
+		if (e < nE-1) SigC -= (EMS[e+1].M / 2.) * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+		SigC -= (EMS[e].M / 2.) * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 		if (EMS[e].CDot / SigC > 0.05) { //TODO name parameters?
 			EMS[e].CDot *= exp(-0.037 * S_TO_D(sn_dt));
 		} else {
@@ -346,9 +351,6 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			EMS[e].CDot += (SigC - EMS[e].C);
 		}
 		EMS[e].C = SigC;
-	}
-	if ( nN == Xdata.SoilNode + 1 ) {
-		return;
 	}
 
 	for (e = Xdata.SoilNode; e < nE; e++) {
@@ -703,7 +705,7 @@ void Snowpack::neumannBoundaryConditionsSoil(const double& flux, const double& T
  */
 void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata, double& mAlb)
 {
-	int n, e;        // nodal and element counters
+	unsigned int n, e;        // nodal and element counters
 	int iteration;	// iteration counter (not really required)
 	int NotConverged;	// = 1 if iteration not converged
 	double MaxTDiff;	// maximum temperature difference for convergence
@@ -720,8 +722,6 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	double Fe[N_OF_INCIDENCES];                  // Element right hand side vector
 
 	void *Kt;                                    // Avoids dereferencing the pointer
-	ElementData *EMS;                           // Avoids dereferencing the pointer
-	int nN, nE;                                  // Nodes and elements for exposition
 	double *U=NULL, *dU=NULL, *ddU=NULL;         // Solution vectors
 	double I0;                                   // The net incoming shortwave irradiance
 	double Alb;                                  // Modeled albedo
@@ -733,9 +733,9 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	// Dereference the pointers
 	Kt = Xdata.Kt;
 	vector<NodeData>& NDS = Xdata.Ndata;
-	nN = Xdata.getNumberOfNodes();
-	EMS = &Xdata.Edata[0];
-	nE = Xdata.getNumberOfElements();
+	unsigned int nN = Xdata.getNumberOfNodes();
+	vector<ElementData>& EMS = Xdata.Edata;
+	unsigned int nE = Xdata.getNumberOfElements();
 
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// What snow depth should be used?
@@ -949,7 +949,8 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 			v_pump = 0.0;
 		}
 		// Assemble matrix
-		for (e = nE-1; e >= 0; e--) {
+		e = nE;
+		while (e-- > 0) {
 			EL_INCID( e, Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Update the wind pumping velocity gradient
@@ -1329,11 +1330,11 @@ double Snowpack::NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xd
  */
 void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw)
 {
-	int nNewE, nHoarE;          // The number of new elements to be added to Profile
-	int i, e, nE, n, nN, nOldE, nOldN;    // Temporary values; node and element counters
-	double z0;                  // Used to determine the z-location of new snowfall nodes
-	ElementData  *EMS;         // Avoids dereferencing the pointer
-	double Ln;                  // Original new snow layer element length
+	unsigned int nNewE, nHoarE;        // The number of elements to be added
+	unsigned int nOldE, nE, nOldN, nN; // Old and new numbers of elements and nodes
+	unsigned int e, n;                 // Element and node counters
+	double z0;                         // Used to determine the z-location of new snowfall nodes
+	double Ln;                         // Original new snow layer element length
 
 	double rho_hn=Constants::undefined, t_surf, hn, hoar;  // New snow data
 	double cos_sl, L0, dL, Theta0;  // Local values
@@ -1408,16 +1409,16 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				Xdata.Ndata[nOldN-1].hoar = 0.;
 			}
 
+			Xdata.Albedo = Snowpack::new_snow_albedo;
+
 			nN = nOldN + nNewE + nHoarE;
 			nE = nOldE + nNewE + nHoarE;
-
 			Xdata.resize(nE);
+			vector<NodeData>& NDS = Xdata.Ndata;
+			vector<ElementData>& EMS = Xdata.Edata;
 
-			vector<NodeData>& NDS = Xdata.Ndata; EMS = &Xdata.Edata[0];
-
-			Xdata.Albedo = Snowpack::new_snow_albedo;
 			// Create hoar layer
-			if ( nHoarE ) {
+			if (nHoarE) {
 				// Since mass of hoar was already added to element below, substract....
 				// Make sure you don't try to extract more than is there
 				hoar = MAX(0.,MIN(EMS[nOldE-1].M - 0.1,hoar));
@@ -1431,8 +1432,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				EMS[nOldE-1].theta[ICE] += -hoar/(Constants::density_ice*EMS[nOldE-1].L);
 				EMS[nOldE-1].theta[ICE] = MAX(EMS[nOldE-1].theta[ICE],0.);
 				EMS[nOldE-1].theta[WATER] *= L0/EMS[nOldE-1].L;
-				for (i = 0; i < N_SOLUTES; i++) {
-					EMS[nOldE-1].conc[ICE][i] *= L0*Theta0/(EMS[nOldE-1].theta[ICE]*EMS[nOldE-1].L);
+				for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
+					EMS[nOldE-1].conc[ICE][ii] *= L0*Theta0/(EMS[nOldE-1].theta[ICE]*EMS[nOldE-1].L);
 				}
 				EMS[nOldE-1].M -= hoar;
 				EMS[nOldE-1].theta[AIR] = MAX(0., 1.0 - EMS[nOldE-1].theta[WATER] - EMS[nOldE-1].theta[ICE] - EMS[nOldE-1].theta[SOIL]);
@@ -1455,7 +1456,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				NDS[nOldN-1].hoar = 0.0;
 			}
 			// Fill the nodal data
-			if ( !useSoilLayers && (nOldN-1 == Xdata.SoilNode) ) { // New snow on bare ground w/o soil
+			if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode) ) { // New snow on bare ground w/o soil
 				NDS[nOldN-1].T = (t_surf + Mdata.ta)/2.;
 			}
 			Ln = (hn / nNewE);
@@ -1488,15 +1489,15 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				// Mass
 				EMS[e].M = EMS[e].L0*EMS[e].Rho;
 				// Volumetric components
-				EMS[e].theta[ICE]   = EMS[e].Rho/Constants::density_ice; // ice content
-				EMS[e].theta[WATER] = 0.0;                    // water content
-				EMS[e].theta[AIR]   = 1. - EMS[e].theta[ICE]; // void content
-				EMS[e].theta[SOIL]  = 0.0;                    // soil content
-				for (i = 0; i < N_SOLUTES; i++) {
-					EMS[e].conc[ICE][i]   = Mdata.conc[i]*Constants::density_ice/Constants::density_water;
-					EMS[e].conc[WATER][i] = Mdata.conc[i];
-					EMS[e].conc[AIR][i]   = 0.0;
-					EMS[e].conc[SOIL][i]  = 0.0;
+				EMS[e].theta[SOIL]  = 0.0;
+				EMS[e].theta[ICE]   = EMS[e].Rho/Constants::density_ice;
+				EMS[e].theta[WATER] = 0.0;
+				EMS[e].theta[AIR]   = 1. - EMS[e].theta[ICE];
+				for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
+					EMS[e].conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
+					EMS[e].conc[WATER][ii] = Mdata.conc[ii];
+					EMS[e].conc[AIR][ii]   = 0.0;
+					EMS[e].conc[SOIL][ii]  = 0.0;
 				}
 				// Coordination number based on Bob's empirical function
 				EMS[e].N3 = Metamorphism::getCoordinationNumberN3(EMS[e].Rho);
@@ -1660,7 +1661,6 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	PhaseChange phasechange(cfg);
 
 	try {
-
 		// Adjust Boundary Condition
 		if ( change_bc && meas_tss ) {
 			if ( Mdata.tss < C_TO_K(thresh_change_bc) ) {

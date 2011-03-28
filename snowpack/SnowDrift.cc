@@ -129,18 +129,15 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 */
 void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw)
 {
-	int nE, nE_old;                           // number of new and old elements
 	int nErode = 0;                           // number of eroded elements and erosion level
 	bool windward = false;                    // Set to true for windward slope
 	double real_flux = 0., virtual_flux = 0.; // mass flux, either real or virtual
 	double massErode = 0.;                    // eroded mass loss due to erosion
 	double ustar_max;
-	ElementData *EMS;
 
-	nE = Xdata.getNumberOfElements();
-	nE_old = nE;
-	EMS = &Xdata.Edata[0];
+	unsigned int nE = Xdata.getNumberOfElements();
 	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
 
 	const bool no_snow = ((nE < Xdata.SoilNode+1) || (EMS[nE-1].theta[SOIL] > 0.));
 	const bool no_wind_data = (Mdata.vw_drift == Constants::nodata);

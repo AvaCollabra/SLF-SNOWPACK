@@ -57,9 +57,6 @@ WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg)
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
 	sn_dt = M_TO_S(calculation_step_length);
 
-	//The maximum number of solutes to be treated
-	cfg.getValue("MAX_N_SOLUTES", "Parameters", max_n_solutes);
-
 	//To build up a water table over impermeable layers
 	cfg.getValue("JAM", "Parameters", jam);
 
@@ -97,20 +94,19 @@ WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg)
 void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata,
                                             SurfaceFluxes& Sdata)
 {
-	int    nE, nN;                   // number of elements and nodes
-	int    e;                        // element counter
-	ElementData *EMS;               // dereferenced element pointer
-	int    e0;                       // Element where action takes place
+	unsigned int e, ii;          // Counters
 	double L0, dL;                   // Length of element "e" and "e-1"
 	double M0, Theta0;               // available mass and initial volumetric content
 	double dM=0.;                    // elemental change in MASS from element "e" and added to element "e-1"
-	double M_Solutes[max_n_solutes]; // Mass of solutes from disappearing phases
+	double M_Solutes[Xdata.number_of_solutes]; // Mass of solutes from disappearing phases
 	double Tss;                      // Surface Temperature
 	double hoar=0.0;                 // Actual change in hoar mass
 	double cH_old;                   // Temporary variable to hold height of snow
 
-	nN = Xdata.getNumberOfNodes();  vector<NodeData>& NDS = Xdata.Ndata;
-	nE = Xdata.getNumberOfElements();  EMS = &Xdata.Edata[0];
+	unsigned int nN = Xdata.getNumberOfNodes();
+	unsigned int nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
 	Tss = NDS[nE].T;
 
 	/*
@@ -140,7 +136,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			EMS[nE-1].theta[ICE] += dM/(Constants::density_ice*EMS[nE-1].L);
 			EMS[nE-1].theta[WATER] *= L0/EMS[nE-1].L;
 
-			for (int ii = 0; ii > N_SOLUTES; ii++) {
+			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				EMS[nE-1].conc[ICE][ii] *= L0*Theta0/(EMS[nE-1].theta[ICE]*EMS[nE-1].L);
 			}
 		} else {
@@ -153,7 +149,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			Theta0 = EMS[nE-1].theta[WATER];
 			EMS[nE-1].theta[WATER] += dM/(Constants::density_water*EMS[nE-1].L);
 
-			for (int ii = 0; ii > N_SOLUTES; ii++) {
+			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				EMS[nE-1].conc[WATER][ii] *= Theta0/EMS[nE-1].theta[WATER];
 			}
 		}
@@ -164,11 +160,11 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + (EMS[nE-1].theta[WATER] * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 	} else {
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
-		for (int ii = 0; ii > N_SOLUTES; ii++) {
+		for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			M_Solutes[ii] = 0.0;
 		}
-		e0 = nE-1;
-		while (ql < 0.0 && e0 >= 0) {  // While energy is available
+		int e0 = nE-1;
+		while ((e0 > 0) && (ql < 0.0)) {  // While energy is available
 			/*
 			* Determine the amount of potential sublimation/evaporation and collect some variables
 			* that will be continuously used: L0 and M0
@@ -185,13 +181,13 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				if (-dM >= M0) {
 					dM = -M0;
 					// Add solutes to Storage
-					for (int ii = 0; ii > N_SOLUTES; ii++) {
+					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						M_Solutes[ii] += EMS[e0].conc[WATER][ii]*Theta0*L0;
 					}
 					EMS[e0].theta[WATER] = 0.0;
 				} else {
 					EMS[e0].theta[WATER] += dM/(Constants::density_water*L0);
-					for (int ii = 0; ii > N_SOLUTES; ii++) {
+					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						EMS[e0].conc[WATER][ii] *= Theta0/EMS[e0].theta[WATER];
 					}
 				}
@@ -207,13 +203,13 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				if (-dM > M0) {
 					dM = -M0;
 					// Add solutes to Storage
-					for (int ii = 0; ii > N_SOLUTES; ii++) {
+					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						M_Solutes[ii] += EMS[e0].conc[ICE][ii]*Theta0*L0;
 					}
 					EMS[e0].theta[ICE]=0.0; dL = 0.0;
 				} else {
 					dL = dM/(EMS[e0].Rho);
-					if (e0 < Xdata.SoilNode) {
+					if (e0 < signed(Xdata.SoilNode)) {
 						dL = 0.;
 					}
 					NDS[e0+1].z += dL; EMS[e0].L0 = EMS[e0].L = L0 + dL;
@@ -223,7 +219,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					EMS[e0].theta[ICE] *= L0/EMS[e0].L;
 					EMS[e0].theta[ICE] += dM/(Constants::density_ice*EMS[e0].L);
 					EMS[e0].theta[WATER] *= L0/EMS[e0].L;
-					for (int ii = 0; ii > N_SOLUTES; ii++) {
+					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						EMS[e0].conc[ICE][ii] *= L0*Theta0/(EMS[e0].theta[ICE]*EMS[e0].L);
 					}
 				}
@@ -232,31 +228,31 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
 				// If present at surface, surface hoar is sublimated away
-				if (e0 == nE-1) {
+				if (e0 == signed(nE-1)) {
 					hoar = dM;
 				}
 			}
 			// Update remaining volumetric contents and density
 			EMS[e0].theta[AIR] = MAX(0., 1.0 - EMS[e0].theta[WATER] - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]);
 			EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice) + (EMS[e0].theta[WATER] * Constants::density_water) + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
-			e0--; // Go to the next element
-		} // while ql < 0
+			e0--;
+		}
     // Now take care of left over solute mass.
-		if (e0 < 0) { // Add Solute Mass to Runoff
-			for (int ii = 0; ii > N_SOLUTES; ii++) {
+		if (e0 < 0) { // Add Solute Mass to Runoff TODO HACK CHECK
+			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += M_Solutes[ii]/S_TO_H(sn_dt);
 			}
 		} else { // Add Solute Mass to Element below
 			if (EMS[e0].theta[WATER] > 0.) {
-				for(int ii = 0; ii > N_SOLUTES; ii++) {
+				for(ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[WATER][ii] += M_Solutes[ii]/EMS[e0].theta[WATER]/EMS[e0].L;
 				}
 			} else if (EMS[e0].theta[ICE] > 0.) {
-				for (int ii = 0; ii > N_SOLUTES; ii++) {
+				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[ICE][ii] += M_Solutes[ii]/EMS[e0].theta[ICE]/EMS[e0].L;
 				}
 			} else {
-				for (int ii = 0; ii > N_SOLUTES; ii++) {
+				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[SOIL][ii] += M_Solutes[ii]/EMS[e0].theta[SOIL]/EMS[e0].L;
 				}
 			}
@@ -301,20 +297,17 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
  */
 void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	int e0, e1;        // Lower (e0) and upper (e1) element index
-	int nE, nN;        // Original number of elements and nodes
-	int rnE, rnN;      // Reduced number of nodes and elements
 	bool enforce_join = false;  // To enforce merging in special cases
-	ElementData *EMS; // Old element data structures
 
-	EMS = &Xdata.Edata[0];
-	nE = rnE = Xdata.getNumberOfElements();
-	nN = rnN = Xdata.getNumberOfNodes();
+	unsigned int nN = Xdata.getNumberOfNodes();
+	unsigned int rnN = nN, nE = nN-1, rnE = nN-1;
+	vector<ElementData>& EMS = Xdata.Edata;
 
 	if ((nN == Xdata.SoilNode+1) || (wet_layer && snp_soil && (nN == Xdata.SoilNode+2) && (EMS[nE-1].theta[ICE] < Constants::min_ice_content) && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
 		return;
 	}
 
+	unsigned int e0, e1; // Lower (e0) and upper (e1) element index
 	for (e0 = nE-2, e1 = nE-1; e1 > Xdata.SoilNode; e1--, e0--) {
 		enforce_join = 1;
 		if ((EMS[e1].L < minimum_l_element) || (EMS[e1].mk%100 == 3)) {
@@ -347,7 +340,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps)) && (EMS[e0].theta[ICE] < Constants::min_ice_content || EMS[e0].L < 0.005) && !(wet_layer && snp_soil && (nE > 1) && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95)) && (EMS[nE-1].theta[WATER] > 0.05))) {
 		Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e0].M;
 		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e0].M;
-		for (int ii = 0; ii < N_SOLUTES; ii++) {
+		for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			Sdata.load[ii] += (EMS[e0].L*EMS[e0].theta[WATER]*EMS[e0].conc[WATER][ii] + EMS[e0].L*EMS[e0].theta[ICE] * EMS[e0].conc[ICE][ii])/S_TO_H(sn_dt);
 		}
 		rnE--;
@@ -371,19 +364,18 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
  */
 void WaterTransport::adjustDensity(SnowStation& Xdata)
 {
-	int nE, nN;                           // number of elements and nodes
-	int e,e0,n;                           // Element "e" (top) and element "e-1"
-	double L0, dL, cH_old;                // Length of element "e" and "e-1"
-	ElementData *EMS;                    // dereferenced element pointer
+	unsigned int e0, e, n;  // Element e0 is where the action takes place
+	double L0, dL;          // Lengths of upper and lower element
 
-	vector<NodeData>& NDS = Xdata.Ndata; nN = Xdata.getNumberOfNodes();
-	EMS = &Xdata.Edata[0]; nE = Xdata.getNumberOfElements();
-	if (nN == Xdata.SoilNode + 1) {
-		return;
-	}
+	unsigned int nN = Xdata.getNumberOfNodes();
+	if (nN == Xdata.SoilNode + 1) return;
 
-	e0 = nE-1;
-	while (((e0 >= Xdata.SoilNode) && (EMS[e0].theta[SOIL] < Constants::eps2) && (EMS[e0].mk%100 > 9) &&
+	unsigned int nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+
+	e0 = nE;
+	while (((e0-- > Xdata.SoilNode) && (EMS[e0].theta[SOIL] < Constants::eps2) && (EMS[e0].mk%100 > 9) &&
 			(EMS[e0].theta[WATER] < 0.3) && (EMS[e0].theta[ICE] < Constants::min_ice_content) &&
 			(EMS[e0].L > minimum_l_element))) {
 
@@ -421,9 +413,8 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			        e0, nE, EMS[e0].Rho, EMS[e0].theta[ICE], EMS[e0].theta[WATER], EMS[e0].theta[AIR]);
 			throw IOException("Cannot evaluate mass balance in adjust density routine", AT);
 		}
-		e0--;
 	}
-	cH_old = Xdata.cH;
+	double cH_old = Xdata.cH;
 	Xdata.cH = NDS[Xdata.getNumberOfNodes()-1].z + NDS[Xdata.getNumberOfNodes()-1].u;
 	Xdata.mH -= (cH_old - Xdata.cH);
 }
@@ -439,9 +430,9 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
  */
 void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	int nE, nN;           // number of elements and nodes
-	int e0, e1;           // Upper element "e0" and lower element "e1=e0-1"
-	double L0, L1;        // Length of element "e" and "e-1"
+	unsigned int e0, e1;  // Upper and lower element, "e0" and "e1", respectively
+	unsigned int ii;    // Index
+	double L0, L1;        // Lengths of upper an lower elements
 	double dM;            // The total change in MASS -- subtracted from element "e" and added to element "e-1"
 	double dth_w;         // Additional storage capacity due to refreezing
 	double W0, dThetaW0;  // Water to be removed from element e
@@ -450,12 +441,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double Store;         // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 	double excess_water;  // Excess water that cannot be retained in lower element; volume fraction (1)
 	double z_water;       // Position of upper node of top water-film layer (m)
-	ElementData *EMS;    // dereferenced element pointer
-
-	EMS = &Xdata.Edata[0];
-	nE = Xdata.getNumberOfElements();
+	
+	unsigned int nN = Xdata.getNumberOfNodes();
+	unsigned int nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
-	nN = Xdata.getNumberOfNodes();
+	vector<ElementData>& EMS = Xdata.Edata;
 
 	// First, consider no soil with no snow on the ground
 	if (!snp_soil && nN == 1) {
@@ -474,7 +464,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Xdata.ErosionLevel = nE-1;
 
 				Xdata.resize(nE);
-				EMS = &Xdata.Edata[0];
+				vector<ElementData>& EMS = Xdata.Edata;
 
 			// Temperature of the upper hoar node
 				NDS[nN-1].T = Mdata.ta;
@@ -511,7 +501,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				L0 = EMS[e0].L;
 				dThetaW0 = MIN(Constants::density_ice/Constants::density_water*EMS[e0].theta[AIR],Store/L0);
 				Store -= dThetaW0*L0;
-				for (int ii = 0; ii < N_SOLUTES; ii++) {
+				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 *Mdata.conc[ii] + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii]) / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
 				}
 				EMS[e0].theta[WATER] += dThetaW0;
@@ -522,7 +512,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			if (Store > 0.) {
 				L0 = EMS[e0].L;
 				dThetaW0 = Store/L0;
-				for (int ii = 0; ii < N_SOLUTES; ii++) {
+				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 * Mdata.conc[ii] + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii]) / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
 				}
 				EMS[e0].theta[WATER] += dThetaW0;
@@ -596,13 +586,13 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					}
 					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += excess_water*Constants::density_water*L0;
 					// Take care of Solutes
-					for (int ii = 0; ii < N_SOLUTES; ii++) {
+					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						Sdata.load[ii] += (EMS[e1].conc[WATER][ii] * excess_water * Constants::density_water*L0/S_TO_H(sn_dt));
 					}
 				}
 
 				// Water movement from element e0 to element e1: move solutes also
-				for (int ii = 0; ii < N_SOLUTES; ii++) {
+				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e1].conc[WATER][ii] = (W1 * EMS[e1].conc[WATER][ii] + dThetaW1 * EMS[e0].conc[WATER][ii]) / (W1+dThetaW1);
 				}
 				// update volumetric contents, masses and density
@@ -659,7 +649,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += dM;
 		}
 		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += dM;
-		for (int ii = 0; ii < N_SOLUTES; ii++) {
+		for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			Sdata.load[ii] +=  (EMS[0].conc[WATER][ii] * dM / S_TO_H(sn_dt));
 		}
 	}
@@ -717,7 +707,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += Mdata.hnw;
-			for (int ii = 0; ii < N_SOLUTES; ii++) {
+			for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += Mdata.conc[ii] * Mdata.hnw /*/ S_TO_H(sn_dt)*/;
 			}
 		}

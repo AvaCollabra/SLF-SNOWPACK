@@ -43,7 +43,8 @@ class AsciiIO : public SnowpackIOInterface {
 	public:
 		AsciiIO(const mio::Config& i_cfg);
 
-		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
+		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
+		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
@@ -57,11 +58,11 @@ class AsciiIO : public SnowpackIOInterface {
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
-		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& type);
+		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& ftype);
 		bool parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 		bool parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 
-		std::string getFilenamePrefix(const std::string& stationname, const std::string& path);
+		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true);
 
 		bool checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata, const char *ext, ...);
 
@@ -96,15 +97,16 @@ class AsciiIO : public SnowpackIOInterface {
 		double avgsum_time_series;
 		bool useCanopyModel, useSoilLayers, research_mode;
 		int sw_mode;
-		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 		bool perp_to_slope;
 		double min_depth_subsurf;
 		int number_meas_temperatures, number_fixed_heights, number_fixed_rates, max_number_sensors;
+		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
 		double hoar_density_surf, hoar_min_size_surf;
-		int max_number_of_solutes;
+		//int number_of_solutes;
 
-		std::string variant, experiment, outpath, i_snopath, o_snopath;
+		std::string variant, experiment, station_name;
+		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
 		std::vector<double> fixed_sensor_depths;

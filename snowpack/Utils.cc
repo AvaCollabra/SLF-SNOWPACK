@@ -139,24 +139,23 @@ int booleanTime(const double& JulianDate, double days_between,
 	return ret;
 }
 
-
 /**
  * @brief Delete outdir.ext_n[ext] from outdir
  * @author Michael Lehning
  * @version 9Y.mm
  * @param outdir Output dir
  */
-void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
-                          const std::string& station, const int& nSlopes)
+void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
+                          const std::string& station, const unsigned int& nSlopes)
 {
 	vector<string> vecExtension;
-	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
-	//vecExtension.push_back("met"); //Meteo data input
-	//vecExtension.push_back("pro"); //Time series of modeled profile-type data
+	vecExtension.push_back("met"); //Meteo data input
+	vecExtension.push_back("pro"); //Time series of modeled profile-type data
 	vecExtension.push_back("ini"); //Record of run configuration
+	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
 
-	char fp[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
-	int j, n_files;
+	char ftrunc[MAX_STRING_LENGTH]="\000", fname[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
+	unsigned int n_files;
 
 	if (experiment != "NO_EXP") {
 		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", station.c_str(), experiment.c_str());
@@ -165,63 +164,42 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 		const string& ext = vecExtension[ii];
 		n_files = 0;
 
-		if ((ext == "sno") || (ext == "met") || (ext == "pro")){
-			for (j = 0; j < nSlopes; j++) {
-				if ( j ) {
-					snprintf(fp, MAX_STRING_LENGTH-1, "%s%d%s.%s", outdir.c_str(), j, exp, ext.c_str());
-				} else {
-					snprintf(fp, MAX_STRING_LENGTH-1, "%s%s.%s", outdir.c_str(), exp, ext.c_str());
-				}
-				if ( remove(fp) == 0 ) {
-					n_files++;
-				}
-			}
-			if (n_files > 0) {
-				prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
-			} else {
-				prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
-			}
-		} else if (ext == "ini") {
+		snprintf(ftrunc, MAX_STRING_LENGTH-1, "%s/%s", outdir.c_str(), exp);
+		if (ext == "ini") {
 			if (station != "IMIS") {
-				snprintf(fp, MAX_STRING_LENGTH-2, "%s%s.%s", outdir.c_str(), exp, ext.c_str());
+				snprintf(fname, MAX_STRING_LENGTH-2, "%s.%s", ftrunc, ext.c_str());
 				if (nSlopes > 1) {
-					snprintf(fp, MAX_STRING_LENGTH-3, "%s%s-%d.%s", outdir.c_str(), exp, nSlopes-1, ext.c_str());
+					snprintf(fname, MAX_STRING_LENGTH-3, "%s-%d.%s", ftrunc, nSlopes-1, ext.c_str());
 				}
-				if (remove(fp) == 0) {
-					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %s", fp);
+				if (remove(fname) == 0) {
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %s", fname);
 				} else {
-					prn_msg(__FILE__, __LINE__, "msg-", Date(), "No file %s to erase", fp);
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "No file %s to erase", fname);
+				}
+			}
+		} else {
+			for (unsigned int j = 0; j < nSlopes; j++) {
+				if ( j ) {
+					snprintf(fname, MAX_STRING_LENGTH-1, "%s%d.%s", ftrunc, j, ext.c_str());
+				} else {
+					snprintf(fname, MAX_STRING_LENGTH-1, "%s.%s", ftrunc, ext.c_str());
+				}
+				if (ext == "sno") {
+					if (remove(fname) == 0) {
+						n_files++;
+					}
+					if (n_files > 0) {
+						prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
+					} else {
+						prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
+					}
+				} else if ((j == 0) && IOUtils::fileExists(fname)) {
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Data in *.%s file(s) may be overwritten", ext.c_str());
 				}
 			}
 		}
 	}
 }
-
-/**
- * @brief Returns modelled internal snow or/and soil temperature (instantaneous value; degC),
- *        at a given position z perpendicular to slope (m) \n
- *        z must be less than computed height (Xdata->cH), otherwise modeled temperature is set to Constants::undefined
- * @author Charles Fierz
- * @version 10.02
- * @param z Sensor position perpendicular to slope (m)
- * @param *Xdata
- */
-double getModelledTemperature(const double& z, const SnowStation& Xdata)
-{
-	int n_up;           // Upper node number
-	double z_up, z_low; // Upper and lower nodes around position z of sensor
-
-	const vector<NodeData>& NDS = Xdata.Ndata;
-	if ( (z == Constants::nodata) || !((Xdata.getNumberOfNodes() > 1) && (z < Xdata.cH)) ) {
-		return Constants::nodata;
-	} else {
-		n_up = findUpperNode(z, NDS, Xdata.getNumberOfNodes());
-		z_low = (NDS[n_up-1].z + NDS[n_up-1].u);
-		z_up = (NDS[n_up].z + NDS[n_up].u);
-		return (K_TO_C(NDS[n_up-1].T + (z - z_low)*(NDS[n_up].T-NDS[n_up-1].T)/(z_up-z_low)));
-	}
-}
-
 
 /**
  * @brief Returns number of lowest node above a given position z perpendicular to slope (m) \n
@@ -359,13 +337,12 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
 bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in)
 {
 	bool mass_error = true;
-	int e;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
 	double hnw = Xdata.hn*Xdata.rho_hn;
 	double mass_change = hnw - Sdata.mass[SurfaceFluxes::MS_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
-	for (e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
+	for (unsigned int e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
 		tot_mass += Xdata.Edata[e].M;
 		tot_swe  += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
 		dmassE = Xdata.Edata[e].M - (Xdata.Edata[e].L * Xdata.Edata[e].Rho);

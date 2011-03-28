@@ -36,12 +36,12 @@
 class Aggregate {
 
 	public:
-		static int aggregate(std::vector<SnowProfileLayer>& Pdata);
+		static unsigned int aggregate(std::vector<SnowProfileLayer>& Pdata);
 
 	private:
-		static void shift(const int& nE, std::vector<SnowProfileLayer>& Pdata);
-		static bool doJoin2(const int& e1, std::vector<SnowProfileLayer>& Pdata);
-		static bool doJoin(const int& e1, std::vector<SnowProfileLayer>& Pdata);
+		static void shift(const unsigned int& nE, std::vector<SnowProfileLayer>& Pdata);
+		static bool doJoin2(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata);
+		static bool doJoin(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata);
 
 		static const double limit_dry;     ///< Distinguishes between dry and wet snow layers (1)
 		static const double diff_theta_w;  ///< Maximum water difference for aggregation (Vol %)

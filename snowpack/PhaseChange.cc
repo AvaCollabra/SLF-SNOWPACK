@@ -70,13 +70,12 @@ PhaseChange::PhaseChange(const mio::Config& i_cfg) : cfg(i_cfg)
  * @param dt Time step (s)
  * @param *ql_Rest Latent heat flux balance (W m-2)
  */
-void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const double& dt, double& ql_Rest)
+void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt, double& ql_Rest)
 {
 	double dT;    // Constants::freezing_tk - Te > 0
 	double A;     // coefficient A ( see notes below )
 	double dth_i; // change in volumetric ice content
 	double dth_w; // change in volumetric water content
-	int i;
 
 	Edata.checkVolContent();
 	/*
@@ -112,9 +111,9 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const double& dt, doubl
 			dT = dth_i / A;
 		}
 		// Compute the new chemical concentrations
-		for (i = 0; i < N_SOLUTES; i++) {
+		for (unsigned int ii = 0; ii < nSolutes; ii++) {
 			if( dth_w > 0. ) {
-				Edata.conc[WATER][i] = (Edata.theta[WATER] * Edata.conc[WATER][i] + dth_w * Edata.conc[ICE][i]) / (Edata.theta[WATER] + dth_w);
+				Edata.conc[WATER][ii] = (Edata.theta[WATER] * Edata.conc[WATER][ii] + dth_w * Edata.conc[ICE][ii]) / (Edata.theta[WATER] + dth_w);
 			}
 		}
 		Edata.theta[ICE] += dth_i;
@@ -183,7 +182,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const double& dt, doubl
  * @param *Edata
  * @param dt Time step (s)
  */
-void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const double& dt)
+void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSolutes, const double& dt)
 {
 	Edata.checkVolContent();
 	/*
@@ -213,8 +212,8 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const double& dt)
 			Edata.theta[WATER] = PhaseChange::theta_r;
 			Edata.theta[AIR] = 0.0;
 		} else {
-			// If not compute the volumetric components
-			for (int ii = 0; ii < N_SOLUTES; ii++) {
+			// If the new chemical concentrations
+			for (unsigned int ii = 0; ii < nSolutes; ii++) {
 				if (dth_i > 0.) {
 					Edata.conc[ICE][ii] = (Edata.theta[ICE] * Edata.conc[ICE][ii] + dth_i * Edata.conc[WATER][ii]) / ( Edata.theta[ICE] + dth_i);
 				}
@@ -283,7 +282,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 			double thresh_th_w;
 			for (e = nE-1, ql_Rest = 0.; e >= 0; e--) {
 				try {
-					compSubSurfaceMelt(EMS[e], sn_dt, ql_Rest);
+					compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest);
 				} catch(...) {
 					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceMelt at element [%d], nE=%d", e, nE);
 					throw;
@@ -320,7 +319,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				double Te_old = EMS[e].Te;
 
 				try {
-					compSubSurfaceFrze(EMS[e], sn_dt);
+					compSubSurfaceFrze(EMS[e], Xdata.number_of_solutes, sn_dt);
 				} catch(...) {
 					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceFrze at element [%d], nE=%d", e, nE);
 					throw;

@@ -38,40 +38,40 @@ const double Aggregate::min_l_element = 0.3;   ///< Minimum length of element to
  * @param nE (int)
  * @param Pdata A vector of SnowProfileLayer
  */
-void Aggregate::shift(const int& nE, std::vector<SnowProfileLayer>& Pdata)
+void Aggregate::shift(const unsigned int& nE, std::vector<SnowProfileLayer>& Pdata)
 {
-	int l = 0;
-	for (int e=1; e<nE; e++) {
+	for (unsigned int e=1, ll=1; e<nE; e++) {
 		if (Pdata[e].height != Constants::undefined) {
-			l++;
-			Pdata[l].height = Pdata[e].height;
-			Pdata[l].layerDate = Pdata[e].layerDate;
-			Pdata[l].rho = Pdata[e].rho;
-			Pdata[l].tem = Pdata[e].tem;
-			Pdata[l].tem_grad = Pdata[e].tem_grad;
-			Pdata[l].strain_rate = Pdata[e].strain_rate;
-			Pdata[l].theta_w = Pdata[e].theta_w;
-			Pdata[l].theta_i = Pdata[e].theta_i;
-			Pdata[l].dendricity = Pdata[e].dendricity;
-			Pdata[l].sphericity = Pdata[e].sphericity;
-			Pdata[l].coordin_num = Pdata[e].coordin_num;
-			Pdata[l].grain_size = Pdata[e].grain_size;
-			Pdata[l].bond_size = Pdata[e].bond_size;
-			Pdata[l].hard = Pdata[e].hard;
-			Pdata[l].marker = Pdata[e].marker;
+			if (ll != e) {
+				Pdata[ll].height = Pdata[e].height;
+				Pdata[ll].layerDate = Pdata[e].layerDate;
+				Pdata[ll].rho = Pdata[e].rho;
+				Pdata[ll].T = Pdata[e].T;
+				Pdata[ll].gradT = Pdata[e].gradT;
+				Pdata[ll].strain_rate = Pdata[e].strain_rate;
+				Pdata[ll].theta_w = Pdata[e].theta_w;
+				Pdata[ll].theta_i = Pdata[e].theta_i;
+				Pdata[ll].dendricity = Pdata[e].dendricity;
+				Pdata[ll].sphericity = Pdata[e].sphericity;
+				Pdata[ll].coordin_num = Pdata[e].coordin_num;
+				Pdata[ll].grain_size = Pdata[e].grain_size;
+				Pdata[ll].bond_size = Pdata[e].bond_size;
+				Pdata[ll].hard = Pdata[e].hard;
+				Pdata[ll].marker = Pdata[e].marker;
+			}
+			ll++;
 		}
-	} // for all old elements
-} // End of shift
-
+	}
+}
 
 /**
  * @brief Decide whether to codense two layers
  * @param e1 (int)
  * @param Pdata A vector of SnowProfileLayer
  */
-bool Aggregate::doJoin2(const int& e1, std::vector<SnowProfileLayer>& Pdata)
+bool Aggregate::doJoin2(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata)
 {
-	int e2 = e1+1;
+	unsigned int e2 = e1+1;
 
 	// if a dry layer is involved
 	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)){
@@ -112,17 +112,16 @@ bool Aggregate::doJoin2(const int& e1, std::vector<SnowProfileLayer>& Pdata)
 		}
 	}
 	return true;
-} // End of doJoin2
-
+}
 
 /**
  * @brief Decide whether to codense two layers
  * @param e1 (int)
  * @param Pdata A vector of SnowProfileLayer
  */
-bool Aggregate::doJoin(const int& e1, std::vector<SnowProfileLayer>& Pdata)
+bool Aggregate::doJoin(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata)
 {
-	int e2 = e1 - 1;
+	unsigned int e2 = e1 - 1;
 
 	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)) {
 		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > limit_dry)
@@ -157,18 +156,17 @@ bool Aggregate::doJoin(const int& e1, std::vector<SnowProfileLayer>& Pdata)
 	}
 
 	return true;
-} // End of doJoin
-
+}
 
 /**
  * @brief Aggregate snow profile layers and compute the grain class
  * @param Pdata A vector of SnowProfileLayer
  */
-int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
+unsigned int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 {
 	bool flag = false;
-	int nL, nE = (int)Pdata.size();
-	double Lp0, Lp1;
+	unsigned int nL, nE = (unsigned)Pdata.size();
+	double Lp0, Lp1; // lower and upper layer
 
 	// Initialize number of layers and aggregate only if more than 5 layers
 	nL = nE;
@@ -176,10 +174,10 @@ int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 		// First Run - do not touch top element
 		// keep track of the coordinates and length of elements
 		Lp0 = (Pdata[nE-2].height -  Pdata[nE-3].height);
-		for (int l1=nE-2; l1>0; l1--) {
+		for (unsigned int l1=nE-2; l1 > 0; l1--) {
 			int l0 = l1-1;
 			Lp1 = Lp0;
-			if (l0>0) {
+			if (l0 > 0) {
 				Lp0 = (Pdata[l0].height -  Pdata[l0-1].height);
 			} else {
 				Lp0 = Pdata[l0].height;
@@ -199,10 +197,10 @@ int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 		// Second Run - aggregate remaining very thin layers
 		if (nE > 2) {
 			Lp0 = (Pdata[nE-2].height -  Pdata[nE-3].height);
-			for(int l1=nE-2; l1>0; l1--) {
-				int l0 = l1-1;
+			for(unsigned int l1 = nE-2; l1 > 0; l1--) {
+				int l0 = signed(l1)-1;
 				Lp1 = Lp0;
-				if (l0>0) {
+				if (l0 > 0) {
 					Lp0 = (Pdata[l0].height -  Pdata[l0-1].height);
 				} else {
 					Lp0 = Pdata[l0].height;
@@ -233,10 +231,10 @@ int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 	} // if more than 5 layers
 
 	// Update snow type
-	for(int ll=0; ll<nL; ll++) {
+	for(unsigned int ll=0; ll<nL; ll++) {
 		Pdata[ll].type = ElementData::snowType(Pdata[ll].dendricity, Pdata[ll].sphericity,
                                            Pdata[ll].grain_size, Pdata[ll].marker, Pdata[ll].theta_w/100.,
                                            ElementData::snowResidualWaterContent(Pdata[ll].theta_i/100.));
 	}
 	return (nL);
-} // End of aggregate
+}

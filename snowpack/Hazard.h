@@ -75,7 +75,7 @@ class Hazard {
 		bool enforce_measured_snow_heights;
 		bool force_rh_water;
 		double sn_dt;
-		double time_zone;
+		double i_time_zone;
 		int hazard_steps_between;
 		double hoar_density_surf, hoar_min_size_surf;
 		static const double minimum_drift, maximum_drift;

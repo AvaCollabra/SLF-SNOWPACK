@@ -37,16 +37,16 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg)
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
 	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
 	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", Config::nothrow);
-	if (vecProfileOutput.size() == 0){
+	if (vecProfileOutput.size() == 0) {
 		outputprofile_as_ascii = true;
 		outputprofile_as_imis  = false;
-	} else if (vecProfileOutput.size() > 2){
+	} else if (vecProfileOutput.size() > 2) {
 		throw InvalidArgumentException("The key PROFILE in section OUTPUT can have two values at most", AT);
 	} else {
 		for (unsigned int ii=0; ii<vecProfileOutput.size(); ii++){
 			if (vecProfileOutput[ii] == "ASCII"){
 				outputprofile_as_ascii = true;
-			} else if (vecProfileOutput[ii] == "IMIS"){
+			} else if (vecProfileOutput[ii] == "IMIS") {
 				outputprofile_as_imis  = true;
 			} else {
 				throw InvalidArgumentException("Key PROFILE / section OUTPUT: only values ASCII or IMIS expected", AT);
@@ -55,9 +55,10 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg)
 	}
 }
 
-void SnowpackIO::readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
+void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
+                               SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
-	asciiio.readSnowCover(station, SSdata, Zdata);
+	asciiio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
 }
 
 void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,

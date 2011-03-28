@@ -49,7 +49,7 @@ int booleanTime(const double& JulianDate, double days_between,
                 const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
-                          const std::string& station, const int& nSlopes);
+                          const std::string& station, const unsigned int& nSlopes);
 
 void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
                         char *compile_date, char *user);
@@ -60,8 +60,6 @@ void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
 void typeToCode(int *F1, int *F2, int *F3, int type);
 
 bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in);
-
-double getModelledTemperature(const double& z, const SnowStation& Xdata);
 
 int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int& nN);
 

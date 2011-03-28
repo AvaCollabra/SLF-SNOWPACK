@@ -35,7 +35,8 @@ class SnowpackIO : public SnowpackIOInterface {
 	public:
 		SnowpackIO(const mio::Config& i_cfg);
 
-		virtual void readSnowCover(const std::string& station, SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
+		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
+		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);

@@ -63,32 +63,28 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
-
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
 	sn_dt = M_TO_S(calculation_step_length);
-
-	/*
-	 * Hazard data interval in units of CALCULATION_STEP_LENGTH \n
-	 * WARNING: In operational mode, this has to result in a 30 min interval!
-	 * It is a matter of consitency. If you change this, a big mess will result!!!
-	 */
-	cfg.getValue("HAZARD_STEPS_BETWEEN", "Parameters", hazard_steps_between);
-
 	/* Dew point relative to water or ice
 	 * - default: 1
 	 * - Antarctica: 0 */
 	cfg.getValue("FORCE_RH_WATER", "Parameters", force_rh_water);
-
 	cfg.getValue("RESEARCH", "Parameters", research_mode);
-
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
 	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
-
 	//Minimum size to show surface hoar on surface (mm)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
 
-	cfg.getValue("TIME_ZONE", "Input", time_zone);
+	cfg.getValue("TIME_ZONE", "Input", i_time_zone);
+
+	/*
+	* Hazard data interval in units of CALCULATION_STEP_LENGTH \n
+	* WARNING: In operational mode, this has to result in a 30 min interval!
+	* It is a matter of consitency. If you change this, a big mess will result!!!
+	*/
+	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
+
 }
 
 /**
@@ -116,7 +112,7 @@ void Hazard::initializeHazard(const double duration, double *old_drift, double s
 	Hdata[0].nHz = (signed)nHz;
 	Hdata[nHz-1].nHz = (signed)nHz;
 
-	versionUserRuntime(time_zone, Hdata[0].sn_version, Hdata[0].sn_computation_date,
+	versionUserRuntime(i_time_zone, Hdata[0].sn_version, Hdata[0].sn_computation_date,
                      &Hdata[0].sn_jul_computation_date, Hdata[0].sn_compilation_date, Hdata[0].sn_user);
 
 	Hdata[0].wind_trans = driftIndex(old_drift, 0., Hazard::wind_slab_density, 6, slope_angle, -1);
@@ -237,18 +233,20 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
 {
 	double crust_dep=0., crust_thick=0.;
 	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	int e = Xdata.getNumberOfElements()-1;
 
-	while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
-		if ((Xdata.Edata[e].type == 772) || (Xdata.Edata[e].type == 880)) {
-			crust_thick += Xdata.Edata[e].L/cos_sl;
-			if ((Xdata.Edata[e-1].type != 772) && (Xdata.Edata[e-1].type != 880)) {
-				break;
+	if (Xdata.getNumberOfElements() > 0) {
+		unsigned int e = Xdata.getNumberOfElements()-1;
+		while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
+			if ((Xdata.Edata[e].type == 772) || (Xdata.Edata[e].type == 880)) {
+				crust_thick += Xdata.Edata[e].L/cos_sl;
+				if ((Xdata.Edata[e-1].type != 772) && (Xdata.Edata[e-1].type != 880)) {
+					break;
+				}
+			} else {
+				crust_dep += Xdata.Edata[e].L/cos_sl;
 			}
-		} else {
-			crust_dep += Xdata.Edata[e].L/cos_sl;
+			e--;
 		}
-		e--;
 	}
 	if ( (crust_thick >= 0.) && (crust_thick <= Xdata.cH/cos_sl) ) {
 		Hdata.crust = M_TO_CM(crust_thick);
@@ -273,7 +271,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
                         const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
                         const SnowStation& Xdata)
 {
-	int    nE = Xdata.getNumberOfElements();
+	unsigned int nE = Xdata.getNumberOfElements();
 	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	double hs = Xdata.cH / cos_sl;
 
@@ -330,14 +328,14 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	double t_hn[6] ={0.5, 3., 6., 12., 24., 72.}, hn[6], hnw[6];
 	double sum_hn = 0., sum_hnw = 0.;
 	int e = nE-1;
-	for (unsigned int k = 0; k <= 5; k++) {
-		while ((e >= Xdata.SoilNode) && ((Mdata.date - EMS[e].depositionDate).getJulianDate() < (H_TO_D(t_hn[k])))) {
+	for (unsigned int kk = 0; kk <= 5; kk++) {
+		while ((e >= signed(Xdata.SoilNode)) && ((Mdata.date - EMS[e].depositionDate).getJulianDate() < (H_TO_D(t_hn[kk])))) {
 			sum_hn  += EMS[e].L;
 			sum_hnw += EMS[e].L * EMS[e].Rho;
 			e--;
 		}
-		hn[k] = sum_hn;
-		hnw[k] = sum_hnw;
+		hn[kk] = sum_hn;
+		hnw[kk] = sum_hnw;
 	}
 	Hdata.hn_half_hour = M_TO_CM(hn[0] / cos_sl);
 	Hdata.hn3 =  M_TO_CM(hn[1] / cos_sl);
@@ -401,8 +399,8 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 
 	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
 	if (research_mode){
-		Hdata.dewpt_def = K_TO_C(Xdata.Ndata[Xdata.getNumberOfNodes()-1].T) 
-			- RhtoDewPoint(Mdata.rh, K_TO_C(Mdata.ta), force_rh_water);
+		Hdata.dewpt_def = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T
+		                  - RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
 	} else {
 		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
 	}
@@ -516,12 +514,12 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	// Snow temperatures t_top1 and t_top2 in degC at 5 cm and 10 cm below the surface, respectively
 	double h_top1 = hs - 0.05;
 	h_top1 = hs - 0.05;
-	Hdata.t_top1 = getModelledTemperature(h_top1, Xdata);
+	Hdata.t_top1 = Xdata.getModelledTemperature(h_top1);
 	if ( !((Hdata.t_top1 > -50.) && (Hdata.t_top1 <= 0.)) ) {
 		Hdata_ind.t_top1 = -1;
 	}
 	double h_top2 = hs - 0.10;
-	Hdata.t_top2 = getModelledTemperature(h_top2, Xdata);
+	Hdata.t_top2 = Xdata.getModelledTemperature(h_top2);
 	if (!((Hdata.t_top2 > -50.) && (Hdata.t_top2 <= 0.))) {
 		Hdata_ind.t_top2 = -1;
 	}

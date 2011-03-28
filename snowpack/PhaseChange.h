@@ -40,8 +40,8 @@ class PhaseChange {
 		void compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata);
 
 	private:
-		void compSubSurfaceMelt(ElementData& Edata, const double& dt, double& ql_Rest);
-		void compSubSurfaceFrze(ElementData& Edata, const double& dt);
+		void compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt, double& ql_Rest);
+		void compSubSurfaceFrze(ElementData& Edata, const unsigned int nSolutes, const double& dt);
 		
 		double sn_dt;
 		const mio::Config& cfg;

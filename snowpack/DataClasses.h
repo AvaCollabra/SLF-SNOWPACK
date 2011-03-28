@@ -79,7 +79,7 @@ class SurfaceFluxes {
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 
-		SurfaceFluxes(const unsigned int& max_number_of_solutes);
+		SurfaceFluxes();
 
 		void reset(const bool& cumsum_mass);
 
@@ -105,9 +105,6 @@ class SurfaceFluxes {
 		std::vector<double> mass; ///< Total mass of snowpack PLUS different amounts of total mass change, sublimation, runoff, erosion, etc. Basically the mass which crosses the surface
 		std::vector<double> load; ///< Total load (kg m-2) in water runoff from solutes like nitrate
 		double dhs_corr; ///< Snow depth correction in case of squezzing or blow-up
-
-	private:
-		unsigned int max_number_of_solutes;
 };
 
 /**
@@ -128,7 +125,7 @@ struct SN_ZWISCHEN_DATA {
 class CurrentMeteo {
 
 	public:
-		CurrentMeteo(const unsigned int& i_max_number_of_sensors, const unsigned int& i_max_number_of_solutes);
+		CurrentMeteo(const unsigned int& i_max_number_of_sensors);
 		void reset();
 
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
@@ -158,14 +155,13 @@ class CurrentMeteo {
 		double hnw;    ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
 		double hs1;    ///< The measured height of snow (m), corrected for spikes etc. in ml_co_Control()
 
-		std::vector<double> ts;        ///< Snowpack and/or Soil temperatures (K)
-		std::vector<double> zv_ts;     ///< Depth of temperature sensors (m)
-		std::vector<double> conc;      ///< Solute concentrations in precipitation
-		double rho_hn; ///< Measured new sno density (kg m-3)
+		std::vector<double> ts;    ///< Snowpack and/or Soil temperatures (K)
+		std::vector<double> zv_ts; ///< Depth of temperature sensors (m)
+		std::vector<double> conc;  ///< Solute concentrations in precipitation
+		double rho_hn;             ///< Measured new sno density (kg m-3)
 
 	private:
 		unsigned int max_number_of_sensors;
-		unsigned int max_number_of_solutes;
 };
 
 ///@brief BoundCond is a subset of surface energy exchange data required to set Neumann boundary conditions
@@ -179,13 +175,6 @@ class BoundCond {
 		double ql;      ///< latent heat
 		double qr;      ///< rain energy
 		double qg;      ///< geothermal heat flux or heat flux at bottom of combined soil-snow pack
-};
-
-
-/// @brief the chemical species (solutes) to be treated
-enum {
-	// NITRATE,
-	N_SOLUTES
 };
 
 /// @brief The 3 mathematical fields that can be solved
@@ -220,11 +209,11 @@ enum SN_SOIL_DATA{
 class LayerData {
 
 	public:
-		LayerData(const unsigned int& i_max_number_of_solutes); 
+		LayerData(); 
 
 		mio::Date layerDate;        ///< Date of deposition
 		double hl;                  ///< The height of the layer in m
-		int    ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
+		unsigned int ne;            ///< Number of finite elements in the the layer (hl/ne defines elm. size)
 		double tl;                  ///< Temperature at the top of the layer in K or degC
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
@@ -241,13 +230,10 @@ class LayerData {
 		double sp;                  ///< Micro-structure : Sphericity
 		double dd;                  ///< Micro-structure : Dendricity
 		double rb;                  ///< Micro-structure : Bond Radius in mm
-		int    mk;                  ///< Micro-structure : Marker
+		int mk;                     ///< Micro-structure : Marker
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
-
-	private:
-		unsigned int max_number_of_solutes;
 };
 
 /**
@@ -259,20 +245,19 @@ class SN_SNOWSOIL_DATA {
 
 	public:
 
-		SN_SNOWSOIL_DATA(const unsigned int& i_max_number_of_solutes) : meta(), profileDate(0., 0.), nN(0), Height(0.),
+		SN_SNOWSOIL_DATA() : meta(), profileDate(0., 0.), nN(0), Height(0.),
                      nLayers(0), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
                      Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
-                     WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.),
-                     max_number_of_solutes(i_max_number_of_solutes)
+                     WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
 		{
 			Ldata.clear();
 		}
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
-		int nN;                           ///< Total number of FE nodes
+		unsigned int nN;                  ///< Total number of FE nodes
 		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
-		int nLayers;                      ///< Total number of snowpack layers
+		unsigned int nLayers;             ///< Total number of snowpack layers
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
 		double HS_last;                   ///< Last checked measured Snow Height
 		double Albedo;                    ///< Snow albedo
@@ -284,9 +269,6 @@ class SN_SNOWSOIL_DATA {
 		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
 		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
 		double TimeCountDeltaHS;          ///< Time counter tracking erroneous settlement in operational mode
-
-	private:
-		unsigned int max_number_of_solutes;
 };
 
 /**
@@ -298,7 +280,7 @@ class SN_SNOWSOIL_DATA {
 class ElementData {
 	
 	public:
-		ElementData(const unsigned int& i_max_number_of_solutes);
+		ElementData();
 
 		bool checkVolContent();
 		void heatCapacity();
@@ -355,17 +337,13 @@ class ElementData {
 		double hard;               ///< Parameterized hand hardness (1)
 		//NIED (H. Hirashima)
 		double dhf;
-
-	private:
-		unsigned int max_number_of_solutes;
-
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
 class NodeData {
 	public:
-		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), hoar(0.), 
-		                 dhf(0.), S_dhf(0.), Sigdhf(0.) {}
+		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), hoar(0.),
+		             dhf(0.), S_dhf(0.), Sigdhf(0.) {}
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -463,64 +441,65 @@ class CanopyData {
 class SnowStation {
 
 	public:
-		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers, const unsigned int& i_max_n_solutes);
+		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers);
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata);
-		void resize(const int& number_of_elements);
-		void reduceNumberOfElements(const int& rnE);
-		void joinElements(const int& number_top_elements);
+		void resize(const unsigned int& number_of_elements);
 
+		void reduceNumberOfElements(const unsigned int& rnE);
+		void joinElements(const unsigned int& number_top_elements);
 		static bool sn_joinCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
 
 		double compSnowpackInternalEnergyChange(const double sn_dt);
+		double getModelledTemperature(const double& z) const;
 
-		int getNumberOfElements() const;
-		int getNumberOfNodes() const;
+		unsigned int getNumberOfElements() const;
+		unsigned int getNumberOfNodes() const;
 
-		mio::StationData meta; ///< Station meta data
-		double Albedo;        ///< Snow albedo
-		double SoilAlb;       ///< Soil albedo
-		double BareSoil_z0;   ///< Bare soil roughness in m
-		int    SoilNode;      ///< The top soil node, 0 in case of SNP_SOIL == 0
-		double cH;            ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
-		double mH;            ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
-		double Ground;        ///< The ground height -- meaning the height of the top soil node
-		double hn;            ///< Depth of new snow to be used on slopes
-		double rho_hn;        ///< Density of new snow to be used on slopes
-		bool   windward;      ///< True for windward (luv) slope
-		int    ErosionLevel;  ///< Element where snow erosion stopped previously for the drift index
-		double ErosionMass;   ///< Eroded mass either real or virtually (storage if less than one element)
-		int    S_class1;      ///< Stability class based on hand hardness, grain class ...
-		int    S_class2;      ///< Stability class based on hand hardness, grain class ...
-		double S_d;           ///< Minimum Direct Action Stability Index  ...
-		double z_S_d;         ///< Depth of Minimum Direct Action Stability
-		double S_n;           ///< Minimum Natural Stability Index
-		double z_S_n;         ///< Depth of Minimum Natural Stability
-		double S_s;           ///< Minimum Alternative Stability Index (ASI; skier stability)
-		double z_S_s;         ///< Depth of Minimum ASI
-		double S_4;           ///< stab_index4
-		double z_S_4;         ///< Depth of stab_index4
-		double S_5;           ///< stab_index5
-		double z_S_5;         ///< Depth of stab_index5
-		std::vector<NodeData> Ndata;  ///< pointer to nodal data array (e.g. T, z, u etc..)
-		std::vector<ElementData> Edata;
-		void *Kt, *Ks;        ///< Pointer to pseudo-conductivity and stiffnes matrix
-		double ColdContent;   ///< Cold content of snowpack (J m-2)
-		char SubSurfaceMelt;  ///< Subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;  ///< Subsurface refreezing flag ( yes/no ) for exposition
-		CanopyData Cdata; ///< Pointer to canopy data
-		int tag_low;          ///< Lowest tag to dump, 0 means no tags at all
+		mio::StationData meta;      ///< Station meta data
+		double Albedo;              ///< Snow albedo
+		double SoilAlb;             ///< Soil albedo
+		double BareSoil_z0;         ///< Bare soil roughness in m
+		unsigned int SoilNode;      ///< The top soil node, 0 in case of SNP_SOIL == 0
+		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
+		double mH;                  ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
+		double Ground;              ///< The ground height -- meaning the height of the top soil node
+		double hn;                  ///< Depth of new snow to be used on slopes
+		double rho_hn;              ///< Density of new snow to be used on slopes
+		bool windward;              ///< True for windward (luv) slope
+		unsigned int ErosionLevel;  ///< Element where snow erosion stopped previously for the drift index
+		double ErosionMass;         ///< Eroded mass either real or virtually (storage if less than one element)
+		int S_class1;               ///< Stability class based on hand hardness, grain class ...
+		int S_class2;               ///< Stability class based on hand hardness, grain class ...
+		double S_d;                 ///< Minimum Direct Action Stability Index  ...
+		double z_S_d;               ///< Depth of Minimum Direct Action Stability
+		double S_n;                 ///< Minimum Natural Stability Index
+		double z_S_n;               ///< Depth of Minimum Natural Stability
+		double S_s;                 ///< Minimum Alternative Stability Index (ASI; skier stability)
+		double z_S_s;               ///< Depth of Minimum ASI
+		double S_4;                 ///< stab_index4
+		double z_S_4;               ///< Depth of stab_index4
+		double S_5;                 ///< stab_index5
+		double z_S_5;               ///< Depth of stab_index5
+		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
+		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
+		void *Kt, *Ks;              ///< Pointer to pseudo-conductivity and stiffnes matrix
+		double ColdContent;         ///< Cold content of snowpack (J m-2)
+		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
+		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
+		CanopyData Cdata;           ///< Pointer to canopy data
+		int tag_low;                ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
-		static const int number_top_elements;
+		static const unsigned int number_top_elements;
+		static unsigned int number_of_solutes;  ///< The model treats that number of solutes
 
 	private:
-		bool useCanopyModel, useSoilLayers;
-		unsigned int max_number_of_solutes;
-		int nNodes; ///< actual number of nodes; different for each exposition
-		int nElems; ///< actual number of elements (nElems=nNodes-1)
+		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
+		unsigned int nNodes;                ///< Actual number of nodes; different for each exposition
+		unsigned int nElems;                ///< Actual number of elements (nElems=nNodes-1)
 };
 
 /// @brief Defines structure for snow profile layers
@@ -542,21 +521,21 @@ class SnowProfileLayer {
 		mio::Date profileDate; ///< Date of profile
 
 		mio::Date layerDate; ///< Date of deposition
-		double height;       ///< 0 bis 1000      (cm)
-		double rho;          ///< 0 bis 1000      (kg m-3)
-		double tem;          ///< -50 bis 50      (degC)
-		double tem_grad;     ///< -1000 bis 1000  (K m-1)
-		double strain_rate;  ///< 0 bis 1e-5      (s-1)
-		double theta_w;      ///< 0 bis 100       (%)
-		double theta_i;      ///< 0 bis 100       (%)
-		double dendricity;   ///< 0 bis 1         (-)
-		double sphericity;   ///< 0 bis 1         (-)
-		double coordin_num;  ///< 0 bis 10        (-)
-		double grain_size;   ///< 0 bis 100       (mm)
-		double bond_size;    ///< 0 bis 100       (mm)
-		double hard;         ///< 0. bis 5.       (-)
-		int    marker;       ///< 0 bis 100       (-)
-		int    type;         ///< 0 bis 100       (-)
+		double height;       ///< 0 to 1000      (cm)
+		double rho;          ///< 0 to 1000      (kg m-3)
+		double T;            ///< -50 to 50, snow temperature at top of layer (degC)
+		double gradT   ;     ///< -1000 to 1000, temperature gradient across layer (K m-1)
+		double strain_rate;  ///< 0 to 1e-5      (s-1)
+		double theta_w;      ///< 0 to 100       (%)
+		double theta_i;      ///< 0 to 100       (%)
+		double dendricity;   ///< 0 to 1         (-)
+		double sphericity;   ///< 0 to 1         (-)
+		double coordin_num;  ///< 0 to 10        (-)
+		double grain_size;   ///< 0 to 100       (mm)
+		double bond_size;    ///< 0 to 100       (mm)
+		double hard;         ///< 0. to 5.       (-)
+		int    marker;       ///< 0 to 100       (-)
+		int    type;         ///< 0 to 100       (-)
 };
 
 

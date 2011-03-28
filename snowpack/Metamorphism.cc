@@ -771,7 +771,6 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 			EMS[e].mk += 10;
 		}
 
-		// Update the snow type
 		EMS[e].snowType();
 	}
 }
@@ -1028,7 +1027,6 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 			EMS[e].mk += 10;
 		}
 
-		// Update the snow type
 		EMS[e].snowType();
 	}
 }
@@ -1037,7 +1035,3 @@ void Metamorphism::runMetamorphismModel(const CurrentMeteo& Mdata, SnowStation& 
 {
 	CALL_MEMBER_FN(*this, mapMetamorphismModel[metamorphism_model])(Mdata, Xdata);
 }
-
-/*
- * End of Metamorphism.c
- */

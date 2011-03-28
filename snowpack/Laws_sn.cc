@@ -593,7 +593,7 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
 	int e1 = e;
 	double vapor_enhance = 1.;
 
-	while ((e1 >= MAX(Xdata.SoilNode, e-7)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
+	while ((e1 >= MAX(signed(Xdata.SoilNode), e-7)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
 		//TODO check limit on theta_water
 		if ( (Xdata.Edata[e1].theta[WATER] > 0.001) && (Xdata.Edata[e].theta[ICE] < 0.7) ) {
 			vapor_enhance = SnLaws::montana_vapor_fudge;
