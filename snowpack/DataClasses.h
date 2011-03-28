@@ -65,16 +65,16 @@ class SurfaceFluxes {
 		 * Rates in kg m-2 h-1 (MS_HNW, MS_RAIN and MS_WIND)
 		 */
 		enum SN_MASS_CHANGES {
-			MS_TOTALMASS,      ///<  This of course is the total mass of the snowpack at the present time
-			MS_SWE,            ///<  This too, of course, but summing rho*L
-			MS_WATER,          ///<  The total amount of water in the snowpack at the present time
-			MS_HNW,            ///<  Solid precipitation rate
-			MS_RAIN,           ///<  Rain rate
-			MS_WIND,           ///<  Mass loss rate due to wind erosion
-			MS_EVAPORATION,    ///<  The mass loss or gain of the top element due to water evaporating
-			MS_SUBLIMATION,    ///<  The mass loss or gain of the top element due to snow (ice) sublimating
-			MS_RUNOFF,         ///<  The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
-			MS_SOIL_RUNOFF,    ///<  Equivalent to MS_RUNOFF but at bottom soil node
+			MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
+			MS_SWE,            ///< This too, of course, but summing rho*L
+			MS_WATER,          ///< The total amount of water in the snowpack at the present time
+			MS_HNW,            ///< Solid precipitation rate
+			MS_RAIN,           ///< Rain rate
+			MS_WIND,           ///< Mass loss rate due to wind erosion
+			MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
+			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
+			MS_RUNOFF,         ///< The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
+			MS_SOIL_RUNOFF,    ///< Equivalent to MS_RUNOFF but at bottom soil node
 			MS_CORRECTION,     ///< Mass correction from either squeezing (neg) or blowing up (pos)
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
@@ -84,27 +84,27 @@ class SurfaceFluxes {
 		void reset(const bool& cumsum_mass);
 
 		double dIntEnergy; ///< change of internal energy
-		double lw_in;    ///< incoming longwave radiation
-		double lw_out;   ///< outgoing longwave radiation
-		double lw_net;   ///< net longwave radiation
-		double qs;       ///< sensible heat
-		double ql;       ///< latent heat
-		double hoar;     ///< mass of surface hoar formed or sublimated
-		double qr;       ///< rain energy
-		double qg;       ///< geothermal heat flux or heat flux at bottom of combined soil-snow pack
-		double qg0;      ///< ground heat flux at soil-snow interface
-		double sw_hor;   ///< incoming global shortwave radiation in W m-2 on horizontal surface
-		double sw_in;    ///< incoming global shortwave radiation in W m-2; on slopes projected
-		double sw_out;   ///< reflected shortwave radiation in W m-2
-		double qw;       ///< absorbed shortwave radiation in W m-2 on surface (net SW)
-		double sw_dir;   ///< incoming direct shortwave radiation in W/m2; on slopes: projected
-		double sw_diff;  ///< incoming diffuse shortwave radiation in W m-2
-		double cA;       ///< computed Albedo (USED only for OUTPUT)
-		double mA;       ///< measured Albedo (USED only for OUTPUT)
-		double drift;    ///< the surface flux of drifting snow in kg m-1 s-1
+		double lw_in;      ///< incoming longwave radiation
+		double lw_out;     ///< outgoing longwave radiation
+		double lw_net;     ///< net longwave radiation
+		double qs;         ///< sensible heat
+		double ql;         ///< latent heat
+		double hoar;       ///< mass of surface hoar formed or sublimated
+		double qr;         ///< rain energy
+		double qg;         ///< geothermal heat flux or heat flux at bottom of combined soil-snow pack
+		double qg0;        ///< ground heat flux at soil-snow interface
+		double sw_hor;     ///< incoming global shortwave radiation in W m-2 on horizontal surface
+		double sw_in;      ///< incoming global shortwave radiation in W m-2; on slopes projected
+		double sw_out;     ///< reflected shortwave radiation in W m-2
+		double qw;         ///< absorbed shortwave radiation in W m-2 on surface (net SW)
+		double sw_dir;     ///< incoming direct shortwave radiation in W/m2; on slopes: projected
+		double sw_diff;    ///< incoming diffuse shortwave radiation in W m-2
+		double cA;         ///< computed Albedo (USED only for OUTPUT)
+		double mA;         ///< measured Albedo (USED only for OUTPUT)
+		double drift;      ///< the surface flux of drifting snow in kg m-1 s-1
 		std::vector<double> mass; ///< Total mass of snowpack PLUS different amounts of total mass change, sublimation, runoff, erosion, etc. Basically the mass which crosses the surface
 		std::vector<double> load; ///< Total load (kg m-2) in water runoff from solutes like nitrate
-		double dhs_corr; ///< Snow depth correction in case of squezzing or blow-up
+		double dhs_corr;   ///< Snow depth correction in case of squezzing or blow-up
 };
 
 /**
@@ -443,7 +443,7 @@ class SnowStation {
 	public:
 		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers);
 
-		void initialize(const SN_SNOWSOIL_DATA& SSdata);
+		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
 		void resize(const unsigned int& number_of_elements);
 
 		void reduceNumberOfElements(const unsigned int& rnE);
@@ -458,6 +458,7 @@ class SnowStation {
 		unsigned int getNumberOfNodes() const;
 
 		mio::StationData meta;      ///< Station meta data
+		unsigned int sector;        ///< current slope sector of width 360./MAX(1, nSlopes-1)
 		double Albedo;              ///< Snow albedo
 		double SoilAlb;             ///< Soil albedo
 		double BareSoil_z0;         ///< Bare soil roughness in m

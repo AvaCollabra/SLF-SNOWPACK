@@ -711,7 +711,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
  * @version 10.02
  * @param SSdata
  */
-void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
+void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector)
 {
 	unsigned int ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
 	int real_soil_no_sandwich = 1;  // Switch to count real soil layers
@@ -721,6 +721,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata)
 	BareSoil_z0 = SSdata.BareSoil_z0;
 	
 	meta = SSdata.meta;
+	sector = i_sector;
 
 	mH = cH = SSdata.Height;
 

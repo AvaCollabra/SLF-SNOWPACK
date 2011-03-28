@@ -435,7 +435,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	 * wrong with the model. For now assume erosion if more than 3 cm are missing
 	 */
 	if ( (Mdata.hs1 + 0.03) < cH ) {
-		dhs_corr = Mdata.hs1 - cH;
+		dhs_corr += Mdata.hs1 - cH;
 		mass_corr += forcedErosion(Mdata.hs1, Xdata);
 		if ( 0 ) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
@@ -443,8 +443,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		}
 	} else {
 		// assume settling error
-		dhs_corr = Mdata.hs1 - cH;
-		mass_corr += 0.;
+		dhs_corr += Mdata.hs1 - cH;
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
@@ -468,7 +467,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		if ( sum_total_correction > 0. ) {
 			factor_corr = (Mdata.hs1 - cH) / sum_total_correction;
 		} else {
-			dhs_corr = 0.;
+			dhs_corr += 0.;
 			return;
 		}
 		// ... above marked element (translation only) ...

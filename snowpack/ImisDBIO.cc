@@ -78,8 +78,9 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 void ImisDBIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
 	unsigned int nE = Xdata.getNumberOfElements();
-	if (nE == 0)
+	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
+	}
 
 	FILE *PFile=NULL;
 	unsigned int e, ll;
