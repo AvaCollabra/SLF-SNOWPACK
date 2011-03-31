@@ -225,9 +225,7 @@ void ElementData::heatCapacity()
 
 /**
  * @brief Computes cold content of an element
- * @author Charles Fierz
  * @version 10.08
- * @param *Edata
  * @return Cold content (J m-2)
  */
 double ElementData::coldContent()
@@ -385,12 +383,6 @@ double ElementData::neck2VolumetricStrain()
  * First revisited by Fierz and Bellaire 2006 and 2007
  * TODO needs to be adapted to international classification
  * @version 11.01
- * @param dendricity (1)
- * @param sphericity (1)
- * @param grain_size (mm)
- * @param marker grain marker, see Metamorphism.cc
- * @param theta_w volumetric water content (1)
- * @param theta_i volumetric ice content (1)
  * @return snow type code according to old-fashioned Swiss tradition
  */
 
@@ -707,9 +699,9 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
  * lowest soil or snow layer \n
  * IMPORTANT: it is very important for Alpine3D that Cdata.height is initialized even if CANOPY = 0,
  * otherwise SnowInterface will not recognize the canopy grids (David 2007-06-25).
- * @author Perry Bartelt \n Michael Lehning \n Charles Fierz
  * @version 10.02
  * @param SSdata
+ * @param i_sector defines the exposition sector of the slope (width 360./number_slopes)
  */
 void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector)
 {

@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Meteo.c
+ * @file Meteo.cc
  * @author Michael Lehning and others
  * @version 9.x
  * @date -

@@ -248,7 +248,8 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K ), \n
  * and the coefficient: \n
  * A = c_p(T) * th(i) * Q_f
- * @param *Xdata
+ * @param Sdata
+ * @param Xdata
  */
 void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 {

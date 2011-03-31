@@ -147,6 +147,7 @@ void AsciiIO::cleanup() throw()
 /**
  * @brief This routine reads the status of the snow cover at program start
  * @version 10.02
+ * @param i_snowfile file containing the initial state of the snowpack
  * @param stationID
  * @param SSdata
  * @param Zdata
@@ -350,6 +351,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
  * @version 11.02
  * @param date current
  * @param Xdata
+ * @param SSdata
  * @param Zdata
  * @param forbackup dump Xdata on the go
  */
@@ -1690,7 +1692,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 	return true;
 }
 
-bool AsciiIO::writeHazardData(const std::string& /*station*/, const std::vector<ProcessDat>& /*Hdata*/,
+bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
                               const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
 {
 	/*

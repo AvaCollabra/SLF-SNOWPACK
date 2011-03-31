@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Queries.h
+ * @file Utils.h
  * @version 10.02
  * @date -
  * @brief This header file contains the definition of the structures required to handle I/O
@@ -49,7 +49,7 @@ int booleanTime(const double& JulianDate, double days_between,
                 const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment, 
-                          const std::string& station, const unsigned int& nSlopes);
+                          const std::string& stationID, const unsigned int& nSlopes);
 
 void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
                         char *compile_date, char *user);

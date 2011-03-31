@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Canopy.c
+ * @file Canopy.cc
  * @version 10.02
  * @author David Gustafsson (davidg@kth.se) \n Michael Lehning
  * @bug     -
@@ -1399,7 +1399,7 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
  * @param Mdata CurrentMeteo
  * @param Xdata Profile
  * @param roughness_length
- * @param height_of_wind_value
+ * @param height_of_wind_val
  */
 
 void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length, double height_of_wind_val)

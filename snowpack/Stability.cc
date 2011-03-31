@@ -407,7 +407,7 @@ double Stability::st_DeformationRateIndex(ElementData& Edata)
  * @param psi_ref Reference slope angle (deg)
  */
 void Stability::initStability(const double& psi_ref, StabilityData& STpar,
-                              SnowStation& Xdata, vector<InstabilityData>& SIdata)
+                              SnowStation& Xdata, std::vector<InstabilityData>& SIdata)
 {
 	unsigned int nN = Xdata.getNumberOfNodes();
 

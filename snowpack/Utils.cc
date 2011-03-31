@@ -111,12 +111,13 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
  * @author Michael Lehning \n Julia Kowalski \n Charles Fierz \n Mathias Bavay
  * @version 9.mm
  * @param JulianDate Julian Date
- * @param days_between (double) number of days between two outputs
- * @param start (const double) start date as Julian Date
+ * @param days_between number of days between two outputs
+ * @param start start date as Julian Date
+ * @param calculation_step_length (min)
  * @return int
  */
 int booleanTime(const double& JulianDate, double days_between,
-			    const double& start, const double& calculation_step_length)
+                const double& start, const double& calculation_step_length)
 {
 	int ret;
 	double jul_frc;
@@ -140,13 +141,15 @@ int booleanTime(const double& JulianDate, double days_between,
 }
 
 /**
- * @brief Delete outdir.ext_n[ext] from outdir
- * @author Michael Lehning
- * @version 9Y.mm
+ * @brief Delete old output files (*.sno, *.ini) from outdir
+ * @version 11.03
  * @param outdir Output dir
+ * @param experiment Name of ongoin experiment
+ * @param stationID
+ * @param nSlopes Number of slopes treated
  */
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
-                          const std::string& station, const unsigned int& nSlopes)
+                          const std::string& stationID, const unsigned int& nSlopes)
 {
 	vector<string> vecExtension;
 	vecExtension.push_back("met"); //Meteo data input
@@ -158,7 +161,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	unsigned int n_files;
 
 	if (experiment != "NO_EXP") {
-		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", station.c_str(), experiment.c_str());
+		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", stationID.c_str(), experiment.c_str());
 	}
 	for (unsigned int ii=0; ii<vecExtension.size(); ii++){
 		const string& ext = vecExtension[ii];
@@ -166,7 +169,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 
 		snprintf(ftrunc, MAX_STRING_LENGTH-1, "%s/%s", outdir.c_str(), exp);
 		if (ext == "ini") {
-			if (station != "IMIS") {
+			if (stationID != "IMIS") {
 				snprintf(fname, MAX_STRING_LENGTH-2, "%s.%s", ftrunc, ext.c_str());
 				if (nSlopes > 1) {
 					snprintf(fname, MAX_STRING_LENGTH-3, "%s-%d.%s", ftrunc, nSlopes-1, ext.c_str());
@@ -227,9 +230,11 @@ int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
  * @brief Fill the snowpack version number, date of computation, user, ...
  * @author Mathias Bavay
  * @version 8.mm
+ * @param time_zone
  * @param *version
  * @param *computation_date iso-format
  * @param *jul_computation_date Julian Date
+ * @param *compilation_date Julian Date
  * @param *user
  */
 void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
@@ -258,11 +263,11 @@ void versionUserRuntime(const double& time_zone, char *version, char *computatio
 
 /**
  * @brief Averages energy fluxes
- * @author Charles Fierz
- * @version 9Y.mm
+ * @version 11.03
+ * @param n_steps Number of calculation time steps since last output
+ * @param useCanopyModel
  * @param Sdata
  * @param Xdata
- * @param n_steps Number of calculation time steps since last output
 */
 void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, SurfaceFluxes& Sdata, SnowStation& Xdata)
 {

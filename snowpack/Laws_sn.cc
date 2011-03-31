@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Laws_sn.c
+ * @file Laws_sn.cc
  * @version 10.03
  * @brief This module contains (ALL) the constitutive laws for the 1d snowpack model.
  *
@@ -96,7 +96,6 @@ std::vector<double> SnLaws::swa_fb;
 
 
 /// @name SOIL PARAMETERS
-//@{
 /**
  * @brief Define Method and Coefficents for the computation of the influence of soil water
  * content on Evaporation from Bare Soil Layers:
@@ -104,6 +103,7 @@ std::vector<double> SnLaws::swa_fb;
  * - 0 ==> Relative Humidity Approach, see Snowpack.cc
  * - -1 ==> none, assume saturation pressure and no extra resistance
  */
+//@{
 const bool SnLaws::soil_evaporation = true;
 
 /// @brief Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
@@ -723,10 +723,10 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 
 /**
  * @brief SENSIBLE HEAT EXCHANGE COEFFICIENT (Surface Energy Exchange)
- * @author Michael Lehning
  * @version 9Y.mm
  * @param Mdata
  * @param Xdata
+ * @param height_of_meteo_values Height at which meteo parameters are measured
  * @return Exchange coefficient for sensible heat (1)
 */
 double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& height_of_meteo_values)
@@ -758,6 +758,7 @@ double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const Snow
  * @version 9Y.mm
  * @param Mdata
  * @param Xdata
+ * @param height_of_meteo_values Height at which meteo parameters are measured
  * @return Latent heat flux (W m-2)
  */
 double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
@@ -820,6 +821,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
  * @version 9Y.mm
  * @param Mdata
  * @param Xdata
+ * @param height_of_meteo_values Height at which meteo parameters are measured
  * @return Latent heat flux (W m-2)
  */
 double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
@@ -878,8 +880,8 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
  * convective heat exchange coefficient for radiation.)
  * @author Perry Bartelt
  * @version 9Y.mm
- * @param T_snow Snow surface temperature (K)
- * @param T_atm Temperature of the atmosphere, i.e., air (K)
+ * @param t_snow Snow surface temperature (K)
+ * @param t_atm Temperature of the atmosphere, i.e., air (K)
  * @param e_atm Emissivity of the atmosphere (1)
  * @return LW radiation coefficient (?)
  */
@@ -993,7 +995,6 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
  * This fudge factor takes into account bond-ice imperfections and the effect of liquid water
  * @version 11.02
  * @param Edata
- * @param date current date
  * @return Fudge factor for snow viscosity
  */
 double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
@@ -1177,7 +1178,6 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
  * @brief SNOW VISCOSITY according to formulation by Kojima
  * @version 9.10
  * @param Edata
- * @param date current
  * @return Snow viscosity (Pa s)
  */
 double SnLaws::snowViscosityKOJIMA(const ElementData& Edata)

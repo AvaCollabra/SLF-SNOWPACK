@@ -838,14 +838,14 @@ int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat);
  * NOTE: Except the definition of the multiplicity in ds_Initialize(), all steps performed to
  * define the structure of matrix [A] are stricktly independent from the multiplicity
  *
- * @param *pMat (MYTYPE): INPUT: Pointer to the matrix [A] opaque data returned by ds_Initialize()
+ * @param *pMat0 (MYTYPE): INPUT: Pointer to the matrix [A] opaque data returned by ds_Initialize()
  * @param nEq (int) INPUT: No. of equations for one element forming a crique
  * @param Eq[] (int) INPUT: Element list of equations for more elements with equal no. of eqs.
  * @param nEl (int) INPUT: No. of elements  ( 0 <= i "<" nEq ;  0 <= e "<" nEl )
  * @param Dim (int) INPUT: first dimension of the 2D-array Eq[][Dim]
  */
 
-int ds_DefineConnectivity( MYTYPE *pMat, int nEq, int Eq[], int nEl, int Dim );
+int ds_DefineConnectivity( MYTYPE *pMat0, int nEq, int Eq[], int nEl, int Dim );
 
 /**
 * @brief This function assemble the element square matrix [ElMat] for one element with nEq*M x nEq*M

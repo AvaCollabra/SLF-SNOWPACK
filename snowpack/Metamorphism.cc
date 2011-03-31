@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Metamorphism.c
+ * @file Metamorphism.cc
  * @brief This module contains the snow metamorphism routines of the SLF one-dimensional OPERATIONAL and RESEARCH snowpack model \n
  * It represents a truly international research effort: Dr. Bob "Borolo" Brown of MONTANA STATE UNIVERSITY (USA)
  * provided a lot of the motivation and low temperature gradient micro-structure

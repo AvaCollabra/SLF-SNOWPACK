@@ -24,7 +24,7 @@
 using namespace mio;
 
 /**
- * @file Laws.c
+ * @file Laws.cc
  * @version 10.02
  * @bug
  * @brief This contains some physical laws or parametrizations that are used by Snowpack but are independent of its data structures.
@@ -306,6 +306,7 @@ double lw_Omstedt(const double e0, const double cloud_frac)
  * - input less than or equal to 0 : use clear sky parameterization of Brutsaert
  * @param ta Checked air temperature (K)
  * @param rh Checked relative humidity (1)
+ * @param min_air_emissivity minimum allowed air emissivity (1)
  * @return air emissivity in range [MIN_AIR_EMISSIVITY,1.] (1)
  */
 double lw_AirEmissivity(const double input, const double ta, const double rh, const double min_air_emissivity)

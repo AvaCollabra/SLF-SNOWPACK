@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Snowpack.c
+ * @file Snowpack.cc
  * @version 10.02
  * @bug     -
  * @brief This module contains the driving routines for the 1d snowpack model

@@ -85,11 +85,11 @@ void SnowpackIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const P
 	}
 }
 
-bool SnowpackIO::writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
+bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
 #ifdef IMISDBIO
-	if (imisdbio.writeHazardData(station, Hdata, Hdata_ind, num)){
+	if (imisdbio.writeHazardData(stationID, Hdata, Hdata_ind, num)){
 		return true;
 	} else {
 		return false;

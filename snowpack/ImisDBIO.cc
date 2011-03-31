@@ -167,8 +167,8 @@ void ImisDBIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const Pro
 	fclose(PFile);
 }
 
-bool ImisDBIO::writeHazardData(const std::string& station, const vector<ProcessDat>& Hdata,
-                               const vector<ProcessInd>& Hdata_ind, const int& num)
+bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
+                               const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
 	//HACK: num is incremented after each new data is added. It is therefore the index of the next element to write
 	if ((num <= 0) || (num > (int)Hdata.size())){
@@ -186,7 +186,7 @@ bool ImisDBIO::writeHazardData(const std::string& station, const vector<ProcessD
 	}
 
 	string stationName="", stationNumber="";
-	parseStationName(station, stationName, stationNumber);
+	parseStationName(stationID, stationName, stationNumber);
 
 	Environment *env = NULL;
 	
@@ -206,7 +206,7 @@ bool ImisDBIO::writeHazardData(const std::string& station, const vector<ProcessD
 		Environment::terminateEnvironment(env); // static OCCI function
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing hazard data for %s to %s,",
-		        station.c_str(), oracleDB.c_str());
+		        stationID.c_str(), oracleDB.c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "from %s to %s",
 		        Hdata[0].date.toString(mio::Date::ISO).c_str(), Hdata[num-1].date.toString(mio::Date::ISO).c_str());
 		throw IOException("Oracle Error: " + string(e.what()), AT); //Translation of OCCI exception to IOException

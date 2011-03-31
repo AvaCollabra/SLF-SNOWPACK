@@ -43,7 +43,7 @@ class ImisDBIO : public SnowpackIOInterface{
 
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
-		virtual bool writeHazardData(const std::string& station, const std::vector<ProcessDat>& Hdata,
+		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:

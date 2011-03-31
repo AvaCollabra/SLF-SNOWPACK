@@ -20,7 +20,6 @@
 /**
  * @file Laws_sn.h
  * @version 10.02
- * @date 2009-10-21
  */
 
 #ifndef __LAWS_SN_H__
@@ -39,6 +38,7 @@ class SnLaws {
 
 	public:
 
+		//@{
 		/// To define which version to use while calibrating
 		enum ViscosityCalVersion {
 			visc_cal_new=111,         ///< version currently under test
@@ -54,6 +54,7 @@ class SnLaws {
 			t_term_steinkogler,
 			t_term_deprecated=999
 		};
+		//@}
 
 		/**
 		 * @name Albedo models
@@ -62,6 +63,7 @@ class SnLaws {
 		 *                *_2 corresponds to the latest regression. Variant ANTARCTICA sets coefficient Cage to 0.0
 		 * - ALB_NIED: Japanese adaptation of model ALB_LEHNING_2
 		 */
+		//@{
 		enum AlbedoModel {
 			alb_lehning_0,
 			alb_lehning_1,
@@ -69,6 +71,7 @@ class SnLaws {
 			alb_nied,
 			nAlbedoModel
 		};
+		//@}
 		
 		static double conductivity_ice(const double& Temperature);
 		static double conductivity_water(const double& Temperature);
@@ -135,4 +138,4 @@ class SnLaws {
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
 };
 
-#endif //End of Laws_sn.h
+#endif

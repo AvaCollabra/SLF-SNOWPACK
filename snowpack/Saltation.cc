@@ -417,7 +417,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 
 /**
  * @brief Computes the saltation flux for one bottom element
- * @param tauS
+ * @param i_tauS
  * @param tau_th
  * @param slope_angle
  * @param dg

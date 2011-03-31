@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Hazard.c
+ * @file Hazard.cc
  * @version 10.02
  * This module contains the hazard computation routines
 */
@@ -95,7 +95,9 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
  * @version 10.03
  * @param duration of run (s)
  * @param *old_drift
- * @param cos_sl Cosine of slope angle
+ * @param slope_angle (degree)
+ * @param Hdata
+ * @param Hdata_ind
  */
 void Hazard::initializeHazard(const double duration, double *old_drift, double slope_angle,
                               std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
