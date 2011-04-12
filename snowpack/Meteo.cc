@@ -242,10 +242,10 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
  */
 void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
-	if (useCanopyModel)
+	if (useCanopyModel && Xdata->Cdata.lai > 0.)		// lai <= 0 implies "no canopy"
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);
 
-	if (!useCanopyModel || Xdata->Cdata.zdispl < 0.)
+	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
 		MicroMet(*Xdata, *Mdata);
 }
 
