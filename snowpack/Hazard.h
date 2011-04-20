@@ -39,9 +39,9 @@
 
 class Hazard {
 	public:
-		Hazard(const mio::Config& i_cfg);
+		Hazard(const mio::Config& i_cfg, const double duration);
 
-		void initializeHazard(const double TimeEnd, double *vecDrift, double slope_angle,
+		void initializeHazard(double *vecDrift, double slope_angle,
 		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
 
 		static double driftIndex(double *old_drift, double drift, const double rho, const int nHours,
@@ -77,6 +77,7 @@ class Hazard {
 		double sn_dt;
 		double i_time_zone;
 		int hazard_steps_between;
+		int nHz;
 		double hoar_density_surf, hoar_min_size_surf;
 		static const double minimum_drift, maximum_drift;
 };

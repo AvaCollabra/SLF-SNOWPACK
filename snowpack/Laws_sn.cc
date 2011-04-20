@@ -122,7 +122,6 @@ const double SnLaws::pore_length_soil = 0.01;
 const double SnLaws::field_capacity_soil = 0.15;
 //@}
 
-
 /**
  * @name Thermal conductivity
  * @brief Defines the constants and parameters for computing snow and soil thermal conductivity
@@ -1165,7 +1164,7 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 	double Te = MIN(Edata.Te, Constants::melting_tk);
 	eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
 	// NOT YIELDING, LINEAR; sigNeckYield = 0.4 MPa
-	if ( (visc_micro * sig) <= 100. * sigNeckYield ) {
+	if ( (visc_micro * sig) <= 100. * sigNeckYield ) { // HACK multiply by 100. to avoid yielding on purpose
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
 	// YIELDING, NON-LINEAR
 	} else {

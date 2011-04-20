@@ -51,7 +51,7 @@ const bool Hazard::r_in_n = true;
  * non-static section                                       *
  ************************************************************/
 
-Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
+Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -85,6 +85,9 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
 	*/
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
 
+	nHz = (int)floor( (duration / (hazard_steps_between * sn_dt)) ) + 2;
+	if (nHz <= 0) nHz = 1;
+
 }
 
 /**
@@ -93,20 +96,16 @@ Hazard::Hazard(const mio::Config& i_cfg) : cfg(i_cfg)
  * - Computes a zeroth order drift index for the first time step w/o shifting old_drift!
  * @author Michael Lehning
  * @version 10.03
- * @param duration of run (s)
  * @param *old_drift
  * @param slope_angle (degree)
  * @param Hdata
  * @param Hdata_ind
  */
-void Hazard::initializeHazard(const double duration, double *old_drift, double slope_angle,
+void Hazard::initializeHazard(double *old_drift, double slope_angle,
                               std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
 {
-	int nHz = (int)floor( (duration / (hazard_steps_between * sn_dt)) ) + 2;
-	if (nHz <= 0) nHz = 1;
-
-	Hdata = vector<ProcessDat>((unsigned)nHz);
-	Hdata_ind = vector<ProcessInd>((unsigned)nHz);
+	Hdata.resize((unsigned)nHz);
+	Hdata_ind.resize((unsigned)nHz);
 
 	memset(&Hdata[0], 0, sizeof(ProcessDat)*nHz);
 	memset(&Hdata_ind[0], 0, sizeof(ProcessInd)*nHz);
