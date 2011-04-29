@@ -88,7 +88,6 @@ class Metamorphism {
 		static std::map<std::string, MetaModelFn> mapMetamorphismModel;
 		static std::map<std::string, MetaSpRateFn> mapSpRate;
 		
-		const mio::Config& cfg;
 		std::string metamorphism_model;
 		double sn_dt, new_snow_grain_rad;
 };

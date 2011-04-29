@@ -26,80 +26,83 @@ using namespace std;
 /************************************************************
  * static section                                           *
  ************************************************************/
-map<string,string> SnowpackConfig::defaultConfig;
+map<string,string> SnowpackConfig::advancedConfig;
+map<string,string> SnowpackConfig::inputConfig;
+map<string,string> SnowpackConfig::outputConfig;
+
 const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 
 bool SnowpackConfig::initStaticData()
 {
-	// Parameters section
-	defaultConfig["ALPINE3D"] = "0";
-	defaultConfig["DOORSCHOT"] = "0";
-	defaultConfig["FIXED_HN_DENSITY"] = "100.";
-	defaultConfig["FORCE_RH_WATER"] = "1";
-	defaultConfig["HARDNESS_MODEL"] = "DEFAULT";
-	defaultConfig["HEIGHT_NEW_ELEM"] = "0.02";
-	defaultConfig["HOAR_DENSITY_BURIED"] = "125.";
-	defaultConfig["HOAR_DENSITY_SURF"] = "100.";
-	defaultConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
-	defaultConfig["HOAR_MIN_SIZE_SURF"] = "0.5";
-	defaultConfig["HOAR_THRESH_RH"] = "0.97";
-	defaultConfig["HOAR_THRESH_VW"] = "3.5";
-	defaultConfig["JAM"] = "0";
-	defaultConfig["JOIN_ELEMENTS"] = "1";
-	defaultConfig["MASS_BALANCE"] = "0";
-	defaultConfig["MAX_NUMBER_SENSORS"] = "5";
-	defaultConfig["METAMORPHISM_MODEL"] = "DEFAULT";
-	defaultConfig["MIN_DEPTH_SUBSURF"] = "0.07";
-	defaultConfig["MULTISTREAM"] = "1";
-	defaultConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
-	defaultConfig["NUMBER_FIXED_HEIGHTS"] = "5";
-	defaultConfig["NUMBER_FIXED_RATES"] = "0";
-	defaultConfig["PERP_TO_SLOPE"] = "0";
-	defaultConfig["PLASTIC"] = "0";
-	defaultConfig["RESEARCH"] = "1";
-	defaultConfig["STATION_NAME"] = "station";
-	defaultConfig["STRENGTH_MODEL"] = "DEFAULT";
-	defaultConfig["SURFACECODE"] = "NEUMANN_BC";
-	defaultConfig["SW_MODE_CHANGE"] = "0";
-	defaultConfig["THRESH_RAIN"] = "1.2";
-	defaultConfig["THRESH_RH"] = "0.5";
-	defaultConfig["T_CRAZY_MAX"] = "340.";
-	defaultConfig["T_CRAZY_MIN"] = "210.";
-	defaultConfig["VARIANT"] = "DEFAULT";
-	defaultConfig["VISCOSITY_MODEL"] = "DEFAULT";
-	defaultConfig["WET_LAYER"] = "1";
-	defaultConfig["PREVAILING_WIND_DIR"] = "0.";
-	defaultConfig["WIND_SCALING_FACTOR"] = "1.0";
+	//[SnowpackAdvanced] section
+	advancedConfig["ALPINE3D"] = "0";
+	advancedConfig["DOORSCHOT"] = "0";
+	advancedConfig["FIXED_HN_DENSITY"] = "100.";
+	advancedConfig["FORCE_RH_WATER"] = "1";
+	advancedConfig["HARDNESS_MODEL"] = "DEFAULT";
+	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
+	advancedConfig["HOAR_DENSITY_BURIED"] = "125.";
+	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
+	advancedConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
+	advancedConfig["HOAR_MIN_SIZE_SURF"] = "0.5";
+	advancedConfig["HOAR_THRESH_RH"] = "0.97";
+	advancedConfig["HOAR_THRESH_VW"] = "3.5";
+	advancedConfig["JAM"] = "0";
+	advancedConfig["JOIN_ELEMENTS"] = "1";
+	advancedConfig["MASS_BALANCE"] = "0";
+	advancedConfig["MAX_NUMBER_SENSORS"] = "5";
+	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
+	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
+	advancedConfig["MULTISTREAM"] = "1";
+	advancedConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
+	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "5";
+	advancedConfig["NUMBER_FIXED_RATES"] = "0";
+	advancedConfig["PERP_TO_SLOPE"] = "0";
+	advancedConfig["PLASTIC"] = "0";
+	advancedConfig["PREVAILING_WIND_DIR"] = "0.";
+	advancedConfig["RESEARCH"] = "1";
+	advancedConfig["STATION_NAME"] = "station";
+	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
+	advancedConfig["SURFACECODE"] = "NEUMANN_BC";
+	advancedConfig["SW_MODE_CHANGE"] = "0";
+	advancedConfig["THRESH_RAIN"] = "1.2";
+	advancedConfig["THRESH_RH"] = "0.5";
+	advancedConfig["T_CRAZY_MAX"] = "340.";
+	advancedConfig["T_CRAZY_MIN"] = "210.";
+	advancedConfig["VARIANT"] = "DEFAULT";
+	advancedConfig["VISCOSITY_MODEL"] = "DEFAULT";
+	advancedConfig["WET_LAYER"] = "1";
+	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 
-	// Input section
-	defaultConfig["FIXED_SENSOR_DEPTHS"] = "0.25 0.50 1.0 1.5 -0.1";
-	defaultConfig["METEOPATH"] = "./DATA/input";
-	defaultConfig["NUMBER_OF_SOLUTES"] = "0";
-	defaultConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
-	defaultConfig["RHO_HN"] = "false";
-	defaultConfig["SOLUTE_NAMES"] = "NITRATE";
-	defaultConfig["USEANETZ"] = "0"; // Operational (ImisIO) only
-	defaultConfig["VW_DRIFT"] = "false";
+	//[Input] section
+	inputConfig["FIXED_SENSOR_DEPTHS"] = "0.25 0.50 1.0 1.5 -0.1";
+	inputConfig["METEOPATH"] = "./DATA/input";
+	inputConfig["NUMBER_OF_SOLUTES"] = "0";
+	inputConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
+	inputConfig["RHO_HN"] = "false";
+	inputConfig["SOLUTE_NAMES"] = "NITRATE";
+	inputConfig["USEANETZ"] = "0"; // Operational (ImisIO) only
+	inputConfig["VW_DRIFT"] = "false";
 
-	// Output section
-	defaultConfig["AVGSUM_TIME_SERIES"] = "1";
-	defaultConfig["BACKUP_DAYS_BETWEEN"] = "365.";
-	defaultConfig["CUMSUM_MASS"] = "0";
-	defaultConfig["EXPERIMENT"] = "NO_EXP";
-	defaultConfig["FIRST_BACKUP"] = "400.";
-	defaultConfig["METEOPATH"] = "./DATA";
-	defaultConfig["OUT_CANOPY"] = "0";
-	defaultConfig["OUT_HAZ"] = "1";
-	defaultConfig["OUT_HEAT"] = "1";
-	defaultConfig["OUT_LOAD"] = "0";
-	defaultConfig["OUT_LW"] = "1";
-	defaultConfig["OUT_MASS"] = "1";
-	defaultConfig["OUT_METEO"] = "1";
-	defaultConfig["OUT_STAB"] = "1";
-	defaultConfig["OUT_SW"] = "1";
-	defaultConfig["OUT_T"] = "1";
-	defaultConfig["PLASTIC"] = "0";
-	defaultConfig["PRECIP_RATES"] = "1";
+	//[Output] section
+	outputConfig["AVGSUM_TIME_SERIES"] = "1";
+	outputConfig["BACKUP_DAYS_BETWEEN"] = "365.";
+	outputConfig["CUMSUM_MASS"] = "0";
+	outputConfig["EXPERIMENT"] = "NO_EXP";
+	outputConfig["FIRST_BACKUP"] = "400.";
+	outputConfig["METEOPATH"] = "./DATA";
+	outputConfig["OUT_CANOPY"] = "0";
+	outputConfig["OUT_HAZ"] = "1";
+	outputConfig["OUT_HEAT"] = "1";
+	outputConfig["OUT_LOAD"] = "0";
+	outputConfig["OUT_LW"] = "1";
+	outputConfig["OUT_MASS"] = "1";
+	outputConfig["OUT_METEO"] = "1";
+	outputConfig["OUT_STAB"] = "1";
+	outputConfig["OUT_SW"] = "1";
+	outputConfig["OUT_T"] = "1";
+	outputConfig["PLASTIC"] = "0";
+	outputConfig["PRECIP_RATES"] = "1";
 
 	return true;
 }
@@ -112,108 +115,111 @@ SnowpackConfig::~SnowpackConfig() {}
 
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
 {
-	string variant = get("VARIANT", "Parameters", Config::nothrow);
+	string variant = get("VARIANT", "SnowpackAdvanced", Config::nothrow);
 
-	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters");
+	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 
-	addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0025"); //Minimum element length (m)
-	double minimum_l_element = get("MINIMUM_L_ELEMENT", "Parameters");
+	addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0025"); //Minimum element length (m)
+	double minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 	if (enforce_measured_snow_heights) {
-		addKey("HEIGHT_NEW_ELEM", "Parameters", "0.02");
+		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", "0.02");
 	} else {
 		stringstream ss;
 		double tmp = 2.0 * minimum_l_element;
 		ss << tmp;
-		addKey("HEIGHT_NEW_ELEM", "Parameters", ss.str());
+		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 	}
 
-	string viscosity_model = get("VISCOSITY_MODEL", "Parameters", Config::nothrow);
-	string metamorphism_model = get("METAMORPHISM_MODEL", "Parameters", Config::nothrow);
-	string strength_model = get("STRENGTH_MODEL", "Parameters", Config::nothrow);
+	string viscosity_model = get("VISCOSITY_MODEL", "SnowpackAdvanced", Config::nothrow);
+	string metamorphism_model = get("METAMORPHISM_MODEL", "SnowpackAdvanced", Config::nothrow);
+	string strength_model = get("STRENGTH_MODEL", "SnowpackAdvanced", Config::nothrow);
 
 	if ((variant == "") || (variant == "DEFAULT")) {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "DEFAULT");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "DEFAULT");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
 
 	} else if (variant == "JAPAN") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "KOJIMA");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "NIED");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "NIED");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 
 	} else if (variant == "ANTARCTICA") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "CALIBRATION");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
 
-		addKey("MINIMUM_L_ELEMENT", "Parameters", "0.0001"); //Minimum element length (m)
-		minimum_l_element = get("MINIMUM_L_ELEMENT", "Parameters");
+		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
+		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
-		string hoar_density_buried = get("HOAR_DENSITY_BURIED", "Parameters", Config::nothrow);
-		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "Parameters", "200.0");
+		string hoar_density_buried = get("HOAR_DENSITY_BURIED", "SnowpackAdvanced", Config::nothrow);
+		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
 
-		string fixed_hn_density = get("FIXED_HN_DENSITY", "Parameters", Config::nothrow);
-		if (fixed_hn_density == "") addKey("FIXED_HN_DENSITY", "Parameters", "300.");
+		string fixed_hn_density = get("FIXED_HN_DENSITY", "SnowpackAdvanced", Config::nothrow);
+		if (fixed_hn_density == "") addKey("FIXED_HN_DENSITY", "SnowpackAdvanced", "300.");
 
-		string force_rh_water = get("FORCE_RH_WATER", "Parameters", Config::nothrow);
-		if (force_rh_water == "") addKey("FORCE_RH_WATER", "Parameters", "0");
+		string force_rh_water = get("FORCE_RH_WATER", "SnowpackAdvanced", Config::nothrow);
+		if (force_rh_water == "") addKey("FORCE_RH_WATER", "SnowpackAdvanced", "0");
 
-		string thresh_rh = get("THRESH_RH", "Parameters", Config::nothrow);
-		if (thresh_rh == "") addKey("THRESH_RH", "Parameters", "0.7");
+		string thresh_rh = get("THRESH_RH", "SnowpackAdvanced", Config::nothrow);
+		if (thresh_rh == "") addKey("THRESH_RH", "SnowpackAdvanced", "0.7");
 
 		if ( !enforce_measured_snow_heights) {
 			stringstream ss;
 			double tmp = 1.1 * minimum_l_element;
 			ss << tmp;
-			addKey("HEIGHT_NEW_ELEM", "Parameters", ss.str());
+			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 		addKey("FIRST_BACKUP", "Output", "1200.");
-		addKey("NUMBER_FIXED_HEIGHTS", "Parameters", "7");
-		addKey("FIXED_RATES", "Parameters", "1");
-		addKey("NUMBER_FIXED_RATES", "Parameters", "7");
-		addKey("MAX_NUMBER_SENSORS", "Parameters", "23");
-		addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.");
-		addKey("T_CRAZY_MIN", "Parameters", "165.");
-		addKey("T_CRAZY_MAX", "Parameters", "300.");
-		addKey("NEW_SNOW_GRAIN_RAD", "Parameters", "0.1");
+		addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "7");
+		addKey("FIXED_RATES", "SnowpackAdvanced", "1");
+		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "7");
+		addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "23");
+		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
+		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
+		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
+		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
 
 	} else if (variant == "CALIBRATION") {
 
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "Parameters", "CALIBRATION");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "Parameters", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "Parameters", "DEFAULT");
+		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
+		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
+		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
 
-		string number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "Parameters", Config::nothrow);
-		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "Parameters", "5");
-		string number_fixed_rates = get("NUMBER_FIXED_RATES", "Parameters", Config::nothrow);
-		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "Parameters", "0");
-		string max_number_sensors = get("MAX_NUMBER_SENSORS", "Parameters", Config::nothrow);
-		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "Parameters", "5");
-		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "Parameters", Config::nothrow);
-		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "Parameters", "0.0");
+		string number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
+		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
+		string number_fixed_rates = get("NUMBER_FIXED_RATES", "SnowpackAdvanced", Config::nothrow);
+		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		string max_number_sensors = get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", Config::nothrow);
+		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "5");
+		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", Config::nothrow);
+		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
 
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
 	}
 
-	// For all parameters not set by the user or by the initialization above, the default values apply
-	// That is, loop through defaultConfig and check whether user has set the parameter in the
-	// corresponding section, if not add default value
-	for(map<string,string>::const_iterator it = defaultConfig.begin(); it != defaultConfig.end(); it++){
-		// Parameters section
-		string value = get(it->first, "Parameters", Config::nothrow);
-		if (value == "") addKey(it->first, "Parameters", it->second);
+	/* For all parameters not set by the user or by the initialization above, the default values apply
+	 * That is, loop through advancedConfig (then inputConfig & outputConfig) and check whether user has set 
+	 * the parameter in the corresponding section, if not add default value 
+	 */
+	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); it++){
+		//[SnowpackAdvanced] section
+		string value = get(it->first, "SnowpackAdvanced", Config::nothrow);
+		if (value == "") addKey(it->first, "SnowpackAdvanced", it->second);
 	}
-	for(map<string,string>::const_iterator it = defaultConfig.begin(); it != defaultConfig.end(); it++){
-		// Input section
+
+	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); it++){
+		//[Input] section
 		string value = get(it->first, "Input", Config::nothrow);
 		if (value == "") addKey(it->first, "Input", it->second);
 	}
-	for(map<string,string>::const_iterator it = defaultConfig.begin(); it != defaultConfig.end(); it++){
-		// Output section
+
+	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); it++){
+		//[Output] section
 		string value = get(it->first, "Output", Config::nothrow);
 		if (value == "") addKey(it->first, "Output", it->second);
 	}
@@ -230,7 +236,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 * - WARNING: In operational mode and if NUMBER_SLOPES > 1, the above two values are always unset!
 	 */
 	//@{
-	int nSlopes = get("NUMBER_SLOPES", "Parameters");
+	int nSlopes = get("NUMBER_SLOPES", "Snowpack");
 	if (nSlopes > 1) {
 		addKey("AVGSUM_TIME_SERIES", "Output", "0");
 		addKey("CUMSUM_MASS", "Output", "0");
@@ -241,7 +247,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 * WARNING: In operational mode, this has to result in a 30 min interval!
 	 * It is a matter of consitency. If you change this, a big mess will result!!!
 	 */
-	double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Snowpack");
 
 	string hazard_steps_between = get("HAZARD_STEPS_BETWEEN", "Output", Config::nothrow);
 	if (hazard_steps_between == "") {

@@ -262,15 +262,15 @@ double Metamorphism::ddRate(const ElementData& Edata)
  * non-static section                                       *
  ************************************************************/
 
-Metamorphism::Metamorphism(const mio::Config& i_cfg) : cfg(i_cfg) 
+Metamorphism::Metamorphism(const mio::Config& cfg)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
-	cfg.getValue("new_snow_grain_rad", "Parameters", new_snow_grain_rad);
+	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
 
-	cfg.getValue("METAMORPHISM_MODEL", "Parameters", metamorphism_model);
+	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model);
 
 	map<string, MetaModelFn>::const_iterator it1 = mapMetamorphismModel.find(metamorphism_model);
 	if (it1 == mapMetamorphismModel.end()) throw InvalidArgumentException("Unknown metamorphism model: "

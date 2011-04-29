@@ -62,19 +62,19 @@ Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
+	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 	/* Dew point relative to water or ice
 	 * - default: 1
 	 * - Antarctica: 0 */
-	cfg.getValue("FORCE_RH_WATER", "Parameters", force_rh_water);
-	cfg.getValue("RESEARCH", "Parameters", research_mode);
+	cfg.getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water);
+	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 	//Minimum size to show surface hoar on surface (mm)
-	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
 
 	cfg.getValue("TIME_ZONE", "Input", i_time_zone);
 
@@ -87,7 +87,6 @@ Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
 
 	nHz = (int)floor( (duration / (hazard_steps_between * sn_dt)) ) + 2;
 	if (nHz <= 0) nHz = 1;
-
 }
 
 /**

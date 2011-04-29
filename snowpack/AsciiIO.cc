@@ -42,7 +42,7 @@ const bool AsciiIO::t_gnd = false;
  * non-static section                                       *
  ************************************************************/
 
-AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
+AsciiIO::AsciiIO(const mio::Config& cfg)
 {
 	/**
 	 * @name Snow sensors
@@ -75,21 +75,24 @@ AsciiIO::AsciiIO(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * 		-# Up to NUMBER_MEAS_TEMPERATURES-NUMBER_FIXED_HEIGHTS-NUMBER_FIXED_RATES double columns of measured values and positions
 	 */
 	///< Parameter section
-	cfg.getValue("CALCULATION_STEP_LENGTH", "Parameters", calculation_step_length);
-	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
-	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf); // Density of SH at surface node (kg m-3)
-	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf); // Minimum size to show SH on surface (mm)
-	cfg.getValue("MAX_NUMBER_SENSORS", "Parameters", max_number_sensors);
-	cfg.getValue("MIN_DEPTH_SUBSURF", "Parameters", min_depth_subsurf);
-	cfg.getValue("NUMBER_FIXED_HEIGHTS", "Parameters", number_fixed_heights);
-	cfg.getValue("NUMBER_FIXED_RATES", "Parameters", number_fixed_rates);
+	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
+	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf); // Density of SH at surface node (kg m-3)
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf); // Minimum size to show SH on surface (mm)
+	cfg.getValue("MAX_NUMBER_SENSORS", "SnowpackAdvanced", max_number_sensors);
+	cfg.getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf);
+	cfg.getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", number_fixed_heights);
+	cfg.getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates);
 	number_sensors = number_fixed_heights + number_fixed_rates;
-	cfg.getValue("PERP_TO_SLOPE", "Parameters", perp_to_slope);
-	cfg.getValue("RESEARCH", "Parameters", research_mode);
-	cfg.getValue("SNP_SOIL", "Parameters", useSoilLayers);
-	cfg.getValue("SW_MODE", "Parameters", sw_mode);
+
+	cfg.getValue("FIXED_HN_DENSITY", "SnowpackAdvanced", fixed_hn_density);
+
+	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
+	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
+	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
+	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
-	cfg.getValue("VARIANT", "Parameters", variant);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	///< Input section
 	cfg.getValue("FIXED_SENSOR_DEPTHS", "Input", fixed_sensor_depths);
@@ -1411,7 +1414,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	if (Xdata.hn > 0.) {
 		for(unsigned int i=0; i<5; i++) {
 			if ( i != Snowpack::LEHNING_OLD ) {
-				rho_hn = Snowpack::NewSnowDensity(Mdata, Xdata, t_surf, 0., Snowpack::NewSnowDensityModel(i));
+				rho_hn = Snowpack::NewSnowDensity(Mdata, Xdata, t_surf, 0., Snowpack::NewSnowDensityModel(i), fixed_hn_density);
 				fprintf(fout,",%.1lf", rho_hn);
 			}
 		}

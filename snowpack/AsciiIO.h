@@ -90,7 +90,6 @@ class AsciiIO : public SnowpackIOInterface {
 
 		static const bool r_in_n, t_srf, t_gnd;
 		
-		const mio::Config& cfg;
 		double time_zone; ///< input data time zone
 
 		double calculation_step_length, hazard_steps_between, ts_days_between;
@@ -103,6 +102,7 @@ class AsciiIO : public SnowpackIOInterface {
 		int number_meas_temperatures, number_fixed_heights, number_fixed_rates, max_number_sensors;
 		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
 		double hoar_density_surf, hoar_min_size_surf;
+		double fixed_hn_density;
 		//int number_of_solutes;
 
 		std::string variant, experiment, station_name;

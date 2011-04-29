@@ -49,7 +49,6 @@ class SnowDrift {
  	private:
 		double compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle);
 
-		const mio::Config& cfg;
 		bool enforce_measured_snow_heights, snow_redistribution; // Will be read from cfg object
 		Saltation saltation; // The saltation model used
 		double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH

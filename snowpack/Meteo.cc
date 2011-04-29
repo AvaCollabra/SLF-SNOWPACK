@@ -31,7 +31,7 @@
 
 #include <snowpack/Meteo.h>
 
-Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg) 
+Meteo::Meteo(const mio::Config& cfg) : canopy(cfg) 
 {
 	/**
 	 * @brief Defines the way to deal with atmospheric stability:
@@ -40,28 +40,28 @@ Meteo::Meteo(const mio::Config& i_cfg) : cfg(i_cfg), canopy(cfg)
 	 *         recommended with Neumann b.c., i.e., BC_CHANGE=0
 	 * - (-1): Simplified Richardson number stability correction
 	 */
-	cfg.getValue("NEUTRAL", "Parameters", neutral);
+	cfg.getValue("NEUTRAL", "Snowpack", neutral);
 
 	/**
 	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
 	 * Default value and operational mode: 0.002 m
 	 */
-	cfg.getValue("ROUGHNESS_LENGTH", "Parameters", roughness_length);
+	cfg.getValue("ROUGHNESS_LENGTH", "Snowpack", roughness_length);
 
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
-	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
+	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
 	 * Required for surface energy exchange computation and for drifting and blowing snow.
 	 */
-	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Parameters", height_of_wind_value);
+	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
 
-	cfg.getValue("RESEARCH", "Parameters", research_mode);
+	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 }
 
 

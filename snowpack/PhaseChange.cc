@@ -42,10 +42,10 @@ const double PhaseChange::theta_s = 1.0;
  * non-static section                                       *
  ************************************************************/
 
-PhaseChange::PhaseChange(const mio::Config& i_cfg) : cfg(i_cfg) 
+PhaseChange::PhaseChange(const mio::Config& cfg)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 }
 

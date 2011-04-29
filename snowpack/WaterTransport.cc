@@ -24,18 +24,18 @@
 using namespace std;
 using namespace mio;
 
-WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg) 
+WaterTransport::WaterTransport(const mio::Config& cfg)
 {
-	cfg.getValue("VARIANT", "Parameters", variant);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	// Defines whether soil layers are used
-	cfg.getValue("SNP_SOIL", "Parameters", snp_soil);
+	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
 
 	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
-	cfg.getValue("WET_LAYER", "Parameters", wet_layer);
+	cfg.getValue("WET_LAYER", "SnowpackAdvanced", wet_layer);
 
 	//Rain only for air temperatures warmer than threshold (degC)
-	cfg.getValue("THRESH_RAIN", "Parameters", thresh_rain);
+	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
 
 	/**
 	 * @brief No surface hoar will form for rH above threshold (1)
@@ -43,7 +43,7 @@ WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - r141: HOAR_THRESH_RH set to 0.9
 	 * - r719: HOAR_THRESH_RH set to 0.97
 	 */
-	cfg.getValue("HOAR_THRESH_RH", "Parameters", hoar_thresh_rh);
+	cfg.getValue("HOAR_THRESH_RH", "SnowpackAdvanced", hoar_thresh_rh);
 
 	/**
 	 * @brief No surface hoar will form at wind speeds above threshold (m s-1)
@@ -51,26 +51,26 @@ WaterTransport::WaterTransport(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - r141: HOAR_THRESH_VW set to 3.0
 	 * - r242: HOAR_THRESH_VW set to 3.5
 	 */
-	cfg.getValue("HOAR_THRESH_VW", "Parameters", hoar_thresh_vw);
+	cfg.getValue("HOAR_THRESH_VW", "SnowpackAdvanced", hoar_thresh_vw);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
 	//To build up a water table over impermeable layers
-	cfg.getValue("JAM", "Parameters", jam);
+	cfg.getValue("JAM", "SnowpackAdvanced", jam);
 
 	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
-	cfg.getValue("HOAR_DENSITY_BURIED", "Parameters", hoar_density_buried);
+	cfg.getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried);
 
 	//Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
-	cfg.getValue("HOAR_MIN_SIZE_BURIED", "Parameters", hoar_min_size_buried);
+	cfg.getValue("HOAR_MIN_SIZE_BURIED", "SnowpackAdvanced", hoar_min_size_buried);
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 
 	//Minimum element length (m)
-	cfg.getValue("MINIMUM_L_ELEMENT", "Parameters", minimum_l_element);
+	cfg.getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", minimum_l_element);
 }
 
 /**

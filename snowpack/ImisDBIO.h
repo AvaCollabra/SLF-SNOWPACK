@@ -57,7 +57,6 @@ class ImisDBIO : public SnowpackIOInterface{
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
 		                 const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
-		const mio::Config& cfg;
 		//double time_zone; ///< input data time zone
 		static const double time_zone; //All IMIS data is in gmt+1
 

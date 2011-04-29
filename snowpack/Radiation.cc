@@ -37,9 +37,9 @@ const double Radiation::thresh_sun_elevation = 1.e-2;
  * non-static section                                       *
  ************************************************************/
 
-Radiation::Radiation(const mio::Config& i_cfg) : cfg(i_cfg) 
+Radiation::Radiation(const mio::Config& cfg)
 {
-	cfg.getValue("SW_MODE", "Parameters", sw_mode);
+	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
 }
 

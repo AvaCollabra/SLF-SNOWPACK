@@ -99,7 +99,8 @@ class Snowpack {
 		static double newSnowDensityHendrikx(const double ta, const double tss, const double rh, const double vw);
 
 		static double NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xdata,
-                                 const double& tss, const double& hnw, const NewSnowDensityModel& model);
+							    const double& tss, const double& hnw, const NewSnowDensityModel& model, 
+		                             const double& fixed_hn_density);
 
 		const static double new_snow_albedo;
 		static NewSnowDensityModel hn_density_model; ///<New snow density model to be used
@@ -167,11 +168,12 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		bool vw_dendricity;
+		double fixed_hn_density;
 
 		//The following block is necessary, because compNewSnowDensity() is called from other modules
 		//and shall remain static, therefore these variables also have to be static
 		static void initStaticData(const std::string& variant);
-		static double fixed_hn_density, max_hn_density, event_wind_lowlim, event_wind_highlim;
+		static double max_hn_density, event_wind_lowlim, event_wind_highlim;
 		static EventType event_type;
 
 		const static bool jordy_new_snow, hydrometeor;

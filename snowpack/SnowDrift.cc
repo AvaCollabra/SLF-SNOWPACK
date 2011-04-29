@@ -38,7 +38,7 @@ const bool SnowDrift::msg_erosion = false;
  * non-static section                                       *
  ************************************************************/
 
-SnowDrift::SnowDrift(const mio::Config& i_cfg) : cfg(i_cfg), saltation(cfg)
+SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -49,16 +49,16 @@ SnowDrift::SnowDrift(const mio::Config& i_cfg) : cfg(i_cfg), saltation(cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
+	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
 	/**
 	 * @brief Defines whether real snow erosion and redistribution should happen under
 	 * blowing snow conditions. Set in operational mode.
 	 */
-	cfg.getValue("SNOW_REDISTRIBUTION", "Parameters", snow_redistribution);
+	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
 	/*
@@ -67,7 +67,7 @@ SnowDrift::SnowDrift(const mio::Config& i_cfg) : cfg(i_cfg), saltation(cfg)
 	 * - 5 real simulation on flat field plus 4 virtual slopes
 	 * - 9 real simulation on flat field plus 8 virtual slopes
 	 */
-	cfg.getValue("NUMBER_SLOPES", "Parameters", nSlopes);
+	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
 }
 
 /**

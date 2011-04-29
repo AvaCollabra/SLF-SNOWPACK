@@ -47,7 +47,6 @@ class Meteo {
  	private:
 		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata);
 		
-		const mio::Config& cfg;
 		int neutral;
 		bool research_mode, useCanopyModel;
 		double roughness_length, height_of_wind_value;

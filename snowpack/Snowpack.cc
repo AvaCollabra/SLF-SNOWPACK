@@ -44,7 +44,6 @@ const double Snowpack::snowfall_warning = 0.5;
 const int Snowpack::new_snow_marker = 0;
 const double Snowpack::new_snow_albedo = 0.9;
 
-double Snowpack::fixed_hn_density        = 100.0;
 double Snowpack::max_hn_density          = 250.0;
 double Snowpack::event_wind_lowlim       = 0.0;
 double Snowpack::event_wind_highlim      = 0.0;
@@ -56,7 +55,6 @@ void Snowpack::initStaticData(const std::string& variant)
 	/* Wind effect on new snow density, dendricity and grain size
 	 * EVENT_... : thresholds for event driven new snow density and bond size */
 	if (variant == "ANTARCTICA"){
-		Snowpack::fixed_hn_density   = 300.0;
 		Snowpack::max_hn_density     = 340.0;
 		Snowpack::event_type         = Snowpack::EVENT_WIND;
 		Snowpack::event_wind_lowlim  = 4.0;
@@ -71,24 +69,26 @@ void Snowpack::initStaticData(const std::string& variant)
 
 Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 {
-	cfg.getValue("VARIANT", "Parameters", variant);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	initStaticData(variant);
+
+	fixed_hn_density = cfg.get("FIXED_HN_DENSITY", "SnowpackAdvanced");
 
 	/** Defines the management of the bottom boundary conditions with soil layers
 	 * - 0 ==> Dirichlet, i.e fixed Temperature
 	 * - 1 ==> Neumann, fixed geothermal heat flux GEO_HEAT */
-	cfg.getValue("SOIL_FLUX", "Parameters", soil_flux);
+	cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux);
 
-	cfg.getValue("GEO_HEAT", "Parameters", geo_heat); //Constant geothermal heat flux at (great) depth (W m-2)
+	cfg.getValue("GEO_HEAT", "Snowpack", geo_heat); //Constant geothermal heat flux at (great) depth (W m-2)
 
 	/* Defines the management of the surface boundary conditions
 	 * - 0: Neumann boundary conditions throughout
 	 * - 1: Dirichlet if Tss < THRESH_CHANGE_BC, Neumann else */
-	cfg.getValue("CHANGE_BC", "Parameters", change_bc);
-	cfg.getValue("THRESH_CHANGE_BC", "Parameters", thresh_change_bc);
+	cfg.getValue("CHANGE_BC", "Snowpack", change_bc);
+	cfg.getValue("THRESH_CHANGE_BC", "Snowpack", thresh_change_bc);
 
 	//Should be 0 for data-sets which do not provide measured surface temperatures
-	cfg.getValue("MEAS_TSS", "Parameters", meas_tss);
+	cfg.getValue("MEAS_TSS", "Snowpack", meas_tss);
 
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -99,19 +99,19 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
 	 */
-	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Parameters", enforce_measured_snow_heights);
+	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
-	cfg.getValue("CANOPY", "Parameters", useCanopyModel);
+	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
 	 * Required for surface energy exchange computation and for drifting and blowing snow.
 	 */
-	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Parameters", height_of_meteo_values);
+	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Snowpack", height_of_meteo_values);
 
 	/**
 	 * @brief Defines whether the measured shortwave radiation is incoming
@@ -120,7 +120,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - (SW_MODE = 2 || 12) both incoming and reflected SW used \n
 	 * NOTE: If SW_MODE == 2 || SW_MODE >= 10, the input file must hold both fluxes!
 	 */
-	cfg.getValue("SW_MODE", "Parameters", sw_mode);
+	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
 
 	/**
@@ -130,18 +130,18 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - 0: 2.0*MINIMUM_L_ELEMENT (value depends on VARIANT)
 	 * - 1: 0.02
 	 */
-	cfg.getValue("HEIGHT_NEW_ELEM", "Parameters", height_new_elem);
-	cfg.getValue("MINIMUM_L_ELEMENT", "Parameters", minimum_l_element);
+	cfg.getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", height_new_elem);
+	cfg.getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", minimum_l_element);
 
 	// Defines whether soil layers are used
-	cfg.getValue("SNP_SOIL", "Parameters", useSoilLayers);
+	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 
-	cfg.getValue("RESEARCH", "Parameters", research_mode);
+	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 
-	cfg.getValue("VISCOSITY_MODEL", "Parameters", viscosity_model);
+	cfg.getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model);
 
 	//Rain only for air temperatures warmer than threshold (degC)
-	cfg.getValue("THRESH_RAIN", "Parameters", thresh_rain);
+	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
 
 	/**
 	 * @brief Precipitation only for rH above threshold (1)
@@ -150,20 +150,20 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * 	- 2008-01-21: set back THRESH_RH to 0.50 (IMIS sensor problem in operational mode)
 	 * - Antarctica: 0.70
 	 */
-	cfg.getValue("THRESH_RH", "Parameters", thresh_rh);
+	cfg.getValue("THRESH_RH", "SnowpackAdvanced", thresh_rh);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Parameters");
+	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
 	//Defines whether a multiband model is used for short wave radiation extinction
-	cfg.getValue("MULTISTREAM", "Parameters", multistream);
+	cfg.getValue("MULTISTREAM", "SnowpackAdvanced", multistream);
 
 	//Defines whether joining elements will be considered at all
-	cfg.getValue("JOIN_ELEMENTS", "Parameters", join_elements);
+	cfg.getValue("JOIN_ELEMENTS", "SnowpackAdvanced", join_elements);
 
 	//Which boundary condition to use
-	string boundary_condition = cfg.get("SURFACECODE", "Parameters");
+	string boundary_condition = cfg.get("SURFACECODE", "SnowpackAdvanced");
 	if (boundary_condition == "NEUMANN_BC") {
 		surfaceCode = Snowpack::NEUMANN_BC;
 	} else if (boundary_condition == "DIRICHLET_BC") {
@@ -173,8 +173,8 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	}
 
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
-	cfg.getValue("T_CRAZY_MIN", "Parameters", t_crazy_min);
-	cfg.getValue("t_crazy_max", "Parameters", t_crazy_max);
+	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
+	cfg.getValue("T_CRAZY_MAX", "SnowpackAdvanced", t_crazy_max);
 	
 	/* Initial new snow parameters, see computeSnowFall()
 	 * - that rg and rb are equal to 0.5*gsz and 0.5*bsz, respectively. Both given in millimetres
@@ -199,7 +199,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 		bond_factor_rh = 1.0;
 	}
 
-	cfg.getValue("NEW_SNOW_GRAIN_RAD", "Parameters", new_snow_grain_rad);
+	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
 	new_snow_bond_rad = 0.25 * new_snow_grain_rad;
 
 	/**
@@ -210,12 +210,12 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	 * - 0.002  m : favored operational value with Dirichlet bc
 	 */
 	//Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
-	cfg.getValue("HOAR_DENSITY_BURIED", "Parameters", hoar_density_buried);
+	cfg.getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried);
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 
 	//Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
-	cfg.getValue("HOAR_MIN_SIZE_BURIED", "Parameters", hoar_min_size_buried);
+	cfg.getValue("HOAR_MIN_SIZE_BURIED", "SnowpackAdvanced", hoar_min_size_buried);
 }
 
 /**
@@ -1283,7 +1283,8 @@ double Snowpack::newSnowDensityHendrikx(const double ta, const double tss, const
  * @param model  Model to be used
  * @return double
  */
-double Snowpack::NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss, const double& hnw, const NewSnowDensityModel& model)
+double Snowpack::NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss, 
+                                const double& hnw, const NewSnowDensityModel& model, const double& fixed_hn_density)
 {
 	double rho;
 
@@ -1347,7 +1348,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	} else {
 		t_surf = MIN(C_TO_K(-0.1), (Xdata.Ndata[nOldN-1].T + Mdata.ta)/2.);
 	}
-	rho_hn = NewSnowDensity(Mdata, Xdata, t_surf, cumu_hnw, Snowpack::hn_density_model);
+	rho_hn = NewSnowDensity(Mdata, Xdata, t_surf, cumu_hnw, Snowpack::hn_density_model, fixed_hn_density);
 
 	if ( !enforce_measured_snow_heights ) {
 		if ( Mdata.ta < C_TO_K(thresh_rain) ) {

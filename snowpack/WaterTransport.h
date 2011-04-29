@@ -56,7 +56,6 @@ class WaterTransport {
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		std::string variant;
-		const mio::Config& cfg;
 		bool snp_soil; 	//Defines whether soil layers are used
 		bool wet_layer; 	//Build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
 		bool jam; 	     //To build up a water table over impermeable layers

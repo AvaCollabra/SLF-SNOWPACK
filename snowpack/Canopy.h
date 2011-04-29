@@ -123,9 +123,8 @@ class Canopy {
 		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
 		static const double f3_gd, rootdepth, wp_fraction;
 		
-		const mio::Config& cfg;
 		int snp_soil;
-		double thresh_rain, calculation_step_length;
+		double thresh_rain, calculation_step_length, fixed_hn_density;
 };
 
 #endif //END of Canopy.h

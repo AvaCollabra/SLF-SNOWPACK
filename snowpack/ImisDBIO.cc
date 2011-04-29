@@ -40,17 +40,17 @@ string ImisDBIO::oraclePassword = "";
 
 const std::string ImisDBIO::profile_filename = "loaddata/pmodpro.dat";
 
-ImisDBIO::ImisDBIO(const mio::Config& i_cfg) : cfg(i_cfg)
+ImisDBIO::ImisDBIO(const mio::Config& cfg)
 {
 	cfg.getValue("DBNAME", "Output", oracleDB, Config::nothrow);
 	cfg.getValue("DBUSER", "Output", oracleUser, Config::nothrow);
 	cfg.getValue("DBPASS", "Output", oraclePassword, Config::nothrow);
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
-	cfg.getValue("HOAR_DENSITY_SURF", "Parameters", hoar_density_surf);
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 
 	//Minimum size to show surface hoar on surface (mm)
-	cfg.getValue("HOAR_MIN_SIZE_SURF", "Parameters", hoar_min_size_surf);
+	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
 }
 
 void ImisDBIO::readSnowCover(const std::string& /*i_snowfile*/, const std::string& /*stationID*/,

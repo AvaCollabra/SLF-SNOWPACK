@@ -43,8 +43,7 @@ class PhaseChange {
 		void compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt, double& ql_Rest);
 		void compSubSurfaceFrze(ElementData& Edata, const unsigned int nSolutes, const double& dt);
 		
-		double sn_dt;
-		const mio::Config& cfg;
+		double sn_dt; ///< The calculation_step_length in seconds
 
 		static const double theta_r; ///< Residual Water Content,  for now we say  0.0
 		static const double theta_s; ///< Saturated Water Content, for now we say  1.0

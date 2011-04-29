@@ -79,10 +79,10 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg) 
+Stability::Stability(const mio::Config& cfg)
 {
-	cfg.getValue("STRENGTH_MODEL", "Parameters", strength_model);
-	cfg.getValue("HARDNESS_MODEL", "Parameters", hardness_model);
+	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
+	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
 
 	map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
 	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
@@ -92,10 +92,10 @@ Stability::Stability(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	//To build a sandwich with a non-snow layer (plastic or wood chips) on top; 
 	//originally introduced for snow farming applications
-	cfg.getValue("PLASTIC", "Parameters", plastic);
+	cfg.getValue("PLASTIC", "SnowpackAdvanced", plastic);
 
 	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
-	cfg.getValue("HOAR_DENSITY_BURIED", "Parameters", hoar_density_buried);
+	cfg.getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried);
 }
 
 

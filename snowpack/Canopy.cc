@@ -276,15 +276,17 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
  * non-static section                                       *
  ************************************************************/
 
-Canopy::Canopy(const mio::Config& i_cfg) : cfg(i_cfg) 
+Canopy::Canopy(const mio::Config& cfg) 
 {
 	// Defines whether soil layers are used
-	cfg.getValue("snp_soil", "Parameters", snp_soil);
+	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
 
 	//Rain only for air temperatures warmer than threshold (degC)
-	cfg.getValue("THRESH_RAIN", "Parameters", thresh_rain);
+	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
 
-	cfg.getValue("CALCULATION_STEP_LENGTH", "Parameters", calculation_step_length);
+	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
+
+	cfg.getValue("FIXED_HN_DENSITY", "SnowpackAdvanced", fixed_hn_density);
 }
 
 /**
@@ -1448,7 +1450,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * 1.1a Always new snow density as estimate of density in intercepted storage
 	 */
 	density_of_new_snow = Snowpack::NewSnowDensity(*Mdata, *Xdata, Xdata->Cdata.temp, -1.,
-                                                 Snowpack::hn_density_model);
+	                                               Snowpack::hn_density_model, fixed_hn_density);
 
 	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain
 	intcapacity = cn_IntCapacity(Mdata->ta, density_of_new_snow, Xdata->Cdata.lai);

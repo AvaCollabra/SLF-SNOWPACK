@@ -68,9 +68,6 @@
  * approve of our method (WEG) and our many possibilities (FREEDOM).
  */
 
-/*
- * INCLUDES
-*/
 #include <snowpack/Laws_sn.h>
 
 using namespace std;
@@ -167,7 +164,7 @@ double SnLaws::visc_time_fudge = 0.;
 double SnLaws::visc_ice_fudge = 0.51;
 double SnLaws::visc_sp_fudge = 1.19;
 double SnLaws::visc_water_fudge = 31.;
-bool   SnLaws::setfix;
+bool   SnLaws::setfix = false;
 SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_new;
 
 SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
@@ -177,9 +174,10 @@ const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
 
 /**
  * @brief  This function is used to give default values to a bunch of static members of SnLaws
- *         it is called when the helper variable __init is called and everytime the user changes
- *         the variant and invokes either compAlbedo(..) or compSnowViscosity(...)
- * @return true
+ *         it is called when the helper variable __init is initialized (compile-time) 
+ *         and everytime the user changes the variant and invokes either compAlbedo(..) or 
+ *         compSnowViscosity(...)
+ * @return always true
  */
 bool SnLaws::setStaticData(const std::string& variant)
 {

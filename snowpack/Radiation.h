@@ -143,7 +143,6 @@ class Radiation {
 		//projection of incoming radiation for a given slope
 		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, CurrentMeteo& Mdata, RadiationData& Rdata); 
 
-		const mio::Config& cfg;
 		int sw_mode;
 
 		static const double thresh_sun_elevation;
