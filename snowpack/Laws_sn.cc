@@ -173,11 +173,14 @@ SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_new;
 SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
 double SnLaws::albedoCage = -0.000575;
 
-/************************************************************
- * non-static section                                       *
- ************************************************************/
-
 const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
+
+/**
+ * @brief  This function is used to give default values to a bunch of static members of SnLaws
+ *         it is called when the helper variable __init is called and everytime the user changes
+ *         the variant and invokes either compAlbedo(..) or compSnowViscosity(...)
+ * @return true
+ */
 bool SnLaws::setStaticData(const std::string& variant)
 {
 	current_variant = variant;
