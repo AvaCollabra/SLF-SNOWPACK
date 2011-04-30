@@ -20,7 +20,15 @@
 /**
  * @file Laws_sn.cc
  * @version 10.03
- * @brief This module contains (ALL) the constitutive laws for the 1d snowpack model.
+ * @brief This module contains (ALL) the constitutive laws for the 1d snowpack model. SnLaws is
+ *        currently a merely static class (all functions and all variables are static members). 
+ *        In order to initialize the static member variables they are defined below and if dependent
+ *        on the VARIANT in use initialized in setStaticData(const& std::string variant). This
+ *        function also initializes static containers (swa_k, swa_fb, swa_pc). When calling
+ *        compAlbedo(...) or compSnowViscosity(...) setStaticData might be called in case that
+ *        the VARIANT has changed, thus some static variables may be adapted at runtime to the 
+ *        VARIANT specified.
+ *
  *
  * This includes Michael Lehning's ALBEDO law as well as Bob Brown's VISCOSITY and HEAT CONDUCTION models.
  * It also contains the SENSIBLE and LATENT heat CONVECTION coefficients.  Moreover, this code
@@ -150,7 +158,15 @@ const double SnLaws::smallest_viscosity = 1.0e6;
 /**
  * @name Snow viscosity
  * @brief Defines the constants and parameters for computing the snow viscosity \n
- * NOTE The Japanese variant uses a viscosity parametrization by Kojima
+ * @note {
+ * @par
+ * The Japanese variant uses a viscosity parametrization by Kojima
+ *
+ * @par 
+ * These static variables are only defined below, if you want to change them
+ * for your purposes you need to do so in the function SnLaws::setStaticData
+ * where these parameters are set according to the VARIANT used
+ * }
  * - t_term Temperature dependence
  * - visc_time_fudge  : Empirical constant related to age of snow
  * - visc_ice_fudge   : Empirical constant related to volumetric ice content; ori: 0.4
