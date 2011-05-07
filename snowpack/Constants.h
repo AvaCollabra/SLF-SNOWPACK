@@ -78,9 +78,6 @@ namespace Constants {
 	//@{
 	const double min_rho = 5.0;
 	const double max_rho = 1000.0;
-	/// @brief Min volumetric ice content allowed
-	const double min_hn_density = 30.0;
-	const double min_ice_content = min_hn_density / density_ice;
 	//@}
 	//@}
 

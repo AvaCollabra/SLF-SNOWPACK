@@ -410,11 +410,15 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
 
 
 /**
- * @brief Michi is very unhappy that the warning service wants to inflate or deflate the
- * snow if there is a consistent under- oder overestimation of settling respectively. \n
- * But since the will of the warning service is law at the SLF, we have no choice
- * and need to implement this additional terrible non mass-conserving and cheating
- * feature. But it will make the operational users happy, I hope. \n
+ * @brief Deflates or inflates the snowpack for warning service purposes
+ * - Forced erosion: dhs_corr < 0. & mass_corr > 0.
+ * - Deflate       : dhs_corr < 0. & mass_corr < 0.
+ * - Inlate        : dhs_corr > 0. & mass_corr > 0.
+ * @note Michi is very unhappy that the warning service wants to deflate or inflate the
+ *       snow if there is a consistent under- oder overestimation of settling, respectively.
+ *       But since the will of the warning service is law at the SLF, we have no choice
+ *       and need to implement this additional terrible non mass-conserving and cheating
+ *       feature. But it will make the operational users happy, I hope. \n
  * Implemented on 2 Feb 2008 (and 7 Mar 2008: back to erosion) by Mathias Bavay
  * and Michi, who should be home with Leo being sick ...
  * @param Mdata
@@ -424,7 +428,7 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  */
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
 {
-	int    e, nE, nSoil;                         // Element counter
+	unsigned int e, nE, nSoil;                   // Element counter
 	double factor_corr, sum_total_correction=0.; // Correction factor
 	double ddL, dL=0.;                           // Length changes
 	double cH, cH_old;                           // Snow depth
@@ -432,57 +436,62 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	// Dereference a few values
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	nE = Xdata.getNumberOfElements(); nSoil = Xdata.SoilNode;
+	nE = Xdata.getNumberOfElements();
+	nSoil = Xdata.SoilNode;
 	cH = Xdata.cH - Xdata.Ground;
+	dhs_corr = Mdata.hs1 - cH;
 	/*
 	 * First try to find erosion events, which have not been captured by the drift module
 	 * (Maybe the wind sensor did not measure correctly due to riming, or s.th. else went
 	 * wrong with the model. For now assume erosion if more than 3 cm are missing
 	 */
-	if ( (Mdata.hs1 + 0.03) < cH ) {
-		dhs_corr += Mdata.hs1 - cH;
-		mass_corr += forcedErosion(Mdata.hs1, Xdata);
-		if ( 0 ) {
+	if ((Mdata.hs1 + 0.03) < cH) {
+		mass_corr = forcedErosion(Mdata.hs1, Xdata);
+		if (0) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
-			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
+			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
+			                                              Mdata.hs1, cH);
 		}
 	} else {
 		// assume settling error
-		dhs_corr += Mdata.hs1 - cH;
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
 		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[nSoil].depositionDate.getJulianDate())
 			return;
 
-		if ( 0 ) {
+		if (0) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
-				   "Small correction due to assumed settling error\n");
+			          "Small correction due to assumed settling error\n");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-							"Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
+			          "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3))&&(Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
+			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
+			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
 				sum_total_correction += EMS[e].L
-						* (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
-							   / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())));
+				    * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
+				        / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())));
 			}
 		}
-		if ( sum_total_correction > 0. ) {
-			factor_corr = (Mdata.hs1 - cH) / sum_total_correction;
+		if (sum_total_correction > 0.) {
+			factor_corr = dhs_corr / sum_total_correction;
 		} else {
-			dhs_corr += 0.;
+			dhs_corr = 0.;
 			return;
 		}
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
 		for (e = nSoil; e < nE; e++) {
-			if ( (!(EMS[e].mk > 20 || EMS[e].mk == 3)) && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
-				ddL = EMS[e].L 
-					* MAX(-0.9, MIN(0.9, factor_corr 
-						* (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
-										    / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())))));
+			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
+			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
+				ddL = EMS[e].L
+				        * MAX(-0.9, MIN(0.9,
+				                factor_corr * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate()
+				                  - EMS[e].depositionDate.getJulianDate())
+				                    / (EMS[nE-1].depositionDate.getJulianDate()
+				                      - EMS[nSoil].depositionDate.getJulianDate())))));
 			} else {
 				ddL = 0.;
 			}
@@ -499,7 +508,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
 		Xdata.mH -= (cH_old - Xdata.cH);
 	}
-} // End qro_ErodeDeflateInflate
+}
 
 /**
  * @brief Logistic function

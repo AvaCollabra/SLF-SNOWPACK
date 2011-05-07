@@ -351,9 +351,8 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	Hdata.hnw72 =  hnw[5] / cos_sl;
 
 	// Compute 72h sum of 24h new snow depths for a total of 3 days
-	for (int l = 143; l > 0; l--) {
+	for (int l = 143; l > 0; l--)
 		Zdata.hn24[l] = Zdata.hn24[l-1];
-	}
 	Zdata.hn24[0] = hn[4];
 	Hdata.hn72_24 =  M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
 
@@ -398,9 +397,9 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	}
 
 	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
-	if (research_mode){
+	if (research_mode) {
 		Hdata.dewpt_def = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T
-		                  - RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
+		                      - RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
 	} else {
 		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
 	}
@@ -412,21 +411,17 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	// hoar size, size in mm assuming HOAR_DENSITY_SURF at surface
 	Hdata.hoar_size = M_TO_MM(Xdata.Ndata[nE].hoar / hoar_density_surf);
 	// Check for lower size limit
-	if (Hdata.hoar_size <= hoar_min_size_surf) {
+	if (Hdata.hoar_size <= hoar_min_size_surf)
 		Hdata.hoar_size = 0.;
-	}
-	if (!((Hdata.hoar_size >= 0.) && (Hdata.hoar_size < 100.))) {
+	if (!((Hdata.hoar_size >= 0.) && (Hdata.hoar_size < 100.)))
 		Hdata_ind.hoar_size = -1;
-	}
 	// HOAR INDEX (24h and 6h), mass in kg m-2
 	Hdata.hoar_ind24 = compHoarIndex(&(Zdata.hoar24[0]), Sdata.hoar, 24, 1);
-	if (!((Hdata.hoar_ind24 > -10.) && (Hdata.hoar_ind24 < 10.))) {
+	if (!((Hdata.hoar_ind24 > -10.) && (Hdata.hoar_ind24 < 10.)))
 		Hdata_ind.hoar_ind24 = -1;
-	}
 	Hdata.hoar_ind6  = compHoarIndex(&(Zdata.hoar24[0]), Sdata.hoar,  6, 0);
-	if (!((Hdata.hoar_ind6 > -10.) && (Hdata.hoar_ind6 < 10.))) {
+	if (!((Hdata.hoar_ind6 > -10.) && (Hdata.hoar_ind6 < 10.)))
 		Hdata_ind.hoar_ind6 = -1;
-	}
 
 	// SWE and total liquid water content
 	Hdata.swe = Sdata.mass[SurfaceFluxes::MS_SWE];
@@ -435,18 +430,16 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	Hdata.runoff /= S_TO_H(sn_dt * hazard_steps_between);
 
 	// Profile type
-	if ((Xdata.S_class1 <= 10) && (Xdata.S_class1 >= 0)) {
+	if ((Xdata.S_class1 <= 10) && (Xdata.S_class1 >= 0))
 		Hdata.stab_class1 = Xdata.S_class1;
-	} else {
+	else
 		Hdata_ind.stab_class1 = -1;
-	}
 
 	// Stability class
-	if ((Xdata.S_class2 <= 5) && (Xdata.S_class2 >= 1)) {
+	if ((Xdata.S_class2 <= 5) && (Xdata.S_class2 >= 1))
 		Hdata.stab_class2 = Xdata.S_class2;
-	} else {
+	else
 		Hdata_ind.stab_class2 = -1;
-	}
 	// Stability index: Deformation index
 	if ((Xdata.S_d < (Stability::max_stability + Constants::eps)) && (Xdata.S_d > 0.)) {
 		Hdata.stab_index1 = Xdata.S_d;
@@ -491,22 +484,19 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	// Surface crust [type == 772] computed for southerly aspect outside compHazard()
 
 	// Energy input ... (kJ m-2)
-	if (nE > Xdata.SoilNode) {
+	if (nE > Xdata.SoilNode)
 		Hdata.en_bal = Sdata.dIntEnergy * hazard_steps_between / 1000.;
-	} else {
-		Hdata.en_bal = ( ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr))
-				* sn_dt * hazard_steps_between ) / 1000.;
-  }
-	if (!((Hdata.en_bal > -3000.) && (Hdata.en_bal < 3000.))) {
+	else
+		Hdata.en_bal = (((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr))
+		                    * sn_dt * hazard_steps_between) / 1000.;
+	if (!((Hdata.en_bal > -3000.) && (Hdata.en_bal < 3000.)))
 		Hdata_ind.en_bal = -1;
-	}
 
 	// Net SW energy at surface (kJ m-2)
 	if (Sdata.sw_in > 0.) {
 		Hdata.sw_net = (Sdata.qw * sn_dt * hazard_steps_between) / 1000.;
-		if (!((Hdata.sw_net > -3000.) && (Hdata.sw_net < 3000.))) {
+		if (!((Hdata.sw_net > -3000.) && (Hdata.sw_net < 3000.)))
 			Hdata_ind.sw_net = -1;
-		}
 	} else {
 		Hdata.sw_net = 0.;
 	}
@@ -515,14 +505,12 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 	double h_top1 = hs - 0.05;
 	h_top1 = hs - 0.05;
 	Hdata.t_top1 = Xdata.getModelledTemperature(h_top1);
-	if ( !((Hdata.t_top1 > -50.) && (Hdata.t_top1 <= 0.)) ) {
+	if ( !((Hdata.t_top1 > -50.) && (Hdata.t_top1 <= 0.)) )
 		Hdata_ind.t_top1 = -1;
-	}
 	double h_top2 = hs - 0.10;
 	Hdata.t_top2 = Xdata.getModelledTemperature(h_top2);
-	if (!((Hdata.t_top2 > -50.) && (Hdata.t_top2 <= 0.))) {
+	if (!((Hdata.t_top2 > -50.) && (Hdata.t_top2 <= 0.)))
 		Hdata_ind.t_top2 = -1;
-	}
 }
 
 void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,

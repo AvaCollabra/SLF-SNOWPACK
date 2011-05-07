@@ -230,7 +230,7 @@ class LayerData {
 		double sp;                  ///< Micro-structure : Sphericity
 		double dd;                  ///< Micro-structure : Dendricity
 		double rb;                  ///< Micro-structure : Bond Radius in mm
-		int mk;                     ///< Micro-structure : Marker
+		unsigned int mk;            ///< Micro-structure : Marker
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
@@ -322,8 +322,8 @@ class ElementData {
 		double rb;                 ///< grain bond radius (mm)
 		double ps2rb;              ///< proportion of grain bond growth due to pressure sintering (1)
 		double N3;                 ///< grain Coordination number (1)
-		int    mk;                 ///< grain marker (history dependent)
-		int    type;               ///< grain class
+		unsigned int    mk;                 ///< grain marker (history dependent)
+		unsigned int    type;               ///< grain class
 		double metamo;             ///< keep track of metamorphism
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
@@ -490,7 +490,7 @@ class SnowStation {
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		CanopyData Cdata;           ///< Pointer to canopy data
-		int tag_low;                ///< Lowest tag to dump, 0 means no tags at all
+		unsigned int tag_low;       ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;

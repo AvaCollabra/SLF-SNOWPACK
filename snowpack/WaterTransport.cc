@@ -303,7 +303,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	unsigned int rnN = nN, nE = nN-1, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	if ((nN == Xdata.SoilNode+1) || (wet_layer && snp_soil && (nN == Xdata.SoilNode+2) && (EMS[nE-1].theta[ICE] < Constants::min_ice_content) && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
+	if ((nN == Xdata.SoilNode+1) || (wet_layer && snp_soil && (nN == Xdata.SoilNode+2) && (EMS[nE-1].theta[ICE] < Snowpack::min_ice_content) && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
 		return;
 	}
 
@@ -324,7 +324,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {
 			enforce_join = false;
 		}
-		if (((EMS[e1].theta[ICE] < Constants::min_ice_content) || enforce_join ) && EMS[e1].theta[SOIL] < Constants::eps2) {
+		if (((EMS[e1].theta[ICE] < Snowpack::min_ice_content) || enforce_join ) && EMS[e1].theta[SOIL] < Constants::eps2) {
 			SnowStation::mergeElements(EMS[e0], EMS[e1], enforce_join);
 			rnE--;
 			rnN--;
@@ -337,7 +337,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	}
 	// Check for one snow element left
 	e0 = Xdata.SoilNode;
-	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps)) && (EMS[e0].theta[ICE] < Constants::min_ice_content || EMS[e0].L < 0.005) && !(wet_layer && snp_soil && (nE > 1) && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95)) && (EMS[nE-1].theta[WATER] > 0.05))) {
+	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps)) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content || EMS[e0].L < 0.005) && !(wet_layer && snp_soil && (nE > 1) && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95)) && (EMS[nE-1].theta[WATER] > 0.05))) {
 		Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e0].M;
 		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e0].M;
 		for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
@@ -376,7 +376,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 
 	e0 = nE;
 	while (((e0-- > Xdata.SoilNode) && (EMS[e0].theta[SOIL] < Constants::eps2) && (EMS[e0].mk%100 > 9) &&
-			(EMS[e0].theta[WATER] < 0.3) && (EMS[e0].theta[ICE] < Constants::min_ice_content) &&
+			(EMS[e0].theta[WATER] < 0.3) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content) &&
 			(EMS[e0].L > minimum_l_element))) {
 
 		// First collect some variables and adjust height
@@ -394,7 +394,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 		}
 
 		// For wet_layer go to Water Density
-		if (wet_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Constants::min_ice_content) && ( e0 > 0) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
+		if (wet_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content) && ( e0 > 0) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
 			dL = -L0*(1.-EMS[e0].theta[WATER]);
 			EMS[e0].theta[WATER] = 1.;
 			EMS[e0].theta[ICE] = 0.;
@@ -638,7 +638,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	}
 	Wres = MAX (0., Wres);
 	// Do not drain last water element if wet_layer is set
-	if ((W0 > Wres) && !(wet_layer && (EMS[0].theta[ICE] < Constants::min_ice_content) && (EMS[0].theta[SOIL] < Constants::eps2))) {
+	if ((W0 > Wres) && !(wet_layer && (EMS[0].theta[ICE] < Snowpack::min_ice_content) && (EMS[0].theta[SOIL] < Constants::eps2))) {
 		dThetaW0 = W0 - Wres;
 		EMS[0].theta[WATER] = W0 - dThetaW0;
 		EMS[0].theta[AIR] = 1. - EMS[0].theta[WATER] - EMS[0].theta[ICE] - EMS[0].theta[SOIL];

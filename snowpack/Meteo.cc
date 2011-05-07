@@ -140,7 +140,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 			Mdata.z0 = z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral", RAD_TO_DEG(Xdata.meta.getAzimuth()), RAD_TO_DEG(Xdata.meta.getSlopeAngle()));
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+			          "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
+			            Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 			return;
 		}
 		ustar_old = ustar;

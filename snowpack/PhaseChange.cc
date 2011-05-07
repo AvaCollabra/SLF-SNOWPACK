@@ -297,7 +297,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
 				if ( (EMS[e].theta[WATER] > thresh_th_w) && 
-					((EMS[e].theta[ICE] > Constants::min_ice_content) || (EMS[e].Te <= Constants::melting_tk)) ) {
+					((EMS[e].theta[ICE] > Snowpack::min_ice_content) || (EMS[e].Te <= Constants::melting_tk)) ) {
 					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
 					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) ) {
@@ -333,7 +333,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 					thresh_th_w = 0.0;
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
-				if ( (EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > Constants::min_ice_content) ) {
+				if ( (EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > Snowpack::min_ice_content) ) {
 					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
 					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) )

@@ -536,7 +536,7 @@ double Metamorphism::PressureSintering(ElementData& Edata)
 {
 	double rbdot; // Bond radius growth rate (mm s-1)
 
-	if (Edata.theta[ICE] <= Constants::min_ice_content) {
+	if (Edata.theta[ICE] <= Snowpack::min_ice_content) {
 		return 0.;
 	}
 	if (Edata.Te > Constants::melting_tk) {
@@ -571,7 +571,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 	double T1, T2;       // Nodal temperatures of element
 	double dPdZ;         // Vapor pressure gradient within element
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
-	int    marker;       // local variable
+	unsigned int marker; // local variable
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0];

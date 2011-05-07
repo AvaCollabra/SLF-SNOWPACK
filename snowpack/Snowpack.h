@@ -48,7 +48,7 @@
 
 /**
  * @name Element macro definitions used in Snowpack.cc only
- * TODO to be replaced by proper functions some day
+ * @todo to be replaced by proper functions some day
  */
 //@{
 /// @brief The number of element incidences
@@ -78,54 +78,23 @@
 class Snowpack {
 
 	public:
-		///@brief New snow density models
-		enum NewSnowDensityModel {
-			ZWART,       ///< Costijn Zwart's model (elaborated 2006; in use since 4 Dec 2007
-			LEHNING_OLD, ///< First model by M. Lehning
-			LEHNING_NEW, ///< Improved model by M. Lehning, incl. ad-hoc wind & temperature effects (used until 06/07)
-			BELLAIRE,    ///< Sascha Bellaire's model (elaborated 2007; used summer/fall 2007)
-			PAHAUT,      ///< Edmond Pahaut's model, introduced Sep 1995 in CROCUS by G. Giraud
-			EVENT,       ///< Introduced by Christine Groot Zwaaftink 2009 (Antarctica)
-			MEASURED,    ///< Use measured new snow density read from meteo input
-			FIXED,       ///< Fixed new snow density => FIXED_HN_DENSITY (SnowMIP NSD experiment, Antarctica)
-			N_HNDM
-		};
-
 		Snowpack(const mio::Config& i_cfg);
 
 		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw, 
                           BoundCond& Bdata, SurfaceFluxes& Sdata);
 
-		static double newSnowDensityHendrikx(const double ta, const double tss, const double rh, const double vw);
-
-		static double NewSnowDensity(const CurrentMeteo& Mdata, const SnowStation& Xdata,
-							    const double& tss, const double& hnw, const NewSnowDensityModel& model, 
-		                             const double& fixed_hn_density);
-
-		const static double new_snow_albedo;
-		static NewSnowDensityModel hn_density_model; ///<New snow density model to be used
+		const static double new_snow_albedo, min_ice_content;
 
 	private:
 		/**
 		 * @brief Specifies what kind of boundary condition is to be implemented at the top surface \n
-		 * 0 : use surface fluxes (NEUMANN_BC)\n
-		 * 1 : use prescribed surface temperature (DIRICHLET_BC)
+		 * - 0 : use surface fluxes (NEUMANN_BC)
+		 * - 1 : use prescribed surface temperature (DIRICHLET_BC)
 		 */
 		enum BoundaryCondition {
 			NEUMANN_BC,
 			DIRICHLET_BC
 		};
-
-		///@brief Types of events for computing new snow density
-		enum EventType {
-			EVENT_DEFAULT,  ///< Default
-			EVENT_WIND,     ///< Wind driven deposition of snow
-			N_EVENT_TYPE
-		};
-
-		static double newSnowDensityPara(double TA, double TSS, double RH, double VW, double HH);
-
-		static double newSnowDensityEvent(const CurrentMeteo& Mdata, const EventType& i_event_type);
 
 		bool compSnowForces(ElementData *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
 		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
@@ -142,20 +111,21 @@ class Snowpack {
                                BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		void neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& Bdata, const SnowStation& Xdata,
-					const double& T_snow, const double& T_iter, 
-					double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
+		                               const double& T_snow, const double& T_iter,
+		                               double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
 
 		void neumannBoundaryConditionsSoil(const double& flux, const double& T_snow,
-						double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
+		                                   double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
+		                                   double Fe[ N_OF_INCIDENCES ]);
 
 		void compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata, double& mAlb);
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
-						  SurfaceFluxes& Sdata);
+		                      SurfaceFluxes& Sdata);
 
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw);
 
-		std::string viscosity_model, variant;
+		std::string hn_density_model, viscosity_model, variant;
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSoilLayers;
@@ -168,17 +138,11 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		bool vw_dendricity;
-		double fixed_hn_density;
+		double fixed_albedo, hn_fixed_density;
 
-		//The following block is necessary, because compNewSnowDensity() is called from other modules
-		//and shall remain static, therefore these variables also have to be static
-		static void initStaticData(const std::string& variant);
-		static double max_hn_density, event_wind_lowlim, event_wind_highlim;
-		static EventType event_type;
-
-		const static bool jordy_new_snow, hydrometeor;
+		const static bool hydrometeor;
 		const static double snowfall_warning;
-		const static int new_snow_marker;
+		const static unsigned int new_snow_marker;
 }; //end class Snowpack
 
-#endif //End of Snowpack.h
+#endif

@@ -69,15 +69,16 @@ class AsciiIO : public SnowpackIOInterface {
 		void writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout);
 		void writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout);
 
-		int writeTemperatures(FILE *fout, const double& z_vert, const double& T,
-                          const int& i, const SnowStation& Xdata);
+		unsigned int writeTemperatures(FILE *fout, const double& z_vert, const double& T,
+		                               const unsigned int& i, const SnowStation& Xdata);
 
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
-                            const double& ground, const double& slope_angle);
+		                        const double& ground, const double& slope_angle);
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 		
-		int findTaggedElement(const int& tag, const SnowStation& Xdata);
-		int writeHeightTemperatureTag(FILE *fout,const int& tag,const CurrentMeteo& Mdata,const SnowStation& Xdata);
+		int findTaggedElement(const unsigned int& tag, const SnowStation& Xdata);
+		unsigned int writeHeightTemperatureTag(FILE *fout, const unsigned int& tag,
+		                                       const CurrentMeteo& Mdata, const SnowStation& Xdata);
 		
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                 const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
@@ -99,13 +100,12 @@ class AsciiIO : public SnowpackIOInterface {
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 		bool perp_to_slope;
 		double min_depth_subsurf;
-		int number_meas_temperatures, number_fixed_heights, number_fixed_rates, max_number_sensors;
-		int number_sensors; //Actual number of "sensors" that are monitored, including tags in advanced mode
+		unsigned int number_meas_temperatures, number_fixed_heights, number_fixed_rates;
+		unsigned int number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored
 		double hoar_density_surf, hoar_min_size_surf;
-		double fixed_hn_density;
-		//int number_of_solutes;
+		double hn_fixed_density;
 
-		std::string variant, experiment, station_name;
+		std::string hn_density_model, variant, experiment, station_name;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates

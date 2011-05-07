@@ -1053,7 +1053,7 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
 
 LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
                      phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.), SoilRho(0.), SoilK(0.), SoilC(0.),
-                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.)
+                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
 {
 	cIce.resize(SnowStation::number_of_solutes);
 	cWater.resize(SnowStation::number_of_solutes);
