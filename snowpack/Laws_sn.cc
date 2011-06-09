@@ -943,9 +943,9 @@ double SnLaws::newSnowDensityEvent(const SnLaws::EventType& i_event, const Curre
 		break;
 	}
 	default:
-		prn_msg(__FILE__, __LINE__,"err", Date(),"No new snow density parameterization for event type %d",
-		        i_event);
-		exit(EXIT_FAILURE);
+		prn_msg(__FILE__, __LINE__,"err", Date(),
+		        "No new snow density parameterization for event type %d", i_event);
+		throw IOException("Event type not implemented yet!", AT);
 		break;
 	}
 }
@@ -1223,7 +1223,9 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 		break;
 	}
 	default:
-		return 0.;
+		prn_msg(__FILE__, __LINE__, "err", Date(),
+		        "visc=%d not a valid choice for initialStress!", visc);
+		throw IOException("Choice not implemented yet!", AT);
 		break;
 	}
 }
@@ -1278,7 +1280,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 		sp_fudge = SnLaws::visc_sp_fudge;
 
 	switch (visc) {
-	case visc_cal: case visc_ant: case visc_dflt: { // Calibration currently under test
+	case visc_cal: case visc_dflt: { // Calibration currently under test
 		double ice_fudge = (0.67*14.1*SnLaws::visc_ice_fudge / Edata.theta[ICE]); // 0.67; 0.59; r897: 0.51
 		ice_fudge *= (1. - logisticFunction(Edata.theta[ICE], 0.019, 0.15))
 		                  * pow(Edata.theta[ICE], 0.77);
@@ -1306,7 +1308,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 // 		                   * (MAX(0., 0.8 - Edata.theta[ICE]*Edata.theta[ICE])));
 		break;
 	}
-	case visc_897: { // case SnLaws::visc_ant: { // Calibration fall 2010 & Antarctica
+	case visc_897: case visc_ant: { // Calibration fall 2010 & Antarctica
 		double ice_fudge = 0.51*SnLaws::visc_ice_fudge / Edata.theta[ICE]; //
 		if (SnLaws::visc != SnLaws::visc_ant) {
 			ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
@@ -1349,6 +1351,11 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 		thresh_rho2 = 0.7;
 		break;
 	}
+	default:
+		prn_msg(__FILE__, __LINE__, "err", Date(),
+		        "visc=%d not a valid choice for SnowViscosityFudge!", visc);
+		throw IOException("Choice not implemented yet!", AT);
+		break;
 	}
 
 	if (use_thresh) { // Default false
