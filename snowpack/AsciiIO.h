@@ -94,11 +94,9 @@ class AsciiIO : public SnowpackIOInterface {
 		double time_zone; ///< input data time zone
 
 		double calculation_step_length, hazard_steps_between, ts_days_between;
-		double avgsum_time_series;
-		bool useCanopyModel, useSoilLayers, research_mode;
 		int sw_mode;
+		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
-		bool perp_to_slope;
 		double min_depth_subsurf;
 		unsigned int number_meas_temperatures, number_fixed_heights, number_fixed_rates;
 		unsigned int number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored

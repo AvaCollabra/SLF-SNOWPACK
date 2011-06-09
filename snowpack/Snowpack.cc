@@ -19,7 +19,7 @@
 */
 /**
  * @file Snowpack.cc
- * @version 10.02
+ * @version 11.06
  * @bug     -
  * @brief This module contains the driving routines for the 1d snowpack model
  */
@@ -307,6 +307,7 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
  * -# Normal densification
  * -# Empirism for surface hoar. Two different rates are used for either large or small SH.
  *    Implemented by Sascha Bellaire on 28.11.2006.
+ * @todo name parameters for the computation of CDot
  * @param Xdata
  * @param Mdata
  */
@@ -314,7 +315,6 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	unsigned int e;         // Element counter
 	double L0, dL, cH_old;  // Element length and change of length
-	double Sig0=0., SigC, eta; // Initial and Cauchy stress, resp.; snow viscosity
 
 	unsigned int nN = Xdata.getNumberOfNodes();
 	if (nN == (Xdata.SoilNode + 1))
@@ -323,22 +323,29 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	unsigned int nE = Xdata.getNumberOfElements();
 	vector<ElementData>& EMS = Xdata.Edata;
-	e = nE; SigC = 0.0;
+	e = nE;
+	double SigC = 0.;    // Cauchy stress
+	double Sig0 = 0.; // Initial stress
+	const double SigC_fac = Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	while (e-- > 0) {
+		double oldStress = EMS[e].C;
+		double age = MAX(0., Mdata.date.getJulianDate() - EMS[e].depositionDate.getJulianDate());
 		if (e < nE-1)
-			SigC -= (EMS[e+1].M / 2.) * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-		SigC -= (EMS[e].M / 2.) * Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-		if (EMS[e].CDot / SigC > 0.05) { //TODO name parameters?
+			SigC -= (EMS[e+1].M / 2.) * SigC_fac;
+		EMS[e].C = SigC -= (EMS[e].M / 2.) * SigC_fac;
+		if (EMS[e].CDot / SigC > 0.05) {
 			EMS[e].CDot *= exp(-0.037 * S_TO_D(sn_dt));
-			if ((SigC - EMS[e].C) < 0.)
-				EMS[e].CDot += (SigC - EMS[e].C);
 		} else {
 			EMS[e].CDot = 0.;
 		}
-		EMS[e].C = SigC;
+		if ((e < nE-1) && (age > Constants::eps)) {
+			if ((SigC - oldStress) < 0.)
+				EMS[e].CDot += (SigC - oldStress);
+		}
 	}
 
 	for (e = Xdata.SoilNode; e < nE; e++) {
+		double eta = SnLaws::smallest_viscosity; // snow viscosity
 		if (EMS[e].Rho > 910. ||  EMS[e].theta[SOIL] > 0. || EMS[e].theta[ICE] < Constants::eps) {
 			EMS[e].k[SETTLEMENT] = eta = 1.0e99;
 		} else {
@@ -370,7 +377,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			        && ((NDS[nE].z - NDS[e].z < Metamorphism::wind_slab_depth) || e==nE-1)) {
 				wind_slab += Metamorphism::wind_slab_enhance * (Mdata.vw - Metamorphism::wind_slab_vw);
 			}
-			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0 ) / eta;
+			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0) / eta;
 			dL = L0 * sn_dt * EMS[e].EvDot;
 			if ((L0 + dL) < minimum_l_element)
 				dL = MIN(0., minimum_l_element - L0);
@@ -389,10 +396,10 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		}
 
 		if (variant == "CALIBRATION") {
-			NDS[e].f = (Sig0 - EMS[e].EDot) / eta;
-			EMS[e].EDot /= eta;
-			NDS[e].udot = EMS[e].C / eta;
-			EMS[e].S = EMS[e].CDot / SigC; // ratio addLoad to load
+			NDS[e].f = (Sig0 - EMS[e].EDot) / eta; // sigMetamo
+			EMS[e].EDot /= eta;                    // sigReac
+			NDS[e].udot = EMS[e].C / eta;          // Deformation due to load alone
+			EMS[e].S = EMS[e].CDot / EMS[e].C;     // ratio loadrate to load addLoad to load
 		}
 
 		EMS[e].theta[WATER] *= L0 / (L0 + dL);
@@ -401,11 +408,12 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			EMS[e].theta[ICE] *= 0.99;
 			EMS[e].theta[WATER] *= 0.99;
 			EMS[e].M = L0 * ((EMS[e].theta[ICE] * Constants::density_ice) 
-						  + (EMS[e].theta[WATER] * Constants::density_water));
+			                  + (EMS[e].theta[WATER] * Constants::density_water));
 		}
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
-		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER] * Constants::density_water) 
-			+ (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
+		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER]
+		                *Constants::density_water) + (EMS[e].theta[SOIL]
+		                  * EMS[e].soil[SOIL_RHO]);
 		EMS[e].L0 = EMS[e].L = (L0 + dL);
 		NDS[e+1].z = NDS[e].z + EMS[e].L;
 		if (! (EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
@@ -737,13 +745,14 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 
 	// Estimated albedo (statistical model) allowing correct treatment of PLASTIC or WET_LAYER
 	if ((nE > Xdata.SoilNode) && (EMS[nE-1].theta[SOIL] < 0.000001)) {
-		if ((EMS[nE-1].theta[ICE] >= (min_ice_content))) { // Snow on top
-			Alb = SnLaws::compSnowAlbedo(variant, fixed_albedo, EMS[nE-1], NDS[nN-1].T, Mdata,
-			                             Mdata.date.getJulianDate() - EMS[nE-1].depositionDate.getJulianDate());
+		double age = Mdata.date.getJulianDate() - EMS[nE-1].depositionDate.getJulianDate();
+		if ((EMS[nE-1].theta[ICE] >= (min_ice_content))) {
+			// Snow on top
+			Alb = SnLaws::compSnowAlbedo(variant, fixed_albedo, EMS[nE-1], NDS[nN-1].T, Mdata, age);
 		} else if ((nE > Xdata.SoilNode+1) && (EMS[nE-2].theta[ICE] >= (min_ice_content))) {
 			// Water over snow or ice
-			Alb = SnLaws::compSnowAlbedo(variant, fixed_albedo, EMS[nE-2], NDS[nN-2].T, Mdata,
-			                             Mdata.date.getJulianDate() - EMS[nE-2].depositionDate.getJulianDate());
+			age = Mdata.date.getJulianDate() - EMS[nE-2].depositionDate.getJulianDate();
+			Alb = SnLaws::compSnowAlbedo(variant, fixed_albedo, EMS[nE-2], NDS[nN-2].T, Mdata, age);
 		} else {
 			Alb = Xdata.SoilAlb;
 		}
@@ -1036,7 +1045,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	} while ( NotConverged ); // end Convergence Loop
 
 	unsigned int crazy = 0;
-	string crazy_msg("msg+");
+	bool crazy_wrn = true;
 	for (n = 0; n < nN; n++) {
 		if ((U[n] > t_crazy_min) && (U[n] < t_crazy_max)) {
 			NDS[n].T = U[n];
@@ -1046,31 +1055,36 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 				if (!crazy && (nN > Xdata.SoilNode + 3)) {
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)!");
 					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					          "T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf",
-					            t_crazy_min, t_crazy_max, nN, Xdata.cH,
-					              Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-					crazy_msg = "msg-";
+					        "T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf",
+					        t_crazy_min, t_crazy_max, nN, Xdata.cH,
+					        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+					crazy_wrn = false;
 				}
 				if (useSoilLayers && (n <= Xdata.SoilNode)) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					          "SOIL node n=%3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
-					            n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
+					        "SOIL node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
+					        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
 				} else if ((n > Xdata.SoilNode) && (nN > Xdata.SoilNode + 3)) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					          "SNOW node n=%3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf EMS[n-1].th_w(t-1)=%.5lf",
-					            n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
+					        "SNOW node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf EMS[n-1].th_w(t-1)=%.5lf",
+					        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
 				}
 			}
 			crazy++;
 		}
 	}
 	if (crazy) {
-		prn_msg(__FILE__, __LINE__, crazy_msg.c_str(), Mdata.date,
-		          "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
-		            crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+		if (crazy_wrn)
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+			        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
+			        crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+		else
+			prn_msg(__FILE__, __LINE__, "msg-", Date(),
+			        "%d crazy node(s) from total %d!",
+			        crazy, nN);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(),
-		          "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
-		            Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
+		        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
+		        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
 	}
 
 	for (e = 0; e < nE; e++) {
@@ -1188,13 +1202,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	    	|| !enforce_measured_snow_heights || (Xdata.hn > 0.)) {
 		if (Xdata.cH < (Xdata.mH - (height_new_elem*cos_sl)) || (Xdata.hn > 0.)) {
 			// In case of virtual slope use new snow depth and density from either flat field or luv slope
-			if (Xdata.rho_hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
+			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
-			} else { // in case of flat field
+			} else { // in case of flat field or PERP_TO_SLOPE
 				hn = Xdata.mH - Xdata.cH;
-				// Store flat field new snow depth and density for virtual slope simulations
-				if (!ALPINE3D && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle)) {
+				// Store new snow depth and density
+				if (!ALPINE3D) {
 					Xdata.hn = hn;
 					Xdata.rho_hn = rho_hn;
 				}
@@ -1207,11 +1221,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			if (nNewE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
 				if (!ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
-				        || (hn_density_model == "MEASURED") || (hn_density_model == "EVENT")))
+				        || (hn_density_model == "MEASURED") || (hn_density_model == "EVENT"))) {
 					nNewE = 1;
-				else
+				} else {
 					Xdata.hn = 0.;
+					Xdata.rho_hn = Constants::undefined;
 					return;
+				}
 			}
 			cumu_hnw = 0.0;
 			// Check whether surface hoar could be buried
@@ -1341,6 +1357,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				EMS[e].EDot = EMS[e].EvDot=0.0;
 				// Total Element Stress
 				EMS[e].S=0.0;
+				EMS[e].CDot = 0.; // loadRate
 				// NEW SNOW MICRO-STRUCTURE	 fitted from different data sources
 				{
 					double logit, value;
@@ -1412,6 +1429,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 						// Note: L0 > hoar_min_size_buried/hoar_density_buried
 						EMS[e].rb = EMS[e].rg/3.;
 					}
+					EMS[e].metamo = 0.;
 				} // Treat all the initial snow types
 
 				// Snow classification

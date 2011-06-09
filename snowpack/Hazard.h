@@ -56,7 +56,6 @@ class Hazard {
 		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
 		                   const unsigned int& nSlopes, const bool& virtual_slope);
 
-		static const bool r_in_n;
 		static const double typical_slope_length, wind_slab_density;
 
 	private:

@@ -1378,11 +1378,9 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	fprintf(fout,",%lf", ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr)
 	                          * D_TO_S(ts_days_between)) / 1000.);
 	if (Xdata.hn > 0.) {
-		// 96: measured new snow density (kg m-3)
-		fprintf(fout,",%.1lf", Mdata.rho_hn);
-		// 97-100: new snow densities zwart, newLe, bellaire, crocus (kg m-3)
-		rho_hn = SnLaws::compNewSnowDensity("ZWART", hn_fixed_density, Mdata, Xdata, t_surf, 0.);
-		fprintf(fout,",%.1lf", rho_hn);
+		// 96-97: new snow density (kg m-3)
+		fprintf(fout,",%.1lf,%.1lf", Mdata.rho_hn, Xdata.rho_hn);
+		// 98-100: new snow densities zwart, newLe, bellaire, crocus (kg m-3)
 		rho_hn = SnLaws::compNewSnowDensity("LEHNING_NEW", hn_fixed_density, Mdata, Xdata, t_surf, 0.);
 		fprintf(fout,",%.1lf", rho_hn);
 		rho_hn = SnLaws::compNewSnowDensity("BELLAIRE", hn_fixed_density, Mdata, Xdata, t_surf, 0.);

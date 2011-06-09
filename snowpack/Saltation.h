@@ -66,7 +66,7 @@ class Saltation {
 		                     const double& dg, const double& tau_th, double& z_max, double& ubar);
 
 	private:
-		int doorschot; ///< Use Doorschots Saltation model instead of Sorenson (much slower)
+		bool doorschot; ///< Use Doorschots Saltation model instead of Sorenson (much slower)
 
 		static const double hs_frac, karman, elas, angle_ej, ratio_ve_ustar, z0_salt, salt_height;
 		static const int strong, weak;

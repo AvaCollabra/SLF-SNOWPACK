@@ -44,9 +44,6 @@ const double Hazard::minimum_drift = 0.0;
 //Largest additional accumulation allowed (cm h-1)
 const double Hazard::maximum_drift = 5.0;
 
-//Selects whether hand hardness index R is output either in N (Swiss scale) or steps
-const bool Hazard::r_in_n = true;
-
 /************************************************************
  * non-static section                                       *
  ************************************************************/
@@ -93,7 +90,6 @@ Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
  * @brief Allocates and initializes Hazard data (flat field station only)
  * - Fills the snowpack version number, date of computation, user, ...
  * - Computes a zeroth order drift index for the first time step w/o shifting old_drift!
- * @author Michael Lehning
  * @version 10.03
  * @param *old_drift
  * @param slope_angle (degree)

@@ -19,7 +19,7 @@
 */
 /**
  * @file Laws_sn.cc
- * @version 11.04
+ * @version 11.06
  * @brief This module contains (ALL) the constitutive laws for the 1d snowpack model \n
  * @par SnLaws is currently a merely static class (all functions and all variables are static members).
  *   In order to initialize the static member variables they are defined below and if dependent
@@ -173,22 +173,22 @@ const double SnLaws::smallest_viscosity = 1.0e6;
  * where these parameters are set according to the VARIANT used
  * }
  * - t_term           : Temperature dependence.
- * - visc_time_fudge  : Empirical constant related to age of snow.
+ * 	- _arrhenius_critical, _arrhenius, t_term_837, _stk
  * - visc_ice_fudge   : Empirical constant related to volumetric ice content.
  * - visc_sp_fudge    : Empirical constant related to sphericity of snow grains.
  * - visc_water_fudge : Empirical constant related to volumetric water content.
+ * - visc_time_fudge  : Empirical constant related to age of snow (deprecated).
+ * - visc_*           : viscosity version:
+ * 	- _dflt, _cal, _ant, _897, _837, _stk
  * - setfix           : Quickfix to "harden" antarctic snow.
- * - visc_cal_*       : which viscosity fudge to use for calibration:
- * 	- _new, _897, _837, _ant, _steinkogler
  */
 //@{
 SnLaws::TempDependence SnLaws::t_term = SnLaws::t_term_arrhenius_critical;
-double SnLaws::visc_time_fudge = 0.;
-double SnLaws::visc_ice_fudge = 0.51;
-double SnLaws::visc_sp_fudge = 1.19;
-double SnLaws::visc_water_fudge = 31.;
+SnLaws::ViscosityVersion SnLaws::visc = SnLaws::visc_cal;
+double SnLaws::visc_ice_fudge = 1.;
+double SnLaws::visc_sp_fudge = 1.;
+double SnLaws::visc_water_fudge = 0.;
 bool   SnLaws::setfix = false;
-SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_new;
 //@}
 
 /**
@@ -203,12 +203,13 @@ SnLaws::ViscosityCalVersion SnLaws::visc_cal = SnLaws::visc_cal_new;
  */
 //@{
 SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
-double SnLaws::albedoCage = -0.000575;
+bool SnLaws::noAlbedoAge = false;
+const double SnLaws::glacier_albedo = 0.3;
 //@}
 
 double SnLaws::min_hn_density = 30.;
 double SnLaws::max_hn_density = 250.0;
-SnLaws::EventType SnLaws::event_type = SnLaws::event_default;
+SnLaws::EventType SnLaws::event = SnLaws::event_none;
 double SnLaws::event_wind_lowlim = 0.0;
 double SnLaws::event_wind_highlim = 0.0;
 
@@ -227,42 +228,38 @@ bool SnLaws::setStaticData(const std::string& variant)
 
 	if (current_variant == "ANTARCTICA") {
 		t_term = t_term_arrhenius_critical;
-		visc_time_fudge = 0.;
-		visc_ice_fudge = 0.51;
-		visc_sp_fudge = 1.19;
-		visc_water_fudge = 0.;
-		visc_cal = visc_cal_ant;
+		visc = visc_dflt; //visc_cal; //visc_ant; //
+		visc_ice_fudge = 9.45; //1.
+		visc_sp_fudge = 16.5;  //1.
 		setfix = false;
 
 		max_hn_density = 340.0;
-		event_type = event_wind;
+		event = event_wind;
 		event_wind_lowlim = 4.0;
 		event_wind_highlim = 7.0;
 
 	} else if (current_variant == "CALIBRATION") {
-		if (true) {
-			t_term = t_term_arrhenius_critical;
-			visc_time_fudge = 0.;
-			visc_ice_fudge = 0.51;
-			visc_sp_fudge = 1.19; //see factors in Laws_sn.cc
-			visc_water_fudge = 31.;
-			visc_cal = visc_cal_897;
-		} else { // from revision 837
-			t_term = t_term_837;
-			visc_time_fudge = 11.;
-			visc_ice_fudge = 0.5;
-			visc_sp_fudge = 0.3;
-			visc_water_fudge = 31.;
-			visc_cal = visc_cal_837;
-		}
+		// actual calibration; see factors in Laws_sn.cc
+		t_term = t_term_arrhenius_critical;
+		visc = visc_cal; //visc_897; //visc_ant; //
+		// Revision 837 & Steinkogler
+// 		t_term = t_term_837; //_stk; // settings from r837 or WSteinkogler (stk)
+// 		visc = visc_837; //visc_stk; //
+		visc_ice_fudge = 1.;
+		visc_sp_fudge = 1.; //see factors in Laws_sn.cc
+		visc_water_fudge = 1.;
+// 		visc_time_fudge = 11.;
+// 		visc_ice_fudge = 0.5; //0.5 // 837=0.5, stk=0.51
+// 		visc_sp_fudge = 0.3; //0.3 // 837=0.3, stk=1.19
+// 		visc_water_fudge = 31.;
 		setfix = false;
 
 	} else {
 		t_term = t_term_arrhenius_critical;
-		visc_time_fudge = 0.;
-		visc_ice_fudge = 0.51;
-		visc_sp_fudge = 1.19;
-		visc_water_fudge = 31.;
+		visc = visc_dflt;
+		visc_ice_fudge = 9.45;
+		visc_sp_fudge = 16.5;
+		visc_water_fudge = 33.;
 		setfix = false;
 	}
 
@@ -272,18 +269,18 @@ bool SnLaws::setStaticData(const std::string& variant)
 		currentAlbedoModel = alb_lehning_2;
 
 	if (current_variant == "ANTARCTICA")
-		SnLaws::albedoCage = 0.;
+		SnLaws::noAlbedoAge = true;
 	else
-		SnLaws::albedoCage = -0.000575;
+		SnLaws::noAlbedoAge = false;
 
 	swa_nBands = 5; // use 5 bands per default
 	if (SnLaws::band20) {
 		swa_nBands = 20;
 		double k_init[20]  = {0.0304, 0.0438, 0.0752, 0.1799, 0.3817, 0.5398, 0.7229, 1.618, 3.0372, 6.1273,
-							 8.0446, 9.9419, 17.0339, 23.3685, 16.5658, 21.7658, 29.504, 66.922, 130.125,
-							 120.405};
+		                      8.0446, 9.9419, 17.0339, 23.3685, 16.5658, 21.7658, 29.504, 66.922, 130.125,
+		                      120.405};
 		double pc_init[20] = {1.98, 5.46, 8.9, 16.8, 6.54, 4.48, 4.4, 8.6, 10.81, 3.48, 1.2, 1.09, 6.89,
-							 6.31, 1.38, 0.43, 1.27, 4.95, 1.93, 4.65};
+		                      6.31, 1.38, 0.43, 1.27, 4.95, 1.93, 4.65};
 		double fb_init[20];
 		for (unsigned int ii=0; ii<swa_nBands; ii++) fb_init[ii] = 10.;//fudge_bohren
 
@@ -350,7 +347,7 @@ double SnLaws::conductivity_water(const double& Temperature)
  */
 double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
                               const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata,
-                              const double& age)
+                              double& age)
 {
 	if (variant != SnLaws::current_variant)
 		setStaticData(variant);
@@ -375,9 +372,9 @@ double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_
 				sqrt_age=sqrt(age);
 			lwi = Constants::stefan_boltzmann*Mdata.ea*Ta*Ta*Ta*Ta;
 			Alb1 = exp(a + b*sqrt_age + c*Tss + d*Mdata.vw + e*Mdata.rswr + f*Mdata.rh
-					+ g*sqrt_age*Ta*Ta + h*sqrt_age*Tss + i*sqrt_age*lwi
-					+ j*Ta*Ta*Tss + k*Ta*Ta*lwi + l*Tss*Mdata.rswr
-					+ m*Tss*lwi + n*Tss*Mdata.rh + o*Mdata.vw*Mdata.rh);
+			         + g*sqrt_age*Ta*Ta + h*sqrt_age*Tss + i*sqrt_age*lwi
+			           + j*Ta*Ta*Tss + k*Ta*Ta*lwi + l*Tss*Mdata.rswr
+			             + m*Tss*lwi + n*Tss*Mdata.rh + o*Mdata.vw*Mdata.rh);
 			Alb = weight * Edata.dd * Snowpack::new_snow_albedo + (1 - weight * Edata.dd) * Alb1;
 			break;
 		}
@@ -401,30 +398,39 @@ double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_
 		case alb_lehning_2: {
 			//TODO: this perfoms very badly (if not completly wrong) for wet snowpack
 			//for example, February 2007 in Davos that saw very warm weather leads to albedos of 0.3 ...
-			const double av = 0.8042; // Value of original regression: av=0.8042
-			const double inter = 1.442, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
-			const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
-			const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
-
-			Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
-			               + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
-			                 + Cswout*Mdata.rswr+ Crh*Mdata.rh + SnLaws::albedoCage*age;
-			if (Alb1 > 0.) {
-				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+			if (SnLaws::noAlbedoAge)
+				age = 0.;
+			if (age > 365.) {
+				Alb = SnLaws::glacier_albedo;
 			} else {
-				Alb = Constants::min_albedo;
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+				const double av = 0.8042; // Value of original regression: av=0.8042
+				const double inter = 1.442;
+				const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
+				const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
+				const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
+
+				Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
+				         + Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
+				           + Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
+				             + Crh*Mdata.rh;
+				if (Alb1 > 0.) {
+					Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+				} else {
+					Alb = Constants::min_albedo;
+					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+				}
 			}
 			break;
 		}
 		case alb_nied: { // by H. Hirashima (NIED, Nagaoka, Japan)
-			const double av=0.75;
-			const double inter=1.005, Cta=-0.000249*2.0, Cv=0.00578, Clwc=-2.15;
-			const double Crho=-0.000047, Cage=-0.00016*10.0, Crh=0.129, Crb=-0.306, Crg=0.107;
-			const double Cdd=0.076, Csp=0.00964, Ctss=-0.000166, Cswout=-1.8e-5;
+			const double av = 0.75;
+			const double inter = 1.005;
+			const double Cage = -0.00016*10.0, Cta = -0.000249*2.0, Cv = 0.00578, Clwc = -2.15;
+			const double Crho = -0.000047, Crh = 0.129, Crb = -0.306, Crg = 0.107;
+			const double Cdd = 0.076, Csp = 0.00964, Ctss = -0.000166, Cswout = -1.8e-5;
 
 			Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
-					+ Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
+			         + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
 					+ Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
 
 			if (Alb1 > 0) {
@@ -921,13 +927,13 @@ double SnLaws::compLWRadCoefficient(const double& t_snow, const double& t_atm, c
 
 /**
  * @brief Event driven new-snow density
- * @param i_event_type:
+ * @param i_event:
  * - event_wind: rho = 250.3 kg m-3 @ 4 m s-1; rho = 338 kg m-3 @ 7 m s-1 Antarctica
  * @param Mdata  Meteorological input
  */
-double SnLaws::newSnowDensityEvent(const SnLaws::EventType& i_event_type, const CurrentMeteo& Mdata)
+double SnLaws::newSnowDensityEvent(const SnLaws::EventType& i_event, const CurrentMeteo& Mdata)
 {
-	switch (i_event_type) {
+	switch (i_event) {
 	case event_wind: {
 		const double rho_0=361., rho_1=33.;
 		if ((Mdata.vw_ave >= event_wind_lowlim) && (Mdata.vw_ave <= event_wind_highlim))
@@ -937,8 +943,8 @@ double SnLaws::newSnowDensityEvent(const SnLaws::EventType& i_event_type, const 
 		break;
 	}
 	default:
-		prn_msg(__FILE__, __LINE__,"err", Date(),"No new-snow density parameterization for event type %d",
-		        i_event_type);
+		prn_msg(__FILE__, __LINE__,"err", Date(),"No new snow density parameterization for event type %d",
+		        i_event);
 		exit(EXIT_FAILURE);
 		break;
 	}
@@ -1067,7 +1073,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density_model, const d
 			return Constants::undefined;
 		}
 	} else if (i_hn_density_model == "EVENT") {
-		rho = newSnowDensityEvent(event_type, Mdata);
+		rho = newSnowDensityEvent(event, Mdata);
 		return rho;
 	} else {
 		rho = newSnowDensityPara(i_hn_density_model,
@@ -1100,12 +1106,43 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 }
 
 /**
- * @brief Computes the additional stress during initial settling process due to loading rate and metamorphism
- * @version 11.02
+ * @brief Computes the temperature term of viscosity
+ * @version 11.06
+ * @param Te Element temperature
+ * @return Temperature term of snow viscosity
+ */
+double SnLaws::snowViscosityTemperatureTerm(const double& Te)
+{
+	const double Q = 67000.; // Activation energy for defects in ice (J mol-1)
+
+	switch (SnLaws::t_term) {
+	case t_term_arrhenius_critical: {
+		const double Q_fac = 0.39; // Adjust Q to snow; from Schweizer et al. (2004): 0.24
+		const double criticalExp = 0.7; //0.5; //0.3; //
+		const double T_r = 265.15; // Reference temperature (K), from Schweizer et al. (2004)
+		return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r))
+		             * (0.3 * pow((Constants::melting_tk - Te), criticalExp) + 0.4));
+		break;
+	}
+	case t_term_arrhenius:
+		return (1. / lw_ArrheniusLaw(Q, Te, 263.));
+		break;
+	case t_term_stk: // Master thesis, September 2009
+		return (0.35 * sqrt(274.15 - Te));
+		break;
+	default: // as of revision 243, used up to revision 837 (deprecated)
+		return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
+		break;
+	}
+}
+
+/**
+ * @brief Computes the additional stress during initial settling process due to loading rate
+ * @version 11.06
  * @param i_viscosity_model see compSnowViscosity()
  * @param Edata
  * @param date current
- * @return Initial stress (Pa); note the negative sign!
+ * @return Initial stress (Pa); note it is a negative value!
  */
 double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementData& Edata, const mio::Date& date)
 {
@@ -1117,53 +1154,76 @@ double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementDa
 
 double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
 {
-	double sigMetamo=0.;
 	const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 
-	double sigReac = 15.9 * Edata.CDot * exp(-age / 101.);
-	if (Edata.dd > Constants::eps)
-		sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata);
-	return sigReac + sigMetamo;
+	double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
+	if (Edata.theta[WATER] > Constants::eps)
+		sigReac *= 0.37 * (1 + Edata.theta[WATER]);
+	return sigReac;
 }
 
 double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& date)
 {
 	const double sigTension = 0.11;  // Ice surface tension (N m-2)
 
-	const unsigned int version = 0;
-	switch (version) {
-	case 837: // as of revision 837
-		if ((Edata.dd < 0.9) && (Edata.dd > 0.3)) {
-			double facIS = -3.; // default r712
-			if (SnLaws::visc_cal == SnLaws::visc_cal_steinkogler) facIS = -1.5; //-1.1; //-0.5; //
-			return (facIS * Metamorphism::ddRate(Edata) * sigTension / MM_TO_M(Edata.rg)); //default
-		} else {
-			return 0.;
-		}
-		break;
-	default: // new calibration, currently r897
-		double sigReac=0., sigMetamo=0.;
+	Edata.EDot = 0.;
+	switch (visc) {
+	case visc_dflt: case visc_cal: case visc_ant:  { // new calibration
+		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
-		//09-24: sig0 = 33.7 * Edata.CDot * exp(-age/553.); //3.5 //5. //2.7 //1.e3 * exp(-age/77.) * Edata.CDot / Edata.C;
+		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
+		if (Edata.theta[WATER] > Constants::eps)
+			sigReac *= 0.37 * (1 + Edata.theta[WATER]); // 0.2 ; 0.37
+// 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
+// 		              * MAX(0.1, 1. - 9.*Edata.theta[WATER]);
+// 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
+// 		              * MAX(0., 1. - pow(Edata.theta[WATER], 1./3.));
+// 		sigReac = 15.9 * Edata->CDot * exp(-age/101.);
+// 		sigReac = 17.3 * Edata->CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
+		Edata.EDot = sigReac;
+		if (false && (Edata.dd > Constants::eps)) {
+			sigMetamo = 3.7e2 * Metamorphism::ddRate(Edata);
+			if (false && Edata.dd < 0.9 ) {
+				sigMetamo *= pow(Edata.dd, 1./2.);
+			}
+		}
+		return sigReac;
+// 		return (sigReac + sigMetamo);
+// 		return 0.;
+		break;
+	}
+	case visc_897: { // r897
+		double sigReac = 0., sigMetamo = 0.;
+		const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 		sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
-		//if (1 && (Edata.dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/) {
-		if (true && (Edata.dd > Constants::eps) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/) {
-			//sig0 *= -10. * mm_ddRate(Edata);
-			//sig0 += 73.5 * mm_ddRate(Edata) * sigTension / MM_TO_M(Edata.rg); // ori: -3.0; -23.
+		Edata.EDot = sigReac;
+		//if ( 1 && (Edata->dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/ ) {
+		if (1 && (Edata.dd > Constants::eps) /*((Edata->dd < 0.9) && (Edata->dd > 0.3))*/) {
 			//sigMetamo = 73.5 * mm_ddRate(Edata) * sigTension / MM_TO_M(Edata.rg); // ori: -3.0; -23.
 			//sigMetamo = 139.7 * mm_ddRate(Edata) * sigTension / MM_TO_M(Edata.rg); // 2010-10-22
 			//sigMetamo = 29.0 * mm_ddRate(Edata) / MM_TO_M(Edata.rg); // 2010-10-23
 			sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata); // 2010-10-23
-			if (false && Edata.dd < 0.9 ) {
+			if (0 && Edata.dd < 0.9) {
 				//sigMetamo /= Edata.dd; // pow(Edata.dd, 1./2.);
 				sigMetamo *= pow(Edata.dd, 1./2.);
 			}
-			Edata.EDot = sigReac;
-			return (sigReac + sigMetamo);
-		} else { //if (age > 3000.) {
-			Edata.EDot = sigReac;
-			return (sigReac);
 		}
+		return (sigReac + sigMetamo);
+		break;
+	}
+	case visc_837: case visc_stk: { // as of revision 837
+		double sig0 = 0.;
+		if ((Edata.dd < 0.9) && (Edata.dd > 0.3)) {
+			double facIS = 3.; // default r712
+			if (SnLaws::visc == SnLaws::visc_stk)
+				facIS = -1.5; //-1.1; //-0.5; //
+			sig0 = facIS * Metamorphism::ddRate(Edata) * sigTension / MM_TO_M(Edata.rg);
+		}
+		return sig0;
+		break;
+	}
+	default:
+		return 0.;
 		break;
 	}
 }
@@ -1171,7 +1231,7 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 /**
  * @brief Determines the fudge factor for viscosity \n
  * This fudge factor takes into account bond-ice imperfections and the effect of liquid water
- * @version 11.02
+ * @version 11.06
  * @param Edata
  * @return Fudge factor for snow viscosity
  */
@@ -1179,21 +1239,26 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
 {
 	double visc_fudge, sp_fudge;
 
+	double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
+	ice_fudge *= (1. - logisticFunction(Edata.theta[ICE], 0.019, 0.15))
+	                 * pow(Edata.theta[ICE], 0.77);
+
 	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005)
 		sp_fudge = 0.;
 	else
 		sp_fudge = SnLaws::visc_sp_fudge;
+	sp_fudge *= (1. - logisticFunction(Edata.sp, 0.37, 0.21))
+	                 * Edata.sp*Edata.sp*Edata.sp;
 
-	double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
-	ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
-	sp_fudge *= (1. - logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
 	visc_fudge = ice_fudge * (1. + sp_fudge) + 0.1;
-	visc_fudge *= (1. + SnLaws::visc_water_fudge * Edata.theta[WATER] * (1. - Edata.theta[ICE]*Edata.theta[ICE]));
+
+	visc_fudge *= (1. + SnLaws::visc_water_fudge * Edata.theta[WATER]
+	                   * (1. - Edata.theta[ICE]));
 	return visc_fudge;
 }
 
 /**
- * @brief To calibrate the fudge factor for viscosity \n
+ * @brief To calibrate the fudge factor for viscosity
  * @note This is the fudge playground for calibrations used in SnowViscosityCALIBRATION()
  * @version 10.11
  * @param Edata
@@ -1203,90 +1268,96 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
 double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date)
 {
 	double visc_fudge, sp_fudge;
-	double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
-	double thresh_rho1, thresh_rho2=0.7; // Thresholds for enhanced viscosity
-	bool use_thresh=false;
+	double const age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
+	double thresh_rho1 = 1., thresh_rho2 = 1.; // Thresholds for enhanced viscosity
+	bool use_thresh = false;
 
 	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005)
 		sp_fudge = 0.;
 	else
 		sp_fudge = SnLaws::visc_sp_fudge;
 
-	switch (SnLaws::visc_cal) {
-	case SnLaws::visc_cal_new: {// Calibration currently under test
-		double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
-		ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
-		sp_fudge *= (1. - logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
+	switch (visc) {
+	case visc_cal: case visc_ant: case visc_dflt: { // Calibration currently under test
+		double ice_fudge = (0.67*14.1*SnLaws::visc_ice_fudge / Edata.theta[ICE]); // 0.67; 0.59; r897: 0.51
+		ice_fudge *= (1. - logisticFunction(Edata.theta[ICE], 0.019, 0.15))
+		                  * pow(Edata.theta[ICE], 0.77);
+// 		ice_fudge *= 0.67*13.7 * (1. - lwsn_logisticFunction(Edata.theta[ICE], 0.019, 0.15))
+// 		ice_fudge *= 0.67*23.7*(1. - lwsn_logisticFunction(Edata.theta[ICE], 0.009, 0.11))
+// 		                 * Edata.theta[ICE];
+
+		sp_fudge *= 0.67*24.7;  // 0.67 ; 0.77 ; r897: 1.19 //
+		sp_fudge *= (1. - logisticFunction(Edata.sp, 0.37, 0.21))
+		                 * Edata.sp*Edata.sp*Edata.sp;
+// 		sp_fudge *= 0.67*24.7*(1. - lwsn_logisticFunction(Edata.sp, 0.35, 0.17))
+// 		                * Edata.sp*Edata.sp*Edata.sp;
+// 		sp_fudge *= 0.67*(1. - lwsn_logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
+
 		visc_fudge = ice_fudge * (1. + sp_fudge) + 0.1;
-		visc_fudge *= (1. + SnLaws::visc_water_fudge * Edata.theta[WATER] * (1. - Edata.theta[ICE]*Edata.theta[ICE]));
+
+		visc_fudge *= (1. + 33.*visc_water_fudge * Edata.theta[WATER]
+		                   * (1. - Edata.theta[ICE])); // 31. ; 33. ; 35.
+// 		visc_fudge *= (1. + 31.*visc_water_fudge * Edata.theta[WATER]
+// 		                   * (1. - Edata.theta[ICE]*Edata.theta[ICE])); // ori r897
+// 		                   * (0.67 - 0.29*Edata.theta[ICE]));
+// 		                   * (1.37 - Edata.theta[ICE]));
+// 		                   * (0.8 - 0.6*pow(Edata.theta[ICE], 0.5)));
+// 		                   * MAX(0.2, MIN(0.8, 1.16 - 1.2*Edata.theta[ICE])));
+// 		                   * (MAX(0., 0.8 - Edata.theta[ICE]*Edata.theta[ICE])));
 		break;
 	}
-	case SnLaws::visc_cal_897: case SnLaws::visc_cal_ant: { // Calibration fall 2010 & adaptation to Antarctica; see revision xxx TODO by Fierz
-		double ice_fudge = SnLaws::visc_ice_fudge / Edata.theta[ICE];
-		if (SnLaws::visc_cal != SnLaws::visc_cal_ant) {
+	case visc_897: { // case SnLaws::visc_ant: { // Calibration fall 2010 & Antarctica
+		double ice_fudge = 0.51*SnLaws::visc_ice_fudge / Edata.theta[ICE]; //
+		if (SnLaws::visc != SnLaws::visc_ant) {
 			ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.431, 0.067) * Edata.theta[ICE];
 		} else {  // antarctic
 			ice_fudge *= 1. - logisticFunction(Edata.theta[ICE], 0.351, 0.097) * Edata.theta[ICE]
 			               * (1. - Edata.theta[ICE]);
 		}
+
+		sp_fudge *= 1.19; //
 		sp_fudge *= (1. - logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
+
 		visc_fudge = ice_fudge * (1. + sp_fudge) + 0.1;
-		visc_fudge *= (1. + SnLaws::visc_water_fudge * Edata.theta[WATER] * (1. - Edata.theta[ICE]*Edata.theta[ICE]));
+
+		visc_fudge *= (1. + 31.*SnLaws::visc_water_fudge * Edata.theta[WATER]
+		                   * (1. - Edata.theta[ICE]*Edata.theta[ICE]));
 		break;
 	}
-	case SnLaws::visc_cal_steinkogler: { // Walter Steinkogler's playground; master thesis, September 2009
-		visc_fudge += SnLaws::visc_time_fudge / exp(age / 35.);
-		visc_fudge += (SnLaws::visc_ice_fudge / Edata.theta[ICE]) + (sp_fudge * sqrt(Edata.sp))
-			+ (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5 * (1. - Edata.theta[ICE]));
-		thresh_rho1 = 0.5; // rho_dry > 458.5 kg m-3
+	case visc_stk: { // Walter Steinkogler's playground; master thesis, September 2009
+		const double visc_time_fudge = 8.;
+		visc_fudge += visc_time_fudge / exp(age / 35.);
+		visc_fudge += (0.5*SnLaws::visc_ice_fudge / Edata.theta[ICE])
+		                 + (0.3*sp_fudge * sqrt(Edata.sp))
+		                   + (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5
+		                          * (1. - Edata.theta[ICE]));
 		use_thresh=true;
+		thresh_rho1 = 0.5; // rho_dry > 458.5 kg m-3
+		thresh_rho2 = 0.7;
 		break;
 	}
-	default: { // as of revision 837 (deprecated)
-		visc_fudge += SnLaws::visc_time_fudge * (1. - sqrt(MIN(1., age / 77.))) * (1. + MIN(0.3, (263.15 - Edata.Te) / 17.));
-		visc_fudge += (SnLaws::visc_ice_fudge / Edata.theta[ICE]) + (sp_fudge * sqrt(Edata.sp))
-			+ (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5 * (1. - Edata.theta[ICE]));
+	case visc_837: { // as of revision 712, used up to r837 (deprecated)
+		const double visc_time_fudge = 11.;
+		visc_fudge += visc_time_fudge * (1. - sqrt(MIN(1., age / 77.)))
+		                  * (1. + MIN(0.3, (263.15 - Edata.Te) / 17.));
+		visc_fudge += (0.5*SnLaws::visc_ice_fudge / Edata.theta[ICE])
+		                 + (0.3*sp_fudge * sqrt(Edata.sp))
+		                   + (3. * Edata.theta[WATER] / Edata.theta[ICE]
+		                          * 0.5 * (1. - Edata.theta[ICE]));
 		use_thresh=true;
 		thresh_rho1 = 0.5; // rho_dry > 458.5 kg m-3
+		thresh_rho2 = 0.7;
+		break;
 	}
 	}
 
-	if (use_thresh) {
+	if (use_thresh) { // Default false
 		if (Edata.theta[ICE] > thresh_rho1)
 			visc_fudge *= (1. - Edata.theta[ICE]);
 		if (Edata.theta[ICE] > thresh_rho2)
 			visc_fudge *= (1. - Edata.theta[ICE]);
 	}
 	return visc_fudge;
-}
-
-/**
- * @brief Computes the temperature term of viscosity
- * @version 11.02
- * @param Te Element temperature
- * @return Temperature term of snow viscosity
- */
-double SnLaws::snowViscosityTemperatureTerm(const double& Te)
-{
-	const double Q = 67000.; // Activation energy for defects in ice (J mol-1)
-
-	switch (SnLaws::t_term) {
-	case t_term_arrhenius:
-		return (1. / lw_ArrheniusLaw(Q, Te, 263.));
-		break;
-	case t_term_arrhenius_critical: {
-		const double Q_fac=0.39; // Adjust Q to snow; from Schweizer et al. (20??): 0.24
-		const double T_r=265.15; // Reference temperature (K), from Schweizer et al. (20??)
-		return ((1. / lw_ArrheniusLaw(Q_fac * Q, Te, T_r)) * (0.3 * sqrt(Constants::melting_tk - Te) + 0.4));
-		break;
-	}
-	case t_term_steinkogler: // Master thesis, September 2009
-		return (0.35 * pow((274.15 - Te), 0.5));
-		break;
-	default: // as of revision 243, used up to revision 837 (deprecated)
-		return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
-		break;
-	}
 }
 
 /**
@@ -1398,9 +1469,9 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	//	return(Constants::big);
 	//}
 	// Check needed while JAM set!
-	if (true && Edata.theta[WATER] > 0.3) {
+	if (true && (Edata.theta[WATER] > 0.3)) {
 		return (1.e9 * SnLaws::smallest_viscosity);
-	} else if (false && Edata.theta[WATER] >= 0.005) {
+	} else if (false && (Edata.theta[WATER] >= 0.005)) {
 		return SnLaws::snowViscosityKOJIMA(Edata);
 	}
 	// Check that you are not in a ice or/and water layer
