@@ -55,8 +55,8 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	cfg.getValue("FIXED_ALBEDO", "SnowpackAdvanced", fixed_albedo);
 
+	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
-	cfg.getValue("HN_FIXED_DENSITY", "SnowpackAdvanced", hn_fixed_density);
 
 	/** Defines the management of the bottom boundary conditions with soil layers
 	 * - 0 ==> Dirichlet, i.e fixed Temperature
@@ -1180,7 +1180,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		t_surf = MIN(C_TO_K(-0.1), Mdata.tss);
 	else
 		t_surf = MIN(C_TO_K(-0.1), (Xdata.Ndata[nOldN-1].T + Mdata.ta)/2.);
-	rho_hn = SnLaws::compNewSnowDensity(hn_density_model, hn_fixed_density,
+	rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
 	                                    Mdata, Xdata, t_surf, cumu_hnw);
 
 	if (!enforce_measured_snow_heights) {

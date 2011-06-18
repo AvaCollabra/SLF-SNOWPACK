@@ -98,8 +98,7 @@ class SnLaws {
 		static void compShortWaveAbsorption(const double& I0, const bool& useSoilLayers,
 		                                    const bool& multistream,SnowStation& Xdata);
 
-		static double compNewSnowDensity(const std::string& i_hn_density_model,
-		                                 const double& hn_fixed_density,
+		static double compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata,
 		                                 const double& tss, const double& hnw);
 

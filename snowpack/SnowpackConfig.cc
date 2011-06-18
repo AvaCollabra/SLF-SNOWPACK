@@ -41,8 +41,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_MODEL"] = "DEFAULT";
 	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
+	advancedConfig["HN_DENSITY"] = "PARAMETERIZED";
 	advancedConfig["HN_DENSITY_MODEL"] = "LEHNING_NEW";
-	advancedConfig["HN_FIXED_DENSITY"] = "100.";
 	advancedConfig["HOAR_DENSITY_BURIED"] = "125.";
 	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
 	advancedConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
@@ -131,6 +131,13 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 	}
 
+	string hn_density = get("HN_DENSITY", "SnowpackAdvanced", Config::nothrow);
+	if (hn_density == "MEASURED") {
+		bool rho_hn = false;
+		getValue("RHO_HN", "Input", rho_hn, Config::nothrow);
+		if (!rho_hn)
+			throw InvalidArgumentException("HN_DENSITY = " + hn_density + " while RHO_HN = false", AT);
+	}
 	string hn_density_model = get("HN_DENSITY_MODEL", "SnowpackAdvanced", Config::nothrow);
 	string metamorphism_model = get("METAMORPHISM_MODEL", "SnowpackAdvanced", Config::nothrow);
 	string strength_model = get("STRENGTH_MODEL", "SnowpackAdvanced", Config::nothrow);
@@ -138,27 +145,17 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 	if ((variant == "") || (variant == "DEFAULT")) {
 
-		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "DEFAULT");
+		// Use default settings
 
 	} else if (variant == "JAPAN") {
 
-		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
 
 	} else if (variant == "ANTARCTICA") {
 
-		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "EVENT");
-		string hn_fixed_density = get("HN_FIXED_DENSITY", "SnowpackAdvanced", Config::nothrow);
-		if (hn_fixed_density == "") addKey("HN_FIXED_DENSITY", "SnowpackAdvanced", "300.");
-
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
+		if (hn_density == "") addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
 
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
@@ -191,8 +188,6 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	} else if (variant == "CALIBRATION") {
 
 		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "DEFAULT");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "DEFAULT");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
 		string number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);

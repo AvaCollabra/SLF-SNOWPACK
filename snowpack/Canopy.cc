@@ -286,8 +286,8 @@ Canopy::Canopy(const mio::Config& cfg)
 
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
 
+	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
-	cfg.getValue("HN_FIXED_DENSITY", "SnowpackAdvanced", hn_fixed_density);
 }
 
 /**
@@ -1450,7 +1450,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * 1.1 compute the interception capacity [mm m-2]
 	 * 1.1a Always new snow density as estimate of density in intercepted storage
 	 */
-	density_of_new_snow = SnLaws::compNewSnowDensity(hn_density_model, hn_fixed_density,
+	density_of_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
 	                                                 *Mdata, *Xdata, Xdata->Cdata.temp, -1.);
 
 	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain

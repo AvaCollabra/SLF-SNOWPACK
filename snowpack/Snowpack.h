@@ -125,7 +125,7 @@ class Snowpack {
 
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw);
 
-		std::string hn_density_model, viscosity_model, variant;
+		std::string hn_density, hn_density_model, viscosity_model, variant;
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSoilLayers;
@@ -138,7 +138,7 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		bool vw_dendricity;
-		double fixed_albedo, hn_fixed_density;
+		double fixed_albedo;
 
 		const static bool hydrometeor;
 		const static double snowfall_warning;

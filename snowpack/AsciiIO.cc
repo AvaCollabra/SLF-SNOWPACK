@@ -90,8 +90,8 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates);
 	number_sensors = number_fixed_heights + number_fixed_rates;
 
+	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
-	cfg.getValue("HN_FIXED_DENSITY", "SnowpackAdvanced", hn_fixed_density);
 
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
@@ -1381,11 +1381,11 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 		// 96-97: new snow density (kg m-3)
 		fprintf(fout,",%.1lf,%.1lf", Mdata.rho_hn, Xdata.rho_hn);
 		// 98-100: new snow densities zwart, newLe, bellaire, crocus (kg m-3)
-		rho_hn = SnLaws::compNewSnowDensity("LEHNING_NEW", hn_fixed_density, Mdata, Xdata, t_surf, 0.);
+		rho_hn = SnLaws::compNewSnowDensity(hn_density, "LEHNING_NEW", Mdata, Xdata, t_surf, 0.);
 		fprintf(fout,",%.1lf", rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity("BELLAIRE", hn_fixed_density, Mdata, Xdata, t_surf, 0.);
+		rho_hn = SnLaws::compNewSnowDensity(hn_density, "BELLAIRE", Mdata, Xdata, t_surf, 0.);
 		fprintf(fout,",%.1lf", rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity("CROCUS", hn_fixed_density, Mdata, Xdata, t_surf, 0.);
+		rho_hn = SnLaws::compNewSnowDensity(hn_density, "CROCUS", Mdata, Xdata, t_surf, 0.);
 		fprintf(fout,",%.1lf", rho_hn);
 	} else {
 		fprintf(fout,",0.0,0.0,0.0,0.0,0.0");

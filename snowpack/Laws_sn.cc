@@ -994,7 +994,8 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 	} else if (i_hn_model == "BELLAIRE") {
 		double arg;
 		double alpha=3.946, beta=0.07703, zeta=0.0001701, eta=0.02222, mu=-0.05371;
-			// Transformations based on natural logarithm!!!
+		// Transformations based on natural logarithm!!!
+		VW = MAX(1., VW);
 		arg = alpha + beta*TA + zeta*HH + eta*log(VW) + mu*TA*log(VW);
 		rho_hn = exp(arg);
 
@@ -1036,48 +1037,56 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
 }
 
 /**
- * @brief Determines density of new snow. The available options are:
- * - FIXED: Fixed new snow density => HN_FIXED_DENSITY (SnowMIP NSD experiment, Antarctica)
- * - MEASURED: Use measured new snow density read from meteo input 
- * - EVENT: Driven by event type:
- * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
- * - Parameterizations:
+ * @brief Computes the density of new snow. The options are:
+ * - PARAMETERIZED:
  * 	- ZWART: Costijn Zwart's model (elaborated 2006; in use since 4 Dec 2007
  * 	- LEHNING_NEW: Improved model by M. Lehning, incl. ad-hoc wind & temperature effects (used until 06/07)
  * 	- LEHNING_OLD: First model by M. Lehning
- * @note {models by M. Lehning can be augmented with a parameterization for winds > 2.9 m s-1
- *       worked out by J. Hendrikx (set
+ *       @note {models by M. Lehning can be augmented with a parameterization for winds > 2.9 m s-1
+ *              worked out by J. Hendrikx => set jordy_new_snow in Laws_sn.cc}
  * 	- BELLAIRE: Sascha Bellaire's model (elaborated 2007; used summer/fall 2007)
  * 	- PAHAUT: Edmond Pahaut's model, introduced Sep 1995 in CROCUS by G. Giraud
- * @param i_hn_density_model to use
- * @param hn_fixed_density density value to use if model == "FIXED"
+ * - EVENT: Driven by event type, that is,
+ * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
+ * - MEASURED: Use measured new snow density read from meteo input (RHO_HN must be set)
+ * - fixed: Fixed new snow density by assigning HN_DENSITY a number > 0.
+ * @param i_hn_density type of density computation
+ * @param i_hn_density_model to use if 
  * @param Mdata Meteorological input
  * @param Xdata Snow cover data
  * @param tss    Snow surface temperature (K)
  * @param hnw    Available amount of precipitation (kg m-2)
  */
-double SnLaws::compNewSnowDensity(const std::string& i_hn_density_model, const double& hn_fixed_density,
+double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
                                   const CurrentMeteo& Mdata, const SnowStation& Xdata,
                                   const double& tss, const double& hnw)
 {
 	double rho;
 
-	if (i_hn_density_model == "FIXED") {
-		return hn_fixed_density;
-	} else if (i_hn_density_model == "MEASURED") {
-		if (Mdata.rho_hn > 1.) { // HACK 1. instead of 0. used with current input for Antarctica
-			return Mdata.rho_hn; // New snow density as read from input file
-		} else if (hnw > 0.) {
-			return Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
-		} else {
-			return Constants::undefined;
-		}
-	} else if (i_hn_density_model == "EVENT") {
+	if (i_hn_density == "PARAMETERIZED") {
+		rho = newSnowDensityPara(i_hn_density_model,
+		                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
+		                         Xdata.meta.position.getAltitude());
+		return rho;
+	} else if (i_hn_density == "EVENT") {
 		rho = newSnowDensityEvent(event, Mdata);
 		return rho;
+	} else if (i_hn_density == "MEASURED") {
+		if (hnw > 0.) {
+			if (Mdata.rho_hn != Constants::nodata) {
+				rho = Mdata.rho_hn; // New snow density as read from input file
+			} else {
+				rho = newSnowDensityPara(i_hn_density_model,
+				                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
+				                         Xdata.meta.position.getAltitude());
+			}
+		} else {
+			rho = Constants::undefined;
+		}
+		return rho;
 	} else {
-		rho = newSnowDensityPara(i_hn_density_model,
-		          Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
+		if (!IOUtils::convertString(rho, i_hn_density, std::dec))
+			throw ConversionFailedException("Can not convert  '"+i_hn_density+"' to double", AT);
 		return rho;
 	}
 }
