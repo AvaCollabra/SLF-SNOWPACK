@@ -7,6 +7,7 @@ endif(COMMAND cmake_policy)
 
 SET(snowpacklib_sources 
   DataClasses.cc
+  SmetIO.cc
   SnowpackIO.cc
   AsciiIO.cc
   SnowpackConfig.cc

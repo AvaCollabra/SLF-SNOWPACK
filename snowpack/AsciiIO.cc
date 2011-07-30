@@ -313,35 +313,35 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		}
 	}
 
-		// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
-		fscanf(fin,"%*s ");
-		for (ii = 0; ii < 48; ii++) {
-			if (fscanf(fin," %lf ", &Zdata.hoar24[ii]) != 1) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hoar data (48) !!!");
-				throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
-			}
+	// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
+	fscanf(fin,"%*s ");
+	for (ii = 0; ii < 48; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hoar24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hoar data (48) !!!");
+			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
-		fscanf(fin,"%*s");
-		for (ii = 0; ii < 48; ii++) {
-			if (fscanf(fin," %lf ", &Zdata.drift24[ii]) != 1) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "While reading drift data (48)  !!!");
-				throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
-			}
+	}
+	fscanf(fin,"%*s");
+	for (ii = 0; ii < 48; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.drift24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "While reading drift data (48)  !!!");
+			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
-		fscanf(fin,"%*s");
-		for (ii = 0; ii < 144; ii++) {
-			if (fscanf(fin," %lf ", &Zdata.hn3[ii]) != 1) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hn(3h) data (144) !!!");
-				throw InvalidFormatException("While reading Zdata (hns3) !!!", AT);
-			}
+	}
+	fscanf(fin,"%*s");
+	for (ii = 0; ii < 144; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hn3[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hn(3h) data (144) !!!");
+			throw InvalidFormatException("While reading Zdata (hns3) !!!", AT);
 		}
-		fscanf(fin,"%*s");
-		for (ii = 0; ii < 144; ii++) {
-			if (fscanf(fin," %lf ", &Zdata.hn24[ii]) != 1) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hn(24h) data (144)  !!!");
-				throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
-			}
+	}
+	fscanf(fin,"%*s");
+	for (ii = 0; ii < 144; ii++) {
+		if (fscanf(fin," %lf ", &Zdata.hn24[ii]) != 1) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "While reading hn(24h) data (144)  !!!");
+			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
+	}
 
 	SSdata.nN = 1;
 	SSdata.Height = 0.;

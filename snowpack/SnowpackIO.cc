@@ -24,10 +24,10 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), imisdbio(cfg)
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), imisdbio(cfg), smetio(cfg)
 {
 #else
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg)
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), smetio(cfg)
 {
 #endif
 	//Actual constructor code following
@@ -53,18 +53,33 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg)
 			}
 		}
 	}
+
+	//Initial snow profile, where to read it from: 
+	string in_snow;
+	cfg.getValue("SNOW", "Input", in_snow, Config::nothrow);
+
+	if (in_snow == "SMET"){
+		input_snow_as_smet = true;
+	} else {
+		input_snow_as_smet = false;
+	}
 }
 
 void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                                SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
-	asciiio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+	if (input_snow_as_smet){
+		smetio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+	} else {
+		asciiio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+	}
 }
 
 void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
 	asciiio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+	smetio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
 }
 
 void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,

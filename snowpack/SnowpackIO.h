@@ -23,6 +23,7 @@
 
 #include <snowpack/SnowpackIOInterface.h>
 #include <snowpack/AsciiIO.h>
+#include <snowpack/SmetIO.h>
 #include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 
@@ -52,8 +53,10 @@ class SnowpackIO : public SnowpackIOInterface {
 	private:
 		const mio::Config& cfg;
 		bool outputprofile_as_ascii, outputprofile_as_imis;
+		bool outputsnow_as_smet, input_snow_as_smet;
 
 		AsciiIO asciiio;
+		SmetIO smetio;
 #ifdef IMISDBIO
 		ImisDBIO imisdbio;
 #endif
