@@ -292,11 +292,11 @@ double ElementData::soilFieldCapacity()
 		fc = MIN(SnLaws::field_capacity_soil, (1. - theta[SOIL]) * 0.1);
 	} else {
 		//Follow implementation by Tobias Hipp master thesis.
-		//Note that the value of 0.0976114 is more precise and the value of 60.8 is slightly different from what is mentioned in thesis, to make the function continuous over rg.
+		//Note that the value of 0.0976114 is more precise and the value of 60.8057 is slightly different from what is mentioned in thesis, to make the function continuous over rg.
 		if(rg<17.0) {
 			fc = MIN(0.95, 0.32 / sqrt(rg) + 0.02);
 		} else {
-			if(rg<60.8) {
+			if(rg<60.8057) {
 				fc=0.0976114-0.002*(rg-17.0);
 			} else {
 				fc=0.01;
