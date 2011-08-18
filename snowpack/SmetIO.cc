@@ -61,7 +61,6 @@ SmetIO::SmetIO(const mio::Config& cfg)
 void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                            SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
 {
-	unsigned int ii;
 	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
 	string hazfilename(snofilename);
 
@@ -77,7 +76,7 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 	Date haz_date = read_hazsmet(hazfilename, Zdata);
 
 	if (haz_date != sno_date)
-		throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);		
+		throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
 }
 
 mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA& Zdata)
@@ -89,7 +88,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 	 */
 	smet::SMETReader haz_reader(hazfilename);
 	Date profile_date;
-	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  time_zone);	
+	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  time_zone);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -105,12 +104,12 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 			Zdata.hn3[ii]  = 0.0;
 			Zdata.hn24[ii] = 0.0;
 		}
-		
+
 		return profile_date;
 	} else if (vec_timestamp.size() == 144) {
 		//everything as expected
 	} else {
-		throw InvalidFormatException("There need to be 144 data lines in " + haz_reader.get_filename(), AT);		
+		throw InvalidFormatException("There need to be 144 data lines in " + haz_reader.get_filename(), AT);
 	}
 
 	size_t current_index = 0;
@@ -159,11 +158,11 @@ mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::strin
 	size_t current_index = 0;
 	for (size_t ll=0; ll<SSdata.nLayers; ll++) {
 		//firstly deal with date
-		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  time_zone);		
+		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  time_zone);
 
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), 
-				   "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) !!!", 
+			prn_msg(__FILE__, __LINE__, "err", Date(),
+				   "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) !!!",
 				   ll+1, SSdata.Ldata[ll].layerDate.getJulianDate(), SSdata.profileDate.getJulianDate());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
@@ -217,7 +216,7 @@ mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::strin
 	return profile_date;
 }
 
-mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID, 
+mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
                                       SN_SNOWSOIL_DATA& SSdata)
 {
 	/*
@@ -226,7 +225,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	 */
 	string station_name = sno_reader.get_header_value("station_name");
 	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  time_zone);
-	
+
 	SSdata.HS_last = get_doubleval(sno_reader, "HS_Last");
 	double lat, lon, alt, slope_angle, azi;
 	lat = get_doubleval(sno_reader, "latitude");
@@ -246,7 +245,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 		        "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
 		throw IOException("Do not generate Xdata from file " + sno_reader.get_filename(), AT);
 	}
-	
+
 	int dum = get_intval(sno_reader, "nSoilLayerData");
 	if (dum < 0) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "'nSoilLayerData' < 0 !!!");
@@ -301,7 +300,7 @@ double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& 
 
 	double value = reader.get_header_doublevalue(key);
 	if (value == nodata){
-		string msg = "Missing key '" + key + "'"; 
+		string msg = "Missing key '" + key + "'";
 		prn_msg(__FILE__, __LINE__, "err", Date(), msg.c_str());
 		throw InvalidFormatException("Cannot generate Xdata from file " + reader.get_filename(), AT);
 	}
@@ -320,7 +319,7 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 
 	int value = reader.get_header_intvalue(key);
 	if (value == inodata){
-		string msg = "Missing key '" + key + "'"; 
+		string msg = "Missing key '" + key + "'";
 		prn_msg(__FILE__, __LINE__, "err", Date(), msg.c_str());
 		throw InvalidFormatException("Cannot generate Xdata from file " + reader.get_filename(), AT);
 	}
@@ -359,7 +358,7 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
-	 * data and timestamps into vec_timestamp and vec_data (copied from Zdata). 
+	 * data and timestamps into vec_timestamp and vec_data (copied from Zdata).
 	 * The SMETWriter object finally writes out the HAZ SMET file
 	 */
 	vector<string> vec_timestamp;
@@ -396,11 +395,11 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 }
 
 void SmetIO::writeSnoFile(const std::string& filename, const mio::Date& date, const SnowStation& Xdata,
-                          const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata) const
+                          const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& /*Zdata*/) const
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
-	 * data and timestamps into vec_timestamp and vec_data (from Xdata). 
+	 * data and timestamps into vec_timestamp and vec_data (from Xdata).
 	 * The SMETWriter object finally writes out the SNO SMET file
 	 */
 	smet::SMETWriter sno_writer(filename);
@@ -453,7 +452,7 @@ void SmetIO::writeSnoFile(const std::string& filename, const mio::Date& date, co
 			vec_data.push_back(EMS[e].conc(SOIL,ii));
 		}
 	}
-	
+
 	sno_writer.write(vec_timestamp, vec_data);
 }
 
@@ -478,7 +477,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 {
 	/*
 	 * The non-compulsory header key/value pairs for SNO files are set in this procedure
-	 * The sequence in which they are handed to smet_writer will be preserved when 
+	 * The sequence in which they are handed to smet_writer will be preserved when
 	 * the SMETWriter actually writes the header
 	 */
 	stringstream ss; //we use the stringstream to produce strings in desired format
@@ -487,7 +486,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 
 	// Last checked Snow Depth used for data Control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
-	smet_writer.set_header_value("HS_Last", ss.str());						   
+	smet_writer.set_header_value("HS_Last", ss.str());
 
 	// Latitude, Longitude, Altitude, Slope Angle, Slope Azimut
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
@@ -525,7 +524,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("TimeCountDeltaHS", ss.str());
 }
 
-void SmetIO::setFormatting(const size_t& nr_solutes, 
+void SmetIO::setFormatting(const size_t& nr_solutes,
                            std::vector<size_t>& vec_width, std::vector<size_t>&  vec_precision) const
 {
 	/*
@@ -564,23 +563,23 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 		vec_width.push_back(18); vec_precision.push_back(7); //EMS[e].conc(WATER,ii)
 		vec_width.push_back(18); vec_precision.push_back(7); //EMS[e].conc(AIR,ii)
 		vec_width.push_back(18); vec_precision.push_back(7); //EMS[e].conc(SOIL,ii)
-	}	
+	}
 }
 
-	
+
 void SmetIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void SmetIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
+void SmetIO::writeProfile(const mio::Date& /*date*/, SnowStation& /*Xdata*/, const ProcessDat& /*Hdata*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 
-bool SmetIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-					    const std::vector<ProcessInd>& Hdata_ind, const int& num)
+bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
+                             const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 	return true;

@@ -30,14 +30,11 @@
 #define ALPINE3D 0
 
 /**
- * @brief SVNREV is given as a compilation flag to tell us what is the version number \n
+ * @brief _VERSION is given as a compilation flag to tell us what is the version number \n
  * Please only use SN_VERSION in the code
  */
-#ifndef SVNREV
-#define SVNREV "20101006.001"
-#endif
 #ifndef SN_VERSION
-	#define SN_VERSION SVNREV
+	#define SN_VERSION _VERSION
 #endif
 
 #define MAX_STRING_LENGTH 256
@@ -98,7 +95,7 @@ namespace Constants {
 	///@name Vapor Diffusion in Air and Snow (m2 s-1)
 	//@{
 	///@brief This value was taken from: Colbeck, S.C., 1993. The vapor diffusion coefficient for snow, Water Resources Research, 29(1)
-	const double diffusion_coefficient_in_air = 22.0e-6;  
+	const double diffusion_coefficient_in_air = 22.0e-6;
 	const double diffusion_coefficient_in_snow = 85.0e-6; ///< It is larger (see Colbeck) according to work prior to 2008!
 	//@}
 
@@ -116,7 +113,7 @@ namespace Constants {
 	///@name Numerical Constants
 	//@{
 	const double min_slope_angle = 3.; ///< Smallest angle a flat field may show (deg)
-	
+
 	/// @brief Small numbers for comparisons and to avoid divisions by zero
 	const double eps = 1.e-6;
 	const double eps2 = eps*eps;

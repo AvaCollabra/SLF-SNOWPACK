@@ -159,7 +159,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
 	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
 	cfg.getValue("T_CRAZY_MAX", "SnowpackAdvanced", t_crazy_max);
-	
+
 /** @brief Initial new snow parameters, see computeSnowFall()
  * - that rg and rb are equal to 0.5*gsz and 0.5*bsz, respectively. Both given in millimetres
  * - If VW_DENDRICITY is set, new snow dendricity is f(vw)
@@ -407,7 +407,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		while (EMS[e].theta[ICE] + EMS[e].theta[WATER] + EMS[e].theta[SOIL] > 0.99) {
 			EMS[e].theta[ICE] *= 0.99;
 			EMS[e].theta[WATER] *= 0.99;
-			EMS[e].M = L0 * ((EMS[e].theta[ICE] * Constants::density_ice) 
+			EMS[e].M = L0 * ((EMS[e].theta[ICE] * Constants::density_ice)
 			                  + (EMS[e].theta[WATER] * Constants::density_water));
 		}
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
@@ -555,7 +555,7 @@ void Snowpack::updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xda
 
 	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
 	if ((Xdata.getNumberOfElements() > 0)
-	        && (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= min_ice_content)) {
+	        /*&& (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= min_ice_content)*/) { //HACK: how should we handle large fluxes?
 		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
 	}
 	Sdata.ql += Bdata.ql;
@@ -1528,7 +1528,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// Reinitialize and compute the Meteo Heat Fluxes
 		memset((&Bdata), 0, sizeof(BoundCond));
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata, Sdata);
-		
+
 		// Find the temperature in the snowpack
 		compSnowTemperature(Xdata, Mdata, Bdata, mAlb);
 
@@ -1545,7 +1545,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		// Assign some results from computeSnowTemperature() to Sdata
 		assignSomeFluxes(Xdata, Mdata, mAlb, Sdata);
-		
+
 		// See if any SUBSURFACE phase changes are occuring
 		phasechange.compPhaseChange(Sdata, Xdata);
 

@@ -24,7 +24,7 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), imisdbio(cfg), smetio(cfg)
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), smetio(cfg), imisdbio(cfg)
 {
 #else
 SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), smetio(cfg)
@@ -54,7 +54,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 		}
 	}
 
-	//Initial snow profile, where to read it from: 
+	//Initial snow profile, where to read it from:
 	string in_snow;
 	cfg.getValue("SNOW", "Input", in_snow, Config::nothrow);
 
@@ -100,16 +100,20 @@ void SnowpackIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const P
 	}
 }
 
+#ifdef IMISDBIO
 bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
-#ifdef IMISDBIO
 	if (imisdbio.writeHazardData(stationID, Hdata, Hdata_ind, num)){
 		return true;
 	} else {
 		return false;
 	}
-#else
-	return false;
-#endif
 }
+#else
+bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
+                                 const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
+{
+	return false;
+}
+#endif

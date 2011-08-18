@@ -164,8 +164,8 @@ using namespace mio;
 const double Canopy::int_cap_snow = 5.9;
 /// Specific interception capacity for rain (I_LAI) (mm/LAI)
 const double Canopy::int_cap_rain = 0.3;
-/** Coef in interception function, see (Pomeroy et al,1998) where a value of 0.7 was 
- * found to be appropriate for hourly time-step, but smaller time steps require smaller 
+/** Coef in interception function, see (Pomeroy et al,1998) where a value of 0.7 was
+ * found to be appropriate for hourly time-step, but smaller time steps require smaller
  * values, 0.5 was found reasoanble by using the SnowMIP2 data (2007-12-09)
  */
 const double Canopy::interception_timecoef = 0.5;
@@ -228,7 +228,7 @@ const double Canopy::wp_fraction = 0.17;
  */
 void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl)
 {
-	fprintf(OutFile, ",%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf",
+	fprintf(OutFile, ",%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f",
 	// PRIMARY "STATE" VARIABLES
 	Cdata->storage/cos_sl,      // intercepted water (mm or kg m-2)
 	K_TO_C(Cdata->temp),        // temperature (degC)
@@ -276,7 +276,7 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
  * non-static section                                       *
  ************************************************************/
 
-Canopy::Canopy(const mio::Config& cfg) 
+Canopy::Canopy(const mio::Config& cfg)
 {
 	// Defines whether soil layers are used
 	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
@@ -690,8 +690,8 @@ double Canopy::cn_CanopyTransmissivity(const double& lai, const double& elev)
  * @param *r1p
  */
 void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
-							   double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, 
-							   const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect, 
+							   double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
+							   const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
 							   const double& sigfdirect, double& r1p)
 {
 	double TC_old, TG, eg, ag;
@@ -858,12 +858,12 @@ void Canopy::cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& t
  * @param r1p
  * @param CanopyClosure
  */
-void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0, 
-							 const double& le1, const double& vpair, const double& ce_canopy, 
-							 const double& ce_condensation, const double& r1p, const double& CanopyClosure, 
-							 double& r0, double& r1, double& TCANOPY, double& RNCANOPY, 
+void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
+							 const double& le1, const double& vpair, const double& ce_canopy,
+							 const double& ce_condensation, const double& r1p, const double& CanopyClosure,
+							 double& r0, double& r1, double& TCANOPY, double& RNCANOPY,
 							 double& HCANOPY, double& LECANOPY)
-			      
+
 {
 	// local variables
 	double TC_CHANGE, TC_OLD, r0change, r1change;
@@ -1121,7 +1121,7 @@ double Canopy::cn_RichardsonToAeta(double za, double TempAir, double DiffTemp,
  * @param *ce_interception
  * @param *ce_condensation
  */
-void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg, 
+void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
                                         const double& wetfraction, SnowStation& Xdata, double& ch_canopy,
                                         double& ce_canopy, double& ce_transpiration,
                                         double& ce_interception, double& ce_condensation)
@@ -1220,7 +1220,7 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	ustar = vw_local * karman / (log((refheight - zdisplcan) / zomc) + psim);
 
 	// 2.4 TRANSFER COEFFICIENT FOR SCALARS ABOVE CANOPY
-	ch = Canopy::can_ch0 / (Constants::density_air * Constants::specific_heat_air) 
+	ch = Canopy::can_ch0 / (Constants::density_air * Constants::specific_heat_air)
 		+ ustar * karman / (log((refheight - zdisplcan) / zohc) + psih);
 	ch_e = ustar * karman / (log((refheight - zdisplcan) / zohc) + psih);
 
@@ -1521,7 +1521,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * ce_canopy        = latent heat total
 	 * cm_canopy        = momentum (through the canopy, i.e to estimate wind speed below)
 	*/
-	cn_CanopyTurbulentExchange(*Mdata, zref, z0m_ground, wetfrac, 
+	cn_CanopyTurbulentExchange(*Mdata, zref, z0m_ground, wetfrac,
 						  *Xdata, ch_canopy, ce_canopy, ce_transpiration, ce_interception, ce_condensation);
 
 
@@ -1571,7 +1571,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 		canopyalb = cn_CanopyAlbedo(Mdata->ta, wetfrac);
 
 		// compute properties r0 and r1 in eq (2) (and downward lw and sw for snowpack model)
-		cn_LineariseNetRadiation(*Mdata, Xdata->Cdata, *Xdata, iswrac, rsnet, ilwrac, r0, r1, 
+		cn_LineariseNetRadiation(*Mdata, Xdata->Cdata, *Xdata, iswrac, rsnet, ilwrac, r0, r1,
 							canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
 
 		// compute properties h0 and h1 in eq (3)
@@ -1581,18 +1581,18 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 		cn_LineariseLatentHeatFlux(ce_canopy, Xdata->Cdata.temp, Mdata->rh*lw_SaturationPressure(Mdata->ta), le0, le1);
 
 		/* final canopy energy balance */
-		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata->rh * lw_SaturationPressure(Mdata->ta), 
-						   ce_canopy, ce_condensation, r1p, 1. - Xdata->Cdata.direct_throughfall, 
+		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata->rh * lw_SaturationPressure(Mdata->ta),
+						   ce_canopy, ce_condensation, r1p, 1. - Xdata->Cdata.direct_throughfall,
 						   r0, r1, Xdata->Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 
 		/*
 		 * Partition latent heat flux on interception and transpiration
 		 * and correct energy balance for overestimated interception evaporation
 		*/
-		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, &LECANOPY, Mdata->ta, 
-								 Mdata->rh * lw_SaturationPressure(Mdata->ta), Xdata->Cdata.storage, 
-								 M_TO_H(calculation_step_length), &CanopyEvaporation, &INTEVAP, &TRANSPIRATION, 
-								 &RNCANOPY, &HCANOPY, &Xdata->Cdata.temp, &r0, &r1, h0, h1, &LECANOPYCORR, 
+		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, &LECANOPY, Mdata->ta,
+								 Mdata->rh * lw_SaturationPressure(Mdata->ta), Xdata->Cdata.storage,
+								 M_TO_H(calculation_step_length), &CanopyEvaporation, &INTEVAP, &TRANSPIRATION,
+								 &RNCANOPY, &HCANOPY, &Xdata->Cdata.temp, &r0, &r1, h0, h1, &LECANOPYCORR,
 								 r1p, 1. - Xdata->Cdata.direct_throughfall ,wetfrac);
 
 		newstorage = Xdata->Cdata.storage - INTEVAP;

@@ -209,7 +209,7 @@ enum SN_SOIL_DATA{
 class LayerData {
 
 	public:
-		LayerData(); 
+		LayerData();
 
 		mio::Date layerDate;        ///< Date of deposition
 		double hl;                  ///< The height of the layer in m
@@ -278,7 +278,7 @@ class SN_SNOWSOIL_DATA {
  * It can ONLY be changed by the WATER TRANSPORT or SURFACE SUBLIMATION or WIND TRANSPORT routines.
  */
 class ElementData {
-	
+
 	public:
 		ElementData();
 
@@ -299,6 +299,8 @@ class ElementData {
 		void snowType();
 		static int snowType(const double dendricity, const double sphericity, const double grain_dia, const int marker,
                         const double theta_w, const double res_wat_cont);
+
+		friend std::ostream& operator<<(std::ostream& os, const ElementData& data);
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element length (m)
@@ -380,7 +382,7 @@ class CanopyData {
 		     height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
 		     totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.),
 		     iswrbc(0.), ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.),
-		     sensible(0.), latent(0.), latentcorr(0.), transp(0.), intevap(0.), 
+		     sensible(0.), latent(0.), latentcorr(0.), transp(0.), intevap(0.),
 		     interception(0.), throughfall(0.), snowunload(0.) {}
 
 		void reset(const bool& cumsum_mass);

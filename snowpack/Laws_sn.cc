@@ -608,12 +608,12 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 			C_eff_soil += 0.27;
 		C_eff_soil = MIN(C_eff_soil_max, C_eff_soil);
 	} else {
-		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te) 
+		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te)
                        + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);
 	}
 
 	// Now check for possible ERRORS
-	if (!(C_eff_soil >= 0.1*Edata.soil[SOIL_K] && C_eff_soil < 10.))
+	if (!(C_eff_soil >= 0.1*Edata.soil[SOIL_K] && C_eff_soil < 10.)) //HACK
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Thermal Conductivity of Soil: %lf", C_eff_soil);
 
 	// In case of dry soil, simply use the given conductivity with a possible ventilation part
@@ -642,9 +642,9 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
 		e1--;
 	}
 
-	if (vapor_enhance > 1.0) 
+	if (vapor_enhance > 1.0)
 		vapor_enhance *= ((8. - (e - e1)) / 7.);
-	
+
 	return (vapor_enhance);
 }
 
@@ -689,8 +689,8 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 		return(Constants::conductivity_water);
 
 	// Important are the conductivities and cross sectional areas.
-	kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P 
-		 * lw_SaturationPressure(Te)) 
+	kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P
+		 * lw_SaturationPressure(Te))
 		 / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - lw_SaturationPressure(Te))));
 
 	/*
@@ -920,7 +920,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
  */
 double SnLaws::compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm)
 {
-	return (Constants::stefan_boltzmann 
+	return (Constants::stefan_boltzmann
 	          * ((t_snow * t_snow) + (sqrt(e_atm) * t_atm * t_atm))
 	            * ((t_snow) + (pow(e_atm, 0.25) * t_atm)));
 }
@@ -1051,7 +1051,7 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * - MEASURED: Use measured new snow density read from meteo input (RHO_HN must be set)
  * - fixed: Fixed new snow density by assigning HN_DENSITY a number > 0.
  * @param i_hn_density type of density computation
- * @param i_hn_density_model to use if 
+ * @param i_hn_density_model to use if
  * @param Mdata Meteorological input
  * @param Xdata Snow cover data
  * @param tss    Snow surface temperature (K)
@@ -1103,7 +1103,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 {
 	double rho_hn = MAX(min_hn_density, Edata.Rho);
-	
+
 	if (rho_hn > 913.) //upper boundary
 		return (1.e9 * smallest_viscosity);
 
@@ -1337,7 +1337,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 	}
 	case visc_stk: { // Walter Steinkogler's playground; master thesis, September 2009
 		const double visc_time_fudge = 8.;
-		visc_fudge += visc_time_fudge / exp(age / 35.);
+		visc_fudge = visc_time_fudge / exp(age / 35.);
 		visc_fudge += (0.5*SnLaws::visc_ice_fudge / Edata.theta[ICE])
 		                 + (0.3*sp_fudge * sqrt(Edata.sp))
 		                   + (3. * Edata.theta[WATER] / Edata.theta[ICE] * 0.5
@@ -1349,7 +1349,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 	}
 	case visc_837: { // as of revision 712, used up to r837 (deprecated)
 		const double visc_time_fudge = 11.;
-		visc_fudge += visc_time_fudge * (1. - sqrt(MIN(1., age / 77.)))
+		visc_fudge = visc_time_fudge * (1. - sqrt(MIN(1., age / 77.)))
 		                  * (1. + MIN(0.3, (263.15 - Edata.Te) / 17.));
 		visc_fudge += (0.5*SnLaws::visc_ice_fudge / Edata.theta[ICE])
 		                 + (0.3*sp_fudge * sqrt(Edata.sp))

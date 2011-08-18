@@ -98,7 +98,6 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	double L0, dL;                   // Length of element "e" and "e-1"
 	double M0, Theta0;               // available mass and initial volumetric content
 	double dM=0.;                    // elemental change in MASS from element "e" and added to element "e-1"
-	double M_Solutes[Xdata.number_of_solutes]; // Mass of solutes from disappearing phases
 	double Tss;                      // Surface Temperature
 	double hoar=0.0;                 // Actual change in hoar mass
 	double cH_old;                   // Temporary variable to hold height of snow
@@ -160,9 +159,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + (EMS[nE-1].theta[WATER] * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 	} else {
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
-		for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-			M_Solutes[ii] = 0.0;
-		}
+		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		int e0 = nE-1;
 		while ((e0 > 0) && (ql < 0.0)) {  // While energy is available
 			/*
@@ -237,7 +234,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice) + (EMS[e0].theta[WATER] * Constants::density_water) + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
 			e0--;
 		}
-    // Now take care of left over solute mass.
+		// Now take care of left over solute mass.
 		if (e0 < 0) { // Add Solute Mass to Runoff TODO HACK CHECK
 			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += M_Solutes[ii]/S_TO_H(sn_dt);
@@ -441,7 +438,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double Store;         // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 	double excess_water;  // Excess water that cannot be retained in lower element; volume fraction (1)
 	double z_water;       // Position of upper node of top water-film layer (m)
-	
+
 	unsigned int nN = Xdata.getNumberOfNodes();
 	unsigned int nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;

@@ -292,7 +292,8 @@ double ElementData::soilFieldCapacity()
 		fc = MIN(SnLaws::field_capacity_soil, (1. - theta[SOIL]) * 0.1);
 	} else {
 		//Follow implementation by Tobias Hipp master thesis.
-		//Note that the value of 0.0976114 is more precise and the value of 60.8057 is slightly different from what is mentioned in thesis, to make the function continuous over rg.
+		//Note that the value of 0.0976114 is more precise and the value of 60.8057 is
+		//slightly different from what is mentioned in thesis, to make the function continuous over rg.
 		if(rg<17.0) {
 			fc = MIN(0.95, 0.32 / sqrt(rg) + 0.02);
 		} else {
@@ -336,7 +337,8 @@ double ElementData::snowElasticity()
  */
 double ElementData::neckStressEnhancement()
 {
-	return ((4. / (N3 * theta[ICE])) * (rg * rg) / (rb * rb));
+	const double stressEnhance = (4. / (N3 * theta[ICE])) * (rg * rg) / (rb * rb);
+	return stressEnhance;
 }
 
 /**
@@ -531,6 +533,16 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	return (a*100 + b*10 + c);
 }
 
+std::ostream& operator<<(std::ostream& os, const ElementData& data)
+{
+	os << std::fixed << std::showpoint;
+	os << data.depositionDate << " " << setprecision(4) << data.L << " - " << data.type << " (" << setprecision(2) << data.rg << "/" << data.rb << ") - " << data.mk;
+	os << setprecision(2) << "(" << data.theta[SOIL] << "-" << data.theta[ICE] << "-" << data.theta[WATER] << "-" << data.theta[AIR] << ")";
+	os << std::endl;
+
+	return os;
+}
+
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
 	meta(), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn(0.), rho_hn(0.), windward(false), ErosionLevel(0), ErosionMass(0.),
@@ -662,7 +674,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 	unsigned int e0;                    // Lower element index
 	unsigned int eNew;                  // New element index
 	double cH_old, dL=0.;
-	
+
 	for (e0 = SoilNode, eNew = SoilNode; e0 < nElems; e0++) {
 		if (Edata[e0].Rho == Constants::undefined) {
 			if (Edata[e0].L > 0.0) { // Joining elements
@@ -711,7 +723,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
-	
+
 	meta = SSdata.meta;
 	sector = i_sector;
 
@@ -900,7 +912,7 @@ bool SnowStation::sn_joinCondition(const ElementData& Edata0, const ElementData&
 {
 	if ( (Edata0.L > join_thresh_l) || (Edata1.L > join_thresh_l) )
 		return false;
-	
+
 	if ( Edata0.mk%100 != Edata1.mk%100 )
 		return false;
 
@@ -916,7 +928,7 @@ bool SnowStation::sn_joinCondition(const ElementData& Edata0, const ElementData&
 	if ( (Edata0.mk%100 == 3) || (Edata1.mk%100 == 3) )
 		return false;
 
-	if ( (Edata0.dd > join_thresh_dd || Edata1.dd > join_thresh_dd) && 
+	if ( (Edata0.dd > join_thresh_dd || Edata1.dd > join_thresh_dd) &&
 		!(Edata0.dd > join_thresh_dd && Edata1.dd > join_thresh_dd) ) {
 		return false;
 	} else if ( fabs(Edata0.dd - Edata1.dd) > join_thresh_dd ) {
@@ -978,7 +990,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 	Edata0.theta[WATER] = (L1*Edata1.theta[WATER] + L0*Edata0.theta[WATER]) / LNew;
 	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
 	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);
-	
+
 	for (int ii = 0; ii < signed(SnowStation::number_of_solutes); ii++) {
 		for (unsigned int kk = 0; kk < N_COMPONENTS; kk++) {
 			Edata0.conc[kk][ii] = (L1*Edata1.conc(kk,ii) + L0*Edata0.conc[kk][ii]) / LNew;

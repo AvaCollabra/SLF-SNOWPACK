@@ -247,7 +247,7 @@ void versionUserRuntime(const double& time_zone, char *version, char *computatio
 	localdate.setTimeZone(time_zone);
 
 	// version as well as computation and compilation time
-	snprintf(version, MAX_STRING_LENGTH-1, "%lf", SN_VERSION);
+	strncpy(version, SN_VERSION, MAX_STRING_LENGTH-1);
 	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());
 	snprintf(compilation_date, MAX_STRING_LENGTH-1, "%s, %s", __DATE__, __TIME__);
 
