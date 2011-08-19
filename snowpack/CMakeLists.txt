@@ -1,8 +1,8 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
 
-if(COMMAND cmake_policy)
-	cmake_policy(SET CMP0003 NEW)
-endif(COMMAND cmake_policy)
+IF(COMMAND cmake_policy)
+	CMAKE_POLICY(SET CMP0003 NEW)
+ENDIF(COMMAND cmake_policy)
 
 SET(snowpacklib_sources
 	DataClasses.cc

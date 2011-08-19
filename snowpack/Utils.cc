@@ -28,6 +28,12 @@
 using namespace std;
 using namespace mio;
 
+std::string getLibVersion() {
+	std::stringstream ss;
+	ss << _VERSION << " compiled on " << __DATE__ << " " << __TIME__;
+	return ss.str();
+}
+
 /**
  * @brief Print a message to screen (see p.351-352[,469] in C: The Complete Reference) \n
  * If date_in is Date(), no running date will be written, \n

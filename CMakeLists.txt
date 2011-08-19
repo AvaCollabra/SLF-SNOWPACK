@@ -11,14 +11,17 @@ SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
 
 PROJECT(snowpack)
 ADD_SUBDIRECTORY(snowpack)
+IF(SNOWPACK_STANDALONE)
+	ADD_SUBDIRECTORY(applications/snowpack)
+ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################
-#plugins
-set(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
+#plugins and applications
+SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
+SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
 
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
-#SET(DEBUG_ARITHM ON CACHE BOOL "Force crash the application when doing an arithmetic exception")
 OPTION( BUILD_SHARED_LIBS "Set to OFF to build only static libraries" ON )
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
@@ -116,10 +119,18 @@ FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}*")
 
 INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
-ADD_CUSTOM_TARGET(distclean make clean
-	COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake
-	COMMAND cmake -E remove_directory CMakeFiles
-	COMMAND cmake -E remove_directory snowpack/CMakeFiles)
+IF(SNOWPACK_STANDALONE)
+	ADD_CUSTOM_TARGET(distclean make clean
+		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake
+		COMMAND cmake -E remove_directory CMakeFiles
+		COMMAND cmake -E remove_directory snowpack/CMakeFiles
+		COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles)
+ELSE(SNOWPACK_STANDALONE)
+	ADD_CUSTOM_TARGET(distclean make clean
+		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake
+		COMMAND cmake -E remove_directory CMakeFiles
+		COMMAND cmake -E remove_directory snowpack/CMakeFiles)
+ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################
 #for the uninstall target
@@ -131,16 +142,16 @@ CONFIGURE_FILE(
 ADD_CUSTOM_TARGET(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
 #Build the documentation if doxygen is found
-include(FindDoxygen)
+INCLUDE(FindDoxygen)
 FIND_PACKAGE(Doxygen)
-if (DOXYGEN_FOUND)
+IF (DOXYGEN_FOUND)
 	ADD_CUSTOM_TARGET(documentation "doxygen" ${PROJECT_SOURCE_DIR}/snowpack/config.dox)
-	get_target_property(DOC_TARGET doc TYPE)
-	if(NOT DOC_TARGET)
-		add_custom_target(doc)
-	endif(NOT DOC_TARGET)
-	add_dependencies(doc documentation)
-endif (DOXYGEN_FOUND)
+	GET_TARGET_PROPERTY(DOC_TARGET doc TYPE)
+	IF(NOT DOC_TARGET)
+		ADD_CUSTOM_TARGET(doc)
+	ENDIF(NOT DOC_TARGET)
+	ADD_DEPENDENCIES(doc documentation)
+ENDIF (DOXYGEN_FOUND)
 #Install the documentation if the user desires it
 SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 IF(INSTALL_DOC)
@@ -164,22 +175,22 @@ ENDIF(INSTALL_DOC)
 ###########################################################
 ## CPACK section
 ###########################################################
-set(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
+SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Welcome.txt")
-set(CPACK_PACKAGE_NAME "libsnowpack")
+SET(CPACK_PACKAGE_NAME "libsnowpack")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Snowpack")
-set(CPACK_PACKAGE_CONTACT "Mathias Bavay ")
-set(CPACK_PACKAGE_VENDOR "WSL Institute for Snow and Avalanche Research")
+SET(CPACK_PACKAGE_CONTACT "Mathias Bavay ")
+SET(CPACK_PACKAGE_VENDOR "WSL Institute for Snow and Avalanche Research")
 SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons\\\\icon.ico")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.txt")
 SET(CPACK_RESOURCE_FILE_WELCOME "${CMAKE_SOURCE_DIR}/Welcome.txt")
 SET(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/Readme.txt")
 
-set(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
-set(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
-set(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
-set(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
+SET(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
+SET(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
+SET(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
+SET(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 #SET(CPACK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 SET(CPACK_ARCH "i386")
 SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${CPACK_ARCH}")
@@ -209,20 +220,20 @@ SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an a
 
 IF(UNIX)
 	IF(APPLE)
-		set(CPACK_GENERATOR "PackageMaker;")
+		SET(CPACK_GENERATOR "PackageMaker;")
 		SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}-${VERSION}")
 	ELSE(APPLE)
-		set(CPACK_GENERATOR "DEB;RPM;TGZ")
+		SET(CPACK_GENERATOR "DEB;RPM;TGZ")
 		SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
-		set(CPACK_DEBIAN_PACKAGE_NAME "libsnowpack")
-		set(CPACK_DEBIAN_PACKAGE_SECTION "devel")
-		set(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio") #objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
-		set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
-		set(CPACK_RPM_PACKAGE_NAME "libsnowpack")
-		set(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
-		set(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, meteoio")
-		set(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
-		set(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
+		SET(CPACK_DEBIAN_PACKAGE_NAME "libsnowpack")
+		SET(CPACK_DEBIAN_PACKAGE_SECTION "devel")
+		SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio") #objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
+		SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
+		SET(CPACK_RPM_PACKAGE_NAME "libsnowpack")
+		SET(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
+		SET(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, meteoio")
+		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+		SET(CPACK_RPM_PACKAGE_GROUP "Development/Libraries")
 	ENDIF(APPLE)
 ELSE(UNIX)
 	IF(WIN32)
@@ -242,12 +253,12 @@ ELSE(UNIX)
 ENDIF(UNIX)
 
 
-set(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}" CACHE INTERNAL "tarball basename")
-set(CPACK_SOURCE_GENERATOR TGZ)
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-${VERSION}" CACHE INTERNAL "tarball basename")
+SET(CPACK_SOURCE_GENERATOR TGZ)
 # The following components are regex's to match anywhere (unless anchored)
 # in absolute path + filename to find files or directories to be excluded
 # from source tarball.
-set(CPACK_SOURCE_IGNORE_FILES
+SET(CPACK_SOURCE_IGNORE_FILES
 	"~$"
 	"\\\\.svn/"
 	"/CMakeFiles/"
@@ -260,4 +271,4 @@ set(CPACK_SOURCE_IGNORE_FILES
 	"/m4/"
 )
 
-include(CPack)
+INCLUDE(CPack)
