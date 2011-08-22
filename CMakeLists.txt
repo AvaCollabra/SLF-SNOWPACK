@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 # Version of library
 SET(VERSION_MAJOR 2 CACHE INTERNAL "")
 SET(VERSION_MINOR 0 CACHE INTERNAL "")
-SET(VERSION_PATCH 0 CACHE INTERNAL "")
+SET(VERSION_PATCH 1 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
 SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
@@ -12,7 +12,10 @@ SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
 PROJECT(snowpack)
 ADD_SUBDIRECTORY(snowpack)
 IF(SNOWPACK_STANDALONE)
+	SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 	ADD_SUBDIRECTORY(applications/snowpack)
+ELSE(SNOWPACK_STANDALONE)
+	SET(DEBUG_ARITHM OFF CACHE BOOL "Force-crash the application when doing an arithmetic exception" FORCE)
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################

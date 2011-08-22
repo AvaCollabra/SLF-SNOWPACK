@@ -15,8 +15,8 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
 LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
 LIST(APPEND SN_LINKS ${METEOIO_LIBRARIES})
 
-#special features
-SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
+#special features # currently set in the main CMakeLists.txt
+#SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 
 IF(PLUGIN_IMISIO)
 	FIND_PACKAGE(OCCI REQUIRED)

@@ -65,7 +65,7 @@ void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xd
 {
 	throw IOException("Nothing implemented here!", AT);
 }
-	
+
 void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
@@ -140,9 +140,9 @@ void ImisDBIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const Pro
 		const double profile_date = Pdata[ll].profileDate.getJulianDate() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[ll].layerDate.getJulianDate() - 2415021. + 0.5; //HACK
 
-		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[ll].stationname.c_str(),
+		fprintf(PFile,"%.5f,%s,%d,%.2f,", profile_date, Pdata[ll].stationname.c_str(),
 		        Pdata[ll].loc_for_snow, Pdata[ll].height);
-		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n", 
+		fprintf(PFile,"%.5f,%.0f,%.1f,%.0f,%.4e,%.0f,%.0f,%.2f,%.2f,%.1f,%.1f,%.2f,%d\n",
 		        layer_date, Pdata[ll].rho, Pdata[ll].T, Pdata[ll].gradT, Pdata[ll].strain_rate,
 		        Pdata[ll].theta_w, Pdata[ll].theta_i, Pdata[ll].dendricity, Pdata[ll].sphericity,
 		        Pdata[ll].coordin_num, Pdata[ll].grain_size, Pdata[ll].bond_size, Pdata[ll].type);
@@ -157,9 +157,9 @@ void ImisDBIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const Pro
 		double gsz_SH = NDS[nE].hoar / hoar_density_surf;
 		const double Tss = Pdata[ll].T + (Pdata[ll].gradT * gsz_SH);
 
-		fprintf(PFile,"%.5lf,%s,%d,%.2lf,", profile_date, Pdata[ll].stationname.c_str(),
+		fprintf(PFile,"%.5f,%s,%d,%.2f,", profile_date, Pdata[ll].stationname.c_str(),
 		        Pdata[ll].loc_for_snow, Pdata[ll].height + M_TO_CM(gsz_SH));
-		fprintf(PFile,"%.5lf,%.0lf,%.1lf,%.0lf,%.4e,%.0lf,%.0lf,%.2lf,%.2lf,%.1lf,%.1lf,%.2lf,%d\n",
+		fprintf(PFile,"%.5f,%.0f,%.1f,%.0f,%.4e,%.0f,%.0f,%.2f,%.2f,%.1f,%.1f,%.2f,%d\n",
 		        layer_date, hoar_density_surf, Tss, Pdata[ll].gradT, 0.,
 		        0., hoar_density_surf/Constants::density_ice, 0., 0., 2., M_TO_MM(gsz_SH), 0.6667*M_TO_MM(gsz_SH), 660);
 	}
@@ -189,7 +189,7 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 	parseStationName(stationID, stationName, stationNumber);
 
 	Environment *env = NULL;
-	
+
 	try {
 		env = Environment::createEnvironment();// static OCCI function
 		Connection *conn = NULL;
@@ -288,9 +288,9 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
-	for (int i = 0; i<num; i++){ 		
+	for (int i = 0; i<num; i++){
 		if (Hdata[i].date == mio::Date()) break; //catch the case that not all Hdata has been set properly
-		
+
 		vector<int> hzdate = vector<int>(5);
 		mio::Date dateH(Hdata[i].date);
 		dateH.setTimeZone(time_zone);
@@ -319,7 +319,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setString(param++, stationName);
 		stmt->setNumber(param++, statNum);
 
-		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def); 
+		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].hoar_ind6 != -1)	stmt->setNumber(param++, Hdata[i].hoar_ind6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
@@ -340,7 +340,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].hn72_24 != -1)   stmt->setNumber(param++, Hdata[i].hn72_24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		
+
 		if (Hdata_ind[i].hnw3 != -1)        stmt->setNumber(param++, Hdata[i].hnw3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].hnw6 != -1)        stmt->setNumber(param++, Hdata[i].hnw6);
