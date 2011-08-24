@@ -35,7 +35,7 @@
 enum {
 	SOLID,  ///< Solid
 	LIQUID, ///< Liquid
-	VOID,   ///< Gas
+	GAS,   ///< Gas
 	NUMBER_OF_PHASES
 };
 

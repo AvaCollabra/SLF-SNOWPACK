@@ -361,7 +361,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 				              EMS[e].theta[ICE], EMS[e].theta[WATER]);
 			}
 			if (eta < SnLaws::smallest_viscosity) {
-				if (false)
+				if (false) //HACK
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 					        "Viscosity=%e reset to SMALLEST_VISCOSITY! e=%d nE=%d", eta, e, nE);
 				EMS[e].k[SETTLEMENT] = eta = SnLaws::smallest_viscosity;

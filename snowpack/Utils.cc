@@ -246,8 +246,6 @@ int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
 void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
                         char *compilation_date, char *user)
 {
-	char *logname;
-
 	Date localdate;
 	localdate.setFromSys();
 	localdate.setTimeZone(time_zone);
@@ -259,12 +257,8 @@ void versionUserRuntime(const double& time_zone, char *version, char *computatio
 
 	*jul_computation_date = localdate.getJulianDate();
 	//logname=getlogin(); //other options possible, see man
-	logname = getenv("LOGNAME");
-	if ( logname == NULL ) {
-		snprintf(user, MAX_STRING_LENGTH, "N/A");
-	} else {
-		snprintf(user, MAX_STRING_LENGTH, "%s", logname);
-	}
+	const std::string logname = IOUtils::getLogName();
+	snprintf(user, MAX_STRING_LENGTH, "%s", logname.c_str());
 }
 
 /**
@@ -453,7 +447,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	 */
 	if ((Mdata.hs1 + 0.03) < cH) {
 		mass_corr = forcedErosion(Mdata.hs1, Xdata);
-		if (0) {
+		if (0) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
 			                                              Mdata.hs1, cH);
@@ -466,7 +460,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[nSoil].depositionDate.getJulianDate())
 			return;
 
-		if (0) {
+		if (0) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 			          "Small correction due to assumed settling error\n");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),

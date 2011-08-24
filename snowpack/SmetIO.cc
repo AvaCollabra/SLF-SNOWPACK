@@ -368,8 +368,8 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 	setBasicHeader(Xdata, "timestamp SurfaceHoarIndex DriftIndex ThreeHourNewSnow TwentyFourHourNewSnow", haz_writer);
 	haz_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
 
-	haz_writer.set_width(vector<size_t>(4,9));
-	haz_writer.set_precision(vector<size_t>(4,5));
+	haz_writer.set_width(vector<int>(4,9));
+	haz_writer.set_precision(vector<int>(4,5));
 
 	Date hrs72(date - Date(3.0,0.0));
 	Date half_hour(1.0/48.0,0.0);
@@ -415,7 +415,7 @@ void SmetIO::writeSnoFile(const std::string& filename, const mio::Date& date, co
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
-	vector<size_t> vec_width, vec_precision;
+	vector<int> vec_width, vec_precision;
 	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision);
 	sno_writer.set_width(vec_width);
 	sno_writer.set_precision(vec_precision);
@@ -525,7 +525,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 }
 
 void SmetIO::setFormatting(const size_t& nr_solutes,
-                           std::vector<size_t>& vec_width, std::vector<size_t>&  vec_precision) const
+                           std::vector<int>& vec_width, std::vector<int>&  vec_precision) const
 {
 	/*
 	 * When writing a SNOW SMET file each written parameter may have a different

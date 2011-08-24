@@ -21,22 +21,13 @@
 #ifndef __SMET_IO_H__
 #define __SMET_IO_H__
 
-#include <snowpack/Constants.h> 
-#include <snowpack/SnowpackIOInterface.h> 
-#include <snowpack/Hazard.h>
 #include <meteoio/MeteoIO.h>
+#include <snowpack/Constants.h>
+#include <snowpack/SnowpackIOInterface.h>
+#include <snowpack/Hazard.h>
 #include <snowpack/Canopy.h>
 
-#include <sys/time.h> // time manipulation functions
-#include <unistd.h>   // used for getlogin
-#include <cmath>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg> // needed for va_list
-#include <ctime>
 #include <string>
-#include <set>
 
 class SmetIO : public SnowpackIOInterface {
 
@@ -48,10 +39,10 @@ class SmetIO : public SnowpackIOInterface {
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
-		
+
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
-		
+
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
@@ -63,7 +54,7 @@ class SmetIO : public SnowpackIOInterface {
 		void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date,
 		                      smet::SMETWriter& smet_writer) const;
 		void setFormatting(const size_t& nr_solutes,
-		                   std::vector<size_t>& vec_width, std::vector<size_t>&  vec_precision) const;
+		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
 		void writeSnoFile(const std::string& filename, const mio::Date& date, const SnowStation& Xdata,
 		                  const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata) const;
 		void writeHazFile(const std::string& filename, const mio::Date& date,

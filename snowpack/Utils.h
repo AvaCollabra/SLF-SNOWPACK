@@ -35,6 +35,13 @@
 #include <cstring>
 #include <vector>
 
+#ifdef _MSC_VER
+//Microsoft still does NOT support C99...
+//This replacement is not fully compatible, so
+//switch to a real, standard compliant compiler
+	#define snprintf _snprintf
+#endif
+
 /*
  * FUNCTION PROTOTYPES
  */

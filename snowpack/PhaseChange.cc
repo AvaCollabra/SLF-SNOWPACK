@@ -33,10 +33,10 @@ using namespace std;
  * - This constant is used in the PHASE CHANGE ROUTINES; moreover we will freeze
  *   ALL water in the snowpack.  This ensures that we can have DRY snow. (Perryanic comment!)
  */
-const double PhaseChange::theta_r = 0.0; 
+const double PhaseChange::theta_r = 0.0;
 
 //Saturated Water Content, for now we say  1.0
-const double PhaseChange::theta_s = 1.0; 
+const double PhaseChange::theta_s = 1.0;
 
 /************************************************************
  * non-static section                                       *
@@ -83,12 +83,12 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 	 * is above the melting temperature (2) there is something to melt and (3) there is enough
 	 * room to place the meltwater ...
 	*/
-	if (((Edata.Te < Constants::melting_tk) && (ql_Rest == 0.)) 
+	if (((Edata.Te < Constants::melting_tk) && (ql_Rest == 0.))
 		|| (Edata.theta[ICE] <= 0.0) || (Edata.theta[WATER] >= PhaseChange::theta_s)) {
 		return;
 	} else {
 		dT = Constants::melting_tk - Edata.Te;
-		// Now we take into account that there might be some extra energy that could not be used 
+		// Now we take into account that there might be some extra energy that could not be used
 		// by the element above because of complete melting
 		dT -= ql_Rest / (Edata.c[TEMPERATURE] * Edata.Rho * Edata.L);
 		if (dT > 0.) {
@@ -278,7 +278,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 					   e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 		}
-		
+
 		if (Xdata.SubSurfaceMelt) {
 			double thresh_th_w;
 			for (e = nE-1, ql_Rest = 0.; e >= 0; e--) {
@@ -296,7 +296,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 					thresh_th_w = 0.0;
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
-				if ( (EMS[e].theta[WATER] > thresh_th_w) && 
+				if ( (EMS[e].theta[WATER] > thresh_th_w) &&
 					((EMS[e].theta[ICE] > Snowpack::min_ice_content) || (EMS[e].Te <= Constants::melting_tk)) ) {
 					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
@@ -312,7 +312,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 			}
 		}
 		// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
-		
+
 		// Subsurface refreezing check
 		if ( Xdata.SubSurfaceFrze ) {
 			double thresh_th_w;
@@ -366,7 +366,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 			cold_content_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - Constants::melting_tk) * EMS[e].L;
 			sum_Qmf += EMS[e].Qmf * EMS[e].L;
 		}
-		if (0 && (sum_Qmf > Constants::eps)) {
+		if (0 && (sum_Qmf > Constants::eps)) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Checking energy balance  (W/m2):");
 			prn_msg(__FILE__, __LINE__, "msg+", Date(), " E1: %lf   E0: %lf  E1-E0: %lf  sum_Qmf: %lf  Surface EB : %lf",
 				   (cold_content_out) / sn_dt, (cold_content_in) / sn_dt,

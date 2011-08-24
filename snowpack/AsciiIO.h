@@ -21,22 +21,11 @@
 #ifndef __ASCIIIO_H__
 #define __ASCIIIO_H__
 
-#include <snowpack/Constants.h> 
-#include <snowpack/SnowpackIOInterface.h> 
+#include <snowpack/Constants.h>
+#include <snowpack/SnowpackIOInterface.h>
 #include <snowpack/Hazard.h>
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Canopy.h>
-
-#include <sys/time.h> // time manipulation functions
-#include <unistd.h>   // used for getlogin
-#include <cmath>
-#include <cstring>
-#include <cstdio>
-#include <cstdlib>
-#include <cstdarg> // needed for va_list
-#include <ctime>
-#include <string>
-#include <set>
 
 class AsciiIO : public SnowpackIOInterface {
 
@@ -48,10 +37,10 @@ class AsciiIO : public SnowpackIOInterface {
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
-		
+
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
-		
+
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
@@ -75,11 +64,11 @@ class AsciiIO : public SnowpackIOInterface {
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
 		                        const double& ground, const double& slope_angle);
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
-		
+
 		int findTaggedElement(const unsigned int& tag, const SnowStation& Xdata);
 		unsigned int writeHeightTemperatureTag(FILE *fout, const unsigned int& tag,
 		                                       const CurrentMeteo& Mdata, const SnowStation& Xdata);
-		
+
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                 const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
 		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
@@ -90,7 +79,7 @@ class AsciiIO : public SnowpackIOInterface {
                                     FILE *fout);
 
 		static const bool r_in_n, t_srf, t_gnd;
-		
+
 		double time_zone; ///< input data time zone
 
 		double calculation_step_length, hazard_steps_between, ts_days_between;

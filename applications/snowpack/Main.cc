@@ -659,14 +659,14 @@ int main (int argc, char *argv[])
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
 
-	unsigned int nStations = 0;
+	size_t nStations = 0;
 	string outpath(""), experiment("");
 	stringstream ss;
 
 	if (vecStationIDs.size() == 0) {
 		cfg.getValue("NROFSTATIONS", "Input", nStations);
 		vecStationIDs.clear();
-		for (unsigned int i_stn=0; i_stn<nStations; i_stn++) {
+		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
 			string stationID("");
 			ss.str("");
 			ss << "STATION" << i_stn+1;
@@ -678,14 +678,14 @@ int main (int argc, char *argv[])
 		ss.str("");
 		ss << nStations;
 		cfg.addKey("NROFSTATIONS", "Input", ss.str());
-		for (unsigned int i_stn=0; i_stn<nStations; i_stn++) {
+		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
 			ss.str("");
 			ss << "STATION" << i_stn+1;
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
 
-	for (unsigned int i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
+	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		const string meteosrc = cfg.get("METEO", "Input");
 		ss.str("");
 		ss << "METEOFILE" << i_stn+1;
@@ -770,7 +770,7 @@ int main (int argc, char *argv[])
 	mio::IOManager io(cfg);
 
 	/* START LOOP OVER ALL STATIONS */
-	for (unsigned int i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
+	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on station %s", vecStationIDs[i_stn].c_str());
 		run_timer.reset();
@@ -812,13 +812,16 @@ int main (int argc, char *argv[])
 		ss.str("");
 		ss << "SNOWFILE" << i_stn+1;
 		cfg.getValue(ss.str(), "Input", snowfile, mio::Config::nothrow);
-		for (unsigned int sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
+		for (size_t sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
 			try {
 				if (sector == slope.station) {
 					if (snowfile == "") {
 						snowfile = vecStationIDs[i_stn];
-					} else if (snowfile.rfind(".sno") != string::npos) {
-						snowfile.erase(snowfile.size()-4, 4);
+					} else {
+						const size_t pos_dot = snowfile.rfind(".");
+						const size_t pos_slash = snowfile.rfind("/");
+						if( pos_dot!= string::npos && pos_dot>pos_slash) //so that the dot is not in a directory name
+							snowfile.erase(pos_dot, snowfile.size()-pos_dot);
 					}
 					snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.station], sn_Zdata);
 					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Reading snow cover data for station %s", vecStationIDs[i_stn].c_str());
@@ -869,7 +872,7 @@ int main (int argc, char *argv[])
 
 		//CHECK date inconsistencies between sno files
 		bool dates_consistent(true);
-		for (unsigned int sector=slope.first; sector<slope.nSlopes; sector++) {
+		for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
 			if (vecSSdata[sector].profileDate != vecSSdata[slope.station].profileDate) {
 				prn_msg(__FILE__, __LINE__, "err", mio::Date(),
 				        "Date virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
@@ -936,7 +939,7 @@ int main (int argc, char *argv[])
 			PositionSun   Psolar;  // Parameters to determine the position of the sun
 
 			// START LOOP OVER ASPECTS
-			for (unsigned int slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
+			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; //Check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 				copyMeteoData(vecMyMeteo[i_stn], sn_MdataT, slope.prevailing_wind_dir, wind_scaling_factor);
@@ -978,7 +981,7 @@ int main (int argc, char *argv[])
 				// Compute total masses
 				surfFluxes.mass[SurfaceFluxes::MS_TOTALMASS] = surfFluxes.mass[SurfaceFluxes::MS_SWE]
 					= surfFluxes.mass[SurfaceFluxes::MS_WATER] = 0.;
-				for (unsigned int e=vecXdata[slope.sector].SoilNode; e<vecXdata[slope.sector].getNumberOfElements(); e++) {
+				for (size_t e=vecXdata[slope.sector].SoilNode; e<vecXdata[slope.sector].getNumberOfElements(); e++) {
 					surfFluxes.mass[SurfaceFluxes::MS_TOTALMASS] += vecXdata[slope.sector].Edata[e].M;
 					surfFluxes.mass[SurfaceFluxes::MS_SWE] += vecXdata[slope.sector].Edata[e].L
 							* vecXdata[slope.sector].Edata[e].Rho;
@@ -1181,7 +1184,7 @@ int main (int argc, char *argv[])
 
 		if (computed_one_timestep) {
 			// Dump the PROFILEs (Xdata) for all available sectors at the end of the Meteo data
-			for (unsigned int sector=slope.station; sector<slope.nSlopes; sector++) {
+			for (size_t sector=slope.station; sector<slope.nSlopes; sector++) {
 				if ((mode == "OPERATIONAL") && (sector == slope.station)) {
 					// Operational mode ONLY: dump snow depth discrepancy time counter
 					vecSSdata[slope.station].TimeCountDeltaHS = time_count_deltaHS;

@@ -179,7 +179,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 
 	// Header, Station Name and Julian Date
 	char station_name[MAX_STRING_LENGTH];
-	if( fscanf(fin, " %*s") !=1) {
+	if( fscanf(fin, " %*s") !=0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read header of file "+filename, AT);
 	}
@@ -1496,7 +1496,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 		fclose(fin);
 	} else if ((strcmp(ext, "none") == 0)) {
 		// Check header only!
-		return -1;
+		return false;
 	} else {
 		if (!(fout = fopen(fnam, "w")))
 			return false;

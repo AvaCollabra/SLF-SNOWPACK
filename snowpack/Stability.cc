@@ -30,11 +30,11 @@ using namespace std;
 const double Stability::psi_ref = 38.0; ///< Reference slope angle
 const double Stability::max_stability = 6.; ///< Upper stability limit
 
-///Minimum slab thickness for natural and deformation stability index (m) 
-const double Stability::minimum_slab = 0.1; 
+///Minimum slab thickness for natural and deformation stability index (m)
+const double Stability::minimum_slab = 0.1;
 
 ///The first GROUND_ROUGH m of snow will not be unstable due to ground roughness
-const double Stability::ground_rough = 0.2; 
+const double Stability::ground_rough = 0.2;
 
 ///MIN_DEPTH_SSI m of snow must be left after discarding penetration depth
 const double Stability::min_depth_ssi = 0.1;
@@ -68,7 +68,7 @@ bool Stability::initStaticData()
 {
 	mapHandHardness["DEFAULT"]  = &Stability::st_HandHardnessDEFAULT;
 	mapHandHardness["ASARC"]    = &Stability::st_HandHardnessASARC;
-	
+
 	mapShearStrength["DEFAULT"] = &Stability::st_ShearStrengthDEFAULT;
 	mapShearStrength["NIED"]    = &Stability::st_ShearStrengthSTRENGTH_NIED;
 
@@ -90,7 +90,7 @@ Stability::Stability(const mio::Config& cfg)
 	map<string, StabFnShearStrength>::const_iterator it2 = mapShearStrength.find(strength_model);
 	if (it2 == mapShearStrength.end()) throw InvalidArgumentException("Unknown strength model: "+strength_model, AT);
 
-	//To build a sandwich with a non-snow layer (plastic or wood chips) on top; 
+	//To build a sandwich with a non-snow layer (plastic or wood chips) on top;
 	//originally introduced for snow farming applications
 	cfg.getValue("PLASTIC", "SnowpackAdvanced", plastic);
 
@@ -461,7 +461,7 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 				if (thick_crust > Stability::min_thick_crust) {
 					crust = true;
 				} else {
-					e_crust = Constants::undefined;
+					e_crust = Constants::iundefined;
 					top_crust = 0.;
 					thick_crust = 0.;
 				}
@@ -587,7 +587,7 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	STpar.phi = phi;
 
 	// Warning message may be enabled for large differences in snow shear stength models
-	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
+	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
 		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
@@ -698,7 +698,7 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	STpar.phi = phi;
 
 	// Warning message may be enabled for large differences in snow shear stength models
-	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
+	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
 		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
