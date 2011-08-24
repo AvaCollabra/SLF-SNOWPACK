@@ -58,7 +58,7 @@ const double Saltation::salt_height = 0.07;
  * non-static section                                       *
  ************************************************************/
 
-Saltation::Saltation(const mio::Config& cfg) 
+Saltation::Saltation(const mio::Config& cfg)
 {
 	//Use Doorschots Saltation model instead of Sorenson (much slower)
 	cfg.getValue("DOORSCHOT", "SnowpackAdvanced", doorschot);
@@ -74,11 +74,11 @@ Saltation::Saltation(const mio::Config& cfg)
  * @param slope_angle (deg)
  * @return u
  */
-double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0, 
+double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0,
                         const double& u_start, const double& slope_angle)
 {
 	double u, B, hs;
-	
+
 	hs = z0 / 100 + 0.6 * pow(u_start, 2) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
 	//  hs = DSQR(0.6*u_start)/(2.*Constants::g * cos(DEG_TO_RAD(slope_angle)));
 	B = (tauS - tauA) / log(hs / z0);
@@ -88,7 +88,7 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
 	} else {
 		u = sqrt(tauS / Constants::density_air) / Saltation::karman * log(z / z0);
 	}
-	
+
 	return (u);
 }
 
@@ -102,30 +102,30 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
  * @param slope_angle (deg)
  * @return u
  */
-double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0, 
+double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0,
 												 const double& u_start, const double& slope_angle)
 {
 	double u, hs, r, ustar, ustarz, dudz, z_act;
 	double dz = 0.00002;
-	
-	u = 0; z_act = z0; 
-	
+
+	u = 0; z_act = z0;
+
 	//  hs = z0 + DSQR(0.6*u_start)/(2.*Constants::g * cos(DEG_TO_RAD(slope_angle)));
 	hs = pow(0.6 * u_start, 2) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
-	
+
 	r = tauA / tauS;
 	ustar = sqrt(tauS / Constants::density_air);
 	//  fprintf(stdout, "\n z_act=%lf, r=%lf, ustar=%l",z_act,r,ustar);
-	
+
 	while (z_act < z) {
-		z_act += dz; 
+		z_act += dz;
 		//    fprintf(stdout, "\n z_act=%lf",z_act);
 		ustarz = ustar * (1 - (1 - sqrt(r)) *  exp(-z_act / hs));
 		dudz = ustarz / Saltation::karman / z_act;
-		u += dudz * dz; 
+		u += dudz * dz;
 	}
 	//    fprintf(stdout, "\n z_act=%lf, ustarz=%lf, dudz=%lf, u=%lf",z_act,ustarz,dudz,u); }
-	
+
 	return(u);
 }
 
@@ -146,7 +146,7 @@ double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS
  * @return bool
  */
 bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const double& slope_angle, const double& dg,
-                          const double& tauA, const double& tauS, const double& z0, 
+                          const double& tauA, const double& tauS, const double& z0,
                           double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max)
 {
 	int nt = 0;
@@ -154,18 +154,18 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
 	const double vis = 1.74e-5;
 	double x, z, xdot, zdot, xdotdot, zdotdot, Ur, u;
 	double Cd, Re;
-	
+
 	// Initialize velocities of particle and position
 	xdot = u0 * cos(angle_e_rad);
 	zdot = u0 * sin(angle_e_rad);
 	x = xdot * DT;
-	z = z0 + zdot * DT; 
-	
+	z = z0 + zdot * DT;
+
 	ubar = xdot;
 	z_max = z0;
-	
+
 	if (ubar == 0.0) return false;
-	
+
 	// Make a simple forward time integration
 	do {
 		// Wind velocity
@@ -176,28 +176,28 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
 		// Reynolds number and Drag coefficient
 		Re = dg * Ur / vis;
 		Cd = 24. / Re + 4. / pow(Re,0.33);
-		Cd = 24. / Re + 6 / (1 + sqrt(Re)) + 0.4; 
+		Cd = 24. / Re + 6 / (1 + sqrt(Re)) + 0.4;
 		//    fprintf(stdout, "\n Cd=%lf",Cd);
-		
+
 		// Accelerations
 		xdotdot = -0.75 * Constants::density_air / Constants::density_ice * Ur / dg * Cd * (xdot - u) - Constants::g * sin(DEG_TO_RAD(slope_angle));
 		zdotdot = -0.75 * Constants::density_air / Constants::density_ice * Ur / dg * Cd * zdot - Constants::g * cos(DEG_TO_RAD(slope_angle));
-		
+
 		// Velocities
 		xdot += xdotdot * DT;
 		zdot += zdotdot * DT;
-		
+
 		// Positions
 		x += xdot * DT;
 		z += zdot * DT;
-		
+
 		ubar += xdot;
 		if (z > z_max) {
 			z_max = z;
 		}
 		nt++;
 	} while (z > z0);
-	
+
 	if (!((nt > 1) && (xdot > 0.0)) ) {
 		return false;
 	} else {
@@ -209,7 +209,7 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
 		angle_i_rad = atan(-zdot / xdot);
 		// Flight time
 		t_i = nt * DT;
-		
+
 		return true;
 	}
 }
@@ -233,11 +233,12 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
   	//  double tau_th=0.04;
 	// pa preliminary until coupled to SNOWPACK
 	double u0, angle_e_rad;
-	double u_i, angle_i_rad, t_i;
+	double u_i;
+	double angle_i_rad=0., t_i=0.; //so the compiler doesn't complain about initialized vars
 	double Nreb, tau1G_reb;
 	double mass;
 	double hsalt, udisturb, ulog;
-	
+
 	// Initialize mass: Model Mass Flus is extremely sensitive to grain mass
 	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow( (dg / 2.), 3. );
 	// Compute trajectories until stationary
@@ -246,7 +247,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
 	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 	//  u0 = 3.7*sqrt(tauS-tau_th);
-	
+
 	u_i = u0;
 	// Iterate until stationary trajectory
 	while (u_i == u0) {
@@ -255,14 +256,14 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 			return 0.;
 		}
 	}
-	
+
 	// Shear stress from one grain
 	tau1G_reb = mass * ( u_i * cos(angle_i_rad) - u0 * cos(angle_e_rad) ) / t_i;
 	//  tau1G_reb = mass*( u_i*cos(angle_i_rad) - u0*cos(angle_e_rad) );
-	
+
 	// Number of rebounding grains
 	Nreb = (tauS - tauA) / tau1G_reb;
-	
+
 	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ) {
 		hsalt = z0 + Saltation::hs_frac * 0.5 * pow((u0 * cos(angle_e_rad)), 2) / 2. / Constants::g;
@@ -272,12 +273,12 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	} else {
 		cs = 0.0;
 	}
-	
+
 	if ( !(mass*Nreb*ubar > 0. && mass*Nreb*ubar < 1e10) ) {
 		prn_msg(__FILE__, __LINE__, "msg+", Date(),
 			"Infinite Flux from Mass Flux  mass:%lf NrebG:%lf ubar:%lf", mass, Nreb, ubar);
 	}
-	
+
 	return (mass*Nreb*ubar);
 } // End of MassFlux
 
@@ -294,7 +295,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
  * @param cs
  * @return surface shear stress
 */
-double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const double& slope_angle, const double& dg, 
+double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const double& slope_angle, const double& dg,
                                  const double& tau_th, double& flux, double& z_max, double& ubar, double& cs)
 {
 	int    iter = 0, maxit = 40;
@@ -304,20 +305,20 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	double Nae, n_ae;
 	double mass;
 	double hsalt, udisturb, ulog;
-	
+
 	// Initialize mass, entrainment number and surface shear stress
 	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3.);
 	angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
 	//  n_ae = 1./(1.09*mass*sqrt(tauS/DENSITY_AIR));
-	n_ae  = 0.5 / 8. / Constants::pi / dg / dg; 
+	n_ae  = 0.5 / 8. / Constants::pi / dg / dg;
 	//  n_ae = 200000;
 	tauA = (tauS + tau_th) / 2;
-	
+
 	// Compute trajectories until stationary
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
 	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 	//  u0 = 3.7*sqrt(tauS-tau_th);
-	
+
 	iter=0;
 	do {
 		if (!sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max)) {
@@ -329,12 +330,12 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 		Nae = n_ae * (tauA - tau_th);
 		tauA = tauS - Nae *mass * (u_i * cos(angle_i_rad) - u0 * cos(angle_e_rad)) / t_i;
 		//    tauA = tauS - Nae*mass*(u_i*cos(angle_i_rad) - u0*cos(angle_e_rad));
-		if(tauA < tau_th) tauA = tau_th; 
-		tauA = (tauA+tauA_old)/2.; 
+		if(tauA < tau_th) tauA = tau_th;
+		tauA = (tauA+tauA_old)/2.;
 		//     fprintf(stdout, "n_ae=%lf, tauA=%lf \n",n_ae, tauA);
 		iter++;
 	} while ( (fabs((tauA - tauA_old)/tauA) > eps) && (iter < maxit) );
-	
+
 	if (iter == maxit) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Airborne shear stress Iteration did not converge");
 		tauA = 0.5 * tauS;
@@ -342,16 +343,16 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	}
 	if (tauA < tau_th) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Airborne shear stress smaller than threshold");
-		Nae = 0.; 
+		Nae = 0.;
 	}
-	
+
 	flux = mass * Nae * ubar;
-	
+
 	if ( !((flux > 0.) && (flux < 1e10)) ) {
 		prn_msg(__FILE__, __LINE__, "msg+", Date(),
 			"Infinite Flux from Aero Entrain  mass:%lf Nae:%lf ubar:%lf",mass,Nae,ubar);
 	}
-	
+
 	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ){
 		hsalt = z0 + Saltation::hs_frac * 0.5 * pow((u0 * cos(angle_e_rad)), 2) / 2. / Constants::g;
@@ -361,7 +362,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	} else {
 		cs = 0.0;
 	}
-	
+
 	return(tauA);
 
 } // End of sa_AeroEntrain
@@ -384,21 +385,21 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 	int j;
 	double u0, angle_e_rad;
 	double u_i, angle_i_rad, t_i;
-	double hsalt1, hsalt2, mass;
-	
+	double hsalt1, hsalt2=0., mass; //so that the compiler doesn't complain about uninitialized var
+
 	// Initialize mass
 	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3);
 	// Compute trajectories until stationary
 	angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
 	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
-	
+
 	// Compute the first trajectory
 	sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max);
 	hsalt1 = z_max;
 	u0 = Saltation::elas * u_i;
 	// u0 = sqrt(ELAS*DSQR(u_i)) ;
-	
+
 	// Compute three trajectories to see whether they are growing
 	for (j = 0; j < 3; j++) {
 		sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max);
@@ -406,7 +407,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 		u0 = Saltation::elas * u_i;
 		//    u0 = sqrt(ELAS*DSQR(u_i));
 	}
-		
+
 	if (hsalt2 > hsalt1) {
 		return (Saltation::strong);
 	} else {
@@ -434,7 +435,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 	double tauA, tauA_left, tauA_right, tauA_middle, tau_r, tau_e = 0.;
 	double taumean, taumax, taustep, Cp, tau_j, Ptau_j, ubar = 0., z_lower = 0.;
 	double flux_mean = 0., cs_mean = 0., flux, cs;  // What we finally want
-	
+
 	if (!doorschot) {
 		// Sorensen
 		ustar = sqrt(tauS / Constants::density_air);
@@ -454,16 +455,16 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		taumax = 15.* tauS;
 		taustep = (taumax - tau_th) / k;
 		Cp = 1. / taumean;
-	
-	
+
+
 		for (j = 0; j < k; j++) {
 			tau_j = tau_th + ((double)(j) + 0.5) * taustep;
 			Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
-	
+
 			tauS = tau_j;
-	
+
 			if(tauS > tau_th) {
-	
+
 				// First test for large rebound thresholds
 				if (sa_TestSaltation(Saltation::z0_salt, tauS, tauS, slope_angle, dg, tau_th, z_lower, ubar) == Saltation::weak) {
 					tauA = sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
@@ -482,7 +483,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 						}
 					} while (tauA_right - tauA_left > eps);
 					tau_r = tauA_middle;
-	
+
 					/*
 					* Distinguish the different possibilities after Judith and compute
 					* the flux; Start with computation of tau_e: The surface shear stress
@@ -502,18 +503,18 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 				} // else large rebound threshold
 				cs_mean += cs * Ptau_j;
 				flux_mean += flux * Ptau_j;
-	
+
 			} // if there is s.th. to do
-	
+
 		} // for all shear stress classes
-	
+
 		// Fill return Values
 		massflux = flux_mean;
 		c_salt = cs_mean;
 	}
-	
+
 	//  printf("Saltation Conc. %lf", c_salt);
-	
+
 	return true;
 }
 

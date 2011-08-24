@@ -23,7 +23,13 @@
 #include <iostream>
 #include <string>
 #include <sstream>
-#include <getopt.h>
+
+#ifdef _MSC_VER
+	#include "getopt.h"
+#else
+	//#include <unistd.h> //for getopt
+	#include <getopt.h> //for getopt_long
+#endif
 
 using namespace std;
 
@@ -845,7 +851,7 @@ int main (int argc, char *argv[])
 					vecSSdata[sector].meta.stationName = vecSSdata[slope.station].meta.getStationName();
 				}
 				vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
-			} catch (exception& e){
+			} catch (const exception& e){
 				if (sector == slope.first){
 					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "No virtual slopes! Computation for main station %s only!",
 					        vecStationIDs[i_stn].c_str());

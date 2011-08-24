@@ -956,7 +956,7 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 		hard.resize(nE_s, 0.0);
 		red_hard.resize(nE_s, 0.0);
 		deltaN.resize(nE_s, 0.0);
-	} catch(exception& e){
+	} catch(const exception& e){
 		prn_msg(__FILE__, __LINE__, "err", date,
 			   "Cannot allocate space for temporary objects in Stability::recognizeProfileType");
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions

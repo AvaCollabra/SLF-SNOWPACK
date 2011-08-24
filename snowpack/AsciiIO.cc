@@ -578,7 +578,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	}
 
-	if (!(PFile = fopen(filename.c_str(), "a"))) {
+	if ( !(PFile = fopen(filename.c_str(), "a")) ) {
 		prn_msg(__FILE__, __LINE__, "err", i_date,
 			   "Cannot open profile series file: %s", filename.c_str());
 		throw IOException("Cannot dum profile " + filename + "for Java Visualisation", AT);
@@ -1148,8 +1148,6 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 		if (fout.is_open()) fout.close();
 		return false;
 	}
-
-	return false;
 }
 
 /**
@@ -1198,7 +1196,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	}
 
-	if (!(TFile = fopen(filename.c_str(), "a"))) {
+	if ( !(TFile = fopen(filename.c_str(), "a")) ) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Cannot open time series file: %s", filename.c_str());
 		throw FileAccessException(filename, AT);
 	}
@@ -1769,7 +1767,7 @@ bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vecto
 			fout << Zdata.hns24[e];
 		}
 		fout << endl;
-	} catch (exception& e){
+	} catch (const exception&){
 		cleanup();
 		throw;
 	}

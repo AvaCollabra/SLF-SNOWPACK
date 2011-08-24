@@ -202,7 +202,7 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 		env->terminateConnection(conn);
 		Environment::terminateEnvironment(env); // static OCCI function
 
-	} catch (exception& e){
+	} catch (const exception& e){
 		Environment::terminateEnvironment(env); // static OCCI function
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing hazard data for %s to %s,",

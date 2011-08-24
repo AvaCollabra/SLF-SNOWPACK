@@ -1410,10 +1410,10 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 
 	// local mass flux variables
 	double precipitation, throughfall, unload, interception;
-	double CanopyEvaporation, INTEVAP, TRANSPIRATION;
+	double CanopyEvaporation=0., INTEVAP=0., TRANSPIRATION=0.;
 
 	// local energy flux variables
-	double RNCANOPY, HCANOPY, LECANOPY, LECANOPYCORR;
+	double RNCANOPY=0., HCANOPY=0., LECANOPY=0., LECANOPYCORR=0.;
 	double iswrac, rswrac, iswrbc, rswrbc, ilwrac, rlwrac, ilwrbc, rlwrbc, rsnet;
 
 	// local auxiliary variables
@@ -1618,7 +1618,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	*/
 	// radiation above and below canopy
 	cn_CanopyRadiationOutput(*Xdata, *Mdata, canopyalb, &iswrac, &rswrac, &iswrbc,&rswrbc,&ilwrac,
-						&rlwrac,&ilwrbc,&rlwrbc,canopyclosuredirect,radfracdirect,sigfdirect);
+	                         &rlwrac,&ilwrbc,&rlwrbc,canopyclosuredirect,radfracdirect,sigfdirect);
 
 	// longwave and shortwave radiation components
 	Xdata->Cdata.iswrac += iswrac;

@@ -28,7 +28,7 @@ using namespace std;
  ************************************************************/
 
 ///Deviation from geometrical factors defined by Schmidt
-const double SnowDrift::schmidt_drift_fudge = 1.0; 
+const double SnowDrift::schmidt_drift_fudge = 1.0;
 
 ///Enables erosion notification
 const bool SnowDrift::msg_erosion = false;
@@ -96,7 +96,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 
 	// First, look whether there is any transport at all: use formulation of Schmidt
 	if ( tau_thresh > tau ) {
-		return (0.0); 
+		return (0.0);
 	}
 	// Compute the saltation mass flux (after Pomeroy and Gray)
 	if (!saltation.compSaltation(tau, tau_thresh, slope_angle, MM_TO_M(2.*Edata.rg), Qsalt, c_salt)) {
@@ -175,7 +175,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			} else {
 				real_flux = compMassFlux(EMS[nE-1], ustar_max, Xdata.meta.getSlopeAngle()); // Windward slope && vw_drift && nE-1
 			}
-		} catch(exception& ex){
+		} catch(const exception&){
 			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "SnowDrift");
 			throw;
 		}

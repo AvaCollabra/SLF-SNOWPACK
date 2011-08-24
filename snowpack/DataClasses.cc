@@ -607,7 +607,7 @@ void SnowStation::resize(const unsigned int& number_of_elements)
 	try {
 		Edata.resize(number_of_elements, ElementData());
 		Ndata.resize(number_of_elements + 1);
-	}catch(exception& e){
+	}catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
 

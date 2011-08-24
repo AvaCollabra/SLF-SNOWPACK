@@ -373,7 +373,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				   (cold_content_out - cold_content_in) / sn_dt, sum_Qmf,
 				   Sdata.qs + Sdata.ql + Sdata.lw_net + Sdata.qr + Sdata.qw);
 		}
-	} catch (exception& ex) {
+	} catch (const exception& ) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Run-time error in compPhaseChange()");
 		throw;
 	}

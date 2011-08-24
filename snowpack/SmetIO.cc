@@ -185,9 +185,9 @@ mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::strin
 		SSdata.Ldata[ll].rb = vec_data[current_index++];
 		SSdata.Ldata[ll].dd = vec_data[current_index++];
 		SSdata.Ldata[ll].sp = vec_data[current_index++];
-		SSdata.Ldata[ll].mk = vec_data[current_index++]; //int
+		SSdata.Ldata[ll].mk = static_cast<unsigned int>(vec_data[current_index++]+.5); //int
 		SSdata.Ldata[ll].hr = vec_data[current_index++];
-		SSdata.Ldata[ll].ne = vec_data[current_index++]; //int
+		SSdata.Ldata[ll].ne = static_cast<unsigned int>(vec_data[current_index++]+.5); //int
 
 		if (SSdata.Ldata[ll].rg>0. && SSdata.Ldata[ll].rb >= SSdata.Ldata[ll].rg) {
 			//HACK To avoid surprises in lwsn_ConcaveNeckRadius()
@@ -315,7 +315,7 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 	 * If the header key does not exist or the value is not set throw an exception
 	 */
 	double nodata = reader.get_header_doublevalue("nodata");
-	int inodata = floor(nodata + .1);
+	int inodata = static_cast<int>( floor(nodata + .1) );
 
 	int value = reader.get_header_intvalue(key);
 	if (value == inodata){
@@ -582,7 +582,6 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
                              const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
 {
 	throw IOException("Nothing implemented here!", AT);
-	return true;
 }
 
 std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp)

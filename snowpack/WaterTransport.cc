@@ -717,7 +717,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	try {
 		adjustDensity(Xdata);
 		transportWater(Mdata, Xdata, Sdata);
-	} catch(exception& ex){
+	} catch(const exception&){
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportMass()");
 		throw;
 	}

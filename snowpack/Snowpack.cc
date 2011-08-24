@@ -807,7 +807,7 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
 		SnLaws::compShortWaveAbsorption(I0, useSoilLayers, multistream, Xdata);
-	} catch(exception& ex){
+	} catch(const exception&){
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
 		throw;
 	}
@@ -1559,7 +1559,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// computeSnowTemperatures where the vectors U, dU and dUU are allocated.
 		compSnowCreep(Mdata, Xdata);
 
-	} catch(exception& ex) {
+	} catch(const exception&) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Snowpack computation not completed");
 		throw;
 	}

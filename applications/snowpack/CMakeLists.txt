@@ -4,8 +4,13 @@ IF(COMMAND cmake_policy)
 	CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)
 
+IF(MSVC)
+	SET(getopt_src getopt.c)
+ENDIF(MSVC)
+
 SET(snowpack-app_sources
 	Main.cc
+	${getopt_src}
 )
 
 SET(SN_LINKS "snowpack")
