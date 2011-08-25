@@ -116,7 +116,7 @@ SnowpackConfig::~SnowpackConfig() {}
 
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
 {
-	string variant = get("VARIANT", "SnowpackAdvanced", Config::nothrow);
+	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, Config::nothrow);
 
 	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 
@@ -131,17 +131,17 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 	}
 
-	string hn_density = get("HN_DENSITY", "SnowpackAdvanced", Config::nothrow);
+	string hn_density;  getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, Config::nothrow);
 	if (hn_density == "MEASURED") {
 		bool rho_hn = false;
 		getValue("RHO_HN", "Input", rho_hn, Config::nothrow);
 		if (!rho_hn)
 			throw InvalidArgumentException("HN_DENSITY = " + hn_density + " while RHO_HN = false", AT);
 	}
-	string hn_density_model = get("HN_DENSITY_MODEL", "SnowpackAdvanced", Config::nothrow);
-	string metamorphism_model = get("METAMORPHISM_MODEL", "SnowpackAdvanced", Config::nothrow);
-	string strength_model = get("STRENGTH_MODEL", "SnowpackAdvanced", Config::nothrow);
-	string viscosity_model = get("VISCOSITY_MODEL", "SnowpackAdvanced", Config::nothrow);
+	string hn_density_model; getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model, Config::nothrow);
+	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, Config::nothrow);
+	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, Config::nothrow);
+	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, Config::nothrow);
 
 	if ((variant == "") || (variant == "DEFAULT")) {
 
@@ -160,13 +160,13 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
-		string hoar_density_buried = get("HOAR_DENSITY_BURIED", "SnowpackAdvanced", Config::nothrow);
+		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried, Config::nothrow);
 		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
 
-		string force_rh_water = get("FORCE_RH_WATER", "SnowpackAdvanced", Config::nothrow);
+		string force_rh_water; getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water, Config::nothrow);
 		if (force_rh_water == "") addKey("FORCE_RH_WATER", "SnowpackAdvanced", "false");
 
-		string thresh_rh = get("THRESH_RH", "SnowpackAdvanced", Config::nothrow);
+		string thresh_rh; getValue("THRESH_RH", "SnowpackAdvanced", thresh_rh, Config::nothrow);
 		if (thresh_rh == "") addKey("THRESH_RH", "SnowpackAdvanced", "0.7");
 
 		if ( !enforce_measured_snow_heights) {
@@ -190,13 +190,13 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
-		string number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
+		string number_fixed_heights; getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", number_fixed_heights, Config::nothrow);
 		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
-		string number_fixed_rates = get("NUMBER_FIXED_RATES", "SnowpackAdvanced", Config::nothrow);
+		string number_fixed_rates; getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates, Config::nothrow);
 		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		string max_number_sensors = get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", Config::nothrow);
+		string max_number_sensors; getValue("MAX_NUMBER_SENSORS", "SnowpackAdvanced", max_number_sensors, Config::nothrow);
 		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "5");
-		string min_depth_subsurf = get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", Config::nothrow);
+		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, Config::nothrow);
 		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
 
 	} else {
@@ -204,24 +204,24 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	}
 
 	/* For all parameters not set by the user or by the initialization above, the default values apply
-	 * That is, loop through advancedConfig (then inputConfig & outputConfig) and check whether user has set 
-	 * the parameter in the corresponding section, if not add default value 
+	 * That is, loop through advancedConfig (then inputConfig & outputConfig) and check whether user has set
+	 * the parameter in the corresponding section, if not add default value
 	 */
 	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); it++){
 		//[SnowpackAdvanced] section
-		string value = get(it->first, "SnowpackAdvanced", Config::nothrow);
+		string value; getValue(it->first, "SnowpackAdvanced", value, Config::nothrow);
 		if (value == "") addKey(it->first, "SnowpackAdvanced", it->second);
 	}
 
 	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); it++){
 		//[Input] section
-		string value = get(it->first, "Input", Config::nothrow);
+		string value; getValue(it->first, "Input", value, Config::nothrow);
 		if (value == "") addKey(it->first, "Input", it->second);
 	}
 
 	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); it++){
 		//[Output] section
-		string value = get(it->first, "Output", Config::nothrow);
+		string value; getValue(it->first, "Output", value, Config::nothrow);
 		if (value == "") addKey(it->first, "Output", it->second);
 	}
 
@@ -249,7 +249,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 */
 	double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Snowpack");
 
-	string hazard_steps_between = get("HAZARD_STEPS_BETWEEN", "Output", Config::nothrow);
+	string hazard_steps_between; getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between, Config::nothrow);
 	if (hazard_steps_between == "") {
 		stringstream ss;
 		int tmp = (int)(30./calculation_step_length + 0.5);
@@ -267,10 +267,10 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 */
 	unsigned int number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
 	if (number_meas_temperatures > 0) {
-		string i_fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Input", Config::nothrow);
+		string i_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Input", i_fixed_sensor_depths, Config::nothrow);
 		addKey("FIXED_SENSOR_DEPTHS", "Output", i_fixed_sensor_depths);
 	} else {
-		string o_fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Output", Config::nothrow);
+		string o_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths, Config::nothrow);
 		if (o_fixed_sensor_depths == "")
 			addKey("FIXED_SENSOR_DEPTHS", "Output", "0.25 0.50 1.0 1.5 -0.1");
 		else

@@ -1414,15 +1414,15 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 
 	// local energy flux variables
 	double RNCANOPY=0., HCANOPY=0., LECANOPY=0., LECANOPYCORR=0.;
-	double iswrac, rswrac, iswrbc, rswrbc, ilwrac, rlwrac, ilwrbc, rlwrbc, rsnet;
+	double iswrac, rswrac, iswrbc, rswrbc, ilwrac, rlwrac, ilwrbc, rlwrbc, rsnet=IOUtils::nodata;
 
 	// local auxiliary variables
-	double intcapacity, wetfrac, canopyalb;
+	double intcapacity, wetfrac, canopyalb=IOUtils::nodata;
 	double ch_canopy, ce_transpiration, ce_interception, ce_canopy, ce_condensation;
 	double r0, r1, h0, h1, le0, le1;
 	double zref, z0m_ground;
 	double density_of_new_snow, TC_OLD, newstorage;
-	double canopyclosuredirect, radfracdirect, sigfdirect, r1p;
+	double canopyclosuredirect=IOUtils::nodata, radfracdirect=IOUtils::nodata, sigfdirect, r1p;
 	int ebalitt;
 
 	// First check, whether there is Canopy above the snow, i.e. whether s.th. needs to be done here

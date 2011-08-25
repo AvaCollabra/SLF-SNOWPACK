@@ -63,7 +63,6 @@ class Slope {
 	 unsigned int south;
 	 unsigned int luv;
 	 unsigned int lee;
-	 unsigned int no_sector;
 	 double prevailing_wind_dir;
 
 	 int getSectorDir(const double& dir_or_expo) const;
@@ -112,7 +111,6 @@ Slope::Slope(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	station = 0;
 	first = 1;
-	no_sector = -1;
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::Config::nothrow);
 	sector_width = 360./MAX(1, nSlopes-1);
 	south = getSectorDir(180.);
@@ -155,7 +153,8 @@ void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, do
 			lee = (luv + nSlopes/2) % (nSlopes-1);
 			if (lee == 0) lee = nSlopes - 1;
 		} else {
-			luv = lee = no_sector;
+			//requesting slope 0 of 0 expositions
+			luv = lee = 0;
 		}
 		sector = station;
 		break;

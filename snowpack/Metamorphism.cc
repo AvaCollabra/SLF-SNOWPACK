@@ -121,7 +121,7 @@ using namespace mio;
 ///Defines the vapor pressure gradient at which TG metamorphism begins (hPa m-1)
 const double Metamorphism::mm_tg_dpdz = 5.;
 const double Metamorphism::ba_g_fudge = 3.; ///< brief Defines Thorsten's Geometry FUDGE
-const double Metamorphism::sa_g_fudge = 0.35; ///< Defines Satyawali's Geometry FUDGE 
+const double Metamorphism::sa_g_fudge = 0.35; ///< Defines Satyawali's Geometry FUDGE
 
 /// @name Grain and bond growth
 //@
@@ -798,7 +798,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
 	double cw, thetam_w; // local variables
 	int    marker;       // local variable
-	double dhfDot;       //NIED (H. Hirashima) Depth hoar factor ... //Fz HACK needs to be initialized! see line 894!
+	double dhfDot = Constants::undefined;       //NIED (H. Hirashima) Depth hoar factor ...
 	double DenFact, Diffus, gradV; //NIED (H. Hirashima) //Fz HACK please describe variables
 
 	// Dereference the element pointer containing micro-structure data

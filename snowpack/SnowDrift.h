@@ -29,10 +29,6 @@
 #include <vector>
 
 class Saltation;
-struct ElementData;
-struct SurfaceFluxes;
-struct CurrentMeteo;
-struct SnowStation;
 
 /**
  * @class SnowDrift
