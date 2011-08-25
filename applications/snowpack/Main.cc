@@ -691,10 +691,10 @@ int main (int argc, char *argv[])
 	}
 
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
-		const string meteosrc = cfg.get("METEO", "Input");
+		string meteosrc; cfg.getValue("METEO", "Input", meteosrc);
 		ss.str("");
 		ss << "METEOFILE" << i_stn+1;
-		const string meteofile = cfg.get(ss.str(), "Input", mio::Config::nothrow);
+		string meteofile; cfg.getValue(ss.str(), "Input", meteofile, mio::Config::nothrow);
 		if (meteofile == "") {
 			if (meteosrc == "SMET") {
 				cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]+".smet");
@@ -704,8 +704,7 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	string variant("");
-	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
+	string variant; cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
 	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
 	if (useSoilLayers) {
 		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Start SNOWPACK w/ soil layers in %s mode", mode.c_str());

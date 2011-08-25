@@ -14,8 +14,8 @@ ADD_SUBDIRECTORY(snowpack)
 IF(SNOWPACK_STANDALONE)
 	SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 	ADD_SUBDIRECTORY(applications/snowpack)
-ELSE(SNOWPACK_STANDALONE)
-	SET(DEBUG_ARITHM OFF CACHE BOOL "Force-crash the application when doing an arithmetic exception" FORCE)
+#ELSE(SNOWPACK_STANDALONE)
+#	SET(DEBUG_ARITHM OFF CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################

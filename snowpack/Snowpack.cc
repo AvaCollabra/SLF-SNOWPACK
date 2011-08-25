@@ -147,7 +147,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("JOIN_ELEMENTS", "SnowpackAdvanced", join_elements);
 
 	//Which boundary condition to use
-	string boundary_condition = cfg.get("SURFACECODE", "SnowpackAdvanced");
+	string boundary_condition; cfg.getValue("SURFACECODE", "SnowpackAdvanced", boundary_condition);
 	if (boundary_condition == "NEUMANN_BC") {
 		surfaceCode = Snowpack::NEUMANN_BC;
 	} else if (boundary_condition == "DIRICHLET_BC") {
