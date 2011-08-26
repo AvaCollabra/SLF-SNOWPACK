@@ -181,7 +181,6 @@ void Usage(const string& programname)
 	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
-	*/
 #endif
 	cout << "Usage: " << programname << endl
 		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)" << endl
