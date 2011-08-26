@@ -25,6 +25,11 @@
 #include <sstream>
 
 #ifdef _MSC_VER
+	/*
+	This software contains code under BSD license (namely, getopt for Visual C++).
+	Therefore, this product includes software developed by the University of
+	California, Berkeley and its contributors when compiling with Visual C++.
+	*/
 	#include "getopt.h"
 #else
 	//#include <unistd.h> //for getopt
@@ -172,6 +177,12 @@ void Usage(const string& programname)
 	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
 		<< "\tLibsnowpack " << getLibVersion() << endl
 		<< "\tMeteoIO " << mio::getLibVersion() << endl;
+#ifdef _MSC_VER
+	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
+		<< "It therefore includes software developed by the University of "
+		<< "California, Berkeley and its contributors." << endl;
+	*/
+#endif
 	cout << "Usage: " << programname << endl
 		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)" << endl
 		<< "\t[-c, --config=<ini file> (e.g. io.ini)]" << endl

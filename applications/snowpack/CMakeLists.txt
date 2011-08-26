@@ -1,15 +1,11 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
 
-SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
-SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
-OPTION( BUILD_SHARED_LIBS "Set to OFF to build only static libraries" ON )
-
 IF(COMMAND cmake_policy)
 	CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)
 
 IF(MSVC)
-	SET(getopt_src getopt.c)
+	SET(getopt_src getopt.c getopt_long.c)
 ENDIF(MSVC)
 
 SET(snowpack-app_sources
@@ -18,6 +14,7 @@ SET(snowpack-app_sources
 )
 
 SET(SN_LINKS "snowpack")
+LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 FIND_PACKAGE(MeteoIO REQUIRED)
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
@@ -37,20 +34,18 @@ ENDIF(PLUGIN_IMISIO)
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 
-#Prepare executable
-SET(BINARY "snowpack.app")
-ADD_EXECUTABLE(${BINARY} ${snowpack-app_sources})
-
 IF(UNIX)
 	LIST(APPEND SN_LINKS "dl")
 	LIST(APPEND SN_LINKS "pthread")
 ENDIF(UNIX)
 
+#Prepare executable
+SET(BINARY "snowpack.app")
+ADD_EXECUTABLE(${BINARY} ${snowpack-app_sources})
+
 TARGET_LINK_LIBRARIES(${BINARY} ${SN_LINKS})
 
 SET_TARGET_PROPERTIES(${BINARY} PROPERTIES
-	LIBRARY_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib"
-	ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/lib"
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
 	CLEAN_DIRECT_OUTPUT 1
 	OUTPUT_NAME "snowpack"
@@ -58,7 +53,5 @@ SET_TARGET_PROPERTIES(${BINARY} PROPERTIES
 
 INSTALL(TARGETS ${BINARY}
 	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
-	ARCHIVE DESTINATION lib
 	COMPONENT runtime
 )
