@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Creator: fig2dev Version 3.2 Patchlevel 5-alpha5 -->
+
 <!-- CreationDate: Thu Feb 28 17:10:09 2008 -->
+
 <!-- Magnification: 1.000 -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
    xmlns:cc="http://creativecommons.org/ns#"
@@ -15,13 +18,13 @@
    viewBox="2907 1826 6062 5355"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
-   sodipodi:docname="slf.svg"
-   sodipodi:docbase="/home/bavay/Documents"
+   inkscape:version="0.47 r22583"
+   sodipodi:docname="icon.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/bavay/Documents/slf.png"
-   inkscape:export-xdpi="250"
-   inkscape:export-ydpi="250">
+   inkscape:export-filename="/home/bavay/alpine3d/snowpack/snowpack/snowpack/icons/icon24.png"
+   inkscape:export-xdpi="5.5057106"
+   inkscape:export-ydpi="5.5057106"
+   version="1.1">
   <metadata
      id="metadata61">
     <rdf:RDF>
@@ -30,6 +33,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -68,7 +72,8 @@
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:current-layer="svg2"
-     showgrid="false" />
+     showgrid="false"
+     inkscape:window-maximized="0" />
   <g
      id="g3272">
     <polyline

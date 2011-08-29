@@ -1,24 +1,37 @@
-include(LibFindMacros)
+INCLUDE(LibFindMacros)
 
 # Finally the library itself
-find_library(METEOIO_LIBRARY
-  NAMES meteoio
-  PATHS
-	ENV LD_LIBRARY_PATH
-	"~/usr/lib"
-	"/usr/local/lib"
-	"/usr/lib"
-	"/opt/lib"
-  DOC "Location of the libmeteoio, like /usr/lib"
- )
+IF(WIN32)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\MeteoIO]" ABSOLUTE CACHE)
+
+	FIND_LIBRARY(METEOIO_LIBRARY
+		NAMES libmeteoio.lib
+		PATHS
+			ENV LIB
+			${METEOIO_ROOT}/lib
+			"C:/Program Files/MeteoIO/lib"
+		DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.lib"
+		)
+ELSE(WIN32)
+	FIND_LIBRARY(METEOIO_LIBRARY
+	NAMES meteoio
+	PATHS
+		ENV LD_LIBRARY_PATH
+		"~/usr/lib"
+		"/usr/local/lib"
+		"/usr/lib"
+		"/opt/lib"
+	DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
+	)
+ENDIF(WIN32)
 
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
-if ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
-   set(METEOIO_ROOT "${CMAKE_MATCH_1}")
-endif ("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
+IF("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
+   SET(METEOIO_ROOT "${CMAKE_MATCH_1}")
+ENDIF("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
 
 # locate main header file
-find_path(METEOIO_INCLUDE_DIR
+FIND_PATH(METEOIO_INCLUDE_DIR
   NAMES meteoio/MeteoIO.h
   #HINTS ${METEOIO_ROOT}/include
   PATHS
@@ -32,6 +45,6 @@ find_path(METEOIO_INCLUDE_DIR
 
 # Set the include dir variables and the libraries and let libfind_process do the rest.
 # NOTE: Singular variables for this library, plural for libraries this this lib depends on.
-set(METEOIO_PROCESS_INCLUDES METEOIO_INCLUDE_DIR)
-set(METEOIO_PROCESS_LIBS METEOIO_LIBRARY)
+SET(METEOIO_PROCESS_INCLUDES METEOIO_INCLUDE_DIR)
+SET(METEOIO_PROCESS_LIBS METEOIO_LIBRARY)
 libfind_process(METEOIO)

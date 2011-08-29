@@ -55,3 +55,17 @@ INSTALL(TARGETS ${BINARY}
 	RUNTIME DESTINATION bin
 	COMPONENT exe
 )
+
+###########################################################
+## Bundle MeteoIO
+###########################################################
+# SET(BUNDLE_METEOIO OFF CACHE BOOL "Pack MeteoIO with Snowpack ON or OFF")
+# IF(BUNDLE_METEOIO)
+# 	# fixup the bundle
+# 	LIST(APPEND libSearchDirs ${METEOIO_LIBRARIES})
+# 	SET(additionalLib ${METEOIO_LIBRARIES})
+# 	INSTALL(CODE "
+# 		include(BundleUtilities)
+# 		fixup_bundle(\"bin/snowpack\" \"${additionalLib}\" \"${libSearchDirs}\")"
+# 		COMPONENT libraries)
+# ENDIF(BUNDLE_METEOIO)
