@@ -4,14 +4,25 @@ INCLUDE(LibFindMacros)
 IF(WIN32)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\MeteoIO]" ABSOLUTE CACHE)
 
-	FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES libmeteoio.lib
-		PATHS
-			ENV LIB
-			${METEOIO_ROOT}/lib
-			"C:/Program Files/MeteoIO/lib"
-		DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.lib"
-		)
+	IF(MSVC)
+		FIND_LIBRARY(METEOIO_LIBRARY
+			NAMES libmeteoio.lib
+			PATHS
+				ENV LIB
+				${METEOIO_ROOT}/lib
+				"C:/Program Files/MeteoIO/lib"
+			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.lib"
+			)
+	ELSE(MSVC)
+		FIND_LIBRARY(METEOIO_LIBRARY
+			NAMES libmeteoio.dll.a
+			PATHS
+				ENV LIB
+				${METEOIO_ROOT}/lib
+				"C:/Program Files/MeteoIO/lib"
+			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.dll.a"
+			)
+	ENDIF(MSVC)
 ELSE(WIN32)
 	FIND_LIBRARY(METEOIO_LIBRARY
 	NAMES meteoio
