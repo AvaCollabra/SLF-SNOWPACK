@@ -24,16 +24,30 @@ IF(WIN32)
 			)
 	ENDIF(MSVC)
 ELSE(WIN32)
-	FIND_LIBRARY(METEOIO_LIBRARY
-	NAMES meteoio
-	PATHS
-		ENV LD_LIBRARY_PATH
-		"~/usr/lib"
-		"/usr/local/lib"
-		"/usr/lib"
-		"/opt/lib"
-	DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
-	)
+	IF(APPLE)
+		FIND_LIBRARY(METEOIO_LIBRARY
+		NAMES meteoio
+		PATHS
+			"/Applications/MeteoIO/lib"
+			ENV LD_LIBRARY_PATH
+			"~/usr/lib"
+			"/usr/local/lib"
+			"/usr/lib"
+			"/opt/lib"
+		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.dylib"
+		)
+	ELSE(APPLE)
+		FIND_LIBRARY(METEOIO_LIBRARY
+		NAMES meteoio
+		PATHS
+			ENV LD_LIBRARY_PATH
+			"~/usr/lib"
+			"/usr/local/lib"
+			"/usr/lib"
+			"/opt/lib"
+		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
+		)
+	ENDIF(APPLE)
 ENDIF(WIN32)
 
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
