@@ -37,6 +37,7 @@
 #endif
 
 using namespace std;
+using namespace mio;
 
 #ifdef DEBUG_ARITHM
 	#ifndef _GNU_SOURCE
@@ -175,7 +176,7 @@ void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, do
 void Usage(const string& programname)
 {
 	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
-		<< "\tLibsnowpack " << getLibVersion() << endl
+		<< "\tLibsnowpack " << snowpack::getLibVersion() << endl
 		<< "\tMeteoIO " << mio::getLibVersion() << endl;
 #ifdef _MSC_VER
 	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
@@ -253,35 +254,35 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 void editMeteoData(mio::MeteoData& md, const string& variant)
 {
 	// Since we cannot deal with precipitation nodata, we set it to zero (HACK)
-	if (md.hnw == mio::IOUtils::nodata)
-		md.hnw = 0.0;
+	if (md(MeteoData::HNW) == mio::IOUtils::nodata)
+		md(MeteoData::HNW) = 0.0;
 
-	if (md.vw == mio::IOUtils::nodata)
-		md.vw = 1.0; // if no wind measurement exists assume 1 m/s; ori: 3 m/s
+	if (md(MeteoData::VW) == mio::IOUtils::nodata)
+		md(MeteoData::VW) = 1.0; // if no wind measurement exists assume 1 m/s; ori: 3 m/s
 
-	if (md.dw == mio::IOUtils::nodata)
-		md.dw = 0.;
+	if (md(MeteoData::DW) == mio::IOUtils::nodata)
+		md(MeteoData::DW) = 0.;
 
-	if (md.tsg == mio::IOUtils::nodata)
-		md.tsg = 273.15;
+	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
+		md(MeteoData::TSG) = 273.15;
 
 	//Add the atmospheric emissivity as a parameter
 	if (!md.param_exists("EA")) md.addParameter("EA");
 	if (variant != "ANTARCTICA") {
-		md.param("EA") = lw_AirEmissivity(md.ilwr, md.ta, md.rh);
+		md("EA") = lw_AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH));
 	} else {
 		//change min_air_emissivity
-		md.param("EA") = lw_AirEmissivity(md.ilwr, md.ta, md.rh, 0.31);
+		md("EA") = lw_AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH), 0.31);
 	}
 
 	// Snow stations without separate wind station use their own wind for drifting and blowing snow
 	if (!md.param_exists("VW_DRIFT")) {
 		md.addParameter("VW_DRIFT");
-		md.param("VW_DRIFT") = md.vw;
+		md("VW_DRIFT") = md(MeteoData::VW);
 	}
 	if (!md.param_exists("DW_DRIFT")) {
 		md.addParameter("DW_DRIFT");
-		md.param("DW_DRIFT") = md.dw;
+		md("DW_DRIFT") = md(MeteoData::DW);
 	}
 }
 
@@ -291,15 +292,15 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName)
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_rad=false;
 	bool miss_ea=false;
 
-	if (md.ta == mio::IOUtils::nodata)
+	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
-	if (md.rh == mio::IOUtils::nodata)
+	if (md(MeteoData::RH) == mio::IOUtils::nodata)
 		miss_rh=true;
-	if ((md.iswr == mio::IOUtils::nodata) && (md.rswr == mio::IOUtils::nodata))
+	if ((md(MeteoData::ISWR) == mio::IOUtils::nodata) && (md(MeteoData::RSWR) == mio::IOUtils::nodata))
 		miss_rad=true;
-	if ((md.hnw == mio::IOUtils::nodata) && (md.hs == mio::IOUtils::nodata))
+	if ((md(MeteoData::HNW) == mio::IOUtils::nodata) && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_precip=true;
-	if (md.param("EA") == mio::IOUtils::nodata)
+	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
 
 	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_ea) {
@@ -321,38 +322,38 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName)
 void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double prevailing_wind_dir, const double wind_scaling_factor)
 {
 	Mdata.date = md.date;
-	Mdata.ta   = md.ta;
-	Mdata.rh   = md.rh;
-	Mdata.vw   = md.vw;
-	Mdata.dw   = md.dw;
-	Mdata.vw_max  = md.vw_max;
+	Mdata.ta   = md(MeteoData::TA);
+	Mdata.rh   = md(MeteoData::RH);
+	Mdata.vw   = md(MeteoData::VW);
+	Mdata.dw   = md(MeteoData::DW);
+	Mdata.vw_max  = md(MeteoData::VW_MAX);
 
-	Mdata.vw_drift = md.param("VW_DRIFT");
+	Mdata.vw_drift = md("VW_DRIFT");
 	if (Mdata.vw_drift != mio::IOUtils::nodata) Mdata.vw_drift *= wind_scaling_factor;
-	Mdata.dw_drift = md.param("DW_DRIFT");
+	Mdata.dw_drift = md("DW_DRIFT");
 	if (Mdata.dw_drift == mio::IOUtils::nodata) Mdata.dw_drift = prevailing_wind_dir;
 
-	if (md.iswr == mio::IOUtils::nodata) {
+	if (md(MeteoData::ISWR) == mio::IOUtils::nodata) {
 		Mdata.iswr   = 0.0;
 	} else {
-		Mdata.iswr   = md.iswr;
+		Mdata.iswr   = md(MeteoData::ISWR);
 	}
 
-	if (md.rswr == mio::IOUtils::nodata){
+	if (md(MeteoData::RSWR) == mio::IOUtils::nodata){
 		Mdata.rswr   = 0.0;
 	} else {
-		Mdata.rswr   = md.rswr;
+		Mdata.rswr   = md(MeteoData::RSWR);
 	}
 
-	Mdata.ea  = md.param("EA");
-	Mdata.tss = md.tss;
-	Mdata.ts0 = md.tsg;
-	Mdata.hnw = md.hnw;
-	Mdata.hs1 = md.hs;
+	Mdata.ea  = md("EA");
+	Mdata.tss = md(MeteoData::TSS);
+	Mdata.ts0 = md(MeteoData::TSG);
+	Mdata.hnw = md(MeteoData::HNW);
+	Mdata.hs1 = md(MeteoData::HS);
 
 	// Add measured new snow density if available
 	if (md.param_exists("RHO_HN"))
-		Mdata.rho_hn = md.param("RHO_HN");
+		Mdata.rho_hn = md("RHO_HN");
 }
 
 void editSensorDepths(const mio::MeteoData& md, vector<double>& vecHTS)
@@ -361,8 +362,8 @@ void editSensorDepths(const mio::MeteoData& md, vector<double>& vecHTS)
 	for (jj = 0; jj < vecHTS.size(); jj++) {
 		stringstream ss;
 		ss << "HTS" << jj+1;
-		if (md.param_exists(ss.str()) && (md.param(ss.str()) != mio::IOUtils::nodata)) {
-			vecHTS[jj] = md.param(ss.str());
+		if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
+			vecHTS[jj] = md(ss.str());
 		} else {
 			if (jj > 0)
 				vecHTS[jj] = vecHTS[jj-1] + 0.5;
@@ -379,8 +380,8 @@ void copySnowTemperatures(const mio::MeteoData& md, CurrentMeteo& Mdata, vector<
 		if (current_slope == 0) {
 			stringstream ss;
 			ss << "TS" << jj+1;
-			if (md.param_exists(ss.str()) && (md.param(ss.str()) != mio::IOUtils::nodata)) {
-				Mdata.ts[jj] = md.param(ss.str());
+			if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
+				Mdata.ts[jj] = md(ss.str());
 			}
 		}
 	}
@@ -393,7 +394,7 @@ void copySolutes(const mio::MeteoData& md, CurrentMeteo& Mdata, const unsigned i
 			Mdata.conc[jj] = mio::IOUtils::nodata;
 			stringstream ss;
 			ss << "CONC" << jj;
-			Mdata.conc[jj] = md.param(ss.str());
+			Mdata.conc[jj] = md(ss.str());
 		}
 	} else {
 		return;
@@ -637,11 +638,11 @@ void getDhs6Dhs24(double& delta_hs6, double& delta_hs24, mio::IOManager& io, con
 		throw;
 	}
 
-	if ((md6.size() > 0) && (md[i_stn].hs != mio::IOUtils::nodata) && (md6[i_stn].hs != mio::IOUtils::nodata)) {
-		delta_hs6 = MAX(0., md[i_stn].hs - md6[i_stn].hs);
+	if ((md6.size() > 0) && (md[i_stn](MeteoData::HS) != mio::IOUtils::nodata) && (md6[i_stn](MeteoData::HS) != mio::IOUtils::nodata)) {
+		delta_hs6 = MAX(0., md[i_stn](MeteoData::HS) - md6[i_stn](MeteoData::HS));
 	}
-	if ((md24.size() > 0) && (md[i_stn].hs != mio::IOUtils::nodata) && (md24[i_stn].hs != mio::IOUtils::nodata)) {
-		delta_hs24 = MAX(0., md[i_stn].hs - md24[i_stn].hs);
+	if ((md24.size() > 0) && (md[i_stn](MeteoData::HS) != mio::IOUtils::nodata) && (md24[i_stn](MeteoData::HS) != mio::IOUtils::nodata)) {
+		delta_hs24 = MAX(0., md[i_stn](MeteoData::HS) - md24[i_stn](MeteoData::HS));
 	}
 }
 

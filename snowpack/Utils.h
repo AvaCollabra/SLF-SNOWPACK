@@ -49,7 +49,9 @@
 * @brief Return the library version
 * @return library version string
 */
+namespace snowpack {
 std::string getLibVersion();
+}
 
 #ifdef GNU	//in this case, GCC can check the format arguments for types, number, ...
 void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...)
