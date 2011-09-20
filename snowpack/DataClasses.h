@@ -344,7 +344,7 @@ class ElementData {
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
 class NodeData {
 	public:
-		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), hoar(0.),
+		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(0.), hoar(0.),
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {}
 
 		double z;    ///< nodal height from ground in m
@@ -354,6 +354,7 @@ class NodeData {
 		double T;    ///< nodal temperature in K
 		double S_n;  ///< Stability Index for natural avalanches
 		double S_s;  ///< Stability Index for skier triggered avalanches
+		double ssi;  ///< Structural Stability Index
 		double hoar; ///< Mass of surface hoar collected while node was exposed to surface
 
 		//NIED (H. Hirashima)

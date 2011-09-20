@@ -684,15 +684,15 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	//  531: deformation rate stability index Sdef
 	fprintf(PFile,"\n0531,%d" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.1f",EMS[e].S_dr);
+		fprintf(PFile,",%.2f",EMS[e].S_dr);
 	//  532: natural stability index Sn38
 	fprintf(PFile,"\n0532,%d" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode;  e < nE; e++)
-		fprintf(PFile,",%.1f",NDS[e+1].S_n);
+		fprintf(PFile,",%.2f",NDS[e+1].S_n);
 	//  533: stability index Sk38
 	fprintf(PFile,"\n0533,%d" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.1f",NDS[e+1].S_s);
+		fprintf(PFile,",%.2f",NDS[e+1].S_s);
 	//  534: hand hardness ...
 	fprintf(PFile,"\n0534,%d" ,nE-Xdata.SoilNode);
 	if (AsciiIO::r_in_n) { // ... either converted to newtons according to Swiss scale
@@ -731,6 +731,7 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 	unsigned int e, ii, jj;
 	const unsigned int nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
+	const vector<NodeData>& NDS = Xdata.Ndata;
 
 	if (out_load) {
 		// *6nn: e.g. solute concentration
@@ -757,6 +758,11 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		fprintf(fout,"\n0603,%d" ,nE-Xdata.SoilNode);
 		for (e = Xdata.SoilNode; e < nE-1; e++)
 			fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
+		fprintf(fout,",0.");
+		//  *604: ssi index
+		fprintf(fout,"\n0604,%d" ,nE-Xdata.SoilNode);
+		for (e = Xdata.SoilNode; e < nE-1; e++)
+			fprintf(fout,",%.2f",NDS[e+1].ssi);
 		fprintf(fout,",0.");
 	}
 }
@@ -1707,6 +1713,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\n0601,nElems,snow shear strength (kPa)");
 			fprintf(fout, "\n0602,nElems,grain size difference (mm)");
 			fprintf(fout, "\n0603,nElems,hardness difference (1)");
+			fprintf(fout, "\n0604,nElems,ssi");
 			if (variant == "CALIBRATION") {
 				fprintf(fout, "\n0701,nElems,SNOWPACK: total settling rate (%% h-1)");
 				fprintf(fout, "\n0702,nElems,SNOWPACK: settling rate due to load (%% h-1)");
