@@ -327,18 +327,18 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw IOException("Cannot generate Xdata from file " + snowfile, AT);
 		}
 		if ((nFields = fscanf(fin, " %lf %lf %lf %lf %lf %lf", &SSdata.Ldata[ll].hl, &SSdata.Ldata[ll].tl, &SSdata.Ldata[ll].phiIce, &SSdata.Ldata[ll].phiWater, &SSdata.Ldata[ll].phiVoids, &SSdata.Ldata[ll].phiSoil)) != 6) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading hl etc (6): read %d fields", nFields);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading hl etc: read %d of 6 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
 		if (SSdata.Ldata[ll].tl < 100.) {
 			SSdata.Ldata[ll].tl = C_TO_K(SSdata.Ldata[ll].tl);
 		}
 		if ((nFields = fscanf(fin, "%lf %lf %lf", &SSdata.Ldata[ll].SoilRho, &SSdata.Ldata[ll].SoilK, &SSdata.Ldata[ll].SoilC)) != 3) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading SoilRho etc (3): read %d fields", nFields);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading SoilRho etc: read %d of 3 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
-		if ((nFields = fscanf(fin, "%lf %lf %lf %lf %ud %lf %ud", &SSdata.Ldata[ll].rg, &SSdata.Ldata[ll].rb, &SSdata.Ldata[ll].dd, &SSdata.Ldata[ll].sp, &SSdata.Ldata[ll].mk, &SSdata.Ldata[ll].hr, &SSdata.Ldata[ll].ne)) != 7) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading rg etc (7): read %d fields", nFields);
+		if ((nFields = fscanf(fin, "%lf %lf %lf %lf %u %lf %u", &SSdata.Ldata[ll].rg, &SSdata.Ldata[ll].rb, &SSdata.Ldata[ll].dd, &SSdata.Ldata[ll].sp, &SSdata.Ldata[ll].mk, &SSdata.Ldata[ll].hr, &SSdata.Ldata[ll].ne)) != 7) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading rg etc: read %d of 7 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
 		if (SSdata.Ldata[ll].rg<=0. || SSdata.Ldata[ll].rb<=0.) {
@@ -354,12 +354,12 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%f (rb=%f mm, rg=%f mm)! Reset to Metamorphism::max_grain_bond_ratio", ll+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[ll].rb, SSdata.Ldata[ll].rg);
 		}
 		if ((nFields = fscanf(fin, "%lf %lf", &SSdata.Ldata[ll].CDot, &SSdata.Ldata[ll].metamo)) != 2) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading CDot etc (2): read %d fields", nFields);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading CDot etc: read %d of 2 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
 		for (ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 			if ((nFields = fscanf(fin," %lf %lf %lf %lf ", &SSdata.Ldata[ll].cIce[ii], &SSdata.Ldata[ll].cWater[ii], &SSdata.Ldata[ll].cVoids[ii], &SSdata.Ldata[ll].cSoil[ii])) != 4) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading impurity concentrations (4): read %d fields", nFields);
+				prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading impurity concentrations: read %d of 4 fields", nFields);
 				throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 			}
 		}
