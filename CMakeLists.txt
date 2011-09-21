@@ -30,7 +30,7 @@ SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF
 
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
-OPTION( BUILD_SHARED_LIBS "Set to OFF to build only static libraries" ON )
+OPTION( BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON )
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 
