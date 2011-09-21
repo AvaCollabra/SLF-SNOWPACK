@@ -681,6 +681,9 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 				Ndata[eNew] = Ndata[e0+1];
 				Ndata[eNew].z = Ndata[e0+1].z + Ndata[e0+1].u + dL;
 				Ndata[eNew].u = Ndata[e0].udot = 0.;
+				Ndata[eNew].ssi = Ndata[e0+1].ssi;
+				Ndata[eNew].S_s = Ndata[e0+1].S_s;
+				Ndata[eNew].S_n = Ndata[e0+1].S_n;
 			} else { // Removing elements
 				dL += Edata[e0].L;
 			}
@@ -691,6 +694,9 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 			}
 			Ndata[eNew+1].z = Ndata[e0+1].z + Ndata[e0+1].u + dL;
 			Ndata[eNew+1].u = Ndata[e0+1].udot = 0.;
+			Ndata[eNew+1].ssi = Ndata[e0+1].ssi;
+			Ndata[eNew+1].S_s = Ndata[e0+1].S_s;
+			Ndata[eNew+1].S_n = Ndata[e0+1].S_n;
 			eNew++;
 		}
 	}

@@ -763,7 +763,7 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		fprintf(fout,"\n0604,%d" ,nE-Xdata.SoilNode);
 		for (e = Xdata.SoilNode; e < nE-1; e++)
 			fprintf(fout,",%.2f",NDS[e+1].ssi);
-		fprintf(fout,",0.");
+		fprintf(fout,",%.2f",Stability::max_stability);
 	}
 }
 
