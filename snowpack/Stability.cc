@@ -28,7 +28,7 @@ using namespace std;
  ************************************************************/
 
 const double Stability::psi_ref = 38.0; ///< Reference slope angle
-const double Stability::max_stability = 6.; ///< Upper stability limit
+const double Stability::max_stability = 6.0; ///< Upper stability limit
 
 ///Minimum slab thickness for natural and deformation stability index (m)
 const double Stability::minimum_slab = 0.1;
@@ -47,9 +47,6 @@ const double Stability::min_thick_crust = 0.03;
 
 ///Defines regression model for surface hoar shear strength
 const int Stability::sh_mod = 2;
-
-///Maximum number of structural instabilities looked at ("lemons")
-const int Stability::nmax_lemon = 2;
 
 /**
  * @brief Defines classification scheme for snow profiles
@@ -417,8 +414,7 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 	STpar.sig_s = 999.;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
-	unsigned int e = nN;
-	while (e-- > Xdata.SoilNode) {
+	for(size_t e=Xdata.SoilNode; e<nN; e++) {
 		SIdata[e].ssi      = Stability::max_stability;
 		Xdata.Ndata[e].S_n = Stability::max_stability;
 		Xdata.Ndata[e].S_s = Stability::max_stability;
@@ -752,19 +748,22 @@ double Stability::st_SkierStabilityIndex(const double& depth_lay, const Stabilit
 void Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
                                             const double& Sk, InstabilityData& SIdata)
 {
-	const double thresh_dhard=1.5, thresh_dgsz=0.50; // Thresholds for structural instabilities
+	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
+	const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
 
 	SIdata.n_lemon = 0;
 	SIdata.dhard = fabs(Edata_low.hard - Edata_up.hard);
 	if ( SIdata.dhard > thresh_dhard ) {
-		SIdata.n_lemon++;
+		SIdata.n_lemon += 1;
 	}
 	SIdata.dgsz = 2.*fabs(Edata_low.rg - Edata_up.rg);
+	//double ref_gs= MIN (Edata_low.rg,Edata_up.rg);
+	//SIdata.dgsz = (fabs(Edata_low.rg - Edata_up.rg))/(ref_gs);
 	if ( SIdata.dgsz > thresh_dgsz ) {
-		SIdata.n_lemon++;
+		SIdata.n_lemon += 1;
 	}
 	// Skier Stability Index (SSI)
-	SIdata.ssi = (Stability::nmax_lemon - SIdata.n_lemon) + Sk;
+	SIdata.ssi = (nmax_lemon - SIdata.n_lemon) + Sk;
 	// Limit stability indices to range {0.05, Stability::max_stability}
 	SIdata.ssi = MAX(0.05, MIN (SIdata.ssi, Stability::max_stability));
 }
@@ -1222,13 +1221,17 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		// Discard penetration depth Pk (in m) at surface
 		e = nE;
 		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk));
+
 		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)
+			
 			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
 				const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
 				NDS[e+1].S_s = st_SkierStabilityIndex(depth_lay, STpar);
 				setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
+				NDS[e+1].ssi = SIdata[e+1].ssi;
+				
 				if ( (Swl_ssi > SIdata[e+1].ssi) || ((fabs(Swl_ssi - SIdata[e+1].ssi) < 0.09) && (SIdata[e+1].n_lemon > Swl_lemon)) ) {
 					Swl_ssi = SIdata[e+1].ssi;
 					zwl_ssi = NDS[e+1].z + NDS[e+1].u ;

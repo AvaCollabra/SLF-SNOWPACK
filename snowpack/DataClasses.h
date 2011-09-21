@@ -344,8 +344,8 @@ class ElementData {
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
 class NodeData {
 	public:
-		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(0.), hoar(0.),
-		             dhf(0.), S_dhf(0.), Sigdhf(0.) {}
+		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
+		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m

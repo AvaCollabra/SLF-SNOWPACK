@@ -36,7 +36,7 @@
  */
 class InstabilityData {
 	public:
-		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(0.0) {}
+		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(6.0) {} //HACK needs to be max_stability
 
 		int    n_lemon;  ///< Number of "lemons" found
 		double dhard;    ///< Difference in hardness
@@ -96,7 +96,7 @@ class Stability {
 
 		static const double psi_ref, max_stability, minimum_slab, ground_rough;
 		static const double min_depth_ssi, skier_depth, min_thick_crust;
-		static const int sh_mod, nmax_lemon, prof_classi; 
+		static const int sh_mod, prof_classi; 
 
 	private:
 
