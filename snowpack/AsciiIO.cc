@@ -341,7 +341,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading rg etc: read %d of 7 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file " + snowfile, AT);
 		}
-		if (SSdata.Ldata[ll].rg<=0. || SSdata.Ldata[ll].rb<=0.) {
+		if (SSdata.Ldata[ll].phiSoil==0. && (SSdata.Ldata[ll].rg<=0. || SSdata.Ldata[ll].rb<=0.)) {		//Test only for snow layers
 			std::stringstream ss;
 			ss << "Invalid grain specification in layer " << ll+1 << " (from bottom) of file " << filename << ": ";
 			ss << "grain radius = " << SSdata.Ldata[ll].rg << " bond radius = " << SSdata.Ldata[ll].rb;
