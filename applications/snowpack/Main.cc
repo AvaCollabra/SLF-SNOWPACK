@@ -784,6 +784,7 @@ int main (int argc, char *argv[])
 	SnowpackIO snowpackio(cfg);
 
 	mio::IOManager io(cfg);
+	io.setMinBufferRequirements(IOUtils::nodata, 1.1); //we require the buffer to contain at least 1.1 day before the current point
 
 	/* START LOOP OVER ALL STATIONS */
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
