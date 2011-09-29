@@ -955,6 +955,9 @@ int main (int argc, char *argv[])
 			RadiationData Rdata;   // Radiation splitting data
 			PositionSun   Psolar;  // Parameters to determine the position of the sun
 
+			//Calculate average TSS and HS for first snow fall detection algorithm
+			Meteo::compTSSavgHSrate(sn_MdataT, vecXdata[i_stn], io, current_date);
+
 			// START LOOP OVER ASPECTS
 			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; //Check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set

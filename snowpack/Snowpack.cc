@@ -1173,6 +1173,14 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	double rho_hn=Constants::undefined, t_surf, hn, hoar;  // New snow data
 	double cos_sl, L0, dL, Theta0;  // Local values
 
+	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
+	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
+	const double TSS_threshold12_smallHSincrease=-0.5;	//deg Celcius of 12 hour average TSS in case of low rate of change of HS
+	const double TSS_threshold12_largeHSincrease=1.0;	//deg Celcius of 12 hour average TSS in case of high rate of change of HS
+	const double HS_threshold_smallincrease=0.01;		//low rate of change of HS (m/hour)
+	const double HS_threshold_largeincrease=0.02;		//high rate of change of HS (m/hour)
+	const double ThresholdSmallCanopy=1.;			//Set the threshold for the canopy height. Below this threshold, the canopy is considered to be small and snow will fall on top (like grass, or small bushes). Above this threshold, snow will fall through (like in forests). When the canopy is small, the measured snow height will be assigned to the canopy height in case of no snow pack on the ground.
+
 	nOldN = Xdata.getNumberOfNodes();
 	nOldE = Xdata.getNumberOfElements();
 	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
@@ -1198,15 +1206,31 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	// Check thresholds to see if a new snow layer has appeared
 	// NOTE No new snow during cloud free conditions
-	if (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))
-	    	|| !enforce_measured_snow_heights || (Xdata.hn > 0.)) {
-		if (Xdata.cH < (Xdata.mH - (height_new_elem*cos_sl)) || (Xdata.hn > 0.)) {
+	if (  (  ( (Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)			//These conditions are only used when having no snow pack yet.
+		|| (Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease) && Mdata.hs_change_rate > HS_threshold_smallincrease)
+                || (Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease) && Mdata.hs_change_rate > HS_threshold_largeincrease) ) || Xdata.getNumberOfNodes()>Xdata.SoilNode+1)	//... if we have a snow pack, or the conditions above are met
+		&& (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))		//... we check for the other conditions
+	    	|| !enforce_measured_snow_heights || (Xdata.hn > 0.))) {
+
+		//Now check if we have some canopy left. Then we reduce the canopy with the new snow height. This is to simulate the gradual sinking of the canopy under the weight of snow.
+		//We also adjust Xdata.mH, to have it reflect only measured snow, and not the canopy. (So if there is only a canopy, mH=0.)
+		if ( Xdata.Cdata.height > 0.  &&  Xdata.Cdata.height < ThresholdSmallCanopy  &&  (Xdata.cH + Xdata.Cdata.height) < Xdata.mH  &&  Xdata.mH != IOUtils::nodata ) {	//The third clause makes it a one way issue (only with snowfall, not with melt). The second clause limits this issue to small canopies only, to prevent problems with Alpine3D simulations in forests.
+			Xdata.Cdata.height = Xdata.Cdata.height - ( Xdata.mH - (Xdata.cH + Xdata.Cdata.height) );	//Reduce canopy height
+			if ( Xdata.Cdata.height < 0. ) {								//Canopy height cannot be smaller than zero
+				Xdata.Cdata.height=0.;
+			} else {
+				Xdata.mH-=Xdata.Cdata.height;								//Adjust measured snow height with canopy height ...
+				if(Xdata.mH < Xdata.Ground) Xdata.mH=Xdata.Ground;					//... but not more than possible.
+			}
+		}
+
+		if ( (Xdata.cH + Xdata.Cdata.height) < (Xdata.mH - (height_new_elem*cos_sl)) || (Xdata.hn > 0.)) {		//Because we allow snow to fall on top of canopy, we should check the sum cH and canopy height.
 			// In case of virtual slope use new snow depth and density from either flat field or luv slope
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
 			} else { // in case of flat field or PERP_TO_SLOPE
-				hn = Xdata.mH - Xdata.cH;
+				hn = Xdata.mH - (Xdata.cH + Xdata.Cdata.height);
 				// Store new snow depth and density
 				if (!ALPINE3D) {
 					Xdata.hn = hn;
@@ -1445,6 +1469,16 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			Xdata.ErosionLevel = nE-1;
 		} //  End of NEW_SNOWFALL Condition 2
 	} //  End of NEW_SNOWFALL Condition 1
+	// If there is no new snow fall, we can assign the measured snow height to the canopy, if there is no snow pack yet.
+        else {
+		if ( Xdata.Cdata.height < ThresholdSmallCanopy ) {							//Only for small canopies, to prevent problems with Alpine3D simulations in forests.
+	     		if ( Xdata.getNumberOfNodes()==Xdata.SoilNode+1 && Xdata.mH!=IOUtils::nodata ) {		//If there is a snow pack and we have a measured value of snow height ...
+        	                Xdata.Cdata.height=Xdata.mH-Xdata.Ground;						//... we assign the measured snow height to the canopy.
+        	        }
+		}
+        }
+
+
 }
 
 /**

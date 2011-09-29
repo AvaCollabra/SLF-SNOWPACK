@@ -154,6 +154,9 @@ class CurrentMeteo {
 		double ts0;    ///< Bottom temperatures of snow/soil pack (K)
 		double hnw;    ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
 		double hs1;    ///< The measured height of snow (m), corrected for spikes etc. in ml_co_Control()
+		double tss12;  ///< The 12 hour average snow surface temperature (K)
+		double tss24;  ///< The 24 hour average snow surface temperature (K)
+		double hs_change_rate;	///< The rate of change in snow height (m/hour)
 
 		std::vector<double> ts;    ///< Snowpack and/or Soil temperatures (K)
 		std::vector<double> zv_ts; ///< Depth of temperature sensors (m)

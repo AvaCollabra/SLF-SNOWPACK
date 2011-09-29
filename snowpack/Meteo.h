@@ -42,10 +42,12 @@ class Meteo {
 		Meteo(const mio::Config& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
+		static void compTSSavgHSrate(CurrentMeteo& sn_MdataT, SnowStation& vecXdata, mio::IOManager& io, const mio::Date& current_date);
 		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
 
  	private:
 		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata);
+		static double getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param, const mio::Date& current_date, const int& time_span, const int& increment);
 		
 		int neutral;
 		bool research_mode, useCanopyModel;

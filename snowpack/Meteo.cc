@@ -28,6 +28,8 @@
  * - 15.03.2005: Andy and Michi implement stability correction for turbulent fluxes in the hope
  *               that this will also improve the little bit too strong melting of the version 8.1
  */
+#include <meteoio/MeteoIO.h>
+using namespace mio;
 
 #include <snowpack/Meteo.h>
 
@@ -218,6 +220,78 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 		psi_s = log(zref / z0) - 0.01; // Prevent contragradient fluxes
 	}
 } // End MicroMet
+
+
+/**
+ * @brief Calculate an average for a given parameter over a specified period
+ * @param *io
+ * @param *param
+ * @param *current_date
+ * @param *time_span
+ * @param *increment
+ */
+double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param, const mio::Date& current_date, const int& time_span, const int& increment)
+{
+	size_t count = 0;
+	double sum = 0.;
+	std::vector<mio::MeteoData> MyMeteo2;
+
+	for (int i=time_span; i>=0; i-=increment) {						//i in minutes
+		const Date myDate=Date(current_date-(double(double(i)/1440.0)));	//Calculate only backwards in time (for operational mode, no future data is available).
+		io.getMeteoData(myDate, MyMeteo2);					//Get meteo data from meteoio
+		if(MyMeteo2.size()>0) {							//If there is no data at all for this date/time, vector is empty and will crash snowpack.
+			if(MyMeteo2[0](param) != IOUtils::nodata) {			//Only if valid measurement is available ...
+				count++;						//... calculate average
+				sum+=MyMeteo2[0](param);
+			}
+		}
+	}
+
+	if(count!=0) return sum/(double)count;
+	else return IOUtils::nodata;
+}
+
+
+/**
+ * @brief Calculate average values for TSS and HS, to be used in the detection of the first snow fall (detection of canopy (grass) vs. snow fall)
+ * @param *sn_MdataT
+ * @param *Xdata
+ * @param *io
+ * @param *current_date
+ */
+void Meteo::compTSSavgHSrate(CurrentMeteo& sn_MdataT, SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
+{
+	//To better determine the first snowfall on bare ground, calculate average values of TSS and snow height changes rate:
+	const int avghours=3;							//Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
+
+	double tss24avg=0., tss12avg=0., hs_change_rate=0., hs_change_avg1=0., hs_change_avg2=0.;
+
+	if( not(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) {						//This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
+		tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30);	//Get average TSS over 24 hours
+		if (tss24avg!=IOUtils::nodata) sn_MdataT.tss24=tss24avg;				//Assign this value to sn_MdataT
+		else sn_MdataT.tss24=sn_MdataT.tss;							//Use default in case no average could be calculated
+
+		tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30);	//Get average TSS over 12 hours
+		if (tss12avg!=IOUtils::nodata) sn_MdataT.tss12=tss12avg;				//Assign this value to sn_MdataT
+		else sn_MdataT.tss12=sn_MdataT.tss;							//Use default in case no average could be calculated
+
+		//Calculate average snow height per defined time period
+		hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30);					//Get average HS over [current_time; current_time-avghours]
+		hs_change_avg2 = getParameterAverage(io, MeteoData::HS, current_date-(double)((avghours*60)-1)/(24.*60.), (avghours*60)-1, 30);	//Get average HS over [current_time-avghours; current_time-2*avghours]
+		if(hs_change_avg1!=IOUtils::nodata && hs_change_avg2!=IOUtils::nodata) {
+			hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours); 		//Note: we compare two time spans of avghours, so to get a correct average,
+												//we take the distance between the middle of the two time spans.
+			sn_MdataT.hs_change_rate=hs_change_rate;				//Note: hs_change is expressed as m/hour.
+		} else {
+		      sn_MdataT.hs_change_rate=0.;						//If we were not able to calculate average HS, set the rate of change to 0.
+		}
+	} else {										//If there is already a snow pack, we don't use this algorithm, so set the values to something.
+		sn_MdataT.tss24=sn_MdataT.tss;
+		sn_MdataT.tss12=sn_MdataT.tss;
+		sn_MdataT.hs_change_rate=0.;
+	}
+}
+
 
 /**
  * @brief
