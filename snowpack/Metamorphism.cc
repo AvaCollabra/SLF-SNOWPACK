@@ -1,5 +1,5 @@
 /*
- *  SNOWPACK VERSION 9.x
+ *  SNOWPACK stand-alone
  *
  *  Copyright WSL Institute for Snow and Avalanche Research SLF, DAVOS, SWITZERLAND
 */

@@ -1,5 +1,5 @@
 /*
- *  SNOWPACK VERSION 9.x
+ *  SNOWPACK stand-alone
  *
  *  Copyright WSL Institute for Snow and Avalanche Research SLF, DAVOS, SWITZERLAND
 */
@@ -821,7 +821,7 @@ int main (int argc, char *argv[])
 		SN_ZWISCHEN_DATA sn_Zdata;   // "Memory"-data, required for every operational station
 
 		// Meteo data for the current time step (interpolated!)
-		CurrentMeteo sn_MdataT(max_number_sensors/*, number_of_solutes*/);
+		CurrentMeteo Mdata(max_number_sensors/*, number_of_solutes*/);
 		// To collect surface exchange data for output
 		SurfaceFluxes surfFluxes/*(number_of_solutes)*/;
 		// Boundary condition (fluxes)
@@ -964,17 +964,17 @@ int main (int argc, char *argv[])
 			PositionSun   Psolar;  // Parameters to determine the position of the sun
 
 			//Calculate average TSS and HS for first snow fall detection algorithm
-			Meteo::compTSSavgHSrate(sn_MdataT, vecXdata[i_stn], io, current_date);
+			Meteo::compTSSavgHSrate(Mdata, vecXdata[i_stn], io, current_date);
 
 			// START LOOP OVER ASPECTS
 			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; //Check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
-				copyMeteoData(vecMyMeteo[i_stn], sn_MdataT, slope.prevailing_wind_dir, wind_scaling_factor);
-				copySnowTemperatures(vecMyMeteo[i_stn], sn_MdataT, fixed_sensor_depths, slope_sequence);
-				copySolutes(vecMyMeteo[i_stn], sn_MdataT, SnowStation::number_of_solutes);
-				slope.setSlope(slope_sequence, vecXdata, sn_MdataT.dw_drift);
-				dataForCurrentTimeStep(sn_MdataT, surfFluxes, vecXdata, slope, tmpcfg,
+				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
+				copySnowTemperatures(vecMyMeteo[i_stn], Mdata, fixed_sensor_depths, slope_sequence);
+				copySolutes(vecMyMeteo[i_stn], Mdata, SnowStation::number_of_solutes);
+				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
+				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
                                Psolar, Rdata, cumu_hnw, lw_in, iswr_forced, tot_mass_in);
 
 				// Notify user every fifteen days of date being processed
@@ -990,8 +990,8 @@ int main (int argc, char *argv[])
 				// SNOWPACK model (Temperature and Settlement computations)
 				Snowpack snowpack(tmpcfg); //the snowpack model to use
 				Stability stability(tmpcfg);
-				snowpack.runSnowpackModel(sn_MdataT, vecXdata[slope.sector], cumu_hnw, sn_Bdata, surfFluxes);
-				stability.checkStability(sn_MdataT, vecXdata[slope.sector]);
+				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumu_hnw, sn_Bdata, surfFluxes);
+				stability.checkStability(Mdata, vecXdata[slope.sector]);
 
 				// Update blowing snow flux
 				if (slope.virtual_slopes) {
@@ -1009,7 +1009,7 @@ int main (int argc, char *argv[])
 				}
 
 				/***** OUTPUT SECTION *****/
-				surfFluxes.CollectSurfaceFluxes(surfFluxes, sn_Bdata, vecXdata[slope.sector], sn_MdataT,
+				surfFluxes.CollectSurfaceFluxes(surfFluxes, sn_Bdata, vecXdata[slope.sector], Mdata,
 				                                useSoilLayers, soil_flux);
 				if (slope.sector == slope.station) { // station field only (usualy flat)
 					int i_hz = mn_ctrl.HzStep;
@@ -1027,7 +1027,7 @@ int main (int argc, char *argv[])
 					// Deal with new snow densities
 					if (vecXdata[slope.station].hn > 0.) {
 						surfFluxes.cRho_hn = vecXdata[slope.station].rho_hn;
-						surfFluxes.mRho_hn = sn_MdataT.rho_hn;
+						surfFluxes.mRho_hn = Mdata.rho_hn;
 					}
 					if (mode == "OPERATIONAL") {
 						if (!cumsum_mass) {
@@ -1043,8 +1043,8 @@ int main (int argc, char *argv[])
 						 *   and therefore it can't be wrong, dixunt Michi and Charles.
 						*/
 						// Either missed erosion or settling not strong enough
-						if ((time_count_deltaHS >= 0.) && (sn_MdataT.hs1 != Constants::nodata)) {
-							if ((sn_MdataT.hs1 + 0.01) < (vecXdata[slope.station].cH
+						if ((time_count_deltaHS >= 0.) && (Mdata.hs1 != Constants::nodata)) {
+							if ((Mdata.hs1 + 0.01) < (vecXdata[slope.station].cH
 							                                 - vecXdata[slope.station].Ground)) {
 								time_count_deltaHS += S_TO_D(sn_dt);
 							} else {
@@ -1053,7 +1053,7 @@ int main (int argc, char *argv[])
 						}
 						// Settling too strong
 						if (time_count_deltaHS <= 0.) {
-							if ((sn_MdataT.hs1 - 0.01) > (vecXdata[slope.station].cH - vecXdata[slope.station].Ground)) {
+							if ((Mdata.hs1 - 0.01) > (vecXdata[slope.station].cH - vecXdata[slope.station].Ground)) {
 								time_count_deltaHS -= S_TO_D(sn_dt);
 							} else {
 								time_count_deltaHS = 0.;
@@ -1061,7 +1061,7 @@ int main (int argc, char *argv[])
 						}
 						// There is a persistent error for at least one day => apply correction
 						if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
-							deflateInflate(sn_MdataT, vecXdata[slope.station],
+							deflateInflate(Mdata, vecXdata[slope.station],
 							               qr_Hdata[i_hz].dhs_corr, qr_Hdata[i_hz].mass_corr);
 							time_count_deltaHS = 0.;
 						}
@@ -1091,10 +1091,10 @@ int main (int argc, char *argv[])
 						}
 
 						double delta_hs6 = 0.0, delta_hs24 = 0.0;
-						getDhs6Dhs24(delta_hs6, delta_hs24, io, vecMyMeteo, i_stn, sn_MdataT.date);
+						getDhs6Dhs24(delta_hs6, delta_hs24, io, vecMyMeteo, i_stn, Mdata.date);
 
 						hazard.getHazardData(qr_Hdata[i_hz], qr_Hdata_ind[i_hz], delta_hs6, delta_hs24,
-						                     sn_MdataT, surfFluxes, sn_Zdata, vecXdata[slope.station],
+						                     Mdata, surfFluxes, sn_Zdata, vecXdata[slope.station],
 						                     vecXdata[slope.south], slope.nSlopes, slope.virtual_slopes);
 						mn_ctrl.HzStep++;
 						surfFluxes.hoar = 0.;
@@ -1157,7 +1157,7 @@ int main (int argc, char *argv[])
 					if (slope.sector != slope.station) {
 						ss << slope.sector;
 					}
-					snowpackio.writeTimeSeries(vecXdata[slope.sector], surfFluxes, sn_MdataT,
+					snowpackio.writeTimeSeries(vecXdata[slope.sector], surfFluxes, Mdata,
 						                       qr_Hdata[i_hz], wind_trans24);
 
 					if (avgsum_time_series) {
