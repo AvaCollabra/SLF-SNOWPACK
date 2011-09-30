@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 /**
- * @file Snowpack.h
- * @version 10.02
+ * @file DataClasses.h
+ * @version 11.08
  * This header file contains all the data structures needed for the 1d snowpack model
  */
 
@@ -54,61 +54,7 @@ struct WL_STRUCT {
 };
 
 /**
- * SurfaceFluxes contains all surface exchange data \n
- * Some of the most important results of the simulation are contained in this data structure.
- */
-class SurfaceFluxes {
-	public:
-		/**
-		 * @brief The different types of Mass fluxes
-		 * Mass fluxes in kg m-2, computed and output in qr_WriteTimeSeries() \n
-		 * Rates in kg m-2 h-1 (MS_HNW, MS_RAIN and MS_WIND)
-		 */
-		enum SN_MASS_CHANGES {
-			MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
-			MS_SWE,            ///< This too, of course, but summing rho*L
-			MS_WATER,          ///< The total amount of water in the snowpack at the present time
-			MS_HNW,            ///< Solid precipitation rate
-			MS_RAIN,           ///< Rain rate
-			MS_WIND,           ///< Mass loss rate due to wind erosion
-			MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
-			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
-			MS_RUNOFF,         ///< The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
-			MS_SOIL_RUNOFF,    ///< Equivalent to MS_RUNOFF but at bottom soil node
-			MS_CORRECTION,     ///< Mass correction from either squeezing (neg) or blowing up (pos)
-			N_MASS_CHANGES     ///< Total number of different mass change types
-		};
-
-		SurfaceFluxes();
-
-		void reset(const bool& cumsum_mass);
-
-		double dIntEnergy; ///< change of internal energy
-		double lw_in;      ///< incoming longwave radiation
-		double lw_out;     ///< outgoing longwave radiation
-		double lw_net;     ///< net longwave radiation
-		double qs;         ///< sensible heat
-		double ql;         ///< latent heat
-		double hoar;       ///< mass of surface hoar formed or sublimated
-		double qr;         ///< rain energy
-		double qg;         ///< geothermal heat flux or heat flux at bottom of combined soil-snow pack
-		double qg0;        ///< ground heat flux at soil-snow interface
-		double sw_hor;     ///< incoming global shortwave radiation in W m-2 on horizontal surface
-		double sw_in;      ///< incoming global shortwave radiation in W m-2; on slopes projected
-		double sw_out;     ///< reflected shortwave radiation in W m-2
-		double qw;         ///< absorbed shortwave radiation in W m-2 on surface (net SW)
-		double sw_dir;     ///< incoming direct shortwave radiation in W/m2; on slopes: projected
-		double sw_diff;    ///< incoming diffuse shortwave radiation in W m-2
-		double cA;         ///< computed Albedo (USED only for OUTPUT)
-		double mA;         ///< measured Albedo (USED only for OUTPUT)
-		double drift;      ///< the surface flux of drifting snow in kg m-1 s-1
-		std::vector<double> mass; ///< Total mass of snowpack PLUS different amounts of total mass change, sublimation, runoff, erosion, etc. Basically the mass which crosses the surface
-		std::vector<double> load; ///< Total load (kg m-2) in water runoff from solutes like nitrate
-		double dhs_corr;   ///< Snow depth correction in case of squezzing or blow-up
-};
-
-/**
- * @brief sn_Zdata contains "memory" information \n
+ * @brief sn_Zdata contains "memory" information mainly for operational use\n
  * It is used to prepare some parameters of qr_Hdata. This data is read from and written to *.sno files
  */
 struct SN_ZWISCHEN_DATA {
@@ -123,7 +69,6 @@ struct SN_ZWISCHEN_DATA {
  * It contains some additional and very important derived parameters such as the roughness length or running mean values.
  */
 class CurrentMeteo {
-
 	public:
 		CurrentMeteo(const unsigned int& i_max_number_of_sensors);
 		void reset();
@@ -167,19 +112,6 @@ class CurrentMeteo {
 		unsigned int max_number_of_sensors;
 };
 
-///@brief BoundCond is a subset of surface energy exchange data required to set Neumann boundary conditions
-class BoundCond {
-	public:
-		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(0.) {};
-
-		double lw_out;  ///< outgoing longwave radiation
-		double lw_net;  ///< net longwave radiation
-		double qs;      ///< sensible heat
-		double ql;      ///< latent heat
-		double qr;      ///< rain energy
-		double qg;      ///< geothermal heat flux or heat flux at bottom of combined soil-snow pack
-};
-
 /// @brief The 3 mathematical fields that can be solved
 enum SN_FIELD{
 	TEMPERATURE, ///< Temperature (phase change and metamorphism)
@@ -210,7 +142,6 @@ enum SN_SOIL_DATA{
  * It is used as a pointer (array) within the sn_SSdata (profile) data structure.
  */
 class LayerData {
-
 	public:
 		LayerData();
 
@@ -245,9 +176,7 @@ class LayerData {
  * For now it is simply an efficient way of creating a snowpack to investigate.
  */
 class SN_SNOWSOIL_DATA {
-
 	public:
-
 		SN_SNOWSOIL_DATA() : meta(), profileDate(0., 0.), nN(0), Height(0.),
                      nLayers(0), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
                      Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
@@ -281,7 +210,6 @@ class SN_SNOWSOIL_DATA {
  * It can ONLY be changed by the WATER TRANSPORT or SURFACE SUBLIMATION or WIND TRANSPORT routines.
  */
 class ElementData {
-
 	public:
 		ElementData();
 
@@ -445,7 +373,6 @@ class CanopyData {
  * the post-processing writes. It is initialized from SN_SNOWSOIL_DATA (at present).
  */
 class SnowStation {
-
 	public:
 		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers);
 
@@ -457,7 +384,7 @@ class SnowStation {
 		static bool sn_joinCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
 
-		double compSnowpackInternalEnergyChange(const double sn_dt);
+		void compSnowpackInternalEnergyChange(const double sn_dt);
 		double getModelledTemperature(const double& z) const;
 
 		unsigned int getNumberOfElements() const;
@@ -465,7 +392,8 @@ class SnowStation {
 
 		mio::StationData meta;      ///< Station meta data
 		unsigned int sector;        ///< current slope sector of width 360./MAX(1, nSlopes-1)
-		double Albedo;              ///< Snow albedo
+		double cAlbedo;             ///< Computed snow albedo
+		double mAlbedo;             ///< Measured snow albedo
 		double SoilAlb;             ///< Soil albedo
 		double BareSoil_z0;         ///< Bare soil roughness in m
 		unsigned int SoilNode;      ///< The top soil node, 0 in case of SNP_SOIL == 0
@@ -493,6 +421,7 @@ class SnowStation {
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
 		void *Kt, *Ks;              ///< Pointer to pseudo-conductivity and stiffnes matrix
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
+		double dIntEnergy;          ///< Internal energy change (J m-2)
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		CanopyData Cdata;           ///< Pointer to canopy data
@@ -509,9 +438,88 @@ class SnowStation {
 		unsigned int nElems;                ///< Actual number of elements (nElems=nNodes-1)
 };
 
+/**
+ * @name Surface data
+ * @note Some of the most important results of the simulation are contained in these data structures
+ */
+//@{
+class BoundCond {
+	public:
+		///@brief BoundCond is used to set Neumann boundary conditions
+		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::nodata) {};
+
+		double lw_out;  ///< outgoing longwave radiation
+		double lw_net;  ///< net longwave radiation
+		double qs;      ///< sensible heat
+		double ql;      ///< latent heat
+		double qr;      ///< rain energy
+		double qg;      ///< geothermal heat flux or heat flux at lower boundary
+};
+
+class SurfaceFluxes {
+	public:
+		/**
+		 * @brief The different types of mass fluxes:
+		 * Mass fluxes in kg m-2 \n
+		 * Rates in kg m-2 h-1 (MS_HNW, MS_RAIN and MS_WIND)
+		 */
+		enum SN_MASS_CHANGES {
+		MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
+		MS_SWE,            ///< This too, of course, but summing rho*L
+		MS_WATER,          ///< The total amount of water in the snowpack at the present time
+		MS_HNW,            ///< Solid precipitation rate
+		MS_RAIN,           ///< Rain rate
+		MS_WIND,           ///< Mass loss rate due to wind erosion
+		MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
+		MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
+		MS_RUNOFF,         ///< The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
+		MS_SOIL_RUNOFF,    ///< Equivalent to MS_RUNOFF but at bottom soil node
+		N_MASS_CHANGES     ///< Total number of different mass change types
+};
+
+		SurfaceFluxes();
+
+		void reset(const bool& cumsum_mass);
+		void CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& Bdata,
+		                          SnowStation& Xdata, const CurrentMeteo& Mdata,
+		                          const bool& useSoilLayers, const bool& soil_flux);
+
+		/**
+		 * @brief Energy fluxes:
+		 * Energy change of snowpack in kJ m-2 (dIntEnergy)\n
+		 * Fluxes in W m-2
+		 */
+		double lw_in;      ///< incoming longwave radiation
+		double lw_out;     ///< outgoing longwave radiation
+		double lw_net;     ///< net longwave radiation
+		double qs;         ///< sensible heat
+		double ql;         ///< latent heat
+		double hoar;       ///< mass of surface hoar formed or sublimated
+		double qr;         ///< rain energy
+		double qg;         ///< geothermal heat flux or heat flux at lower boundary
+		double qg0;        ///< ground heat flux at soil-snow interface
+		double sw_hor;     ///< incoming global shortwave radiation on horizontal surface
+		double sw_in;      ///< incoming global shortwave radiation; on slopes: projected
+		double sw_out;     ///< reflected shortwave radiation
+		double qw;         ///< net shortwave radiation at the surface (absorbed within the snowpack)
+		double sw_dir;     ///< incoming direct shortwave radiation; on slopes: projected
+		double sw_diff;    ///< incoming diffuse shortwave radiation
+		double cA;         ///< computed Albedo (used for OUTPUT only)
+		double mA;         ///< measured Albedo (used for OUTPUT only)
+		double dIntEnergy; ///< Internal energy change in J m-2 (used for OUTPUT only)
+
+		/// @brief Other surface data:
+		double drift;      ///< the surface flux of drifting snow in kg m-1 s-1
+		std::vector<double> mass; ///< Total mass of snowpack PLUS different amounts of total mass change, sublimation, runoff, erosion, etc. Basically the mass which crosses the surface
+		std::vector<double> load; ///< Total load (kg m-2) in water runoff from solutes like nitrate
+		double dhs_corr;   ///< operational mode only: snow depth correction in case of squeezing or blow-up (m)
+		double cRho_hn;    ///< Computed new snow density (kg m-3)
+		double mRho_hn;    ///< Measured new snow density (kg m-3)
+};
+//@}
+
 /// @brief Defines structure for snow profile layers
 class SnowProfileLayer {
-
 	public:
 		void average(const double& w1, const double& w2, const SnowProfileLayer& Pdata);
 
@@ -548,66 +556,63 @@ class SnowProfileLayer {
 
 /// Structure of double values for output to SDB
 struct ProcessDat {
-	mio::Date date; ///< Process date
-	char stat_abbrev[16];
-	int  loc_for_snow;
-	int  loc_for_wind;
 	// Version used, date, user, ...
 	char sn_version[MAX_STRING_LENGTH];          ///< SNOWPACK version
 	char sn_computation_date[MAX_STRING_LENGTH]; ///< Date of computation
 	double sn_jul_computation_date;
 	char sn_compilation_date[MAX_STRING_LENGTH]; ///< Date of compilation
 	char sn_user[MAX_STRING_LENGTH];             ///< SNOWPACK user
-	int nHz;               ///< Number of hazard steps
 
-	// Snow depth
-	double ch;             ///< cm
-	// SWE, total liquid water content and runoff
-	double swe;
-	double tot_lwc;
-	double runoff;
-	// Surface hoar index
-	double dewpt_def;      ///< degC
-	double hoar_size;      ///< mm
-	double hoar_ind6;      ///< kg m-2
-	double hoar_ind24;     ///< kg m-2
-	// Drift index
-	double wind_trans;     ///< cm
-	double wind_trans24;   ///< cm
-	// New snow depths
-	double hn_half_hour;   ///< cm
-	double hn3;            ///< cm
-	double hn6;            ///< cm
-	double hn12;           ///< cm
-	double hn24;           ///< cm
-	double hn72;           ///< cm
-	double hn72_24;        ///< cm;
-	// New snow water equivalents
-	double hnw_half_hour;  ///< kg m-2
-	double hnw3;           ///< kg m-2
-	double hnw6;           ///< kg m-2
-	double hnw12;          ///< kg m-2
-	double hnw24;          ///< kg m-2
-	double hnw72;          ///< kg m-2
-	// Stability indices
-	int stab_class1;       ///< Stability class 1,3,5
-	int stab_class2;       ///< Profile type 0..10
-	double stab_index1;
-	double stab_index2;
-	double stab_index3;
-	double stab_index4;
-	double stab_index5;
-	double stab_height1;   ///< cm
-	double stab_height2;   ///< cm
-	double stab_height3;   ///< cm
-	double stab_height4;   ///< cm
-	double stab_height5;   ///< cm
+	mio::Date date;        ///< Process date
+	int nHz;               ///< Number of hazard steps
+	char stat_abbrev[16];
+	int  loc_for_snow;
+	int  loc_for_wind;
+	// Data
+	double ch;             ///< height of snow HS (cm)
+	double swe;            ///< snow water equivalent SWE (kg m-2)
+	double tot_lwc;        ///< total liquid water content (kg m-2)
+	double runoff;         ///< runoff (kg m-2)
+	double dewpt_def;      ///< dew point deficit (degC)
+	double hoar_size;      ///< 24 h surface hoar size (mm)
+	double hoar_ind6;      ///< 6 h surface hoar index (kg m-2)
+	double hoar_ind24;     ///< 24 h surface hoar index (kg m-2)
+	double wind_trans;     ///< 6 h drifting snow index (cm)
+	double wind_trans24;   ///< 24 h drifting snow index (cm)
+	double hn_half_hour;   ///< half_hour depth of snowfall (cm)
+	double hn3;            ///< 3 h depth of snowfall (cm)
+	double hn6;            ///< 6 h depth of snowfall (cm)
+	double hn12;           ///< 12 h depth of snowfall (cm)
+	double hn24;           ///< 24 depth of snowfall (cm)
+	double hn72;           ///< 72 depth of snowfall (cm)
+	double hn72_24;        ///< 3 d sum of 24 h depth of snowfall (cm)
+	double hnw_half_hour;  ///< half_hour new snow water equivalent (kg m-2)
+	double hnw3;           ///< 3 h new snow water equivalent (kg m-2)
+	double hnw6;           ///< 6 h new snow water equivalent (kg m-2)
+	double hnw12;          ///< 12 h new snow water equivalent (kg m-2)
+	double hnw24;          ///< 24 h new snow water equivalent (kg m-2)
+	double hnw72;          ///< 72 h new snow water equivalent (kg m-2)
+	int stab_class1;       ///< stability classes 1,3,5
+	int stab_class2;       ///< profile type 0..10
+	double stab_index1;    ///< deformation index Sdef
+	double stab_index2;    ///< natural stability index Sn38
+	double stab_index3;    ///< skier stability index Sk38
+	double stab_index4;    ///< structural stability index SSI
+	double stab_index5;    ///< none
+	double stab_height1;   ///< depth of stab_index1 (cm)
+	double stab_height2;   ///< depth of stab_index2 (cm)
+	double stab_height3;   ///< depth of stab_index3 (cm)
+	double stab_height4;   ///< depth of stab_index4 (cm)
+	double stab_height5;   ///< depth of stab_index5 (cm)
 	// Special parameters
-	double crust;          ///< cm
-	double en_bal;         ///< kJ m-2
-	double sw_net;         ///< kJ m-2
-	double t_top1;         ///< degC
-	double t_top2;         ///< degC
+	double crust;          ///< height of melt-freeze crust on southern slope (cm)
+	double en_bal;         ///< internal energy change (kJ m-2)
+	double sw_net;         ///< surface energy input (kJ m-2)
+	double t_top1;         ///< snow temperature at depth 1 (degC)
+	double t_top2;         ///< snow temperature at depth 2 (degC)
+	// Control parameters
+	double dhs_corr;       ///< snow depth correction in case of squezzing or blow-up (cm)
+	double mass_corr;      ///< mass correction from either forced erosion and squeezing (neg) or blowing up (pos) (cm)
 };
 
 struct ProcessInd {
@@ -616,32 +621,26 @@ struct ProcessInd {
 	short loc_for_wind;
 	// Data
 	short ch;
-
 	short swe;
 	short tot_lwc;
 	short runoff;
-
 	short dewpt_def;
 	short hoar_size;
 	short hoar_ind6;
 	short hoar_ind24;
-
 	short wind_trans;
 	short wind_trans24;
-
 	short hn3;
 	short hn6;
 	short hn12;
 	short hn24;
 	short hn72;
 	short hn72_24;
-
 	short hnw3;
 	short hnw6;
 	short hnw12;
 	short hnw24;
 	short hnw72;
-
 	short stab_class1;
 	short stab_class2;
 	short stab_index1;
@@ -654,7 +653,6 @@ struct ProcessInd {
 	short stab_height3;
 	short stab_height4;
 	short stab_height5;
-
 	short crust;
 	short en_bal;
 	short sw_net;

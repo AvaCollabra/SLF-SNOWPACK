@@ -470,7 +470,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 
 	// Incoming global solar radiation on horizontal surface
 	if (sw_mode == 1) {
-		Rdata.global_hor = Mdata.rswr/Xdata.Albedo;
+		Rdata.global_hor = Mdata.rswr/Xdata.cAlbedo;
 	} else {
 		Rdata.global_hor = Mdata.iswr;
 	}
@@ -481,7 +481,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 	}
 	// Compute potential radiation only for Psolar.elev > THRESH_SUN_ELEVATION ...
 	if (Psolar.elev >= Radiation::thresh_sun_elevation) {
-		computePotentialRadiation(Psolar, Xdata.Albedo, Xdata.meta.position.getAltitude(), lw_AirPressure(Xdata.meta.position.getAltitude()), Mdata.rh, Mdata.ta, Rdata);
+		computePotentialRadiation(Psolar, Xdata.cAlbedo, Xdata.meta.position.getAltitude(), lw_AirPressure(Xdata.meta.position.getAltitude()), Mdata.rh, Mdata.ta, Rdata);
 	} else {// ... because radiation is only diffuse otherwise
 		Rdata.pot_dir = 0.;
 		Rdata.pot_diffsky = Rdata.global_hor;
@@ -504,7 +504,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 
 	// Reset global radiation values
 	if (sw_mode == 1) {
-		Mdata.rswr = (Rdata.dir_hor + Rdata.diffsky)*Xdata.Albedo;
+		Mdata.rswr = (Rdata.dir_hor + Rdata.diffsky)*Xdata.cAlbedo;
 	} else {
 		Mdata.iswr = Rdata.dir_hor + Rdata.diffsky;
 	}
@@ -531,7 +531,7 @@ void Radiation::radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, 
 		// Angle of incidence
 		angleOfIncidence(0., 0., Xdata.meta.getSlopeAngle(), Xdata.meta.getAzimuth(), Psolar);
 		// Project radiation
-		projectRadiationOnSlope(Psolar, Xdata.Albedo, Mdata, Rdata);
+		projectRadiationOnSlope(Psolar, Xdata.cAlbedo, Mdata, Rdata);
 	} else {
 		Rdata.dir_slope = Rdata.dir_hor;
 	}

@@ -434,6 +434,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	double factor_corr, sum_total_correction=0.; // Correction factor
 	double ddL, dL=0.;                           // Length changes
 	double cH, cH_old;                           // Snow depth
+	bool prn_CK = false;
 
 	// Dereference a few values
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -449,7 +450,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	 */
 	if ((Mdata.hs1 + 0.03) < cH) {
 		mass_corr = forcedErosion(Mdata.hs1, Xdata);
-		if (0) { //HACK
+		if (prn_CK) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
 			                                              Mdata.hs1, cH);
@@ -462,7 +463,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[nSoil].depositionDate.getJulianDate())
 			return;
 
-		if (0) { //HACK
+		if (prn_CK) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 			          "Small correction due to assumed settling error\n");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
@@ -489,19 +490,19 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
 				ddL = EMS[e].L
-				        * MAX(-0.9, MIN(0.9,
-				                factor_corr * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate()
-				                  - EMS[e].depositionDate.getJulianDate())
+				        * MAX(-0.9,
+			                 MIN(0.9, factor_corr * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate()
+				                - EMS[e].depositionDate.getJulianDate())
 				                    / (EMS[nE-1].depositionDate.getJulianDate()
-				                      - EMS[nSoil].depositionDate.getJulianDate())))));
+				                          - EMS[nSoil].depositionDate.getJulianDate())))));
 			} else {
 				ddL = 0.;
 			}
 			dL += ddL;
-			mass_corr += ddL*EMS[e].Rho;
+			mass_corr += ddL * EMS[e].Rho;
 			NDS[e+1].z += dL + NDS[e+1].u;
 			NDS[e+1].u  = 0.0;
-			EMS[e].M += ddL*EMS[e].Rho;
+			EMS[e].M += ddL * EMS[e].Rho;
 			EMS[e].L0 = EMS[e].L += ddL;
 			EMS[e].E  = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
 		}

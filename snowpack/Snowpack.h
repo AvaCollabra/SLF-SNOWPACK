@@ -81,7 +81,7 @@ class Snowpack {
 		Snowpack(const mio::Config& i_cfg);
 
 		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw, 
-                          BoundCond& Bdata, SurfaceFluxes& Sdata);
+		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		const static double new_snow_albedo, min_ice_content;
 
@@ -98,7 +98,8 @@ class Snowpack {
 
 		bool compSnowForces(ElementData *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
 		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
-		                    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
+		                    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ],
+		                    double Fe[ N_OF_INCIDENCES ]);
 
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
@@ -108,22 +109,24 @@ class Snowpack {
 		                        double VaporEnhance);
 		
 		void updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xdata,
-                               BoundCond& Bdata, SurfaceFluxes& Sdata);
+                                   BoundCond& Bdata);
 
 		void neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& Bdata, const SnowStation& Xdata,
 		                               const double& T_snow, const double& T_iter,
-		                               double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ]);
+		                               double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
+		                               double Fe[ N_OF_INCIDENCES ]);
 
 		void neumannBoundaryConditionsSoil(const double& flux, const double& T_snow,
 		                                   double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                                   double Fe[ N_OF_INCIDENCES ]);
 
-		void compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata, double& mAlb);
+		void compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata);
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);
 
-		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw);
+		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
+		                  SurfaceFluxes& Sdata);
 
 		std::string hn_density, hn_density_model, viscosity_model, variant;
 		const mio::Config& cfg;
@@ -143,6 +146,8 @@ class Snowpack {
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
+
+		double meteo_step_length;
 }; //end class Snowpack
 
 #endif

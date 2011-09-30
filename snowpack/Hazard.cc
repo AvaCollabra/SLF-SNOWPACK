@@ -227,14 +227,14 @@ double Hazard::compHoarIndex(double *OldHoar, double new_hoar, int nhour, int ne
 
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
-	double crust_dep=0., crust_thick=0.;
+	double crust_dep=0., crust_height=0.;
 	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	if (Xdata.getNumberOfElements() > 0) {
 		unsigned int e = Xdata.getNumberOfElements()-1;
 		while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
 			if ((Xdata.Edata[e].type == 772) || (Xdata.Edata[e].type == 880)) {
-				crust_thick += Xdata.Edata[e].L/cos_sl;
+				crust_height += Xdata.Edata[e].L/cos_sl;
 				if ((Xdata.Edata[e-1].type != 772) && (Xdata.Edata[e-1].type != 880)) {
 					break;
 				}
@@ -244,8 +244,8 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
 			e--;
 		}
 	}
-	if ( (crust_thick >= 0.) && (crust_thick <= Xdata.cH/cos_sl) ) {
-		Hdata.crust = M_TO_CM(crust_thick);
+	if ( (crust_height >= 0.) && (crust_height <= Xdata.cH/cos_sl) ) {
+		Hdata.crust = M_TO_CM(crust_height);
 	} else {
 		Hdata_ind.crust = -1;
 	}
@@ -481,10 +481,11 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 
 	// Energy input ... (kJ m-2)
 	if (nE > Xdata.SoilNode)
-		Hdata.en_bal = Sdata.dIntEnergy * hazard_steps_between / 1000.;
+		Hdata.en_bal = ((Xdata.dIntEnergy - Sdata.qg0 * sn_dt)
+		                    * hazard_steps_between) / 1000.;
 	else
-		Hdata.en_bal = (((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr))
-		                    * sn_dt * hazard_steps_between) / 1000.;
+		Hdata.en_bal = ((Sdata.qw + Sdata.lw_net + Sdata.qs + Sdata.ql + Sdata.qr) * sn_dt
+		                    * hazard_steps_between) / 1000.;
 	if (!((Hdata.en_bal > -3000.) && (Hdata.en_bal < 3000.)))
 		Hdata_ind.en_bal = -1;
 

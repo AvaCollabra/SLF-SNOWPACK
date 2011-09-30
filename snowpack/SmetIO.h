@@ -38,7 +38,7 @@ class SmetIO : public SnowpackIOInterface {
 		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
@@ -46,7 +46,7 @@ class SmetIO : public SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
+		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true);

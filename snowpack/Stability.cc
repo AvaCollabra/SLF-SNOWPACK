@@ -360,10 +360,20 @@ double Stability::st_CriticalStress(const double& epsNeckDot, const double& Ts)
 	phi = P1*pow(epsa, 0.23)*Constants::pi/180.;
 
 	// Hydrostatic melting pressure
-	Pm = (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9;
-	// Find the critical stress
-	return(Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle)))); // TODO check that argument of sqrt is correctly written
-} // End of st_CriticalStress
+	// NOTE this function returns negative values for
+	//   Ts <=181.2 K and Ts >= 273.15 K.
+	//   The argument to the square root below becomes
+	//   negative for Ts <= 180.4 K and Ts >= 274 K
+	//   The maximum of the function is reached at 227.2 K
+	//   HACK use this value for temperatures below 227.2 K (Quick and dirty fix;-)
+	if (Ts >= 227.2)
+		Pm = (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9;
+	else
+		Pm = (C1 + C2*(227.2) + C3*(227.2)*(227.2)) * 1.e9;
+
+	// Return the critical stress. TODO check that argument of sqrt is correctly written
+	return(Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle))));
+}
 
 /**
  * @brief Returns the layer stability index
@@ -610,6 +620,7 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	double Sig_ET, Sig_DH;         //NIED (H. Hirashima)
 	double phi;                    // Normal load correction
 	double rho_ri;                 // Snow density relative to ice
+	bool prn_WRN = false;
 
 	// Snow density relative to ice
 	rho_ri = Edata.Rho/Constants::density_ice;
@@ -693,8 +704,10 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	STpar.Sig_c2 = Sig_c2;
 	STpar.phi = phi;
 
-	// Warning message may be enabled for large differences in snow shear stength models
-	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
+	// Warning message may be enabled to warn for large differences in snow shear stength models
+	if (prn_WRN
+	        && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.)
+	            && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
 		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;

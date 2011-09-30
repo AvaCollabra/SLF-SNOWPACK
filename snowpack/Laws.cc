@@ -118,9 +118,10 @@ double lw_WetBulbTemperature(const double L, const double T, const double RH, co
  * where
  * - p0, T0:	triple point pressure and temperature of water
  * - Qlh:	latent heat of evaporation, (water) or sublimation (ice)
- * Note: the zero point of the Celsius scale of Murray is at 273.16 K!!!
- * from F.W. Murray (1967), J. of Applied Meteorology (transformed equation of Teten (1930) who gave the Magnus
- * formula)
+ * from F.W. Murray (1967), J. of Applied Meteorology, 6, 203-204,
+ * who transformed equation of Teten (1930) to obtain the Magnus formula.
+ * Note that the triple point (T_t = 273.16 K, P_t ~ 611. Pa) is used here as a reference.
+
  * @author Mathias Bavay \n Michael Lehning
  * @version Y.mm
  * @param T air temperature in K (const double)
@@ -129,10 +130,9 @@ double lw_WetBulbTemperature(const double L, const double T, const double RH, co
 double lw_SaturationPressure(const double T)
 {
 	double exp_p_sat; // exponent
-	const double p0 = 610.78; // triple point pressure of water
 	double c2, c3; // varying constants
 
-	if ( T < 273.16 ) { // for a flat ice surface
+	if (T < Constants::triple_point_t) { // for a flat ice surface
 		c2 = 21.88;
 		c3 = 7.66;
 	} else { // for a flat water surface
@@ -141,7 +141,7 @@ double lw_SaturationPressure(const double T)
 	}
 	exp_p_sat = c2 *  (T - 273.16) / (T - c3);
 
-	return( p0 * exp( exp_p_sat ) );
+	return(Constants::triple_point_p * exp( exp_p_sat ));
 }
 
 /**

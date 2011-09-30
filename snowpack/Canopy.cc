@@ -278,10 +278,10 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
 
 Canopy::Canopy(const mio::Config& cfg)
 {
-	// Defines whether soil layers are used
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
+
 	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
 
-	//Rain only for air temperatures warmer than threshold (degC)
 	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
 
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
@@ -701,7 +701,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 	// Variables used a lot
 	if ( Xdata.getNumberOfElements() > 0 ) {
 		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// ground surface temperature
-		ag = Xdata.Albedo;
+		ag = Xdata.cAlbedo;
 	} else {
 		TG = Mdata.ta;
 		ag = Xdata.SoilAlb;
@@ -1342,7 +1342,7 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	// Variables used a lot
 	if ( Xdata.getNumberOfElements() > 0 ) {
 		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// ground surface temperature
-		ag=Xdata.Albedo;
+		ag=Xdata.cAlbedo;
 	} else {
 		TG = Mdata.ta;
 		ag = Xdata.SoilAlb;
@@ -1451,7 +1451,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * 1.1a Always new snow density as estimate of density in intercepted storage
 	 */
 	density_of_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
-	                                                 *Mdata, *Xdata, Xdata->Cdata.temp, -1.);
+	                                                 *Mdata, *Xdata, Xdata->Cdata.temp, variant);
 
 	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain
 	intcapacity = cn_IntCapacity(Mdata->ta, density_of_new_snow, Xdata->Cdata.lai);
@@ -1665,7 +1665,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	Xdata->Cdata.intcapacity += intcapacity;
 	Xdata->Cdata.canopyalb += canopyalb;
 	if ( Xdata->getNumberOfElements() > 0 ) {
-		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->Albedo,
+		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->cAlbedo,
 					Xdata->Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
 	} else {
 		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->SoilAlb,

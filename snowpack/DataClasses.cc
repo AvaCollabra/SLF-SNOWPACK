@@ -74,10 +74,10 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 	marker      = MAX(profile_layer.marker, marker);
 }
 
-
 SurfaceFluxes::SurfaceFluxes()
-  : dIntEnergy(0.), lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
-    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), cA(0.), mA(0.), drift(0.), dhs_corr(0.)
+  : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
+    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), cA(0.), mA(0.), dIntEnergy(0.), drift(0.),
+    dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
 {
 	mass.resize(N_MASS_CHANGES);
 	load.resize(SnowStation::number_of_solutes);
@@ -86,7 +86,6 @@ SurfaceFluxes::SurfaceFluxes()
 void SurfaceFluxes::reset(const bool& cumsum_mass)
 {
 	if (cumsum_mass) { // Do not reset cumulated mass balance
-		dIntEnergy = 0.;
 		lw_in   = 0.;
 		lw_out  = 0.;
 		lw_net  = 0.;
@@ -103,10 +102,84 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 		sw_diff = 0.;
 		cA      = 0.;
 		mA      = 0.;
+		dIntEnergy = 0.;
 		mass[MS_HNW] = 0.;
 		mass[MS_RAIN] = 0.;
 	} else {
 		*this = SurfaceFluxes(); //reset everything
+	}
+}
+
+/**
+ * @brief Assign surface data from SnowStation to SurfaceFluxes.
+ * @param Xdata
+ * @param Bdata
+ * @param Mdata
+ * @param Sdata
+ */
+void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& Bdata,
+                                         SnowStation& Xdata, const CurrentMeteo& Mdata,
+                                         const bool& useSoilLayers, const bool& soil_flux)
+{
+	// 1) Short wave fluxes and Albedo.
+	//     Depending on settings (sw_mode) and conditions,
+	//     sw_in and sw_out may differ slightly from the original input
+	Sdata.sw_in  += Mdata.iswr;
+	Sdata.sw_out += Mdata.rswr;
+	Sdata.qw     += Mdata.iswr - Mdata.rswr;
+
+	Sdata.cA += Xdata.cAlbedo;
+	Sdata.mA += Xdata.mAlbedo;
+
+	// 2) Long wave and heat fluxes.
+	Sdata.qs += Bdata.qs;
+	//Sdata->ql += Bdata->ql; //HACK needed because latent heat ql not linearized w/ respect to Tss!!!
+	Sdata.qr += Bdata.qr;
+	Sdata.lw_out += Bdata.lw_out;
+	Sdata.lw_net += Bdata.lw_net;
+	Sdata.lw_in  += (Bdata.lw_net + Bdata.lw_out);
+
+	// 3) Ground heat fluxes
+	if (Xdata.getNumberOfElements() > 0) {
+		const double res_wat_cont = Xdata.Edata[0].snowResidualWaterContent();
+
+		// 3a) qg0: heat flux at soil/snow boundary
+		if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
+			if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * res_wat_cont))
+				Sdata.qg += 0.;
+			else
+				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]
+				                 * Xdata.Edata[Xdata.SoilNode].gradT;
+		} else if (Xdata.SoilNode > 0) {
+			Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
+			                 * Xdata.Edata[Xdata.SoilNode-1].gradT;
+		} else {
+			Sdata.qg0 += Constants::undefined;
+		}
+		// 3b) qg : geothermal heat flux or heat flux at bottom of snow in case of no soil
+		if (useSoilLayers && soil_flux) {
+			Sdata.qg += Bdata.qg;
+		} else if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * res_wat_cont)) {
+			Sdata.qg += 0.;
+		} else {
+			Sdata.qg += -Xdata.Edata[0].k[TEMPERATURE] * Xdata.Edata[0].gradT;
+		}
+	} else {
+		Sdata.qg0 += Constants::undefined;
+		Sdata.qg  += Constants::undefined;
+	}
+
+	// 4) Change of internal energy
+	if (Xdata.getNumberOfElements() > Xdata.SoilNode)
+		Sdata.dIntEnergy += Xdata.dIntEnergy;
+
+	// 5) Compute total masses of snowpack
+	Sdata.mass[MS_TOTALMASS] = Sdata.mass[MS_SWE]= Sdata.mass[MS_WATER] = 0.;
+	for (size_t e = Xdata.SoilNode; e < Xdata.getNumberOfElements(); e++) {
+		Sdata.mass[MS_TOTALMASS] += Xdata.Edata[e].M;
+		Sdata.mass[MS_SWE] += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
+		Sdata.mass[MS_WATER] += Xdata.Edata[e].L * (Xdata.Edata[e].theta[WATER]
+		                            * Constants::density_water);
 	}
 }
 
@@ -199,7 +272,8 @@ bool ElementData::checkVolContent()
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.4f", sum);
 		ret = false;
 	}
-	if ((theta[SOIL]  < -Constants::eps) || (theta[ICE]   < -0.01) || (theta[WATER] < -0.01) || (theta[AIR]   < -0.01) ) {
+	if ((theta[SOIL] < -Constants::eps) || (theta[ICE] < -Constants::eps)
+	        || (theta[WATER] < -Constants::eps) || (theta[AIR] < -Constants::eps) ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative volumetric content!");
 		ret = false;
 	}
@@ -544,10 +618,10 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 }
 
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
-	meta(), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
+	meta(), cAlbedo(0.), mAlbedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn(0.), rho_hn(0.), windward(false), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
-	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), Ks(NULL), ColdContent(0.),
+	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), Ks(NULL), ColdContent(0.), dIntEnergy(0.),
 	SubSurfaceMelt('x'), SubSurfaceFrze('x'), Cdata(), tag_low(0),
 	useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
 	nNodes(0), nElems(0)
@@ -560,18 +634,22 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
  * @brief Computes the internal energy change of the snowpack during one computation time step (J m-2)
  * @version 11.01
  */
-double SnowStation::compSnowpackInternalEnergyChange(const double sn_dt)
+void SnowStation::compSnowpackInternalEnergyChange(const double sn_dt)
 {
 	unsigned int e = SoilNode;
 	double cold_content_in = ColdContent;
 	double melt_freeze_energy = 0.;
 
-	ColdContent = 0.;
-	for (; e<nElems; e++) {
-		melt_freeze_energy -= Edata[e].Qmf * Edata[e].L * sn_dt;
-		ColdContent += Edata[e].coldContent();
+	if (nElems > SoilNode) {
+		ColdContent = 0.;
+		for (; e<nElems; e++) {
+			melt_freeze_energy -= Edata[e].Qmf * Edata[e].L * sn_dt;
+			ColdContent += Edata[e].coldContent();
+		}
+		dIntEnergy = ColdContent - cold_content_in + melt_freeze_energy;
+	} else {
+		dIntEnergy = 0.;
 	}
-	return(ColdContent - cold_content_in + melt_freeze_energy);
 }
 
 /**
@@ -726,7 +804,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	unsigned int ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
 	int real_soil_no_sandwich = 1;  // Switch to count real soil layers
 
-	Albedo = SSdata.Albedo;
+	cAlbedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
 
@@ -985,7 +1063,8 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 		Edata0.sp = 0.5 * ( Edata0.sp + Edata1.sp );
 		Edata0.rb = 0.5 * ( Edata0.rb + Edata1.rb );
 		Edata0.E = Edata0.Ev;
-		Edata0.Ee = 0.0; // TODO Check whether not simply add the elastic and viscous strains of the elements and average the stress?
+		Edata0.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
+		                 //                 and viscous strains of the elements and average the stress?
 	} else {
 		Edata0.Ee = Edata0.E = Edata0.Ev = Edata0.dE = 0.0;
 	}

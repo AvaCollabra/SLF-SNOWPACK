@@ -175,11 +175,11 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 			ss << tmp;
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
-		addKey("FIRST_BACKUP", "Output", "1200.");
+		addKey("FIRST_BACKUP", "Output", "1500.");
 		addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "7");
-		addKey("FIXED_RATES", "SnowpackAdvanced", "true");
-		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "7");
-		addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "23");
+		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
+		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");

@@ -180,7 +180,7 @@ const double SnLaws::smallest_viscosity = 1.0e6;
  * - visc_time_fudge  : Empirical constant related to age of snow (deprecated).
  * - visc_*           : viscosity version:
  * 	- _dflt, _cal, _ant, _897, _837, _stk
- * - setfix           : Quickfix to "harden" antarctic snow.
+ * - setfix           : Quickfix to "harden" antarctic snow (use with CALIBRATION variant only)
  */
 //@{
 SnLaws::TempDependence SnLaws::t_term = SnLaws::t_term_arrhenius_critical;
@@ -207,11 +207,24 @@ bool SnLaws::noAlbedoAge = false;
 const double SnLaws::glacier_albedo = 0.3;
 //@}
 
-double SnLaws::min_hn_density = 30.;
-double SnLaws::max_hn_density = 250.0;
+/**
+ * @name Event driven density of new snow
+ * @par {
+ * These static variables are only defined below, if you want to change them
+ * for your purposes you need to do so in the function SnLaws::setStaticData
+ * where these parameters are set according to the VARIANT used
+ * }
+ * - event : type of event, currently only event_wind implemented
+ * - 	event_wind_lowlim : lower limit for event_wind
+ * - 	event_wind_highlim : upper limit for event_wind
+ */
+//@{
 SnLaws::EventType SnLaws::event = SnLaws::event_none;
 double SnLaws::event_wind_lowlim = 0.0;
 double SnLaws::event_wind_highlim = 0.0;
+//@}
+double SnLaws::min_hn_density = 30.;
+double SnLaws::max_hn_density = 250.0;
 
 const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
 
@@ -231,9 +244,9 @@ bool SnLaws::setStaticData(const std::string& variant)
 		visc = visc_dflt; //visc_cal; //visc_ant; //
 		visc_ice_fudge = 9.45; //1.
 		visc_sp_fudge = 16.5;  //1.
+		//visc_water_fudge = 33.; // set to zero by default
 		setfix = false;
 
-		max_hn_density = 340.0;
 		event = event_wind;
 		event_wind_lowlim = 4.0;
 		event_wind_highlim = 7.0;
@@ -345,9 +358,9 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @param Mdata
  * @param tday Age of surface snow (d)
  */
-double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
-                              const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata,
-                              double& age)
+double SnLaws::parameterizedSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
+                                       const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata,
+                                       double& age)
 {
 	if (variant != SnLaws::current_variant)
 		setStaticData(variant);
@@ -357,6 +370,8 @@ double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_
 
 	if (i_fixed_albedo != Constants::undefined) {
 		Alb = i_fixed_albedo;
+	} else if (!SnLaws::noAlbedoAge && (age > 365.)) {
+		Alb = SnLaws::glacier_albedo;
 	} else {
 		switch (currentAlbedoModel) {
 		case alb_lehning_0: {
@@ -396,29 +411,27 @@ double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_
 			break;
 		}
 		case alb_lehning_2: {
-			//TODO: this perfoms very badly (if not completly wrong) for wet snowpack
-			//for example, February 2007 in Davos that saw very warm weather leads to albedos of 0.3 ...
-			if (SnLaws::noAlbedoAge)
+			//TODO: this perfoms very badly (if not completly wrong) for (very?) wet snowpack
+			//for example, February 2007 in Davos with very warm weather resulting in (measured?) albedos of 0.3 ...
+			double av = 0.8042; // Value of original regression
+			if (SnLaws::noAlbedoAge) { // NOTE clean antarctic snow
 				age = 0.;
-			if (age > 365.) {
-				Alb = SnLaws::glacier_albedo;
-			} else {
-				const double av = 0.8042; // Value of original regression: av=0.8042
-				const double inter = 1.442;
-				const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
-				const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
-				const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
+				av = 0.7542; // estimated from comparison with measurements at Dome C
+			}
+			const double inter = 1.442;
+			const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
+			const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
+			const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
 
-				Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
-				         + Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
-				           + Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
-				             + Crh*Mdata.rh;
-				if (Alb1 > 0.) {
-					Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
-				} else {
-					Alb = Constants::min_albedo;
-					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
-				}
+			Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
+			           + Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
+			               + Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
+			                   + Crh*Mdata.rh;
+			if (Alb1 > 0.) {
+				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+			} else {
+				Alb = Constants::min_albedo;
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 			}
 			break;
 		}
@@ -430,8 +443,8 @@ double SnLaws::compSnowAlbedo(const std::string& variant, const double& i_fixed_
 			const double Cdd = 0.076, Csp = 0.00964, Ctss = -0.000166, Cswout = -1.8e-5;
 
 			Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
-			         + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
-					+ Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
+			           + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
+			               + Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
 
 			if (Alb1 > 0) {
 				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
@@ -920,9 +933,10 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
  */
 double SnLaws::compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm)
 {
-	return (Constants::stefan_boltzmann
-	          * ((t_snow * t_snow) + (sqrt(e_atm) * t_atm * t_atm))
-	            * ((t_snow) + (pow(e_atm, 0.25) * t_atm)));
+	return (Constants::emissivity_snow * Constants::stefan_boltzmann
+	           * ((t_snow*t_snow) + (sqrt(e_atm) * t_atm*t_atm))
+	               * (t_snow + (pow(e_atm, 0.25) * t_atm)));
+
 }
 
 /**
@@ -931,8 +945,12 @@ double SnLaws::compLWRadCoefficient(const double& t_snow, const double& t_atm, c
  * - event_wind: rho = 250.3 kg m-3 @ 4 m s-1; rho = 338 kg m-3 @ 7 m s-1 Antarctica
  * @param Mdata  Meteorological input
  */
-double SnLaws::newSnowDensityEvent(const SnLaws::EventType& i_event, const CurrentMeteo& Mdata)
+double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::EventType& i_event,
+                                   const CurrentMeteo& Mdata)
 {
+	if (variant != SnLaws::current_variant)
+		setStaticData(variant);
+
 	switch (i_event) {
 	case event_wind: {
 		const double rho_0=361., rho_1=33.;
@@ -1014,7 +1032,8 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		rho_hn = 109. + 6.*(C_TO_K(TA) - Constants::melting_tk) + 26.*sqrt(VW);
 
 	} else {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "New snow density parameterization '%s' not available",
+		prn_msg(__FILE__, __LINE__, "err", Date(),
+		        "New snow density parameterization '%s' not available",
 		        i_hn_model.c_str());
 		exit(EXIT_FAILURE);
 	}
@@ -1051,15 +1070,14 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * - MEASURED: Use measured new snow density read from meteo input (RHO_HN must be set)
  * - fixed: Fixed new snow density by assigning HN_DENSITY a number > 0.
  * @param i_hn_density type of density computation
- * @param i_hn_density_model to use if
+ * @param i_hn_density_model to use
  * @param Mdata Meteorological input
  * @param Xdata Snow cover data
- * @param tss    Snow surface temperature (K)
- * @param hnw    Available amount of precipitation (kg m-2)
+ * @param tss Snow surface temperature (K)
  */
 double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
-                                  const CurrentMeteo& Mdata, const SnowStation& Xdata,
-                                  const double& tss, const double& hnw)
+                                  const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,
+                                  const std::string& variant)
 {
 	double rho;
 
@@ -1067,14 +1085,14 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		rho = newSnowDensityPara(i_hn_density_model,
 		                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
 		                         Xdata.meta.position.getAltitude());
-		return rho;
 	} else if (i_hn_density == "EVENT") {
-		rho = newSnowDensityEvent(event, Mdata);
-		return rho;
+		rho = newSnowDensityEvent(variant, event, Mdata);
 	} else if (i_hn_density == "MEASURED") {
-		if (hnw > 0.) {
-			if (Mdata.rho_hn != Constants::nodata) {
-				rho = Mdata.rho_hn; // New snow density as read from input file
+		if (Mdata.rho_hn != Constants::nodata) {
+			rho = Mdata.rho_hn; // New snow density as read from input file
+		} else if (Mdata.hnw > 0. ) {
+			if (i_hn_density_model == "SURFACE_SNOW") {
+				rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
 			} else {
 				rho = newSnowDensityPara(i_hn_density_model,
 				                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
@@ -1083,12 +1101,12 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		} else {
 			rho = Constants::undefined;
 		}
-		return rho;
-	} else {
+	} else { // "FIXED"
 		if (!IOUtils::convertString(rho, i_hn_density, std::dec))
-			throw ConversionFailedException("Can not convert  '"+i_hn_density+"' to double", AT);
-		return rho;
+			throw ConversionFailedException("Cannot convert  '"+i_hn_density+"' to double", AT);
 	}
+
+	return rho;
 }
 
 /**
@@ -1146,22 +1164,22 @@ double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 }
 
 /**
- * @brief Computes the additional stress during initial settling process due to loading rate
+ * @brief Computes the additional stress due to loading rate
  * @version 11.06
  * @param i_viscosity_model see compSnowViscosity()
  * @param Edata
  * @param date current
  * @return Initial stress (Pa); note it is a negative value!
  */
-double SnLaws::compInitialStress(const std::string& i_viscosity_model, ElementData& Edata, const mio::Date& date)
+double SnLaws::compLoadingRateStress(const std::string& i_viscosity_model, ElementData& Edata, const mio::Date& date)
 {
 	if (i_viscosity_model == "CALIBRATION")
-		return initialStressCALIBRATION(Edata, date);
+		return loadingRateStressCALIBRATION(Edata, date);
 	else
-		return initialStressDEFAULT(Edata, date);
+		return loadingRateStressDEFAULT(Edata, date);
 }
 
-double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
+double SnLaws::loadingRateStressDEFAULT(ElementData& Edata, const mio::Date& date)
 {
 	const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
 
@@ -1171,7 +1189,7 @@ double SnLaws::initialStressDEFAULT(ElementData& Edata, const mio::Date& date)
 	return sigReac;
 }
 
-double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& date)
+double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date& date)
 {
 	const double sigTension = 0.11;  // Ice surface tension (N m-2)
 
@@ -1233,7 +1251,7 @@ double SnLaws::initialStressCALIBRATION(ElementData& Edata, const mio::Date& dat
 	}
 	default:
 		prn_msg(__FILE__, __LINE__, "err", Date(),
-		        "visc=%d not a valid choice for initialStress!", visc);
+				"visc=%d not a valid choice for loadingRateStress!", visc);
 		throw IOException("Choice not implemented yet!", AT);
 		break;
 	}

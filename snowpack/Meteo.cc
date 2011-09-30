@@ -127,7 +127,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	}
 
 	// In case of ventilation ...
-	if ( SnLaws::wind_pump ) {
+	if (SnLaws::wind_pump) {
 		d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
 	} else {
 		d_pump = 0.;
@@ -138,7 +138,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	ustar = 0.4 * vw / log((zref - d_pump) / z0);
 	do {
 		iter++;
-		if ( iter > max_iter ) {
+		if (iter > max_iter) {
 			Mdata.z0 = z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
@@ -153,57 +153,62 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 		z0 = 0.9 * z0_old + 0.1 * (a2 * ustar*ustar / 2. / Constants::g);
 		z_ratio = log((zref - d_pump) / z0);
 		
-		// Prepare Values for Richardson
-		if ( neutral < 0 ) { // Switch for Richardson
+		// Stability corrections
+		if (neutral < 0) { // Switch for Richardson
 			Ri = Constants::g / tss_v * (ta_v - tss_v) * zref / vw / vw;
-			if ( Ri < 0.2 ) {// neutral and unstable
+			if (Ri < 0.2) { // neutral and unstable
 				stab_ratio = Ri;
 			} else {
 				stab_ratio = Ri/(1.-5.*Ri);
 			}			
-			if ( Ri < 0. ) { // unstable
+			if (Ri < 0.) { // unstable
 				stab_ratio = Ri;
 				dummy = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = log((0.5 * (1 + dummy*dummy)) * (0.5 * (1 + dummy)) * (0.5 * (1 + dummy))) - 2. * atan(dummy) + 0.5 * Constants::pi;
+				psi_m = log((0.5 * (1 + dummy*dummy)) * (0.5 * (1 + dummy)) * (0.5 * (1 + dummy)))
+				            - 2. * atan(dummy) + 0.5 * Constants::pi;
 				psi_s = 2. * log(0.5 * (1 + dummy*dummy));
-			} else if ( Ri < 0.1999 ) { // stable
+			} else if (Ri < 0.1999) { // stable
 				stab_ratio = Ri / (1. - 5. * Ri);
 				psi_m = psi_s = -5. * stab_ratio;
 			} else {
 				stab_ratio = Ri / (1. - 5. * 0.1999);
 				psi_m = psi_s = -5. * stab_ratio;
 			}
-
 			ustar = 0.4 * vw / (z_ratio - psi_m);
-		} else if ( neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.)) ) { // MO Iteration
-		ustar = 0.4 * vw / (z_ratio - psi_m);
+
+		} else if (neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) { // MO Iteration
+			ustar = 0.4 * vw / (z_ratio - psi_m);
 			Tstar = 0.4 * (tss_v - ta_v) / (z_ratio - psi_s);
 			stab_ratio = -0.4 * zref * Tstar * Constants::g / (tss * ustar*ustar);
 		
-			if ( stab_ratio > 0. ) { // stable
-				/* Stearns & Weidner, 1993 */
+			if (stab_ratio > 0.) { // stable
+				// Stearns & Weidner, 1993
 				dummy = pow((1. + 5. * stab_ratio), 0.25);
-				psi_m = (log(1. + dummy) * log(1. + dummy) + log(1. + dummy*dummy) - 1. * atan(dummy) - 0.5 * dummy*dummy*dummy + 0.8247); // Original 2.*atan(dummy) - 1.3333
+				psi_m = log(1. + dummy) * log(1. + dummy) + log(1. + dummy*dummy)
+				            - 1. * atan(dummy) - 0.5 * dummy*dummy*dummy + 0.8247; // Original 2.*atan(dummy) - 1.3333
 				// Launiainen and Vihma, 1990
-				// psi_m = -17*(1.-exp(-0.29*stab_ratio));
-			
-				// Stearns & Weidner, 1993 for scalars
-				dummy = sqrt(1. + 5. * stab_ratio);
-				psi_s = (log(1. + dummy) * log(1. + dummy) - 1. * dummy - 0.3 * dummy*dummy*dummy + 1.2804); // Original 2.*dummy - 0.66667*...
+				//psi_m = -17. * (1. - exp(-0.29 * stab_ratio));
 
 				// Holtslag and DeBruin (1988) prepared from Ed Andreas
-				// psi_m = psi_s = -(0.7*stab_ratio + 0.75*(stab_ratio - 14.28)*
-				// exp(-0.35*stab_ratio) + 10.71);
+				//psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
+				//                    * exp(-0.35 * stab_ratio) + 10.71);
+
+				// Stearns & Weidner, 1993, for scalars
+				dummy = sqrt(1. + 5. * stab_ratio);
+				psi_s = log(1. + dummy) * log(1. + dummy)
+				            - 1. * dummy - 0.3 * dummy*dummy*dummy + 1.2804; // Ori: 2. * dummy - 0.66667 * ...
 			} else {
-				// Stearns & Weidner, 1993 - Must be an ERROR somewhere
-				//	dummy = pow((1.-15.*stab_ratio),0.25);
-				//	psi_m = log(1.-dummy)*log(1.-dummy) + log(1.+dummy*dummy) - 2.*atan(dummy) -
-				// 	        -1. + dummy - 0.5086;
+				// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
+				//dummy = pow((1.-15. * stab_ratio),0.25);
+				//psi_m = log(1. - dummy) * log(1. - dummy) + log(1. + dummy*dummy)
+				//            - 2.*atan(dummy) - -1. + dummy - 0.5086;
+
 				// Paulson - the original
 				dummy = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = 2. * log(0.5 * (1. + dummy)) +  log(0.5 * (1. + dummy*dummy)) - 2. * atan(dummy) + 0.5 * Constants::pi;
-			
-				// Stearns & Weidner, 1993 for scalars
+				psi_m = 2. * log(0.5 * (1. + dummy)) + log(0.5 * (1. + dummy*dummy))
+				            - 2. * atan(dummy) + 0.5 * Constants::pi;
+
+				// Stearns & Weidner, 1993, for scalars
 				dummy = pow((1. - 22.5 * stab_ratio), 0.33333);
 				psi_s = pow(log(1. + dummy + dummy*dummy), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy)) + 0.1659;
 			}
@@ -254,12 +259,12 @@ double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Para
 
 /**
  * @brief Calculate average values for TSS and HS, to be used in the detection of the first snow fall (detection of canopy (grass) vs. snow fall)
- * @param *sn_MdataT
+ * @param *Mdata
  * @param *Xdata
  * @param *io
  * @param *current_date
  */
-void Meteo::compTSSavgHSrate(CurrentMeteo& sn_MdataT, SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
+void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
 {
 	//To better determine the first snowfall on bare ground, calculate average values of TSS and snow height changes rate:
 	const int avghours=3;							//Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
@@ -268,12 +273,12 @@ void Meteo::compTSSavgHSrate(CurrentMeteo& sn_MdataT, SnowStation& Xdata, mio::I
 
 	if( not(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) {						//This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
 		tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30);	//Get average TSS over 24 hours
-		if (tss24avg!=IOUtils::nodata) sn_MdataT.tss24=tss24avg;				//Assign this value to sn_MdataT
-		else sn_MdataT.tss24=sn_MdataT.tss;							//Use default in case no average could be calculated
+		if (tss24avg!=IOUtils::nodata) Mdata.tss24=tss24avg;				//Assign this value to Mdata
+		else Mdata.tss24=Mdata.tss;							//Use default in case no average could be calculated
 
 		tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30);	//Get average TSS over 12 hours
-		if (tss12avg!=IOUtils::nodata) sn_MdataT.tss12=tss12avg;				//Assign this value to sn_MdataT
-		else sn_MdataT.tss12=sn_MdataT.tss;							//Use default in case no average could be calculated
+		if (tss12avg!=IOUtils::nodata) Mdata.tss12=tss12avg;				//Assign this value to Mdata
+		else Mdata.tss12=Mdata.tss;							//Use default in case no average could be calculated
 
 		//Calculate average snow height per defined time period
 		hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30);					//Get average HS over [current_time; current_time-avghours]
@@ -281,14 +286,14 @@ void Meteo::compTSSavgHSrate(CurrentMeteo& sn_MdataT, SnowStation& Xdata, mio::I
 		if(hs_change_avg1!=IOUtils::nodata && hs_change_avg2!=IOUtils::nodata) {
 			hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours); 		//Note: we compare two time spans of avghours, so to get a correct average,
 												//we take the distance between the middle of the two time spans.
-			sn_MdataT.hs_change_rate=hs_change_rate;				//Note: hs_change is expressed as m/hour.
+			Mdata.hs_change_rate=hs_change_rate;				//Note: hs_change is expressed as m/hour.
 		} else {
-		      sn_MdataT.hs_change_rate=0.;						//If we were not able to calculate average HS, set the rate of change to 0.
+		      Mdata.hs_change_rate=0.;						//If we were not able to calculate average HS, set the rate of change to 0.
 		}
 	} else {										//If there is already a snow pack, we don't use this algorithm, so set the values to something.
-		sn_MdataT.tss24=sn_MdataT.tss;
-		sn_MdataT.tss12=sn_MdataT.tss;
-		sn_MdataT.hs_change_rate=0.;
+		Mdata.tss24=Mdata.tss;
+		Mdata.tss12=Mdata.tss;
+		Mdata.hs_change_rate=0.;
 	}
 }
 

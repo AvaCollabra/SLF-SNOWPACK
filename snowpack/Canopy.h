@@ -124,7 +124,7 @@ class Canopy {
 		static const double f3_gd, rootdepth, wp_fraction;
 		
 		int snp_soil;
-		std::string hn_density, hn_density_model;
+		std::string hn_density, hn_density_model, variant;
 		double thresh_rain, calculation_step_length;
 };
 

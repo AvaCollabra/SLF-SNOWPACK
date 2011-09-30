@@ -66,6 +66,10 @@ namespace Constants {
 	const double max_albedo = 0.99;
 	const double glacier_albedo = 0.3;
 	//@}
+	/// @name Emissivity (1)
+	//@{
+	const double emissivity_snow = 0.98;
+	//@}
 	/// @name Density (kg m-3)
 	//@{
 	const double density_air = 1.1; ///< Approximation: use ideal gas law
@@ -105,7 +109,7 @@ namespace Constants {
 	const double melting_tk = 273.15; ///< (K)
 	const double freezing_tk = 273.15; ///< (K)
 	const double triple_point_t = 273.16; ///< (K)
-	const double triple_point_p = 611.657; ///< (Pa)
+	const double triple_point_p = 611.73; ///< (Pa)
 	const double lh_sublimation = 2.838e6; ///< (J kg-1) (solid to vapor)
 	const double lh_vaporization = 2.504e6; ///< (J kg-1) (liquid to vapor)
 	const double lh_fusion = 3.34e5; ///< (J kg-1) (solid to liquid)

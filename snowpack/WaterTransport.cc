@@ -312,7 +312,9 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				enforce_join = false;
 			}
 			if (EMS[e1].mk%100 == 3) {
-				if ((e1 < nE-1) && (EMS[e1].L >= MM_TO_M(0.75*hoar_min_size_buried * (hoar_density_surf/hoar_density_buried))) && (EMS[e1].Rho <= 300.)) {
+				if ((e1 < nE-1) && (EMS[e1].L >= MM_TO_M(0.75*hoar_min_size_buried
+				                                     * (hoar_density_surf/hoar_density_buried)))
+				                    && (EMS[e1].Rho <= 300.)) {
 					enforce_join = false;
 				} else {
 					enforce_join = true;
@@ -321,7 +323,9 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {
 			enforce_join = false;
 		}
-		if (((EMS[e1].theta[ICE] < Snowpack::min_ice_content) || enforce_join ) && EMS[e1].theta[SOIL] < Constants::eps2) {
+		if (((EMS[e1].theta[ICE] < Snowpack::min_ice_content)
+		             || enforce_join)
+		       && (EMS[e1].theta[SOIL] < Constants::eps2)) {
 			SnowStation::mergeElements(EMS[e0], EMS[e1], enforce_join);
 			rnE--;
 			rnN--;
@@ -448,14 +452,14 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	if (!snp_soil && nN == 1) {
 		return;
 	} else { // Second, consider soil and/or snow on the ground:
-		if ((Mdata.hnw > 0.) && (Mdata.ta > C_TO_K(thresh_rain))) {
+		if ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain))) {
 			Store = Mdata.hnw/Constants::density_water;
 			e0 = nE-1;
 		// Now find out, whether you are on an impermeable surface and want to create a water layer ...
 			if (wet_layer && ((snp_soil && (nE == Xdata.SoilNode) && (EMS[nE-1].theta[SOIL] > 0.95)) || ((e0 > 0) && (EMS[e0-1].theta[ICE] > 0.95)) ) && (Store > 0.)) {
 			// ... then generate a new layer
 			// Set the Albedo to the Water ALBEDO
-				Xdata.Albedo = 0.2;
+				Xdata.cAlbedo = 0.2;
 				nE++;
 				nN++;
 				Xdata.ErosionLevel = nE-1;
@@ -700,7 +704,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 {
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!snp_soil && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
-		if (Mdata.ta > C_TO_K(thresh_rain)) {
+		if (Mdata.ta >= C_TO_K(thresh_rain)) {
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += Mdata.hnw;

@@ -92,23 +92,23 @@ class SnLaws {
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double compSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
-		                             const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata,
-		                             double& age);
+		static double parameterizedSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
+		                                      const ElementData& Edata, const double& Tss,
+		                                      const CurrentMeteo& Mdata, double& age);
 		static void compShortWaveAbsorption(const double& I0, const bool& useSoilLayers,
 		                                    const bool& multistream,SnowStation& Xdata);
 
 		static double compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
-		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata,
-		                                 const double& tss, const double& hnw);
+		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,
+		                                 const std::string& variant);
 
 		static double NewSnowViscosityLehning(const ElementData& Edata);
 
 		static double snowViscosityTemperatureTerm(const double& Te);
-		static double compInitialStress(const std::string& variant, ElementData& Edata,
-		                                const mio::Date& date);
-		static double initialStressDEFAULT(ElementData& Edata, const mio::Date& date);
-		static double initialStressCALIBRATION(ElementData& Edata, const mio::Date& date);
+		static double compLoadingRateStress(const std::string& variant, ElementData& Edata,
+		                                    const mio::Date& date);
+		static double loadingRateStressDEFAULT(ElementData& Edata, const mio::Date& date);
+		static double loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date& date);
 		static double snowViscosityFudgeDEFAULT(const ElementData& Edata);
 		static double snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date);
 		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model,
@@ -117,7 +117,7 @@ class SnLaws {
 		static double snowViscosityKOJIMA(const ElementData& Edata);
 		static double snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date);
 
-		static double min_hn_density, event_wind_lowlim;
+		static double min_hn_density, max_hn_density, event_wind_lowlim;
 		static const double smallest_viscosity, field_capacity_soil;
 		static const bool jordy_new_snow, wind_pump, wind_pump_soil;
 
@@ -127,9 +127,10 @@ class SnLaws {
 
 		static double newSnowDensityPara(const std::string& i_hn_model,
 		                                 double TA, double TSS, double RH, double VW, double HH);
-		static double newSnowDensityEvent(const SnLaws::EventType& i_event_type, const CurrentMeteo& Mdata);
+		static double newSnowDensityEvent(const std::string& variant, const SnLaws::EventType& i_event,
+                                          const CurrentMeteo& Mdata);
 		static double newSnowDensityHendrikx(const double ta, const double tss, const double rh, const double vw);
-		static double max_hn_density, event_wind_highlim;
+		static double event_wind_highlim;
 		static EventType event;
 
 		static double sn_dt; //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH

@@ -70,13 +70,17 @@ class AsciiIO : public SnowpackIOInterface {
 		                                       const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps, FILE *fout);
+                                    const CurrentMeteo& Mdata, const double crust,
+                                    const double dhs_corr, const double mass_corr,
+                                    const unsigned int nCalcSteps, FILE *fout);
 		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                   const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps,
-                                   FILE *fout);
+                                    const CurrentMeteo& Mdata, const double crust,
+                                    const double dhs_corr, const double mass_corr,
+                                    const unsigned int nCalcSteps, FILE *fout);
 		void writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                    const CurrentMeteo& Mdata, const double crust, const unsigned int nCalcSteps,
-                                    FILE *fout);
+                                    const CurrentMeteo& Mdata, const double crust,
+                                    const double dhs_corr, const double mass_corr,
+                                    const unsigned int nCalcSteps, FILE *fout);
 
 		static const bool r_in_n, t_srf, t_gnd;
 
