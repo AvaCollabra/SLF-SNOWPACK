@@ -208,6 +208,14 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 }
 
 /**
+ * @brief Return rain/snow temperature threshold that Snowpack uses
+ * @return rain/snow threshold temperature (K)
+ */
+double Snowpack::getThreshRain() const {
+	return C_TO_K( thresh_rain );
+}
+
+/**
  * @brief This routine evaluates the element stiffness matrix and right hand side vector for the
  * creep solution process. That is, the routine evaluates [Ke], {Fc} (which are later placed
  * on the right hand side), {Fi}, the internal forces and finally the external forces {Fe}

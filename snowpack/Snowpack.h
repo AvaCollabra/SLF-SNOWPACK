@@ -80,8 +80,10 @@ class Snowpack {
 	public:
 		Snowpack(const mio::Config& i_cfg);
 
-		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw, 
+		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
+
+		double getThreshRain() const;
 
 		const static double new_snow_albedo, min_ice_content;
 
@@ -103,11 +105,11 @@ class Snowpack {
 
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
-		bool sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], 
+		bool sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Tn[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                        double Fe[ N_OF_INCIDENCES ], char *SubSurfaceMelt, char *SubSurfaceFrze,
 		                        double VaporEnhance);
-		
+
 		void updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xdata,
                                    BoundCond& Bdata);
 
