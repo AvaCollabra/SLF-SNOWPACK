@@ -68,7 +68,7 @@ class SmetIO : public SnowpackIOInterface {
 
 	private:
 		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath;
-		double time_zone;
+		double in_dflt_TZ;
 		int sw_mode;
 		bool perp_to_slope, useSoilLayers;
 };

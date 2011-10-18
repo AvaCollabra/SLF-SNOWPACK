@@ -121,7 +121,7 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
  * @param JulianDate Julian Date
  * @param days_between number of days between two outputs
  * @param start start date as Julian Date
- * @param calculation_step_length (min)
+ * @param calculation_step_length (min) //HACK: it should be in SI!!
  * @return int
  */
 int booleanTime(const double& JulianDate, double days_between,

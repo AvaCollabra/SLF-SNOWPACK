@@ -25,7 +25,7 @@ using namespace mio;
 
 SmetIO::SmetIO(const mio::Config& cfg)
 {
-	cfg.getValue("TIME_ZONE", "Input", time_zone);
+	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
@@ -88,7 +88,12 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 	 */
 	smet::SMETReader haz_reader(hazfilename);
 	Date profile_date;
-	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  time_zone);
+
+	const double nodata = haz_reader.get_header_doublevalue("nodata");
+	double current_timezone = haz_reader.get_header_doublevalue("tz");
+	if (current_timezone == nodata)
+		current_timezone = in_dflt_TZ;
+	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  current_timezone);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -156,9 +161,10 @@ mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::strin
 
 	//copy data to respective variables in SSdata
 	size_t current_index = 0;
+	const double current_timezone = SSdata.profileDate.getTimeZone();
 	for (size_t ll=0; ll<SSdata.nLayers; ll++) {
 		//firstly deal with date
-		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  time_zone);
+		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  current_timezone);
 
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
@@ -223,8 +229,13 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	 * Read values for certain header keys (integer and double values) and perform
 	 * consistency checks upon them.
 	 */
-	string station_name = sno_reader.get_header_value("station_name");
-	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  time_zone);
+	const string station_name = sno_reader.get_header_value("station_name");
+
+	const double nodata = sno_reader.get_header_doublevalue("nodata");
+	double current_timezone = sno_reader.get_header_doublevalue("tz");
+	if (current_timezone == nodata)
+		current_timezone = in_dflt_TZ;
+	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  current_timezone);
 
 	SSdata.HS_last = get_doubleval(sno_reader, "HS_Last");
 	double lat, lon, alt, slope_angle, azi;
@@ -483,6 +494,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	stringstream ss; //we use the stringstream to produce strings in desired format
 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
+	smet_writer.set_header_value("tz", date.getTimeZone());
 
 	// Last checked Snow Depth used for data Control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
