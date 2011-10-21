@@ -82,6 +82,7 @@ bool SnowpackConfig::initStaticData()
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
 	inputConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
 	inputConfig["RHO_HN"] = "false";
+	inputConfig["SNOW"] = "SMET";
 	inputConfig["SOLUTE_NAMES"] = "NITRATE";
 	inputConfig["USEANETZ"] = "false"; // Operational (ImisIO) only
 	inputConfig["VW_DRIFT"] = "false";
@@ -104,6 +105,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
+	outputConfig["SNOW"] = "SMET";
 
 	return true;
 }

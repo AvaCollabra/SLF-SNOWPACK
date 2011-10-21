@@ -61,13 +61,15 @@ void ImisDBIO::readSnowCover(const std::string& /*i_snowfile*/, const std::strin
 
 //void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
 void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xdata*/,
-                              const SN_SNOWSOIL_DATA& /*SSdata*/, const SN_ZWISCHEN_DATA& /*Zdata*/, const bool& /*forbackup*/)
+                              const SN_SNOWSOIL_DATA& /*SSdata*/, const SN_ZWISCHEN_DATA& /*Zdata*/,
+                              const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
-                               const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
+void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/,
+                               const CurrentMeteo& /*Mdata*/, const ProcessDat& /*Hdata*/, 
+                               const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }

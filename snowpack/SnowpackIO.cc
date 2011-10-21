@@ -54,7 +54,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 		}
 	}
 
-	//Initial snow profile, where to read it from:
+	//Format of initial snow profile:
 	string in_snow;
 	cfg.getValue("SNOW", "Input", in_snow, Config::nothrow);
 
@@ -62,6 +62,15 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 		input_snow_as_smet = true;
 	} else {
 		input_snow_as_smet = false;
+	}
+	//Format of transitional and final snow profile(s):
+	string out_snow;
+	cfg.getValue("SNOW", "Output", out_snow, Config::nothrow);
+
+	if (out_snow == "SMET"){
+		output_snow_as_smet = true;
+	} else {
+		output_snow_as_smet = false;
 	}
 }
 
@@ -78,8 +87,11 @@ void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string&
 void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                                 const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
 {
-	asciiio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
-	smetio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+	if (output_snow_as_smet){
+		smetio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+	} else {
+		asciiio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+	}
 }
 
 void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,

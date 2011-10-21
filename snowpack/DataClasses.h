@@ -80,9 +80,9 @@ class CurrentMeteo {
 		mio::Date date;        ///< Date of current meteo data
 		double ta;     ///< Air temperature (K)
 		double rh;     ///< Relative humidity (% or 1)
-		double rh_ave; ///< Running mean of relative humidity (1)
+		double rh_avg; ///< Running mean of relative humidity (1)
 		double vw;     ///< Wind velocity at snow station (m s-1)
-		double vw_ave; ///< Running mean of wind velocity at snow station (m s-1)
+		double vw_avg; ///< Running mean of wind velocity at snow station (m s-1)
 		double vw_max; ///< Maximum wind velocity at snow station (m s-1)
 		double dw;     ///< Wind direction at snow station (deg)
 		double vw_drift; ///< Wind velocity for blowing and drifting snow (operational: wind ridge station)
@@ -391,6 +391,7 @@ class SnowStation {
 		unsigned int getNumberOfNodes() const;
 
 		mio::StationData meta;      ///< Station meta data
+
 		unsigned int sector;        ///< current slope sector of width 360./MAX(1, nSlopes-1)
 		double cAlbedo;             ///< Computed snow albedo
 		double mAlbedo;             ///< Measured snow albedo

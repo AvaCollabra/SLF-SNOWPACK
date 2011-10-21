@@ -8,4 +8,5 @@ TOOL="time"
 TOOL=""
 
 cp -p init/DAV5* current_snow
-${TOOL} ./snowpack -c cfgfiles/io_oper.ini -m operational -s DAV5 -e 2010-06-01T00:00
+rm -f current_snow/DAV5.haz
+${TOOL} ./snowpack -c cfgfiles/io_oper.ini -m operational -s DAV5 -e NOW

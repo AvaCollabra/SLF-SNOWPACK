@@ -1090,7 +1090,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 }
 
 CurrentMeteo::CurrentMeteo(const unsigned int& i_max_number_of_sensors)
-	: n(0), date(), ta(0.), rh(0.), rh_ave(0.), vw(0.), vw_ave(0.), vw_max(0.), dw(0.),
+	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
 	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
 	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
 	  max_number_of_sensors(i_max_number_of_sensors)
@@ -1113,11 +1113,11 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
 	os << "Date:     " << mdata.date.toString(Date::ISO) << endl;
 	os << "TA:       " << mdata.ta << endl;
 	os << "RH:       " << mdata.rh << endl;
-	os << "RH_AVE:   " << mdata.rh_ave << endl;
-	os << "DW:       " << mdata.dw << endl;
+	os << "rh_avg:   " << mdata.rh_avg << endl;
 	os << "VW:       " << mdata.vw << endl;
-	os << "VW_AVE:   " << mdata.vw_ave << endl;
 	os << "VW_MAX:   " << mdata.vw_max << endl;
+	os << "DW:       " << mdata.dw << endl;
+	os << "vw_avg:   " << mdata.vw_avg << endl;
 	os << "USTAR:    " << mdata.ustar << endl;
 	os << "z0:       " << mdata.z0 << endl;
 	os << "psi_s:    " << mdata.psi_s << endl;

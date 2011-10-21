@@ -36,22 +36,22 @@ class ImisDBIO : public SnowpackIOInterface{
 		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
-	
+		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
+		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
 
 		void deleteHdata(const std::string& stationName, const std::string& stationNumber,
-                     const mio::Date& dateStart, const mio::Date& dateEnd,
-                     oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
+		                 const mio::Date& dateStart, const mio::Date& dateEnd,
+		                 oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
 
 		void insertHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
@@ -68,4 +68,4 @@ class ImisDBIO : public SnowpackIOInterface{
 		static const std::string profile_filename;
 };
 
-#endif //End of ImisDBIO.h
+#endif

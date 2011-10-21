@@ -55,13 +55,13 @@ class SmetIO : public SnowpackIOInterface {
 		                      smet::SMETWriter& smet_writer) const;
 		void setFormatting(const size_t& nr_solutes,
 		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
-		void writeSnoFile(const std::string& filename, const mio::Date& date, const SnowStation& Xdata,
+		void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
 		                  const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata) const;
-		void writeHazFile(const std::string& filename, const mio::Date& date,
+		void writeHazFile(const std::string& hazfilename, const mio::Date& date,
 		                  const SnowStation& Xdata, const SN_ZWISCHEN_DATA& Zdata) const;
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
-		mio::Date read_snowsmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
+		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		mio::Date read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
 		                              SN_SNOWSOIL_DATA& SSdata);
 		mio::Date read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA& Zdata);
@@ -73,4 +73,4 @@ class SmetIO : public SnowpackIOInterface {
 		bool perp_to_slope, useSoilLayers;
 };
 
-#endif //End of SmetIO.h
+#endif

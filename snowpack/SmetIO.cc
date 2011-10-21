@@ -64,19 +64,31 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
 	string hazfilename(snofilename);
 
-	if (snofilename.rfind(".sno") == string::npos){
-		snofilename += ".snosmet";
+	if (snofilename.rfind(".sno") == string::npos) {
+		snofilename += ".sno";
 		hazfilename += ".haz";
 	} else {
-		snofilename.replace(snofilename.rfind(".sno"), 4, ".snosmet");;
-		hazfilename.replace(hazfilename.rfind(".sno"), 4, ".haz");;
+		hazfilename.replace(hazfilename.rfind(".sno"), 4, ".haz");
 	}
 
-	Date sno_date = read_snowsmet(snofilename, stationID, SSdata);
-	Date haz_date = read_hazsmet(hazfilename, Zdata);
+	Date sno_date = read_snosmet(snofilename, stationID, SSdata);
+	if (IOUtils::fileExists(hazfilename)) {
+		Date haz_date = read_hazsmet(hazfilename, Zdata);
+		if (haz_date != sno_date)
+			throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
+	} else {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(),
+				"Hazard file %s does not exist. Initialize Zdata to zero.", hazfilename.c_str());
+		for (size_t ii=0; ii<48; ii++) {
+			Zdata.hoar24[ii]  = 0.0;
+			Zdata.drift24[ii] = 0.0;
+		}
 
-	if (haz_date != sno_date)
-		throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
+		for (size_t ii=0; ii<144; ii++) {
+			Zdata.hn3[ii]  = 0.0;
+			Zdata.hn24[ii] = 0.0;
+		}
+	}
 }
 
 mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA& Zdata)
@@ -87,31 +99,15 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 	 * check with the corresponding SNO SMET file
 	 */
 	smet::SMETReader haz_reader(hazfilename);
+		
 	Date profile_date;
-
-	const double nodata = haz_reader.get_header_doublevalue("nodata");
-	double current_timezone = haz_reader.get_header_doublevalue("tz");
-	if (current_timezone == nodata)
-		current_timezone = in_dflt_TZ;
-	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  current_timezone);
+	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
 	haz_reader.read(vec_timestamp, vec_data);
 
-	if (vec_timestamp.size() == 0) {
-		for (size_t ii=0; ii<48; ii++){
-			Zdata.hoar24[ii]  = 0.0;
-			Zdata.drift24[ii] = 0.0;
-		}
-
-		for (size_t ii=0; ii<144; ii++){
-			Zdata.hn3[ii]  = 0.0;
-			Zdata.hn24[ii] = 0.0;
-		}
-
-		return profile_date;
-	} else if (vec_timestamp.size() == 144) {
+	if (vec_timestamp.size() == 144) {
 		//everything as expected
 	} else {
 		throw InvalidFormatException("There need to be 144 data lines in " + haz_reader.get_filename(), AT);
@@ -134,11 +130,11 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 	return profile_date;
 }
 
-mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata)
+mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata)
 {
 	/*
 	 * Read SNO SMET file, parse header and fill SSdata with values from the [DATA] section
-	 */
+	*/
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date = read_snosmet_header(sno_reader, stationID, SSdata);
 
@@ -161,10 +157,9 @@ mio::Date SmetIO::read_snowsmet(const std::string& snofilename, const std::strin
 
 	//copy data to respective variables in SSdata
 	size_t current_index = 0;
-	const double current_timezone = SSdata.profileDate.getTimeZone();
 	for (size_t ll=0; ll<SSdata.nLayers; ll++) {
 		//firstly deal with date
-		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  current_timezone);
+		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  in_dflt_TZ);
 
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
@@ -229,13 +224,8 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	 * Read values for certain header keys (integer and double values) and perform
 	 * consistency checks upon them.
 	 */
-	const string station_name = sno_reader.get_header_value("station_name");
-
-	const double nodata = sno_reader.get_header_doublevalue("nodata");
-	double current_timezone = sno_reader.get_header_doublevalue("tz");
-	if (current_timezone == nodata)
-		current_timezone = in_dflt_TZ;
-	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  current_timezone);
+	string station_name = sno_reader.get_header_value("station_name");
+	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
 
 	SSdata.HS_last = get_doubleval(sno_reader, "HS_Last");
 	double lat, lon, alt, slope_angle, azi;
@@ -348,23 +338,24 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
  * @param forbackup dump Xdata on the go
  */
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
-                            const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+                            const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata,
+                            const bool& forbackup)
 {
-	string filename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snosmet";
+	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".sno";
 	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".haz";
 
 	if (forbackup){
 		stringstream ss;
 		ss << (int)(date.getJulianDate() + 0.5);
-		filename += ss.str();
+		snofilename += ss.str();
 		hazfilename += ss.str();
 	}
 
-	writeSnoFile(filename, date, Xdata, SSdata, Zdata);
+	writeSnoFile(snofilename, date, Xdata, SSdata, Zdata);
 	writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
-void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, const SnowStation& Xdata,
+void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
                           const SN_ZWISCHEN_DATA& Zdata) const
 {
 	/*
@@ -375,12 +366,12 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
 
-	smet::SMETWriter haz_writer(filename);
+	smet::SMETWriter haz_writer(hazfilename);
 	setBasicHeader(Xdata, "timestamp SurfaceHoarIndex DriftIndex ThreeHourNewSnow TwentyFourHourNewSnow", haz_writer);
 	haz_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
 
-	haz_writer.set_width(vector<int>(4,9));
-	haz_writer.set_precision(vector<int>(4,5));
+	haz_writer.set_width(vector<int>(4,10));
+	haz_writer.set_precision(vector<int>(4,6));
 
 	Date hrs72(date - Date(3.0,0.0));
 	Date half_hour(1.0/48.0,0.0);
@@ -392,7 +383,7 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 		vec_timestamp.push_back(hrs72.toString(Date::ISO));
 		if (ii >= 96){
 			size_t index = 143-ii;
-			vec_data.push_back(Zdata.hoar24[index]);  //Print out the hoar hazard data info, flat-field only
+			vec_data.push_back(Zdata.hoar24[index]);  //Print out the hoar hazard data info
 			vec_data.push_back(Zdata.drift24[index]); //Print out the drift hazard data info
 		} else {
 			vec_data.push_back(IOUtils::nodata);
@@ -405,7 +396,7 @@ void SmetIO::writeHazFile(const std::string& filename, const mio::Date& date, co
 	haz_writer.write(vec_timestamp, vec_data);
 }
 
-void SmetIO::writeSnoFile(const std::string& filename, const mio::Date& date, const SnowStation& Xdata,
+void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
                           const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& /*Zdata*/) const
 {
 	/*
@@ -413,7 +404,7 @@ void SmetIO::writeSnoFile(const std::string& filename, const mio::Date& date, co
 	 * data and timestamps into vec_timestamp and vec_data (from Xdata).
 	 * The SMETWriter object finally writes out the SNO SMET file
 	 */
-	smet::SMETWriter sno_writer(filename);
+	smet::SMETWriter sno_writer(snofilename);
 	stringstream ss;
 	ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S " //8
 	   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
@@ -494,13 +485,12 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	stringstream ss; //we use the stringstream to produce strings in desired format
 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
-	smet_writer.set_header_value("tz", date.getTimeZone());
 
 	// Last checked Snow Depth used for data Control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
 
-	// Latitude, Longitude, Altitude, Slope Angle, Slope Azimut
+	// Latitude, Longitude, Altitude NOTE:redundant?, Slope Angle, Slope Azimut
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
@@ -529,7 +519,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("CanopyDirectThroughfall", ss.str());
 
 	// Additional parameters
-	ss.str(""); ss << fixed << setprecision(6) << SSdata.WindScalingFactor;
+	ss.str(""); ss << fixed << setprecision(2) << SSdata.WindScalingFactor;
 	smet_writer.set_header_value("WindScalingFactor", ss.str());
 	smet_writer.set_header_value("ErosionLevel", Xdata.ErosionLevel);
 	ss.str(""); ss << fixed << setprecision(6) << SSdata.TimeCountDeltaHS;

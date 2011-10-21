@@ -322,12 +322,16 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 
 void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double prevailing_wind_dir, const double wind_scaling_factor)
 {
-	Mdata.date = md.date;
-	Mdata.ta   = md(MeteoData::TA);
-	Mdata.rh   = md(MeteoData::RH);
-	Mdata.vw   = md(MeteoData::VW);
-	Mdata.dw   = md(MeteoData::DW);
-	Mdata.vw_max  = md(MeteoData::VW_MAX);
+	Mdata.date   = md.date;
+	Mdata.ta     = md(MeteoData::TA);
+	Mdata.rh     = md(MeteoData::RH);
+	if (md.param_exists("RH_AVG"))
+		Mdata.rh_avg = md("RH_AVG");
+	Mdata.vw     = md(MeteoData::VW);
+	Mdata.dw     = md(MeteoData::DW);
+	Mdata.vw_max = md(MeteoData::VW_MAX);
+	if (md.param_exists("VW_AVG"))
+		Mdata.vw_avg = md("VW_AVG");
 
 	Mdata.vw_drift = md("VW_DRIFT");
 	if (Mdata.vw_drift != mio::IOUtils::nodata) Mdata.vw_drift *= wind_scaling_factor;
@@ -483,9 +487,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 				sw_mode = 2;
 			}
 		}
-		// Compute running mean over nHours window
-		Mdata.vw_ave = Mdata.vw; //TODO running mean over +-50 hours required
-		Mdata.rh_ave = Mdata.rh; //TODO running mean over +-50 hours required
 
 	} else { //virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "0");
@@ -719,6 +720,17 @@ int main (int argc, char *argv[])
 	}
 
 	string variant; cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
+	// Add keys to perform running mean in Antarctic variant
+	if (variant == "ANTARCTICA") {
+		cfg.addKey("COPY::VW_AVG", "Input", "VW");
+		cfg.addKey("COPY::RH_AVG", "Input", "RH");
+
+		cfg.addKey("VW_AVG::filter1", "Filters", "mean_avg");
+		cfg.addKey("VW_AVG::arg1", "Filters", "soft 101 360000");
+		cfg.addKey("RH_AVG::filter1", "Filters", "mean_avg");
+		cfg.addKey("RH_AVG::arg1", "Filters", "soft 101 360000");
+	}
+
 	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
 	bool soil_flux = false;
 	if (useSoilLayers) {
@@ -730,7 +742,8 @@ int main (int argc, char *argv[])
 	if (variant != "DEFAULT") {
 		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Variant is '%s'", variant.c_str());
 	}
-	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "%s compiled on %s at %s", string(argv[0]).c_str(), __DATE__, __TIME__);
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+	        "%s compiled on %s at %s", string(argv[0]).c_str(), __DATE__, __TIME__);
 
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	if (mode == "OPERATIONAL") {
@@ -909,8 +922,10 @@ int main (int argc, char *argv[])
 
 		// Do not go ahead if starting time is larger than maxtime!
 		if (vecSSdata[slope.station].profileDate > dateEnd) {
-			prn_msg(__FILE__, __LINE__, "err", mio::Date(), "Starting time (%.5lf) larger than end time(%.5lf), station %s!",
-			        vecSSdata[slope.station].profileDate.getJulianDate(), dateEnd.getJulianDate(), vecStationIDs[i_stn].c_str());
+			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
+			        "Starting time (%.5lf) larger than end time(%.5lf), station %s!",
+			        vecSSdata[slope.station].profileDate.getJulianDate(), dateEnd.getJulianDate(),
+			        vecStationIDs[i_stn].c_str());
 			continue; //goto next station
 		}
 
@@ -922,7 +937,8 @@ int main (int argc, char *argv[])
 			mn_ctrl.nStep = -1;
 		}
 
-		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate() + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate()
+		                        + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
@@ -931,7 +947,8 @@ int main (int argc, char *argv[])
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s (%f) station time",
 		        vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO).c_str(),
 		        vecSSdata[slope.station].profileDate.getJulianDate());
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s", dateEnd.toString(mio::Date::ISO).c_str());
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
+		        dateEnd.toString(mio::Date::ISO).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min", calculation_step_length);
 
 		bool computed_one_timestep = false;
@@ -999,7 +1016,8 @@ int main (int argc, char *argv[])
 						cumulate(cumsum_drift, surfFluxes.drift);
 						if (mn_ctrl.HzDump) {
 							int i_hz = mn_ctrl.HzStep-1;
-							hazard.getDriftIndex(qr_Hdata[i_hz], qr_Hdata_ind[i_hz], &(sn_Zdata.drift24[0]), cumsum_drift,
+							hazard.getDriftIndex(qr_Hdata[i_hz], qr_Hdata_ind[i_hz],
+							                     &(sn_Zdata.drift24[0]), cumsum_drift,
 							                     cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle())));
 							cumsum_drift = 0.;
 						}
@@ -1224,7 +1242,8 @@ int main (int argc, char *argv[])
 				sdbDump_timer.start();
 				if (snowpackio.writeHazardData(vecStationIDs[i_stn], qr_Hdata, qr_Hdata_ind, mn_ctrl.HzStep)) {
 					sdbDump_timer.stop();
-					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished writing Hdata to SDB for station %s (%lf s)",
+					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+					        "Finished writing Hdata to SDB for station %s (%lf s)",
 					        vecStationIDs[i_stn].c_str(), sdbDump_timer.getElapsed());
 				}
 			}
@@ -1240,7 +1259,10 @@ int main (int argc, char *argv[])
 	time_t nowEND=time(NULL);
 	cout << endl;
 	cout << "[i] []                 STARTED  running SLF " << mode << " Snowpack Model on " << ctime(&nowSRT);
-	cout << "                       ===========================================================================" << endl;
+	if (mode == "OPERATIONAL")
+		cout << "                       ===========================================================================" << endl;
+	else
+		cout << "                       ========================================================================" << endl;
 	cout << "                       FINISHED running SLF " << mode << " Snowpack Model on " << ctime(&nowEND) << endl;
 
 	return 0;

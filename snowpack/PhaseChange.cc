@@ -151,7 +151,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		                + (Constants::density_water * Edata.theta[WATER] )
 		                    + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		if ((Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= Constants::max_rho)) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%lf (SubSurfaceMelt)", Edata.Rho);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%f (SubSurfaceMelt)", Edata.Rho);
 			throw IOException("Error in compSubSurfaceMelt()", AT);
 		}
 		Edata.heatCapacity();
@@ -234,7 +234,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] + (Constants::density_water * Edata.theta[WATER]) + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		if ((Edata.theta[SOIL] == 0.0) && !(Edata.Rho > 0. && Edata.Rho <= Constants::max_rho)) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%lf (SubSurfaceFrze)", Edata.Rho);
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Rho(snow)=%f (SubSurfaceFrze)", Edata.Rho);
 			throw IOException("Error in compSubSurfaceFrze()", AT);
 		}
 		Edata.heatCapacity();
@@ -252,14 +252,16 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * with th(i) volumetric ice content (1), c_p(T) specific heat capacity of ice (J kg-1 K-1), \n
  * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K ), \n
  * and the coefficient: \n
- * A = c_p(T) * th(i) * Q_f
+ * A = c_p(T) * th(i) * Q_f \n
+ * ql_Rest is the Energy that is transferred from the upper element to the lower one
+ * in case of complete melting of the former
  * @param Sdata
  * @param Xdata
  */
 void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
 {
-	int e, nE;
-	double ql_Rest; // Energy that is transferred from the upper element to the lower one in case of complete melting of the former
+	unsigned int e, nE;
+	double ql_Rest;
 	double cold_content_in=Xdata.ColdContent, cold_content_out=0., sum_Qmf=0.;
 	ElementData* EMS;
 	bool prn_CK = false;
@@ -273,21 +275,25 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 	try {
 		// In the first step check the density
 		for (e = 0; e < nE; e++) {
-			if ( EMS[e].theta[SOIL] == 0.0) {
-				if ( !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho) ) {
-					prn_msg(__FILE__, __LINE__, "wrn", Date(), "Phase Change Begin: rho[%d]=%lf", e, EMS[e].Rho);
+			if (EMS[e].theta[SOIL] == 0.0) {
+				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
+					prn_msg(__FILE__, __LINE__, "wrn", Date(), "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
 				}
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "msg+", Date(), "Phase Change Begin: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
-					   e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
+				prn_msg(__FILE__, __LINE__, "msg+", Date(),
+				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
+				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 		}
 
 		if (Xdata.SubSurfaceMelt) {
 			double thresh_th_w;
-			for (e = nE-1, ql_Rest = 0.; e >= 0; e--) {
+			e = nE;
+			ql_Rest = 0.;
+			//for (e = nE-1, ql_Rest = 0.; e >= 0; e--) {
+			while (e-- > 0) {
 				try {
 					compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest);
 				} catch(...) {
@@ -296,22 +302,26 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				}
 
 				// In soils, some water may still be liquid below freezing
-				if ( EMS[e].theta[SOIL] > 0. ) {
+				if (EMS[e].theta[SOIL] > 0.) {
 					thresh_th_w = PhaseChange::theta_r;
 				} else {
 					thresh_th_w = 0.0;
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
-				if ( (EMS[e].theta[WATER] > thresh_th_w) &&
-					((EMS[e].theta[ICE] > Snowpack::min_ice_content) || (EMS[e].Te <= Constants::melting_tk)) ) {
+				if ((EMS[e].theta[WATER] > thresh_th_w) &&
+					((EMS[e].theta[ICE] > Snowpack::min_ice_content) || (EMS[e].Te <= Constants::melting_tk))) {
 					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
-					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) ) {
+					if (e > 0 || !(EMS[e].theta[SOIL] > 0.)) {
 						NDS[e].T = Constants::melting_tk;
 					}
 				}
+				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
+					prn_msg(__FILE__, __LINE__, "wrn", Date(),
+					        "Melt: Snow temperature above melting (%f) in element %d (nE=%d) %f %f",
+					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 				// See whether hoar has melted
-				if ( EMS[e].theta[WATER] > 0.0 ) {
+				if (EMS[e].theta[WATER] > 0.0) {
 					NDS[e].hoar = 0.0;
 					NDS[e+1].hoar = 0.0;
 				}
@@ -320,7 +330,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
 
 		// Subsurface refreezing check
-		if ( Xdata.SubSurfaceFrze ) {
+		if (Xdata.SubSurfaceFrze) {
 			double thresh_th_w;
 			for (e = 0; e < nE; e++) {
 				double Te_old = EMS[e].Te;
@@ -333,16 +343,16 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				}
 
 				// In soils, some water may still be liquid below freezing
-				if ( EMS[e].theta[SOIL] > 0. ) {
+				if (EMS[e].theta[SOIL] > 0.) {
 					thresh_th_w = PhaseChange::theta_r;
 				} else {
 					thresh_th_w = 0.0;
 				}
 				// Now, if you have water in the element -- the nodal temperatures must be 0!!!
-				if ( (EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > Snowpack::min_ice_content) ) {
+				if ((EMS[e].theta[WATER] > thresh_th_w) && (EMS[e].theta[ICE] > Snowpack::min_ice_content)) {
 					NDS[e+1].T = Constants::melting_tk;
 					// Bottom soil node temperature cannot be changed
-					if ( e > 0 || !(EMS[e].theta[SOIL] > 0.) )
+					if (e > 0 || !(EMS[e].theta[SOIL] > 0.))
 						NDS[e].T = Constants::melting_tk;
 				}
 				// Make sure all nodal temperatures are consistent
@@ -350,6 +360,10 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 					NDS[e].T += 0.5 * (EMS[e].Te - Te_old);
 					NDS[e+1].T += 0.5 * (EMS[e].Te - Te_old);
 				}
+				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
+					prn_msg(__FILE__, __LINE__, "wrn", Date(),
+					        "Freeze: Snow temperature above freezing (%f) in element %d (nE=%d) %f %f",
+					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 			}
 		}
 
@@ -357,16 +371,21 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		for (e = 0; e < nE; e++) {
 			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
+			if ((e > Xdata.SoilNode) && (e < nE-1) && ((EMS[e].Te - Constants::melting_tk) > 0.1))
+				prn_msg(__FILE__, __LINE__, "wrn", Date(),
+				        "Snow temperature above melting point (%f) in element %d (nE=%d) %f %f",
+				        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 			if (EMS[e].theta[SOIL] == 0.) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
-					prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: rho[%d]=%lf", e, EMS[e].Rho);
+					prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: rho[%d]=%f", e, EMS[e].Rho);
 					throw IOException("Run-time error in compPhaseChange()", AT);
 				}
 			}
 			// Also make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: Element=%d, nE=%d  ICE %lf, Water %lf, Air %lf Soil %lf",
-								e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
+				prn_msg(__FILE__, __LINE__, "err", Date(),
+				        "Phase Change End: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
+				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 				throw IOException("Run-time error in compPhaseChange()", AT);
 			}
 			cold_content_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - Constants::melting_tk) * EMS[e].L;
@@ -374,7 +393,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		}
 		if (prn_CK && (sum_Qmf > 0.)) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Checking energy balance  (W/m2):");
-			prn_msg(__FILE__, __LINE__, "msg+", Date(), " E1: %lf   E0: %lf  E1-E0: %lf  sum_Qmf: %lf  Surface EB : %lf",
+			prn_msg(__FILE__, __LINE__, "msg+", Date(), " E1: %f   E0: %f  E1-E0: %f  sum_Qmf: %f  Surface EB : %f",
 			           (cold_content_out) / sn_dt, (cold_content_in) / sn_dt,
 			               (cold_content_out - cold_content_in) / sn_dt, sum_Qmf,
 			                   Sdata.qs + Sdata.ql + Sdata.lw_net + Sdata.qr + Sdata.qw);
@@ -384,7 +403,3 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		throw;
 	}
 }
-
-/*
- * END of Phase Change
- */
