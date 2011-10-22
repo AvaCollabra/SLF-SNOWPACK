@@ -96,7 +96,7 @@ Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
  * @param Hdata
  * @param Hdata_ind
  */
-void Hazard::initializeHazard(double *old_drift, double slope_angle,
+void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle,
                               std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
 {
 	Hdata.resize((unsigned)nHz);
@@ -130,7 +130,7 @@ void Hazard::initializeHazard(double *old_drift, double slope_angle,
  * @param slope_angle (deg)
  * @param shift shift first element of *vecDrift
  */
-double Hazard::driftIndex(double *vecDrift, double drift, const double rho, const int nHours,
+double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const double rho, const int nHours,
                           double slope_angle, const int shift)
 {
 	int    i, nValues;
@@ -167,7 +167,7 @@ double Hazard::driftIndex(double *vecDrift, double drift, const double rho, cons
 }
 
 void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           double *old_drift, double& drift, double slope_angle)
+                           std::vector<double>& old_drift, double& drift, double slope_angle)
 {
 	Hdata_ind.wind_trans = 0;
 	Hdata_ind.wind_trans24 = 0;
@@ -264,7 +264,7 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
  * @param Xdata
  */
 void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
-                        const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+                        const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, ZwischenData& Zdata,
                         const SnowStation& Xdata)
 {
 	unsigned int nE = Xdata.getNumberOfElements();
@@ -513,14 +513,14 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                            const double& delta_hs6, const double& delta_hs24,
                            CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
-                           SN_ZWISCHEN_DATA& Zdata, SnowStation& Xdata_station, SnowStation& Xdata_south,
+                           ZwischenData& Zdata, SnowStation& Xdata_station, SnowStation& Xdata_south,
                            const unsigned int& nSlopes, const bool& virtual_slope)
 {
 	compHazard(Hdata, Hdata_ind, delta_hs6, delta_hs24, Mdata, Sdata, Zdata, Xdata_station);
 
 	// Compute snow transport on flat fiels if needed
 	if (!virtual_slope) {
-		getDriftIndex(Hdata, Hdata_ind, &(Zdata.drift24[0]), Sdata.drift,
+		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, Sdata.drift,
                   Xdata_station.meta.getSlopeAngle());
 	}
 

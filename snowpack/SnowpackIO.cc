@@ -75,7 +75,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 }
 
 void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                               SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
+                               SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
 	if (input_snow_as_smet){
 		smetio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
@@ -85,7 +85,7 @@ void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string&
 }
 
 void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+                                const ZwischenData& Zdata, const bool& forbackup)
 {
 	if (output_snow_as_smet){
 		smetio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);

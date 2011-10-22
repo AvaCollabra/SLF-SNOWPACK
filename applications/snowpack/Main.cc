@@ -831,7 +831,7 @@ int main (int argc, char *argv[])
 		// Snowpack data (input/output)
 		vector<SN_SNOWSOIL_DATA> vecSSdata(slope.nSlopes, SN_SNOWSOIL_DATA(/*number_of_solutes*/));
 		vector<SnowStation> vecXdata(slope.nSlopes, SnowStation(useCanopyModel, useSoilLayers/*, number_of_solutes*/));
-		SN_ZWISCHEN_DATA sn_Zdata;   // "Memory"-data, required for every operational station
+		ZwischenData sn_Zdata;   // "Memory"-data, required for every operational station
 
 		// Meteo data for the current time step (interpolated!)
 		CurrentMeteo Mdata(max_number_sensors/*, number_of_solutes*/);
@@ -1015,9 +1015,10 @@ int main (int argc, char *argv[])
 					if (slope.sector == slope.luv) { // Make sure the transported snow comes from the windward slope
 						cumulate(cumsum_drift, surfFluxes.drift);
 						if (mn_ctrl.HzDump) {
-							int i_hz = mn_ctrl.HzStep-1;
-							hazard.getDriftIndex(qr_Hdata[i_hz], qr_Hdata_ind[i_hz],
-							                     &(sn_Zdata.drift24[0]), cumsum_drift,
+							size_t i_hz = 0; //HACK: Please check the index i_hz makes sense
+							if (mn_ctrl.HzStep > 0) i_hz = (size_t)mn_ctrl.HzStep - 1;
+							Hazard::getDriftIndex(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
+							                     sn_Zdata.drift24, cumsum_drift,
 							                     cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle())));
 							cumsum_drift = 0.;
 						}
@@ -1050,7 +1051,7 @@ int main (int argc, char *argv[])
 					if (mode == "OPERATIONAL") {
 						if (!cumsum_mass) {
 							// Cumulate flat field runoff in operational mode
-							qr_Hdata[i_hz].runoff += surfFluxes.mass[SurfaceFluxes::MS_RUNOFF];
+							qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_RUNOFF];
 							cumsum_runoff += surfFluxes.mass[SurfaceFluxes::MS_RUNOFF];
 						}
 						/*
@@ -1080,7 +1081,7 @@ int main (int argc, char *argv[])
 						// There is a persistent error for at least one day => apply correction
 						if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
 							deflateInflate(Mdata, vecXdata[slope.station],
-							               qr_Hdata[i_hz].dhs_corr, qr_Hdata[i_hz].mass_corr);
+							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							time_count_deltaHS = 0.;
 						}
 					}
@@ -1098,20 +1099,20 @@ int main (int argc, char *argv[])
 							surfFluxes.drift = cumsum_drift / MAX(1, (hazard_steps_between - 1));
 						}
 
-						strncpy(qr_Hdata[i_hz].stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
+						strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
 						if (mode == "OPERATIONAL") {
-							qr_Hdata[i_hz].loc_for_snow = (int)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
+							qr_Hdata.at(i_hz).loc_for_snow = (int)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
 							//TODO: WHAT SHOULD WE SET HERE? wstat_abk (not existing yet in DB) and wstao_nr, of course;-)
-							qr_Hdata_ind[i_hz].loc_for_wind = -1;
+							qr_Hdata_ind.at(i_hz).loc_for_wind = -1;
 						} else {
-							qr_Hdata[i_hz].loc_for_snow = 2;
-							qr_Hdata[i_hz].loc_for_wind = 1;
+							qr_Hdata.at(i_hz).loc_for_snow = 2;
+							qr_Hdata.at(i_hz).loc_for_wind = 1;
 						}
 
 						double delta_hs6 = 0.0, delta_hs24 = 0.0;
 						getDhs6Dhs24(delta_hs6, delta_hs24, io, vecMyMeteo, i_stn, Mdata.date);
 
-						hazard.getHazardData(qr_Hdata[i_hz], qr_Hdata_ind[i_hz], delta_hs6, delta_hs24,
+						hazard.getHazardData(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz), delta_hs6, delta_hs24,
 						                     Mdata, surfFluxes, sn_Zdata, vecXdata[slope.station],
 						                     vecXdata[slope.south], slope.nSlopes, slope.virtual_slopes);
 						mn_ctrl.HzStep++;
@@ -1168,15 +1169,15 @@ int main (int argc, char *argv[])
 
 					// Dump
 					const unsigned int i_hz = MAX(0, mn_ctrl.HzStep-1);
-					double wind_trans24 = qr_Hdata[i_hz].wind_trans24;
-					if (i_hz) wind_trans24 = qr_Hdata[i_hz-1].wind_trans24;
+					double wind_trans24 = qr_Hdata.at(i_hz).wind_trans24;
+					if (i_hz) wind_trans24 = qr_Hdata.at(i_hz-1).wind_trans24;
 					ss.str("");
 					ss << vecStationIDs[i_stn];
 					if (slope.sector != slope.station) {
 						ss << slope.sector;
 					}
 					snowpackio.writeTimeSeries(vecXdata[slope.sector], surfFluxes, Mdata,
-						                       qr_Hdata[i_hz], wind_trans24);
+										  qr_Hdata.at(i_hz), wind_trans24);
 
 					if (avgsum_time_series) {
 						surfFluxes.reset(cumsum_mass);
@@ -1194,7 +1195,7 @@ int main (int argc, char *argv[])
 				// SNOW PROFILES ...
 				// ... for visualization (*.pro)
 				if (profwrite && mn_ctrl.PrDump)
-					snowpackio.writeProfile(current_date, vecXdata[slope.sector], qr_Hdata[0]);
+					snowpackio.writeProfile(current_date, vecXdata[slope.sector], qr_Hdata.at(0));
 
 				// ... backup Xdata (*.sno<JulianDate>)
 				if (mn_ctrl.XdataDump) {

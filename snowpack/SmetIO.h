@@ -35,10 +35,10 @@ class SmetIO : public SnowpackIOInterface {
 		SmetIO(const mio::Config& i_cfg);
 
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
+		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-		                            const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+		                            const ZwischenData& Zdata, const bool& forbackup=false);
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
@@ -56,15 +56,15 @@ class SmetIO : public SnowpackIOInterface {
 		void setFormatting(const size_t& nr_solutes,
 		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
 		void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                  const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata) const;
+		                  const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata) const;
 		void writeHazFile(const std::string& hazfilename, const mio::Date& date,
-		                  const SnowStation& Xdata, const SN_ZWISCHEN_DATA& Zdata) const;
+		                  const SnowStation& Xdata, const ZwischenData& Zdata) const;
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
 		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		mio::Date read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
 		                              SN_SNOWSOIL_DATA& SSdata);
-		mio::Date read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA& Zdata);
+		mio::Date read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata);
 
 	private:
 		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath;

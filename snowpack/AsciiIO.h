@@ -33,10 +33,10 @@ class AsciiIO : public SnowpackIOInterface {
 		AsciiIO(const mio::Config& i_cfg);
 
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-		                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata);
+		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup=false);
+                                const ZwischenData& Zdata, const bool& forbackup=false);
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);

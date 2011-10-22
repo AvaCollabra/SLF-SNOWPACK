@@ -54,14 +54,14 @@ ImisDBIO::ImisDBIO(const mio::Config& cfg)
 }
 
 void ImisDBIO::readSnowCover(const std::string& /*i_snowfile*/, const std::string& /*stationID*/,
-                             SN_SNOWSOIL_DATA& /*SSdata*/, SN_ZWISCHEN_DATA& /*Zdata*/)
+                             SN_SNOWSOIL_DATA& /*SSdata*/, ZwischenData& /*Zdata*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }
 
 //void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const std::string& /*station*/, const SnowStation& /*Xdata*/,
 void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xdata*/,
-                              const SN_SNOWSOIL_DATA& /*SSdata*/, const SN_ZWISCHEN_DATA& /*Zdata*/,
+                              const SN_SNOWSOIL_DATA& /*SSdata*/, const ZwischenData& /*Zdata*/,
                               const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);

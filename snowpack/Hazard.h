@@ -41,18 +41,18 @@ class Hazard {
 	public:
 		Hazard(const mio::Config& i_cfg, const double duration);
 
-		void initializeHazard(double *vecDrift, double slope_angle,
+		void initializeHazard(std::vector<double>& vecDrift, double slope_angle,
 		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
 
-		static double driftIndex(double *old_drift, double drift, const double rho, const int nHours,
+		static double driftIndex(std::vector<double>& old_drift, double drift, const double rho, const int nHours,
 		                         double slope_angle, const int shift);
 
-		void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                       double *old_drift, double& drift, double slope_angle);
+		static void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+		                          std::vector<double>& old_drift, double& drift, double slope_angle);
 
 		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 		                   const double& delta_hs6, const double& delta_hs24,
-		                   CurrentMeteo& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		                   CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
 		                   const unsigned int& nSlopes, const bool& virtual_slope);
 
@@ -66,7 +66,7 @@ class Hazard {
 		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
 		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
-		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, SN_ZWISCHEN_DATA& Zdata,
+		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                const SnowStation& Xdata);
 
 		const mio::Config& cfg;

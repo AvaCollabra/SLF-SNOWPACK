@@ -59,7 +59,7 @@ SmetIO::SmetIO(const mio::Config& cfg)
  * @param Zdata
  */
 void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                           SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
+                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
 	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
 	string hazfilename(snofilename);
@@ -79,19 +79,12 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 	} else {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(),
 				"Hazard file %s does not exist. Initialize Zdata to zero.", hazfilename.c_str());
-		for (size_t ii=0; ii<48; ii++) {
-			Zdata.hoar24[ii]  = 0.0;
-			Zdata.drift24[ii] = 0.0;
-		}
 
-		for (size_t ii=0; ii<144; ii++) {
-			Zdata.hn3[ii]  = 0.0;
-			Zdata.hn24[ii] = 0.0;
-		}
+		Zdata.reset();
 	}
 }
 
-mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA& Zdata)
+mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata)
 {
 	/*
 	 * Read HAZ SMET file, parse header and fill Zdata with values from the [DATA] section
@@ -107,11 +100,8 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, SN_ZWISCHEN_DATA&
 	vector<double> vec_data;
 	haz_reader.read(vec_timestamp, vec_data);
 
-	if (vec_timestamp.size() == 144) {
-		//everything as expected
-	} else {
+	if (vec_timestamp.size() != 144)
 		throw InvalidFormatException("There need to be 144 data lines in " + haz_reader.get_filename(), AT);
-	}
 
 	size_t current_index = 0;
 	for (size_t ii=0; ii<144; ii++) {
@@ -338,7 +328,7 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
  * @param forbackup dump Xdata on the go
  */
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
-                            const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& Zdata,
+                            const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata,
                             const bool& forbackup)
 {
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".sno";
@@ -356,7 +346,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 }
 
 void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
-                          const SN_ZWISCHEN_DATA& Zdata) const
+                          const ZwischenData& Zdata) const
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
@@ -397,7 +387,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 }
 
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const SN_SNOWSOIL_DATA& SSdata, const SN_ZWISCHEN_DATA& /*Zdata*/) const
+                          const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& /*Zdata*/) const
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required

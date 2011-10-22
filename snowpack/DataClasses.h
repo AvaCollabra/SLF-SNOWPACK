@@ -54,14 +54,19 @@ struct WL_STRUCT {
 };
 
 /**
- * @brief sn_Zdata contains "memory" information mainly for operational use\n
- * It is used to prepare some parameters of qr_Hdata. This data is read from and written to *.sno files
+ * @brief ZwischenData contains "memory" information mainly for operational use\n
+ * It is used to prepare some parameters of qr_Hdata. This data is read from and written to *.sno
+ * or .haz files respectively
  */
-struct SN_ZWISCHEN_DATA {
-	double hoar24[48];  ///< Twenty-four hour hoar index every half-hour over one day
-	double drift24[48]; ///< Twenty-four hour drift index every half-hour over one day
-	double hn3[144];    ///< Three hour new snow heights every half-hour over three days
-	double hn24[144];   ///< Twenty-four hour snow heights every half-hour over three days
+class ZwischenData {
+	public:
+		ZwischenData();
+		void reset();                ///< Sets all the values in the vectors to 0.0
+
+		std::vector<double> hoar24;  ///< Twenty-four hour hoar index every half-hour over one day 48
+		std::vector<double> drift24; ///< Twenty-four hour hoar index every half-hour over one day 48
+		std::vector<double> hn3;    ///< Three hour new snow heights every half-hour over three days 144
+		std::vector<double> hn24;   ///< Twenty-four hour snow heights every half-hour over three days 144
 };
 
 /**

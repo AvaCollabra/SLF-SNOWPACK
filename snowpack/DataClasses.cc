@@ -45,6 +45,19 @@ const double SnowStation::join_thresh_dd = 0.2;     ///< Dendricity (1)
 const double SnowStation::join_thresh_sp = 0.05;    ///< Sphericity (1)
 const double SnowStation::join_thresh_rg = 0.125;   ///< Grain radius (mm)
 
+ZwischenData::ZwischenData()
+{
+	reset();
+}
+
+void ZwischenData::reset()
+{
+	hoar24  = std::vector<double>(48, 0.0);
+	drift24 = std::vector<double>(48, 0.0);
+	hn3     = std::vector<double>(144, 0.0);
+	hn24    = std::vector<double>(144, 0.0);
+}
+
 /**
  * @brief Determines the averaged quantities of the current layer with another layer
  * @param Lp1 Thickness (weight) of layer Pdata

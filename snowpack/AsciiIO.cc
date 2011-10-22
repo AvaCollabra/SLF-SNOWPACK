@@ -160,7 +160,7 @@ void AsciiIO::cleanup() throw()
  * @param Zdata
  */
 void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                            SN_SNOWSOIL_DATA& SSdata, SN_ZWISCHEN_DATA& Zdata)
+                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
 	unsigned int ii;
 	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
@@ -436,7 +436,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
  * @param forbackup dump Xdata on the go
  */
 void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                             const SN_ZWISCHEN_DATA& Zdata, const bool& forbackup)
+                             const ZwischenData& Zdata, const bool& forbackup)
 {
 	unsigned int ii, e;
 	FILE *fout=NULL;
