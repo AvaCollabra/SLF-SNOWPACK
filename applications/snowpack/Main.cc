@@ -679,11 +679,10 @@ int main (int argc, char *argv[])
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
 
-	size_t nStations = 0;
 	string outpath(""), experiment("");
-	stringstream ss;
 
-	if (vecStationIDs.size() == 0) {
+	/*
+	if (vecStationIDs.size() == 0) {  //Dieser fall bedeutet, dass auf der command line nichts angegeben wurde
 		cfg.getValue("NROFSTATIONS", "Input", nStations);
 		vecStationIDs.clear();
 		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
@@ -693,14 +692,14 @@ int main (int argc, char *argv[])
 			cfg.getValue(ss.str(), "Input", stationID);
 			vecStationIDs.push_back(stationID);
 		}
-	} else {
+	} else { //Bedeutet, dass das IMIS plugin zum Zug kommt
 		nStations = vecStationIDs.size();
 		ss.str("");
 		ss << nStations;
 		cfg.addKey("NROFSTATIONS", "Input", ss.str());
 		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
 			ss.str("");
-			ss << "STATION" << i_stn+1;
+			ss << "STATION" << i_stn+1; //für das IMIS plugin sind diese Keys erforderlich
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
@@ -718,6 +717,7 @@ int main (int argc, char *argv[])
 			}
 		}
 	}
+	*/
 
 	string variant; cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
 	// Add keys to perform running mean in Antarctic variant
@@ -798,10 +798,32 @@ int main (int argc, char *argv[])
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::Config::nothrow);
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::Config::nothrow);
 
+	//If the user provides the stationIDs - operational use case
+	if (vecStationIDs.size() > 0) { //This means that the user provides the station IDs on the command line
+		stringstream ss;
+		ss.str("");
+		ss << vecStationIDs.size();
+
+		cfg.addKey("NROFSTATIONS", "Input", ss.str()); //needed for the IMIS plugin
+		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
+			ss.str("");
+			ss << "STATION" << i_stn+1; //für das IMIS plugin sind diese Keys erforderlich
+			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
+		}
+	}
+
 	SnowpackIO snowpackio(cfg);
 
 	mio::IOManager io(cfg);
 	io.setMinBufferRequirements(IOUtils::nodata, 1.1); //we require the buffer to contain at least 1.1 day before the current point
+	
+	vector<StationData> accessible_stations;
+	io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
+	if (vecStationIDs.size() == 0) {
+		for (size_t ii=0; ii<accessible_stations.size(); ii++) {
+			vecStationIDs.push_back(accessible_stations[ii].getStationID()); //HACK: accessible_stations should be directly used
+		}
+	}
 
 	/* START LOOP OVER ALL STATIONS */
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
@@ -844,6 +866,7 @@ int main (int argc, char *argv[])
 
 		mio::Date current_date;
 		string snowfile("");
+		stringstream ss;
 		ss.str("");
 		ss << "SNOWFILE" << i_stn+1;
 		cfg.getValue(ss.str(), "Input", snowfile, mio::Config::nothrow);
