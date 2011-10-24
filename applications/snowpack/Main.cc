@@ -680,46 +680,8 @@ int main (int argc, char *argv[])
 	}
 
 	string outpath(""), experiment("");
-
-	/*
-	if (vecStationIDs.size() == 0) {  //Dieser fall bedeutet, dass auf der command line nichts angegeben wurde
-		cfg.getValue("NROFSTATIONS", "Input", nStations);
-		vecStationIDs.clear();
-		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
-			string stationID("");
-			ss.str("");
-			ss << "STATION" << i_stn+1;
-			cfg.getValue(ss.str(), "Input", stationID);
-			vecStationIDs.push_back(stationID);
-		}
-	} else { //Bedeutet, dass das IMIS plugin zum Zug kommt
-		nStations = vecStationIDs.size();
-		ss.str("");
-		ss << nStations;
-		cfg.addKey("NROFSTATIONS", "Input", ss.str());
-		for (size_t i_stn=0; i_stn<nStations; i_stn++) {
-			ss.str("");
-			ss << "STATION" << i_stn+1; //für das IMIS plugin sind diese Keys erforderlich
-			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
-		}
-	}
-
-	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
-		string meteosrc; cfg.getValue("METEO", "Input", meteosrc);
-		ss.str("");
-		ss << "METEOFILE" << i_stn+1;
-		string meteofile; cfg.getValue(ss.str(), "Input", meteofile, mio::Config::nothrow);
-		if (meteofile == "") {
-			if (meteosrc == "SMET") {
-				cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]+".smet");
-			} else if (meteosrc == "SNOWPACK") {
-				cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]+".inp");
-			}
-		}
-	}
-	*/
-
 	string variant; cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
+
 	// Add keys to perform running mean in Antarctic variant
 	if (variant == "ANTARCTICA") {
 		cfg.addKey("COPY::VW_AVG", "Input", "VW");
@@ -800,14 +762,9 @@ int main (int argc, char *argv[])
 
 	//If the user provides the stationIDs - operational use case
 	if (vecStationIDs.size() > 0) { //This means that the user provides the station IDs on the command line
-		stringstream ss;
-		ss.str("");
-		ss << vecStationIDs.size();
-
-		cfg.addKey("NROFSTATIONS", "Input", ss.str()); //needed for the IMIS plugin
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
-			ss.str("");
-			ss << "STATION" << i_stn+1; //für das IMIS plugin sind diese Keys erforderlich
+			stringstream ss;
+			ss << "STATION" << i_stn+1; //For the IMIS plugin of MeteoIO, this key denotes the station name
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
