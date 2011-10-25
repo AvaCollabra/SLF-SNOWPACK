@@ -1201,21 +1201,26 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		 * The third clause makes it a one way issue (only with snowfall, not with melt).
 		 * The second clause limits this issue to small canopies only, to prevent problems
 		 * with Alpine3D simulations in forests.
-		*/
+		 */
 		if ((Xdata.Cdata.height > 0.) && (Xdata.Cdata.height < ThresholdSmallCanopy)
                 && ((Xdata.cH + Xdata.Cdata.height) < Xdata.mH) && (Xdata.mH != Constants::undefined)) {
-			//Adjust measured snow height with canopy height ...
-			Xdata.Cdata.height = Xdata.Cdata.height - (Xdata.mH - (Xdata.cH + Xdata.Cdata.height));
+			/*First, reduce the Canopy height with the additional snow height. This makes the Canopy work
+			 *like a spring. When increase in mh is 3 cm and the canopy height is 10 cm, the snow pack is
+			 *assumed to be 6cm in thickness. When the total amount of snow measured (mh) equals the canopy
+			 *height, the canopy is reduced to 0, and everything measured is assumed to be snow.
+			 */
+			Xdata.Cdata.height -= (Xdata.mH - (Xdata.cH + Xdata.Cdata.height));
 			if (Xdata.Cdata.height < 0.) {
 				Xdata.Cdata.height = 0.;
 			} else {
+				//Adjust measured snow height with canopy height ...
 				Xdata.mH -= Xdata.Cdata.height;
 				if (Xdata.mH < Xdata.Ground)
 					Xdata.mH = Xdata.Ground;
 			}
 		}
 
-			// In case of virtual slope use new snow depth and density from either flat field or luv slope
+		// In case of virtual slope use new snow depth and density from either flat field or luv slope
 		if (((Xdata.cH + Xdata.Cdata.height) < (Xdata.mH - (height_new_elem * cos_sl)))
 		        || (Xdata.hn > 0.) || force_layer) {
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
