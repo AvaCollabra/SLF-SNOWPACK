@@ -1241,10 +1241,7 @@ int main (int argc, char *argv[])
 	time_t nowEND=time(NULL);
 	cout << endl;
 	cout << "[i] []                 STARTED  running SLF " << mode << " Snowpack Model on " << ctime(&nowSRT);
-	if (mode == "OPERATIONAL")
-		cout << "                       ===========================================================================" << endl;
-	else
-		cout << "                       ========================================================================" << endl;
+	cout << "                       ========================================================================" << endl;
 	cout << "                       FINISHED running SLF " << mode << " Snowpack Model on " << ctime(&nowEND) << endl;
 
 	return 0;
