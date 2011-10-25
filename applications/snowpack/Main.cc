@@ -835,7 +835,8 @@ int main (int argc, char *argv[])
 					} else {
 						const size_t pos_dot = snowfile.rfind(".");
 						const size_t pos_slash = snowfile.rfind("/");
-						if( pos_dot!= string::npos && pos_dot>pos_slash) //so that the dot is not in a directory name
+						if (((pos_dot != string::npos) && (pos_dot > pos_slash)) || 
+						    ((pos_dot != string::npos) && (pos_slash == string::npos))) //so that the dot is not in a directory name
 							snowfile.erase(pos_dot, snowfile.size()-pos_dot);
 					}
 					snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.station], sn_Zdata);
