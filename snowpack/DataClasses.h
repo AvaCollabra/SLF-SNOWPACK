@@ -380,6 +380,7 @@ class CanopyData {
 class SnowStation {
 	public:
 		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers);
+		~SnowStation();
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
 		void resize(const unsigned int& number_of_elements);
@@ -425,7 +426,7 @@ class SnowStation {
 		double z_S_5;               ///< Depth of stab_index5
 		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
-		void *Kt, *Ks;              ///< Pointer to pseudo-conductivity and stiffnes matrix
+		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double dIntEnergy;          ///< Internal energy change (J m-2)
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
