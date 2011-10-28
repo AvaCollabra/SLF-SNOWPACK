@@ -1193,7 +1193,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
                                 && Mdata.hs_change_rate > HS_threshold_smallincrease)
                              || (Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
                                     && Mdata.hs_change_rate > HS_threshold_largeincrease)));
-	if (snow_fall && snowed_in) {
+	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
+	//if we are NOT in a slope! If we are in a slope, the slope should just get new snow when the flat field gets new snow:
+	if (snow_fall && (snowed_in || (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle))) {
 		/* Now check if we have some canopy left. Then we reduce the canopy with the new snow height.
 		 * This is to simulate the gradual sinking of the canopy under the weight of snow.
 		 * We also adjust Xdata.mH, to have it reflect only measured snow, and not the canopy.
