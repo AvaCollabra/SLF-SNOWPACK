@@ -73,7 +73,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["T_CRAZY_MIN"] = "210.";
 	advancedConfig["VARIANT"] = "DEFAULT";
 	advancedConfig["VISCOSITY_MODEL"] = "DEFAULT";
-	advancedConfig["WET_LAYER"] = "true";
+	advancedConfig["WET_LAYER"] = "false";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 
 	//[Input] section

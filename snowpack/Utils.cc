@@ -124,15 +124,15 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
  * @param calculation_step_length (min) //HACK: it should be in SI!!
  * @return int
  */
-int booleanTime(const double& JulianDate, double days_between,
-                const double& start, const double& calculation_step_length)
+bool booleanTime(const double& JulianDate, double days_between,
+                 const double& start, const double& calculation_step_length)
 {
 	int ret;
 	double jul_frc;
 	const double step = M_TO_D(calculation_step_length);	//step length in days (converted from minutes)
 
 	if ( JulianDate < (start - 0.5*step) ) {
-		return 0;
+		return false;
 	}
 
 	// NOTE that days_between must be known to a high degree of accuracy to make the test below work
@@ -145,7 +145,7 @@ int booleanTime(const double& JulianDate, double days_between,
 	}
 	jul_frc = (JulianDate - start) / days_between - floor((JulianDate - start) / days_between);
 	ret = ( (jul_frc > (days_between - 0.5 * step) / days_between) || (jul_frc < 0.5 * step / days_between) );
-	return ret;
+	return (ret != 0);
 }
 
 /**

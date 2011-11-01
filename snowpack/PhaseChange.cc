@@ -316,10 +316,10 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 						NDS[e].T = Constants::melting_tk;
 					}
 				}
-				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
-					prn_msg(__FILE__, __LINE__, "wrn", Date(),
-					        "Melt: Snow temperature above melting (%f) in element %d (nE=%d) %f %f",
-					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
+// 				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
+// 					prn_msg(__FILE__, __LINE__, "wrn", Date(),
+// 					        "Melt: Snow temperature above melting (%f) in element %d (nE=%d) %f %f",
+// 					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 				// See whether hoar has melted
 				if (EMS[e].theta[WATER] > 0.0) {
 					NDS[e].hoar = 0.0;
@@ -360,10 +360,10 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 					NDS[e].T += 0.5 * (EMS[e].Te - Te_old);
 					NDS[e+1].T += 0.5 * (EMS[e].Te - Te_old);
 				}
-				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
-					prn_msg(__FILE__, __LINE__, "wrn", Date(),
-					        "Freeze: Snow temperature above freezing (%f) in element %d (nE=%d) %f %f",
-					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
+// 				if (NDS[e].T > Constants::melting_tk || NDS[e+1].T > Constants::melting_tk)
+// 					prn_msg(__FILE__, __LINE__, "wrn", Date(),
+// 					        "Freeze: Snow temperature above freezing (%f) in element %d (nE=%d) %f %f",
+// 					        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 			}
 		}
 

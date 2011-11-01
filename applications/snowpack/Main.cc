@@ -92,17 +92,18 @@ vector<string> vecStationIDs;
 /// @brief Main control parameters
 struct MainControl
 {
-	double TimeN;      ///< Time of present computation (s)
-	int    nStep;      ///< Time step number
-	double Duration;   ///< Duration of run (s)
-	int    TsDump;     ///< Flag for time series dump
-	int    nAvg;       ///< Number of calculation time steps to average fluxes etc.
-	int    HzStep;     ///< Hazard step number (should be half of nStep in operational mode)
-	int    HzDump;     ///< Calculation of hazard information will be performed
-	int    PrDump;     ///< Flag for profile dump
-	int    XdataDump;  ///< Backup of Xdata will be performed
-	int    TaglayDump; ///< Flag for tagged layer series dump
-	int    PrTabDump;  ///< Flag for tabular profile dump
+	double Duration;     ///< Duration of run (s)
+	double TimeN;        ///< Time of present computation (s)
+	size_t nStep;        ///< Time step number
+	size_t nAvg;         ///< Number of calculation time steps to average fluxes etc.
+	size_t HzStep;       ///< Hazard step number (should be half of nStep in operational mode)
+	bool   TsDump;       ///< Flag for time series dump
+	bool   HzDump;       ///< Calculation of hazard information will be performed
+	bool   PrDump;       ///< Flag for profile dump
+	bool   XdataDump;    ///< Backup of Xdata will be performed
+	bool   TaglayDump;   ///< Flag for tagged layer series dump
+	bool   PrTabDump;    ///< Flag for tabular profile dump
+	bool   resFirstDump; ///< Flag to dump initial state of snowpack
 };
 
 /************************************************************
@@ -616,15 +617,21 @@ void getDhs6Dhs24(double& delta_hs6, double& delta_hs24, mio::IOManager& io, con
  * @param mn_ctrl timestep control structure
  **/
 
-void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Date& sno_step, const double& calculation_step_length,
-					  const double& tsstart, const double& tsdaysbetween,
-	   const double& profstart, const double& profdaysbetween,
-	const double& first_backup, const double& backup_days_between)
+void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Date& sno_step,
+                      const double& calculation_step_length,
+                      const double& tsstart, const double& tsdaysbetween,
+                      const double& profstart, const double& profdaysbetween,
+                      const double& first_backup, const double& backup_days_between)
 {
 //HACK: put all tsstart, tsdaysbetween, etc in MainControl as well as current timestep
 	const double Dstep = step.getJulianDate();
 	const double Dsno_step = sno_step.getJulianDate();
-	if ( mn_ctrl.nStep ) {
+	if (mn_ctrl.resFirstDump) {
+		mn_ctrl.HzDump = false;
+		mn_ctrl.TsDump = true;
+		mn_ctrl.PrDump = true;
+		mn_ctrl.resFirstDump = false;
+	} else {
 		// Hazard data, every half-hour
 		mn_ctrl.HzDump = booleanTime(Dstep, 0.5/24., 0.0, calculation_step_length);
 		// Time series (*.met)
@@ -638,10 +645,6 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
 			bool_start += Dsno_step;
 		mn_ctrl.PrDump = booleanTime(Dstep, profdaysbetween, bool_start, calculation_step_length);
 
-	} else {
-		mn_ctrl.HzDump = 0;
-		mn_ctrl.TsDump = 1;
-		mn_ctrl.PrDump = 1;
 	}
 
 	// Additional Xdata backup (*.<JulianDate>sno)
@@ -754,7 +757,7 @@ int main (int argc, char *argv[])
 	const bool tswrite = cfg.get("TS_WRITE", "Output");
 	const double tsstart = cfg.get("TS_START", "Output");
 	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
-	const int hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Output");
+	const size_t hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Output");
 
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::Config::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::Config::nothrow);
@@ -764,7 +767,7 @@ int main (int argc, char *argv[])
 	if (vecStationIDs.size() > 0) { //This means that the user provides the station IDs on the command line
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 			stringstream ss;
-			ss << "STATION" << i_stn+1; //For the IMIS plugin of MeteoIO, this key denotes the station name
+			ss << "STATION" << i_stn+1; //For the IMIS plugin of MeteoIO, this key denotes the station id
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
@@ -912,10 +915,10 @@ int main (int argc, char *argv[])
 
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
+			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
 			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes);
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
-			mn_ctrl.nStep = -1;
 		}
 
 		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate()
@@ -996,11 +999,12 @@ int main (int argc, char *argv[])
 					if (slope.sector == slope.luv) { // Make sure the transported snow comes from the windward slope
 						cumulate(cumsum_drift, surfFluxes.drift);
 						if (mn_ctrl.HzDump) {
-							size_t i_hz = 0; //HACK: Please check the index i_hz makes sense
-							if (mn_ctrl.HzStep > 0) i_hz = (size_t)mn_ctrl.HzStep - 1;
+							size_t i_hz = 0;
+							if (mn_ctrl.HzStep > 0)
+								i_hz = mn_ctrl.HzStep - 1;
 							Hazard::getDriftIndex(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
-							                     sn_Zdata.drift24, cumsum_drift,
-							                     cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle())));
+							                      sn_Zdata.drift24, cumsum_drift,
+							                      cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle())));
 							cumsum_drift = 0.;
 						}
 					}
@@ -1149,16 +1153,18 @@ int main (int argc, char *argv[])
 					surfFluxes.mass[SurfaceFluxes::MS_WIND] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 
 					// Dump
-					const unsigned int i_hz = MAX(0, mn_ctrl.HzStep-1);
-					double wind_trans24 = qr_Hdata.at(i_hz).wind_trans24;
-					if (i_hz) wind_trans24 = qr_Hdata.at(i_hz-1).wind_trans24;
+					double wind_trans24;
+					size_t i_hz = 0;
+					if (mn_ctrl.HzStep > 0)
+						i_hz = mn_ctrl.HzStep - 1;
+					wind_trans24 = qr_Hdata.at(i_hz).wind_trans24;
 					ss.str("");
 					ss << vecStationIDs[i_stn];
 					if (slope.sector != slope.station) {
 						ss << slope.sector;
 					}
 					snowpackio.writeTimeSeries(vecXdata[slope.sector], surfFluxes, Mdata,
-										  qr_Hdata.at(i_hz), wind_trans24);
+					                           qr_Hdata.at(i_hz), wind_trans24);
 
 					if (avgsum_time_series) {
 						surfFluxes.reset(cumsum_mass);

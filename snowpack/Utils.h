@@ -60,8 +60,8 @@ __attribute__ ((format (printf, 5, 6)));
 void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...);
 #endif
 
-int booleanTime(const double& JulianDate, double days_between,
-                const double& start, const double& calculation_step_length);
+bool booleanTime(const double& JulianDate, double days_between,
+                 const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
                           const std::string& stationID, const unsigned int& nSlopes);
