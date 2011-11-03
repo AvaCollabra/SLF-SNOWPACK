@@ -139,9 +139,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
-	//Mean meteo time step in seconds
-	mio::IOManager io(cfg);
-	meteo_step_length = io.getAvgSamplingRate();
+	meteo_step_length = cfg.get("METEO_STEP_LENGTH", "Snowpack");
 
 	//Defines whether a multiband model is used for short wave radiation extinction
 	cfg.getValue("MULTISTREAM", "SnowpackAdvanced", multistream);

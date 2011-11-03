@@ -776,7 +776,7 @@ int main (int argc, char *argv[])
 
 	mio::IOManager io(cfg);
 	io.setMinBufferRequirements(IOUtils::nodata, 1.1); //we require the buffer to contain at least 1.1 day before the current point
-	
+
 	vector<StationData> accessible_stations;
 	io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
 	if (vecStationIDs.size() == 0) {
@@ -838,7 +838,7 @@ int main (int argc, char *argv[])
 					} else {
 						const size_t pos_dot = snowfile.rfind(".");
 						const size_t pos_slash = snowfile.rfind("/");
-						if (((pos_dot != string::npos) && (pos_dot > pos_slash)) || 
+						if (((pos_dot != string::npos) && (pos_dot > pos_slash)) ||
 						    ((pos_dot != string::npos) && (pos_slash == string::npos))) //so that the dot is not in a directory name
 							snowfile.erase(pos_dot, snowfile.size()-pos_dot);
 					}
@@ -936,6 +936,7 @@ int main (int argc, char *argv[])
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min", calculation_step_length);
 
 		bool computed_one_timestep = false;
+		double meteo_step_length = -1.;
 
 		// START TIME INTEGRATION LOOP
 		do {
@@ -947,6 +948,12 @@ int main (int argc, char *argv[])
 			vector<mio::MeteoData> vecMyMeteo;
 			meteoRead_timer.start();
 			io.getMeteoData(current_date, vecMyMeteo);
+			if(meteo_step_length<0.) {
+				std::stringstream ss;
+				meteo_step_length = io.getAvgSamplingRate();
+				ss << meteo_step_length;
+				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss.str());
+			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
