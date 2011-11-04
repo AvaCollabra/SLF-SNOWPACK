@@ -92,9 +92,8 @@ class SnLaws {
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double parameterizedSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
-		                                      const ElementData& Edata, const double& Tss,
-		                                      const CurrentMeteo& Mdata, double& age);
+		static double parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
+		                                      const double& Tss, const CurrentMeteo& Mdata);
 		static void compShortWaveAbsorption(const double& I0, const bool& useSoilLayers,
 		                                    const bool& multistream,SnowStation& Xdata);
 
@@ -137,8 +136,7 @@ class SnLaws {
 		static const bool __init;
 		static std::string current_variant;
 		static AlbedoModel currentAlbedoModel;
-		static const double glacier_albedo;
-		static bool noAlbedoAge;
+		static bool ageAlbedo;
 		static ViscosityVersion visc;
 		static TempDependence t_term;
 		static double visc_ice_fudge, visc_sp_fudge, visc_water_fudge;

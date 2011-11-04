@@ -203,8 +203,7 @@ bool   SnLaws::setfix = false;
  */
 //@{
 SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
-bool SnLaws::noAlbedoAge = false;
-const double SnLaws::glacier_albedo = 0.3;
+bool SnLaws::ageAlbedo = true;
 //@}
 
 /**
@@ -282,9 +281,9 @@ bool SnLaws::setStaticData(const std::string& variant)
 		currentAlbedoModel = alb_lehning_2;
 
 	if (current_variant == "ANTARCTICA")
-		SnLaws::noAlbedoAge = true;
+		SnLaws::ageAlbedo = false;
 	else
-		SnLaws::noAlbedoAge = false;
+		SnLaws::ageAlbedo = true;
 
 	swa_nBands = 5; // use 5 bands per default
 	if (SnLaws::band20) {
@@ -358,20 +357,17 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @param Mdata
  * @param tday Age of surface snow (d)
  */
-double SnLaws::parameterizedSnowAlbedo(const std::string& variant, const double& i_fixed_albedo,
-                                       const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata,
-                                       double& age)
+double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
+                                       const double& Tss, const CurrentMeteo& Mdata)
 {
-	if (variant != SnLaws::current_variant)
-		setStaticData(variant);
-
-	double Alb=Constants::min_albedo, Alb1;
+	double Alb = Constants::min_albedo, Alb1;
 	const double Ta = Mdata.ta;
+	double age = Mdata.date.getJulianDate() - Edata.depositionDate.getJulianDate();
 
 	if (i_fixed_albedo != Constants::undefined) {
 		Alb = i_fixed_albedo;
-	} else if (!SnLaws::noAlbedoAge && (age > 365.)) {
-		Alb = SnLaws::glacier_albedo;
+	} else if ((SnLaws::ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
+		Alb = Constants::glacier_albedo;
 	} else {
 		switch (currentAlbedoModel) {
 		case alb_lehning_0: {
@@ -414,7 +410,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& variant, const double&
 			//TODO: this perfoms very badly (if not completly wrong) for (very?) wet snowpack
 			//for example, February 2007 in Davos with very warm weather resulting in (measured?) albedos of 0.3 ...
 			double av = 0.8042; // Value of original regression
-			if (SnLaws::noAlbedoAge) { // NOTE clean antarctic snow
+			if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
 				age = 0.;
 				av = 0.7542; // estimated from comparison with measurements at Dome C
 			}
@@ -1074,6 +1070,7 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * @param Mdata Meteorological input
  * @param Xdata Snow cover data
  * @param tss Snow surface temperature (K)
+ * @param variant which is currently used
  */
 double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
                                   const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,

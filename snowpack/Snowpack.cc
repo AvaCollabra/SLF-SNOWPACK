@@ -707,9 +707,9 @@ void Snowpack::neumannBoundaryConditionsSoil(const double& flux, const double& T
  * @param Mdata
  * @param Bdata
  */
-void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata)
+void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata)
 {
-	unsigned int n, e;        // nodal and element counters
+	size_t n, e;        // nodal and element counters
 	int iteration;	// iteration counter (not really required)
 	int NotConverged;	// = 1 if iteration not converged
 	double MaxTDiff;	// maximum temperature difference for convergence
@@ -736,9 +736,9 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	// Dereference the pointers
 	Kt = Xdata.Kt;
 	vector<NodeData>& NDS = Xdata.Ndata;
-	unsigned int nN = Xdata.getNumberOfNodes();
+	size_t nN = Xdata.getNumberOfNodes();
 	vector<ElementData>& EMS = Xdata.Edata;
-	unsigned int nE = Xdata.getNumberOfElements();
+	size_t nE = Xdata.getNumberOfElements();
 
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// What snow depth should be used?
@@ -753,20 +753,26 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 	else
 		Xdata.mAlbedo = Constants::undefined;
 
-	// Estimated albedo (statistical model) allowing correct treatment of PLASTIC or WET_LAYER
-	if ((nE > Xdata.SoilNode) && (EMS[nE-1].theta[SOIL] < 0.000001)) {
-		double age = Mdata.date.getJulianDate() - EMS[nE-1].depositionDate.getJulianDate();
-		if ((EMS[nE-1].theta[ICE] >= (min_ice_content))) {
-			// Snow on top
-			cAlb = SnLaws::parameterizedSnowAlbedo(variant, fixed_albedo, EMS[nE-1], NDS[nN-1].T, Mdata, age);
-		} else if ((nE > Xdata.SoilNode+1) && (EMS[nE-2].theta[ICE] >= (min_ice_content))) {
-			// Water over snow or ice
-			age = Mdata.date.getJulianDate() - EMS[nE-2].depositionDate.getJulianDate();
-			cAlb = SnLaws::parameterizedSnowAlbedo(variant, fixed_albedo, EMS[nE-2], NDS[nN-2].T, Mdata, age);
-		} else {
-			cAlb = Xdata.SoilAlb;
+	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
+	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer
+		size_t eAlbedo = nE-1;
+		size_t marker = EMS[eAlbedo].mk % 10;
+		switch (marker) {
+		case 9: // WATER_LAYER
+			if (eAlbedo > Xdata.SoilNode)
+				eAlbedo--;
+		case 8: // Ice layer within the snowpack
+			while ((eAlbedo > Xdata.SoilNode) && (marker == 8))
+				eAlbedo--;
+		default: // Snow, glacier ice, PLASTIC, or soil
+			if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
+				cAlb = SnLaws::parameterizedSnowAlbedo(fixed_albedo, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+			} else { // PLASTIC, or soil
+				cAlb = Xdata.SoilAlb;
+			}
+			break;
 		}
-	} else {
+	} else { // Soil
 		cAlb = Xdata.SoilAlb;
 	}
 
@@ -778,10 +784,10 @@ void Snowpack::compSnowTemperature(SnowStation& Xdata, CurrentMeteo& Mdata, Boun
 			}
 		}
 		if (!ALPINE3D)
-			cAlb = MAX (cAlb, Mdata.rswr / Constants::solcon);
-		cAlb = MAX (Xdata.SoilAlb, MIN(0.95, cAlb));
+			cAlb = MAX(cAlb, Mdata.rswr / Constants::solcon);
+		cAlb = MAX(Xdata.SoilAlb, MIN(0.95, cAlb));
 	} else {
-		cAlb = MAX (0.05, MIN (0.99, cAlb));
+		cAlb = MAX(0.05, MIN(0.99, cAlb));
 	}
 
 	switch (sw_mode) {
@@ -1253,7 +1259,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			cumu_hnw = 0.0;
 			// Check whether surface hoar could be buried
 			hoar = Xdata.Ndata[nOldN-1].hoar;
-			if (nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < 0.00001) {
+			if (nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < Constants::eps2) {
 				// W.E. of surface hoar must be larger than a threshold to be buried
 				if (hoar > 1.5*MM_TO_M(hoar_min_size_buried)*hoar_density_surf) {
 					nHoarE = 1;
@@ -1558,7 +1564,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata);
 
 		// Find the temperature in the snowpack
-		compSnowTemperature(Xdata, Mdata, Bdata);
+		compSnowTemperatures(Xdata, Mdata, Bdata);
 
 		//Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
 		// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
@@ -1568,7 +1574,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
 			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = C_TO_K(thresh_change_bc/2.);
-			compSnowTemperature(Xdata, Mdata, Bdata);
+			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 
 		// See if any SUBSURFACE phase changes are occuring

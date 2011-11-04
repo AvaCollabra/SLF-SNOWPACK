@@ -55,8 +55,10 @@
  *                            - 2 reached a sp of 1
  *                            - 3 Surface Hoar SH
  *                            - 4 Graupel PPgp
- *                            - 5 not implemented yet --> thin crusts
+ *                            - 5 Not implemented yet --> thin crusts
+ *                            - 7 Glacier ice
  *                            - 8 Ice layer IFil
+ *                            - 9 Pure water on top of snowpack, soil, or road
  *                            - mk < 10, mk=mk+10 : first complete wetting
  *                            - mk < 20, mk=mk+10 : first melt-freeze cycle completed
  *                            - mk / 100 >= 1     : tagged snow layer
@@ -557,7 +559,6 @@ double Metamorphism::PressureSintering(ElementData& Edata)
  */
 void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	int e, nE;
 	ElementData *EMS;   // Avoids dereferencing the element data pointer
 
 	double rgDot;        // Grain growth rate (mm d-1)
@@ -571,17 +572,16 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 	double T1, T2;       // Nodal temperatures of element
 	double dPdZ;         // Vapor pressure gradient within element
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
-	unsigned int marker; // local variable
+	const double cw = 1.e8 * exp(-6000. / 273.15);
+	size_t marker;       // local variable
+	const size_t nE = Xdata.getNumberOfElements();
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0];
 	//vector<ElementData>& EMS = Xdata.Edata;
 	vector<NodeData>& NDS = Xdata.Ndata;
-	nE = Xdata.getNumberOfElements();
 
-	const double cw = 1.e8 * exp(-6000. / 273.15);
-
-	for (e = Xdata.SoilNode; e < nE; e++) {
+	for (size_t e = Xdata.SoilNode; e < nE; e++) {
 		// Set all rates of change to zero for element e
 		ddDot = spDot = rbDot = rgDot = 0.0;
 
@@ -593,7 +593,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		EMS[e].N3 = getCoordinationNumberN3(EMS[e].Rho);
 
 		// Compute local values
-		double thetam_w = 1.e2 * (Constants::density_water * (EMS[e].theta[WATER]) / (EMS[e].Rho));
+		const double thetam_w = 1.e2 * (Constants::density_water * (EMS[e].theta[WATER]) / (EMS[e].Rho));
 
 		splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
@@ -752,9 +752,9 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 			if ((EMS[e].sp > 0.999) && (marker % 10 == 0)) {
 				EMS[e].mk += 2;  // grains become fully rounded
 			}
-			if ((EMS[e].theta[ICE] > 0.763) && (marker % 10 != 8)) {
+			// An ice layer forms in the snowpack for dry densities above 700 kg m-3!
+			if ((EMS[e].theta[ICE] > 0.763) && ((marker % 10 != 7) || (marker % 10 != 8))) {
 				EMS[e].mk = (EMS[e].mk / 10) * 10 + 8;
-				// There is an ice layer forming for dry densities above 700 kg m-3!
 			}
 		}
 
@@ -782,7 +782,6 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
  */
 void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	int e, nE;
 	ElementData *EMS;   // Avoids dereferencing the element data pointer
 
 	double rgDot;        // Grain growth rate (mm d-1)
@@ -796,17 +795,17 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double T1, T2;       // Nodal temperatures of element
 	double dPdZ;         // Vapor pressure gradient within element
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
-	double cw, thetam_w; // local variables
-	int    marker;       // local variable
+	const double cw = 1.e8 * exp(-6000. / 273.15);
 	double dhfDot = Constants::undefined;       //NIED (H. Hirashima) Depth hoar factor ...
 	double DenFact, Diffus, gradV; //NIED (H. Hirashima) //Fz HACK please describe variables
+	size_t marker;       // local variable
+	const size_t nE = Xdata.getNumberOfElements();
 
 	// Dereference the element pointer containing micro-structure data
 	EMS = &Xdata.Edata[0];
 	vector<NodeData>& NDS = Xdata.Ndata;
-	nE = Xdata.getNumberOfElements();
 
-	for (e = Xdata.SoilNode; e < nE; e++) {
+	for (size_t e = Xdata.SoilNode; e < nE; e++) {
 		// Set all rates of change to zero for element e
 		ddDot = spDot = rbDot = rgDot = 0.0;
 
@@ -818,8 +817,8 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		EMS[e].N3 = getCoordinationNumberN3(EMS[e].Rho);
 
 		// Compute local values
-		cw = 1.e8 * exp(-6000. / 273.15);
-		thetam_w = 1.e2 * (Constants::density_water * EMS[e].theta[WATER] / EMS[e].Rho);
+		const double thetam_w = 1.e2 * (Constants::density_water * EMS[e].theta[WATER] / EMS[e].Rho);
+
 		splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
 			splim1=0.0;
@@ -1012,9 +1011,9 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 			if ( (EMS[e].sp > 0.999) && (marker % 10 == 0) ) {
 				EMS[e].mk += 2;  // grains become fully rounded
 			}
-			if ( (EMS[e].theta[ICE] > 0.763) && (marker % 10 != 8) ) {
+			// An ice layer forms for dry densities above 700 kg m-3!
+			if ((EMS[e].theta[ICE] > 0.763) && ((marker % 10 != 7) || (marker % 10 != 8))) {
 				EMS[e].mk = (EMS[e].mk / 10) * 10 + 8;
-				// There is an ice layer forming for dry densities above 700 kg m-3!
 			}
 		}
 

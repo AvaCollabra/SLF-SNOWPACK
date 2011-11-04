@@ -125,10 +125,12 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 
 /**
  * @brief Assign surface data from SnowStation to SurfaceFluxes.
- * @param Xdata
- * @param Bdata
- * @param Mdata
  * @param Sdata
+ * @param Bdata
+ * @param Xdata
+ * @param Mdata
+ * @param useSoilLayers then the model also deals with soil layers
+ * @param soil_flux strength of soil heat flux at greater depth (where it can be considered to be constant)
  */
 void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& Bdata,
                                          SnowStation& Xdata, const CurrentMeteo& Mdata,
@@ -471,7 +473,7 @@ double ElementData::neck2VolumetricStrain()
  * @brief Determine the type of snow \n
  * First revisited by Fierz and Bellaire 2006 and 2007
  * TODO needs to be adapted to international classification
- * @version 11.01
+ * @version 11.11
  * @return snow type code according to old-fashioned Swiss tradition
  */
 
@@ -607,14 +609,16 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	if ((marker >= 20) && (theta_w < 0.1*res_wat_cont)) { // MFcr Melt-Freeze
 		c = 2;
 	}
-	if (marker == 3) { // SH   Surface Hoar
+	switch (marker) {
+	case 3: // SH   Surface Hoar
 		a = 6; b = 6; c = 0;
-	}
-	if (marker == 4) { // PPgp Graupel
+		break;
+	case 4: // PPgp Graupel
 		a = 0; b = 0; c = 0;
-	}
-	if (marker % 10 == 8) { // IFil Ice Layer
+		break;
+	case 7: case 8: // Glacier ice & IFil, that is, ice layers within the snowpack
 		a = 8; b = 8; c = 0;
+		break;
 	}
 
 	return (a*100 + b*10 + c);
@@ -663,7 +667,7 @@ SnowStation::~SnowStation()
  */
 void SnowStation::compSnowpackInternalEnergyChange(const double sn_dt)
 {
-	unsigned int e = SoilNode;
+	size_t e = SoilNode;
 	double cold_content_in = ColdContent;
 	double melt_freeze_energy = 0.;
 
@@ -720,12 +724,12 @@ void SnowStation::resize(const unsigned int& number_of_elements)
 	nNodes = (int)Ndata.size();
 }
 
-unsigned int SnowStation::getNumberOfElements() const
+size_t SnowStation::getNumberOfElements() const
 {
 	return nElems;
 }
 
-unsigned int SnowStation::getNumberOfNodes() const
+size_t SnowStation::getNumberOfNodes() const
 {
 	return nNodes;
 }

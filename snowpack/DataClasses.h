@@ -393,24 +393,24 @@ class SnowStation {
 		void compSnowpackInternalEnergyChange(const double sn_dt);
 		double getModelledTemperature(const double& z) const;
 
-		unsigned int getNumberOfElements() const;
-		unsigned int getNumberOfNodes() const;
+		size_t getNumberOfElements() const;
+		size_t getNumberOfNodes() const;
 
 		mio::StationData meta;      ///< Station meta data
 
-		unsigned int sector;        ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
 		double cAlbedo;             ///< Computed snow albedo
 		double mAlbedo;             ///< Measured snow albedo
 		double SoilAlb;             ///< Soil albedo
 		double BareSoil_z0;         ///< Bare soil roughness in m
-		unsigned int SoilNode;      ///< The top soil node, 0 in case of SNP_SOIL == 0
+		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
 		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
 		double mH;                  ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		bool windward;              ///< True for windward (luv) slope
-		unsigned int ErosionLevel;  ///< Element where snow erosion stopped previously for the drift index
+		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
 		double ErosionMass;         ///< Eroded mass either real or virtually (storage if less than one element)
 		int S_class1;               ///< Stability class based on hand hardness, grain class ...
 		int S_class2;               ///< Stability class based on hand hardness, grain class ...
@@ -432,7 +432,7 @@ class SnowStation {
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		CanopyData Cdata;           ///< Pointer to canopy data
-		unsigned int tag_low;       ///< Lowest tag to dump, 0 means no tags at all
+		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
@@ -441,8 +441,8 @@ class SnowStation {
 
 	private:
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
-		unsigned int nNodes;                ///< Actual number of nodes; different for each exposition
-		unsigned int nElems;                ///< Actual number of elements (nElems=nNodes-1)
+		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
+		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 };
 
 /**
