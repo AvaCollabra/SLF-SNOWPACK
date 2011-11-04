@@ -32,7 +32,7 @@ WaterTransport::WaterTransport(const mio::Config& cfg)
 	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
 
 	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
-	cfg.getValue("WET_LAYER", "SnowpackAdvanced", wet_layer);
+	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", water_layer);
 
 	//Rain only for air temperatures warmer than threshold (degC)
 	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
@@ -286,7 +286,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
  * 	  => Use sn_ElementMerging() to compute the properties of the lower element
  * - NOTE
  * 	- Water will be transported AFTER elements have been removed.
- * 	- If wet_layer and snp_soil are set, make sure that you keep a potential wet water layer over soil or ice
+ * 	- If water_layer and snp_soil are set, make sure that you keep a potential wet water layer over soil or ice
  * 	- Reset ground surface temperature if !snp_soil and no snow is left
  * @param *Xdata
  * @param *Sdata
@@ -300,7 +300,10 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	unsigned int rnN = nN, nE = nN-1, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	if ((nN == Xdata.SoilNode+1) || (wet_layer && snp_soil && (nN == Xdata.SoilNode+2) && (EMS[nE-1].theta[ICE] < Snowpack::min_ice_content) && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
+	if ((nN == Xdata.SoilNode+1)
+	        || (water_layer && snp_soil && (nN == Xdata.SoilNode+2)
+	                && (EMS[nE-1].theta[ICE] < Snowpack::min_ice_content)
+	                    && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
 		return;
 	}
 
@@ -338,11 +341,16 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	}
 	// Check for one snow element left
 	e0 = Xdata.SoilNode;
-	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps)) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content || EMS[e0].L < 0.005) && !(wet_layer && snp_soil && (nE > 1) && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95)) && (EMS[nE-1].theta[WATER] > 0.05))) {
+	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps))
+            && (EMS[e0].theta[ICE] < Snowpack::min_ice_content || EMS[e0].L < 0.005)
+                && !(water_layer && snp_soil && (nE > 1)
+                         && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95))
+                         && (EMS[nE-1].theta[WATER] > 0.05))) {
 		Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e0].M;
 		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e0].M;
 		for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
-			Sdata.load[ii] += (EMS[e0].L*EMS[e0].theta[WATER]*EMS[e0].conc[WATER][ii] + EMS[e0].L*EMS[e0].theta[ICE] * EMS[e0].conc[ICE][ii])/S_TO_H(sn_dt);
+			Sdata.load[ii] += (EMS[e0].L*EMS[e0].theta[WATER]*EMS[e0].conc[WATER][ii]
+                                  + EMS[e0].L*EMS[e0].theta[ICE] * EMS[e0].conc[ICE][ii])/S_TO_H(sn_dt);
 		}
 		rnE--;
 		rnN--;
@@ -394,8 +402,9 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			EMS[e0].theta[ICE]   *= 1.5;
 		}
 
-		// For wet_layer go to Water Density
-		if (wet_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content) && ( e0 > 0) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
+		// For water layer go to water density
+		if (water_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content)
+                && (e0 > Xdata.SoilNode) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
 			dL = -L0*(1.-EMS[e0].theta[WATER]);
 			EMS[e0].theta[WATER] = 1.;
 			EMS[e0].theta[ICE] = 0.;
@@ -453,13 +462,12 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		return;
 	} else { // Second, consider soil and/or snow on the ground:
 		if ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain))) {
-			Store = Mdata.hnw/Constants::density_water;
+			Store = Mdata.hnw / Constants::density_water;
 			e0 = nE-1;
-		// Now find out, whether you are on an impermeable surface and want to create a water layer ...
-			if (wet_layer && ((snp_soil && (nE == Xdata.SoilNode) && (EMS[nE-1].theta[SOIL] > 0.95)) || ((e0 > 0) && (EMS[e0-1].theta[ICE] > 0.95)) ) && (Store > 0.)) {
-			// ... then generate a new layer
-			// Set the Albedo to the Water ALBEDO
-				Xdata.cAlbedo = 0.2;
+			// Now find out whether you are on an impermeable surface and want to create a water layer ...
+			if (water_layer && (Store > 0.)
+			        && ((snp_soil && (nE == Xdata.SoilNode)
+			                && (EMS[nE-1].theta[SOIL] > 0.95)) || ((e0 > 0) && (EMS[e0-1].theta[ICE] > 0.95)))) {
 				nE++;
 				nN++;
 				Xdata.ErosionLevel = nE-1;
@@ -467,34 +475,37 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Xdata.resize(nE);
 				vector<ElementData>& EMS = Xdata.Edata;
 
-			// Temperature of the upper hoar node
+				// Temperature of the uppermost node
 				NDS[nN-1].T = Mdata.ta;
-			// The new nodal position
-				z_water = MIN(Store,MAX(0.001,0.01*cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))));
+				// The new nodal position
+				z_water = MIN(Store, MAX(0.001, 0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))));
 				NDS[nN-1].z = NDS[nN-2].z + NDS[nN-2].u + z_water;
 				Store -= z_water;
-			// Fill the element data
+				// Fill the element data
 				EMS[nE-1].depositionDate = Mdata.date;
 
 				EMS[nE-1].Te = Mdata.ta;
 				EMS[nE-1].L0 = EMS[nE-1].L = z_water;
 				EMS[nE-1].Rho = Constants::density_water;
-				EMS[nE-1].M = EMS[nE-1].L0*EMS[nE-1].Rho;
+				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
 				EMS[nE-1].theta[WATER] = 1.0;
-				EMS[nE-1].N3 = Metamorphism::getCoordinationNumberN3(EMS[nE-1].Rho);
-				EMS[nE-1].mk = 22;
+				EMS[nE-1].mk = 19;
+				//NOTE all other microstructure parameters should better be set to Constants::undefined but ...
+				EMS[nE-1].N3 = 1.;
 				EMS[nE-1].dd = 0.;
 				EMS[nE-1].sp = 1.;
-				EMS[nE-1].rg = 10.;
-				EMS[nE-1].rb = 10.;
+				EMS[nE-1].rg = 1.0;
+				EMS[nE-1].rb = 0.5;
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
-			} else if (wet_layer && (( snp_soil && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95)) || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95))) && (Store > 0.)) {
-			// Put rain water in existing wet layer
-				z_water = MIN(Store, MAX(0.0, (0.01*cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))-EMS[nE-1].L)));
+			} else if (water_layer && (Store > 0.)
+			               && ((snp_soil && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95))
+			                       || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95)))) {
+				// Put rain water in existing wet layer
+				z_water = MIN(Store, MAX(0.0, (0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())) - EMS[nE-1].L)));
 				NDS[nN-1].z += z_water;
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);
-				EMS[nE-1].M = EMS[nE-1].L0*EMS[nE-1].Rho;
+				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			}
 
@@ -503,7 +514,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				dThetaW0 = MIN(Constants::density_ice/Constants::density_water*EMS[e0].theta[AIR],Store/L0);
 				Store -= dThetaW0*L0;
 				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 *Mdata.conc[ii] + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii]) / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
+					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 *Mdata.conc[ii]
+					                                  + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii])
+					                              / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
 				}
 				EMS[e0].theta[WATER] += dThetaW0;
 				EMS[e0].theta[AIR] -= dThetaW0;
@@ -514,7 +527,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				L0 = EMS[e0].L;
 				dThetaW0 = Store/L0;
 				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 * Mdata.conc[ii] + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii]) / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
+					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 * Mdata.conc[ii]
+					                                  + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii])
+					                              / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
 				}
 				EMS[e0].theta[WATER] += dThetaW0;
 				EMS[e0].theta[AIR] -= dThetaW0;
@@ -529,25 +544,35 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		W0 = EMS[e0].theta[WATER];
 
 		// Determine the additional storage capacity due to refreezing
-		dth_w = EMS[e0].c[TEMPERATURE]*EMS[e0].Rho/Constants::lh_fusion/Constants::density_water*MAX(0.,Constants::melting_tk-EMS[e0].Te);
-		if ((e0 == nE-1) && (EMS[e1].theta[AIR] <= 0.05) && wet_layer) {
+		dth_w = EMS[e0].c[TEMPERATURE] * EMS[e0].Rho / Constants::lh_fusion / Constants::density_water
+		            * MAX(0., Constants::melting_tk-EMS[e0].Te);
+		if ((e0 == nE-1) && (EMS[e1].theta[AIR] <= 0.05) && water_layer) {
 			// allow for a water table in the last layer above road/rock
-			Wres = Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL] - 0.05);
+			Wres = Constants::density_ice/Constants::density_water
+			           * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL] - 0.05);
 		} else if (EMS[e0].theta[SOIL] < Constants::eps2) {
-			Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE]), EMS[e0].snowResidualWaterContent() + dth_w);
+			Wres = MIN(Constants::density_ice / Constants::density_water
+			               * (1. - EMS[e0].theta[ICE]),
+			           EMS[e0].snowResidualWaterContent() + dth_w);
 		} else { // treat soil separately
-			Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]),
-                 EMS[e0].soilFieldCapacity() + dth_w);
+			Wres = MIN(Constants::density_ice / Constants::density_water
+			               * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]),
+			           EMS[e0].soilFieldCapacity() + dth_w);
 		}
 		Wres = MAX (0., Wres);
 
 		if (e0 == nE-1 && (W0 > 0.0 && W0 <= Wres)) {
-			// In that case you need to update the volumetric air content and the density of the top element as it may have caught some rain!
+			// In that case you need to update the volumetric air content and the density of the top element
+			// as it may have caught some rain!
 			EMS[e0].theta[AIR] = MAX(0., 1. - EMS[e0].theta[WATER] - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]);
-			EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice) + (EMS[e0].theta[WATER] * Constants::density_water) + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
+			EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice)
+			                   + (EMS[e0].theta[WATER] * Constants::density_water)
+			                       + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
 			if ( EMS[e0].theta[SOIL] < Constants::eps2 ) {
 				if ( !(EMS[e0].Rho > Constants::min_rho && EMS[e0].Rho <= Constants::max_rho) ) {
-					prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Volume contents: e:%d nE:%d rho:%lf ice:%lf wat:%lf air:%le", e0, nE, EMS[e0].Rho, EMS[e0].theta[ICE], EMS[e0].theta[WATER], EMS[e0].theta[AIR]);
+					prn_msg(__FILE__, __LINE__, "err", Mdata.date,
+					        "Volume contents: e:%d nE:%d rho:%lf ice:%lf wat:%lf air:%le",
+					        e0, nE, EMS[e0].Rho, EMS[e0].theta[ICE], EMS[e0].theta[WATER], EMS[e0].theta[AIR]);
 					throw IOException("Cannot transfer water within the snowpack in transportWater()", AT);
 				}
 			}
@@ -564,22 +589,29 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				// Now check whether there is enough air left - in case of ice, rock or heavy
 				// soil you might not be able to move the water or/and water may refreeze and expand.
 				// Specifically, you might want to create a water table over ice or frozen soil
-				if (dThetaW1 + W1 > Constants::density_ice/Constants::density_water*(1. - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL])) {
+				if ((dThetaW1 + W1) > (Constants::density_ice / Constants::density_water
+				        * (1. - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL]))) {
 					// Deal with excess water ... Look how much you can leave in the lower element e1.
 					// If you have too much water even for the lower element (more melt or rain per time
 					// step than can be kept in this element) you could choose a smaller calculation time step.
 					// Otherwise excess water will be added to runoff !!!!
-					dThetaW1 = MAX(0.,Constants::density_ice/Constants::density_water*(1. - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL]) - W1);
+					dThetaW1 = MAX(0., (Constants::density_ice/Constants::density_water
+					                        * (1. - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL]) - W1));
 					if (jam) {
 						dThetaW0 = dThetaW1*L1/L0;
-						if ((W0 - dThetaW0 > (Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL])))) {
-							dThetaW0 = W0 - Constants::density_ice/Constants::density_water*(1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL] );
+						if ((W0 - dThetaW0) > (Constants::density_ice/Constants::density_water
+						                           * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]))) {
+							dThetaW0 = W0 - Constants::density_ice/Constants::density_water
+							                    * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]);
 							excess_water = dThetaW0 - dThetaW1*L1/L0;
 						} else {
 							excess_water = 0.;
 						}
 					} else { // No JAM
-						// TODO Fz 2009-11-07: Is the idea below really correct? I would argue, that in case of no JAM, excess water should be carried down to the bottom prior to be released. In case of JAM it should be retained in the upper element.
+						// TODO Fz 2009-11-07: Is the idea below really correct?
+						// In case of no JAM, I would argue that excess water should be
+						// carried down to the bottom prior to be released.
+						// In case of JAM it should be retained in the upper element.
 						excess_water = dThetaW0 - dThetaW1*L1/L0;
 					}
 					if (EMS[e1].theta[SOIL] < Constants::eps2) {
@@ -588,13 +620,15 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += excess_water*Constants::density_water*L0;
 					// Take care of Solutes
 					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-						Sdata.load[ii] += (EMS[e1].conc[WATER][ii] * excess_water * Constants::density_water*L0/S_TO_H(sn_dt));
+						Sdata.load[ii] += (EMS[e1].conc[WATER][ii] * excess_water
+					                           * Constants::density_water*L0/S_TO_H(sn_dt));
 					}
 				}
 
 				// Water movement from element e0 to element e1: move solutes also
 				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					EMS[e1].conc[WATER][ii] = (W1 * EMS[e1].conc[WATER][ii] + dThetaW1 * EMS[e0].conc[WATER][ii]) / (W1+dThetaW1);
+					EMS[e1].conc[WATER][ii] = (W1 * EMS[e1].conc[WATER][ii] + dThetaW1 * EMS[e0].conc[WATER][ii])
+				                                  / (W1+dThetaW1);
 				}
 				// update volumetric contents, masses and density
 				EMS[e0].theta[WATER]=W0-dThetaW0;
@@ -603,11 +637,17 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e1].theta[AIR] = 1. - EMS[e1].theta[WATER] - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL];
 				EMS[e0].M -= L0 * Constants::density_water * dThetaW0;
 				EMS[e1].M += L1 * Constants::density_water * dThetaW1;
-				EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice) + (EMS[e0].theta[WATER] * Constants::density_water) + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
-				EMS[e1].Rho = (EMS[e1].theta[ICE] * Constants::density_ice) + (EMS[e1].theta[WATER] * Constants::density_water) + (EMS[e1].theta[SOIL] * EMS[e1].soil[SOIL_RHO]);
+				EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice)
+				                  + (EMS[e0].theta[WATER] * Constants::density_water)
+				                      + (EMS[e0].theta[SOIL] * EMS[e0].soil[SOIL_RHO]);
+				EMS[e1].Rho = (EMS[e1].theta[ICE] * Constants::density_ice)
+				                  + (EMS[e1].theta[WATER] * Constants::density_water)
+				                      + (EMS[e1].theta[SOIL] * EMS[e1].soil[SOIL_RHO]);
 				if (EMS[e0].theta[SOIL] < Constants::eps2) {
 					if (!(EMS[e0].theta[AIR] >= -Constants::eps)) {
-						prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Volume contents: e:%d nE:%d rho:%lf ice:%lf wat:%lf air:%le", e0, nE, EMS[e0].Rho, EMS[e0].theta[ICE],  EMS[e0].theta[WATER], EMS[e0].theta[AIR]);
+						prn_msg(__FILE__, __LINE__, "err", Mdata.date,
+						        "Volume contents: e:%d nE:%d rho:%lf ice:%lf wat:%lf air:%le",
+						        e0, nE, EMS[e0].Rho, EMS[e0].theta[ICE], EMS[e0].theta[WATER], EMS[e0].theta[AIR]);
 						throw IOException("Cannot transfer water within the snowpack in transportWater()", AT);
 					}
 				}
@@ -630,22 +670,28 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	// RUNOFF at bottom of either snowpack or soil
 	W0 = EMS[0].theta[WATER];
 	// Determine the additional storage capacity due to refreezing
-	dth_w = EMS[0].c[TEMPERATURE]*EMS[0].Rho/Constants::lh_fusion/Constants::density_water*MAX(0.,Constants::melting_tk-EMS[0].Te);
+	dth_w = EMS[0].c[TEMPERATURE] * EMS[0].Rho / Constants::lh_fusion / Constants::density_water
+	            * MAX(0., Constants::melting_tk-EMS[0].Te);
 	if (EMS[0].theta[SOIL] < Constants::eps2) {
-		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE]), EMS[e0].snowResidualWaterContent() + dth_w);
+		Wres = MIN(Constants::density_ice / Constants::density_water * (1. - EMS[0].theta[ICE]),
+		           EMS[e0].snowResidualWaterContent() + dth_w);
 	} else { // treat soil separately
 		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE] - EMS[0].theta[SOIL]),
-               EMS[0].soilFieldCapacity() + dth_w);
+		       EMS[0].soilFieldCapacity() + dth_w);
 	}
 	Wres = MAX (0., Wres);
-	// Do not drain last water element if wet_layer is set
-	if ((W0 > Wres) && !(wet_layer && (EMS[0].theta[ICE] < Snowpack::min_ice_content) && (EMS[0].theta[SOIL] < Constants::eps2))) {
+	// NOTE: if water_layer is set, do not drain water element on top of soil
+	if ((W0 > Wres)
+	        && !(water_layer && (EMS[0].theta[ICE] < Snowpack::min_ice_content)
+	                 && (EMS[0].theta[SOIL] < Constants::eps2))) {
 		dThetaW0 = W0 - Wres;
 		EMS[0].theta[WATER] = W0 - dThetaW0;
 		EMS[0].theta[AIR] = 1. - EMS[0].theta[WATER] - EMS[0].theta[ICE] - EMS[0].theta[SOIL];
 		dM = EMS[0].L * Constants::density_water * dThetaW0;
 		EMS[0].M -= dM;
-		EMS[0].Rho = (EMS[0].theta[ICE] * Constants::density_ice) + (EMS[0].theta[WATER] * Constants::density_water) + (EMS[0].theta[SOIL] * EMS[0].soil[SOIL_RHO]);
+		EMS[0].Rho = (EMS[0].theta[ICE] * Constants::density_ice)
+		                 + (EMS[0].theta[WATER] * Constants::density_water)
+		                     + (EMS[0].theta[SOIL] * EMS[0].soil[SOIL_RHO]);
 		if (EMS[0].theta[SOIL] < Constants::eps2) {
 			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += dM;
 		}
