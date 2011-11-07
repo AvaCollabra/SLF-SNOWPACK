@@ -42,7 +42,7 @@ class Meteo {
 		Meteo(const mio::Config& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
-		static void compTSSavgHSrate(CurrentMeteo& Mdata, SnowStation& vecXdata,
+		static void compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata,
 		                             mio::IOManager& io, const mio::Date& current_date);
 		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
 
@@ -50,7 +50,7 @@ class Meteo {
 		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata);
 		static double getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param,
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
-		
+
 		int neutral;
 		bool research_mode, useCanopyModel;
 		double roughness_length, height_of_wind_value;

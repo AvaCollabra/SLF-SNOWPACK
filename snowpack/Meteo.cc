@@ -33,7 +33,7 @@ using namespace mio;
 
 #include <snowpack/Meteo.h>
 
-Meteo::Meteo(const mio::Config& cfg) : canopy(cfg) 
+Meteo::Meteo(const mio::Config& cfg) : canopy(cfg)
 {
 	/**
 	 * @brief Defines the way to deal with atmospheric stability:
@@ -101,15 +101,19 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 
 	// Ideal approximation of pressure and vapor pressure
-	p0 = lw_AirPressure(Xdata.meta.position.getAltitude());
+	//p0 = lw_AirPressure(Xdata.meta.position.getAltitude());
+	p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
 	if (Mdata.ta > Constants::melting_tk) {
 		LH = Constants::lh_vaporization;
+		//LH = Cst::l_water_vaporization;
 	} else {
 		LH = Constants::lh_sublimation;
+		//LH = Cst::l_water_sublimation;
 	}
 
-	sat_vap = lw_SaturationPressure(Mdata.ta);
-	
+	//sat_vap = lw_SaturationPressure(Mdata.ta);
+	sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
+
 	ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
 	tss_v = tss * (1. + 0.377 * sat_vap / p0);
 
@@ -152,7 +156,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 		// Update z0
 		z0 = 0.9 * z0_old + 0.1 * (a2 * ustar*ustar / 2. / Constants::g);
 		z_ratio = log((zref - d_pump) / z0);
-		
+
 		// Stability corrections
 		if (neutral < 0) { // Switch for Richardson
 			Ri = Constants::g / tss_v * (ta_v - tss_v) * zref / vw / vw;
@@ -160,7 +164,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 				stab_ratio = Ri;
 			} else {
 				stab_ratio = Ri/(1.-5.*Ri);
-			}			
+			}
 			if (Ri < 0.) { // unstable
 				stab_ratio = Ri;
 				dummy = pow((1. - 15. * stab_ratio), 0.25);
@@ -180,7 +184,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 			ustar = 0.4 * vw / (z_ratio - psi_m);
 			Tstar = 0.4 * (tss_v - ta_v) / (z_ratio - psi_s);
 			stab_ratio = -0.4 * zref * Tstar * Constants::g / (tss * ustar*ustar);
-		
+
 			if (stab_ratio > 0.) { // stable
 				// Stearns & Weidner, 1993
 				dummy = pow((1. + 5. * stab_ratio), 0.25);
@@ -215,7 +219,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 		} else { // NEUTRAL
 			psi_m = 0.;
 			psi_s = 0.;
-		} 
+		}
 	} while ( (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
 	// Save the values in the global sn_Mdata data structure to use it later
 	Mdata.ustar = ustar;
@@ -241,12 +245,12 @@ double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Para
 	double sum = 0.;
 	std::vector<mio::MeteoData> MyMeteo2;
 
-	for (int i=time_span; i>=0; i-=increment) {						//i in minutes
-		const Date myDate=Date(current_date-(double(double(i)/1440.0)));	//Calculate only backwards in time (for operational mode, no future data is available).
-		io.getMeteoData(myDate, MyMeteo2);					//Get meteo data from meteoio
-		if(MyMeteo2.size()>0) {							//If there is no data at all for this date/time, vector is empty and will crash snowpack.
-			if(MyMeteo2[0](param) != IOUtils::nodata) {			//Only if valid measurement is available ...
-				count++;						//... calculate average
+	for (int i=time_span; i>=0; i-=increment) { //i in minutes
+		const Date myDate=Date(current_date-(double(double(i)/1440.0))); //Calculate only backwards in time (for operational mode, no future data is available).
+		io.getMeteoData(myDate, MyMeteo2);
+		if(MyMeteo2.size()>0) {
+			if(MyMeteo2[0](param) != IOUtils::nodata) {
+				count++;
 				sum+=MyMeteo2[0](param);
 			}
 		}
@@ -259,38 +263,37 @@ double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Para
 
 /**
  * @brief Calculate average values for TSS and HS, to be used in the detection of the first snow fall (detection of canopy (grass) vs. snow fall)
- * @param *Mdata
- * @param *Xdata
- * @param *io
- * @param *current_date
+ * To better determine the first snowfall on bare ground, calculate average values of TSS and snow height changes rate.
+ * @param Mdata
+ * @param Xdata
+ * @param io
+ * @param current_date
  */
-void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
+void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
 {
-	//To better determine the first snowfall on bare ground, calculate average values of TSS and snow height changes rate:
-	const int avghours=3;							//Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
+	if( not(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
+		const int avghours=3; //Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
 
-	double tss24avg=0., tss12avg=0., hs_change_rate=0., hs_change_avg1=0., hs_change_avg2=0.;
+		const double tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30); //Get average TSS over 24 hours
+		if (tss24avg!=IOUtils::nodata) Mdata.tss24=tss24avg;
+		else Mdata.tss24=Mdata.tss;
 
-	if( not(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) {						//This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
-		tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30);	//Get average TSS over 24 hours
-		if (tss24avg!=IOUtils::nodata) Mdata.tss24=tss24avg;				//Assign this value to Mdata
-		else Mdata.tss24=Mdata.tss;							//Use default in case no average could be calculated
-
-		tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30);	//Get average TSS over 12 hours
-		if (tss12avg!=IOUtils::nodata) Mdata.tss12=tss12avg;				//Assign this value to Mdata
-		else Mdata.tss12=Mdata.tss;							//Use default in case no average could be calculated
+		const double tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30); //Get average TSS over 12 hours
+		if (tss12avg!=IOUtils::nodata) Mdata.tss12=tss12avg;
+		else Mdata.tss12=Mdata.tss;
 
 		//Calculate average snow height per defined time period
-		hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30);					//Get average HS over [current_time; current_time-avghours]
-		hs_change_avg2 = getParameterAverage(io, MeteoData::HS, current_date-(double)((avghours*60)-1)/(24.*60.), (avghours*60)-1, 30);	//Get average HS over [current_time-avghours; current_time-2*avghours]
+		const double hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30); //Get average HS over [current_time; current_time-avghours]
+		const double hs_change_avg2 = getParameterAverage(io, MeteoData::HS, current_date-(double)((avghours*60)-1)/(24.*60.), (avghours*60)-1, 30); //Get average HS over [current_time-avghours; current_time-2*avghours]
 		if(hs_change_avg1!=IOUtils::nodata && hs_change_avg2!=IOUtils::nodata) {
-			hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours); 		//Note: we compare two time spans of avghours, so to get a correct average,
-												//we take the distance between the middle of the two time spans.
-			Mdata.hs_change_rate=hs_change_rate;				//Note: hs_change is expressed as m/hour.
+			//Note: we compare two time spans of avghours, so to get a correct average,
+			//we take the distance between the middle of the two time spans. Note: hs_change is expressed as m/hour.
+			const double hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours);
+			Mdata.hs_change_rate=hs_change_rate;
 		} else {
-		      Mdata.hs_change_rate=0.;						//If we were not able to calculate average HS, set the rate of change to 0.
+		      Mdata.hs_change_rate=0.;
 		}
-	} else {										//If there is already a snow pack, we don't use this algorithm, so set the values to something.
+	} else {
 		Mdata.tss24=Mdata.tss;
 		Mdata.tss12=Mdata.tss;
 		Mdata.hs_change_rate=0.;
