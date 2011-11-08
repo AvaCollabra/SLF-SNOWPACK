@@ -13,11 +13,18 @@ PROJECT(snowpack)
 ADD_SUBDIRECTORY(snowpack)
 
 IF(SNOWPACK_STANDALONE)
-	INCLUDE (CheckFunctionExists)
-	CHECK_FUNCTION_EXISTS(feenableexcept HAVE_FENV_H)
-	IF(HAVE_FENV_H)
+	#it seems that the only reliable way is to test-compile...
+	INCLUDE (CheckCXXSourceCompiles)
+	CHECK_CXX_SOURCE_COMPILES("
+	#include <fenv.h>
+	int main() {
+	feenableexcept(FE_DIVBYZERO);
+	return 0;
+	}" HAVE_FEENABLE)
+
+	IF(HAVE_FEENABLE)
 		SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
-	ENDIF(HAVE_FENV_H)
+	ENDIF(HAVE_FEENABLE)
 	ADD_SUBDIRECTORY(applications/snowpack)
 #ELSE(SNOWPACK_STANDALONE)
 #	SET(DEBUG_ARITHM OFF CACHE BOOL "Force-crash the application when doing an arithmetic exception")
