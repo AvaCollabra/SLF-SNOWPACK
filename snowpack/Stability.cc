@@ -1201,7 +1201,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	// Natural and "deformation rate" Stability Index
 	// Discard Stability::minimum_slab (in m) at surface
 	e = nE;
-	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab));
+	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab)) {};
 	if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 		// Slab must be thicker than Stability::ground_rough (m)  for an avalanche to release.
 		while ((e-- > Xdata.SoilNode) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
@@ -1237,14 +1237,14 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)
-			
+
 			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
 				const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
 				NDS[e+1].S_s = st_SkierStabilityIndex(depth_lay, STpar);
 				setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
 				NDS[e+1].ssi = SIdata[e+1].ssi;
-				
+
 				if ( (Swl_ssi > SIdata[e+1].ssi) || ((fabs(Swl_ssi - SIdata[e+1].ssi) < 0.09) && (SIdata[e+1].n_lemon > Swl_lemon)) ) {
 					Swl_ssi = SIdata[e+1].ssi;
 					zwl_ssi = NDS[e+1].z + NDS[e+1].u ;
