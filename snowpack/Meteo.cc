@@ -271,7 +271,7 @@ double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Para
  */
 void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
 {
-	if( not(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
+	if( !(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
 		const int avghours=3; //Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
 
 		const double tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30); //Get average TSS over 24 hours

@@ -1233,7 +1233,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	if ((Xdata.cH/cos_sl > Stability::ground_rough) && ((Xdata.cH/cos_sl - Pk) > Stability::min_depth_ssi)) {
 		// Discard penetration depth Pk (in m) at surface
 		e = nE;
-		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk));
+		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk)) {};
 
 		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)

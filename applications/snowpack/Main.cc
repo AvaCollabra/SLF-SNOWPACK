@@ -176,14 +176,15 @@ void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, do
 
 void Usage(const string& programname)
 {
-	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
-		<< "\tLibsnowpack " << snowpack::getLibVersion() << endl
-		<< "\tMeteoIO " << mio::getLibVersion() << endl;
 #ifdef _MSC_VER
 	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
 #endif
+	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
+		<< "\tLibsnowpack " << snowpack::getLibVersion() << endl
+		<< "\tMeteoIO " << mio::getLibVersion() << endl;
+
 	cout << "Usage: " << programname << endl
 		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)" << endl
 		<< "\t[-c, --config=<ini file> (e.g. io.ini)]" << endl

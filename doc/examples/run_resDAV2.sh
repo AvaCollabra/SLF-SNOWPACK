@@ -8,4 +8,4 @@ TOOL="time"
 TOOL=""
 
 cp -p init/DAV2* current_snow
-${TOOL} ./snowpack -c cfgfiles/io_resDAV2.ini -e 2010-06-01T00:00
+${TOOL} snowpack -c cfgfiles/io_resDAV2.ini -e 2010-06-01T00:00

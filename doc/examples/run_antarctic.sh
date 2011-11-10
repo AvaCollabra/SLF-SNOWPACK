@@ -7,4 +7,4 @@ TOOL="/software/bin/valgrind --tool=memcheck --leak-check=full --show-reachable=
 TOOL="time"
 TOOL=""
 
-${TOOL} ./snowpack -c cfgfiles/io_antarctic.ini -e 2006-02-15T00:00
+${TOOL} snowpack -c cfgfiles/io_antarctic.ini -e 2006-02-15T00:00

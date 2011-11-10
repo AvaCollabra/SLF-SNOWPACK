@@ -9,4 +9,4 @@ TOOL=""
 
 cp -p init/DAV2* current_snow
 rm -f current_snow/DAV2*.haz
-${TOOL} ./snowpack -c cfgfiles/io_oper.ini -m operational -s DAV2 -e 2010-06-01T00:00
+${TOOL} snowpack -c cfgfiles/io_oper.ini -m operational -s DAV2 -e 2010-06-01T00:00

@@ -9,4 +9,4 @@ TOOL=""
 
 cp -p init/DAV5* current_snow
 rm -f current_snow/DAV5.haz
-${TOOL} ./snowpack -c cfgfiles/io_oper.ini -m operational -s DAV5 -e NOW
+${TOOL} snowpack -c cfgfiles/io_oper.ini -m operational -s DAV5 -e NOW

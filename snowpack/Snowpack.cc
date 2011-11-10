@@ -963,7 +963,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			                        &Xdata.SubSurfaceFrze, VaporEnhance)) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Error in sn_ElementKtMatrix @ element %d:", e);
 				for (n = 0; n < nN; n++)
-					fprintf(stdout, "U[%ul]=%e K\n", n, U[n]);
+					fprintf(stdout, "U[%u]=%e K\n", (unsigned int)n, U[n]);
 				free(U); free(dU); free(ddU);
 				throw IOException("Runtime error in sn_SnowTemperature", AT);
 			}
