@@ -289,7 +289,8 @@ void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, Surfa
 	Sdata.sw_dir  /= n_steps;
 	Sdata.sw_diff /= n_steps;
 	Sdata.cA      /= n_steps;
-	Sdata.mA      /= n_steps;
+	if (Sdata.mA != Constants::undefined)
+		Sdata.mA  /= n_steps;
 
 	if (useCanopyModel) {
 		// *radiation

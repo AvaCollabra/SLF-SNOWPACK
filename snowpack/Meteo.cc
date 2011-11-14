@@ -101,14 +101,11 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 
 	// Ideal approximation of pressure and vapor pressure
-	//p0 = lw_AirPressure(Xdata.meta.position.getAltitude());
 	p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
 	if (Mdata.ta > Constants::melting_tk) {
 		LH = Constants::lh_vaporization;
-		//LH = Cst::l_water_vaporization;
 	} else {
 		LH = Constants::lh_sublimation;
-		//LH = Cst::l_water_sublimation;
 	}
 
 	//sat_vap = lw_SaturationPressure(Mdata.ta);

@@ -144,7 +144,10 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 	Sdata.qw     += Mdata.iswr - Mdata.rswr;
 
 	Sdata.cA += Xdata.cAlbedo;
-	Sdata.mA += Xdata.mAlbedo;
+	if (Xdata.mAlbedo != Constants::undefined)
+		Sdata.mA += Xdata.mAlbedo;
+	else
+		Sdata.mA = Constants::undefined;
 
 	// 2) Long wave and heat fluxes.
 	Sdata.qs += Bdata.qs;

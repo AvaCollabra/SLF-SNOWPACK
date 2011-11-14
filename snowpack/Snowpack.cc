@@ -99,10 +99,10 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	/**
 	 * @brief Defines whether the measured shortwave radiation is incoming
-	 * - (SW_MODE 0 || 10) only incoming SW used
-	 * - (SW_MODE 1 || 11) only reflected SW used
-	 * - (SW_MODE = 2 || 12) both incoming and reflected SW used \n
-	 * @note { If SW_MODE == 2 || SW_MODE >= 10, the input file must hold both fluxes! }
+	 * - 0 downward SW radiation is used
+	 * - 1 reflected SW radiation is used
+	 * - 2 both downward and reflected SW radiation is used \n
+	 * @note { If SW_MODE == 2, the input must hold both fluxes! }
 	 */
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
@@ -747,12 +747,6 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	else
 		hs = Xdata.cH;
 
-	// Measured albedo, works only if both parameters could be read
-	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
-		Xdata.mAlbedo = Mdata.rswr / Mdata.iswr;
-	else
-		Xdata.mAlbedo = Constants::undefined;
-
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer
 		size_t eAlbedo = nE-1;
@@ -799,7 +793,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		break;
 		// ... while the ground is still snow covered according to HS measurements
 	case 2: // use measured albedo ...
-		if (Xdata.mAlbedo > 0.) {
+		if (Xdata.mAlbedo != Constants::undefined) {
 			if ((!((Xdata.mAlbedo < 2.*Xdata.SoilAlb)
 			        && ((Xdata.cH - Xdata.Ground) > 0.05))) && Xdata.mAlbedo <= 0.95)
 				cAlb = Xdata.mAlbedo;
@@ -1190,14 +1184,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 	// To check whether the ground is already snowed in or snow will remain on it
-	snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
-	              || (Mdata.tss24!=IOUtils::nodata &&
-	                      Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                      || (Mdata.tss12!=IOUtils::nodata &&
-	                      Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                      || (Mdata.tss12!=IOUtils::nodata &&
-	                      Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease) && Mdata.hs_change_rate > HS_threshold_largeincrease)
-	            );
+	snowed_in = ((Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
+	                 || ((Mdata.tss24 < C_TO_K(TSS_threshold24)
+	                         && Mdata.hs_change_rate > HS_threshold_smallincrease)
+                         || (Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease)
+                                && Mdata.hs_change_rate > HS_threshold_smallincrease)
+                             || (Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
+                                    && Mdata.hs_change_rate > HS_threshold_largeincrease)));
 	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
 	//if we are NOT in a slope! If we are in a slope, the slope should just get new snow when the flat field gets new snow:
 	if (snow_fall && (snowed_in || (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle))) {

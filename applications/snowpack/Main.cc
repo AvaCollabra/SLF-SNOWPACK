@@ -434,7 +434,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		Mdata.tss=Constants::melting_tk; //TODO: it would be better to test for NEUMANN instead of relying on tss=melting_tk in the model...
 	}
 
-	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It has to be set to true in operational mode.
+	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 	const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 
@@ -460,6 +460,12 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	surfFluxes.mass[SurfaceFluxes::MS_WIND] = 0.;
 
 	if (slope.sector == slope.station) {
+		// Estimate measured albedo, works only if both parameters are available
+		if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
+			vecXdata[slope.station].mAlbedo = Mdata.rswr / Mdata.iswr;
+		else
+			vecXdata[slope.station].mAlbedo = Constants::undefined;
+
 		//split flat field radiation and compute potential radiation
 		radiation.flatFieldRadiation(vecXdata[slope.station], Mdata, Psolar, Rdata);
 		iswr_forced = -1.0; //initialize on station field
