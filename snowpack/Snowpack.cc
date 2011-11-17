@@ -1184,13 +1184,14 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 	// To check whether the ground is already snowed in or snow will remain on it
-	snowed_in = ((Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
-	                 || ((Mdata.tss24 < C_TO_K(TSS_threshold24)
-	                         && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                         || (Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease)
-                                && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                             || (Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
-                                    && Mdata.hs_change_rate > HS_threshold_largeincrease)));
+	snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
+	              || (Mdata.tss24!=IOUtils::nodata &&
+	                      Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
+                      || (Mdata.tss12!=IOUtils::nodata &&
+	                      Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease) && Mdata.hs_change_rate > HS_threshold_smallincrease)
+                      || (Mdata.tss12!=IOUtils::nodata &&
+	                      Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease) && Mdata.hs_change_rate > HS_threshold_largeincrease)
+	            );
 	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
 	//if we are NOT in a slope! If we are in a slope, the slope should just get new snow when the flat field gets new snow:
 	if (snow_fall && (snowed_in || (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle))) {
