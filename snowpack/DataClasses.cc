@@ -660,7 +660,7 @@ SnowStation::~SnowStation()
 		} else if ( pMat->State == BlockMatrix  ){
 			ReleaseBlockMatrix(&pMat->Mat.Block);
 		}
-		//free(pMat);
+		free(pMat);
 	}
 }
 
@@ -1106,6 +1106,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 	Edata0.L0 = Edata0.L = LNew;
 	Edata0.M += Edata1.M;
 	Edata0.theta[ICE] = (L1*Edata1.theta[ICE] + L0*Edata0.theta[ICE]) / LNew;
+	// TODO No check whether we have space to accomodate all water percolating into Edata0
 	Edata0.theta[WATER] = (L1*Edata1.theta[WATER] + L0*Edata0.theta[WATER]) / LNew;
 	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
 	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);

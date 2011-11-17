@@ -268,16 +268,22 @@ double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Para
  */
 void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
 {
-	if( !(Xdata.getNumberOfNodes()>Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
+	if( (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
 		const int avghours=3; //Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
 
 		const double tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30); //Get average TSS over 24 hours
-		if (tss24avg!=IOUtils::nodata) Mdata.tss24=tss24avg;
-		else Mdata.tss24=Mdata.tss;
+		if (tss24avg!=IOUtils::nodata) {
+			Mdata.tss24=tss24avg;
+		} else {
+			Mdata.tss24=Constants::undefined;
+		}
 
 		const double tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30); //Get average TSS over 12 hours
-		if (tss12avg!=IOUtils::nodata) Mdata.tss12=tss12avg;
-		else Mdata.tss12=Mdata.tss;
+		if (tss12avg!=IOUtils::nodata) {
+			Mdata.tss12=tss12avg;
+		} else {
+			Mdata.tss12=Constants::undefined;
+		}
 
 		//Calculate average snow height per defined time period
 		const double hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30); //Get average HS over [current_time; current_time-avghours]
@@ -288,12 +294,12 @@ void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, mio:
 			const double hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours);
 			Mdata.hs_change_rate=hs_change_rate;
 		} else {
-		      Mdata.hs_change_rate=0.;
+			Mdata.hs_change_rate=Constants::undefined;
 		}
 	} else {
-		Mdata.tss24=Mdata.tss;
-		Mdata.tss12=Mdata.tss;
-		Mdata.hs_change_rate=0.;
+		Mdata.tss24=Constants::undefined;
+		Mdata.tss12=Constants::undefined;
+		Mdata.hs_change_rate=Constants::undefined;
 	}
 }
 

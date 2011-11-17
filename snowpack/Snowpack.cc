@@ -478,19 +478,20 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 	}
 
 	// Phase Change Check
-	if ((Tn[0] > Constants::melting_tk || Tn[1] > Constants::melting_tk) && Edata->theta[ICE] > 0.)
+	// NOTE Should it not preferably be done in PhaseChange.cc ??
+	if ((Tn[0] > Constants::melting_tk || Tn[1] > Constants::melting_tk) && Edata->theta[ICE] > Constants::eps2)
 		*SubSurfaceMelt = true;
-	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > 0.)
+	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > Constants::eps2)
 		*SubSurfaceFrze = true;
-	// Compute the element mean temperature and temperature gradient
-	if (Edata->theta[WATER] > 0. && Edata->theta[SOIL] == 0.)
+	if (Edata->theta[WATER] > Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
 		 T0[0] = T0[1] = Constants::melting_tk;
 
 	// Find the conductivity of the element
 	if (Edata->theta[SOIL] > 0.0) {
 		Keff = SnLaws::compSoilThermalConductivity(*Edata, dvdz);
 	} else if (Edata->theta[ICE] > 0.55 || Edata->theta[ICE] < min_ice_content) {
-		Keff = Edata->theta[AIR] * Constants::conductivity_air + Edata->theta[ICE] * Constants::conductivity_ice + Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[SOIL] * Edata->soil[SOIL_K];
+		Keff = Edata->theta[AIR] * Constants::conductivity_air + Edata->theta[ICE] * Constants::conductivity_ice +
+		           Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[SOIL] * Edata->soil[SOIL_K];
 	} else {
 		Keff = SnLaws::compSnowThermalConductivity(*Edata, dvdz);
 	}
@@ -1183,15 +1184,24 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	// NOTE No new snow during cloud free conditions
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
-	// To check whether the ground is already snowed in or snow will remain on it
-	snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
-	              || (Mdata.tss24!=IOUtils::nodata &&
-	                      Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                      || (Mdata.tss12!=IOUtils::nodata &&
-	                      Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-                      || (Mdata.tss12!=IOUtils::nodata &&
-	                      Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease) && Mdata.hs_change_rate > HS_threshold_largeincrease)
-	            );
+	// snowed_in is true if the ground is either already snowed in or snow will remain on it
+	//  ... but check first for the availability of the following data. This is particularly important if enforce_measured_snow_heights == false.
+	if (!enforce_measured_snow_heights || (Mdata.hs_change_rate == Constants::undefined)
+		   || (Mdata.tss24 == Constants::undefined) || (Mdata.tss12 ==  Constants::undefined)) {
+		snowed_in = true;
+	} else {
+		snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
+		        || (Mdata.tss24!=IOUtils::nodata &&
+		                Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
+		        || (Mdata.tss12!=IOUtils::nodata
+		                && Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease)
+		                && Mdata.hs_change_rate > HS_threshold_smallincrease)
+		        || (Mdata.tss12!=IOUtils::nodata
+		                && Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
+		                && Mdata.hs_change_rate > HS_threshold_largeincrease)
+		            );
+	}
+
 	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
 	//if we are NOT in a slope! If we are in a slope, the slope should just get new snow when the flat field gets new snow:
 	if (snow_fall && (snowed_in || (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle))) {
