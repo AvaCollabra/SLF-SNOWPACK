@@ -296,8 +296,8 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
 	bool enforce_join = false;  // To enforce merging in special cases
 
-	unsigned int nN = Xdata.getNumberOfNodes();
-	unsigned int rnN = nN, nE = nN-1, rnE = nN-1;
+	size_t nN = Xdata.getNumberOfNodes();
+	size_t rnN = nN, nE = nN-1, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	if ((nN == Xdata.SoilNode+1)
@@ -307,9 +307,9 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		return;
 	}
 
-	unsigned int e0, e1; // Lower (e0) and upper (e1) element index
-	for (e0 = nE-2, e1 = nE-1; e1 > Xdata.SoilNode; e1--, e0--) {
-		enforce_join = 1;
+	size_t e1 = nE; // (e1-1) is the lower and (e1) the upper element
+	while (e1-- > Xdata.SoilNode) {
+		enforce_join = true;
 		if ((EMS[e1].L < minimum_l_element) || (EMS[e1].mk%100 == 3)) {
 			if ((EMS[e1].mk >= 100) && (EMS[e1].L >= 0.5 * minimum_l_element)) {
 				enforce_join = false;
@@ -326,10 +326,21 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {
 			enforce_join = false;
 		}
-		if (((EMS[e1].theta[ICE] < Snowpack::min_ice_content)
-		             || enforce_join)
-		       && (EMS[e1].theta[SOIL] < Constants::eps2)) {
-			SnowStation::mergeElements(EMS[e0], EMS[e1], enforce_join);
+		if (((EMS[e1].theta[ICE] < Snowpack::min_ice_content) || enforce_join)
+		       && (EMS[e1].theta[SOIL] < Constants::eps2)
+		           && (EMS[e1].mk % 100 != 9)) {  // no PLASTIC or WATER_LAYER please
+			if (e1 > Xdata.SoilNode) { //If we have snow elements below to join with
+				SnowStation::mergeElements(EMS[e1-1], EMS[e1], enforce_join);
+			} else { // route liquid water and solute load to output TODO what if soil is present
+				Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e1].M;
+				if (Xdata.SoilNode == 0) { // In case of no soil
+					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e1].M;
+					for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
+						Sdata.load[ii] += (EMS[e1].L*EMS[e1].theta[WATER]*EMS[e1].conc[WATER][ii]
+								+ EMS[e1].L*EMS[e1].theta[ICE] * EMS[e1].conc[ICE][ii])/S_TO_H(sn_dt);
+					}
+				}
+			}
 			rnE--;
 			rnN--;
 			EMS[e1].Rho = Constants::undefined;
@@ -338,24 +349,6 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[e1+1].L *= -1.;
 			}
 		}
-	}
-	// Check for one snow element left
-	e0 = Xdata.SoilNode;
-	if (((rnN == Xdata.SoilNode + 2) || (EMS[e0].Rho < Constants::eps))
-            && (EMS[e0].theta[ICE] < Snowpack::min_ice_content || EMS[e0].L < 0.005)
-                && !(water_layer && snp_soil && (nE > 1)
-                         && ((EMS[nE-2].theta[SOIL] > 0.95) || (EMS[nE-2].theta[ICE] > 0.95))
-                         && (EMS[nE-1].theta[WATER] > 0.05))) {
-		Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e0].M;
-		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e0].M;
-		for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++) {
-			Sdata.load[ii] += (EMS[e0].L*EMS[e0].theta[WATER]*EMS[e0].conc[WATER][ii]
-                                  + EMS[e0].L*EMS[e0].theta[ICE] * EMS[e0].conc[ICE][ii])/S_TO_H(sn_dt);
-		}
-		rnE--;
-		rnN--;
-		EMS[e0].Rho = Constants::undefined;
-		EMS[e0].L *= -1.;
 	}
 	if (rnE < nE) {
 		Xdata.reduceNumberOfElements(rnE);
