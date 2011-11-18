@@ -1191,12 +1191,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		snowed_in = true;
 	} else {
 		snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
-		        || (Mdata.tss24!=IOUtils::nodata &&
+		        || (Mdata.tss24!=Constants::undefined &&
 		                Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-		        || (Mdata.tss12!=IOUtils::nodata
+		        || (Mdata.tss12!=Constants::undefined
 		                && Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease)
 		                && Mdata.hs_change_rate > HS_threshold_smallincrease)
-		        || (Mdata.tss12!=IOUtils::nodata
+		        || (Mdata.tss12!=Constants::undefined
 		                && Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
 		                && Mdata.hs_change_rate > HS_threshold_largeincrease)
 		            );
