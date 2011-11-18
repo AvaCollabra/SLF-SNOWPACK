@@ -473,10 +473,15 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		for (e = nSoil; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
-			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())){
-				sum_total_correction += EMS[e].L
-				    * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate() - EMS[e].depositionDate.getJulianDate())
-				        / (EMS[nE-1].depositionDate.getJulianDate() - EMS[nSoil].depositionDate.getJulianDate())));
+			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
+				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
+				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
+				const double first_snow_date = EMS[nSoil].depositionDate.getJulianDate();
+				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
+				if(age_fraction<0.) {		//An issue was encountered that rounding errors could produce very small negative numbers
+					age_fraction=0.;
+				}
+				sum_total_correction += EMS[e].L * (1. - sqrt(age_fraction) );
 			}
 		}
 		if (sum_total_correction > 0.) {
@@ -490,12 +495,16 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		for (e = nSoil; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
+				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
+				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
+				const double first_snow_date = EMS[nSoil].depositionDate.getJulianDate();
+				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
+				if(age_fraction<0.) {		//An issue was encountered that rounding errors could produce very small negative numbers
+					age_fraction=0.;
+				}
 				ddL = EMS[e].L
 				        * MAX(-0.9,
-			                 MIN(0.9, factor_corr * (1. - sqrt((EMS[nE-1].depositionDate.getJulianDate()
-				                - EMS[e].depositionDate.getJulianDate())
-				                    / (EMS[nE-1].depositionDate.getJulianDate()
-				                          - EMS[nSoil].depositionDate.getJulianDate())))));
+			                 MIN(0.9, factor_corr * (1. - sqrt(age_fraction))));
 			} else {
 				ddL = 0.;
 			}
