@@ -734,8 +734,8 @@ int main (int argc, char *argv[])
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	const double sn_dt = M_TO_S(calculation_step_length); //Calculation time step in seconds
 
-	const unsigned int max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", mio::Config::nothrow);
-	const unsigned int number_meas_temperatures = cfg.get("NUMBER_MEAS_TEMPERATURES", "Input", mio::Config::nothrow);
+	const size_t max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", mio::Config::nothrow);
+	const size_t number_meas_temperatures = cfg.get("NUMBER_MEAS_TEMPERATURES", "Input", mio::Config::nothrow);
 	vector<double> fixed_sensor_depths;
 	if (number_meas_temperatures > 0) {
 		cfg.getValue("FIXED_SENSOR_DEPTHS", "Input", fixed_sensor_depths);
@@ -964,7 +964,7 @@ int main (int argc, char *argv[])
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
-				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "No valid data for station %s on [%s]",
+				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				break;
 			}
@@ -996,7 +996,7 @@ int main (int argc, char *argv[])
 				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulianDate()) + 15.5;
 				if ((mode == "RESEARCH") && (slope.sector == slope.station)
 				        && booleanTime(current_date.getJulianDate(false), 15., notify_start, calculation_step_length)) {
-					prn_msg(__FILE__, __LINE__, "msg", mio::Date(),
+					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					            "Station %s (%d slope(s)): advanced to %s (%f) station time",
 					                vecSSdata[slope.station].meta.stationID.c_str(), slope.nSlopes,
 					                    current_date.toString(mio::Date::DIN).c_str(), current_date.getJulianDate());
@@ -1059,25 +1059,30 @@ int main (int argc, char *argv[])
 						 *   ... wrong settling, which in turn is assumed to be due to a wrong estimation ...
 						 *   of fresh snow mass because Michi spent many painful days calibrating the settling ...
 						 *   and therefore it can't be wrong, dixunt Michi and Charles.
-						*/
-						// Either missed erosion or settling not strong enough
-						if ((time_count_deltaHS >= 0.) && (Mdata.hs1 != Constants::nodata)) {
-							if ((Mdata.hs1 + 0.01) < (vecXdata[slope.station].cH
-							                                 - vecXdata[slope.station].Ground)) {
-								time_count_deltaHS += S_TO_D(sn_dt);
-							} else {
-								time_count_deltaHS = 0.;
+						 */
+						if (Mdata.hs1 != IOUtils::nodata) {
+							const double cH = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
+							// Look for missed erosion or not strong enough settling ...
+							// ... and nastily deep "dips" caused by buggy data ...
+							if (time_count_deltaHS > -Constants::eps2) {
+								if ((Mdata.hs1 + 0.01) < cH) {
+									time_count_deltaHS += S_TO_D(sn_dt);
+								} else {
+									time_count_deltaHS = 0.;
+								}
 							}
-						}
-						// Settling too strong
-						if (time_count_deltaHS <= 0.) {
-							if ((Mdata.hs1 - 0.01) > (vecXdata[slope.station].cH - vecXdata[slope.station].Ground)) {
-								time_count_deltaHS -= S_TO_D(sn_dt);
-							} else {
-								time_count_deltaHS = 0.;
+							// ... or too strong settling
+							if (time_count_deltaHS < Constants::eps2) {
+								if ((Mdata.hs1 - 0.01) > cH) {
+									time_count_deltaHS -= S_TO_D(sn_dt);
+								} else {
+									time_count_deltaHS = 0.;
+								}
 							}
+						} else {
+							time_count_deltaHS = 0.;
 						}
-						// There is a persistent error for at least one day => apply correction
+						// If the error persisted for at least one day => apply correction
 						if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
 							deflateInflate(Mdata, vecXdata[slope.station],
 							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
@@ -1244,7 +1249,7 @@ int main (int argc, char *argv[])
 				sdbDump_timer.start();
 				if (snowpackio.writeHazardData(vecStationIDs[i_stn], qr_Hdata, qr_Hdata_ind, mn_ctrl.HzStep)) {
 					sdbDump_timer.stop();
-					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+					prn_msg(__FILE__, __LINE__, "msg-", current_date,
 					        "Finished writing Hdata to SDB for station %s (%lf s)",
 					        vecStationIDs[i_stn].c_str(), sdbDump_timer.getElapsed());
 				}

@@ -431,19 +431,16 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  */
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
 {
-	unsigned int e, nE, nSoil;                   // Element counter
-	double factor_corr, sum_total_correction=0.; // Correction factor
-	double ddL, dL=0.;                           // Length changes
-	double cH, cH_old;                           // Snow depth
+	size_t e, nE = Xdata.getNumberOfElements(), soil_node = Xdata.SoilNode;
+	double factor_corr, sum_total_correction=0.;  // Correction factors
+	double ddL, dL = 0.;                          // Length changes
+	double cH = Xdata.cH - Xdata.Ground, cH_old;  // Snow depths
 	bool prn_CK = false;
 
-	// Dereference a few values
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	nE = Xdata.getNumberOfElements();
-	nSoil = Xdata.SoilNode;
-	cH = Xdata.cH - Xdata.Ground;
 	dhs_corr = Mdata.hs1 - cH;
+	
 	/*
 	 * First try to find erosion events, which have not been captured by the drift module
 	 * (Maybe the wind sensor did not measure correctly due to riming, or s.th. else went
@@ -461,24 +458,25 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
-		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[nSoil].depositionDate.getJulianDate())
+		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[soil_node].depositionDate.getJulianDate())
 			return;
 
 		if (prn_CK) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
-			          "Small correction due to assumed settling error\n");
+			          "Small correction due to assumed settling error");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
 			          "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
-		for (e = nSoil; e < nE; e++) {
+		for (e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
 				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
 				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
-				const double first_snow_date = EMS[nSoil].depositionDate.getJulianDate();
+				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
-				if(age_fraction<0.) {		//An issue was encountered that rounding errors could produce very small negative numbers
+				// Rounding errors could produce very small negative numbers ...
+				if(age_fraction<0.) {
 					age_fraction=0.;
 				}
 				sum_total_correction += EMS[e].L * (1. - sqrt(age_fraction) );
@@ -492,12 +490,12 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		}
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
-		for (e = nSoil; e < nE; e++) {
+		for (e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
 				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
 				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
-				const double first_snow_date = EMS[nSoil].depositionDate.getJulianDate();
+				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
 				if(age_fraction<0.) {		//An issue was encountered that rounding errors could produce very small negative numbers
 					age_fraction=0.;

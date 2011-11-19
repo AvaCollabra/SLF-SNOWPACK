@@ -56,7 +56,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	advancedConfig["MULTISTREAM"] = "true";
-	advancedConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
 	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "5";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
 	advancedConfig["PERP_TO_SLOPE"] = "false";
@@ -147,13 +146,16 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 	if ((variant == "") || (variant == "DEFAULT")) {
 
-		// Use default settings
+		// Use default settings and ...
+		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.15");
 
 	} else if (variant == "JAPAN") {
 
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
+
+		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.15");
 
 	} else if (variant == "ANTARCTICA") {
 
@@ -162,7 +164,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
-		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried, Config::nothrow);
+		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced",
+		                                     hoar_density_buried, Config::nothrow);
 		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
 
 		string force_rh_water; getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water, Config::nothrow);
@@ -177,6 +180,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 			ss << tmp;
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
+
 		addKey("FIRST_BACKUP", "Output", "1500.");
 		addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "7");
 		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
@@ -192,7 +196,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
-		string number_fixed_heights; getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", number_fixed_heights, Config::nothrow);
+		string number_fixed_heights; getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced",
+		                                      number_fixed_heights, Config::nothrow);
 		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
 		string number_fixed_rates; getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates, Config::nothrow);
 		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
@@ -200,6 +205,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, Config::nothrow);
 		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
+
+		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
 
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);

@@ -95,7 +95,7 @@ class AsciiIO : public SnowpackIOInterface {
 		unsigned int number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored
 		double hoar_density_surf, hoar_min_size_surf;
 
-		std::string hn_density, hn_density_model, variant, experiment, station_name;
+		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
