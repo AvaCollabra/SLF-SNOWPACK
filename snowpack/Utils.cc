@@ -348,7 +348,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 {
 	bool mass_error = true;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
-	double hnw = Xdata.hn*Xdata.rho_hn;
+	const double hnw = Xdata.hn*Xdata.rho_hn;
 	double mass_change = hnw - Sdata.mass[SurfaceFluxes::MS_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
@@ -431,16 +431,18 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  */
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
 {
-	size_t e, nE = Xdata.getNumberOfElements(), soil_node = Xdata.SoilNode;
+	const size_t nE = Xdata.getNumberOfElements(), soil_node = Xdata.SoilNode;
+	size_t e;
 	double factor_corr, sum_total_correction=0.;  // Correction factors
 	double ddL, dL = 0.;                          // Length changes
-	double cH = Xdata.cH - Xdata.Ground, cH_old;  // Snow depths
+	const double cH = Xdata.cH - Xdata.Ground;  // Snow depths
+	double cH_old;  // Snow depths
 	bool prn_CK = false;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	dhs_corr = Mdata.hs1 - cH;
-	
+
 	/*
 	 * First try to find erosion events, which have not been captured by the drift module
 	 * (Maybe the wind sensor did not measure correctly due to riming, or s.th. else went
