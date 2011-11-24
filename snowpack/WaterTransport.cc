@@ -502,9 +502,16 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			}
 
+			//Put rain water in the layers, starting from the top element.
+			e0 = nE;
 			while (Store > 0.0 && e0 > 0.) {
+				e0--;				//This construct with e0=nE and e0-- is to circumvent troubles with the unsigned ints.
 				L0 = EMS[e0].L;
-				dThetaW0 = MIN(Constants::density_ice/Constants::density_water*EMS[e0].theta[AIR],Store/L0);
+				if(e0>0) {	//Check how much space is left to put rain water in.
+					dThetaW0 = MIN(Constants::density_ice/Constants::density_water*EMS[e0].theta[AIR],Store/L0);
+				} else {	//For the lowest layer, put all rain water in, to prevent loosing the mass.
+					dThetaW0 = Store/L0;
+				}
 				Store -= dThetaW0*L0;
 				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 *Mdata.conc[ii]
@@ -514,19 +521,6 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e0].theta[WATER] += dThetaW0;
 				EMS[e0].theta[AIR] -= dThetaW0;
 				EMS[e0].M += dThetaW0 * L0 * Constants::density_water;
-				e0--;
-			}
-			if (Store > 0.) {
-				L0 = EMS[e0].L;
-				dThetaW0 = Store/L0;
-				for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					EMS[e0].conc[WATER][ii] = (L0 * dThetaW0 * Mdata.conc[ii]
-					                                  + L0 * EMS[e0].theta[WATER] * EMS[e0].conc[WATER][ii])
-					                              / (L0 * (EMS[e0].theta[WATER] + dThetaW0));
-				}
-				EMS[e0].theta[WATER] += dThetaW0;
-				EMS[e0].theta[AIR] -= dThetaW0;
-				EMS[e0].M += dThetaW0*L0*Constants::density_water;
 			}
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 		}
