@@ -746,7 +746,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	if (enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))
 		hs = Mdata.hs1;
 	else
-		hs = Xdata.cH;
+		hs = Xdata.cH - Xdata.Ground;
 
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer

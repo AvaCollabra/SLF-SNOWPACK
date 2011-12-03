@@ -482,7 +482,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 				(vecXdata[slope.station].meta.getSlopeAngle() < Constants::min_slope_angle)) {
 				hs = Mdata.hs1;
 			} else {
-				hs = vecXdata[slope.station].cH;
+				hs = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
 			}
 			iswr_factor=(Mdata.rswr+0.01)/(Rdata.pot_dir+Rdata.pot_diffsky+0.00001); //avoiding "0/0"
 			if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
@@ -517,7 +517,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	if (!(ebalance_switch || perp_to_slope)) {
 		radiation.radiationOnSlope(vecXdata[slope.sector], Mdata, surfFluxes, Psolar, Rdata);
 
-		if (((sw_mode == 1) || (sw_mode == 2)) && (vecXdata[slope.sector].meta.getSlopeAngle() > Constants::min_slope_angle)) {
+		if (((sw_mode == 1) || (sw_mode == 2))
+			    && (vecXdata[slope.sector].meta.getSlopeAngle() > Constants::min_slope_angle)) {
 			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
 
@@ -1030,7 +1031,7 @@ int main (int argc, char *argv[])
 				surfFluxes.CollectSurfaceFluxes(surfFluxes, sn_Bdata, vecXdata[slope.sector], Mdata,
 				                                useSoilLayers, soil_flux);
 				if (slope.sector == slope.station) { // station field only (usualy flat)
-					int i_hz = mn_ctrl.HzStep;
+					size_t i_hz = mn_ctrl.HzStep;
 					// Calculate consistent lw_in for virtual slopes
 					if ( vecXdata[slope.station].getNumberOfElements() > 0 ) {
 						double k_eff, gradT;
@@ -1079,14 +1080,17 @@ int main (int argc, char *argv[])
 									time_count_deltaHS = 0.;
 								}
 							}
+							// If the error persisted for at least one day => apply correction
+							if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
+								deflateInflate(Mdata, vecXdata[slope.station],
+								               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
+								time_count_deltaHS = 0.;
+							}
 						} else {
-							time_count_deltaHS = 0.;
-						}
-						// If the error persisted for at least one day => apply correction
-						if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
-							deflateInflate(Mdata, vecXdata[slope.station],
-							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
-							time_count_deltaHS = 0.;
+							if (time_count_deltaHS < Constants::eps2)
+								time_count_deltaHS -= S_TO_D(sn_dt);
+							else
+								time_count_deltaHS += S_TO_D(sn_dt);
 						}
 					}
 

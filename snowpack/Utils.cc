@@ -390,17 +390,17 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
  * @brief Forced erosion of a missed event
  * @author Michael Lehning \n Mathis Bavay
  * @date 2008-03-07
- * @param hs1 Snow depth to correct
+ * @param hs Snow depth to assimilate
  * @param Xdata
  * @return Eroded mass (kg m-2)
  */
-double forcedErosion(const double hs1, SnowStation& Xdata)
+double forcedErosion(const double hs, SnowStation& Xdata)
 {
 	int    nErode=0;        // Counters
 	double massErode=0.;    // Eroded mass (kg m-2)
 
 	massErode=0.;
-	while ( (Xdata.getNumberOfElements() > Xdata.SoilNode) && (hs1 + 0.01) < (Xdata.cH - Xdata.Ground) ) {
+	while ( (Xdata.getNumberOfElements() > Xdata.SoilNode) && (hs + 0.01) < (Xdata.cH - Xdata.Ground) ) {
 		massErode += Xdata.Edata[Xdata.getNumberOfElements()-1].M;
 		Xdata.cH -= Xdata.Edata[Xdata.getNumberOfElements()-1].L;
 		Xdata.resize(Xdata.getNumberOfElements() - 1);
@@ -426,7 +426,7 @@ double forcedErosion(const double hs1, SnowStation& Xdata)
  * and Michi, who should be home with Leo being sick ...
  * @param Mdata
  * @param Xdata
- * @param dhs_corr Correction on snow depth (m)
+ * @param dhs_corr Correction on calculated snow depth (m)
  * @param mass_corr Mass correction (kg m-2)
  */
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
@@ -435,8 +435,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	size_t e;
 	double factor_corr, sum_total_correction=0.;  // Correction factors
 	double ddL, dL = 0.;                          // Length changes
-	const double cH = Xdata.cH - Xdata.Ground;  // Snow depths
-	double cH_old;  // Snow depths
+	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
+	double cH_old;                                // Temporary snow depth
 	bool prn_CK = false;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -453,7 +453,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		if (prn_CK) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
-			                                              Mdata.hs1, cH);
+			        Mdata.hs1, cH);
 		}
 	} else {
 		// assume settling error
@@ -478,8 +478,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
 				// Rounding errors could produce very small negative numbers ...
-				if(age_fraction<0.) {
-					age_fraction=0.;
+				if (age_fraction < 0.) {
+					age_fraction = 0.;
 				}
 				sum_total_correction += EMS[e].L * (1. - sqrt(age_fraction) );
 			}
@@ -499,8 +499,9 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
 				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
-				if(age_fraction<0.) {		//An issue was encountered that rounding errors could produce very small negative numbers
-					age_fraction=0.;
+				// Rounding errors could produce very small negative numbers ...
+				if (age_fraction < 0.) {
+					age_fraction = 0.;
 				}
 				ddL = EMS[e].L
 				        * MAX(-0.9,
@@ -509,15 +510,15 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 				ddL = 0.;
 			}
 			dL += ddL;
-			mass_corr += ddL * EMS[e].Rho;
 			NDS[e+1].z += dL + NDS[e+1].u;
 			NDS[e+1].u  = 0.0;
+			mass_corr += ddL * EMS[e].Rho;
 			EMS[e].M += ddL * EMS[e].Rho;
 			EMS[e].L0 = EMS[e].L += ddL;
 			EMS[e].E  = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
 		}
 		// Update the overall height
-		cH_old     = Xdata.cH;
+		cH_old    = Xdata.cH;
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
 		Xdata.mH -= (cH_old - Xdata.cH);
 	}
