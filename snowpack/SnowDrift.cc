@@ -182,7 +182,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		massErode = (real_flux * sn_dt / Hazard::typical_slope_length);
 	}
 	// Real erosion either on flat field or on windward slope or in ALPINE3D
-	if ((snow_redistribution && (((Mdata.hs1 + 0.02) < (Xdata.cH - Xdata.Ground)) && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))) || ALPINE3D || windward) {
+	if ((snow_redistribution && (((Xdata.mH + 0.02) < (Xdata.cH - Xdata.Ground)) && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))) || ALPINE3D || windward) {
 		Xdata.ErosionMass = 0.;
 		// Erode at most one element with a maximal error of +- 5 % on mass ...
 		if (massErode >= 0.95 * EMS[nE-1].M) {
