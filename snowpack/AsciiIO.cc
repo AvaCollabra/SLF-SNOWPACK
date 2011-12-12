@@ -502,7 +502,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, hh, mm);
 		fprintf(fout, " %7.5f %8.4f %7.5f %7.5f %7.5f",  EMS[e].L,
 			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
-		fprintf(fout," %7.4f %6.1f %4.1f %6.1f %5.2f %5.2f %5.2f %5.2f %4d %7.5f 1",
+		fprintf(fout," %7.4f %6.1f %4.1f %6.1f %5.2f %5.2f %5.2f %5.2f %4u %7.5f 1",
 			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
 		fprintf(fout," %10.3e %f", EMS[e].CDot, EMS[e].metamo);
@@ -643,7 +643,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	//  513: grain type (Swiss code F1F2F3)
 	fprintf(PFile,"\n0513,%u", nE+1-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%03d",EMS[e].type);
+		fprintf(PFile,",%03u",EMS[e].type);
 	// surface hoar at surface? (depending on boundary conditions)
 	if (M_TO_MM(NDS[nN-1].hoar/hoar_density_surf) > hoar_min_size_surf)
 		fprintf(PFile,",660");
@@ -744,7 +744,7 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		// *6nn: e.g. solute concentration
 		for (jj = 2; jj < N_COMPONENTS-1; jj++) {
 			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-				fprintf(fout,"\n06%02d,%u" , 10*jj + ii,nE-Xdata.SoilNode);
+				fprintf(fout,"\n06%02u,%u" , 10*jj + ii,nE-Xdata.SoilNode);
 				for (e = Xdata.SoilNode; e < nE; e++) {
 					fprintf(fout,",%.1f",EMS[e].conc(ii,jj));
 				}
@@ -1637,10 +1637,10 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 							j_lim = 43;
 						}
 						if (jj < j_lim) {
-							fprintf(fout, ",H(tag%02d),T(tag%02d)", tag, tag);
+							fprintf(fout, ",H(tag%02u),T(tag%02u)", tag, tag);
 							jj += 2;
 							if (ii < number_meas_temperatures) {
-								fprintf(fout, ",H(meas%02d),T(meas%02d)", tag, tag);
+								fprintf(fout, ",H(meas%02u),T(meas%02u)", tag, tag);
 								jj += 2;
 							}
 							tag++;

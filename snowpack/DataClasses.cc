@@ -1124,7 +1124,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 	}
 }
 
-CurrentMeteo::CurrentMeteo(const unsigned int& i_max_number_of_sensors)
+CurrentMeteo::CurrentMeteo(const size_t& i_max_number_of_sensors)
 	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
 	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
 	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
