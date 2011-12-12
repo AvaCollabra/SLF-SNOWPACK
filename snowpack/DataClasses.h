@@ -75,7 +75,7 @@ class ZwischenData {
  */
 class CurrentMeteo {
 	public:
-		CurrentMeteo(const unsigned int& i_max_number_of_sensors);
+		CurrentMeteo(const size_t& i_max_number_of_sensors);
 		void reset();
 
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
@@ -114,7 +114,7 @@ class CurrentMeteo {
 		double rho_hn;             ///< Measured new sno density (kg m-3)
 
 	private:
-		unsigned int max_number_of_sensors;
+		size_t max_number_of_sensors;
 };
 
 /// @brief The 3 mathematical fields that can be solved
@@ -152,7 +152,7 @@ class LayerData {
 
 		mio::Date layerDate;        ///< Date of deposition
 		double hl;                  ///< The height of the layer in m
-		unsigned int ne;            ///< Number of finite elements in the the layer (hl/ne defines elm. size)
+		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
 		double tl;                  ///< Temperature at the top of the layer in K or degC
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
@@ -169,7 +169,7 @@ class LayerData {
 		double sp;                  ///< Micro-structure : Sphericity
 		double dd;                  ///< Micro-structure : Dendricity
 		double rb;                  ///< Micro-structure : Bond Radius in mm
-		unsigned int mk;            ///< Micro-structure : Marker
+		size_t mk;                  ///< Micro-structure : Marker
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
@@ -192,9 +192,9 @@ class SN_SNOWSOIL_DATA {
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
-		unsigned int nN;                  ///< Total number of FE nodes
+		size_t nN;                        ///< Total number of FE nodes
 		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
-		unsigned int nLayers;             ///< Total number of snowpack layers
+		size_t nLayers;                   ///< Total number of snowpack layers
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
 		double HS_last;                   ///< Last checked measured Snow Height
 		double Albedo;                    ///< Snow albedo
@@ -260,8 +260,8 @@ class ElementData {
 		double rb;                 ///< grain bond radius (mm)
 		double ps2rb;              ///< proportion of grain bond growth due to pressure sintering (1)
 		double N3;                 ///< grain Coordination number (1)
-		unsigned int    mk;                 ///< grain marker (history dependent)
-		unsigned int    type;               ///< grain class
+		size_t mk;                 ///< grain marker (history dependent)
+		size_t type;               ///< grain class
 		double metamo;             ///< keep track of metamorphism
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)

@@ -262,7 +262,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * @param Sdata
  * @param Xdata
  */
-void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata)
+void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in)
 {
 	size_t e, nE;
 	double ql_Rest;
@@ -281,12 +281,12 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		for (e = 0; e < nE; e++) {
 			if (EMS[e].theta[SOIL] == 0.0) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
-					prn_msg(__FILE__, __LINE__, "wrn", Date(), "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
+					prn_msg(__FILE__, __LINE__, "wrn", date_in, "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
 				}
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "msg+", Date(),
+				prn_msg(__FILE__, __LINE__, "msg+", date_in,
 				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
@@ -300,7 +300,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				try {
 					compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest);
 				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceMelt at element [%d], nE=%d", e, nE);
+					prn_msg(__FILE__, __LINE__, "err", date_in, "SubSurfaceMelt at element [%d], nE=%d", e, nE);
 					throw;
 				}
 
@@ -335,7 +335,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				try {
 					compSubSurfaceFrze(EMS[e], Xdata.number_of_solutes, sn_dt);
 				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "err", Date(), "SubSurfaceFrze at element [%d], nE=%d", e, nE);
+					prn_msg(__FILE__, __LINE__, "err", date_in, "SubSurfaceFrze at element [%d], nE=%d", e, nE);
 					throw;
 				}
 
@@ -366,18 +366,18 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
 			if (((EMS[e].Te - Constants::melting_tk) > 0.1) && (e > Xdata.SoilNode))
-				prn_msg(__FILE__, __LINE__, "wrn", Date(),
+				prn_msg(__FILE__, __LINE__, "wrn", date_in,
 				        "Snow temperature Te=%f K is above melting point in element %d (nE=%d; T0=%f K, T1=%f K)",
 				        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
 			if (EMS[e].theta[SOIL] == 0.) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
-					prn_msg(__FILE__, __LINE__, "err", Date(), "Phase Change End: rho[%d]=%f", e, EMS[e].Rho);
+					prn_msg(__FILE__, __LINE__, "err", date_in, "Phase Change End: rho[%d]=%f", e, EMS[e].Rho);
 					throw IOException("Run-time error in compPhaseChange()", AT);
 				}
 			}
 			// Also make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (!EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "err", Date(),
+				prn_msg(__FILE__, __LINE__, "err", date_in,
 				        "Phase Change End: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 				throw IOException("Run-time error in compPhaseChange()", AT);
@@ -386,14 +386,14 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 			sum_Qmf += EMS[e].Qmf * EMS[e].L;
 		}
 		if (prn_CK && (sum_Qmf > 0.)) {
-			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Checking energy balance  (W/m2):");
-			prn_msg(__FILE__, __LINE__, "msg+", Date(), " E1: %f   E0: %f  E1-E0: %f  sum_Qmf: %f  Surface EB : %f",
+			prn_msg(__FILE__, __LINE__, "msg+", date_in, "Checking energy balance  (W/m2):");
+			prn_msg(__FILE__, __LINE__, "msg+", date_in, " E1: %f   E0: %f  E1-E0: %f  sum_Qmf: %f  Surface EB : %f",
 			           (cold_content_out) / sn_dt, (cold_content_in) / sn_dt,
 			               (cold_content_out - cold_content_in) / sn_dt, sum_Qmf,
 			                   Sdata.qs + Sdata.ql + Sdata.lw_net + Sdata.qr + Sdata.qw);
 		}
 	} catch (const exception& ) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "Run-time error in compPhaseChange()");
+		prn_msg(__FILE__, __LINE__, "err", date_in, "Run-time error in compPhaseChange()");
 		throw;
 	}
 }

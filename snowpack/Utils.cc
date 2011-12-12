@@ -436,27 +436,27 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	double factor_corr, sum_total_correction=0.;  // Correction factors
 	double ddL, dL = 0.;                          // Length changes
 	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
+	const double mH = Xdata.mH - Xdata.Ground;    // Calculated snow depth
 	double cH_old;                                // Temporary snow depth
 	bool prn_CK = false;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	dhs_corr = Mdata.hs1 - cH;
 
 	/*
 	 * First try to find erosion events, which have not been captured by the drift module
 	 * (Maybe the wind sensor did not measure correctly due to riming, or s.th. else went
 	 * wrong with the model. For now assume erosion if more than 3 cm are missing
 	 */
-	if ((Mdata.hs1 + 0.03) < cH) {
-		mass_corr = forcedErosion(Mdata.hs1, Xdata);
+	if ((mH + 0.03) < cH) {
+		dhs_corr = mH - cH;
+		mass_corr = forcedErosion(mH, Xdata);
 		if (prn_CK) { //HACK
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
-			        Mdata.hs1, cH);
+			        mH, cH);
 		}
-	} else {
-		// assume settling error
+	} else if (cH > Constants::eps){ // assume settling error
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
@@ -467,9 +467,10 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 			          "Small correction due to assumed settling error");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			          "Measured Snow Depth:%lf   Computed Snow Depth:%lf", Mdata.hs1, cH);
+			          "Measured Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
+		dhs_corr = mH - cH;
 		for (e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
@@ -521,6 +522,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		cH_old    = Xdata.cH;
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
 		Xdata.mH -= (cH_old - Xdata.cH);
+	} else {
+		return;
 	}
 }
 

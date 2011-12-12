@@ -36,7 +36,7 @@ class AsciiIO : public SnowpackIOInterface {
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const ZwischenData& Zdata, const bool& forbackup=false);
+		                            const ZwischenData& Zdata, const bool& forbackup=false);
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
@@ -44,7 +44,7 @@ class AsciiIO : public SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                 const std::vector<ProcessInd>& Hdata_ind, const int& num);
+		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
 		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& ftype);
@@ -58,29 +58,29 @@ class AsciiIO : public SnowpackIOInterface {
 		void writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout);
 		void writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout);
 
-		unsigned int writeTemperatures(FILE *fout, const double& z_vert, const double& T,
-		                               const unsigned int& i, const SnowStation& Xdata);
+		size_t writeTemperatures(FILE *fout, const double& z_vert, const double& T,
+		                         const size_t& ii, const SnowStation& Xdata);
 
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
 		                        const double& ground, const double& slope_angle);
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 
-		int findTaggedElement(const unsigned int& tag, const SnowStation& Xdata);
-		unsigned int writeHeightTemperatureTag(FILE *fout, const unsigned int& tag,
-		                                       const CurrentMeteo& Mdata, const SnowStation& Xdata);
+		int findTaggedElement(const size_t& tag, const SnowStation& Xdata);
+		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
+		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                     const CurrentMeteo& Mdata, const double crust,
                                     const double dhs_corr, const double mass_corr,
-                                    const unsigned int nCalcSteps, FILE *fout);
+                                    const size_t nCalcSteps, FILE *fout);
 		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                     const CurrentMeteo& Mdata, const double crust,
                                     const double dhs_corr, const double mass_corr,
-                                    const unsigned int nCalcSteps, FILE *fout);
+                                    const size_t nCalcSteps, FILE *fout);
 		void writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                     const CurrentMeteo& Mdata, const double crust,
                                     const double dhs_corr, const double mass_corr,
-                                    const unsigned int nCalcSteps, FILE *fout);
+                                    const size_t nCalcSteps, FILE *fout);
 
 		static const bool r_in_n, t_srf, t_gnd;
 
@@ -91,8 +91,8 @@ class AsciiIO : public SnowpackIOInterface {
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 		double min_depth_subsurf;
-		unsigned int number_meas_temperatures, number_fixed_heights, number_fixed_rates;
-		unsigned int number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored
+		size_t number_meas_temperatures, number_fixed_heights, number_fixed_rates;
+		size_t number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored
 		double hoar_density_surf, hoar_min_size_surf;
 
 		std::string hn_density, hn_density_model, variant, experiment;

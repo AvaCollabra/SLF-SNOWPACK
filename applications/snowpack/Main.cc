@@ -479,8 +479,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			double hs, iswr_factor;
 			// What snow depth should be used?
 			if (enforce_measured_snow_heights &&
-				(vecXdata[slope.station].meta.getSlopeAngle() < Constants::min_slope_angle)) {
-				hs = Mdata.hs1;
+				   (vecXdata[slope.station].meta.getSlopeAngle() < Constants::min_slope_angle)) {
+				hs = vecXdata[slope.station].mH - vecXdata[slope.station].Ground;
 			} else {
 				hs = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
 			}
@@ -534,7 +534,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	// Update precipitation memory
 	if (slope.sector == slope.station) {
 		cumu_hnw += Mdata.hnw;
-		if (enforce_measured_snow_heights && (Mdata.hs1 != mio::IOUtils::nodata)) {
+		if (Mdata.hs1 != mio::IOUtils::nodata) {
 			vecXdata[slope.station].mH = Mdata.hs1 + vecXdata[slope.station].Ground;
 		}
 	}
@@ -669,6 +669,7 @@ int main (int argc, char *argv[])
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions
 	//feenableexcept(FE_ALL_EXCEPT);
 #endif
+	bool prn_CK = false;
 	mio::Timer prebuffering_timer;
 	mio::Timer meteoRead_timer;
 	mio::Timer run_timer;
@@ -1061,36 +1062,36 @@ int main (int argc, char *argv[])
 						 *   of fresh snow mass because Michi spent many painful days calibrating the settling ...
 						 *   and therefore it can't be wrong, dixunt Michi and Charles.
 						 */
-						if (Mdata.hs1 != IOUtils::nodata) {
-							const double cH = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
-							// Look for missed erosion or not strong enough settling ...
-							// ... and nastily deep "dips" caused by buggy data ...
-							if (time_count_deltaHS > -Constants::eps2) {
-								if ((Mdata.hs1 + 0.01) < cH) {
+						const double cH = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
+						const double mH = vecXdata[slope.station].mH - vecXdata[slope.station].Ground;
+						// Look for missed erosion or not strong enough settling ...
+						// ... and nastily deep "dips" caused by buggy data ...
+						if (time_count_deltaHS > -Constants::eps2) {
+							if ((mH + 0.01) < cH) {
 									time_count_deltaHS += S_TO_D(sn_dt);
-								} else {
-									time_count_deltaHS = 0.;
-								}
-							}
-							// ... or too strong settling
-							if (time_count_deltaHS < Constants::eps2) {
-								if ((Mdata.hs1 - 0.01) > cH) {
-									time_count_deltaHS -= S_TO_D(sn_dt);
-								} else {
-									time_count_deltaHS = 0.;
-								}
-							}
-							// If the error persisted for at least one day => apply correction
-							if (fabs(1. - time_count_deltaHS) < 0.5 * M_TO_D(calculation_step_length)) {
-								deflateInflate(Mdata, vecXdata[slope.station],
-								               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
+							} else {
 								time_count_deltaHS = 0.;
 							}
-						} else {
-							if (time_count_deltaHS < Constants::eps2)
-								time_count_deltaHS -= S_TO_D(sn_dt);
-							else
-								time_count_deltaHS += S_TO_D(sn_dt);
+						}
+						// ... or too strong settling
+						if (time_count_deltaHS < Constants::eps2) {
+							if ((mH - 0.01) > cH) {
+									time_count_deltaHS -= S_TO_D(sn_dt);
+							} else {
+								time_count_deltaHS = 0.;
+							}
+						}
+						// If the error persisted for at least one day => apply correction
+						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
+							deflateInflate(Mdata, vecXdata[slope.station],
+											qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
+							if (prn_CK) {
+								prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
+								        "InflDefl (i_hz=%u): dhs=%f, dmass=%f, counter=%f",
+								        i_hz, qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr,
+								        time_count_deltaHS);
+							}
+							time_count_deltaHS = 0.;
 						}
 					}
 

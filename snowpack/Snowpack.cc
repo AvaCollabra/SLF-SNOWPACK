@@ -744,7 +744,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// What snow depth should be used?
 	if (enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))
-		hs = Mdata.hs1;
+		hs = Xdata.mH - Xdata.Ground;
 	else
 		hs = Xdata.cH - Xdata.Ground;
 
@@ -1583,7 +1583,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		}
 
 		// See if any SUBSURFACE phase changes are occuring
-		phasechange.compPhaseChange(Sdata, Xdata);
+		phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
