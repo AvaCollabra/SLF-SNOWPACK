@@ -365,7 +365,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		for (e = 0; e < nE; e++) {
 			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
-			if (((EMS[e].Te - Constants::melting_tk) > 0.1) && (e > Xdata.SoilNode))
+			if (((EMS[e].Te - Constants::melting_tk) > 0.2) && (e > Xdata.SoilNode))
 				prn_msg(__FILE__, __LINE__, "wrn", date_in,
 				        "Snow temperature Te=%f K is above melting point in element %d (nE=%d; T0=%f K, T1=%f K)",
 				        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);

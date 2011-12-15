@@ -1509,7 +1509,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 		fprintf(fout,",%.1f", rho_hn);
 		rho_hn = SnLaws::compNewSnowDensity(hn_density, "BELLAIRE", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "CROCUS", Mdata, Xdata, t_surf, variant);
+		rho_hn = SnLaws::compNewSnowDensity(hn_density, "PAHAUT", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", rho_hn);
 	} else {
 		double mRho_hn = Constants::undefined;
@@ -1520,7 +1520,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 		fprintf(fout,",%.1f", -rho_hn);
 		rho_hn = SnLaws::compNewSnowDensity(hn_density, "BELLAIRE", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", -rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "CROCUS", Mdata, Xdata, t_surf, variant);
+		rho_hn = SnLaws::compNewSnowDensity(hn_density, "PAHAUT", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", -rho_hn);
 	}
 }
@@ -1661,7 +1661,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			} else if (variant == "CALIBRATION") {
 				if (max_number_sensors == 5)
 					fprintf(fout, ",HS1");
-				fprintf(fout, "Internal energy change,Surface input (sum fluxes),rho_hn(measured),rho_hn(Zwart),rho_hn(Lehning),rho_hn(Bellaire),rho_hn(CROCUS)");
+				fprintf(fout, "Internal energy change,Surface input (sum fluxes),rho_hn(measured),rho_hn(Zwart),rho_hn(Lehning),rho_hn(Bellaire),rho_hn(PAHAUT)");
 			} else {
 				fprintf(fout, ",Soil runoff,Internal energy change,Surface input (sum fluxes),Measured new snow density,Modeled new snow density,Crust thickness (S-slope)");
 				if (!research_mode)

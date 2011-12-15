@@ -750,9 +750,9 @@ size_t SnowStation::getNumberOfNodes() const
  */
 void SnowStation::joinElements(const unsigned int& number_top_elements)
 {
-	unsigned int e0, e1;  // Lower (e0) and upper (e1) element index
-	unsigned int rnE;     // Reduced number of elements
-	unsigned int nJoin=0; // Number of elements to be removed
+	size_t e0, e1;  // Lower (e0) and upper (e1) element index
+	size_t rnE;     // Reduced number of elements
+	size_t nJoin=0; // Number of elements to be removed
 
 	if (nElems - SoilNode < number_top_elements+1) {
 		return;
@@ -835,7 +835,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
  */
 void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector)
 {
-	unsigned int ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
+	size_t ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
 	int real_soil_no_sandwich = 1;  // Switch to count real soil layers
 
 	cAlbedo = SSdata.Albedo;
@@ -961,6 +961,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	while (e-- > 0) {
 		if (e < nElems-1) SigC -= (Edata[e+1].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
 		SigC -= (Edata[e].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
+		Edata[e].C = SigC;
 	}
 	// Cold content
 	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter if Qmf == 0. for all layers
@@ -1096,6 +1097,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 		Edata0.dd = 0.5 * ( Edata0.dd + Edata1.dd );
 		Edata0.sp = 0.5 * ( Edata0.sp + Edata1.sp );
 		Edata0.rb = 0.5 * ( Edata0.rb + Edata1.rb );
+		Edata0.CDot = 0.5 * ( Edata0.CDot + Edata1.CDot );
 		Edata0.E = Edata0.Ev;
 		Edata0.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
 		                 //                 and viscous strains of the elements and average the stress?

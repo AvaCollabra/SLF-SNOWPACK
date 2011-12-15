@@ -323,16 +323,16 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
  */
 void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	unsigned int e;         // Element counter
+	size_t e;               // Element counter
 	double L0, dL, cH_old;  // Element length and change of length
 	bool prn_WRN = false;
 
-	unsigned int nN = Xdata.getNumberOfNodes();
+	size_t nN = Xdata.getNumberOfNodes();
 	if (nN == (Xdata.SoilNode + 1))
 		return;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
-	unsigned int nE = Xdata.getNumberOfElements();
+	size_t nE = Xdata.getNumberOfElements();
 	vector<ElementData>& EMS = Xdata.Edata;
 	e = nE;
 	double SigC = 0.; // Cauchy stress
@@ -1154,7 +1154,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
 
-	if (!enforce_measured_snow_heights) {
+	if (!enforce_measured_snow_heights) { // HNW driven
 		if (Mdata.ta < C_TO_K(thresh_rain)) {
 			if ((cumu_hnw > 0.) && (rho_hn != Constants::undefined)) {
 				if ((hn_density_model == "MEASURED")
