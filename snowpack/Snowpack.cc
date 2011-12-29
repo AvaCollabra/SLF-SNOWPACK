@@ -1209,36 +1209,58 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		 * This is to simulate the gradual sinking of the canopy under the weight of snow.
 		 * We also adjust Xdata.mH, to have it reflect only measured snow, and not the canopy.
 		 * (So if there is only a canopy, mH=0.)
-		 * The third clause makes it a one way issue (only with snowfall, not with melt).
-		 * The second clause limits this issue to small canopies only, to prevent problems
+		 * The first clause only executes the code when SNOWPACK is snow height driven
+		 * The second clause is to execute only when there is a canopy.
+		 * The third clause limits this issue to small canopies only, to prevent problems
 		 * with Alpine3D simulations in forests.
+		 * The fourth clause is an important one. When hs1 is not available, the old Xdata.mH is kept, which
+		 * has already been adjusted in the previous time step, so then skip this part.
+		 * The fifth clause makes sure only flat field is treated this way, and not the slopes.
 		 */
-		if ((Xdata.Cdata.height > 0.) && (Xdata.Cdata.height < ThresholdSmallCanopy)
-                && ((Xdata.cH + Xdata.Cdata.height) < Xdata.mH) && (Xdata.mH != Constants::undefined)) {
+		if ( (enforce_measured_snow_heights) && (Xdata.Cdata.height > 0.)
+			&& (Xdata.Cdata.height < ThresholdSmallCanopy) && (Mdata.hs1 != Constants::nodata)
+		                && (Xdata.mH != Constants::undefined) && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle)) {
 			/*First, reduce the Canopy height with the additional snow height. This makes the Canopy work
 			 *like a spring. When increase in mh is 3 cm and the canopy height is 10 cm, the snow pack is
 			 *assumed to be 6cm in thickness. When the total amount of snow measured (mh) equals the canopy
 			 *height, the canopy is reduced to 0, and everything measured is assumed to be snow.
+			 *To do this, check if there is an increase AND check if a new snow element will be created!
+			 *If you don't do this, the canopy will be reduced for small increases that do not produce a snow layer.
+			 *Then, in the next time step, the canopy height is reduced even more, even without increase in hs1.
+			 *This if-statement looks awkward, but it is just (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
+			 *combined with the new value for Xdata.mH, given the change in Xdata.Cdata.height.
 			 */
-			Xdata.Cdata.height -= (Xdata.mH - (Xdata.cH + Xdata.Cdata.height));
-			if (Xdata.Cdata.height < 0.) {
-				Xdata.Cdata.height = 0.;
+			if ( Xdata.cH < (Xdata.mH - (Xdata.Cdata.height-(Xdata.mH - (Xdata.cH + Xdata.Cdata.height)))- (height_new_elem * cos_sl)) ) {
+				Xdata.Cdata.height -= (Xdata.mH - (Xdata.cH + Xdata.Cdata.height));
 			} else {
-				//Adjust measured snow height with canopy height ...
-				Xdata.mH -= Xdata.Cdata.height;
-				if (Xdata.mH < Xdata.Ground)
-					Xdata.mH = Xdata.Ground;
+				// Special case when the increase is not enough to make a snow pack (so no snow pack yet on the ground):
+				// assign Xdata.mH to Canopy height (as if snow_fall and snowed_in would have been false).
+				if (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) {
+					Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
+				}
+			}
+			if (Xdata.Cdata.height < 0.) {		//Make sure canopy height doesn't get negative
+				Xdata.Cdata.height = 0.;
 			}
 		}
 
+
+		//Adjust measured snow height with canopy height, so Xdata.mH represents "true" snow height measured by sensor
+		Xdata.mH -= Xdata.Cdata.height;
+		if (Xdata.mH < Xdata.Ground)
+			Xdata.mH = Xdata.Ground;
+
+
+		// Now determine if snow depth is increasing:
 		// In case of virtual slope use new snow depth and density from either flat field or luv slope
-		if (((Xdata.cH + Xdata.Cdata.height) < (Xdata.mH - (height_new_elem * cos_sl)))
+		if (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
 		        || (Xdata.hn > 0.) || force_layer) {
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
 			} else { // in case of flat field or PERP_TO_SLOPE
-				hn = Xdata.mH - (Xdata.cH + Xdata.Cdata.height);
+				hn = Xdata.mH - Xdata.cH;
+
 				// Store new snow depth and density
 				if (!ALPINE3D) {
 					Xdata.hn = hn;
@@ -1481,7 +1503,14 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		// but only for small canopies, to prevent problems with Alpine3D simulations in forests.
 		if (Xdata.Cdata.height < ThresholdSmallCanopy) {
 			if ((Xdata.getNumberOfNodes() == Xdata.SoilNode+1) && (Xdata.mH != Constants::undefined)) {
-				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;
+				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
+				Xdata.mH=Xdata.Ground;				//Because we have no snow cover, we consider measured snow height to be effectively 0 (=Xdata.Ground).
+			} else {
+				if(Mdata.hs1 != Constants::nodata) {		//If we have a snow pack, but didn't match the criteria for snow fall, make sure Xdata.mH
+					Xdata.mH -= Xdata.Cdata.height;		//only represents the "true" snow height, to stay consistent and for use in other parts of SNOWPACK.
+					if (Xdata.mH<Xdata.Ground)
+						Xdata.mH=Xdata.Ground;
+				}
 			}
 		}
 	}
