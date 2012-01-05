@@ -587,38 +587,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 }
 
 /**
- * @brief Get 6 and 24 hour difference in snow depth
- * @version 11.02
- * @param delta_hs6 Snow depth difference over 6 hours
- * @param delta_hs24 Snow depth difference over 24 hours
- * @param io
- * @param md meteo data
- * @param i_stn station number
- * @param current_date
- */
-void getDhs6Dhs24(double& delta_hs6, double& delta_hs24, mio::IOManager& io, const vector<mio::MeteoData>& md, const int i_stn, const mio::Date current_date)
-{
-	vector<mio::MeteoData> md6, md24; // meteo data 6 and 24 hours ago, repectively
-
-	delta_hs6  = Constants::undefined;
-	delta_hs24 = Constants::undefined;
-
-	try {
-		io.getMeteoData(current_date - 1.0, md24);
-		io.getMeteoData(current_date - 6.0/24.0, md6);
-	} catch (...) {
-		cerr << "[E] failed to read meteo data for previous 6 and 24 hours\n";
-		throw;
-	}
-
-	if ((md6.size() > 0) && (md[i_stn](MeteoData::HS) != mio::IOUtils::nodata) && (md6[i_stn](MeteoData::HS) != mio::IOUtils::nodata)) {
-		delta_hs6 = MAX(0., md[i_stn](MeteoData::HS) - md6[i_stn](MeteoData::HS));
-	}
-	if ((md24.size() > 0) && (md[i_stn](MeteoData::HS) != mio::IOUtils::nodata) && (md24[i_stn](MeteoData::HS) != mio::IOUtils::nodata)) {
-		delta_hs24 = MAX(0., md[i_stn](MeteoData::HS) - md24[i_stn](MeteoData::HS));
-	}
-}
-/**
  * @brief determine which outputs need to be done for the current time step
  * @param step current time integration step
  * @param sno_step current step in the sno files (current sno profile)
@@ -1118,10 +1086,7 @@ int main (int argc, char *argv[])
 							qr_Hdata.at(i_hz).loc_for_wind = 1;
 						}
 
-						double delta_hs6 = 0.0, delta_hs24 = 0.0;
-						getDhs6Dhs24(delta_hs6, delta_hs24, io, vecMyMeteo, i_stn, Mdata.date);
-
-						hazard.getHazardData(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz), delta_hs6, delta_hs24,
+						hazard.getHazardData(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
 						                     Mdata, surfFluxes, sn_Zdata, vecXdata[slope.station],
 						                     vecXdata[slope.south], slope.nSlopes, slope.virtual_slopes);
 						mn_ctrl.HzStep++;

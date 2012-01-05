@@ -117,18 +117,19 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
 
 /**
  * @brief Computes drift index for past nHours
+ * @note At least min_percent_values of vecDrift need to be defined to obtain a valid drift index
  * - shift
  * 	-  1 : shift old_drift, overwrite old_drift[0]
  * 	-  0 : overwrite old_drift[0] only
  * 	- -1 : no action at all
  * @author Charles Fierz, based on the original by Michael Lehning
  * @version 11.01
- * @param *vecDrift vector of previous 48 half-hourly eroded masses (kg m-1)
+ * @param vecDrift vector of previous 48 half-hourly eroded masses (kg m-1)
  * @param drift last eroded mass (kg m-1)
  * @param rho snow density (kg m-3)
  * @param nHours (1)
  * @param slope_angle (deg)
- * @param shift shift first element of *vecDrift
+ * @param shift shift first element of vecDrift
  */
 double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const double rho, const int nHours,
                           double slope_angle, const int shift)
@@ -263,7 +264,7 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
  * @param Zdata
  * @param Xdata
  */
-void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
+void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                         const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, ZwischenData& Zdata,
                         const SnowStation& Xdata)
 {
@@ -351,46 +352,6 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 		Zdata.hn24[l] = Zdata.hn24[l-1];
 	Zdata.hn24[0] = hn[4];
 	Hdata.hn72_24 =  M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
-
-	if (enforce_measured_snow_heights) {
-		// Check for CONSISTENCY and set indicator to -1 if necessary.
-		//   The following is a cheap fix for InfoManager consistency if the deviation
-		//   is small, i.e. most probably caused by the smoothing
-		//   (4 cm for hns6, 10 cm for hns24).
-		if (((Hdata.hn6 > 1.0)  &&  (Hdata.hn6 < M_TO_CM(d_hs6))) || ((Hdata.hn6 <= 1.0) && (M_TO_CM(d_hs6) > 3.0))) {
-			if ((Hdata.hn6 - M_TO_CM(d_hs6)) < 4.0) {
-				Hdata.hn6 = M_TO_CM(d_hs6) * 1.1;
-				Hdata.hnw6 = Hdata.hn6 * 0.8;
-				Hdata.hn3 = Hdata.hn6 * 0.7;
-				Hdata.hnw3 = Hdata.hn3 * 0.8;
-				Hdata.hn12 = MAX (Hdata.hn6, Hdata.hn12);
-				Hdata.hnw12 = Hdata.hn12 * 0.8;
-			} else {
-				Hdata_ind.hn3  = -1;
-				Hdata_ind.hn6  = -1;
-				Hdata_ind.hn12 = -1;
-				Hdata_ind.hnw3   = -1;
-				Hdata_ind.hnw6   = -1;
-				Hdata_ind.hnw12  = -1;
-			}
-		}
-		if (((Hdata.hn24 > 2.0)  &&  (Hdata.hn24 < M_TO_CM(d_hs24))) || ((Hdata.hn24 <= 2.0) && (M_TO_CM(d_hs24) > 5.0))) {
-			if ((Hdata.hn24 - M_TO_CM(d_hs24)) < 10.0) {
-				Zdata.hn24[0] = d_hs24 * 1.1;
-				Hdata.hn24 = M_TO_CM(Zdata.hn24[0]);
-				Hdata.hnw24 = Hdata.hn24 * 0.8;
-				Hdata.hn72 = MAX (Hdata.hn24 * 1.2, Hdata.hn72);
-				Hdata.hnw72 = Hdata.hn72 * 0.8;
-				Hdata.hn72_24 = M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
-			} else {
-				Hdata_ind.hn24 = -1;
-				Hdata_ind.hn72 = -1;
-				Hdata_ind.hn72_24 = -1;
-				Hdata_ind.hnw24 = -1;
-				Hdata_ind.hnw72 = -1;
-			}
-		}
-	}
 
 	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
 	if (research_mode) {
@@ -511,12 +472,11 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& 
 }
 
 void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           const double& delta_hs6, const double& delta_hs24,
                            CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
                            ZwischenData& Zdata, SnowStation& Xdata_station, SnowStation& Xdata_south,
                            const unsigned int& nSlopes, const bool& virtual_slope)
 {
-	compHazard(Hdata, Hdata_ind, delta_hs6, delta_hs24, Mdata, Sdata, Zdata, Xdata_station);
+	compHazard(Hdata, Hdata_ind, Mdata, Sdata, Zdata, Xdata_station);
 
 	// Compute snow transport on flat fiels if needed
 	if (!virtual_slope) {

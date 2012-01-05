@@ -467,7 +467,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 			          "Small correction due to assumed settling error");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			          "Measured Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
+			          "True Measured Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		dhs_corr = mH - cH;
@@ -521,7 +521,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		// Update the overall height
 		cH_old    = Xdata.cH;
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
-		Xdata.mH -= (cH_old - Xdata.cH);
+		//Xdata.mH -= (cH_old - Xdata.cH);
 	} else {
 		return;
 	}

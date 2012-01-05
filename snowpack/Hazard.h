@@ -51,7 +51,6 @@ class Hazard {
 		                          std::vector<double>& old_drift, double& drift, double slope_angle);
 
 		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                   const double& delta_hs6, const double& delta_hs24,
 		                   CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
 		                   const unsigned int& nSlopes, const bool& virtual_slope);
@@ -65,7 +64,7 @@ class Hazard {
 
 		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
-		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind, const double& d_hs6, const double& d_hs24,
+		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                const SnowStation& Xdata);
 
