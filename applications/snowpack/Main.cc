@@ -253,8 +253,12 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 	}
 }
 
-void editMeteoData(mio::MeteoData& md, const string& variant)
+void editMeteoData(mio::MeteoData& md, const string& variant, const string& mode, const double& thresh_rh)
 {
+	// To be able to run a little bit further in operational mode (a bad HACK ;-)
+	if ((mode == "OPERATIONAL") && (md(MeteoData::RH) == mio::IOUtils::nodata))
+		md(MeteoData::RH) = thresh_rh + Constants::eps;
+
 	// Since we cannot deal with precipitation nodata, we set it to zero (HACK)
 	if (md(MeteoData::HNW) == mio::IOUtils::nodata)
 		md(MeteoData::HNW) = 0.0;
@@ -932,7 +936,8 @@ int main (int argc, char *argv[])
 				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss.str());
 			}
 			meteoRead_timer.stop();
-			editMeteoData(vecMyMeteo[i_stn], variant);
+			const double rh_thresh = cfg.get("THRESH_RH", "SnowpackAdvanced");
+			editMeteoData(vecMyMeteo[i_stn], variant, mode, rh_thresh);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
