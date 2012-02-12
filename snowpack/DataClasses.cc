@@ -901,9 +901,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			// Element's JulianQ Date
 			Edata[e].depositionDate = SSdata.Ldata[ll].layerDate;
 			// Temperature data
-			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T)/2.;
-			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z-Ndata[e].z);
-			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T)/Edata[e].L;
+			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
+			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
+			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T) / Edata[e].L;
 			// Creep data
 			Edata[e].E = Edata[e].S = Edata[e].EDot=0.0;
 			Edata[e].Ev = Edata[e].Ee = Edata[e].EvDot=0.0;

@@ -247,12 +247,11 @@ double Metamorphism::ddRate(const ElementData& Edata)
 {
 	double ddDot;
 
-	const double Ts = Edata.Te;
-	const double dTsdz = fabs(Edata.gradT);
-	const double c = exp (-6000. / Ts); // original CROCUS: -6000.; set to -5800. by Bellaire 2004; back to ori 2007
-	const double f = c * sqrt(dTsdz); // factor 1./7., version 98.03; original CROCUS: c*pow(dTdZ, 0.4)
+	const double dTdz = fabs(Edata.gradT);
+	const double c = exp (-6000. / Edata.Te); // original CROCUS: -6000.; set to -5800. by Bellaire 2004; back to ori 2007
+	const double f = c * sqrt(dTdz); // factor 1./7., version 98.03; original CROCUS: c*pow(dTdZ, 0.4)
 
-	if (dTsdz < 5.0) {
+	if (dTdz < 5.0) {
 		ddDot = -3.0e8 * c;   // Ml: ori -2.0; set to -5.0e8 by Bellaire 2004, then to -2.5e8 2007;
 	} else {                // Ml: additional range DTsdz < 15, version 98.03
 		ddDot = -1.5e8 * f;   // Ml: ori -4.0; set to -1.5e8 by Bellaire 2004, then to -3.5e8 2007;
@@ -291,12 +290,10 @@ Metamorphism::Metamorphism(const mio::Config& cfg)
 double Metamorphism::spRateDEFAULT(const ElementData& Edata)
 {
 	double spDot;
-	double dTdZ;
-	double c, f;
 
-	dTdZ = fabs(Edata.gradT);
-	c = exp(-6000./Edata.Te); // Original 6000.
-	f = c*dTdZ/17.; // Introduced by ml on 2004-10-11; original CROCUS: c*pow(dTdZ, 0.4)
+	const double dTdZ = fabs(Edata.gradT);
+	const double c = exp(-6000. / Edata.Te); // Original 6000.
+	const double f = c * dTdZ / 17.; // Introduced by ml on 2004-10-11; original CROCUS: c*pow(dTdZ, 0.4)
 
 	if ( dTdZ < 5.0 ) {
 		if ( Edata.sp < 0.49 ) {
@@ -308,7 +305,7 @@ double Metamorphism::spRateDEFAULT(const ElementData& Edata)
 		spDot = -((dTdZ - 5.)/dTdZ)*0.5e8*f; // ML: Ori 2.0
 	}
 	// Consider graupel separately
-	if ( (Edata.mk%100) == 4 ) {
+	if ( (Edata.mk % 100) == 4 ) {
 		spDot = 0.;
 	}
 
@@ -324,13 +321,11 @@ double Metamorphism::spRateDEFAULT(const ElementData& Edata)
 double Metamorphism::spRateNIED(const ElementData& Edata)
 {
 	double spDot;
-	double dTdZ;
-	double c, f;
-
-	dTdZ = fabs(Edata.gradT);
-	c = exp(-6000./Edata.Te); // Original 6000.
-	f = c*dTdZ/17.; // Introduced by ml on 2004-10-11; original CROCUS: c*pow(dTdZ, 0.4)
-
+	
+	const double dTdZ = fabs(Edata.gradT);
+	const double c = exp(-6000. / Edata.Te); // Original 6000.
+	const double f = c * dTdZ / 17.; // Introduced by ml on 2004-10-11; original CROCUS: c*pow(dTdZ, 0.4)
+	
   if ( dTdZ < 15.0 ) { //NIED (H. Hirashima)
     spDot = (15.0 - dTdZ)*0.5e9*c;
 	} else if ( (dTdZ > 15.0) && (dTdZ < 25.0) ) {
@@ -343,7 +338,7 @@ double Metamorphism::spRateNIED(const ElementData& Edata)
     }
   }
 	// Now consider Graupel
-	if ( (Edata.mk%100) == 4 ) {
+	if ( (Edata.mk % 100) == 4 ) {
 		spDot = 0.;
 	}
 

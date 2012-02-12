@@ -1103,7 +1103,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	for (e = 0; e < nE; e++) {
 		EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
 		EMS[e].heatCapacity();
-		EMS[e].gradT = -(NDS[e].T - NDS[e+1].T) / EMS[e].L;
+		EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 	}
 	free(U); free(dU); free(ddU);
 }

@@ -92,7 +92,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	 * check with the corresponding SNO SMET file
 	 */
 	smet::SMETReader haz_reader(hazfilename);
-		
+
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
 
@@ -530,25 +530,25 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	vec_width.clear();
 	vec_precision.clear();
 
-	vec_width.push_back(12); vec_precision.push_back(5); //EMS[e].L
-	vec_width.push_back(11); vec_precision.push_back(4); //Xdata.Ndata[e+1].T
-	vec_width.push_back(12); vec_precision.push_back(5); //EMS[e].theta[ICE]
-	vec_width.push_back(12); vec_precision.push_back(5); //EMS[e].theta[WATER]
-	vec_width.push_back(12); vec_precision.push_back(5); //EMS[e].theta[AIR]
-	vec_width.push_back(12); vec_precision.push_back(4); //EMS[e].theta[SOIL]
+	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].L
+	vec_width.push_back(12); vec_precision.push_back(6); //Xdata.Ndata[e+1].T
+	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[ICE]
+	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[WATER]
+	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[AIR]
+	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[SOIL]
 	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_RHO]
-	vec_width.push_back(7); vec_precision.push_back(1);  //EMS[e].soil[SOIL_K]
-	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_C]
-	vec_width.push_back(9); vec_precision.push_back(2);  //EMS[e].rg
-	vec_width.push_back(9); vec_precision.push_back(2);  //EMS[e].rb
-	vec_width.push_back(9); vec_precision.push_back(2);  //EMS[e].dd
-	vec_width.push_back(9); vec_precision.push_back(2);  //EMS[e].sp
+	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_K]
+	vec_width.push_back(12); vec_precision.push_back(1);  //EMS[e].soil[SOIL_C]
+	vec_width.push_back(11); vec_precision.push_back(6);  //EMS[e].rg
+	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].rb
+	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].dd
+	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].sp
 	vec_width.push_back(6); vec_precision.push_back(0);  //EMS[e].mk
 
-	vec_width.push_back(13); vec_precision.push_back(5); //Xdata.Ndata[e+1].hoar
-	vec_width.push_back(2); vec_precision.push_back(0);  //1
-	vec_width.push_back(12); vec_precision.push_back(3); //EMS[e].CDot
-	vec_width.push_back(13); vec_precision.push_back(6); //EMS[e].metamo
+	vec_width.push_back(13); vec_precision.push_back(6); //Xdata.Ndata[e+1].hoar
+	vec_width.push_back(4); vec_precision.push_back(0);  //ne
+	vec_width.push_back(15); vec_precision.push_back(6); //EMS[e].CDot
+	vec_width.push_back(15); vec_precision.push_back(6); //EMS[e].metamo
 
 	for (size_t ii = 0; ii < nr_solutes; ii++) {
 		vec_width.push_back(17); vec_precision.push_back(6); //EMS[e].conc(ICE,ii)

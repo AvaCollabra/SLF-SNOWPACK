@@ -432,10 +432,10 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	int sw_mode = 0;
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
-	if (Mdata.tss==mio::IOUtils::nodata) { //degraded, but better than nothing if no TSS!
+	if (Mdata.tss==mio::IOUtils::nodata) {
+		//NOTE degraded, that is, use clear sky incoming long wave but nvertheless better than nothing if no TSS!
 		cfg.addKey("CHANGE_BC", "Snowpack", "0");
 		cfg.addKey("MEAS_TSS", "Snowpack", "0");
-		Mdata.tss=Constants::melting_tk; //TODO: it would be better to test for NEUMANN instead of relying on tss=melting_tk in the model...
 	}
 
 	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
@@ -909,9 +909,8 @@ int main (int argc, char *argv[])
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
-		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s (%f) station time",
-		        vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO).c_str(),
-		        vecSSdata[slope.station].profileDate.getJulianDate());
+		prn_msg(__FILE__, __LINE__, "msg", vecSSdata[slope.station].profileDate, "Start simulation for %s on julian date %f, UTC%+2.0f",
+				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.getJulianDate(), vecSSdata[slope.station].profileDate.getTimeZone());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min", calculation_step_length);
@@ -1241,7 +1240,10 @@ int main (int argc, char *argv[])
 	time_t nowEND=time(NULL);
 	cout << endl;
 	cout << "[i] []                 STARTED  running SLF " << mode << " Snowpack Model on " << ctime(&nowSRT);
-	cout << "                       ========================================================================" << endl;
+	if (mode == "OPERATIONAL")
+		cout << "                       ===========================================================================" << endl;
+	else
+		cout << "                       ========================================================================" << endl;
 	cout << "                       FINISHED running SLF " << mode << " Snowpack Model on " << ctime(&nowEND) << endl;
 
 	return 0;
