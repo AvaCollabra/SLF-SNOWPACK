@@ -940,6 +940,7 @@ int main (int argc, char *argv[])
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
+				current_date -= calculation_step_length/1440;
 				break;
 			}
 
