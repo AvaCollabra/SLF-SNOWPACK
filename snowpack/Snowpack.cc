@@ -1212,13 +1212,14 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		 * The first clause only executes the code when SNOWPACK is snow height driven
 		 * The second clause is to execute only when there is a canopy.
 		 * The third clause limits this issue to small canopies only, to prevent problems
-		 * with Alpine3D simulations in forests.
+		 *   with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
+		 *   If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
 		 * The fourth clause is an important one. When hs1 is not available, the old Xdata.mH is kept, which
 		 * has already been adjusted in the previous time step, so then skip this part.
 		 * The fifth clause makes sure only flat field is treated this way, and not the slopes.
 		 */
 		if ( (enforce_measured_snow_heights) && (Xdata.Cdata.height > 0.)
-			&& (Xdata.Cdata.height < ThresholdSmallCanopy) && (Mdata.hs1 != Constants::nodata)
+			&& ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) && (Mdata.hs1 != Constants::nodata)
 		                && (Xdata.mH != Constants::undefined) && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle)) {
 			/*First, reduce the Canopy height with the additional snow height. This makes the Canopy work
 			 *like a spring. When increase in mh is 3 cm and the canopy height is 10 cm, the snow pack is
@@ -1500,8 +1501,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		} //  End of NEW_SNOWFALL Condition 2
 	} else {
 		// If there is no snowfall and no snowpack yet, we can assign the measured snow height to the canopy,
-		// but only for small canopies, to prevent problems with Alpine3D simulations in forests.
-		if (Xdata.Cdata.height < ThresholdSmallCanopy) {
+		// but only for small canopies, to prevent problems with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
+		// If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
+		if ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) {
 			if ((Xdata.getNumberOfNodes() == Xdata.SoilNode+1) && (Xdata.mH != Constants::undefined)) {
 				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
 				Xdata.mH=Xdata.Ground;				//Because we have no snow cover, we consider measured snow height to be effectively 0 (=Xdata.Ground).
