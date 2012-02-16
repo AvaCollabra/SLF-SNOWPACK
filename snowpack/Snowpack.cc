@@ -1130,8 +1130,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	unsigned int e, n;                 // Element and node counters
 	double z0;                         // Used to determine the z-location of new snowfall nodes
 	double Ln;                         // Original new snow layer element length
-
-	double rho_hn, t_surf, hn, hoar;   // New snow data
+	double t_surf;                     // Snow surface temperature
+	double rho_hn, hn, hoar;           // New snow data
 	double cos_sl, L0, dL, Theta0;     // Local values
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
@@ -1145,10 +1145,15 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	nOldN = Xdata.getNumberOfNodes();
 	nOldE = Xdata.getNumberOfElements();
 	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	if (surfaceCode == DIRICHLET_BC)
-		t_surf = MIN(C_TO_K(-0.1), Mdata.tss);
-	else
+	if (surfaceCode == DIRICHLET_BC) {
+		if (Mdata.tss != IOUtils::nodata) {
+			t_surf = MIN(C_TO_K(-0.1), Mdata.tss);
+		} else {
+			t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[nOldN-1].T);
+		}
+	} else {
 		t_surf = MIN(C_TO_K(-0.1), (Xdata.Ndata[nOldN-1].T + Mdata.ta)/2.);
+	}
 	rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
 	                                    Mdata, Xdata, t_surf, variant);
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
