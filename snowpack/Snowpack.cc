@@ -49,7 +49,10 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
  * non-static section                                       *
  ************************************************************/
 
-Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
+Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
+                   research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false),
+                   soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
+                   change_bc(false), meas_tss(false), vw_dendricity(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -1274,7 +1277,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				// W.E. of surface hoar must be larger than a threshold to be buried
 				if (hoar > 1.5*MM_TO_M(hoar_min_size_buried)*hoar_density_surf) {
 					nHoarE = 1;
-				} else if (!(change_bc && meas_tss) // Flux BC (NEUMANN) typically produce less SH
+				} else if (!(change_bc && meas_tss) /*Flux BC (NEUMANN) typically produce less SH*/
 				               && (hoar > MM_TO_M(hoar_min_size_buried)*hoar_density_surf)) {
 					nHoarE = 1;
 				} else {

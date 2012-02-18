@@ -76,7 +76,7 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& cfg)
+Stability::Stability(const mio::Config& cfg) : plastic(false)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);

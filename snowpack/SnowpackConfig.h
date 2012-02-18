@@ -39,6 +39,8 @@ class SnowpackConfig : public mio::Config {
 		~SnowpackConfig();
 
 	private:
+		bool enforce_measured_snow_heights;
+
 		static const bool __init;     ///<helper variable to enable the init of static collection data
 		static bool initStaticData(); ///<initialize the static containers
 		static std::map<std::string, std::string> advancedConfig, inputConfig, outputConfig;

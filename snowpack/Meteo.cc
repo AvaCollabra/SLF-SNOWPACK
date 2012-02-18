@@ -33,7 +33,7 @@ using namespace mio;
 
 #include <snowpack/Meteo.h>
 
-Meteo::Meteo(const mio::Config& cfg) : canopy(cfg)
+Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCanopyModel(false)
 {
 	/**
 	 * @brief Defines the way to deal with atmospheric stability:
@@ -93,12 +93,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 	// New variables for stability correction
 	double psi_m = 0., psi_s = 0., Tstar = 0.;
-	double tss, tss_v, ta_v, dummy, p0, sat_vap, LH;
+	double dummy, p0, sat_vap, LH;
 	double z_ratio = 1., stab_ratio = 0.;
 	double Ri;  // Richardson number for simple stability correction
-
-	// Initialize Virtual Temperatures for Stability
-	tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 
 	// Ideal approximation of pressure and vapor pressure
 	p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
@@ -111,8 +108,11 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	//sat_vap = lw_SaturationPressure(Mdata.ta);
 	sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
 
-	ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
-	tss_v = tss * (1. + 0.377 * sat_vap / p0);
+	// Initialize snow surface temperature
+	const double t_surf = Xdata.Ndata[Xdata.getNumberOfElements()].T;
+	// Initialize virtual temperatures for stability
+	const double ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
+	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
 	/*
 	 * Now start the real thing - iteratively determining stability and possibly adjusting z0 to
@@ -156,7 +156,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 		// Stability corrections
 		if (neutral < 0) { // Switch for Richardson
-			Ri = Constants::g / tss_v * (ta_v - tss_v) * zref / vw / vw;
+			Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / vw / vw;
 			if (Ri < 0.2) { // neutral and unstable
 				stab_ratio = Ri;
 			} else {
@@ -179,8 +179,8 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 		} else if (neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) { // MO Iteration
 			ustar = 0.4 * vw / (z_ratio - psi_m);
-			Tstar = 0.4 * (tss_v - ta_v) / (z_ratio - psi_s);
-			stab_ratio = -0.4 * zref * Tstar * Constants::g / (tss * ustar*ustar);
+			Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
+			stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * ustar*ustar);
 
 			if (stab_ratio > 0.) { // stable
 				// Stearns & Weidner, 1993

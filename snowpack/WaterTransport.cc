@@ -24,12 +24,12 @@
 using namespace std;
 using namespace mio;
 
-WaterTransport::WaterTransport(const mio::Config& cfg)
+WaterTransport::WaterTransport(const mio::Config& cfg) : useSoilLayers(false), water_layer(false), jam(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	// Defines whether soil layers are used
-	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
+	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 
 	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
 	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", water_layer);
@@ -303,7 +303,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	if ((nN == Xdata.SoilNode+1)
-	        || (water_layer && snp_soil && (nN == Xdata.SoilNode+2)
+	        || (water_layer && useSoilLayers && (nN == Xdata.SoilNode+2)
 	                && (EMS[nE-1].theta[ICE] < Snowpack::min_ice_content)
 	                    && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
 		return;
@@ -355,7 +355,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	}
 	if (rnE < nE) {
 		Xdata.reduceNumberOfElements(rnE);
-		if (!snp_soil && (rnE == Xdata.SoilNode)) {
+		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
 			Xdata.Ndata[Xdata.SoilNode].T = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
 	}
@@ -452,7 +452,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	// First, consider no soil with no snow on the ground
-	if (!snp_soil && nN == 1) {
+	if (!useSoilLayers && nN == 1) {
 		return;
 	} else { // Add rainfall to snow/soil pack
 		if ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain))) {
@@ -460,7 +460,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			e0 = nE-1;
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
-			        && ((snp_soil && (nE == Xdata.SoilNode)
+			        && ((useSoilLayers && (nE == Xdata.SoilNode)
 			                && (EMS[nE-1].theta[SOIL] > 0.95)) || ((e0 > 0) && (EMS[e0-1].theta[ICE] > 0.95)))) {
 				nE++;
 				nN++;
@@ -492,7 +492,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[nE-1].rb = 0.5;
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			} else if (water_layer && (Store > 0.)
-			               && ((snp_soil && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95))
+			               && ((useSoilLayers && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95))
 			                       || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95)))) {
 				// Put rain water in existing wet layer
 				z_water = MIN(Store, MAX(0.0, (0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())) - EMS[nE-1].L)));
@@ -640,7 +640,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					}
 				}
 				// Update surface runoff with soil
-				if (snp_soil && e0 == Xdata.SoilNode) {
+				if (useSoilLayers && e0 == Xdata.SoilNode) {
 					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += L0 * Constants::density_water * dThetaW0;
 				}
 			} // end positive water movement
@@ -733,7 +733,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
                                        SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
 	// First, consider no soil with no snow on the ground and deal with possible rain water
-	if (!snp_soil && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
+	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
 		if (Mdata.ta >= C_TO_K(thresh_rain)) {
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Mdata.hnw;

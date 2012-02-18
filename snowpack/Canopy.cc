@@ -276,11 +276,11 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
  * non-static section                                       *
  ************************************************************/
 
-Canopy::Canopy(const mio::Config& cfg)
+Canopy::Canopy(const mio::Config& cfg) : useSoilLayers(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
-	cfg.getValue("SNP_SOIL", "Snowpack", snp_soil);
+	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 
 	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
 
@@ -1282,7 +1282,7 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	  * In case there is no soil data, use the air temperature as guess for the soil temperature,
 	  * and skip soil moisture function
 	  */
-	if ( snp_soil ) {
+	if ( useSoilLayers ) {
 		Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac)*cn_f2f4(Xdata.SoilNode,&Xdata.Edata[0]) *
 				cn_f3((1. - Mdata.rh) * lw_SaturationPressure(Mdata.ta)) / Cdata->lai;
 	} else {
@@ -1605,7 +1605,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	} // End of Energy Balance Loop
 
 	// Now REDUCE WaterContent in the Soil Elements --- Could also be part of WaterTransport.c
-	if (snp_soil)
+	if (useSoilLayers)
 		cn_SoilWaterUptake(Xdata->SoilNode, TRANSPIRATION, &Xdata->Edata[0]);
 
 	// final adjustment of interception storage due to evaporation

@@ -48,7 +48,8 @@ const double Hazard::maximum_drift = 5.0;
  * non-static section                                       *
  ************************************************************/
 
-Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg)
+Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg),
+               research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled

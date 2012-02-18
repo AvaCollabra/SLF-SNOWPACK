@@ -101,8 +101,6 @@ class AsciiIO : public SnowpackIOInterface {
 		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
 		std::vector<double> fixed_sensor_depths;
 
-		int CHANGE_BC, MEAS_TSS;
-
 		std::set<std::string> setAppendableFiles;
 
 		//std::ofstream fout;//Output file streams

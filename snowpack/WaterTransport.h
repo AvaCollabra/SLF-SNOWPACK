@@ -56,13 +56,11 @@ class WaterTransport {
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		std::string variant;
-		bool snp_soil;         ///< Defines whether soil layers are used
-		bool water_layer;      ///< Build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
-		bool jam;              ///< To build up a water table over impermeable layers
-		double thresh_rain;    ///< Rain only for air temperatures warmer than threshold (degC)
-		double sn_dt;          ///< Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-		double hoar_thresh_rh; ///< No surface hoar will form for rH above threshold
-		double hoar_thresh_vw; ///< No surface hoar will form at wind speeds above threshold (m s-1)
+		bool useSoilLayers, water_layer, jam;
+		double thresh_rain;
+		double sn_dt;
+		double hoar_thresh_rh;
+		double hoar_thresh_vw;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 };

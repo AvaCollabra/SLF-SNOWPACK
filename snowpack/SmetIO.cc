@@ -23,7 +23,7 @@
 using namespace std;
 using namespace mio;
 
-SmetIO::SmetIO(const mio::Config& cfg)
+SmetIO::SmetIO(const mio::Config& cfg) : useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);

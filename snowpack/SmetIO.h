@@ -70,7 +70,7 @@ class SmetIO : public SnowpackIOInterface {
 		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath;
 		double in_dflt_TZ;
 		int sw_mode;
-		bool perp_to_slope, useSoilLayers;
+		bool useSoilLayers, perp_to_slope;
 };
 
 #endif

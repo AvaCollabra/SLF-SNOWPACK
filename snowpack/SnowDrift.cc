@@ -38,7 +38,8 @@ const bool SnowDrift::msg_erosion = false;
  * non-static section                                       *
  ************************************************************/
 
-SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg)
+SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
+                     enforce_measured_snow_heights(false), snow_redistribution(false)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled

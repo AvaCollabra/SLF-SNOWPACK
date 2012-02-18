@@ -42,7 +42,8 @@ const bool AsciiIO::t_gnd = false;
  * non-static section                                       *
  ************************************************************/
 
-AsciiIO::AsciiIO(const mio::Config& cfg)
+AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false),
+                 research_mode(false), perp_to_slope(false)
 {
 	/**
 	 * @name Snow sensors
