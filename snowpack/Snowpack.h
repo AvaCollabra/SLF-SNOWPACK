@@ -134,16 +134,17 @@ class Snowpack {
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSoilLayers;
+		bool multistream, join_elements, change_bc, meas_tss;
+		bool vw_dendricity;
 		int sw_mode;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh;
-		bool multistream, join_elements, change_bc, meas_tss;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_rad, new_snow_bond_rad;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
-		bool vw_dendricity;
 		double fixed_albedo;
+		double t_surf;
 
 		const static bool hydrometeor;
 		const static double snowfall_warning;

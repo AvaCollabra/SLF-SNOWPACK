@@ -253,7 +253,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 	}
 }
 
-void editMeteoData(mio::MeteoData& md, const string& variant, const string& mode, const double& thresh_rh)
+void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rh)
 {
 	// To be able to run a little bit further in operational mode (a bad HACK ;-)
 	if ((mode == "OPERATIONAL") && (md(MeteoData::RH) == mio::IOUtils::nodata))
@@ -313,14 +313,14 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_ea) {
 		mio::Date now;
 		now.setFromSys();
-		cout << "[E] [" << now.toString(mio::Date::ISO) << "] ";
+		cout << "[E] [" << md.date.toString(mio::Date::ISO) << "] ";
 		cout << StationName << " missing { ";
 		if(miss_ta) cout << "TA ";
 		if(miss_rh) cout << "RH ";
 		if(miss_rad) cout << "radiation ";
 		if(miss_precip) cout << "precipitations ";
 		if(miss_ea) cout << "ea ";
-		cout << "} on [" << md.date.toString(mio::Date::ISO) << "]\n";
+		cout << "} ( current time is [" << now.toString(mio::Date::ISO) << "] )\n";
 		return false;
 	}
 	return true;
@@ -417,7 +417,8 @@ void copySolutes(const mio::MeteoData& md, CurrentMeteo& Mdata, const unsigned i
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
                             const Slope& slope, SnowpackConfig& cfg,
                             PositionSun& Psolar, RadiationData& Rdata,
-                            double& cumu_hnw, const double& lw_in, double& iswr_forced, double& tot_mass_in)
+                            double& cumu_hnw, const double& lw_in, double& iswr_forced,
+                            double& tot_mass_in)
 {
 	/**
 	 * @brief Switch defining whether input data (solar radiation, snow depth and precipitation rates)
@@ -432,14 +433,13 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	int sw_mode = 0;
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
-	if (Mdata.tss==mio::IOUtils::nodata) {
-		//NOTE degraded, that is, use clear sky incoming long wave but nvertheless better than nothing if no TSS!
-		cfg.addKey("CHANGE_BC", "Snowpack", "0");
-		cfg.addKey("MEAS_TSS", "Snowpack", "0");
+	if (Mdata.tss == mio::IOUtils::nodata) {
+		//NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use clear sky incoming long wave with NEUMANN BC.
+		//     Better than nothing if no TSS is available though!
+		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
 	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
-	const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output");
@@ -453,8 +453,9 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		if (useCanopyModel)
 			vecXdata[slope.sector].Cdata.reset(cumsum_mass);
 
-		if (mass_balance) { // Do an initial mass balance check
-			tot_mass_in = 0.;
+		const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
+		if (mass_balance) {
+			// Do an initial mass balance check
 			if (!massBalanceCheck(vecXdata[slope.sector], surfFluxes, tot_mass_in))
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Mass error during initial check!");
 		}
@@ -502,10 +503,11 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	} else { //virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "0");
-		cfg.addKey("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", "1");
 		cfg.addKey("MEAS_TSS", "Snowpack", "0");
+		Mdata.tss = Constants::undefined;
+		cfg.addKey("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", "1");
+		Mdata.hs1 = Constants::undefined;
 		cfg.addKey("NUMBER_MEAS_TEMPERATURES", "Input", "0");
-		Mdata.tss=Constants::melting_tk; //HACK: should we write tss=melting_tk here?
 	}
 
 	if (iswr_forced >= 0.) {
@@ -728,10 +730,6 @@ int main (int argc, char *argv[])
 	double first_backup = 0.;
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::Config::nothrow);
 
-	//To check mass balance if AVGSUM_TIME_SERIES is not set (screen output only)
-	bool mass_balance = false;
-	cfg.getValue("MASS_BALANCE", "Output", mass_balance, mio::Config::nothrow);
-
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
 	const double profstart = cfg.get("PROF_START", "Output");
 	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
@@ -936,7 +934,7 @@ int main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			const double rh_thresh = cfg.get("THRESH_RH", "SnowpackAdvanced");
-			editMeteoData(vecMyMeteo[i_stn], variant, mode, rh_thresh);
+			editMeteoData(vecMyMeteo[i_stn], variant, rh_thresh);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
@@ -958,14 +956,15 @@ int main (int argc, char *argv[])
 
 			// START LOOP OVER ASPECTS
 			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
-				double tot_mass_in = 0.; //Check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
+				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
 				copySnowTemperatures(vecMyMeteo[i_stn], Mdata, fixed_sensor_depths, slope_sequence);
 				copySolutes(vecMyMeteo[i_stn], Mdata, SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
-                               Psolar, Rdata, cumu_hnw, lw_in, iswr_forced, tot_mass_in);
+                                       Psolar, Rdata, cumu_hnw, lw_in, iswr_forced,
+                                       tot_mass_in);
 
 				// Notify user every fifteen days of date being processed
 				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulianDate()) + 15.5;
@@ -1192,10 +1191,13 @@ int main (int argc, char *argv[])
 					        mn_ctrl.nStep);
 				}
 
-				// Mass balance check at end of time step
-				if (mass_balance) {
-					if (massBalanceCheck(vecXdata[slope.sector], surfFluxes, tot_mass_in) == false)
-						prn_msg(__FILE__, __LINE__, "msg+", current_date, "Mass error at end of time step!");
+				// check mass balance if AVGSUM_TIME_SERIES is not set (screen output only)
+				if (!avgsum_time_series) {
+					const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
+					if (mass_balance) {
+						if (massBalanceCheck(vecXdata[slope.sector], surfFluxes, tot_mass_in) == false)
+							prn_msg(__FILE__, __LINE__, "msg+", current_date, "Mass error at end of time step!");
+					}
 				}
 			} //end loop on sectors
 			computed_one_timestep = true;

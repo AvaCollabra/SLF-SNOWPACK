@@ -64,7 +64,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["RESEARCH"] = "true";
 	advancedConfig["STATION_NAME"] = "station";
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
-	advancedConfig["SURFACECODE"] = "NEUMANN_BC";
 	advancedConfig["SW_MODE_CHANGE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";
 	advancedConfig["THRESH_RH"] = "0.5";
@@ -115,11 +114,12 @@ bool SnowpackConfig::initStaticData()
 
 SnowpackConfig::~SnowpackConfig() {}
 
-SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename)
+SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename),
+                               enforce_measured_snow_heights(false)
 {
 	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, Config::nothrow);
 
-	int enforce_measured_snow_heights = get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
+	getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
 	addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0025"); //Minimum element length (m)
 	double minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");

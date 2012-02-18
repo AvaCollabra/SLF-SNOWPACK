@@ -71,7 +71,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 	cfg.getValue("CHANGE_BC", "Snowpack", change_bc);
 	cfg.getValue("THRESH_CHANGE_BC", "Snowpack", thresh_change_bc);
 
-	//Should be 0 for data-sets which do not provide measured surface temperatures
+	//Should be NODATA for data-sets which do not provide measured surface temperatures
 	cfg.getValue("MEAS_TSS", "Snowpack", meas_tss);
 
 	/**
@@ -146,16 +146,6 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg)
 
 	//Defines whether joining elements will be considered at all
 	cfg.getValue("JOIN_ELEMENTS", "SnowpackAdvanced", join_elements);
-
-	//Which boundary condition to use
-	string boundary_condition; cfg.getValue("SURFACECODE", "SnowpackAdvanced", boundary_condition);
-	if (boundary_condition == "NEUMANN_BC") {
-		surfaceCode = Snowpack::NEUMANN_BC;
-	} else if (boundary_condition == "DIRICHLET_BC") {
-		surfaceCode = Snowpack::DIRICHLET_BC;
-	} else {
-		throw InvalidArgumentException("The SURFACECODE " + boundary_condition + " is unknown", AT);
-	}
 
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
 	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
@@ -830,9 +820,8 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		EMS[Xdata.SoilNode].sw_abs = EMS[Xdata.SoilNode+1].sw_abs;
 	}
 
-	// Set ground surface temperature
+	// Set bare ground surface temperature with no soil and return
 	if (nN == 1) {
-		// No snow on the ground and !useSoilLayers
 		if ((Mdata.ts0 > Constants::melting_tk) && ((Mdata.ts0 - Mdata.ta) > 10.))
 			NDS[0].T = (Mdata.ts0 + Mdata.ta) / 2.;
 		else
@@ -888,18 +877,15 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
   // Make sure that the global data structures know where the pointers are for the next integration step after the reallocation ....
 	Xdata.Kt = Kt;
 
-	/*
-	 * Set the temperature at the snowpack base to the prescribed value.
-	 * NOTE if there is water in the base element then the base temperature MUST be 0 degC
-	 * NOTE ts0 no longer set to 0 degC in Control.c
-	*/
+	// Set the temperature at the snowpack base to the prescribed value.
+	// NOTE if there is water in the base element then the base temperature MUST be 0 degC
 	if (!(useSoilLayers && soil_flux)) {
 		if ((EMS[0].theta[ICE] >= min_ice_content)) {
 			if ((EMS[0].theta[WATER] > 0.003)) {
-				NDS[0].T = C_TO_K(0.0); /*Mdata.ts0 = C_TO_K(0.0);*/
+				NDS[0].T = Constants::melting_tk;
 			} else if (!useSoilLayers) {
 				// To avoid temperatures above freezing while snow covered
-				NDS[0].T = MIN(Mdata.ts0, C_TO_K(0.0));
+				NDS[0].T = MIN(Mdata.ts0, Constants::melting_tk);
 			} else {
 				NDS[0].T = Mdata.ts0;
 			}
@@ -907,8 +893,6 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			NDS[0].T = Mdata.ts0;
 		}
 	}
-	if (surfaceCode == DIRICHLET_BC)
-		NDS[nE].T = Mdata.tss;
 	// Copy Temperature at time0 into First Iteration
 	for (n = 0; n < nN; n++) {
 		U[n] = NDS[n].T;
@@ -1130,7 +1114,6 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	unsigned int e, n;                 // Element and node counters
 	double z0;                         // Used to determine the z-location of new snowfall nodes
 	double Ln;                         // Original new snow layer element length
-	double t_surf;                     // Snow surface temperature
 	double rho_hn, hn, hoar;           // New snow data
 	double cos_sl, L0, dL, Theta0;     // Local values
 
@@ -1145,15 +1128,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	nOldN = Xdata.getNumberOfNodes();
 	nOldE = Xdata.getNumberOfElements();
 	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	if (surfaceCode == DIRICHLET_BC) {
-		if (Mdata.tss != IOUtils::nodata) {
-			t_surf = MIN(C_TO_K(-0.1), Mdata.tss);
-		} else {
-			t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[nOldN-1].T);
-		}
-	} else {
-		t_surf = MIN(C_TO_K(-0.1), (Xdata.Ndata[nOldN-1].T + Mdata.ta)/2.);
-	}
+
 	rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
 	                                    Mdata, Xdata, t_surf, variant);
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
@@ -1185,9 +1160,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	if (rho_hn == Constants::undefined)
 		return;
 
-	// To check thresholds for solid precipitation
-	// NOTE No new snow during cloud free conditions
-	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (Mdata.ta - Mdata.tss < 3.0))
+	// Thresholds for solid precipitation. NOTE No new snow during cloud free conditions!
+	// -> check relative humidity as well as difference between air and snow surface temperatures
+	double dt_airsnow = Mdata.ta - t_surf;
+	if (change_bc && !meas_tss)
+		dt_airsnow = Mdata.ta - Constants::melting_tk;
+	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 	// snowed_in is true if the ground is either already snowed in or snow will remain on it
 	//  ... but check first for the availability of the following data. This is particularly important if enforce_measured_snow_heights == false.
@@ -1296,7 +1274,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				// W.E. of surface hoar must be larger than a threshold to be buried
 				if (hoar > 1.5*MM_TO_M(hoar_min_size_buried)*hoar_density_surf) {
 					nHoarE = 1;
-				} else if (!(change_bc && meas_tss)
+				} else if (!(change_bc && meas_tss) // Flux BC (NEUMANN) typically produce less SH
 				               && (hoar > MM_TO_M(hoar_min_size_buried)*hoar_density_surf)) {
 					nHoarE = 1;
 				} else {
@@ -1584,12 +1562,15 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	PhaseChange phasechange(cfg);
 
 	try {
-		// Adjust boundary condition
+		// Set and adjust boundary conditions
+		surfaceCode = NEUMANN_BC;
+		t_surf = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
-			if (Mdata.tss < C_TO_K(thresh_change_bc))
+			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
 				surfaceCode = DIRICHLET_BC;
-			else
-				surfaceCode = NEUMANN_BC;
+				t_surf = Mdata.tss;
+				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = t_surf;
+			}
 		}
 
 		// If it is SNOWING, find out how much, prepare for new FEM data
@@ -1607,14 +1588,14 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// Find the temperature in the snowpack
 		compSnowTemperatures(Xdata, Mdata, Bdata);
 
-		//Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
+		// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
 		// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
 		//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
 		//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = C_TO_K(thresh_change_bc/2.);
+			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, Constants::melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 
