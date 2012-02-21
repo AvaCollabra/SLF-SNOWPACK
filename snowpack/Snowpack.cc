@@ -1123,9 +1123,10 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
 	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
 	const double TSS_threshold12_smallHSincrease=-0.5;	//deg Celcius of 12 hour average TSS in case of low rate of change of HS
-	const double TSS_threshold12_largeHSincrease=1.0;	//deg Celcius of 12 hour average TSS in case of high rate of change of HS
-	const double HS_threshold_smallincrease=0.01;		//low rate of change of HS (m/hour)
-	const double HS_threshold_largeincrease=0.02;		//high rate of change of HS (m/hour)
+	const double TSS_threshold12_largeHSincrease=3.0;	//deg Celcius of 12 hour average TSS in case of high rate of change of HS
+	const double HS_threshold_smallincrease=0.005;		//low rate of change of HS (m/hour)
+	const double HS_threshold_largeincrease=0.010;		//high rate of change of HS (m/hour)
+	const double HS_threshold_verylargeincrease=0.015;	//very high rate of change of HS (m/hour)
 	const double ThresholdSmallCanopy=1.;			//Set the threshold for the canopy height. Below this threshold, the canopy is considered to be small and snow will fall on top (like grass, or small bushes). Above this threshold, snow will fall through (like in forests). When the canopy is small, the measured snow height will be assigned to the canopy height in case of no snow pack on the ground.
 
 	nOldN = Xdata.getNumberOfNodes();
@@ -1185,6 +1186,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		        || (Mdata.tss12!=Constants::undefined
 		                && Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
 		                && Mdata.hs_change_rate > HS_threshold_largeincrease)
+			    || (Mdata.hs_change_rate>HS_threshold_verylargeincrease)
 		            );
 	}
 
