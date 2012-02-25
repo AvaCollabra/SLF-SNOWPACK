@@ -911,7 +911,8 @@ int main (int argc, char *argv[])
 				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.getJulianDate(), vecSSdata[slope.station].profileDate.getTimeZone());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO).c_str());
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min", calculation_step_length);
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
+		        calculation_step_length);
 
 		bool computed_one_timestep = false;
 		double meteo_step_length = -1.;
@@ -933,8 +934,8 @@ int main (int argc, char *argv[])
 				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss.str());
 			}
 			meteoRead_timer.stop();
-			const double rh_thresh = cfg.get("THRESH_RH", "SnowpackAdvanced");
-			editMeteoData(vecMyMeteo[i_stn], variant, rh_thresh);
+			const double thresh_rh = cfg.get("THRESH_RH", "SnowpackAdvanced");
+			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rh);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());

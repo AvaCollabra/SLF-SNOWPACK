@@ -38,7 +38,7 @@ class InstabilityData {
 	public:
 		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(6.0) {} //HACK needs to be max_stability
 
-		int    n_lemon;  ///< Number of "lemons" found
+		size_t n_lemon;  ///< Number of "lemons" found
 		double dhard;    ///< Difference in hardness
 		double dgsz;     ///< Difference in grain size
 		double ssi;      ///< Sk38 + structural instabilities (dhard & dgsz)
@@ -96,41 +96,42 @@ class Stability {
 
 		static const double psi_ref, max_stability, minimum_slab, ground_rough;
 		static const double min_depth_ssi, skier_depth, min_thick_crust;
-		static const int sh_mod, prof_classi; 
+		static const int sh_mod, prof_classi;
+		static const size_t nmax_lemon;
 
 	private:
 
 		void initStability(const double& psi_ref, StabilityData& STpar, 
 		                   SnowStation& Xdata, std::vector<InstabilityData>& SIdata);
 
-		double st_HandHardnessDEFAULT(const ElementData& Edata);
-		double st_HandHardnessASARC(const ElementData& Edata);
+		double setHandHardnessDEFAULT(const ElementData& Edata);
+		double setHandHardnessASARC(const ElementData& Edata);
+		double setHandHardnessMONTI(const ElementData& Edata);
 
-		double st_CriticalStress(const double& epDotn, const double& T_s);
+		double compCriticalStress(const double& epDotn, const double& T_s);
 
-		double st_DeformationRateIndex(ElementData& Edata);
+		double setDeformationRateIndex(ElementData& Edata);
 
-		double st_PenetrationDepth(const SnowStation& Xdata);
+		double compPenetrationDepth(const SnowStation& Xdata);
 
 		void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
 		
-		bool st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
+		bool setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
-		bool st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
+		bool setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
 
-		double st_NaturalStabilityIndex(const StabilityData& STpar);
+		double setNaturalStabilityIndex(const StabilityData& STpar);
 
-		double st_SkierStabilityIndex(const double& depth_lay, const StabilityData& STpar);
+		double setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar);
 
-		void setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
-		                                 const double& Sk, InstabilityData& SIdata);
+		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
+		                                   const double& Sk, InstabilityData& SIdata);
 
 		bool classifyProfileStability(SnowStation& Xdata);
 		
 		bool recognizeProfileType(const mio::Date& date, SnowStation& Xdata);
- 
-	private:
+
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
 		static std::map<std::string, StabMemFn> mapHandHardness;

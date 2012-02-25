@@ -45,6 +45,9 @@ const double Stability::skier_depth = 1.0;
 ///Minimum thickness for a supporting melt-freeze crust (perp to slope, in m)
 const double Stability::min_thick_crust = 0.03;
 
+///Maximum number of structural instabilities looked at ("lemons")
+const size_t Stability::nmax_lemon = 2;
+
 ///Defines regression model for surface hoar shear strength
 const int Stability::sh_mod = 2;
 
@@ -63,11 +66,12 @@ const bool Stability::__init = Stability::initStaticData();
 
 bool Stability::initStaticData()
 {
-	mapHandHardness["DEFAULT"]  = &Stability::st_HandHardnessDEFAULT;
-	mapHandHardness["ASARC"]    = &Stability::st_HandHardnessASARC;
+	mapHandHardness["DEFAULT"]  = &Stability::setHandHardnessDEFAULT;
+	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
+	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
 
-	mapShearStrength["DEFAULT"] = &Stability::st_ShearStrengthDEFAULT;
-	mapShearStrength["NIED"]    = &Stability::st_ShearStrengthSTRENGTH_NIED;
+	mapShearStrength["DEFAULT"] = &Stability::setShearStrengthDEFAULT;
+	mapShearStrength["NIED"]    = &Stability::setShearStrengthSTRENGTH_NIED;
 
 	return true;
 }
@@ -104,10 +108,10 @@ Stability::Stability(const mio::Config& cfg) : plastic(false)
  * better agreement to observed density,it must be checked whether the new or the original
  * regression is the better choice. (18 September 2005; Fierz / S. Bellaire)
  * Original regression values are added as comments where needed.
- * @param *Edata
+ * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::st_HandHardnessDEFAULT(const ElementData& Edata)
+double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
 {
 	int    F1, F2, F3; // grain shape
 	double hardness;
@@ -121,7 +125,7 @@ double Stability::st_HandHardnessDEFAULT(const ElementData& Edata)
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
 		double A, B;
-		switch( F1 ) {
+		switch(F1) {
 			case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
 				A = 0.0078;
 				B = 0.0105;
@@ -186,12 +190,113 @@ double Stability::st_HandHardnessDEFAULT(const ElementData& Edata)
 			hardness = MIN(hardness, 2.);
 		}
 	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
-		const double res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
-		if (Edata.theta[WATER] < 0.3*res_wat_cont) {
+		if (Edata.theta[WATER] < 0.3 * Edata.res_wat_cont) {
 			hardness = 5.;
-		} else if (Edata.theta[WATER] < 0.6*res_wat_cont) {
+		} else if (Edata.theta[WATER] < 0.6 * Edata.res_wat_cont) {
 			hardness = 4.5;
-		} else if (Edata.theta[WATER] < 0.85*res_wat_cont) {
+		} else if (Edata.theta[WATER] < 0.85 * Edata.res_wat_cont) {
+			hardness = 4.;
+		} else {
+			hardness = 3.;
+		}
+	} else { // Ice Formations IF
+		hardness = 6.;
+	}
+	// Limit to range {1, 6}
+	hardness = MAX(1., MIN(6., hardness));
+	return hardness;
+}
+
+/**
+ * @brief Assign hardness to snow types according to density, Fabiano Monti's version
+ * @author Implemented by C. Fierz: Regression by Fabiano Monti 2012 (all types except MFcr).
+ * @param Edata
+ * @return hand hardness index (1)
+ */
+double Stability::setHandHardnessMONTI(const ElementData& Edata)
+{
+	int    F1, F2, F3; // grain shape
+	double hardness;
+	double gsz;
+
+	// Dereference some values
+	gsz = 2.*Edata.rg;
+
+	// Decompose type in its constituents
+	typeToCode(&F1, &F2, &F3, Edata.type);
+
+	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
+		double A, B;
+		switch(F1) {
+			case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 1: { // Precipitation Particles PP; ori: A = 0.7927; B = 0.0038;
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 2: { // Decomposing and Fragmented precipitation particles DF
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 3: { // Rounded Grains RG; ori: A = 0.2027; B = 0.0092;
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 4: { // Faceted Crystals FC; ori: A = 0.3867; B = 0.0071;
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 5: { // Depth Hoar DH
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
+				A = 1. - hoar_density_buried/(250. - hoar_density_buried);
+				B = 1./(250. - hoar_density_buried);
+				break;
+			}
+			case 7: { // Melt Forms MF
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			case 8: { // Ice layer IFil
+				A = 6.;
+				B = 0.;
+				break;
+			}
+			case 9: { // Rounding faceted particles FCxr
+				A = 1.0;
+				B = 0.0;
+				break;
+			}
+			default: {
+				A = Constants::undefined;
+				B = 0.;
+				break;
+			}
+		}
+		hardness = A + B*Edata.Rho;
+		// Large surface hoar stays longer unstable! 1 dec 2007 (sb)
+		if ((F1 == 6) && (gsz >= 5.)) {
+			hardness = 1;
+		} else if ((F1 == 6 ) && (gsz < 5.)) {
+			hardness = MIN(hardness, 2.);
+		}
+	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
+		if (Edata.theta[WATER] < 0.3 * Edata.res_wat_cont) {
+			hardness = 5.;
+		} else if (Edata.theta[WATER] < 0.6 * Edata.res_wat_cont) {
+			hardness = 4.5;
+		} else if (Edata.theta[WATER] < 0.85 * Edata.res_wat_cont) {
 			hardness = 4.;
 		} else {
 			hardness = 3.;
@@ -207,10 +312,10 @@ double Stability::st_HandHardnessDEFAULT(const ElementData& Edata)
 /**
  * @brief Assign hand hardness to snow types according to density and grain size, original Canadian version
  * @author Implemented by C. Fierz: Regression from ASARC database by Bruce Jamieson on 2002-08-14
- * @param *Edata
+ * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::st_HandHardnessASARC(const ElementData& Edata)
+double Stability::setHandHardnessASARC(const ElementData& Edata)
 {
 	int    F1, F2, F3;
 	double A=0., B=0., C=0.;
@@ -311,13 +416,12 @@ double Stability::st_HandHardnessASARC(const ElementData& Edata)
 				break;
 			}
 		}
-	} else if ( Edata.theta[ICE] <= 0.7 ) { // Melt-freeze crust MFcr
-		const double res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
-		if ( Edata.theta[WATER] < 0.3*res_wat_cont ) {
+	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
+		if (Edata.theta[WATER] < 0.3 * Edata.res_wat_cont) {
 			A = 5.;
-		} else if ( Edata.theta[WATER] < 0.6*res_wat_cont ) {
+		} else if (Edata.theta[WATER] < 0.6 * Edata.res_wat_cont) {
 			A = 4.5;
-		} else if ( Edata.theta[WATER] < 0.85*res_wat_cont ) {
+		} else if (Edata.theta[WATER] < 0.85 * Edata.res_wat_cont) {
 			A = 4.;
 		} else {
 			A = 3.;
@@ -326,7 +430,7 @@ double Stability::st_HandHardnessASARC(const ElementData& Edata)
 		A = 6.;
 	}
 	hardness = A + B*Edata.Rho + C*gsz;
-	if ( F1 == 6 ) {
+	if (F1 == 6) {
 		hardness = MIN(hardness, 2.);
 	}
 	// Limit to range {1, 6}
@@ -343,7 +447,7 @@ double Stability::st_HandHardnessASARC(const ElementData& Edata)
  * @param Ts Temperature of layer (K)
  * @return Critical stress (Pa)
  */
-double Stability::st_CriticalStress(const double& epsNeckDot, const double& Ts)
+double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 {
 	double sigBrittle=1.e7;   // Brittle fracture stress of ice (Pa)
 	double Pm;                // Hydrostatic pressure that induces melting (Pa)
@@ -384,7 +488,7 @@ double Stability::st_CriticalStress(const double& epsNeckDot, const double& Ts)
  * @param *Edata
  * @return Deformation rate index
  */
-double Stability::st_DeformationRateIndex(ElementData& Edata)
+double Stability::setDeformationRateIndex(ElementData& Edata)
 {
 	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
@@ -403,8 +507,8 @@ double Stability::st_DeformationRateIndex(ElementData& Edata)
 	// Now find the strain rate in the neck
 	epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
 	// Return the stability index
-	return(MAX(0.1, MIN(st_CriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
-} // End of st_DeformationRateIndex
+	return(MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
+}
 
 /**
  * @brief Initializes strenght parameters
@@ -418,10 +522,12 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 {
 	unsigned int nN = Xdata.getNumberOfNodes();
 
+	STpar.Sig_c2 = Constants::nodata;
+	STpar.strength_up = 1001.;
 	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
 	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
-	STpar.sig_n = 999.;
-	STpar.sig_s = 999.;
+	STpar.sig_n = Constants::nodata;
+	STpar.sig_s = Constants::nodata;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
 	for(size_t e=Xdata.SoilNode; e<nN; e++) {
@@ -438,13 +544,13 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
  * @brief Returns the skier's penetration depth (Adapted from Canadian parameterization)
  * @param *Xdata
  */
-double Stability::st_PenetrationDepth(const SnowStation& Xdata)
+double Stability::compPenetrationDepth(const SnowStation& Xdata)
 {
-	double rho_Pk = 0., dz_Pk = 0.;           // Penetration depth Pk, from mean slab density
+	double rho_Pk = Constants::eps2, dz_Pk = Constants::eps2; // Penetration depth Pk, from mean slab density
 	double cos_sl;                            // Cosine of slope angle
 	double top_crust = 0., thick_crust = 0.;  // Crust properties
 	bool crust = false;                       // Checks for crust
-	int e_crust = Constants::inodata;
+	int e_crust = Constants::iundefined;
 
 	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	unsigned int e = Xdata.getNumberOfElements();
@@ -455,7 +561,7 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 		// Look for the first (from top) with thickness perp to slope > 3cm
 		if (!crust) {
 			if ( (Xdata.Edata[e].mk%100 >= 20) && (Xdata.Edata[e].Rho > 500.) ) {
-				if (e_crust < 0) {
+				if (e_crust == Constants::iundefined) {
 					e_crust = e;
 					top_crust = (Xdata.Ndata[e+1].z + Xdata.Ndata[e+1].u)/cos_sl;
 					thick_crust += Xdata.Edata[e].L;
@@ -474,10 +580,10 @@ double Stability::st_PenetrationDepth(const SnowStation& Xdata)
 			}
 		}
 	}
-	rho_Pk /= (dz_Pk + 1.e-12);
+	rho_Pk /= dz_Pk;
 
   // NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
-	return(MIN(0.8*43.3/(rho_Pk + 1.e-12), (Xdata.cH/cos_sl - top_crust)));
+	return(MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust)));
 }
 
 /**
@@ -502,13 +608,14 @@ void Stability::compReducedStresses(const double& stress, const double& cos_sl, 
  * @param date
  * @return return false on error, true otherwise
  */
-bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
+bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
                                         ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
 	int    F1, F2, F3;                    // Grain shape
 	double Sig_cC, Sig_c2, Sig_c3;        // Critical shear stress (kPa)
 	double phi;                           // Normal load correction
 	double rho_ri;                        // Snow density relative to ice
+	bool prn_wrn = false;
 
 	// Snow density relative to ice
 	rho_ri = Edata.Rho/Constants::density_ice;
@@ -582,25 +689,26 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	}
 
 		// Hack for MFCs
-	if ( Edata.mk >= 20 ) {
+	if ( Edata.mk % 100 >= 20 ) {
 		Sig_c2 = Sig_c3 = 4.;
 	}
 
 	// Final assignements
 	Edata.s_strength = Sig_c2;
-	Sig_c2 = MIN(Sig_c2, STpar.strength_up);
-	STpar.Sig_c2 = Sig_c2;
+	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_up);
 	STpar.phi = phi;
 
 	// Warning message may be enabled for large differences in snow shear stength models
-	if ( 0 && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.) && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
+	if (prn_wrn
+		    && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.)
+		        && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
 		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
 	} else {
 		return true;
 	}
-} // End st_ShearStrengthDEFAULT
+} // End setShearStrengthDEFAULT
 
 /**
  * @brief STRENGTH_NIED: Estimates the critical shear stress based on appropriate parameterisations adapted for Japan
@@ -612,7 +720,7 @@ bool Stability::st_ShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
  * @param date
  * @return return false on error, true otherwise
  */
-bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
+bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
                                               ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
 	int    F1, F2, F3;             // Grain shape
@@ -620,7 +728,7 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	double Sig_ET, Sig_DH;         //NIED (H. Hirashima)
 	double phi;                    // Normal load correction
 	double rho_ri;                 // Snow density relative to ice
-	bool prn_WRN = false;
+	bool prn_wrn = false;
 
 	// Snow density relative to ice
 	rho_ri = Edata.Rho/Constants::density_ice;
@@ -705,23 +813,23 @@ bool Stability::st_ShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	STpar.phi = phi;
 
 	// Warning message may be enabled to warn for large differences in snow shear stength models
-	if (prn_WRN
+	if (prn_wrn
 	        && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.)
-	            && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) { //HACK
+	            && ((fabs(Sig_c3-Sig_cC)/Sig_cC > 10.)))) ) {
 		prn_msg( __FILE__, __LINE__, "wrn", date,"Large difference in Snow Shear Stength (type=%d)", F1);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "Conway: %lf Sig_c2: %lf Sig_c3: %lf\n", Sig_cC, Sig_c2, Sig_c3);
 		return false;
 	} else {
 		return true;
 	}
-} // End st_ShearStrengthSTRENGTH_NIED
+} // End setShearStrengthSTRENGTH_NIED
 
 /**
  * @brief Returns the natural stability index Sn
  * The classic natural stability index Sn, that is, the ratio of shear stress to shear strength (static)
  * @param STpar
  */
-double Stability::st_NaturalStabilityIndex(const StabilityData& STpar)
+double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
 {
 	// Limit natural stability index to range {0.05, Stability::max_stability}
 	return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/STpar.sig_s), Stability::max_stability)));
@@ -735,7 +843,7 @@ double Stability::st_NaturalStabilityIndex(const StabilityData& STpar)
  * @param depth_lay Depth of layer to investigate (m)
  * @param STpar
  */
-double Stability::st_SkierStabilityIndex(const double& depth_lay, const StabilityData& STpar)
+double Stability::setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar)
 {
 	double delta_sig; // Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
 
@@ -757,28 +865,31 @@ double Stability::st_SkierStabilityIndex(const double& depth_lay, const Stabilit
  * @param Edata_up Xdata->Edata[e+1]
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
  * @param SIdata [e+1]
+ * @return SIdata.ssi [e+1]
  */
-void Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
-                                            const double& Sk, InstabilityData& SIdata)
+double Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
+                                              const double& Sk, InstabilityData& SIdata)
 {
 	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
-	const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
+	//const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
 
 	SIdata.n_lemon = 0;
 	SIdata.dhard = fabs(Edata_low.hard - Edata_up.hard);
 	if ( SIdata.dhard > thresh_dhard ) {
-		SIdata.n_lemon += 1;
+		SIdata.n_lemon++;
 	}
 	SIdata.dgsz = 2.*fabs(Edata_low.rg - Edata_up.rg);
 	//double ref_gs= MIN (Edata_low.rg,Edata_up.rg);
 	//SIdata.dgsz = (fabs(Edata_low.rg - Edata_up.rg))/(ref_gs);
 	if ( SIdata.dgsz > thresh_dgsz ) {
-		SIdata.n_lemon += 1;
+		SIdata.n_lemon++;
 	}
 	// Skier Stability Index (SSI)
-	SIdata.ssi = (nmax_lemon - SIdata.n_lemon) + Sk;
-	// Limit stability indices to range {0.05, Stability::max_stability}
+	SIdata.ssi = (Stability::nmax_lemon - SIdata.n_lemon) + Sk;
+	// Limit stability index to range {0.05, Stability::max_stability}
 	SIdata.ssi = MAX(0.05, MIN (SIdata.ssi, Stability::max_stability));
+
+	return SIdata.ssi;
 }
 
 /**
@@ -840,8 +951,8 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 
 			// Remember that S is initialized to 5!!!
 			// First consider wet weak layer
-			if ( EMS[e_weak].theta[WATER] > 0.75*EMS[e_weak].snowResidualWaterContent() ) {
-				if ( EMS[e_weak].mk%100 < 20 ) {
+			if (EMS[e_weak].theta[WATER] > 0.75 * EMS[e_weak].res_wat_cont) {
+				if ( EMS[e_weak].mk % 100 < 20 ) {
 					S = 1;
 				}
 			} else { // Then do some stuff for dry snow
@@ -1150,8 +1261,8 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
  */
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	unsigned int e;                // Counters
-	int    Swl_lemon;              // Lemon counter
+	size_t e;             // Counter
+	size_t Swl_lemon;     // Lemon counter
 	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
 	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
 	double Pk;                       // Penetration depth
@@ -1176,20 +1287,24 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	}
 
 	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
-	Pk = st_PenetrationDepth(Xdata);
-	for (e = Xdata.SoilNode; e < nE; e++) {
-		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
-	}
-	EMS[nE-1].s_strength = 100.;
+	Pk = compPenetrationDepth(Xdata);
 	e=nE-1;
 	while (e-- > Xdata.SoilNode) {
-		compReducedStresses(EMS[e+1].C, cos_sl, STpar);
-		STpar.strength_up = EMS[e+1].s_strength;
-
+		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
+		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
+		//compReducedStresses(EMS[e+1].C, cos_sl, STpar);
+		//STpar.strength_up = EMS[e+1].s_strength;
+		compReducedStresses(EMS[e].C, cos_sl, STpar);
+		
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
 		                                                               EMS[e], NDS[e+1], STpar))) {
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nE+1);
 		}
+		NDS[e+1].S_n = setNaturalStabilityIndex(STpar);
+		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
+		NDS[e+1].S_s = setSkierStabilityIndex(depth_lay, STpar);
+		NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
+		//NDS[e+1].ssi = SIdata[e+1].ssi;
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
@@ -1206,13 +1321,11 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		// Slab must be thicker than Stability::ground_rough (m)  for an avalanche to release.
 		while ((e-- > Xdata.SoilNode) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 			// "deformation rate" Stability Index: find minimum ...
-			EMS[e].S_dr = st_DeformationRateIndex(EMS[e]);
 			if (Swl_d > EMS[e].S_dr) {
 				Swl_d = EMS[e].S_dr;
 				zwl_d = (NDS[e].z + NDS[e+1].z + NDS[e].u + NDS[e+1].u)/2.;
 			}
 			// Natural Stability Index: find minimum ...
-			NDS[e+1].S_n = st_NaturalStabilityIndex(STpar);
 			if ( Swl_n > NDS[e+1].S_n ) {
 				Swl_n = NDS[e+1].S_n;
 				zwl_n = NDS[e+1].z + NDS[e+1].u;
@@ -1240,10 +1353,6 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
-				const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
-				NDS[e+1].S_s = st_SkierStabilityIndex(depth_lay, STpar);
-				setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
-				NDS[e+1].ssi = SIdata[e+1].ssi;
 
 				if ( (Swl_ssi > SIdata[e+1].ssi) || ((fabs(Swl_ssi - SIdata[e+1].ssi) < 0.09) && (SIdata[e+1].n_lemon > Swl_lemon)) ) {
 					Swl_ssi = SIdata[e+1].ssi;
