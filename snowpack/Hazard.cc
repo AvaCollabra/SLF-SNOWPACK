@@ -117,7 +117,7 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
 }
 
 /**
- * @brief Computes drift index for past nHours
+ * @brief Computes drift index for past nHours in cm
  * @note At least min_percent_values of vecDrift need to be defined to obtain a valid drift index
  * - shift
  * 	-  1 : shift old_drift, overwrite old_drift[0]
@@ -130,7 +130,7 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
  * @param rho snow density (kg m-3)
  * @param nHours (1)
  * @param slope_angle (deg)
- * @param shift shift first element of vecDrift
+ * @param shift shift components of vecDrift
  */
 double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const double rho, const int nHours,
                           double slope_angle, const int shift)
@@ -199,32 +199,40 @@ double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
 }
 
 /**
- * @brief Determines hoar mass index for last n hours in kg m-2
- * @author Michael Lehning
- * @version Y.mm
- * @param *OldHoar double
- * @param new_hoar double
- * @param nhour double
- * @param new_step double
- * @return double
+ * @brief Determines hoar (mass) index for past nHours in kg m-2
+ * @note At least min_percent_values of oldHoar need to be defined to obtain a valid hoar index
+ * @author Charles Fierz, based on the original by Michael Lehning
+ * @version 12.01
+ * @param OldHoar vector of previous 48 half-hourly eroded masses (kg m-2)
+ * @param newHoar last deposited or sublimated mass of ice (hoar; kg m-2)
+ * @param nHours (1)
+ * @param shift shift components of oldHoar
  */
-double Hazard::compHoarIndex(double *OldHoar, double new_hoar, int nhour, int new_step)
+double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar, const int nHours, const int shift)
 {
-	int i;
+	int i, nValues;
 	double hoar_ind = 0.;
 
 	// Shift hoar data
-	if (new_step)
-	for (i = 47; i > 0; i-- ) {
-		OldHoar[i] = OldHoar[i-1];
-	}
-	OldHoar[0] = new_hoar;
+	if (shift)
+		for (i = 47; i > 0; i-- ) {
+			oldHoar[i] = oldHoar[i-1];
+		}
+	oldHoar[0] = newHoar;
 
 	// Determine hoar_ind
-	for (i = 0; i < 2*nhour; i++) {
-		hoar_ind += OldHoar[i];
+	for (i = 0, nValues = 0; i < 2*nHours; i++ ) {
+		if (oldHoar[i] == Constants::undefined){
+			continue;
+		} else {
+			hoar_ind += oldHoar[i];
+			nValues++;
+		}
 	}
-	return(hoar_ind);
+	if (nValues <= int(floor(Constants::min_percent_values * 2 * nHours)))
+		return Constants::undefined;
+	else
+		return(hoar_ind);
 }
 
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
@@ -374,10 +382,10 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	if (!((Hdata.hoar_size >= 0.) && (Hdata.hoar_size < 100.)))
 		Hdata_ind.hoar_size = -1;
 	// HOAR INDEX (24h and 6h), mass in kg m-2
-	Hdata.hoar_ind24 = compHoarIndex(&(Zdata.hoar24[0]), Sdata.hoar, 24, 1);
+	Hdata.hoar_ind24 = compHoarIndex(Zdata.hoar24, Sdata.hoar, 24, 1);
 	if (!((Hdata.hoar_ind24 > -10.) && (Hdata.hoar_ind24 < 10.)))
 		Hdata_ind.hoar_ind24 = -1;
-	Hdata.hoar_ind6  = compHoarIndex(&(Zdata.hoar24[0]), Sdata.hoar,  6, 0);
+	Hdata.hoar_ind6  = compHoarIndex(Zdata.hoar24, Sdata.hoar, 6, 0);
 	if (!((Hdata.hoar_ind6 > -10.) && (Hdata.hoar_ind6 < 10.)))
 		Hdata_ind.hoar_ind6 = -1;
 

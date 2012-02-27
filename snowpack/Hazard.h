@@ -60,7 +60,7 @@ class Hazard {
 	private:
 		double compDewPointDeficit(double TA, double TSS, double RH);
 
-		double compHoarIndex(double *OldHoar, double new_hoar, int nhour, int new_step);
+		double compHoarIndex(std::vector<double>& oldHoar, const double newHoar, const int nHours, const int shift);
 
 		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 

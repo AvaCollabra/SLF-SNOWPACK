@@ -19,7 +19,7 @@
 */
 /**
  * @file Metamorphism.cc
- * @brief This module contains the snow metamorphism routines of the SLF one-dimensional OPERATIONAL and RESEARCH snowpack model \n
+ * @brief This module contains the snow metamorphism routines of the SLF one-dimensional snowpack model \n
  * It represents a truly international research effort: Dr. Bob "Borolo" Brown of MONTANA STATE UNIVERSITY (USA)
  * provided a lot of the motivation and low temperature gradient micro-structure
  * physics; Dr. Michael "Give me a Girl" Lehning (GERMANY), when he was was not
@@ -753,15 +753,17 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 			}
 		}
 
-		// First wetting
+		// Compute residual water content
+		EMS[e].snowResidualWaterContent();
+		// Check for first wetting
 		if ((EMS[e].theta[WATER] > 0.015) && (marker < 10)) {
 			// Non-dendritic snow: thrsh ori 0.3 changed by S.Bellaire to get thinner crusts (13.03.2006)
 			// Dendritic snow: very rapid change to melt forms
-			if ((EMS[e].theta[WATER] > 0.35*EMS[e].snowResidualWaterContent()) || (marker < 1)) {
+			if ((EMS[e].theta[WATER] > 0.35 * EMS[e].res_wat_cont) || (marker < 1)) {
 				EMS[e].mk += 10;
 			}
 		}
-    // First melt-freeze cycle completed
+		// Check for first complete melt-freeze cycle
 		else if ((marker < 20) && (marker >= 10) && (EMS[e].Te < Constants::melting_tk - 0.3)) {
 			EMS[e].mk += 10;
 		}
@@ -1013,7 +1015,8 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		}
 
 		// First wetting //NIED (H. Hirashima)
-		if ((marker < 10) && (EMS[e].theta[WATER] > 0.99*EMS[e].snowResidualWaterContent()) ) {
+		EMS[e].snowResidualWaterContent();
+		if ((marker < 10) && (EMS[e].theta[WATER] > 0.99 * EMS[e].res_wat_cont) ) {
 			EMS[e].mk += 10;
 		}
     // First melt-freeze cycle completed

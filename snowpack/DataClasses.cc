@@ -159,11 +159,10 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 
 	// 3) Ground heat fluxes
 	if (Xdata.getNumberOfElements() > 0) {
-		const double res_wat_cont = Xdata.Edata[0].snowResidualWaterContent();
-
 		// 3a) qg0: heat flux at soil/snow boundary
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
-			if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * res_wat_cont))
+			if ((Xdata.getNumberOfElements() < 3)
+			        && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont))
 				Sdata.qg += 0.;
 			else
 				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]
@@ -177,7 +176,8 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 		// 3b) qg : geothermal heat flux or heat flux at bottom of snow in case of no soil
 		if (useSoilLayers && soil_flux) {
 			Sdata.qg += Bdata.qg;
-		} else if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * res_wat_cont)) {
+		} else if ((Xdata.getNumberOfElements() < 3)
+		               && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
 			Sdata.qg += 0.;
 		} else {
 			Sdata.qg += -Xdata.Edata[0].k[TEMPERATURE] * Xdata.Edata[0].gradT;
@@ -344,14 +344,14 @@ double ElementData::extinction()
  * Experimental range:
  * - density unsoaked: 235 to 580
  * - density soaked: 328 to 589 kg m-3
- * - RWC by Vol 0.049 to 0.029
- * Note that function will limit range to 0.0264 to 0.08 RWC by Vol
+ * - RWC by Mass 0.049 to 0.029
+ * @note That function will limit range to 0.0264 to 0.08 RWC by Vol
  * @version 11.01
  * @return residual water content of snow element (1)
  */
-double ElementData::snowResidualWaterContent()
+void ElementData::snowResidualWaterContent()
 {
-	return snowResidualWaterContent(theta[ICE]);
+	res_wat_cont = snowResidualWaterContent(theta[ICE]);
 }
 
 double ElementData::snowResidualWaterContent(const double theta_i)
@@ -363,7 +363,7 @@ double ElementData::snowResidualWaterContent(const double theta_i)
 	} else {
 		res_wat_cont = 0.08 - 0.1023 * (theta_i - 0.03);
 	}
-	return MIN(res_wat_cont, 0.08); //TODO: is MIN() really needed?
+	return MIN(res_wat_cont, 0.08); //NOTE: MIN() only needed in case of theta_i < 0.03
 }
 
 /**
@@ -482,7 +482,7 @@ double ElementData::neck2VolumetricStrain()
 
 void ElementData::snowType()
 {
-	type = snowType(dd, sp, 2.*rg, mk%100, theta[WATER], snowResidualWaterContent(theta[ICE]));
+	type = snowType(dd, sp, 2.*rg, mk%100, theta[WATER], res_wat_cont);
 }
 
 int ElementData::snowType(const double dendricity, const double sphericity,
@@ -740,11 +740,11 @@ size_t SnowStation::getNumberOfNodes() const
 /**
  * @brief If more than NUMBER_TOP_ELEMENTS snow elements exist, attempt to reduce their number in the FEM mesh,
  * leaving NUMBER_TOP_ELEMENTS surface elements untouched \n
- * Pairs of elements within the snow cover satisfying the join conditions of sn_joinCondition() are merged
+ * Pairs of elements within the snow cover satisfying the join conditions of joinCondition() are merged
  * by placing everything in the lower element, setting the density of upper element to Constants::undefined,
  * and getting rid of node in between. \n
  * The elements being very similar and thus the microstructure parameters being approximately equal
- * as defined in sn_joinCondition(), simply average the microstructure properties \n
+ * as defined in joinCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param number_top_elements The number of surface elements to be left untouched
  */
@@ -758,8 +758,8 @@ void SnowStation::joinElements(const unsigned int& number_top_elements)
 		return;
 	}
 	for (e0 = SoilNode, e1 = SoilNode+1; e0 < nElems-number_top_elements; e0++, e1++) {
-	  if (SnowStation::sn_joinCondition(Edata[e0], Edata[e1])) {
-			SnowStation::mergeElements(Edata[e0], Edata[e1], true);
+	  if (joinCondition(Edata[e0], Edata[e1])) {
+			mergeElements(Edata[e0], Edata[e1], true);
 			nJoin++;
 			Edata[e1].Rho = Constants::undefined;
 			e0++; e1++;
@@ -796,7 +796,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 				Ndata[eNew].ssi = Ndata[e0+1].ssi;
 				Ndata[eNew].S_s = Ndata[e0+1].S_s;
 				Ndata[eNew].S_n = Ndata[e0+1].S_n;
-			} else { // Removing elements
+			} else { // Removing elements for negative length L
 				dL += Edata[e0].L;
 			}
 		} else {
@@ -929,6 +929,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].k[TEMPERATURE] = Edata[e].k[SEEPAGE] = Edata[e].k[SETTLEMENT] = 0.;
 			Edata[e].heatCapacity();
 			Edata[e].c[SEEPAGE] = Edata[e].c[SETTLEMENT] = 0.;
+			Edata[e].snowResidualWaterContent();
 			// Set the initial short wave radiation to zero
 			Edata[e].sw_abs = 0.;
 			// Phase change variables
@@ -1027,7 +1028,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
  * @param Edata1 Upper element
  * @return true if the two elements should be joined, false otherwise
  */
-bool SnowStation::sn_joinCondition(const ElementData& Edata0, const ElementData& Edata1)
+bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Edata1)
 {
 	if ( (Edata0.L > join_thresh_l) || (Edata1.L > join_thresh_l) )
 		return false;
@@ -1073,7 +1074,8 @@ bool SnowStation::sn_joinCondition(const ElementData& Edata0, const ElementData&
  * 	- The properties of the upper and lower elements are (depth) averaged in an appropriate way.
  * 	- The new length is the sum of both
  * 	- Keep the birthday of the upper element
- * 	- NOTE Joining two elements may cause the tags (marker >= 100) to "jump" upwards
+ * 	- Keep the tag of the upper element only if the lower is untagged (mk >= 100)
+ * 	- @note Joining two elements may cause the tag (marker >= 100) to "jump" abruptly
  * - Removing:
  * 	- Remaining ice, liquid water, solutes, etc. are added to the lower element
  * 	- The length of the lower element is kept
@@ -1084,7 +1086,7 @@ bool SnowStation::sn_joinCondition(const ElementData& Edata0, const ElementData&
  */
 void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join)
 {
-	double L0, L1, LNew; // Length of lower (e0) and upper (e1) elements, respectively
+	double L0, L1, LNew; // Lengths of lower (e0), upper (e1) elements, and "new" element, respectively
 
 	L1 = Edata1.L;
 	L0 = Edata0.L;
@@ -1108,7 +1110,8 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 	Edata0.L0 = Edata0.L = LNew;
 	Edata0.M += Edata1.M;
 	Edata0.theta[ICE] = (L1*Edata1.theta[ICE] + L0*Edata0.theta[ICE]) / LNew;
-	// TODO No check whether we have space to accomodate all water percolating into Edata0
+	Edata0.snowResidualWaterContent();
+	// TODO Check whether we have space to accomodate all water percolating into Edata0
 	Edata0.theta[WATER] = (L1*Edata1.theta[WATER] + L0*Edata0.theta[WATER]) / LNew;
 	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
 	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);

@@ -261,6 +261,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * in case of complete melting of the former
  * @param Sdata
  * @param Xdata
+ * @param date_in is the current date
  */
 void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in)
 {

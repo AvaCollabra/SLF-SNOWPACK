@@ -144,7 +144,7 @@ enum SN_SOIL_DATA{
 
 /**
  * @brief Parameters of the different layers of the snowpack \n
- * It is used as a pointer (array) within the sn_SSdata (profile) data structure.
+ * It is used as a pointer (array) within the SSdata (profile) data structure.
  */
 class LayerData {
 	public:
@@ -176,7 +176,7 @@ class LayerData {
 };
 
 /**
- * @brief sn_SSdata includes all important station parameters as well as LayerData \n
+ * @brief SN_SNOWSOIL_DATA includes all important station parameters as well as LayerData \n
  * This data structure will have to be replaced by something a little more complicated soon ???
  * For now it is simply an efficient way of creating a snowpack to investigate.
  */
@@ -222,7 +222,7 @@ class ElementData {
 		void heatCapacity();
 		double coldContent();
 		double extinction();
-		double snowResidualWaterContent();
+		void snowResidualWaterContent();
 		static double snowResidualWaterContent(const double theta_i);
 		double soilFieldCapacity();
 
@@ -264,6 +264,7 @@ class ElementData {
 		size_t type;               ///< grain class
 		double metamo;             ///< keep track of metamorphism
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
+		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
 		double dE, E, Ee, Ev;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
 		double EDot, EvDot;        ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
@@ -387,7 +388,7 @@ class SnowStation {
 
 		void reduceNumberOfElements(const unsigned int& rnE);
 		void joinElements(const unsigned int& number_top_elements);
-		static bool sn_joinCondition(const ElementData& Edata0, const ElementData& Edata1);
+		static bool joinCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
 
 		void compSnowpackInternalEnergyChange(const double sn_dt);

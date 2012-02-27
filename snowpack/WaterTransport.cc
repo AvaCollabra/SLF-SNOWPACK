@@ -385,7 +385,13 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 	               && (EMS[e0].L > minimum_l_element)) {
 
 		L0 = EMS[e0].L;
-		if (variant == "JAPAN") {
+		// For water layer go to water density
+		if (water_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content)
+			&& (e0 > Xdata.SoilNode) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
+			dL = -L0 * (1. - EMS[e0].theta[WATER]);
+			EMS[e0].theta[WATER] = 1.;
+			EMS[e0].theta[ICE] = 0.;
+		} else if (variant == "JAPAN") {
 			//NIED (H. Hirashima) //Fz: Please check this adaptation still works as you want it to work!
 			double multif = 0.05 / EMS[e0].theta[ICE];
 			dL  = -L0*((multif-1)/multif);
@@ -397,13 +403,6 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			EMS[e0].theta[ICE]   *= 1.5;
 		}
 
-		// For water layer go to water density
-		if (water_layer && (EMS[e0].theta[WATER] < 0.95) && (EMS[e0].theta[ICE] < Snowpack::min_ice_content)
-                && (e0 > Xdata.SoilNode) && ((EMS[e0-1].theta[SOIL] > 0.95) || (EMS[e0-1].theta[ICE] > 0.95))) {
-			dL = -L0*(1.-EMS[e0].theta[WATER]);
-			EMS[e0].theta[WATER] = 1.;
-			EMS[e0].theta[ICE] = 0.;
-		}
 		for (size_t e = e0; e < nE; e++) {
 			NDS[e+1].z += dL + NDS[e+1].u;
 			NDS[e+1].u = 0.0;
@@ -539,9 +538,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			Wres = Constants::density_ice/Constants::density_water
 			           * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL] - 0.05);
 		} else if (EMS[e0].theta[SOIL] < Constants::eps2) {
-			Wres = MIN(Constants::density_ice / Constants::density_water
-			               * (1. - EMS[e0].theta[ICE]),
-			           EMS[e0].snowResidualWaterContent() + dth_w);
+			Wres = MIN((1. - EMS[e0].theta[ICE]) * Constants::density_ice / Constants::density_water,
+			           EMS[e0].res_wat_cont + dth_w);
 		} else { // treat soil separately
 			Wres = MIN(Constants::density_ice / Constants::density_water
 			               * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]),
@@ -661,8 +659,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	dth_w = EMS[0].c[TEMPERATURE] * EMS[0].Rho / Constants::lh_fusion / Constants::density_water
 	            * MAX(0., Constants::melting_tk-EMS[0].Te);
 	if (EMS[0].theta[SOIL] < Constants::eps2) {
-		Wres = MIN(Constants::density_ice / Constants::density_water * (1. - EMS[0].theta[ICE]),
-		           EMS[e0].snowResidualWaterContent() + dth_w);
+		Wres = MIN((1. - EMS[0].theta[ICE]) * Constants::density_ice / Constants::density_water,
+		           EMS[e0].res_wat_cont + dth_w);
 	} else { // treat soil separately
 		Wres = MIN(Constants::density_ice/Constants::density_water*(1. - EMS[0].theta[ICE] - EMS[0].theta[SOIL]),
 		       EMS[0].soilFieldCapacity() + dth_w);

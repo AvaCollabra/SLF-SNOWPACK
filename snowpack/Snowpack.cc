@@ -980,7 +980,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			ds_AssembleMatrix((MYTYPE*)Kt, 2, Ie, 2, (double*) Se);
 			EL_RGT_ASSEM(dU, Ie, Fe);
 		} else if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9
-		               * Xdata.Edata[0].snowResidualWaterContent())) {
+		               * Xdata.Edata[0].res_wat_cont)) {
 			dU[0] = 0.;
 		} else {
 			// Dirichlet BC at bottom: prescribed temperature value
@@ -1384,10 +1384,11 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				// Coordination number based on Bob's empirical function
 				EMS[e].N3 = Metamorphism::getCoordinationNumberN3(EMS[e].Rho);
 				// Constitutive Parameters
+				EMS[e].k[TEMPERATURE] = EMS[e].k[SEEPAGE] = EMS[e].k[SETTLEMENT]= 0.0;
 				EMS[e].heatCapacity();
 				EMS[e].c[SEEPAGE] = EMS[e].c[SETTLEMENT]= 0.0;
-				EMS[e].k[TEMPERATURE] = EMS[e].k[SEEPAGE] = EMS[e].k[SETTLEMENT]= 0.0;
 				EMS[e].soil[SOIL_RHO] = EMS[e].soil[SOIL_K] = EMS[e].soil[SOIL_C] = 0.0;
+				EMS[e].snowResidualWaterContent();
 				// Set the initial short wave radiation to zero
 				EMS[e].sw_abs = 0.0;
 				// Phase change variables:
