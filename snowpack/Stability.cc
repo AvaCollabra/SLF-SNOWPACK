@@ -523,7 +523,7 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 	unsigned int nN = Xdata.getNumberOfNodes();
 
 	STpar.Sig_c2 = Constants::nodata;
-	STpar.strength_up = 1001.;
+	STpar.strength_upper = 1001.;
 	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
 	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
 	STpar.sig_n = Constants::nodata;
@@ -695,7 +695,7 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 
 	// Final assignements
 	Edata.s_strength = Sig_c2;
-	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_up);
+	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	STpar.phi = phi;
 
 	// Warning message may be enabled for large differences in snow shear stength models
@@ -808,7 +808,7 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
 	Edata.s_strength = Sig_c2;
-	Sig_c2 = MIN(Sig_c2, STpar.strength_up);
+	Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	STpar.Sig_c2 = Sig_c2;
 	STpar.phi = phi;
 
@@ -861,26 +861,26 @@ double Stability::setSkierStabilityIndex(const double& depth_lay, const Stabilit
  * @brief Returns the structural stability index SSI
  * Adds one lemon to Sk for each structural instability found, presently hardness and grain size differences
  * above a given threshold
- * @param Edata_low Xdata->Edata[e]
- * @param Edata_up Xdata->Edata[e+1]
+ * @param Edata_lower Xdata->Edata[e]
+ * @param Edata_upper Xdata->Edata[e+1]
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
  * @param SIdata [e+1]
  * @return SIdata.ssi [e+1]
  */
-double Stability::setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
+double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
                                               const double& Sk, InstabilityData& SIdata)
 {
 	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
 	//const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
 
 	SIdata.n_lemon = 0;
-	SIdata.dhard = fabs(Edata_low.hard - Edata_up.hard);
+	SIdata.dhard = fabs(Edata_lower.hard - Edata_upper.hard);
 	if ( SIdata.dhard > thresh_dhard ) {
 		SIdata.n_lemon++;
 	}
-	SIdata.dgsz = 2.*fabs(Edata_low.rg - Edata_up.rg);
-	//double ref_gs= MIN (Edata_low.rg,Edata_up.rg);
-	//SIdata.dgsz = (fabs(Edata_low.rg - Edata_up.rg))/(ref_gs);
+	SIdata.dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
+	//double ref_gs= MIN (Edata_lower.rg,Edata_upper.rg);
+	//SIdata.dgsz = (fabs(Edata_lower.rg - Edata_upper.rg))/(ref_gs);
 	if ( SIdata.dgsz > thresh_dgsz ) {
 		SIdata.n_lemon++;
 	}
@@ -1293,7 +1293,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
 		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
 		//compReducedStresses(EMS[e+1].C, cos_sl, STpar);
-		//STpar.strength_up = EMS[e+1].s_strength;
+		//STpar.strength_upper = EMS[e+1].s_strength;
 		compReducedStresses(EMS[e].C, cos_sl, STpar);
 		
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
@@ -1303,8 +1303,10 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		NDS[e+1].S_n = setNaturalStabilityIndex(STpar);
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
 		NDS[e+1].S_s = setSkierStabilityIndex(depth_lay, STpar);
-		NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
-		//NDS[e+1].ssi = SIdata[e+1].ssi;
+		if (e < nE-1)
+			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
+		else
+			NDS[nN-1].ssi = SIdata[nN-1].ssi = Stability::max_stability;
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
