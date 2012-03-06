@@ -297,8 +297,8 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		throw InvalidFormatException("Can not read ErosionLevel in file "+snofilename, AT);
 	}
 	if (fscanf(fin, "\nTimeCountDeltaHS=%lf",&SSdata.TimeCountDeltaHS) != 1) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading canopy or additional parameters");
-		throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
+		fclose(fin);
+		throw InvalidFormatException("Can not read TimeCountDeltaHS in file "+snofilename, AT);
 	}
 
 	if (fscanf(fin,"\nYYYY") < 0) {
