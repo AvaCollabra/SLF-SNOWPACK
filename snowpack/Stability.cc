@@ -694,8 +694,9 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	}
 
 	// Final assignements
-	Edata.s_strength = Sig_c2;
 	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
+	Edata.s_strength = Sig_c2;
+	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
 
 	// Warning message may be enabled for large differences in snow shear stength models
@@ -807,11 +808,11 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
+	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	Edata.s_strength = Sig_c2;
-	Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
-	STpar.Sig_c2 = Sig_c2;
+	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
-
+	
 	// Warning message may be enabled to warn for large differences in snow shear stength models
 	if (prn_wrn
 	        && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.)
@@ -1271,8 +1272,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	StabilityData  STpar;        // Stability parameters
 
 	// Dereference the element pointer containing micro-structure data
-	unsigned int nN = Xdata.getNumberOfNodes();
-	unsigned int nE = nN-1;
+	size_t nN = Xdata.getNumberOfNodes();
+	size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
@@ -1288,17 +1289,15 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
 	Pk = compPenetrationDepth(Xdata);
-	e=nE-1;
+	e = nE;
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
 		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
-		//compReducedStresses(EMS[e+1].C, cos_sl, STpar);
-		//STpar.strength_upper = EMS[e+1].s_strength;
 		compReducedStresses(EMS[e].C, cos_sl, STpar);
 		
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
 		                                                               EMS[e], NDS[e+1], STpar))) {
-			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nE+1);
+			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
 		NDS[e+1].S_n = setNaturalStabilityIndex(STpar);
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
