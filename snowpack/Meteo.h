@@ -42,8 +42,7 @@ class Meteo {
 		Meteo(const mio::Config& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
-		static void compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata,
-		                             mio::IOManager& io, const mio::Date& current_date);
+		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double hs_a3hl6);
 		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
 
  	private:

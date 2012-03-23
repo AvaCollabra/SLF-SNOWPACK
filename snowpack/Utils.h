@@ -78,7 +78,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 
 int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int& nN);
 
-double forcedErosion(const double hs1, SnowStation& Xdata);
+double forcedErosion(const double hs, SnowStation& Xdata);
 
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr);
 

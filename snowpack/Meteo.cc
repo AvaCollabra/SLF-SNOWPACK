@@ -33,6 +33,10 @@ using namespace mio;
 
 #include <snowpack/Meteo.h>
 
+/************************************************************
+* non-static section                                       *
+************************************************************/
+
 Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCanopyModel(false)
 {
 	/**
@@ -55,7 +59,6 @@ Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCan
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	 */
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
-
 
 	/**
 	 * @brief Define the heights of the meteo measurements above ground (m) \n
@@ -225,84 +228,34 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	if ( (log(zref / z0) - psi_s) < 0.01 ) {
 		psi_s = log(zref / z0) - 0.01; // Prevent contragradient fluxes
 	}
-} // End MicroMet
-
-
-/**
- * @brief Calculate an average for a given parameter over a specified period
- * @param *io
- * @param *param
- * @param *current_date
- * @param *time_span
- * @param *increment
- */
-double Meteo::getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param, const mio::Date& current_date, const int& time_span, const int& increment)
-{
-	size_t count = 0;
-	double sum = 0.;
-	std::vector<mio::MeteoData> MyMeteo2;
-
-	for (int i=time_span; i>=0; i-=increment) { //i in minutes
-		const Date myDate=Date(current_date-(double(double(i)/1440.0))); //Calculate only backwards in time (for operational mode, no future data is available).
-		io.getMeteoData(myDate, MyMeteo2);
-		if(MyMeteo2.size()>0) {
-			if(MyMeteo2[0](param) != IOUtils::nodata) {
-				count++;
-				sum+=MyMeteo2[0](param);
-			}
-		}
-	}
-
-	if(count!=0) return sum/(double)count;
-	else return IOUtils::nodata;
 }
 
-
 /**
- * @brief Calculate average values for TSS and HS, to be used in the detection of the first snow fall (detection of canopy (grass) vs. snow fall)
- * To better determine the first snowfall on bare ground, calculate average values of TSS and snow height changes rate.
+ * @brief Compute measured snow depth change rate to detect growing grass (canopy) vs. snowfall on bare ground
  * @param Mdata
  * @param Xdata
- * @param io
- * @param current_date
+ * @param hs_a3hl6 snow depth average from t_now - 6 h to t_now - 3 h
+ * @return whether grass should be detected
  */
-void Meteo::compTSSavgHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, mio::IOManager& io, const mio::Date& current_date)
+bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const double hs_a3hl6)
 {
-	if( (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) ) { //This algoritm is only necessary when there is no snow pack yet. Else we skip these calculations to increase speed.
-		const int avghours=3; //Time window to take for determining rate of change in HS ([current_time - 2*avghours; current_time]);
-
-		const double tss24avg = getParameterAverage(io, MeteoData::TSS, current_date, (24*60)-1, 30); //Get average TSS over 24 hours
-		if (tss24avg!=IOUtils::nodata) {
-			Mdata.tss24=tss24avg;
+	if (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) { //Detect only when there is no snow pack yet.
+		if ((hs_a3hl6 != Constants::undefined) && (Mdata.hs_a3h != Constants::undefined)) {
+			// NOTE we compare two consecutive time spans of 3 hours and take the rate from
+			//      the "middle" of the two time spans. hs_rate is in m h-1.
+			Mdata.hs_rate = (Mdata.hs_a3h - hs_a3hl6) / 3.;
+			return true;
 		} else {
-			Mdata.tss24=Constants::undefined;
-		}
-
-		const double tss12avg = getParameterAverage(io, MeteoData::TSS, current_date, (12*60)-1, 30); //Get average TSS over 12 hours
-		if (tss12avg!=IOUtils::nodata) {
-			Mdata.tss12=tss12avg;
-		} else {
-			Mdata.tss12=Constants::undefined;
-		}
-
-		//Calculate average snow height per defined time period
-		const double hs_change_avg1 = getParameterAverage(io, MeteoData::HS, current_date, (avghours*60)-1, 30); //Get average HS over [current_time; current_time-avghours]
-		const double hs_change_avg2 = getParameterAverage(io, MeteoData::HS, current_date-(double)((avghours*60)-1)/(24.*60.), (avghours*60)-1, 30); //Get average HS over [current_time-avghours; current_time-2*avghours]
-		if(hs_change_avg1!=IOUtils::nodata && hs_change_avg2!=IOUtils::nodata) {
-			//Note: we compare two time spans of avghours, so to get a correct average,
-			//we take the distance between the middle of the two time spans. Note: hs_change is expressed as m/hour.
-			const double hs_change_rate=(hs_change_avg1-hs_change_avg2)/(avghours);
-			Mdata.hs_change_rate=hs_change_rate;
-		} else {
-			Mdata.hs_change_rate=Constants::undefined;
+			Mdata.hs_rate = Constants::undefined;
+			return false;
 		}
 	} else {
-		Mdata.tss24=Constants::undefined;
-		Mdata.tss12=Constants::undefined;
-		Mdata.hs_change_rate=Constants::undefined;
+		Mdata.tss_a12h = Constants::undefined;
+		Mdata.tss_a24h = Constants::undefined;
+		Mdata.hs_rate = Constants::undefined;
+		return false;
 	}
 }
-
 
 /**
  * @brief

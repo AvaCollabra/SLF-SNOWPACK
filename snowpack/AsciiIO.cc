@@ -704,9 +704,9 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		fprintf(PFile,",%.2f",NDS[e+1].S_s);
 	//  534: hand hardness ...
 	fprintf(PFile,"\n0534,%u" ,nE-Xdata.SoilNode);
-	if (AsciiIO::r_in_n) { // ... either converted to newtons according to Swiss scale
+	if (AsciiIO::r_in_n) { // ... either converted to newtons according to the ICSSG 2009
 		for (e = Xdata.SoilNode; e < nE; e++)
-			fprintf(PFile,",%.1f",-1.*(19.472*pow(EMS[e].hard, 2.3607)));
+			fprintf(PFile,",%.1f",-1.*(19.3*pow(EMS[e].hard, 2.4)));
 	} else { // ... or in index steps (1)
 		for (e = Xdata.SoilNode; e < nE; e++)
 			fprintf(PFile,",%.1f", -EMS[e].hard);
@@ -770,9 +770,8 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		fprintf(fout,",0.");
 		//  *604: ssi index
 		fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE-1; e++)
+		for (e = Xdata.SoilNode; e < nE; e++)
 			fprintf(fout,",%.2f",NDS[e+1].ssi);
-		fprintf(fout,",%.2f",Stability::max_stability);
 	}
 }
 
@@ -805,6 +804,10 @@ void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 	for (e = Xdata.SoilNode; e < nE-1; e++)
 		fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
 	fprintf(fout,",0.");
+	//  *604: ssi index
+	fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
+	for (e = Xdata.SoilNode; e < nE; e++)
+		fprintf(fout,",%.2f",NDS[e+1].ssi);
 
 	// 700-profile specials for settling comparison
 	// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
@@ -1287,9 +1290,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,,,,,,,,");
 	}
 	if (max_number_sensors == 5) {
-		// 50: Either measured snow depth hs1 or solute load at ground surface
+		// 50: Either measured snow depth hs or solute load at ground surface
 		if (!out_load)
-			fprintf(TFile,",%.2f", M_TO_CM(Mdata.hs1)/cos_sl);
+			fprintf(TFile,",%.2f", M_TO_CM(Mdata.hs)/cos_sl);
 		else
 			fprintf(TFile,",%f", Sdata.load[0]);
 		if (out_mass)
@@ -1436,7 +1439,7 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
 {
 	(void) crust; (void) dhs_corr; (void) mass_corr;
 	if (max_number_sensors == 5)
-		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs1)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
 	// 94: change of internal energy (kJ m-2)
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
@@ -1489,7 +1492,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	double rho_hn;
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (max_number_sensors == 5)
-		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs1)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
@@ -1591,15 +1594,20 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			for (ii = 0; ii < number_fixed_heights; ii++)
 				fprintf(fout, ",%.3f", fixed_sensor_depths[ii]);
 			fprintf(fout, "\n\n[HEADER]");
-			if (out_haz) // HACK To avoid troubles in A3D
+			if (out_haz) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", Hdata.sn_computation_date,
 				        variant.c_str(), Hdata.sn_version, Hdata.sn_user);
+				if (research_mode)
+					fprintf(fout, " (research mode)");
+				else
+					fprintf(fout, " (operational mode)");
+			}
 			fprintf(fout, "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100");
 			fprintf(fout, "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)");
 			fprintf(fout, ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Measured snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),Total snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration)");
 			fprintf(fout, ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)");
 			if (max_number_sensors == 5) {
-				fprintf(fout, ",HS1 or Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
+				fprintf(fout, ",HS or Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
 				if (useCanopyModel && out_canopy) {
 					fprintf(fout, ",Interception storage,Canopy surface  temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation canopy,Sensible heat flux into the canopy,Latent heat flux into the canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the canopy,Latent heat flux to the canopy,Longwave radiation up above canopy,Longwave radiation down above canopy");
 					fprintf(fout, ",Net longwave radiation above canopy,Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation above canopy,Total land surface albedo,Total net radiation,Surface (radiative) temperature,Precipitation Above Canopy,Total Evapotranspiration");
@@ -1658,11 +1666,11 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 
 			if (variant == "ANTARCTICA") {
 				if (max_number_sensors == 5)
-					fprintf(fout, ",HS1");
+					fprintf(fout, ",HS");
 				fprintf(fout, ",Internal energy change,Surface input (sum fluxes),Measured new snow density,Modeled new snow density,Erosion level (from srf),Running mean relative humidity (100h),Running mean wind speed (100h)");
 			} else if (variant == "CALIBRATION") {
 				if (max_number_sensors == 5)
-					fprintf(fout, ",HS1");
+					fprintf(fout, ",HS");
 				fprintf(fout, "Internal energy change,Surface input (sum fluxes),rho_hn(measured),rho_hn(Zwart),rho_hn(Lehning),rho_hn(Bellaire),rho_hn(PAHAUT)");
 			} else {
 				fprintf(fout, ",Soil runoff,Internal energy change,Surface input (sum fluxes),Measured new snow density,Modeled new snow density,Crust thickness (S-slope)");
@@ -1747,9 +1755,14 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\nSlopeAzi= %.2f",   va_Xdata->meta.getAzimuth());
 
 			fprintf(fout, "\n\n[HEADER]");
-			if (out_haz) // HACK To avoid troubles in A3D
+			if (out_haz) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"",
 					   Hdata.sn_computation_date, variant.c_str(), Hdata.sn_version, Hdata.sn_user);
+				if (research_mode)
+					fprintf(fout, " (research mode)");
+				else
+					fprintf(fout, " (operational mode)");
+			}
 			fprintf(fout, "\n0500,Date");
 			fprintf(fout, "\n0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)");
 			fprintf(fout, "\n0502,nElems,element density (kg m-3)");

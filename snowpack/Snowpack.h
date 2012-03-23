@@ -133,7 +133,8 @@ class Snowpack {
 		std::string hn_density, hn_density_model, viscosity_model, variant;
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
-		bool research_mode, useCanopyModel, enforce_measured_snow_heights, soil_flux, useSoilLayers;
+		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
+		bool soil_flux, useSoilLayers;
 		bool multistream, join_elements, change_bc, meas_tss;
 		bool vw_dendricity;
 		int sw_mode;

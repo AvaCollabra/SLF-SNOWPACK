@@ -37,6 +37,7 @@ bool SnowpackConfig::initStaticData()
 	//[SnowpackAdvanced] section
 	advancedConfig["ALPINE3D"] = "false";
 	advancedConfig["DOORSCHOT"] = "false";
+	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["FIXED_ALBEDO"] = "-999.";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_MODEL"] = "DEFAULT";

@@ -447,7 +447,7 @@ double ElementData::concaveNeckRadius()
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb);
 		return (Constants::big);
 	} else {
-		return (rb*rb / (2. * (rg - rb) ));
+		return (rb*rb / (2. * (rg - rb)));
 	}
 }
 
@@ -1132,7 +1132,9 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 CurrentMeteo::CurrentMeteo(const size_t& i_max_number_of_sensors)
 	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
 	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
-	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), ts0(0.), hnw(0.), hs1(0.), rho_hn(0.),
+	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
+	  hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
+	  rho_hn(0.),
 	  max_number_of_sensors(i_max_number_of_sensors)
 {
 	ts    = vector<double>(max_number_of_sensors, Constants::nodata);
@@ -1169,7 +1171,7 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
 	os << "TSS:      " << mdata.tss << endl;
 	os << "TSG:      " << mdata.ts0 << endl;
 	os << "HNW:      " << mdata.hnw << endl;
-	os << "HS:       " << mdata.hs1 << endl;
+	os << "HS:       " << mdata.hs << endl;
 	stringstream ss;
 	for (unsigned int ii=1; ii<mdata.ts.size(); ii++) {
 		ss << ""; ss << ii;

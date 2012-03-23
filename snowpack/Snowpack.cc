@@ -85,9 +85,11 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
 	 *      This procedure has the disadvantage that if the snowpack settles too strongly
 	 *      extra mass is added to the snowpack. \n
 	 * New snow density is needed in both cases, either parameterized, measured, or fixed.
+	 * Also check whether growing grass should be detected
 	 */
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
-
+	cfg.getValue("DETECT_GRASS", "SnowpackAdvanced", detect_grass);
+	
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
@@ -380,7 +382,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			        && ((dz < Metamorphism::wind_slab_depth) || (e == nE-1))) {
 				if (variant == "ANTARCTICA") {
 					// fits original parameterization at Metamorphism::wind_slab_vw + 0.6 m/s
-					wind_slab += 2.7*Metamorphism::wind_slab_enhance
+					wind_slab += 2.7 * Metamorphism::wind_slab_enhance
 					                 * dv*dv*dv * (1. - dz / (1.25 * Metamorphism::wind_slab_depth));
 				} else {
 					// original parameterization by Lehning
@@ -902,7 +904,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
 		if (!(U[n] > 50. && U[n] < 500.)) {
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bond at beginning of iteration!");
+			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
 			prn_msg(__FILE__, __LINE__, "msg", Date(), "At snow node n=%d (nN=%d): T=%.2lf", n, nN, U[n]);
 			free(U); free(dU); free(ddU);
 			throw IOException("Runtime error in sn_SnowTemperature", AT);
@@ -1173,21 +1175,21 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 	// snowed_in is true if the ground is either already snowed in or snow will remain on it
 	//  ... but check first for the availability of the following data. This is particularly important if enforce_measured_snow_heights == false.
-	if (!enforce_measured_snow_heights || (Mdata.hs_change_rate == Constants::undefined)
-		   || (Mdata.tss24 == Constants::undefined) || (Mdata.tss12 ==  Constants::undefined)) {
+	if (!enforce_measured_snow_heights || !detect_grass) {
 		snowed_in = true;
 	} else {
-		snowed_in = ( (Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
-		        || (Mdata.tss24!=Constants::undefined &&
-		                Mdata.tss24 < C_TO_K(TSS_threshold24) && Mdata.hs_change_rate > HS_threshold_smallincrease)
-		        || (Mdata.tss12!=Constants::undefined
-		                && Mdata.tss12 < C_TO_K(TSS_threshold12_smallHSincrease)
-		                && Mdata.hs_change_rate > HS_threshold_smallincrease)
-		        || (Mdata.tss12!=Constants::undefined
-		                && Mdata.tss12 < C_TO_K(TSS_threshold12_largeHSincrease)
-		                && Mdata.hs_change_rate > HS_threshold_largeincrease)
-			    || (Mdata.hs_change_rate>HS_threshold_verylargeincrease)
-		            );
+		snowed_in = ((Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
+		            || (detect_grass &&
+		                   (((Mdata.tss_a24h < C_TO_K(TSS_threshold24))
+		                        && (Mdata.hs_rate > HS_threshold_smallincrease))
+		                    || ((Mdata.tss_a12h < C_TO_K(TSS_threshold12_smallHSincrease))
+		                        && (Mdata.hs_rate > HS_threshold_smallincrease))
+		                    || ((Mdata.tss_a12h < C_TO_K(TSS_threshold12_largeHSincrease))
+		                        && (Mdata.hs_rate > HS_threshold_largeincrease))
+		                   )
+		               )
+		            || (Mdata.hs_rate > HS_threshold_verylargeincrease)
+		);
 	}
 
 	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
@@ -1202,12 +1204,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		 * The third clause limits this issue to small canopies only, to prevent problems
 		 *   with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
 		 *   If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
-		 * The fourth clause is an important one. When hs1 is not available, the old Xdata.mH is kept, which
+		 * The fourth clause is an important one. When hs is not available, the old Xdata.mH is kept, which
 		 * has already been adjusted in the previous time step, so then skip this part.
 		 * The fifth clause makes sure only flat field is treated this way, and not the slopes.
 		 */
 		if ( (enforce_measured_snow_heights) && (Xdata.Cdata.height > 0.)
-			&& ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) && (Mdata.hs1 != Constants::nodata)
+			&& ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) && (Mdata.hs != Constants::nodata)
 		                && (Xdata.mH != Constants::undefined) && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle)) {
 			/*First, reduce the Canopy height with the additional snow height. This makes the Canopy work
 			 *like a spring. When increase in mh is 3 cm and the canopy height is 10 cm, the snow pack is
@@ -1215,7 +1217,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			 *height, the canopy is reduced to 0, and everything measured is assumed to be snow.
 			 *To do this, check if there is an increase AND check if a new snow element will be created!
 			 *If you don't do this, the canopy will be reduced for small increases that do not produce a snow layer.
-			 *Then, in the next time step, the canopy height is reduced even more, even without increase in hs1.
+			 *Then, in the next time step, the canopy height is reduced even more, even without increase in hs.
 			 *This if-statement looks awkward, but it is just (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
 			 *combined with the new value for Xdata.mH, given the change in Xdata.Cdata.height.
 			 */
@@ -1233,12 +1235,10 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 		}
 
-
 		//Adjust measured snow height with canopy height, so Xdata.mH represents "true" snow height measured by sensor
 		Xdata.mH -= Xdata.Cdata.height;
 		if (Xdata.mH < Xdata.Ground)
 			Xdata.mH = Xdata.Ground;
-
 
 		// Now determine if snow depth is increasing:
 		// In case of virtual slope use new snow depth and density from either flat field or luv slope
@@ -1258,7 +1258,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 			if (hn > Snowpack::snowfall_warning)
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
-				          "Large snowfall! hn=%.3lf cm (azi=%.0lf, slope=%.0lf)",
+				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 			nNewE = (int)(hn/(height_new_elem*cos_sl));
 			if (nNewE < 1) {
@@ -1492,12 +1492,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		// If there is no snowfall and no snowpack yet, we can assign the measured snow height to the canopy,
 		// but only for small canopies, to prevent problems with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
 		// If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
-		if ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) {
+		if (detect_grass && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false))) {
 			if ((Xdata.getNumberOfNodes() == Xdata.SoilNode+1) && (Xdata.mH != Constants::undefined)) {
 				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
 				Xdata.mH=Xdata.Ground;				//Because we have no snow cover, we consider measured snow height to be effectively 0 (=Xdata.Ground).
 			} else {
-				if(Mdata.hs1 != Constants::nodata) {		//If we have a snow pack, but didn't match the criteria for snow fall, make sure Xdata.mH
+				if(Mdata.hs != Constants::nodata) {		//If we have a snow pack, but didn't match the criteria for snow fall, make sure Xdata.mH
 					Xdata.mH -= Xdata.Cdata.height;		//only represents the "true" snow height, to stay consistent and for use in other parts of SNOWPACK.
 					if (Xdata.mH<Xdata.Ground)
 						Xdata.mH=Xdata.Ground;

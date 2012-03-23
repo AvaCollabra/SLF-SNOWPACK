@@ -93,20 +93,21 @@ class CurrentMeteo {
 		double vw_drift; ///< Wind velocity for blowing and drifting snow (operational: wind ridge station)
 		double dw_drift; ///< Wind direction of blowing and drifting snow (operational: wind ridge station)
 		double ustar;  ///< The friction velocity (m s-1) computed in mt_MicroMet() and also used later for the MeteoHeat fluxes
-		double z0;     ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
-		double psi_s;  ///< Stability correction for scalar heat fluxes
-		double iswr;   ///< Incoming SHORTWAVE radiation (W m-2)
-		double rswr;   ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
-		double diff;   ///< Diffuse radiation from the sky (W m-2)
-		double elev;   ///< Solar elevation to be used in Canopy.c (rad) => see also
-		double ea;     ///< Atmospheric emissivity (1)
-		double tss;    ///< Snow surface temperature (K)
-		double ts0;    ///< Bottom temperatures of snow/soil pack (K)
-		double hnw;    ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
-		double hs1;    ///< The measured height of snow (m), corrected for spikes etc. in ml_co_Control()
-		double tss12;  ///< The 12 hour average snow surface temperature (K)
-		double tss24;  ///< The 24 hour average snow surface temperature (K)
-		double hs_change_rate;	///< The rate of change in snow height (m/hour)
+		double z0;          ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
+		double psi_s;       ///< Stability correction for scalar heat fluxes
+		double iswr;        ///< Incoming SHORTWAVE radiation (W m-2)
+		double rswr;        ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
+		double diff;        ///< Diffuse radiation from the sky (W m-2)
+		double elev;        ///< Solar elevation to be used in Canopy.c (rad) => see also
+		double ea;          ///< Atmospheric emissivity (1)
+		double tss;         ///< Snow surface temperature (K)
+		double tss_a12h;    ///< Snow surface temperature averaged over past 12 hours (K)
+		double tss_a24h;    ///< Snow surface temperature averaged over past 24 hours (K)
+		double ts0;         ///< Bottom temperatures of snow/soil pack (K)
+		double hnw;         ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
+		double hs;          ///< The measured height of snow (m)
+		double hs_a3h;      ///< Snow depth averaged over 3 past hours
+		double hs_rate;     ///< The rate of change in snow depth (m h-1)
 
 		std::vector<double> ts;    ///< Snowpack and/or Soil temperatures (K)
 		std::vector<double> zv_ts; ///< Depth of temperature sensors (m)
