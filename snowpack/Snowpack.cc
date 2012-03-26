@@ -478,7 +478,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 		*SubSurfaceMelt = true;
 	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > Constants::eps2)
 		*SubSurfaceFrze = true;
-	if (Edata->theta[WATER] > Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
+	if (Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
 		 T0[0] = T0[1] = Constants::melting_tk;
 
 	// Find the conductivity of the element
