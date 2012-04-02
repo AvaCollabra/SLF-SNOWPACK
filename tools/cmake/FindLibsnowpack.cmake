@@ -2,27 +2,55 @@ INCLUDE(LibFindMacros)
 
 # Finally the library itself
 IF(WIN32)
-	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\Snowpack]" ABSOLUTE CACHE)
+	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT2 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\Snowpack]" ABSOLUTE CACHE INTERNAL)
+	SET(SEARCH_PATH
+		ENV LIB
+		${LIBSNOWPACK_ROOT1}/lib
+		${LIBSNOWPACK_ROOT2}/lib
+		${LIBSNOWPACK_ROOT3}/lib
+		"C:/Program Files/Snowpack/lib" )
 
-	FIND_LIBRARY(LIBSNOWPACK_LIBRARY
-		NAMES libsnowpack.lib
-		PATHS
-			ENV LIB
-			${LIBSNOWPACK_ROOT}/lib
-			"C:/Program Files/Snowpack/lib"
-		DOC "Location of the libsnowpack, like c:/Program Files/Snowpack-2.0.0/lib/libsnowpack.lib"
-		)
+	IF(MSVC)
+		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
+			NAMES libsnowpack.lib
+			PATHS ${SEARCH_PATH}
+			DOC "Location of the libsnowpack, like c:/Program Files/Snowpack-2.0.0/lib/libsnowpack.lib"
+			)
+	ELSE(MSVC)
+		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
+			NAMES libsnowpack.dll.a
+			PATHS ${SEARCH_PATH}
+			DOC "Location of the libsnowpack, like c:/Program Files/Snowpack-2.0.0/lib/libsnowpack.dll.a"
+			)
+	ENDIF(MSVC)
 ELSE(WIN32)
-	FIND_LIBRARY(LIBSNOWPACK_LIBRARY
-	NAMES snowpack
-	PATHS
-		ENV LD_LIBRARY_PATH
-		"~/usr/lib"
-		"/usr/local/lib"
-		"/usr/lib"
-		"/opt/lib"
-	DOC "Location of the libsnowpack, like /usr/lib"
-	)
+	IF(APPLE)
+		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
+		NAMES snowpack
+		PATHS
+			"/Applications/Snowpack/lib"
+			ENV LD_LIBRARY_PATH
+			ENV DYLD_FALLBACK_LIBRARY_PATH
+			"~/usr/lib"
+			"/usr/local/lib"
+			"/usr/lib"
+			"/opt/lib"
+		DOC "Location of the libsnowpack, like /usr/lib/libsnowpack.dylib"
+		)
+	ELSE(APPLE)
+		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
+		NAMES snowpack
+		PATHS
+			ENV LD_LIBRARY_PATH
+			"~/usr/lib"
+			"/usr/local/lib"
+			"/usr/lib"
+			"/opt/lib"
+		DOC "Location of the libsnowpack, like /usr/lib"
+		)
+	ENDIF(APPLE)
 END(WIN32)
 
 #build LIBSNOWPACK_ROOT so we can provide a hint for searching for the header file

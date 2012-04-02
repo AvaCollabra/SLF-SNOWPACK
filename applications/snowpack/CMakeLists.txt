@@ -60,7 +60,7 @@ INSTALL(TARGETS ${BINARY}
 ## Bundle MeteoIO
 ###########################################################
 IF(WIN32)
-	SET(BUNDLE_METEOIO OFF CACHE BOOL "Pack Snowpack with its dll ON or OFF")
+	SET(BUNDLE_METEOIO ON CACHE BOOL "Pack Snowpack with its dll ON or OFF")
 	IF(BUNDLE_METEOIO)
 		# fixup the bundle
 	# 	LIST(APPEND libSearchDirs ${METEOIO_LIBRARIES})

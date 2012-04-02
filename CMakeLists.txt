@@ -230,20 +230,22 @@ SET(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "Header files")
 SET(CPACK_COMPONENT_HEADERS_DESCRIPTION "Necessary C++ header files for developing applications using SNOWPACK")
 SET(CPACK_COMPONENT_HEADERS_GROUP Development)
 SET(CPACK_COMPONENT_HEADERS_DEPENDS libraries)
-SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
-SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documentation of the SNOWPACK usage and API both for the end user and the developer using SNOWPACK in his/her application")
-SET(CPACK_COMPONENT_DOCUMENTATION_GROUP Docs)
-SET(CPACK_COMPONENT_EXAMPLES_DISPLAY_NAME "Examples")
-SET(CPACK_COMPONENT_EXAMPLES_DESCRIPTION "Various simulations with their example data")
-SET(CPACK_COMPONENT_EXAMPLES_GROUP Docs)
-#SET(CPACK_COMPONENT_EXAMPLES_DEPENDS libraries headers runtime)
+IF(INSTALL_DOC)
+	SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
+	SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documentation of the SNOWPACK usage and API both for the end user and the developer using SNOWPACK in his/her application")
+	SET(CPACK_COMPONENT_DOCUMENTATION_GROUP Docs)
+	SET(CPACK_COMPONENT_EXAMPLES_DISPLAY_NAME "Examples")
+	SET(CPACK_COMPONENT_EXAMPLES_DESCRIPTION "Various simulations with their example data")
+	SET(CPACK_COMPONENT_EXAMPLES_GROUP Docs)
+	SET(CPACK_COMPONENT_EXAMPLES_DEPENDS libraries headers runtime)
+	SET(CPACK_COMPONENT_DOCS_GROUP "Documentation")
+	SET(CPACK_COMPONENT_GROUP_DOCS_DESCRIPTION "How to use Snowpack as a standalone model or as a library called by your own model")
+ENDIF(INSTALL_DOC)
 
 SET(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
 SET(CPACK_COMPONENT_GROUP_RUNTIME_DESCRIPTION "What you need to run an application based on SNOWPACK")
 SET(CPACK_COMPONENT_DEVELOPMENT_GROUP "Development")
 SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an application based on SNOWPACK")
-SET(CPACK_COMPONENT_DOCS_GROUP "Documentation")
-SET(CPACK_COMPONENT_GROUP_DOCS_DESCRIPTION "How to use Snowpack as a standalone model or as a library called by your own model")
 
 
 IF(UNIX)
@@ -271,12 +273,16 @@ ELSE(UNIX)
 		SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${CPACK_PACKAGE_NAME}")
 		#SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${EnvVarUpdate} $0 \"LIB\"  \"A\" \"HKLM\" \"C:\MyLib\"")
 		SET(CPACK_NSIS_MODIFY_PATH ON)
-		SET(CPACK_NSIS_MENU_LINKS
-			"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
-			"${DOC_PATH}/examples" "SNOWPACK examples"
-			"https://slfsmm.indefero.net/p/snowpack/" "Home page")
+		IF(INSTALL_DOC)
+			SET(CPACK_NSIS_MENU_LINKS
+				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
+				"${DOC_PATH}/examples" "SNOWPACK examples"
+				"https://slfsmm.indefero.net/p/snowpack/" "Home page")
+		ELSEIF(INSTALL_DOC)
+			SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page")
+		ENDIF(INSTALL_DOC)
 		#info for the add/uninstall software administration
-		SET(CPACK_NSIS_INSTALLED_ICON_NAME "${DOC_PATH}\\\\icon.ico")
+		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")
 		SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.slf.ch")
 		SET(CPACK_NSIS_HELP_LINK "https://slfsmm.indefero.net/p/snowpack")
 		SET(CPACK_NSIS_CONTACT "Mathias.Bavay@wsl.ch")

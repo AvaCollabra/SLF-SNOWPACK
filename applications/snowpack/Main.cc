@@ -654,7 +654,7 @@ int main (int argc, char *argv[])
 	if (argc==1) Usage(string(argv[0]));
 
 #ifdef DEBUG_ARITHM
-	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions
+	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW | FE_UNDERFLOW ); //for halting the process at arithmetic exceptions
 	//feenableexcept(FE_ALL_EXCEPT);
 #endif
 	const bool prn_check = false;

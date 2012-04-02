@@ -58,7 +58,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 	string in_snow;
 	cfg.getValue("SNOW", "Input", in_snow, Config::nothrow);
 
-	if (in_snow == "SMET"){
+	if (in_snow == "SMET"){ //TODO: document Input::SNOW = SMET or SNOOLD
 		input_snow_as_smet = true;
 	} else {
 		input_snow_as_smet = false;
@@ -67,7 +67,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 	string out_snow;
 	cfg.getValue("SNOW", "Output", out_snow, Config::nothrow);
 
-	if (out_snow == "SMET"){
+	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	} else {
 		output_snow_as_smet = false;

@@ -2,24 +2,26 @@ INCLUDE(LibFindMacros)
 
 # Finally the library itself
 IF(WIN32)
-	GET_FILENAME_COMPONENT(METEOIO_ROOT "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\MeteoIO]" ABSOLUTE CACHE)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MeteoIO;UninstallString]" PATH CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT2 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MeteoIO;UninstallString]" PATH CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\MeteoIO]" ABSOLUTE CACHE INTERNAL)
+	SET(SEARCH_PATH
+		ENV LIB
+		${METEOIO_ROOT1}/lib
+		${METEOIO_ROOT2}/lib
+		${METEOIO_ROOT3}/lib
+		"C:/Program Files/MeteoIO/lib" )
 
 	IF(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.lib
-			PATHS
-				ENV LIB
-				${METEOIO_ROOT}/lib
-				"C:/Program Files/MeteoIO/lib"
+			PATHS ${SEARCH_PATH}
 			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.lib"
 			)
 	ELSE(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.dll.a
-			PATHS
-				ENV LIB
-				${METEOIO_ROOT}/lib
-				"C:/Program Files/MeteoIO/lib"
+			PATHS ${SEARCH_PATH}
 			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.dll.a"
 			)
 	ENDIF(MSVC)
@@ -30,6 +32,7 @@ ELSE(WIN32)
 		PATHS
 			"/Applications/MeteoIO/lib"
 			ENV LD_LIBRARY_PATH
+			ENV DYLD_FALLBACK_LIBRARY_PATH
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
