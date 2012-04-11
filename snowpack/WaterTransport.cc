@@ -87,7 +87,7 @@ WaterTransport::WaterTransport(const mio::Config& cfg) : useSoilLayers(false), w
  * good possibility that the an ELEMENT might be SUBLIMATED away. \n
  * TODO Revise description!
  * @param *Xdata
- * @param ql Latent heat (J kg-1 K-1)
+ * @param ql Latent heat flux (W m-2)
  * @param *Sdata
  * @param *Mdata
  */
@@ -95,7 +95,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
                                             SurfaceFluxes& Sdata)
 {
 	size_t ii;                       // Counters
-	double L0, dL;                   // Length of element "e" and "e-1"
+	double L0, dL=0.;                   // Length of element "e" and "e-1"
 	double M0, Theta0;               // available mass and initial volumetric content
 	double dM=0.;                    // elemental change in MASS from element "e" and added to element "e-1"
 	double Tss;                      // Surface Temperature
@@ -114,7 +114,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	 * add/subtract mass to MS_SUBLIMATION and/or MS_EVAPORATION,
 	 * potential surface hoar formation will be tested at the end of this routine (NODAL data);
 	*/
-	if (ql > 0.0) { // Add Mass
+	if (ql > Constants::eps2) { // Add Mass
 		if (Tss < Constants::melting_tk) { // Add Ice
 			dM = ql*sn_dt/Constants::lh_sublimation;
 			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
@@ -163,7 +163,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		int e0 = nE-1;
-		while ((e0 > 0) && (ql < 0.0)) {  // While energy is available
+		while ((e0 > 0) && (ql < -Constants::eps2)) {  // While energy is available
 			/*
 			* Determine the amount of potential sublimation/evaporation and collect some variables
 			* that will be continuously used: L0 and M0
@@ -194,7 +194,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				ql -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 			}
-			if (ql < 0.) {
+			if (ql < -Constants::eps2) {
 				// If there is no water or if there was not enough water ...
 				dM = ql*sn_dt/Constants::lh_sublimation;
 				Theta0 = EMS[e0].theta[ICE];
@@ -205,7 +205,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
 						M_Solutes[ii] += EMS[e0].conc[ICE][ii]*Theta0*L0;
 					}
-					EMS[e0].theta[ICE]=0.0; dL = 0.0;
+					EMS[e0].theta[ICE]=0.0; dL = 0.;
 				} else {
 					dL = dM/(EMS[e0].Rho);
 					if (e0 < signed(Xdata.SoilNode)) {

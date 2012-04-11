@@ -223,6 +223,7 @@ class ElementData {
 		void heatCapacity();
 		double coldContent();
 		double extinction();
+		void opticalEquivalentRadius();
 		void snowResidualWaterContent();
 		static double snowResidualWaterContent(const double theta_i);
 		double soilFieldCapacity();
@@ -258,8 +259,8 @@ class ElementData {
 		double rg;                 ///< grain radius (mm)
 		double dd;                 ///< snow dendricity: 0 = none, 1 = newsnow
 		double sp;                 ///< sphericity: 1 = round, 0 = angular
+		double rg_opt;             ///< optical equivalent grain radius (mm)
 		double rb;                 ///< grain bond radius (mm)
-		double ps2rb;              ///< proportion of grain bond growth due to pressure sintering (1)
 		double N3;                 ///< grain Coordination number (1)
 		size_t mk;                 ///< grain marker (history dependent)
 		size_t type;               ///< grain class
@@ -272,9 +273,10 @@ class ElementData {
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress
 		double C;                  ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output
 		double CDot;               ///< Stress rate (Pa s-1), that is the overload change rate
-		double S_dr;               ///< Stability Index based on deformation rate (Direct Action Avalanching)
+		double ps2rb;              ///< proportion of grain bond growth due to pressure sintering (1)
 		double s_strength;         ///< Parameterized snow shear strength (kPa)
 		double hard;               ///< Parameterized hand hardness (1)
+		double S_dr;               ///< Stability Index based on deformation rate (Direct Action Avalanching)
 		//NIED (H. Hirashima)
 		double dhf;
 };
@@ -530,11 +532,9 @@ class SurfaceFluxes {
 /// @brief Defines structure for snow profile layers
 class SnowProfileLayer {
 	public:
-		void average(const double& w1, const double& w2, const SnowProfileLayer& Pdata);
+		SnowProfileLayer();
 
-		std::string stationname;
-		int  loc_for_snow;
-		int  loc_for_wind;
+		void average(const double& w1, const double& w2, const SnowProfileLayer& Pdata);
 
 		// Version used, date, user, ...
 		std::string sn_version;
@@ -542,7 +542,11 @@ class SnowProfileLayer {
 		double sn_jul_computation_date;
 		std::string sn_user;
 
+		// Profile meta data
 		mio::Date profileDate; ///< Date of profile
+		std::string stationname;
+		size_t  loc_for_snow;
+		size_t  loc_for_wind;
 
 		mio::Date layerDate; ///< Date of deposition
 		double height;       ///< 0 to 1000      (cm)
@@ -550,16 +554,17 @@ class SnowProfileLayer {
 		double T;            ///< -50 to 50, snow temperature at top of layer (degC)
 		double gradT   ;     ///< -1000 to 1000, temperature gradient across layer (K m-1)
 		double strain_rate;  ///< 0 to 1e-5      (s-1)
-		double theta_w;      ///< 0 to 100       (%)
-		double theta_i;      ///< 0 to 100       (%)
+		double theta_i;      ///< 0 to 100       (% by volume)
+		double theta_w;      ///< 0 to 100       (% by volume)
+		double grain_size;   ///< 0 to 100       (mm)
 		double dendricity;   ///< 0 to 1         (-)
 		double sphericity;   ///< 0 to 1         (-)
-		double coordin_num;  ///< 0 to 10        (-)
-		double grain_size;   ///< 0 to 100       (mm)
+		double ogs;          ///< 0 to 100       (mm)
 		double bond_size;    ///< 0 to 100       (mm)
+		double coordin_num;  ///< 0 to 10        (-)
+		size_t marker;       ///< 0 to 100       (-)
+		size_t type;         ///< 0 to 100       (-)
 		double hard;         ///< 0. to 5.       (-)
-		int    marker;       ///< 0 to 100       (-)
-		int    type;         ///< 0 to 100       (-)
 };
 
 

@@ -35,45 +35,6 @@
  * laws, for example the ELASTICITY modulus were programmed up by Marc Christen and taken
  * directly from program HAEFELI, the 2d snowpack model.
  */
-/* Warning: The following paragraph is a good example of how jealousy is able to impair a
- * otherwise fairly well working mind. The motivation for the paragraph stems from the fact
- * that NOBODY walked up to Perry after HIS presentation to tell HIM that HIS talk was the
- * best of the conference and that impressive work has been done (even though this
- * compliment was just as well directed at HIS and the whole party's address); not to mention
- * that no funky girl would even consider chatting HIM up whether Italian or Spanish.
- * (By the way, several people came up to Perry and told him, D. McClung, K. Lied, P. Foehn and
- * and and ..Michael himself.. )
- *
- * Perry cleaned the code up after returning from Norway where Michael presented the first
- * snowpack paper (Let's go to the first sheet!).  His presentation was good but could have
- * been better:  he spent the entire conference chatting up a good looking Italian girl -- NO,
- * sorry, a good looking Italian girl chatted him up -- which of course ruined
- * his concentration.  Michael, in a word, BROKE one of the serious plegdes of snowpack
- * programmers (see Main.c, PLEDGE no. 7). This piece of code, and also Michael's
- * behaviour, demonstrate that there is a serious difference between "the possible", (die
- * Moeglichkeit), e.g. constitutive laws that work and funky Italian girls, and "reality" (die
- * Wirklichkeit), e.g. a semi-stable code and steep granite walls without any borrebolte:
- *
- * MOEGLICHKEIT
- * "Hoeher als die Wirklichkeit steht die Moeglichkeit.  Das Moeglichsein, das je das Dasein
- * existenzial ist, unterscheidet sich ebensosehr von der LEEREN, logischen Moeglichkeit wie
- * von der Kontingenz eines Vorhandenen.  Die Moeglichkeit als Existenzial ist die
- * urspruenglischste und LETZTE POSITIVE ONTOLOGISCHE BESTIMMTHEIT des DASEINS."
- *
- * Basically, what Heidegger is saying is that possibilities are a lot of fun, and why playing
- * with different constitutive laws (and women) is central to human existence and also
- * snow research. Possibilites are important paraphenalia along the WAY (der Weg), for
- * example, to Norway:
- *
- * WEG (unterwegs)
- * "Dasein ist immer unterwegs, STEHEN und BLEIBEN sind nur Grenzfaelle dieses ausgerichteten
- * Unterwegs.  Es gilt, einen WEG zur Aufhellung der ontologischen Fundamentalfrage zu suchen
- * und zu GEHEN.  OB er der EINZIGE oder UEBERHAUPT der rechte ist, das kann erst NACH dem
- * GANG entschieden werden."
- *
- * So there is a lot of TRAIL and ERROR in this module, but I think in the end Heidegger would
- * approve of our method (WEG) and our many possibilities (FREEDOM).
- */
 
 #include <snowpack/Laws_sn.h>
 
@@ -240,10 +201,10 @@ bool SnLaws::setStaticData(const std::string& variant)
 
 	if (current_variant == "ANTARCTICA") {
 		t_term = t_term_arrhenius_critical;
-		visc = visc_dflt; //visc_cal; //visc_ant; //
-		visc_ice_fudge = 9.45; //1.
-		visc_sp_fudge = 16.5;  //1.
-		//visc_water_fudge = 33.; // set to zero by default
+		visc = visc_dflt;
+		visc_ice_fudge = 9.45;
+		visc_sp_fudge = 16.5;
+		//visc_water_fudge is set to zero by default
 		setfix = false;
 
 		event = event_wind;
@@ -347,15 +308,14 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @name SNOW ALBEDO (defined as an absolute value--and not as a rate of change)
  * @brief Various parameterizations for snow albedo
  * @version 11.05
- * @param variant see VARIANT
- * @param i_albedo_model
+ * currentAlbedoModel:
  * 	- alb_lehning_[012] : Statistical models of surface snow albedo based on measurements
  *      from the Weissfluhjoch study plot (SWin and SWout, K&Z CM21)
  * 	- alb_nied : The Japanese version of alb_lehning_2
+ * @param i_fixed_albedo value
  * @param Edata
  * @param Tss Snow surface temperature (K)
  * @param Mdata
- * @param tday Age of surface snow (d)
  */
 double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
                                        const double& Tss, const CurrentMeteo& Mdata)
@@ -413,12 +373,13 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 			if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
 				age = 0.;
 				av = 0.7542; // estimated from comparison with measurements at Dome C
+			} else {
+				age = MIN(30., age);
 			}
 			const double inter = 1.442;
 			const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
 			const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
 			const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
-
 			Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
 			           + Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
 			               + Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
@@ -428,6 +389,11 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 			} else {
 				Alb = Constants::min_albedo;
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+			}
+			if (age > 30.) {
+				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
+						"albedo=%f : age=%f rho=%f th_w=%f ta=%f rswr=%f rb=%f sp=%f type=%d",
+						Alb, age, Edata.Rho, Edata.theta[WATER], Ta, Mdata.rswr, Edata.rb, Edata.sp, Edata.type);
 			}
 			break;
 		}
@@ -1132,7 +1098,7 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 /**
  * @brief Computes the temperature term of viscosity
  * @version 11.06
- * @param Te Element temperature
+ * @param Te Element temperature (K)
  * @return Temperature term of snow viscosity
  */
 double SnLaws::snowViscosityTemperatureTerm(const double& Te)

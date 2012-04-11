@@ -58,6 +58,14 @@ void ZwischenData::reset()
 	hn24    = std::vector<double>(144, 0.0);
 }
 
+// Class SnowProfileLayer
+SnowProfileLayer::SnowProfileLayer() : profileDate(), layerDate(),
+                                       height(0.), rho(0.), T(0.), gradT(0.), strain_rate(0.),
+                                       theta_i(0.), theta_w(0.),
+                                       grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
+                                       coordin_num(0.), marker(0), type(0), hard(0.)
+{}
+
 /**
  * @brief Determines the averaged quantities of the current layer with another layer
  * @param Lp1 Thickness (weight) of layer Pdata
@@ -82,6 +90,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 	sphericity  = (Lp1*profile_layer.sphericity + Lp0*sphericity) / layerThickness;
 	coordin_num = (Lp1*profile_layer.coordin_num + Lp0*coordin_num) / layerThickness;
 	grain_size  = (Lp1*profile_layer.grain_size + Lp0*grain_size) / layerThickness;
+	ogs         = (Lp1*profile_layer.ogs + Lp0*ogs) / layerThickness;
 	bond_size   = (Lp1*profile_layer.bond_size + Lp0*bond_size) / layerThickness;
 	hard        = (Lp1*profile_layer.hard + Lp0*hard) / layerThickness;
 	marker      = MAX(profile_layer.marker, marker);
@@ -261,11 +270,14 @@ void CanopyData::initializeSurfaceExchangeData()
 	intcapacity = 0.0;
 }
 
+// Class ElementData
 ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
-                             Te(0.), gradT(0.), Rho(0.), M(0.), sw_abs(0.), rg(0.), dd(0.), sp(0.), rb(0.), ps2rb(0.),
-                             N3(0.), mk(0), type(0), metamo(0.), dth_w(0.), Qmf(0.),
+                             Te(0.), gradT(0.), Rho(0.), M(0.), sw_abs(0.),
+                             rg(0.), dd(0.), sp(0.), rg_opt(0.), rb(0.), N3(0.), mk(0),
+                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
-                             S(0.), C(0.), CDot(0.), S_dr(0.), s_strength(0.), hard(0.), dhf(0.)
+                             S(0.), C(0.), CDot(0.), ps2rb(0.),
+                             s_strength(0.), hard(0.), S_dr(0.), dhf(0.)
 {
 	theta.resize(N_COMPONENTS);
 	conc.resize(N_COMPONENTS, SnowStation::number_of_solutes);
@@ -326,6 +338,25 @@ double ElementData::coldContent()
 }
 
 /**
+ * @brief Opical equivalent grain radius\n
+ * CROCUS implementation as described in Vionnet et al., 2011. The detailed snowpack
+ * scheme Crocus and its implementation in SURFEX v7.
+ * Geosci. Model Dev. Discuss., 4, 2356-2415. (see section 3.6)
+ * @version 12.04
+ */
+void ElementData::opticalEquivalentRadius()
+{
+	// NOTE Be careful regarding dimension!!!
+	if (dd > Constants::eps2) {
+		rg_opt = 1.e-1 * (0.5 * (dd + (1. - dd) * (4. - sp))); // (mm)
+		// rg_opt = 1.e-4 * (0.5 * (dd + (1. - dd) * (4. - s))); // (m)
+	} else {
+		rg_opt = 0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-1, rg)); // rg in mm
+		// rg_opt = 0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-4, rg)); // rg in m
+	}
+}
+
+/**
  * @brief Density dependent extinction coefficient -> Michi's magic trick... out of his magic hat
  * @version 9Y.mm
  * @return Density dependent extinction coefficient (m-1)
@@ -356,14 +387,14 @@ void ElementData::snowResidualWaterContent()
 
 double ElementData::snowResidualWaterContent(const double theta_i)
 {
-	double res_wat_cont;
+	double resWatCont;
 
 	if (theta_i > 0.23) {
-		res_wat_cont = 0.0264 + 0.0099 * (1. - theta_i) / theta_i;
+		resWatCont = 0.0264 + 0.0099 * (1. - theta_i) / theta_i;
 	} else {
-		res_wat_cont = 0.08 - 0.1023 * (theta_i - 0.03);
+		resWatCont = 0.08 - 0.1023 * (theta_i - 0.03);
 	}
-	return MIN(res_wat_cont, 0.08); //NOTE: MIN() only needed in case of theta_i < 0.03
+	return MIN(resWatCont, 0.08); //NOTE: MIN() only needed in case of theta_i < 0.03
 }
 
 /**
@@ -609,7 +640,7 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	}
 	// Now treat a couple of exceptions - note that the order is important
 	if (b < 0) b = a;
-	if ((marker >= 20) && (theta_w < 0.1*res_wat_cont)) { // MFcr Melt-Freeze
+	if ((marker >= 20) && (theta_w < 0.1 * res_wat_cont)) { // MFcr Melt-Freeze
 		c = 2;
 	}
 	switch (marker) {
@@ -939,6 +970,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].dd = SSdata.Ldata[ll].dd;
 			Edata[e].sp = SSdata.Ldata[ll].sp;
 			Edata[e].rg = SSdata.Ldata[ll].rg;
+			Edata[e].opticalEquivalentRadius();
 			Edata[e].rb = SSdata.Ldata[ll].rb;
 			Edata[e].N3 = Metamorphism::getCoordinationNumberN3(Edata[e].Rho);
 			Edata[e].mk = SSdata.Ldata[ll].mk;
@@ -1082,7 +1114,7 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  * 	- Keep the birthday of the lower element
  * @param *Edata0 Properties of lower element
  * @param *Edata1 Properties of upper element
- * @param join Tells whether upper element is either joined with lower one or simply removed
+ * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
  */
 void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join)
 {
@@ -1099,6 +1131,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 		Edata0.dd = 0.5 * ( Edata0.dd + Edata1.dd );
 		Edata0.sp = 0.5 * ( Edata0.sp + Edata1.sp );
 		Edata0.rb = 0.5 * ( Edata0.rb + Edata1.rb );
+		Edata0.opticalEquivalentRadius();
 		Edata0.CDot = 0.5 * ( Edata0.CDot + Edata1.CDot );
 		Edata0.E = Edata0.Ev;
 		Edata0.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic

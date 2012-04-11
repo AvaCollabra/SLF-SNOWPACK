@@ -1402,7 +1402,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				// Total Element Stress
 				EMS[e].S=0.0;
 				EMS[e].CDot = 0.; // loadRate
-				// NEW SNOW MICRO-STRUCTURE	 fitted from different data sources
+				// NEW SNOW MICRO-STRUCTURE
+				// Typifies hydrometeors, allowing for different atmospheric conditions
 				{
 					double logit, value;
 					double alpha, beta, gamma, delta, eta, phi;
@@ -1465,7 +1466,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 							}
 						}
 					} // end no Graupel
-					if (nHoarE &&	 e == nOldE) {
+					if (nHoarE && (e == nOldE)) {
 						EMS[e].mk = 3;
 						EMS[e].dd = 0.;
 						EMS[e].sp = 0.;
@@ -1473,6 +1474,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 						// Note: L0 > hoar_min_size_buried/hoar_density_buried
 						EMS[e].rb = EMS[e].rg/3.;
 					}
+					EMS[e].opticalEquivalentRadius();
 					EMS[e].metamo = 0.;
 				} // Treat all the initial snow types
 
@@ -1612,7 +1614,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
 		// Compute the final meteo heat fluxes
 		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
-		                      // linearized w/ respect to Tss and thus reamins unchanged
+		                      // linearized w/ respect to Tss and thus remains unchanged
 		                      // throughout the temperature iterations!!!
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata);
 

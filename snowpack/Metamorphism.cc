@@ -717,7 +717,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		} else {
 			EMS[e].sp = MAX(0.0, MIN(1.0, EMS[e].sp));
 		}
-		// Update grain size ...
+		// Update grain sizes ...
 		rgDot = MIN(rgDot, Metamorphism::max_grain_growth);
 		if ( marker != 3 ) {
 			EMS[e].rg += rgDot*dDay;
@@ -725,6 +725,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 			//HACK ... but do not allow surface hoar to grow and limit its size to layer thickness.
 			EMS[e].rg = MIN(EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
 		}
+		EMS[e].opticalEquivalentRadius();
 		// Update bond size and limit its growth to Metamorphism::bond_size_stop * EMS[e].rg
 		rbDotMax = (Metamorphism::bond_size_stop * EMS[e].rg - EMS[e].rb) / dDay;
 		rbDot = MAX(0., MIN(rbDot, rbDotMax));
@@ -981,7 +982,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		} else {
 			EMS[e].sp = MAX(0.0, MIN(1.0, EMS[e].sp));
 		}
-		// Update grain size ...
+		// Update grain sizes ...
 		//rgDotMax = Metamorphism::max_grain_growth;
 		rgDot = MIN(rgDot, Metamorphism::max_grain_growth);
 		if ( marker != 3 ) {
@@ -990,6 +991,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 			// ... but do not allow surface hoar to grow and limit its size to layer thickness.
 			EMS[e].rg = MIN (EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
 		}
+		EMS[e].opticalEquivalentRadius();
 		// Update bond size
 		rbDotMax = (Metamorphism::bond_size_stop * EMS[e].rg - EMS[e].rb) / dDay;
 		rbDot = MAX (0., MIN (rbDot, rbDotMax));

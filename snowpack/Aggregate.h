@@ -36,21 +36,21 @@
 class Aggregate {
 
 	public:
-		static unsigned int aggregate(std::vector<SnowProfileLayer>& Pdata);
+		static size_t aggregate(std::vector<SnowProfileLayer>& Pdata);
 
 	private:
-		static void shift(const unsigned int& nE, std::vector<SnowProfileLayer>& Pdata);
-		static bool doJoin2(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata);
-		static bool doJoin(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata);
+		static void shift(const size_t& nL_ini, std::vector<SnowProfileLayer>& Pdata);
+		static bool joinSimilarLayers(const size_t& e1, std::vector<SnowProfileLayer>& Pdata);
+		static bool mergeThinLayer(const size_t& e1, std::vector<SnowProfileLayer>& Pdata);
 
 		static const double limit_dry;     ///< Distinguishes between dry and wet snow layers (1)
-		static const double diff_theta_w;  ///< Maximum water difference for aggregation (Vol %)
-		static const double diff_jul;      ///< Maximum  age difference (days) for aggregation
-		static const double diff_sp;       ///< Maximum  sphericity difference for aggregation
-		static const double diff_dd;       ///< Maximum  dendricity difference for aggregation
-		static const double diff_dg;       ///< Maximum  grain size difference for aggregation
-		static const double diff_dg_rel;   ///< Maximum  relative grain size difference for aggregation
-		static const double min_l_element; ///< Minimum length of element to be kept separate
+		static const double diff_theta_w;  ///< Maximum water difference for aggregation (% by volume)
+		static const double diff_jul;      ///< Maximum  age difference for aggregation (d)
+		static const double diff_dg;       ///< Maximum  grain size difference for aggregation (mm)
+		static const double diff_dg_rel;   ///< Maximum  relative grain size difference for aggregation (mm)
+		static const double diff_sp;       ///< Maximum  sphericity difference for aggregation (1)
+		static const double diff_dd;       ///< Maximum  dendricity difference for aggregation (1)
+		static const double min_l_element; ///< Minimum length of element to be kept separate (cm)
 };
 
 #endif

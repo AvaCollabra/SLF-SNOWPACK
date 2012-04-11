@@ -25,88 +25,133 @@
  ************************************************************/
 
 const double Aggregate::limit_dry     = 0.001; ///< Distinguishes between dry and wet snow layers (1)
-const double Aggregate::diff_theta_w  = 0.7;   ///< Maximum water difference for aggregation (Vol %)
-const double Aggregate::diff_jul      = 1.0;   ///< Maximum  age difference (days) for aggregation
-const double Aggregate::diff_sp       = 0.2;   ///< Maximum  sphericity difference for aggregation
-const double Aggregate::diff_dd       = 0.2;   ///< Maximum  dendricity difference for aggregation
-const double Aggregate::diff_dg       = 0.25;  ///< Maximum  grain size difference for aggregation
-const double Aggregate::diff_dg_rel   = 0.2;   ///< Maximum  relative grain size difference for aggregation
-const double Aggregate::min_l_element = 0.3;   ///< Minimum length of element to be kept separate
+const double Aggregate::diff_theta_w  = 0.7;   ///< Maximum water difference for aggregation (% by volume)
+const double Aggregate::diff_jul      = 1.0;   ///< Maximum  age difference for aggregation (d)
+const double Aggregate::diff_dg       = 0.25;  ///< Maximum  grain size difference for aggregation (mm)
+const double Aggregate::diff_dg_rel   = 0.2;   ///< Maximum  relative grain size difference for aggregation (mm)
+const double Aggregate::diff_sp       = 0.2;   ///< Maximum  sphericity difference for aggregation (1)
+const double Aggregate::diff_dd       = 0.2;   ///< Maximum  dendricity difference for aggregation (1)
+const double Aggregate::min_l_element = 0.3;   ///< Minimum length of element to be kept separate (cm)
 
 /**
  * @brief Eliminate the "empty" layers shift the remaining layers to form a compact snowpack
- * @param nE (int)
+ * @param nL_ini Iinitial number of layers prior to aggregation
  * @param Pdata A vector of SnowProfileLayer
  */
-void Aggregate::shift(const unsigned int& nE, std::vector<SnowProfileLayer>& Pdata)
+void Aggregate::shift(const size_t& nL_ini, std::vector<SnowProfileLayer>& Pdata)
 {
-	for (unsigned int e=1, ll=1; e<nE; e++) {
-		if (Pdata[e].height != Constants::undefined) {
-			if (ll != e) {
-				Pdata[ll].height = Pdata[e].height;
-				Pdata[ll].layerDate = Pdata[e].layerDate;
-				Pdata[ll].rho = Pdata[e].rho;
-				Pdata[ll].T = Pdata[e].T;
-				Pdata[ll].gradT = Pdata[e].gradT;
-				Pdata[ll].strain_rate = Pdata[e].strain_rate;
-				Pdata[ll].theta_w = Pdata[e].theta_w;
-				Pdata[ll].theta_i = Pdata[e].theta_i;
-				Pdata[ll].dendricity = Pdata[e].dendricity;
-				Pdata[ll].sphericity = Pdata[e].sphericity;
-				Pdata[ll].coordin_num = Pdata[e].coordin_num;
-				Pdata[ll].grain_size = Pdata[e].grain_size;
-				Pdata[ll].bond_size = Pdata[e].bond_size;
-				Pdata[ll].hard = Pdata[e].hard;
-				Pdata[ll].marker = Pdata[e].marker;
+	for (size_t ll=1, l_new=1; ll<nL_ini; ll++) {
+		if (Pdata[ll].height != Constants::undefined) {
+			if (l_new != ll) {
+				Pdata[l_new].layerDate = Pdata[ll].layerDate;
+				Pdata[l_new].height = Pdata[ll].height;
+				Pdata[l_new].rho = Pdata[ll].rho;
+				Pdata[l_new].T = Pdata[ll].T;
+				Pdata[l_new].gradT = Pdata[ll].gradT;
+				Pdata[l_new].strain_rate = Pdata[ll].strain_rate;
+				Pdata[l_new].theta_i = Pdata[ll].theta_i;
+				Pdata[l_new].theta_w = Pdata[ll].theta_w;
+				Pdata[l_new].grain_size = Pdata[ll].grain_size;
+				Pdata[l_new].dendricity = Pdata[ll].dendricity;
+				Pdata[l_new].sphericity = Pdata[ll].sphericity;
+				Pdata[l_new].ogs = Pdata[ll].ogs;
+				Pdata[l_new].bond_size = Pdata[ll].bond_size;
+				Pdata[l_new].coordin_num = Pdata[ll].coordin_num;
+				Pdata[l_new].marker = Pdata[ll].marker;
+				Pdata[l_new].hard = Pdata[ll].hard;
 			}
-			ll++;
+			l_new++;
 		}
 	}
 }
 
 /**
- * @brief Decide whether to codense two layers
- * @param e1 (int)
+* @brief Decide whether to join two similar layers
+* @param l_upper index of upper layer
+* @param Pdata A vector of SnowProfileLayer
+*/
+bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfileLayer>& Pdata)
+{
+	unsigned int l_lower = l_upper-1;
+	
+	if ((Pdata[l_upper].theta_w < limit_dry) || (Pdata[l_lower].theta_w < limit_dry)) {
+		if (fabs(Pdata[l_upper].theta_w - Pdata[l_lower].theta_w) > limit_dry)
+			return false;
+	} else {
+		if (fabs(Pdata[l_upper].theta_w - Pdata[l_lower].theta_w) > diff_theta_w)
+			return false;
+	}
+	
+	if (fabs(Pdata[l_upper].layerDate.getJulianDate() - Pdata[l_lower].layerDate.getJulianDate()) > diff_jul)
+		return false;
+	
+	if (Pdata[l_upper].marker != Pdata[l_lower].marker)
+		return false;
+	
+	// do not combine layers which are of quite different hardness 020917;Fz
+	if (fabs(Pdata[l_upper].hard - Pdata[l_lower].hard) > 1.0)
+		return false;
+	
+	if ((Pdata[l_upper].dendricity == 0) && (Pdata[l_lower].dendricity == 0)){
+		if ( fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
+			return false;
+		
+		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) >	MAX(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
+			return false;
+	} else {
+		if (fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
+			return false;
+		
+		if (fabs(Pdata[l_upper].dendricity - Pdata[l_lower].dendricity) > diff_dd)
+			return false;
+	}
+	
+	return true;
+}
+
+/**
+ * @brief Decide whether to merge thin layers
+ * @param l_lower Index of upper layer
  * @param Pdata A vector of SnowProfileLayer
  */
-bool Aggregate::doJoin2(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata)
+bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLayer>& Pdata)
 {
-	unsigned int e2 = e1+1;
+	size_t l_upper = l_lower+1;
 
 	// if a dry layer is involved
-	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)){
+	if ((Pdata[l_lower].theta_w < limit_dry) || (Pdata[l_upper].theta_w < limit_dry)){
 		// do not combine dry with moist layers
-		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > limit_dry)
+		if (fabs(Pdata[l_lower].theta_w - Pdata[l_upper].theta_w) > limit_dry)
 			return false;
 
 		// do not combine layers which are of quite different age
-		if (fabs(Pdata[e1].layerDate.getJulianDate() - Pdata[e2].layerDate.getJulianDate()) > 2 * diff_jul)
+		if (fabs(Pdata[l_lower].layerDate.getJulianDate() - Pdata[l_upper].layerDate.getJulianDate()) > 2 * diff_jul)
 			return false;
 
 		// do not combine layers with different grain classes
-		if (Pdata[e1].marker != Pdata[e2].marker) {
+		if (Pdata[l_lower].marker != Pdata[l_upper].marker) {
 			return false;
 		}
 		// do not combine layers which are of quite different hardness
-		if (fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.5) {
+		if (fabs(Pdata[l_lower].hard - Pdata[l_upper].hard) > 1.5) {
 			return false;
 		}
 	}
 	// for two wet layers
 	else {
-		if ((Pdata[e1].grain_size < 0.75) || (Pdata[e1].sphericity < 0.5) ||
-			(Pdata[e2].grain_size < 0.75) || (Pdata[e2].sphericity < 0.5)) {
-			if (Pdata[e1].marker != Pdata[e2].marker) {
+		if ((Pdata[l_lower].grain_size < 0.75) || (Pdata[l_lower].sphericity < 0.5) ||
+			(Pdata[l_upper].grain_size < 0.75) || (Pdata[l_upper].sphericity < 0.5)) {
+			if (Pdata[l_lower].marker != Pdata[l_upper].marker) {
 				return false;
 			}
 		}
 		else {
-			if (!((((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
-				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23)) ) &&
-				( ((Pdata[e1].marker > 9) &&  (Pdata[e1].marker < 13)) ||
-				((Pdata[e1].marker > 19) &&  (Pdata[e1].marker < 23))))) {
+			if (!((((Pdata[l_lower].marker > 9) &&  (Pdata[l_lower].marker < 13)) ||
+				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23)) ) &&
+				( ((Pdata[l_lower].marker > 9) &&  (Pdata[l_lower].marker < 13)) ||
+				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23))))) {
 				
-				if (Pdata[e1].marker != Pdata[e2].marker)
+				if (Pdata[l_lower].marker != Pdata[l_upper].marker)
 					return false;
 			}
 		}
@@ -115,105 +160,66 @@ bool Aggregate::doJoin2(const unsigned int& e1, std::vector<SnowProfileLayer>& P
 }
 
 /**
- * @brief Decide whether to codense two layers
- * @param e1 (int)
- * @param Pdata A vector of SnowProfileLayer
- */
-bool Aggregate::doJoin(const unsigned int& e1, std::vector<SnowProfileLayer>& Pdata)
-{
-	unsigned int e2 = e1 - 1;
-
-	if ((Pdata[e1].theta_w < limit_dry) || (Pdata[e2].theta_w < limit_dry)) {
-		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > limit_dry)
-			return false;
-	} else {
-		if (fabs(Pdata[e1].theta_w - Pdata[e2].theta_w) > diff_theta_w)
-			return false;
-	}
-
-	if (fabs(Pdata[e1].layerDate.getJulianDate() - Pdata[e2].layerDate.getJulianDate()) > diff_jul)
-		return false;
-
-	if (Pdata[e1].marker != Pdata[e2].marker)
-		return false;
-
-	// do not combine layers which are of quite different hardness 020917;Fz
-	if (fabs(Pdata[e1].hard - Pdata[e2].hard) > 1.0)
-		return false;
-
-	if ((Pdata[e1].dendricity == 0) && (Pdata[e2].dendricity == 0)){
-		if ( fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
-			return false;
-		
-		if (fabs(Pdata[e1].grain_size - Pdata[e2].grain_size) >	MAX(diff_dg, diff_dg_rel * Pdata[e1].grain_size))
-			return false;
-	} else {
-		if (fabs(Pdata[e1].sphericity - Pdata[e2].sphericity) > diff_sp)
-			return false;
-
-		if (fabs(Pdata[e1].dendricity - Pdata[e2].dendricity) > diff_dd)
-			return false;
-	}
-
-	return true;
-}
-
-/**
  * @brief Aggregate snow profile layers and compute the grain class
+ * @note Leave top element untouched
  * @param Pdata A vector of SnowProfileLayer
  */
-unsigned int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
+size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 {
 	bool flag = false;
-	unsigned int nL, nE = (unsigned)Pdata.size();
-	double Lp0, Lp1; // lower and upper layer
+	size_t nL, nL_ini = (size_t)Pdata.size();
+	double L0_lower, L0_upper; // lower and upper layer lengths
 
 	// Initialize number of layers and aggregate only if more than 5 layers
-	nL = nE;
+	nL = nL_ini;
 	if (nL > 5) {
-		// First Run - do not touch top element
+		// First Run - aggregate similar layers
 		// keep track of the coordinates and length of elements
-		Lp0 = (Pdata[nE-2].height -  Pdata[nE-3].height);
-		for (unsigned int l1=nE-2; l1 > 0; l1--) {
-			int l0 = l1-1;
-			Lp1 = Lp0;
-			if (l0 > 0) {
-				Lp0 = (Pdata[l0].height -  Pdata[l0-1].height);
+		L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+		for (size_t l_upper=nL_ini-2; l_upper > 0; l_upper--) {
+			L0_upper = L0_lower;
+			size_t l_lower = l_upper-1;
+			if (l_lower > 0) {
+				L0_lower = (Pdata[l_lower].height -  Pdata[l_lower-1].height);
 			} else {
-				Lp0 = Pdata[l0].height;
+				L0_lower = Pdata[l_lower].height;
 			}
-			// if two layers are similar combine them
-			if (doJoin(l1, Pdata) && (Pdata[l0].marker != 3) && (Pdata[l1].marker != 3)) {
-				nL--;
-				Pdata[l0].average(Lp0, Lp1, Pdata[l1]);
-				Pdata[l1].height = Constants::undefined;
-				Lp0 += Lp1;
+			// if two layers are similar combine them; keep SH though
+			if ((Pdata[l_lower].marker != 3) && (Pdata[l_upper].marker != 3)) {
+				if (joinSimilarLayers(l_upper, Pdata)) {
+					nL--;
+					Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
+					Pdata[l_upper].height = Constants::undefined;
+					L0_lower += L0_upper;
+				}
 			}
-		}  // for all elements
+		}
 
-		shift(nE, Pdata);
-		nE = nL;
+		shift(nL_ini, Pdata);
+		nL_ini = nL;
 
 		// Second Run - aggregate remaining very thin layers
-		if (nE > 2) {
-			Lp0 = (Pdata[nE-2].height -  Pdata[nE-3].height);
-			for(unsigned int l1 = nE-2; l1 > 0; l1--) {
-				int l0 = signed(l1)-1;
-				Lp1 = Lp0;
-				if (l0 > 0) {
-					Lp0 = (Pdata[l0].height -  Pdata[l0-1].height);
+		if (nL_ini > 2) {
+			L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+			for(size_t l_upper = nL_ini-2; l_upper > 0; l_upper--) {
+				size_t l_lower = l_upper-1;
+				L0_upper = L0_lower;
+				if (l_lower > 0) {
+					L0_lower = (Pdata[l_lower].height -  Pdata[l_lower-1].height);
 				} else {
-					Lp0 = Pdata[l0].height;
+					L0_lower = Pdata[l_lower].height;
 				}
-				if ((Pdata[l0].marker != 3) && (Pdata[l1].marker != 3)) {
+				if ((Pdata[l_lower].marker != 3) && (Pdata[l_upper].marker != 3)) {
 					// trick to try to join with upper or lower level -> use flag to mark thin layer
-					if (flag || (Lp0 < (sqrt(Pdata[nE-1].height-Pdata[l0].height)/4.)) || (Lp0 < min_l_element)) {
+					if (flag || (L0_lower < (sqrt(Pdata[nL_ini-1].height-Pdata[l_lower].height)/4.))
+						         || (L0_lower < min_l_element)) {
 						// if two layers are similar or one layer is very very small combine them
-						if (doJoin2(l1, Pdata) || (Lp0 < min_l_element) || (Lp1 < min_l_element)){
+						if (mergeThinLayer(l_upper, Pdata)
+							    || (L0_lower < min_l_element) || (L0_upper < min_l_element)) {
 							nL--;
-							Pdata[l0].average(Lp0, Lp1, Pdata[l1]);
-							Pdata[l1].height = Constants::undefined;
-							Lp0 += Lp1;
+							Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
+							Pdata[l_upper].height = Constants::undefined;
+							L0_lower += L0_upper;
 							flag = false;
 						} else {
 							flag = true;
@@ -226,15 +232,15 @@ unsigned int Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 					flag = false;
 				}
 			}  // for all elements
-			shift(nE, Pdata);
-		} // if nE > 2
+			shift(nL_ini, Pdata);
+		} // if nL_ini > 2
 	} // if more than 5 layers
 
 	// Update snow type
-	for(unsigned int ll=0; ll<nL; ll++) {
+	for(size_t ll=0; ll<nL; ll++) {
 		Pdata[ll].type = ElementData::snowType(Pdata[ll].dendricity, Pdata[ll].sphericity,
-                                           Pdata[ll].grain_size, Pdata[ll].marker, Pdata[ll].theta_w/100.,
-                                           ElementData::snowResidualWaterContent(Pdata[ll].theta_i/100.));
+                                               Pdata[ll].grain_size, Pdata[ll].marker, Pdata[ll].theta_w/100.,
+                                               ElementData::snowResidualWaterContent(Pdata[ll].theta_i/100.));
 	}
 	return (nL);
 }

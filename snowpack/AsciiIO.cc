@@ -553,8 +553,8 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
 /**
  * @brief Write the Snow Profile Results, snow depth being taken VERTICALLY
  * Prepare Output File for JAVA visualization (SNOWPACK format, *.pro)
- * NOTE Parameters marked by an asterisk are available in RESEARCH visualisation only!
- * @version 11.03
+ * @note Parameters marked by an asterisk are available in RESEARCH visualisation only!
+ * @version 12.04
  * @param i_date the current date
  * @param Xdata
  * @param Hdata
@@ -694,7 +694,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	fprintf(PFile,"\n0531,%u" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",EMS[e].S_dr);
-	//  532: natural stability index Sn38
+	// *532: natural stability index Sn38
 	fprintf(PFile,"\n0532,%u" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode;  e < nE; e++)
 		fprintf(PFile,",%.2f",NDS[e+1].S_n);
@@ -711,15 +711,11 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		for (e = Xdata.SoilNode; e < nE; e++)
 			fprintf(PFile,",%.1f", -EMS[e].hard);
 	}
-	//  535: inverse texture index ITI (Mg m-4)
-	fprintf(PFile,"\n0535,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++) {
-	 	if (EMS[e].dd < 0.005)
-			fprintf(PFile,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
-		else
-			fprintf(PFile,",%.1f",0.0);
-	}
-
+	// *535: optical equivalent grain size OGS (mm)
+	fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
+	for (e = Xdata.SoilNode; e < nE; e++)
+		fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
+	
 	if (variant == "CALIBRATION")
 		writeFreeProfileCALIBRATION(Xdata, PFile);
 	else
@@ -772,6 +768,14 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
 		for (e = Xdata.SoilNode; e < nE; e++)
 			fprintf(fout,",%.2f",NDS[e+1].ssi);
+		// *605: inverse texture index ITI (Mg m-4)
+		fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
+		for (e = Xdata.SoilNode; e < nE; e++) {
+			if (EMS[e].dd < 0.005)
+				fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
+			else
+				fprintf(fout,",%.1f",0.0);
+		}
 	}
 }
 
@@ -808,6 +812,14 @@ void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 	fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
 		fprintf(fout,",%.2f",NDS[e+1].ssi);
+	// *605: inverse texture index ITI (Mg m-4)
+	fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
+	for (e = Xdata.SoilNode; e < nE; e++) {
+		if (EMS[e].dd < 0.005)
+			fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
+		else
+			fprintf(fout,",%.1f",0.0);
+	}
 
 	// 700-profile specials for settling comparison
 	// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
@@ -1254,7 +1266,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	if (out_meteo)
 		// 23-26: rH (%), wind (m s-1), wind_drift (m s-1), wind_dir (deg),
 		// 27: solid precipitation rate (kg m-2 h-1),
-		// 28-29: modeled and measured vertical snow depth (cm)
+		// 28-29: modeled and enforced vertical snow depth (cm)
 		fprintf(TFile,",%f,%f,%f,%f,%f,%.2f,%.2f", 100.*Mdata.rh, Mdata.vw, Mdata.vw_drift, Mdata.dw,
 		        Sdata.mass[SurfaceFluxes::MS_HNW], M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl),
 		        M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl));
@@ -1290,7 +1302,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,,,,,,,,");
 	}
 	if (max_number_sensors == 5) {
-		// 50: Either measured snow depth hs or solute load at ground surface
+		// 50: Either input snow depth HS or solute load at ground surface
 		if (!out_load)
 			fprintf(TFile,",%.2f", M_TO_CM(Mdata.hs)/cos_sl);
 		else
@@ -1789,11 +1801,12 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\n0532,nElems,natural stability index Sn38");
 			fprintf(fout, "\n0533,nElems,stability index Sk38");
 			fprintf(fout, "\n0534,nElems,hand hardness either (N) or index steps (1)");
-			fprintf(fout, "\n0535,nElems,inverse texture index ITI (Mg m-4)");
+			fprintf(fout, "\n0535,nElems,optical equivalent grain size (mm)");
 			fprintf(fout, "\n0601,nElems,snow shear strength (kPa)");
 			fprintf(fout, "\n0602,nElems,grain size difference (mm)");
 			fprintf(fout, "\n0603,nElems,hardness difference (1)");
 			fprintf(fout, "\n0604,nElems,ssi");
+			fprintf(fout, "\n0605,nElems,inverse texture index ITI (Mg m-4)");
 			if (variant == "CALIBRATION") {
 				fprintf(fout, "\n0701,nElems,SNOWPACK: total settling rate (%% h-1)");
 				fprintf(fout, "\n0702,nElems,SNOWPACK: settling rate due to load (%% h-1)");
