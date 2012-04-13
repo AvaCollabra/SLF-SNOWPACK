@@ -476,7 +476,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 	// NOTE Should it not preferably be done in PhaseChange.cc ??
 	if ((Tn[0] > Constants::melting_tk || Tn[1] > Constants::melting_tk) && Edata->theta[ICE] > Constants::eps2)
 		*SubSurfaceMelt = true;
-	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > Constants::eps2)
+	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2)
 		*SubSurfaceFrze = true;
 	if (Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
 		 T0[0] = T0[1] = Constants::melting_tk;
@@ -617,7 +617,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 	 * Now branch between phase change cases (semi-explicit treatment) and dry snowpack dynamics
 	 * (implicit treatment)
 	*/
-	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > 0.) && (T_iter != T_snow)) {
+	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > PhaseChange::theta_r + Constants::eps) && (T_iter != T_snow)) {
 		// Semi-explicit
 		// Latent heat transfer and net longwave radiation
 		Fe[1] += Bdata.ql + Bdata.lw_net;
