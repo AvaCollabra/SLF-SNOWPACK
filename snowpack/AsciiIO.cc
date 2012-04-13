@@ -51,7 +51,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyM
 	 */
 	/**
 	 * @brief description:
-	 * - NUMBER_FIXED_HEIGHTS (default: 5) modelled and measured temperatures at fixed positions (m) can be monitored.
+	 * - NUMBER_FIXED_HEIGHTS (default: 0) modelled and measured temperatures at fixed positions (m) can be monitored.
 	 * 	- positive position values: heigth from ground surface (snow only)
 	 * 	- negative position values: depth from either ground surface or snow surface if SNP_SOIL = 0
 	 * - NOTE:

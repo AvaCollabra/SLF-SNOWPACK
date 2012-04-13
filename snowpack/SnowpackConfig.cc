@@ -57,7 +57,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	advancedConfig["MULTISTREAM"] = "true";
-	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "5";
+	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "0";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
 	advancedConfig["PERP_TO_SLOPE"] = "false";
 	advancedConfig["PLASTIC"] = "false";
@@ -76,7 +76,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 
 	//[Input] section
-	inputConfig["FIXED_SENSOR_DEPTHS"] = "0.25 0.50 1.0 1.5 -0.1";
+	inputConfig["FIXED_SENSOR_DEPTHS"] = "";
 	inputConfig["METEOPATH"] = "./DATA/input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
 	inputConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
@@ -275,7 +275,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 *     from the output section will be used for output
 	 * @note default depths are provided for the input section only
 	 */
-	unsigned int number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
+	size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
 	if (number_meas_temperatures > 0) {
 		string i_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Input", i_fixed_sensor_depths, Config::nothrow);
 		addKey("FIXED_SENSOR_DEPTHS", "Output", i_fixed_sensor_depths);
@@ -289,12 +289,12 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		ss << "-999.";
 		addKey("FIXED_SENSOR_DEPTHS", "Input", ss.str());
 	}
-	unsigned int number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
+	size_t number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
 	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Output");
-	if (fixed_sensor_depths.size() > number_fixed_heights) {
+	if (fixed_sensor_depths.size() != number_fixed_heights) {
 		stringstream ss;
 		ss << number_fixed_heights;
-		throw InvalidArgumentException("At most NUMBER_FIXED_HEIGHTS="+ss.str()+" sensor depths allowed", AT);
+		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS !="+ss.str()+" fixed_sensor_depths.size()", AT);
 	}
 }
 
