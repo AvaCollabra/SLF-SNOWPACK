@@ -282,9 +282,10 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("FIXED_SENSOR_DEPTHS", "Output", i_fixed_sensor_depths);
 	} else if (number_fixed_heights > 0) {
 		string o_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths, Config::nothrow);
-		if (o_fixed_sensor_depths 
+		if (o_fixed_sensor_depths == ""){
 			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
 			addKey("FIXED_SENSOR_DEPTHS", "Output", "0.25 0.50 1.0 1.5 -0.1");
+		}
 		else
 			addKey("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths);
 		stringstream ss;
@@ -292,6 +293,10 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		addKey("FIXED_SENSOR_DEPTHS", "Input", ss.str());
 	}
 	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Output");
+	
+	// DEBUG
+	//cout << "--> FIXED_SENSOR_DEPTHS.SIZE() = " << fixed_sensor_depths.size() << endl;
+	//cout << "--> NUMBER_FIXED_HEIGHTS = " << number_fixed_heights << endl;
 	if (fixed_sensor_depths.size() > number_fixed_heights) {
 		stringstream ss;
 		ss << number_fixed_heights;
