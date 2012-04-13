@@ -275,13 +275,15 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 *     from the output section will be used for output
 	 * @note default depths are provided for the input section only
 	 */
+	size_t number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
 	size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
 	if (number_meas_temperatures > 0) {
 		string i_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Input", i_fixed_sensor_depths, Config::nothrow);
 		addKey("FIXED_SENSOR_DEPTHS", "Output", i_fixed_sensor_depths);
-	} else {
+	} else if (number_fixed_heights > 0) {
 		string o_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths, Config::nothrow);
-		if (o_fixed_sensor_depths == "")
+		if (o_fixed_sensor_depths 
+			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
 			addKey("FIXED_SENSOR_DEPTHS", "Output", "0.25 0.50 1.0 1.5 -0.1");
 		else
 			addKey("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths);
@@ -289,9 +291,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		ss << "-999.";
 		addKey("FIXED_SENSOR_DEPTHS", "Input", ss.str());
 	}
-	size_t number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
 	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Output");
-	if (fixed_sensor_depths.size() != number_fixed_heights) {
+	if (fixed_sensor_depths.size() > number_fixed_heights) {
 		stringstream ss;
 		ss << number_fixed_heights;
 		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS !="+ss.str()+" fixed_sensor_depths.size()", AT);
