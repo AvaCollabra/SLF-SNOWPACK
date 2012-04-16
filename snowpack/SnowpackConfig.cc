@@ -276,14 +276,12 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 */
 	int number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
 	const size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
+	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", Config::nothrow);
 	if ((number_meas_temperatures > 0) || (number_fixed_heights > 0)) {
-		string s_fixed_sensor_depths;
-		getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", s_fixed_sensor_depths, Config::nothrow);
-		if (s_fixed_sensor_depths == "") {
+		if (fixed_sensor_depths.size() == 0) {
 			addKey("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", "0.25 0.50 1.0 1.5 -0.1");
 		}
 	}
-	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced");
 	if (number_fixed_heights == Constants::iundefined) {
 		if (fixed_sensor_depths.size() > 0) {
 			stringstream ss;
