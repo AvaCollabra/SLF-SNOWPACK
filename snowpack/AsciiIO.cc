@@ -68,12 +68,14 @@ AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyM
 	 * 			- Calibration 5+11 = 16
 	 * 		-# operational mode: 3
 	 * 	- Add data columns to the input file after the snow depth as follows:
-	 * 		-# NUMBER_FIXED_HEIGHTS (\< NUMBER_MEAS_TEMPERATURES) columns of measured values at fixed positions
-	 * 		-# NUMBER_FIXED_RATES (\< NUMBER_MEAS_TEMPERATURES-NUMBER_FIXED_HEIGHTS) double columns of measured values and positions given by
-	 *       fixed negative settling rates (d-1). Enter the initial position (pos or neg, see above) at the time
-	 *       the change is effective, followed by the rate. Additional such entries can be repeated when initial
-	 *       position and/or rate change again. Otherwise fill the column with -999.9 [IOUtils::nodata]
-	 * 		-# Up to NUMBER_MEAS_TEMPERATURES-NUMBER_FIXED_HEIGHTS-NUMBER_FIXED_RATES double columns of measured values and positions
+	 * 		-# NUMBER_FIXED_HEIGHTS (\<= NUMBER_MEAS_TEMPERATURES) columns of measured values at fixed positions
+	 * 		-# NUMBER_FIXED_RATES (\<= NUMBER_MEAS_TEMPERATURES-NUMBER_FIXED_HEIGHTS) double columns of measured
+	 *       values and positions given by fixed negative settling rates (d-1).
+	 *       Enter the initial position (pos or neg, see above) at the time the change is effective,
+	 *       followed by the rate. Additional such entries can be repeated when initial position and/or rate
+	 *       change again. Otherwise fill the column with -999.9 [IOUtils::nodata]
+	 * 		-# Up to NUMBER_MEAS_TEMPERATURES-NUMBER_FIXED_HEIGHTS-NUMBER_FIXED_RATES double columns
+	 *       of measured values and positions
 	 */
 	// Snowpack section
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
@@ -101,7 +103,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyM
 	// Input section
 	cfg.getValue("NUMBER_MEAS_TEMPERATURES", "Input", number_meas_temperatures);
 	if (number_meas_temperatures > 0)
-		cfg.getValue("FIXED_SENSOR_DEPTHS", "Input", fixed_sensor_depths);
+		cfg.getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", fixed_sensor_depths);
 	cfg.getValue("METEOPATH", "Input", inpath, Config::nothrow);
 	string snowpath("");
 	cfg.getValue("SNOWPATH", "Input", snowpath, Config::nothrow);
@@ -113,8 +115,8 @@ AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyM
 	cfg.getValue("TIME_ZONE", "Input", time_zone);
 
 	// Output section
-	if (number_meas_temperatures == 0)
-		cfg.getValue("FIXED_SENSOR_DEPTHS", "Output", fixed_sensor_depths);
+	if (number_fixed_heights > 0)
+		cfg.getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", fixed_sensor_depths);
 	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, Config::nothrow);
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);

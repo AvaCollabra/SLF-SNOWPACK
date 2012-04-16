@@ -39,6 +39,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["DOORSCHOT"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["FIXED_ALBEDO"] = "-999.";
+	advancedConfig["FIXED_SENSOR_DEPTHS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_MODEL"] = "DEFAULT";
 	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
@@ -57,7 +58,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	advancedConfig["MULTISTREAM"] = "true";
-	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "0";
+	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "-999";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
 	advancedConfig["PERP_TO_SLOPE"] = "false";
 	advancedConfig["PLASTIC"] = "false";
@@ -76,7 +77,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 
 	//[Input] section
-	inputConfig["FIXED_SENSOR_DEPTHS"] = "";
 	inputConfig["METEOPATH"] = "./DATA/input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
 	inputConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
@@ -199,7 +199,7 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 		string number_fixed_heights; getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced",
 		                                      number_fixed_heights, Config::nothrow);
-		if (number_fixed_heights == "") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
+		if (number_fixed_heights == "-999") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
 		string number_fixed_rates; getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates, Config::nothrow);
 		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
 		string max_number_sensors; getValue("MAX_NUMBER_SENSORS", "SnowpackAdvanced", max_number_sensors, Config::nothrow);
@@ -269,38 +269,42 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 
 	/**
 	 * @brief Defines how depths of snow temperature sensors are read in and output \n
-	 * - If measured snow temperatures are available, default or user provided sensor depths
-	 *     from the input section will be used for output
-	 * - If no measured snow temperatures are available, default or user provided sensor depths
-	 *     from the output section will be used for output
-	 * @note default depths are provided for the input section only
+	 * - If measured snow temperatures are available at fixed heights, user provided sensor depths
+	 *     from the advanced section will be used for output
+	 * - If no measured snow temperatures are available but NUMBER_FIXED_HEIGHTS > 0,
+	 *     default or user provided sensor depths from the advanced section will be used for output
 	 */
-	size_t number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
-	size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
-	if (number_meas_temperatures > 0) {
-		string i_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Input", i_fixed_sensor_depths, Config::nothrow);
-		addKey("FIXED_SENSOR_DEPTHS", "Output", i_fixed_sensor_depths);
-	} else if (number_fixed_heights > 0) {
-		string o_fixed_sensor_depths; getValue("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths, Config::nothrow);
-		if (o_fixed_sensor_depths == ""){
-			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
-			addKey("FIXED_SENSOR_DEPTHS", "Output", "0.25 0.50 1.0 1.5 -0.1");
+	int number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
+	const size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
+	if ((number_meas_temperatures > 0) || (number_fixed_heights > 0)) {
+		string s_fixed_sensor_depths;
+		getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", s_fixed_sensor_depths, Config::nothrow);
+		if (s_fixed_sensor_depths == "") {
+			addKey("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", "0.25 0.50 1.0 1.5 -0.1");
 		}
-		else
-			addKey("FIXED_SENSOR_DEPTHS", "Output", o_fixed_sensor_depths);
-		stringstream ss;
-		ss << "-999.";
-		addKey("FIXED_SENSOR_DEPTHS", "Input", ss.str());
 	}
-	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "Output");
-	
-	// DEBUG
-	//cout << "--> FIXED_SENSOR_DEPTHS.SIZE() = " << fixed_sensor_depths.size() << endl;
-	//cout << "--> NUMBER_FIXED_HEIGHTS = " << number_fixed_heights << endl;
-	if (fixed_sensor_depths.size() > number_fixed_heights) {
+	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced");
+	if (number_fixed_heights == Constants::iundefined) {
+		if (fixed_sensor_depths.size() > 0) {
+			stringstream ss;
+			ss << fixed_sensor_depths.size();
+			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", ss.str());
+			number_fixed_heights = fixed_sensor_depths.size();
+		} else {
+			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "0");
+			number_fixed_heights = 0;
+		}
+	}
+	if (number_fixed_heights > (int)fixed_sensor_depths.size()) {
 		stringstream ss;
 		ss << number_fixed_heights;
-		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS !="+ss.str()+" fixed_sensor_depths.size()", AT);
+		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS = "+ss.str()+" > FIXED_SENSOR_DEPTHS.size()", AT);
+	}
+	const int max_number_sensors = get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", Config::nothrow);
+	if (number_fixed_heights > max_number_sensors) {
+		stringstream ss;
+		ss << number_fixed_heights;
+		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS = "+ss.str()+" > MAX_NUMBER_SENSORS", AT);
 	}
 }
 
