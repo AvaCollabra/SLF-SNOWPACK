@@ -436,7 +436,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	double factor_corr, sum_total_correction=0.;  // Correction factors
 	double ddL, dL = 0.;                          // Length changes
 	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
-	const double mH = Xdata.mH - Xdata.Ground;    // Calculated snow depth
+	const double mH = Xdata.mH - Xdata.Ground;    // Enforced snow depth
 	double cH_old;                                // Temporary snow depth
 	bool prn_CK = false;
 
@@ -467,7 +467,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 			          "Small correction due to assumed settling error");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			          "True Measured Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
+			          "Enforced Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		dhs_corr = mH - cH;

@@ -52,12 +52,13 @@ const bool SnLaws::wind_pump = true;
 /// @brief Switch on or off wind pumping in soil
 const bool SnLaws::wind_pump_soil = true;
 
-/// @brief Defines whether the extinction coefficient for SW radiation in snow is based on 20 or less bands
-const bool SnLaws::band20 = false;
-unsigned int SnLaws::swa_nBands = 5;
-std::vector<double> SnLaws::swa_k;
-std::vector<double> SnLaws::swa_pc;
-std::vector<double> SnLaws::swa_fb;
+/// @brief Snow extinction coefficients for absorbtion of SW radiation (swa)
+//@{
+size_t SnLaws::swa_nBands = 5;      ///< Number of bands used
+std::vector<double> SnLaws::swa_k;  ///< mean extinction coefficient for pure ice per band
+std::vector<double> SnLaws::swa_pc; ///< fraction of sun power spectrum per band
+std::vector<double> SnLaws::swa_fb; ///< fudge_bohren
+//@}
 
 /**
  * @name SOIL PARAMETERS
@@ -246,34 +247,19 @@ bool SnLaws::setStaticData(const std::string& variant)
 	else
 		SnLaws::ageAlbedo = true;
 
-	swa_nBands = 5; // use 5 bands per default
-	if (SnLaws::band20) {
-		swa_nBands = 20;
-		double k_init[20]  = {0.0304, 0.0438, 0.0752, 0.1799, 0.3817, 0.5398, 0.7229, 1.618, 3.0372, 6.1273,
-		                      8.0446, 9.9419, 17.0339, 23.3685, 16.5658, 21.7658, 29.504, 66.922, 130.125,
-		                      120.405};
-		double pc_init[20] = {1.98, 5.46, 8.9, 16.8, 6.54, 4.48, 4.4, 8.6, 10.81, 3.48, 1.2, 1.09, 6.89,
-		                      6.31, 1.38, 0.43, 1.27, 4.95, 1.93, 4.65};
-		double fb_init[20];
-		for (unsigned int ii=0; ii<swa_nBands; ii++) fb_init[ii] = 10.;//fudge_bohren
-
-		swa_k.resize(swa_nBands);
-		swa_pc.resize(swa_nBands);
-		swa_fb.resize(swa_nBands);
-		std::copy(k_init, k_init+swa_nBands, swa_k.begin());
-		std::copy(pc_init, pc_init+swa_nBands, swa_pc.begin());
-		std::copy(fb_init, fb_init+swa_nBands, swa_fb.begin());
-	} else {
-		double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23};
-		double pc_init[5] = {16.3, 16.8, 15.4, 31.0, 20.5};
-		double fb_init[5] = {29., 15., 5., 9., 35.}; // fudge_bohren
-		swa_k.resize(swa_nBands);
-		swa_pc.resize(swa_nBands);
-		swa_fb.resize(swa_nBands);
-		std::copy(k_init, k_init+swa_nBands, swa_k.begin());
-		std::copy(pc_init, pc_init+swa_nBands, swa_pc.begin());
-		std::copy(fb_init, fb_init+swa_nBands, swa_fb.begin());
-	}
+	// snow extinction coefficients
+	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23}; // values in use since r140
+	double fb_init[5] = {29., 15., 5., 9., 35.}; // values in use since r140
+	double pc_init[5] = {16.3, 16.8, 15.4, 31.0, 20.5}; // values in use since r140
+// 	double k_init[5]  = {0.00125, 0.0198, 0.179, 3.74, 178.}; // 31 Jul 2008
+// 	double fb_init[5] = {0.5, 0.05, 0.02, 3., 5.}; // fbn1 01 Aug 2008
+	//double fb_init[5] = {0.01, 0.05, 0.05, 3., 3.}; // fbn0 31 Jul 2008
+	swa_k.resize(swa_nBands);
+	swa_pc.resize(swa_nBands);
+	swa_fb.resize(swa_nBands);
+	std::copy(k_init, k_init+swa_nBands, swa_k.begin());
+	std::copy(pc_init, pc_init+swa_nBands, swa_pc.begin());
+	std::copy(fb_init, fb_init+swa_nBands, swa_fb.begin());
 
 	return true;
 }
@@ -338,7 +324,7 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 			const double l = -9.2e-6, m = 6.7e-5, n = -7.2e-5, o = 2.0e-4;
 
 			if (age < 0.001)
-				sqrt_age=0.000001;
+				sqrt_age=Constants::eps;
 			else
 				sqrt_age=sqrt(age);
 			lwi = Constants::stefan_boltzmann*Mdata.ea*Ta*Ta*Ta*Ta;
@@ -429,15 +415,14 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
  * @brief Helens Solution to Radiation Transfer \n
  * NOTE on fudge_bohren (fb): Larger values increase extinction --> Energy stays on top;
  * originally not band dependent, set to 10.0 for Neumann and to 5.0 for Dirichlet BC
- * @version YY.mm
- * @param I0 net shortwave radiation (W m-2)
- * @param useSoilLayers
- * @param multistream
+ * @version 12.04
  * @param Xdata
+ * @param I0 net shortwave radiation (W m-2)
+ * @param multistream
  */
-void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSoilLayers, const bool& multistream, SnowStation& Xdata)
+void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream)
 {
-	int nE, e, bottom_element;
+	size_t nE, e, bottom_element;
 	double I0_band, dI, Ks;
 
 	ElementData *EMS; // Avoids dereferencing the pointer
@@ -446,23 +431,25 @@ void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSoilLayers
 	nE = Xdata.getNumberOfElements();
 	if (nE == 0)
 		return;
-
-	if (useSoilLayers)
+	else if (Xdata.SoilNode > 0)
 		bottom_element = Xdata.SoilNode - 1;
 	else
-		bottom_element = 0;
+		bottom_element = Xdata.SoilNode;
 
-	for (e = 0; e < nE; e++)
+	for (e = bottom_element; e < nE; e++)
 		EMS[e].sw_abs = 0.;
 
 	// Compute absorbed radiation
 	if (multistream) {
-		for (unsigned int i = 0; i < swa_nBands; i++) {
-			I0_band = I0 * swa_pc[i] / 100.;
+		for (size_t ii = 0; ii < swa_nBands; ii++) {
+			I0_band = I0 * swa_pc[ii] / 100.;
 			for (e = nE-1; e > bottom_element; e--) {
-				Ks = swa_fb[i] * 0.84 * sqrt( 1000. * swa_k[i] / (2. * EMS[e].rg) ) * EMS[e].Rho
+				Ks = swa_fb[ii] * 0.84 * sqrt( 1000. * swa_k[ii] / (2. * EMS[e].rg) ) * EMS[e].Rho
 				       / Constants::density_ice;
-				dI = I0_band * (1. - exp(-(Ks * (EMS[e].L))));  // Radiation absorbed by element e in band i
+				if (EMS[e].mk%10 != 9)
+					dI = I0_band * (1. - exp(-(Ks * (EMS[e].L))));  // Radiation absorbed by element e in band i
+				else
+					dI = 0.; // Water is transparent
 				EMS[e].sw_abs += dI;
 				I0_band -= dI;
 			}
@@ -471,14 +458,17 @@ void SnLaws::compShortWaveAbsorption(const double& I0, const bool& useSoilLayers
 	} else { // ad hoc "1-Band" model
 		I0_band = I0;
 		for (e = nE-1; e > bottom_element; e--) {
-			dI = I0 * (1. - exp(-(EMS[e].extinction() * (EMS[e].L))));  // Radiation absorbed by element e
+			if (EMS[e].mk%10 != 9)
+				dI = I0 * (1. - exp(-(EMS[e].extinction() * (EMS[e].L))));  // Radiation absorbed by element e
+			else
+				dI = 0.; // Water is transparent
 			EMS[e].sw_abs += dI;
 			I0_band -= dI;
 		}
 		EMS[bottom_element].sw_abs += I0_band;
 	}
 
-	for (e = nE-1; e >= bottom_element; e--) {
+	for (e = bottom_element; e < nE; e++) {
 		if (EMS[e].sw_abs < 0.) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %lf absorbed by element %d (nE=%d)",
 				   EMS[e].sw_abs, e, nE);
@@ -1051,7 +1041,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 	} else if (i_hn_density == "EVENT") {
 		rho = newSnowDensityEvent(variant, event, Mdata);
 	} else if (i_hn_density == "MEASURED") {
-		if (Mdata.rho_hn != Constants::nodata) {
+		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
 		} else if (Mdata.hnw > 0. ) {
 			if (i_hn_density_model == "SURFACE_SNOW") {

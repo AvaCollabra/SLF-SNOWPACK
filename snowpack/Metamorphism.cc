@@ -71,8 +71,8 @@
  * - E    : modulus of elasticity  (Pa)
  * - eta  : viscosity (Pa s)
  *
- * These are the variables needed to compute these values, contained in the
- * ElementData of the sn_Xdata structure:
+ * These are the variables needed to compute these values of the
+ * ElementData class within the snowStation class:
  * - theta[ICE]   : volumetric ice content (1)
  * - theta[WATER] : volumetric water  (1)
  * - Te           : temperature (K)

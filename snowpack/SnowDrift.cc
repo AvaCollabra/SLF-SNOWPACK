@@ -192,7 +192,6 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			}
 			nE--;
 			Xdata.cH -= EMS[nE].L;
-			Xdata.mH -= EMS[nE].L;
 			NDS[nE].hoar = 0.;
 			massErode -= EMS[nE].M;
 			Xdata.ErosionMass = EMS[nE].M;
@@ -215,7 +214,6 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			NDS[nE].z += dL;
 			EMS[nE-1].L0 = EMS[nE-1].L = EMS[nE-1].L + dL;
 			Xdata.cH += dL;
-			Xdata.mH += dL;
 			NDS[nE].z += NDS[nE].u;
 			NDS[nE].u = 0.0;
 			NDS[nE].hoar = 0.;

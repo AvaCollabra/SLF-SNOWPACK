@@ -409,7 +409,7 @@ class SnowStation {
 		double BareSoil_z0;         ///< Bare soil roughness in m
 		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
 		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
-		double mH;                  ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
+		double mH;                  ///< The ENFORCED snowpack height, including soil depth if SNP_SOIL == 1
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes

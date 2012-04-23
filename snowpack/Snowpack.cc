@@ -318,8 +318,8 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
  */
 void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	size_t e;               // Element counter
-	double L0, dL, cH_old;  // Element length and change of length
+	size_t e;       // Element counter
+	double L0, dL;  // Element length and change of length
 	bool prn_WRN = false;
 
 	size_t nN = Xdata.getNumberOfNodes();
@@ -434,10 +434,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
 			throw IOException("Runtime Error in compSnowCreep()", AT);
 		}
-	} // end for settling-loop
-	cH_old = Xdata.cH;
+	}
+	// Update computed snow depth
 	Xdata.cH = NDS[nN-1].z + NDS[nN-1].u;
-	Xdata.mH -= (cH_old - Xdata.cH);
 }
 
 /**
@@ -725,7 +724,6 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	double *U=NULL, *dU=NULL, *ddU=NULL;         // Solution vectors
 	double I0;                                   // The net incoming shortwave irradiance
 	double cAlb;                                 // Computed albedo
-	double hs;                                   // Snow depth
 	double d_pump, v_pump, dvdz;                 // Wind pumping parameters
 	double VaporEnhance;                         // Enhancement factor for water vapor transport in wet snow
 
@@ -736,13 +734,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	vector<ElementData>& EMS = Xdata.Edata;
 	size_t nE = Xdata.getNumberOfElements();
 
-	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
-	// What snow depth should be used?
-	if (enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))
-		hs = Xdata.mH - Xdata.Ground;
-	else
-		hs = Xdata.cH - Xdata.Ground;
-
+	// SNOW ALBEDO
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer
 		size_t eAlbedo = nE-1;
@@ -767,6 +759,12 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	}
 
 	if (!(useCanopyModel && (Xdata.Cdata.height > 3.5))) {
+		// What snow depth should be used?
+		double hs;
+		if (enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))
+			hs = Xdata.mH - Xdata.Ground;
+		else
+			hs = Xdata.cH - Xdata.Ground;
 		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
 			if ((hs < 0.02) || (NDS[nN-1].T > C_TO_K(3.5))
 			                  || ((hs < 0.05) && (NDS[nN-1].T > C_TO_K(1.7)))) {
@@ -811,9 +809,10 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		exit(EXIT_FAILURE);
 	}
 
+	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
-		SnLaws::compShortWaveAbsorption(I0, useSoilLayers, multistream, Xdata);
+		SnLaws::compShortWaveAbsorption(Xdata, I0, multistream);
 	} catch(const exception&){
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
 		throw;
@@ -1099,8 +1098,8 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 
 /**
  * @brief Determines whether new snow elements are added on top of the snowpack
- * - If enforce_measured_snow_heights=0 (research mode), new snow height corresponding to cumulated
- *   new snow water equivalent cumu_hnw must be greater than HEIGHT_NEW_ELEM to be added to Xdata->mH
+ * - If enforce_measured_snow_heights=0 (research mode), the new snow height corresponding to the cumulated
+ *   new snow water equivalent cumu_hnw must be greater than HEIGHT_NEW_ELEM to allow adding elements.
  * - In case of virtual slopes, uses new snow depth and density from either flat field or luv slope
  * - The first thing is to compute the height of each element in the snow layer. For now,
  *   instead of trying to find an optimal number of elements, we will define the number of new
@@ -1113,14 +1112,13 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
                             SurfaceFluxes& Sdata)
 {
-	bool force_layer = false, snow_fall = false, snowed_in = false;
-	unsigned int nNewE, nHoarE;        // The number of elements to be added
-	unsigned int nOldE, nE, nOldN, nN; // Old and new numbers of elements and nodes
-	unsigned int e, n;                 // Element and node counters
-	double z0;                         // Used to determine the z-location of new snowfall nodes
-	double Ln;                         // Original new snow layer element length
-	double rho_hn, hn, hoar;           // New snow data
-	double cos_sl, L0, dL, Theta0;     // Local values
+	bool add_element = false, snow_fall = false, snowed_in = false;
+	size_t nNewE, nHoarE;           // The number of elements to be added
+	size_t nOldE, nE, nOldN, nN;    // Old and new numbers of elements and nodes
+	size_t e, n;                    // Element and node counters
+	double delta_cH = 0.;           // Actual enforced snow depth
+	double rho_hn, hn, hoar;        // New snow data
+	double cos_sl, L0, dL, Theta0;  // Local values
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
 	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
@@ -1145,14 +1143,16 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			if ((cumu_hnw > 0.) && (rho_hn != Constants::undefined)) {
 				if ((hn_density_model == "MEASURED")
 				        || ((hn_density_model == "FIXED") && (rho_hn > SnLaws::max_hn_density))) {
-					if ((meteo_step_length / sn_dt * Mdata.hnw) <= cumu_hnw) {
-						Xdata.mH += (cumu_hnw/rho_hn);
-						force_layer = 1;
+					// Make sure that a new element is timely added in the above cases
+					// TODO check whether needed in both cases
+					if (((meteo_step_length / sn_dt) * Mdata.hnw) <= cumu_hnw) {
+						delta_cH = (cumu_hnw / rho_hn);
+						add_element = true;
 					}
-				} else if (cumu_hnw/rho_hn > height_new_elem*cos_sl) {
-					Xdata.mH += (cumu_hnw/rho_hn);
-					if (hn_density_model == "EVENT") {
-						force_layer = 1;
+				} else if ((cumu_hnw / rho_hn) > height_new_elem*cos_sl) {
+					delta_cH = (cumu_hnw / rho_hn);
+					if (hn_density_model == "EVENT") { // TODO check whether needed
+						add_element = true;
 					}
 				}
 			} else {
@@ -1161,20 +1161,24 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		} else {
 			// This is now very important to make sure that rain will not accumulate
 			cumu_hnw -= Mdata.hnw;
+			return;
 		}
+	} else { // HS driven
+		delta_cH = Xdata.mH - Xdata.cH;
 	}
 	if (rho_hn == Constants::undefined)
 		return;
 
-	// Thresholds for solid precipitation. NOTE No new snow during cloud free conditions!
-	// -> check relative humidity as well as difference between air and snow surface temperatures
+	// Let's check for the solid precipitation thresholds:
+	// -> check relative humidity as well as difference between air and snow surface temperatures,
+	//    that is, no new snow during cloud free conditions!
 	double dt_airsnow = Mdata.ta - t_surf;
 	if (change_bc && !meas_tss)
 		dt_airsnow = Mdata.ta - Constants::melting_tk;
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
-	// snowed_in is true if the ground is either already snowed in or snow will remain on it
-	//  ... but check first for the availability of the following data. This is particularly important if enforce_measured_snow_heights == false.
+
+	// In addition, let's check whether the ground is already snowed in or cold enough to build up a snowpack
 	if (!enforce_measured_snow_heights || !detect_grass) {
 		snowed_in = true;
 	} else {
@@ -1192,63 +1196,64 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		);
 	}
 
-	//Now we check: we need snow fall AND ground which is snowed in or cold enough to maintain the snow pack. The latter condition is only relevant
-	//if we are NOT in a slope! If we are in a slope, the slope should just get new snow when the flat field gets new snow:
-	if (snow_fall && (snowed_in || (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle))) {
-		/* Now check if we have some canopy left. Then we reduce the canopy with the new snow height.
-		 * This is to simulate the gradual sinking of the canopy under the weight of snow.
-		 * We also adjust Xdata.mH, to have it reflect only measured snow, and not the canopy.
-		 * (So if there is only a canopy, mH=0.)
-		 * The first clause only executes the code when SNOWPACK is snow height driven
-		 * The second clause is to execute only when there is a canopy.
-		 * The third clause limits this issue to small canopies only, to prevent problems
-		 *   with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
-		 *   If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
-		 * The fourth clause is an important one. When hs is not available, the old Xdata.mH is kept, which
-		 * has already been adjusted in the previous time step, so then skip this part.
-		 * The fifth clause makes sure only flat field is treated this way, and not the slopes.
-		 */
-		if ( (enforce_measured_snow_heights) && (Xdata.Cdata.height > 0.)
-			&& ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false)) && (Mdata.hs != Constants::nodata)
-		                && (Xdata.mH != Constants::undefined) && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle)) {
-			/*First, reduce the Canopy height with the additional snow height. This makes the Canopy work
-			 *like a spring. When increase in mh is 3 cm and the canopy height is 10 cm, the snow pack is
-			 *assumed to be 6cm in thickness. When the total amount of snow measured (mh) equals the canopy
-			 *height, the canopy is reduced to 0, and everything measured is assumed to be snow.
-			 *To do this, check if there is an increase AND check if a new snow element will be created!
-			 *If you don't do this, the canopy will be reduced for small increases that do not produce a snow layer.
-			 *Then, in the next time step, the canopy height is reduced even more, even without increase in hs.
-			 *This if-statement looks awkward, but it is just (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
-			 *combined with the new value for Xdata.mH, given the change in Xdata.Cdata.height.
+	// Go ahead if there is a snow fall AND the ground is or can be snowed in.
+	if (snow_fall && snowed_in) {
+		// Now check if we have some canopy left below the snow. Then we reduce the canopy with the new snow height.
+		// This is to simulate the gradual sinking of the canopy under the weight of snow.
+		// We also adjust Xdata.mH to have it reflect deposited snow but not the canopy.
+		// This can only be done when SNOWPACK is snow height driven and there is a canopy.
+		if ((enforce_measured_snow_heights)
+			    && (Xdata.Cdata.height > 0.)
+			        && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel == false))
+			            && (Mdata.hs != Constants::nodata)
+			                && (Xdata.mH != Constants::undefined)
+			                    && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle)) {
+			/* The third clause above limits the issue to small canopies only, to prevent problems
+			 *   with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel
+			 *    is true. If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
+			 * The fourth clause is an important one. When hs is not available, the old Xdata.mH is kept, which
+			 *    has already been adjusted in the previous time step, so then skip this part.
+			 * The fifth clause makes sure only flat field is treated this way, and not the slopes.
+			 *
+			 *  Now reduce the Canopy height with the additional snow height. This makes the Canopy work
+			 *   like a spring. When increase in Xdata.mh is 3 cm and the canopy height is 10 cm, the snow pack is
+			 *   assumed to be 6cm in thickness. When the enforced snow depth Xdata.mH equals
+			 *   the canopy height, the canopy is reduced to 0, and everything measured is assumed to be snow.
+			 * To do this, check if there is an increase AND check if a new snow element will be created!
+			 *   If you don't do this, the canopy will be reduced for small increases that do not produce a snow layer.
+			 * Then, in the next time step, the canopy height is reduced even more, even without increase in snow
+			 *   depth.
 			 */
-			if ( Xdata.cH < (Xdata.mH - (Xdata.Cdata.height-(Xdata.mH - (Xdata.cH + Xdata.Cdata.height)))- (height_new_elem * cos_sl)) ) {
+			if (Xdata.cH < (Xdata.mH - (Xdata.Cdata.height - (Xdata.mH - (Xdata.cH + Xdata.Cdata.height))))) {
 				Xdata.Cdata.height -= (Xdata.mH - (Xdata.cH + Xdata.Cdata.height));
+				// The above if-statement looks awkward, but it is just
+				//   (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
+				//   combined with the new value for Xdata.mH, given the change in Xdata.Cdata.height.
 			} else {
-				// Special case when the increase is not enough to make a snow pack (so no snow pack yet on the ground):
-				// assign Xdata.mH to Canopy height (as if snow_fall and snowed_in would have been false).
+				// If the increase is not large enough to start build up a snowpack yet,
+				//   assign Xdata.mH to Canopy height (as if snow_fall and snowed_in would have been false).
 				if (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) {
-					Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
+					Xdata.Cdata.height = Xdata.mH - Xdata.Ground;
 				}
 			}
-			if (Xdata.Cdata.height < 0.) {		//Make sure canopy height doesn't get negative
+			if (Xdata.Cdata.height < 0.)    // Make sure canopy height doesn't get negative
 				Xdata.Cdata.height = 0.;
-			}
+			Xdata.mH -= Xdata.Cdata.height; // Adjust Xdata.mH to represent the "true" enforced snow depth
+			if (Xdata.mH < Xdata.Ground)    //   and make sure it doesn't get negative
+				Xdata.mH = Xdata.Ground;
+			delta_cH = Xdata.mH - Xdata.cH;
 		}
 
-		//Adjust measured snow height with canopy height, so Xdata.mH represents "true" snow height measured by sensor
-		Xdata.mH -= Xdata.Cdata.height;
-		if (Xdata.mH < Xdata.Ground)
-			Xdata.mH = Xdata.Ground;
-
-		// Now determine if snow depth is increasing:
-		// In case of virtual slope use new snow depth and density from either flat field or luv slope
-		if (Xdata.cH < (Xdata.mH - (height_new_elem * cos_sl))
-		        || (Xdata.hn > 0.) || force_layer) {
+		// Now determine whether the increase in snow depth is large enough.
+		//   NOTE On virtual slopes use new snow depth and density from either flat field or luv slope
+		if ((delta_cH >= height_new_elem * cos_sl)
+		        || (Xdata.hn > 0.)
+		            || add_element) {
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
 			} else { // in case of flat field or PERP_TO_SLOPE
-				hn = Xdata.mH - Xdata.cH;
+				hn = delta_cH;
 
 				// Store new snow depth and density
 				if (!ALPINE3D) {
@@ -1260,11 +1265,11 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-			nNewE = (int)(hn/(height_new_elem*cos_sl));
+			nNewE = (int)(hn / (height_new_elem*cos_sl));
 			if (nNewE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
 				if (!ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
-				                      || force_layer)) {
+				                      || add_element)) {
 					nNewE = 1;
 				} else {
 					Xdata.hn = 0.;
@@ -1342,15 +1347,15 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			// Fill the nodal data
 			if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode)) // New snow on bare ground w/o soil
 				NDS[nOldN-1].T = (t_surf + Mdata.ta)/2.;
-			Ln = (hn / nNewE);
-			z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln;
+			double Ln = (hn / nNewE);               // New snow element length
+			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
 			for (n = nOldN+nHoarE; n < nN; n++) {
-				NDS[n].T = t_surf;                  // The temperature of the new node
-				NDS[n].z = z0;                      // The new nodal position;
+				NDS[n].T = t_surf;                  // Temperature of the new node
+				NDS[n].z = z0;                      // New nodal position
 				NDS[n].u = 0.0;                     // Initial displacement is 0
 				NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
 				NDS[n].udot = 0.0;                  // Settlement rate is also 0
-				NDS[n].f = 0.0;                     // Unbalanced forces is 0
+				NDS[n].f = 0.0;                     // Unbalanced forces are 0
 				NDS[n].S_n = INIT_STABILITY;
 				NDS[n].S_s = INIT_STABILITY;
 				z0 += Ln;
@@ -1486,23 +1491,27 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				EMS[e].hard = 0.;
 			}   // End elements
 
-			// Finally, update snowpack height
-			Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
+			// Finally, update the computed snowpack height
+			Xdata.cH = NDS[nN-1].z + NDS[nN-1].u;
 			Xdata.ErosionLevel = nE-1;
-		} //  End of NEW_SNOWFALL Condition 2
-	} else {
-		// If there is no snowfall and no snowpack yet, we can assign the measured snow height to the canopy,
-		// but only for small canopies, to prevent problems with Alpine3D simulations in forests. This prerequisite is only checked for when useCanopyModel is true.
-		// If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
-		if (detect_grass && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel==false))) {
+		}
+	} else { // No snowfall
+		if (detect_grass && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel == false))) {
+			// Set canopy height to enforced snow depth if there is no snowpack yet
+			//   but only for small canopies, to prevent problems with Alpine3D simulations in forests.
+			// This prerequisite is only checked for when useCanopyModel is true.
+			// If useCanopyModel is false, we can safely assume all snow to fall on top of canopy.
 			if ((Xdata.getNumberOfNodes() == Xdata.SoilNode+1) && (Xdata.mH != Constants::undefined)) {
-				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;	//Set canopy height to measured snow height
-				Xdata.mH=Xdata.Ground;				//Because we have no snow cover, we consider measured snow height to be effectively 0 (=Xdata.Ground).
+				Xdata.Cdata.height = Xdata.mH - Xdata.Ground;
+				// Because there is no snow cover, enforced snow depth is effectively equal to Xdata.Ground.
+				Xdata.mH = Xdata.Ground;
 			} else {
-				if(Mdata.hs != Constants::nodata) {		//If we have a snow pack, but didn't match the criteria for snow fall, make sure Xdata.mH
-					Xdata.mH -= Xdata.Cdata.height;		//only represents the "true" snow height, to stay consistent and for use in other parts of SNOWPACK.
-					if (Xdata.mH<Xdata.Ground)
-						Xdata.mH=Xdata.Ground;
+				if(Mdata.hs != Constants::nodata) {
+					// If we have a snowpack, but didn't match the criteria for snow fall, make sure Xdata.mH
+					// only represents the "true" snow height, to stay consistent and for use in other parts of SNOWPACK.
+					Xdata.mH -= Xdata.Cdata.height;
+					if (Xdata.mH < Xdata.Ground)
+						Xdata.mH = Xdata.Ground;
 				}
 			}
 		}
@@ -1588,7 +1597,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// neccessary. Note that also the very important friction velocity is computed in this
 		// routine and later used to compute the Meteo Heat Fluxes
 		snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_hnw);
-
+		
 		// Reinitialize and compute the initial meteo heat fluxes
 		memset((&Bdata), 0, sizeof(BoundCond));
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata);

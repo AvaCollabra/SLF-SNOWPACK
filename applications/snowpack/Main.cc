@@ -381,8 +381,7 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double p
 
 void editSensorDepths(const mio::MeteoData& md, vector<double>& vecHTS)
 {
-	unsigned int jj;
-	for (jj = 0; jj < vecHTS.size(); jj++) {
+	for (size_t jj = 0; jj < vecHTS.size(); jj++) {
 		stringstream ss;
 		ss << "HTS" << jj+1;
 		if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
@@ -397,9 +396,9 @@ void editSensorDepths(const mio::MeteoData& md, vector<double>& vecHTS)
 
 void copySnowTemperatures(const mio::MeteoData& md, CurrentMeteo& Mdata, vector<double>& vecHTS, const int current_slope)
 {
-	for (unsigned int jj=0; jj < vecHTS.size(); jj++) {
+	for (size_t jj=0; jj < vecHTS.size(); jj++) {
 		Mdata.zv_ts[jj] = vecHTS[jj];
-		Mdata.ts[jj] = mio::IOUtils::nodata;
+		Mdata.ts[jj] = Constants::undefined;
 		if (current_slope == 0) {
 			stringstream ss;
 			ss << "TS" << jj+1;
@@ -748,11 +747,8 @@ int main (int argc, char *argv[])
 	const size_t max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", mio::Config::nothrow);
 	const size_t number_meas_temperatures = cfg.get("NUMBER_MEAS_TEMPERATURES", "Input", mio::Config::nothrow);
 	vector<double> fixed_sensor_depths;
-	if (number_meas_temperatures > 0) {
-		cfg.getValue("FIXED_SENSOR_DEPTHS", "Input", fixed_sensor_depths);
-	} else {
-		cfg.getValue("FIXED_SENSOR_DEPTHS", "Output", fixed_sensor_depths);
-	}
+	if (number_meas_temperatures > 0)
+		cfg.getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", fixed_sensor_depths);
 
 	int nSolutes = Constants::inodata;
 	cfg.getValue("NUMBER_OF_SOLUTES", "Input", nSolutes, mio::Config::nothrow);

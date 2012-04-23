@@ -259,7 +259,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	 */
 	double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Snowpack");
 
-	string hazard_steps_between; getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between, Config::nothrow);
+	string hazard_steps_between;
+	getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between, Config::nothrow);
 	if (hazard_steps_between == "") {
 		stringstream ss;
 		int tmp = (int)(30./calculation_step_length + 0.5);
