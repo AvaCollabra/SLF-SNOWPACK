@@ -451,15 +451,12 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
  * @param dt Calculation time step length (s)
  * @param dvdz Wind pumping velocity gradient (s-1)
  * @param T0 Initial nodal temperatures (K)
- * @param Tn Iterated nodal temperatures (K)
  * @param Se Element heat capacitity (stiffness) matrix
  * @param Fe Element right hand side vector
- * @param *SubSurfaceMelt Check for subsurface melt
- * @param *SubSurfaceFrze Check for subsurface freezing
  * @param VaporEnhance Vapor transport enhancement factor
  * @return false on error, true if no error occurred
  */
-bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], double Tn[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], char *SubSurfaceMelt, char *SubSurfaceFrze, double VaporEnhance)
+bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], double VaporEnhance)
 {
 	double k, c;    // conductivity and heat capacity
 	double Keff;    // the effective thermal conductivity
@@ -471,14 +468,10 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 		return false;
 	}
 
-	// Phase Change Check
-	// NOTE Should it not preferably be done in PhaseChange.cc ??
-	if ((Tn[0] > Constants::melting_tk || Tn[1] > Constants::melting_tk) && Edata->theta[ICE] > Constants::eps2)
-		*SubSurfaceMelt = true;
-	if ((Tn[0] < Constants::freezing_tk || Tn[1] < Constants::freezing_tk) && Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2)
-		*SubSurfaceFrze = true;
+	// Make sure element temperature of an element containing water equals melting temperature
+	// This is a remnant of Rev. 182->183. Check whether it can be removed.
 	if (Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
-		 T0[0] = T0[1] = Constants::melting_tk;
+		T0[0] = T0[1] = Constants::melting_tk;
 
 	// Find the conductivity of the element
 	if (Edata->theta[SOIL] > 0.0) {
@@ -504,7 +497,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 	Fe[1] += Edata->sw_abs;
 
 	/*
-	 * Phase change ennergy:
+	 * Phase change energy:
 	 * double Qpc = Edata->Qmf * Edata->L / 4.0; // original: 2.0 Changed by ML: 15.02.2002 as a compromise between Fz and Pb
 	 * Heat / Cool element via phasechanges (Edata->Qmf is computed in phase change module)
 	 * Why should we do that ????
@@ -942,8 +935,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			// Update the water vapor transport enhancement factor
 			VaporEnhance = MAX (1., SnLaws::compEnhanceWaterVaporTransportSnow(Xdata, e));
 			// Now fill the matrix
-			if (!sn_ElementKtMatrix(&EMS[e], sn_dt, dvdz, T0, TN, Se, Fe, &Xdata.SubSurfaceMelt,
-			                        &Xdata.SubSurfaceFrze, VaporEnhance)) {
+			if (!sn_ElementKtMatrix(&EMS[e], sn_dt, dvdz, T0, Se, Fe, VaporEnhance)) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Error in sn_ElementKtMatrix @ element %d:", e);
 				for (n = 0; n < nN; n++)
 					fprintf(stdout, "U[%u]=%e K\n", (unsigned int)n, U[n]);

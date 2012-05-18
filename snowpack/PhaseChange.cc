@@ -288,7 +288,14 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 	}
 
 	try {
-		// In the first step check the density
+		// In the first step:
+		// 1) check the density
+		// 2) set flags for SubSurfaceMelt and SubSurfaceFrze
+		
+		//Reset flags
+		Xdata.SubSurfaceMelt = false;
+		Xdata.SubSurfaceFrze = false;
+
 		for (e = 0; e < nE; e++) {
 			if (EMS[e].theta[SOIL] == 0.0) {
 				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
@@ -301,6 +308,12 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
+			
+			// Set flags
+			if (EMS[e].Te > Constants::melting_tk && EMS[e].theta[ICE] > Constants::eps2)
+				Xdata.SubSurfaceMelt = true;
+			if (EMS[e].Te < Constants::freezing_tk && EMS[e].theta[WATER] > PhaseChange::theta_r + Constants::eps2)
+				Xdata.SubSurfaceFrze = true;
 		}
 
 		if (Xdata.SubSurfaceMelt) {
