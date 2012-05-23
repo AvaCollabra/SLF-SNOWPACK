@@ -284,6 +284,10 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
 	k.resize(N_SN_FIELDS);
 	c.resize(N_SN_FIELDS);
 	soil.resize(N_SOIL_FIELDS);
+	
+	// Set initial melting and freezing temperatures
+	melting_tk=Constants::melting_tk;
+	freezing_tk=Constants::freezing_tk;
 }
 
 /**

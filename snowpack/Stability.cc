@@ -497,7 +497,7 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 	double epsNeckDot;              // Total strain rate in the neck (s-1)
 	double Te;                      // Element temperature (K)
 
-	Te = MIN(Edata.Te, Constants::melting_tk);
+	Te = MIN(Edata.Te, Edata.melting_tk);
 	// If you have less than 5% ice then say you know you have something unstable
 	if ( Edata.theta[ICE] < 0.05 ) {
 		return(0.1);

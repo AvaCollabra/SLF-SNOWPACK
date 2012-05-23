@@ -115,7 +115,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	 * potential surface hoar formation will be tested at the end of this routine (NODAL data);
 	*/
 	if (ql > Constants::eps2) { // Add Mass
-		if (Tss < Constants::melting_tk) { // Add Ice
+		if (Tss < Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk) { // Add Ice
 			dM = ql*sn_dt/Constants::lh_sublimation;
 			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 			hoar = dM;
@@ -356,7 +356,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	if (rnE < nE) {
 		Xdata.reduceNumberOfElements(rnE);
 		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
-			Xdata.Ndata[Xdata.SoilNode].T = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
+			Xdata.Ndata[Xdata.SoilNode].T = MIN(Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
 	}
 }
@@ -532,7 +532,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 		// Determine the additional storage capacity due to refreezing
 		dth_w = EMS[e0].c[TEMPERATURE] * EMS[e0].Rho / Constants::lh_fusion / Constants::density_water
-		            * MAX(0., Constants::melting_tk-EMS[e0].Te);
+		            * MAX(0., EMS[e0].melting_tk-EMS[e0].Te);
 		if ((e0 == nE-1) && (EMS[e1].theta[AIR] <= 0.05) && water_layer) {
 			// allow for a water table in the last layer above road/rock
 			Wres = Constants::density_ice/Constants::density_water
@@ -657,7 +657,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	W0 = EMS[0].theta[WATER];
 	// Determine the additional storage capacity due to refreezing
 	dth_w = EMS[0].c[TEMPERATURE] * EMS[0].Rho / Constants::lh_fusion / Constants::density_water
-	            * MAX(0., Constants::melting_tk-EMS[0].Te);
+	            * MAX(0., EMS[0].melting_tk-EMS[0].Te);
 	if (EMS[0].theta[SOIL] < Constants::eps2) {
 		Wres = MIN((1. - EMS[0].theta[ICE]) * Constants::density_ice / Constants::density_water,
 		           EMS[e0].res_wat_cont + dth_w);

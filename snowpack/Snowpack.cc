@@ -471,7 +471,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 	// Make sure element temperature of an element containing water equals melting temperature
 	// This is a remnant of Rev. 182->183. Check whether it can be removed.
 	if (Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
-		T0[0] = T0[1] = Constants::melting_tk;
+		T0[0] = T0[1] = Edata->melting_tk;
 
 	// Find the conductivity of the element
 	if (Edata->theta[SOIL] > 0.0) {
@@ -879,10 +879,10 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	if (!(useSoilLayers && soil_flux)) {
 		if ((EMS[0].theta[ICE] >= min_ice_content)) {
 			if ((EMS[0].theta[WATER] > 0.003)) {
-				NDS[0].T = Constants::melting_tk;
+				NDS[0].T = EMS[0].melting_tk;
 			} else if (!useSoilLayers) {
 				// To avoid temperatures above freezing while snow covered
-				NDS[0].T = MIN(Mdata.ts0, Constants::melting_tk);
+				NDS[0].T = MIN(Mdata.ts0, EMS[0].melting_tk);
 			} else {
 				NDS[0].T = Mdata.ts0;
 			}
@@ -1005,7 +1005,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		 * must be constant. This means that the fluxes must be treated explicitely
 		 * (see neumannBoundaryConditions)
 		 */
-		if (U[nE] + ddU[nE] > Constants::melting_tk || EMS[nE-1].theta[WATER] > 0.) {
+		if (U[nE] + ddU[nE] > EMS[nE-1].melting_tk || EMS[nE-1].theta[WATER] > 0.) {
 			ConTolTemp = 0.007;
 			MaxItnTemp = 200; // NOTE originally 100;
 		}
@@ -1166,7 +1166,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	//    that is, no new snow during cloud free conditions!
 	double dt_airsnow = Mdata.ta - t_surf;
 	if (change_bc && !meas_tss)
-		dt_airsnow = Mdata.ta - Constants::melting_tk;
+		dt_airsnow = Mdata.ta - Xdata.Edata[nE-1].melting_tk;
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 
@@ -1573,7 +1573,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
-		t_surf = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
+		t_surf = MIN(Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
 			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
 				surfaceCode = DIRICHLET_BC;
@@ -1604,7 +1604,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, Constants::melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
+			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 

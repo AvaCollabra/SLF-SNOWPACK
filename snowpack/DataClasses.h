@@ -244,6 +244,8 @@ class ElementData {
 		double L0, L;              ///< Original and present element length (m)
 		double Te;                 ///< mean element temperature (K)
 		double gradT;              ///< temperature gradient over element (K m-1)
+		double melting_tk;	   ///< melt temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
+		double freezing_tk;	   ///< freezing temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, AIR (1)
 		double Rho;                ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
 		mio::Array2D<double> conc; ///< Concentration for chemical constituents in (kg m-3)
