@@ -84,6 +84,7 @@ class Snowpack {
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		double getThreshRain() const;
+		void setUseSoilLayers(const bool& value);
 
 		const static double new_snow_albedo, min_ice_content;
 

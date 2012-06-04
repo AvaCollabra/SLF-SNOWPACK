@@ -44,6 +44,8 @@ class Meteo {
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
 		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double hs_a3hl6);
 		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
+		void setStability(const int& i_neutral);
+		int getStability() const;
 
  	private:
 		Canopy canopy;

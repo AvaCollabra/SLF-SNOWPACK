@@ -45,6 +45,9 @@ class Saltation {
 
 		bool compSaltation(const double& tauS, const double& tau_th, const double& slope_angle, const double& dg,
 		                        double& massflux, double& c_salt);
+		                        
+		static const double karman;
+		static const double z0_salt;
 
 	private:
 		double sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0, 
@@ -68,7 +71,7 @@ class Saltation {
 	private:
 		bool doorschot; ///< Use Doorschots Saltation model instead of Sorenson (much slower)
 
-		static const double hs_frac, karman, elas, angle_ej, ratio_ve_ustar, z0_salt, salt_height;
+		static const double hs_frac, elas, angle_ej, ratio_ve_ustar, salt_height;
 		static const int strong, weak;
 };
 

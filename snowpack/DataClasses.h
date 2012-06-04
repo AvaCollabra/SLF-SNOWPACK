@@ -190,6 +190,8 @@ class SN_SNOWSOIL_DATA {
 		{
 			Ldata.clear();
 		}
+		
+		friend std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data);
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
@@ -288,6 +290,8 @@ class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
+		            
+		friend std::ostream& operator<<(std::ostream& os, const NodeData& data); 
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -330,6 +334,8 @@ class CanopyData {
 
 		void reset(const bool& cumsum_mass);
 		void initializeSurfaceExchangeData();
+		
+		friend std::ostream& operator<<(std::ostream& os, const CanopyData& mdata); 
 
 		// Aa
 		double storage;  ///< intercepted water (mm or kg m-2)
@@ -385,7 +391,9 @@ class CanopyData {
  */
 class SnowStation {
 	public:
-		SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers);
+		SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
+		
+		friend std::ostream& operator<<(std::ostream& os, const SnowStation& mdata);
 		~SnowStation();
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
@@ -401,6 +409,8 @@ class SnowStation {
 
 		size_t getNumberOfElements() const;
 		size_t getNumberOfNodes() const;
+		bool isGlacier(const bool& hydro=false) const;
+		bool hasSoilLayers() const;
 
 		mio::StationData meta;      ///< Station meta data
 
@@ -488,7 +498,9 @@ class SurfaceFluxes {
 		MS_RUNOFF,         ///< The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
 		MS_SOIL_RUNOFF,    ///< Equivalent to MS_RUNOFF but at bottom soil node
 		N_MASS_CHANGES     ///< Total number of different mass change types
-};
+		};
+
+		friend std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata);
 
 		SurfaceFluxes();
 

@@ -41,6 +41,8 @@ class SnowDrift {
 		SnowDrift(const mio::Config& i_cfg);
 
 		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
+		
+		static const double schmidt_drift_fudge;
 
  	private:
 		double compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle);
@@ -49,8 +51,6 @@ class SnowDrift {
 		bool enforce_measured_snow_heights, snow_redistribution; // Will be read from cfg object
 		double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		int nSlopes;
-
-		static const double schmidt_drift_fudge;
 		static const bool msg_erosion;
 }; //End class SnowDrift
 

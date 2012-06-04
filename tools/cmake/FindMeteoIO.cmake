@@ -29,7 +29,7 @@ IF(WIN32)
 ELSE(WIN32)
 	IF(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio
+		NAMES meteoio meteoiopopc
 		PATHS
 			"/Applications/MeteoIO/lib"
 			ENV LD_LIBRARY_PATH
@@ -42,7 +42,7 @@ ELSE(WIN32)
 		)
 	ELSE(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio
+		NAMES meteoio meteoiopopc
 		PATHS
 			ENV LD_LIBRARY_PATH
 			"~/usr/lib"

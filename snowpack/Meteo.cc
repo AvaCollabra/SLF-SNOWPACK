@@ -69,6 +69,23 @@ Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCan
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 }
 
+/**
+ * @brief set the atmosphere stability to a given value
+ * @param i_neutral stability model (see possible values in constructor)
+ */
+void Meteo::setStability(const int& i_neutral)
+{
+	neutral = i_neutral;
+}
+
+/**
+ * @brief get the atmosphere stability
+ * @return stability model (see possible values in constructor)
+ */
+int Meteo::getStability() const
+{
+	return neutral;
+}
 
 /**
  * @brief Projects precipitations and snow height perpendicular to slope
@@ -282,10 +299,12 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  */
 void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
-	if (useCanopyModel && Xdata->Cdata.lai > 0.)		// lai <= 0 implies "no canopy"
+	//if (useCanopyModel && Xdata->Cdata.lai > 0.)		// lai <= 0 implies "no canopy"
+	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);
 
-	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
+	//if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
+	if (!(useCanopyModel) || Xdata->Cdata.zdispl < 0.)
 		MicroMet(*Xdata, *Mdata);
 }
 
