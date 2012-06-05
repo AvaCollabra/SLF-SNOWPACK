@@ -119,7 +119,8 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 	// Ideal approximation of pressure and vapor pressure
 	p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
-	if (Mdata.ta > Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk) {
+	const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+	if (Mdata.ta > melting_tk) {
 		LH = Constants::lh_vaporization;
 	} else {
 		LH = Constants::lh_sublimation;

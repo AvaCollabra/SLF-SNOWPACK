@@ -115,7 +115,8 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	 * potential surface hoar formation will be tested at the end of this routine (NODAL data);
 	*/
 	if (ql > Constants::eps2) { // Add Mass
-		if (Tss < Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk) { // Add Ice
+		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		if (Tss < melting_tk) { // Add Ice
 			dM = ql*sn_dt/Constants::lh_sublimation;
 			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 			hoar = dM;
@@ -356,7 +357,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	if (rnE < nE) {
 		Xdata.reduceNumberOfElements(rnE);
 		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
-			Xdata.Ndata[Xdata.SoilNode].T = MIN(Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
+			Xdata.Ndata[Xdata.SoilNode].T = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
 	}
 }

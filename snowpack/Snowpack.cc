@@ -1173,8 +1173,14 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	// -> check relative humidity as well as difference between air and snow surface temperatures,
 	//    that is, no new snow during cloud free conditions!
 	double dt_airsnow = Mdata.ta - t_surf;
-	if (change_bc && !meas_tss)
-		dt_airsnow = Mdata.ta - Xdata.Edata[nE-1].melting_tk;
+	if (change_bc && !meas_tss) {
+		if (nE>0) {
+			dt_airsnow = Mdata.ta - Xdata.Edata[nE-1].melting_tk;
+		} else {
+			dt_airsnow = Mdata.ta - Constants::melting_tk;
+		}
+	}
+	
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 

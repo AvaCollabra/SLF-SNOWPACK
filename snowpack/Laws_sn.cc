@@ -802,7 +802,8 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 		}
 	} else {
 		// for snow assume saturation
-		if (Tss < Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk)
+		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		if (Tss < melting_tk)
 			eS = Vp1;
 		else
 			eS = Vp2;
