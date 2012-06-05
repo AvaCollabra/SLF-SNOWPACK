@@ -1589,7 +1589,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
-		t_surf = MIN(Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
+		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		t_surf = MIN(melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
 			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
 				surfaceCode = DIRICHLET_BC;
@@ -1620,7 +1621,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
+			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 
