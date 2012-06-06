@@ -300,12 +300,12 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  */
 void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
-	//if (useCanopyModel && Xdata->Cdata.lai > 0.)		// lai <= 0 implies "no canopy"
-	if (useCanopyModel)
+	if (useCanopyModel && Xdata->Cdata.lai > 0.) // lai <= 0 implies "no canopy"
+	//if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);
 
-	//if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
-	if (!(useCanopyModel) || Xdata->Cdata.zdispl < 0.)
+	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
+	//if (!(useCanopyModel) || Xdata->Cdata.zdispl < 0.)
 		MicroMet(*Xdata, *Mdata);
 }
 

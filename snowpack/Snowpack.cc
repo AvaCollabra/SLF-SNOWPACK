@@ -53,7 +53,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
                    research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false),
                    soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
                    change_bc(false), meas_tss(false), vw_dendricity(false)
-{	
+{
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	cfg.getValue("FIXED_ALBEDO", "SnowpackAdvanced", fixed_albedo);
@@ -89,7 +89,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
 	 */
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 	cfg.getValue("DETECT_GRASS", "SnowpackAdvanced", detect_grass);
-	
+
 	/**
 	 * @brief Defines whether the canopy model is used \n
 	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
@@ -556,13 +556,13 @@ void Snowpack::updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xda
 	double lw_in, lw_out;		// Incoming and outgoing long wave radiation
 	const double& T_air = Mdata.ta;
 	const double& Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
-	
+
 	alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
-	
+
 	Bdata.qs = MIN (350., MAX (-350., alpha * (T_air - Tss)));
 
 	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
-	
+
 	if ((Xdata.getNumberOfElements() > 0)
 	        /*&& (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= min_ice_content)*/) { //HACK: how should we handle large fluxes?
 		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
@@ -731,7 +731,6 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	size_t nN = Xdata.getNumberOfNodes();
 	vector<ElementData>& EMS = Xdata.Edata;
 	size_t nE = Xdata.getNumberOfElements();
-
 	// SNOW ALBEDO
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer
@@ -775,7 +774,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	} else {
 		cAlb = MAX(0.05, MIN(0.99, cAlb));
 	}
-	
+
 	switch (sw_mode) {
 	case 0: // need to assign rswr a correct value
 		Mdata.rswr = Mdata.iswr * cAlb;
@@ -806,7 +805,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, " iswr:%lf  rswr:%lf  cAlb:%lf", Mdata.iswr, Mdata.rswr, cAlb);
 		exit(EXIT_FAILURE);
 	}
-	
+
 	// ABSORPTION OF SOLAR RADIATION WITHIN THE SNOWPACK
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
@@ -876,7 +875,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 		throw IOException("Runtime error in sn_SnowTemperature", AT);
 	}
 
-  // Make sure that the global data structures know where the pointers are for the next integration step after the reallocation ....
+	// Make sure that the global data structures know where the pointers are for the next integration step after the reallocation ....
 	Xdata.Kt = Kt;
 
 	// Set the temperature at the snowpack base to the prescribed value.
@@ -930,7 +929,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			v_pump = SnLaws::compWindPumpingVelocity(Mdata, d_pump);
 		else
 			v_pump = 0.0;
-		
+
 		// Assemble matrix
 		e = nE;
 		while (e-- > 0) {
@@ -965,7 +964,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			ds_AssembleMatrix( (MYTYPE*)Kt, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
 		}
-		
+
 		if (surfaceCode == DIRICHLET_BC) {
 			Ie[0] = nE;
 			ds_AssembleMatrix( (MYTYPE*)Kt, 1, Ie, 1, &Big );
@@ -1134,7 +1133,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
 	                                    Mdata, Xdata, t_surf, variant);
-	                                    
+
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
 
@@ -1180,7 +1179,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			dt_airsnow = Mdata.ta - Constants::melting_tk;
 		}
 	}
-	
+
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 
@@ -1270,9 +1269,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-				
+
 			nNewE = (int)(hn / (height_new_elem*cos_sl));
-			
+
 			if (nNewE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
 				if (!ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
@@ -1589,7 +1588,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
-		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 		t_surf = MIN(melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
 			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
@@ -1598,22 +1597,22 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = t_surf;
 			}
 		}
-		
+
 		// If it is SNOWING, find out how much, prepare for new FEM data
 		compSnowFall(Mdata, Xdata, cumu_hnw, Sdata);
-		
+
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
 		// routine and later used to compute the Meteo Heat Fluxes
 		snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_hnw);
-		
+
 		// Reinitialize and compute the initial meteo heat fluxes
 		memset((&Bdata), 0, sizeof(BoundCond));
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata);
-		
+
 		// Find the temperature in the snowpack
 		compSnowTemperatures(Xdata, Mdata, Bdata);
-		
+
 		// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
 		// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
 		//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
@@ -1628,16 +1627,16 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		// See if any SUBSURFACE phase changes are occuring
 		phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
-		
+
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
-		
+
 		// Compute the final meteo heat fluxes
 		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
 		                      // linearized w/ respect to Tss and thus remains unchanged
 		                      // throughout the temperature iterations!!!
 		updateMeteoHeatFluxes(Mdata, Xdata, Bdata);
-		
+
 		// The water transport routines must be placed here, otherwise the temperature
 		// and creep solution routines will not pick up the new mesh boolean.
 		watertransport.compTransportMass(Mdata, Bdata.ql, Xdata, Sdata);
@@ -1646,14 +1645,14 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// HACK This routine was formerly placed here because the settlement solution MUST ALWAYS follow
 		// computeSnowTemperatures where the vectors U, dU and dUU are allocated.
 		compSnowCreep(Mdata, Xdata);
-		
+
 	} catch(const exception&) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Snowpack computation not completed");
 		throw;
 	}
 
 	metamorphism.runMetamorphismModel(Mdata, Xdata);
-	
+
 	if (join_elements)
 		Xdata.joinElements(SnowStation::number_top_elements);
 }

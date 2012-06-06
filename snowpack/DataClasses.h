@@ -190,7 +190,7 @@ class SN_SNOWSOIL_DATA {
 		{
 			Ldata.clear();
 		}
-		
+
 		friend std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data);
 
 		mio::StationData meta;            ///< Station meta data
@@ -290,8 +290,8 @@ class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
-		            
-		friend std::ostream& operator<<(std::ostream& os, const NodeData& data); 
+
+		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -334,8 +334,8 @@ class CanopyData {
 
 		void reset(const bool& cumsum_mass);
 		void initializeSurfaceExchangeData();
-		
-		friend std::ostream& operator<<(std::ostream& os, const CanopyData& mdata); 
+
+		friend std::ostream& operator<<(std::ostream& os, const CanopyData& mdata);
 
 		// Aa
 		double storage;  ///< intercepted water (mm or kg m-2)
@@ -392,7 +392,7 @@ class CanopyData {
 class SnowStation {
 	public:
 		SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
-		
+
 		friend std::ostream& operator<<(std::ostream& os, const SnowStation& mdata);
 		~SnowStation();
 

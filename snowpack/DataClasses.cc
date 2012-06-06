@@ -240,44 +240,32 @@ void CanopyData::reset(const bool& cumsum_mass)
 std::ostream& operator<<(std::ostream &os, const CanopyData& mdata)
 {
 	os << "<CanopyData>" << endl;
-	
+
 	os << "\t<Aa>\n";
 	os << "\tstorage:  " << mdata.storage << endl;
 	os << "\ttemp:     " << mdata.temp << endl;
-	os << "\tsigf:     " << mdata.sigf << endl;
-	os << "\tec:       " << mdata.ec << endl;
+	os << "\tsigf:     " << mdata.sigf << "\tec:       " << mdata.ec << endl;
 	os << "\t</Aa>\n\t<Ab>\n";
-	os << "\tlai:                 " << mdata.lai << endl;
-	os << "\tz0m:                 " << mdata.z0m << endl;
-	os << "\tz0h:                 " << mdata.z0h << endl;
-	os << "\tzdispl:              " << mdata.zdispl << endl;
 	os << "\theight:              " << mdata.height << endl;
-	os << "\tdirect_throughfall:  " << mdata.direct_throughfall << endl;
+	os << "\tlai:                 " << mdata.lai << "\tdirect_throughfall:  " << mdata.direct_throughfall << endl;
+	os << "\tz0m:                 " << mdata.z0m << "\tz0h:                 " << mdata.z0h << endl;
+	os << "\tzdispl:              " << mdata.zdispl << endl;
 	os << "\t</Ab>\n\t<Ac>\n";
-	os << "\tra:        " << mdata.ra << endl;
-	os << "\trc:        " << mdata.rc << endl;
-	os << "\trs:        " << mdata.rs << endl;
+	os << "\tra:        " << mdata.ra << " rc: " << mdata.rc << " rs: " << mdata.rs << endl;
 	os << "\trstransp:  " << mdata.rstransp << endl;
 	os << "\t</Ac>\n\t<Ba>\n";
-	os << "\tcanopyalb:    " << mdata.canopyalb << endl;
-	os << "\ttotalalb:     " << mdata.totalalb << endl;
+	os << "\tcanopyalb:    " << mdata.canopyalb << " totalalb: " << mdata.totalalb << endl;
 	os << "\twetfraction:  " << mdata.wetfraction << endl;
 	os << "\tintcapacity:  " << mdata.intcapacity << endl;
 	os << "\t</Ba>\n\t<Bb>\n";
-	os << "\trswrac:  " << mdata.rswrac << "\n";
-	os << "\tiswrac:  " << mdata.iswrac << "\n";
-	os << "\trswrbc:  " << mdata.rswrbc << "\n";
-	os << "\tiswrbc:  " << mdata.iswrbc << "\n";
-	os << "\tilwrac:  " << mdata.ilwrac << "\n";
-	os << "\trlwrac:  " << mdata.rlwrac << "\n";
-	os << "\tilwrbc:  " << mdata.ilwrbc << "\n";
-	os << "\trlwrbc:  " << mdata.rlwrbc << "\n";
-	os << "\trsnet:   " << mdata.rsnet << "\n";
-	os << "\trlnet:   " << mdata.rlnet << "\n";
+	os << "\trswrac:  " << mdata.rswrac << " iswrac: " << mdata.iswrac << "\n";
+	os << "\trswrbc:  " << mdata.rswrbc << " iswrbc: " << mdata.iswrbc << "\n";
+	os << "\tilwrac:  " << mdata.ilwrac << " rlwrac: " << mdata.rlwrac << "\n";
+	os << "\tilwrbc:  " << mdata.ilwrbc << " rlwrbc: " << mdata.rlwrbc << "\n";
+	os << "\trsnet:   " << mdata.rsnet << " rlnet: " << mdata.rlnet << "\n";
 	os << "\t</Bb>\n\t<Bc>\n";
 	os << "\tsensible:    " << mdata.sensible << "\n";
-	os << "\tlatent:      " << mdata.latent << "\n";
-	os << "\tlatentcorr:  " << mdata.latentcorr << "\n";
+	os << "\tlatent:      " << mdata.latent << " latentcorr: " << mdata.latentcorr << "\n";
 	os << "\t</Bc>\n\t<Bd>\n";
 	os << "\ttransp:   " << mdata.transp << "\n";
 	os << "\tintevap:  " << mdata.intevap << "\n";
@@ -337,7 +325,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
 	k.resize(N_SN_FIELDS);
 	c.resize(N_SN_FIELDS);
 	soil.resize(N_SOIL_FIELDS);
-	
+
 	// Set initial melting and freezing temperatures
 	melting_tk=Constants::melting_tk;
 	freezing_tk=Constants::freezing_tk;
@@ -715,57 +703,24 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 	return (a*100 + b*10 + c);
 }
 
-// HACK Methode fast made for debuging, is incomplete
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
+	os << "<ElementData>\t";
 	os << std::fixed << std::showpoint;
-	os << data.depositionDate ;
-	os << " " << setprecision(4) << data.L << " - " << data.type << " (" << setprecision(2) << data.rg << "/" << data.rb << ") - " << data.mk;
-	os << setprecision(2) << "(" << data.theta[SOIL] << "-" << data.theta[ICE] << "-" << data.theta[WATER] << "-" << data.theta[AIR] << ")";
-	os << std::endl;
-	
-	//std::vector<double> theta; // HACK TODO ... output < volumetric contents: SOIL, ICE, WATER, AIR (1)
-	os << "Rho:    " <<  data.Rho << "\n";
-	
-	//mio::Array2D<double> conc; // HACK TODO ... output Concentration for chemical constituents in (kg m-3)
-	os << "M:      " <<  data.M << "\n";   
-	
-	//std::vector<double> k;     // HACK TODO ... output < For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
-	//std::vector<double> c;     // HACK TODO ... output < For example, specific heat of TEMPERATURE field (J kg)
-	
-	//   Will also be used for creep specific snow water capacity  in m3 J-1
-	//std::vector<double> soil;  ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
-	os << "soil[SOIL_RHO]   " << data.soil[SOIL_RHO] << "\n";
-	os << "soil[SOIL_K]   " << data.soil[SOIL_K] << "\n";
-	os << "soil[SOIL_C]   " << data.soil[SOIL_C] << "\n";
-	
-	os << "sw_abs: " <<  data.sw_abs << "\n";          
-	// Snow Metamorphism Data
-	os << "rg:     " <<  data.rg << "\n";    
-	os << "dd:     " <<  data.dd << "\n";         
-	os << "sp:     " <<  data.sp << "\n";        
-	os << "rb:     " <<  data.rb << "\n";         
-	os << "ps2rb:  " <<  data.ps2rb << "\n";        
-	os << "N3:     " <<  data.N3 << "\n";      
-	os << "mk:     " <<  data.mk << "\n";       
-	os << "type:   " <<  data.type << "\n";         
-	os << "metamo: " <<  data.metamo << "\n";     
-	os << "dth_w:  " <<  data.dth_w << "\n";
-	os << "Qmf:    " <<  data.Qmf << "\n";
-	os << "dE:     " <<  data.dE << "\n";
-	os << "E:      " <<  data.E << "\n";
-	os << "Ee:     " <<  data.Ee << "\n";
-	os << "Ev:     " <<  data.Ev << "\n";
-	os << "EDot:   " <<  data.EDot << "\n";
-	os << "EvDpt:  " <<  data.EvDot << "\n";
-	os << "S:      " <<  data.S << "\n";
-	os << "C:      " <<  data.C << "\n";   
-	os << "CDot:   " <<  data.CDot << "\n";
-	os << "S_dr:   " <<  data.S_dr << "\n";
-	os << "s_strength:     " <<  data.s_strength << "\n";
-	os << "hard:   " <<  data.hard << "\n";
-		//NIED (H. Hirashima)
-	os << "dhf:     " <<  data.dhf << "\n";
+	os << data.depositionDate.toString(mio::Date::ISO) << "\n";
+	os << "\tL=" << setprecision(4) << data.L << " type=" << data.type << " marker=" << setprecision(2) << data.mk << " Density=" << data.Rho << " Mass=" << data.M << "\n";;
+
+	os << "\tVolumetric contents: soil=" << setprecision(2) << data.theta[SOIL] << " ice=" << data.theta[ICE] << " water=" << data.theta[WATER] << " air=" << data.theta[AIR] << "\n";
+	os << "\tGrains: rg=" <<  data.rg << " rg_opt=" << data.rg_opt << " rb=" <<  data.rb << " dd=" <<  data.dd << " sp=" <<  data.sp << " N3=" << data.N3 << "\n";
+	os << "\tMetamorphism: ps2rb=" << data.ps2rb << " metamo=" << data.metamo << " sw_abs=" << data.sw_abs << "\n";
+	os << "\tMelting: dth_w=" << data.dth_w << " Qmf=" << data.Qmf << " res_wat_cont=" << data.res_wat_cont << "\n";
+	os << "\tSoil: density=" << data.soil[SOIL_RHO] << " Conductivity=" << data.soil[SOIL_K] << " Capacity=" << data.soil[SOIL_C] << "\n";
+
+	os << "\tStrains: S=" <<  data.S << " C=" << data.C << " s_strength=" << data.s_strength << "\n";
+	os << "\tStrains: dE=" << data.dE << " E=" <<  data.E << " Ee=" <<  data.Ee << " Ev=" <<  data.Ev << "\n";
+	os << "\tStrain rates EDot=" <<  data.EDot << " EvDpt=" <<  data.EvDot << " CDot=" <<  data.CDot << "\n";
+	os << "\tStability: S_dr=" << data.S_dr << " hard=" << data.hard << " dhf=" << data.dhf << "\n";
+	os << "</ElementData>\n";
 
 	return os;
 }
@@ -773,18 +728,11 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 std::ostream& operator<<(std::ostream& os, const NodeData& data)
 {
 	os << std::fixed << std::showpoint;
-	os << "z:      " << data.z << "\n";
-	os << "u:      " << data.u << "\n";
-	os << "f:      " << data.f << "\n";
-	os << "udot:   " << data.udot << "\n";
-	os << "T:      " << data.T << "\n";
-	os << "S_n:    " << data.S_n << "\n";
-	os << "S_s:    " << data.S_s << "\n";
-	os << "ssi:    " << data.ssi << "\n";
-	os << "hoar:   " << data.hoar << "\n";
-	os << "dhf:    " << data.dhf << "\n";
-	os << "S_dhf:  " << data.S_dhf << "\n";
-	os << "Sigdhf: " << data.Sigdhf << "\n";
+	os << "<NodeData>\n";
+	os << "\tz=" << data.z << " T=" << data.T << " hoar=" << data.hoar << "\n";
+	os << "\tCreep: u=" << data.u << " udot=" << data.udot << " f=" << data.f << "\n";
+	os << "\tStability: S_n=" << data.S_n << " S_s=" << data.S_s << " ssi=" << data.ssi << "\n";
+	os << "</NodeData>\n";
 	return os;
 }
 
@@ -867,7 +815,7 @@ double SnowStation::getModelledTemperature(const double& z) const
  */
 void SnowStation::resize(const unsigned int& number_of_elements)
 {
-	
+
 	try {
 		Edata.resize(number_of_elements, ElementData());
 		Ndata.resize(number_of_elements + 1);
@@ -1120,10 +1068,10 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	while (e-- > 0) {
 		if (e < nElems-1) SigC -= (Edata[e+1].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
 		SigC -= (Edata[e].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
-		
+
 		Edata[e].C = SigC;
 	}
-	
+
 	// Cold content
 	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter if Qmf == 0. for all layers
 
@@ -1291,7 +1239,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 }
 
 /**
- * @brief returns if a snow profile can be considered as a glacier. 
+ * @brief returns if a snow profile can be considered as a glacier.
  * Practically, the hydrological criteria is that if a pixel contains more than 2 m
  * of pure ice anywhere, it is considered to be glaciated. The standard criteria is that
  * if the top 5 layers are made of pure ice, the pixel is glaciated.
@@ -1309,20 +1257,20 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		for(unsigned int layer_index=0; layer_index<nElems; layer_index++) {
 			if( Edata[layer_index].type==880) sum_ice_depth += Edata[layer_index].L;
 		}
-		
-		if(sum_ice_depth>=ice_depth_glacier) 
+
+		if(sum_ice_depth>=ice_depth_glacier)
 			return true;
-		else 
+		else
 			return false;
 	} else {
-		
+
 		bool is_pure_ice=true;
 		const unsigned int check_depth=5;
 		const int top_index = nElems-1;
 		const int top_inedex_toCheck = top_index-check_depth;
 		const int soil_index = SoilNode-1;
 		const int end_index = (top_inedex_toCheck>soil_index)?top_inedex_toCheck:soil_index;
-		
+
 		for(int layer_index=top_index; layer_index>end_index; layer_index--) {
 			if(Edata[layer_index].type!=880) {
 				is_pure_ice=false;
@@ -1333,70 +1281,44 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 		return is_pure_ice;
 	}
-	
+
 }
 
 std::ostream& operator<<(std::ostream &os, const SnowStation& mdata)
-{	
+{
 	os << "<SnowStation>" << "\n";
-	
-	os << mdata.meta   << "\n";
-	os << "sector:       " << mdata.sector << "\n";
-	
-	os << setprecision(10);
-	os << fixed;
-	
-	os << "cAlbedo:      " << mdata.cAlbedo << "\n";
-	os << "mAlbedo:      " << mdata.mAlbedo << "\n";
-	os << "SoilAlb:      " << mdata.SoilAlb << "\n";
-	os << "BareSoil_z0:  " << mdata.BareSoil_z0 << "\n";
-	os << "SoilNode:     " << mdata.SoilNode << "\n";
-	os << "cH:           " << mdata.cH << "\n";
-	os << "mH:           " << mdata.mH << "\n";
-	os << "Ground:       " << mdata.Ground << "\n";
-	os << "hn:           " << mdata.hn << "\n";
-	os << "rho_hn:       " << mdata.rho_hn << "\n";
-	os << "windward:     " << mdata.windward << "\n";
-	os << "ErosionLevel: " << mdata.ErosionLevel << "\n";
-	os << "ErosionMass:  " << mdata.ErosionMass << "\n";
-	os << "S_class1:     " << mdata.S_class1 << "\n";
-	os << "S_class2:     " << mdata.S_class2 << "\n";
-	os << "S_d:          " << mdata.S_d << "\n";
-	os << "z_S_d:        " << mdata.z_S_d << "\n";
-	os << "S_n:          " << mdata.S_n << "\n";
-	os << "z_S_n:        " << mdata.z_S_n << "\n";
-	os << "S_s:          " << mdata.S_s << "\n";
-	os << "z_S_s:        " << mdata.z_S_s << "\n";
-	os << "S_4:          " << mdata.S_4 << "\n";
-	os << "z_S_4:        " << mdata.z_S_4 << "\n";
-	os << "S_5:          " << mdata.S_5 << "\n";
-	os << "z_S_5:        " << mdata.z_S_5 << "\n";
+	os << mdata.meta;
+	os << setprecision(4);
+	//os << fixed;
+	os << mdata.nElems << " element(s) and " << mdata.nNodes << " node(s).";
+	if(mdata.useSoilLayers)
+		os << " Soil=true";
+	else
+		os << " Soil=false";
+	if(mdata.useCanopyModel)
+		os << " canopy=true";
+	else
+		os << " canopy=false";
+	os << "\n";
 
-	for (unsigned int ii=1; ii<mdata.Ndata.size(); ii++) {
-		os << "<Ndata index=" << ii << ">\n" << mdata.Ndata[ii] << "</Ndata>\n";
+	os << "Soil:\tSoilNode=" << mdata.SoilNode  << " depth=" << mdata.Ground << " BareSoil_z0=" << mdata.BareSoil_z0 << "\n";
+	os << "Albedo:\tmAlbedo=" << mdata.mAlbedo << " cAlbedo=" << mdata.cAlbedo << " SoilAlb=" << mdata.SoilAlb << "\n";
+	os << "Snow:\tMeasured HS=" << mdata.mH << " Calculated HS=" << mdata.cH << " New snow=" << mdata.hn << " of density=" << mdata.rho_hn << "\n";
+	os << "Energy:\tColdContent=" << mdata.ColdContent << " dIntEnergy=" << mdata.dIntEnergy << " SubSurfaceMelt=" << mdata.SubSurfaceMelt << " SubSurfaceFrze=" << mdata.SubSurfaceFrze << "\n";
+	os << "Snowdrift:\tsector=" << mdata.sector << " windward=" << mdata.windward << " ErosionLevel=" << mdata.ErosionLevel << " ErosionMass=" << mdata.ErosionMass << "\n";
+	os << "Stability:\tS_d(" << mdata.z_S_d << ")=" << mdata.S_d << " S_n(" << mdata.z_S_n << ")=" << mdata.S_n << " S_s(" << mdata.z_S_s << ")=" << mdata.S_s;
+	os << " S_1=" << mdata.S_class1 << " S_2=" << mdata.S_class2 << " S_4(" << mdata.z_S_4 << ")=" << mdata.S_4 << " S_5(" << mdata.z_S_5 << ")=" << mdata.S_5 << "\n";
+
+	os << "Kt= " << hex << mdata.Kt << dec << "\n";
+	/*for (unsigned int ii=1; ii<mdata.Ndata.size(); ii++) {
+		os << mdata.Ndata[ii];
 	}
-
 	for (unsigned int ii=1; ii<mdata.Edata.size(); ii++) {
-		os << "<Edata index=" << ii << ">\n" << mdata.Edata[ii] << "</Edata>\n";
-	}
-	 
-	// no output made: void *Kt, *Ks;              //< Pointer to pseudo-conductivity and stiffnes matrix
+		os << mdata.Edata[ii];
+	}*/
+	//os << "Canopy=" << mdata.Cdata;
 
-	os << "ColdContent:  " << mdata.S_s << "\n";
-	os << "dIntEnergy:   " << mdata.S_s << "\n";
-	os << "SubSurfaceMelt:  " << mdata.S_s << "\n";
-	os << "SubSurfaceFrze:  " << mdata.S_s << "\n";
-	//os << "Cdata:        \n" << mdata.Cdata;
-	os << "tag_low:      " << mdata.tag_low << "\n";
-	os << "number_of_solutes:  " << mdata.number_of_solutes << "\n";
-	/* Private operators.... TODO
-	os << "useCanopyModel:   " << mdata.useCanopyModel << "\n";
-	os << "useSoilLayers:   " << mdata.useSoilLayers << "\n";
-	os << "nNodes:   " << mdata.nNodes << "\n";
-	os << "nElems:   " << mdata.nElems << "\n";
-	*/
-
-	os << "</SnowStation>" << "\n";
+	os << "</SnowStation>\n";
 	return os;
 }
 
@@ -1420,43 +1342,32 @@ void CurrentMeteo::reset()
 
 std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
 {
-	os << "<InterpolatedMeteoData>" << endl;
-	os << std::setprecision(10);
-	os << "n:        " << mdata.n << endl;
-	os << "Date:     " << mdata.date.toString(Date::ISO) << endl;
-	os << "TA:       " << mdata.ta << endl;
-	os << "RH:       " << mdata.rh << endl;
-	os << "rh_avg:   " << mdata.rh_avg << endl;
-	os << "VW:       " << mdata.vw << endl;
-	os << "VW_MAX:   " << mdata.vw_max << endl;
-	os << "DW:       " << mdata.dw << endl;
-	os << "vw_avg:   " << mdata.vw_avg << endl;
-	os << "USTAR:    " << mdata.ustar << endl;
-	os << "z0:       " << mdata.z0 << endl;
-	os << "psi_s:    " << mdata.psi_s << endl;
-	os << "ISWR:     " << mdata.iswr << endl;
-	os << "RSWR:     " << mdata.rswr << endl;
-	os << "diff:     " << mdata.diff << endl;
-	os << "ELEV:     " << mdata.elev << endl;
-	os << "EA:       " << mdata.ea << endl;
-	os << "TSS:      " << mdata.tss << endl;
-	os << "TSG:      " << mdata.ts0 << endl;
-	os << "HNW:      " << mdata.hnw << endl;
-	os << "HS:       " << mdata.hs << endl;
-	stringstream ss;
-	for (unsigned int ii=1; ii<mdata.ts.size(); ii++) {
-		ss << ""; ss << ii;
-		os << "ts[" << ss.str() << "]:    " << mdata.ts[ii] << endl;
-		os << "zv_ts[" << ss.str() << "]: " << mdata.zv_ts[ii] << endl;
-	}
-	for (unsigned int ii=1; ii<mdata.conc.size(); ii++) {
-		ss << ""; ss << ii;
-		os << "conc[" << ss.str() << "]: " << mdata.conc[ii] << endl;
-	}
-	os << "vw_drift: " << mdata.vw_drift << endl;
-	os << "rho_hn:   " << mdata.rho_hn << endl;
+	const double to_deg = 180. / mio::Cst::PI;
+	os << "<CurrentMeteo>" << endl;
+	os << mdata.date.toString(Date::ISO) << " " << mdata.n << " fields\n";
 
-	os << "</InterpolatedMeteoData>" << endl;
+	os << setw(8) << "TA=" << mdata.ta << " TSS=" << mdata.tss << " TSG=" << mdata.ts0 << "\n";
+	os << setw(8) << "RH=" << mdata.rh << " rh_avg=" << mdata.rh_avg << "\n";
+	os << setw(8) << "ISWR=" << mdata.iswr << " RSWR=" << mdata.rswr << " diff=" << mdata.diff << " Sun_elev=" << mdata.elev*to_deg << "° EA=" << mdata.ea << "\n";
+	os << setw(8) << "HNW=" << mdata.hnw << " HS=" << mdata.hs << " rho_hn=" << mdata.rho_hn << "\n";
+	os << setw(8) << "VW=" << mdata.vw << " vw_avg=" << mdata.vw_avg << " vw_max=" << mdata.vw_max << " vw_drift=" << mdata.vw_drift << "\n";
+	os << setw(8) << "DW=" << mdata.dw << "\n";
+	os << setw(8) << "U*=" << mdata.ustar << " z0=" << mdata.z0 << " psi_s=" << mdata.psi_s << "\n";
+
+	//os << std::setprecision(10);
+	stringstream ss;
+	if(mdata.ts.size()>0) os << "     ";
+	for (unsigned int ii=0; ii<mdata.ts.size(); ii++) {
+		os << "ts(" << mdata.zv_ts[ii] << ")=" << mdata.ts[ii] << " ";
+	}
+	if(mdata.ts.size()>0) os << "\n";
+	if(mdata.conc.size()>0) os << "     ";
+	for (unsigned int ii=0; ii<mdata.conc.size(); ii++) {
+		os << "conc[" << ii << "]=" << mdata.conc[ii] << " ";
+	}
+	if(mdata.conc.size()>0) os << "\n";
+
+	os << "</CurrentMeteo>" << endl;
 	return os;
 }
 
@@ -1512,7 +1423,7 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata)
 	os << "mA:       " << mdata.mA << endl;
 	os << "dIntEnergy:      " << mdata.dIntEnergy << endl;
 	os << "drift:      " << mdata.drift << endl;
-	
+
 	stringstream ss;
 	for (unsigned int ii=1; ii<mdata.mass.size(); ii++) {
 		ss << ""; ss << ii;
@@ -1525,9 +1436,9 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata)
 	os << "dhs_corr: " << mdata.dhs_corr << endl;
 	os << "cRho_hn:   " << mdata.cRho_hn << endl;
 	os << "mRho_hn:   " << mdata.mRho_hn << endl;
-	
+
 	os << "</SurfaceFluxes>" << endl;
-	
+
 	return os;
 }
 
