@@ -54,9 +54,8 @@ ELSE(WIN32)
 END(WIN32)
 
 #build LIBSNOWPACK_ROOT so we can provide a hint for searching for the header file
-IF("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack\\.(.+)$")
-   SET(LIBSNOWPACK_ROOT "${CMAKE_MATCH_1}")
-ENDIF("${LIBSNOWPACK_LIBRARY}" MATCHES "^(.+)lib[\\/]libsnowpack\\.(.+)$")
+GET_FILENAME_COMPONENT(snowpack_libs_root ${LIBSNOWPACK_LIBRARY} PATH)
+SET(LIBSNOWPACK_ROOT "${snowpack_libs_root}/../")
 
 # locate main header file
 FIND_PATH(LIBSNOWPACK_INCLUDE_DIR

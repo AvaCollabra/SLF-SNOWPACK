@@ -29,7 +29,7 @@ IF(WIN32)
 ELSE(WIN32)
 	IF(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio meteoiopopc
+		NAMES meteoio
 		PATHS
 			"/Applications/MeteoIO/lib"
 			ENV LD_LIBRARY_PATH
@@ -42,7 +42,7 @@ ELSE(WIN32)
 		)
 	ELSE(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio meteoiopopc
+		NAMES meteoio
 		PATHS
 			ENV LD_LIBRARY_PATH
 			"~/usr/lib"
@@ -55,9 +55,8 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
-IF("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
-   SET(METEOIO_ROOT "${CMAKE_MATCH_1}")
-ENDIF("${METEOIO_LIBRARY}" MATCHES "^(.+)lib[\\/]libmeteoio\\.(.+)$")
+GET_FILENAME_COMPONENT(meteoio_libs_root ${METEOIO_LIBRARY} PATH)
+SET(METEOIO_ROOT "${meteoio_libs_root}/../")
 
 # locate main header file
 FIND_PATH(METEOIO_INCLUDE_DIR

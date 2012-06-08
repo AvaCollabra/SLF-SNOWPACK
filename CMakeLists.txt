@@ -130,7 +130,6 @@ MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
 ###########################################################
 #for the install target
 FILE(GLOB hfiles "snowpack/*.h")
-INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 
 IF(WIN32) #handle the special case of WIN32 needing import libraries
 	FILE(GLOB_RECURSE importlibs "lib/libsnowpack*.lib*")
@@ -138,6 +137,7 @@ ENDIF(WIN32)
 FILE(GLOB_RECURSE solibs "lib/libsnowpack*.${DLL_EXT}")
 FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
 
+INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
 IF(SNOWPACK_STANDALONE)
@@ -196,6 +196,28 @@ ENDIF(INSTALL_DOC)
 ###########################################################
 ## CPACK section
 ###########################################################
+SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a standalone release")
+IF(CPACK_BUNDLE_ALL)
+	#bundle MeteoIO
+	FIND_PACKAGE(MeteoIO REQUIRED)
+	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*.*") #this contains dynamic, static and import libs
+	INSTALL(DIRECTORY ${METEOIO_ROOT}/include/meteoio DESTINATION include COMPONENT headers)
+	INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
+	INSTALL(DIRECTORY ${METEOIO_ROOT}/lib/meteoio/plugins DESTINATION lib/meteoio COMPONENT libraries)
+	IF(INSTALL_DOC)
+		IF(WIN32)
+			FILE(GLOB meteoio_docs "${METEOIO_ROOT}/doc/*.*")
+			SET(METEOIO_DOC ${DOC_PATH}/meteoio)
+		ELSE(WIN32)
+			FILE(GLOB meteoio_docs "${METEOIO_ROOT}/share/doc/meteoio/*.*")
+			SET(METEOIO_DOC ${DOC_PATH}/../meteoio)
+		ENDIF(WIN32)
+		INSTALL(DIRECTORY "${METEOIO_ROOT}/share/doc/meteoio/examples" DESTINATION ${METEOIO_DOC} COMPONENT examples)
+		INSTALL(DIRECTORY "${METEOIO_ROOT}/share/doc/meteoio/html" DESTINATION ${METEOIO_DOC} COMPONENT documentation)
+		INSTALL(FILES ${meteoio_docs} DESTINATION ${METEOIO_DOC} COMPONENT documentation)
+	ENDIF(INSTALL_DOC)
+ENDIF(CPACK_BUNDLE_ALL)
+
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Welcome.txt")
