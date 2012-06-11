@@ -429,13 +429,14 @@ void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const
 
 	EMS = &Xdata.Edata[0];
 	nE = Xdata.getNumberOfElements();
-	if (nE == 0)
-		return;
-	else if (Xdata.SoilNode > 0)
+	if (Xdata.SoilNode > 0)
 		bottom_element = Xdata.SoilNode - 1;
-	else
-		bottom_element = Xdata.SoilNode;
-
+	else {
+		if (nE == 0)
+			return;
+		else
+			bottom_element = Xdata.SoilNode;
+	}
 	for (e = bottom_element; e < nE; e++)
 		EMS[e].sw_abs = 0.;
 
@@ -453,7 +454,8 @@ void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const
 				EMS[e].sw_abs += dI;
 				I0_band -= dI;
 			}
-			EMS[bottom_element].sw_abs += I0_band;
+			if (I0_band > 5.e-4)
+				EMS[bottom_element].sw_abs += I0_band;
 		}
 	} else { // ad hoc "1-Band" model
 		I0_band = I0;
