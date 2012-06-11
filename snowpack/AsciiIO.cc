@@ -544,10 +544,10 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp)
 {
 	//TODO: read only once (in constructor)
-	string filename_prefix = path + "/" + fnam;
+	const string filename_prefix = path + "/" + fnam;
 
 	if (addexp && (experiment != "NO_EXP")) //in operational mode, nothing is appended
-		filename_prefix += "_" + experiment; // complete filename_prefix
+		return filename_prefix + "_" + experiment; // complete filename_prefix
 
 	return filename_prefix;
 }
@@ -565,12 +565,10 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 {
 	FILE *PFile=NULL;
 
-	string stationname = Xdata.meta.getStationName();
-	string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
+	const string stationname = Xdata.meta.getStationName();
+	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
 
 	size_t e, nz;
-	double cos_sl;
-
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -596,7 +594,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	}
 
 	fprintf(PFile,"\n0500,%s", i_date.toString(Date::DIN).c_str());
-	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	if (useSoilLayers)
 		nz = nN;
@@ -717,7 +715,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
 	for (e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
-	
+
 	if (variant == "CALIBRATION")
 		writeFreeProfileCALIBRATION(Xdata, PFile);
 	else
@@ -1040,7 +1038,7 @@ bool AsciiIO::parseMetFile(const char& eoln, const mio::Date& start_date, std::i
 				IOUtils::trim(tmpline);
 				IOUtils::readLineToVec(tmpline, vecTmp, ',');
 				if ((vecTmp.size() >= 2) && (vecTmp[1].length() >= 16)) {
-					string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
+					const string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
 						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
 					IOUtils::convertString(current_date, tmpdate, time_zone);
 
@@ -1095,7 +1093,7 @@ bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::i
 			if (vecTmp.size() >= 2) {
 				if (vecTmp[0] == "0500"){ //The date tag
 					if (vecTmp[1].length() >= 16) {
-						string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
+						const string tmpdate = vecTmp[1].substr(6,4) + "-" + vecTmp[1].substr(3,2) + "-" + vecTmp[1].substr(0,2)
 						                 + "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
 						IOUtils::convertString(current_date, tmpdate, time_zone);
 
@@ -1208,16 +1206,16 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 {
 	FILE *TFile=NULL;
 
-	string stationname = Xdata.meta.getStationName();
-	string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
+	const string stationname = Xdata.meta.getStationName();
+	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
 
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const int nN = Xdata.getNumberOfNodes();
-	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	//Check whether file exists, if so check whether data can be appended or file needs to be deleted
 	if (IOUtils::fileExists(filename)) {
-		bool append = appendFile(filename, Mdata.date, "met");
+		const bool append = appendFile(filename, Mdata.date, "met");
 		if (!append && remove(filename.c_str()) != 0)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
 	}
@@ -1394,7 +1392,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
  */
 void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
 {
-	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	if (Xdata.SoilNode > 0)
 		// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 		fprintf(fout,",%f", Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / cos_sl);
@@ -1418,10 +1416,10 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
 	if(Sdata.cRho_hn > 0.) {
 		fprintf(fout,",%.1f,%.1f", Sdata.mRho_hn, Sdata.cRho_hn);
 	} else {
-		double mRho_hn = Constants::undefined;
-		if (Mdata.rho_hn != Constants::nodata)
-			mRho_hn = -Mdata.rho_hn;
-		fprintf(fout,",%.1f,%.1f", mRho_hn, Sdata.cRho_hn);
+		if(Mdata.rho_hn != Constants::nodata)
+			fprintf(fout,",%.1f,%.1f", -Mdata.rho_hn, Sdata.cRho_hn);
+		else
+			fprintf(fout,",%.1f,%.1f", Constants::undefined, Sdata.cRho_hn);
 	}
 	// 98: crust height (S-slope) (cm)
 	fprintf(fout,",%f", crust);
@@ -1447,11 +1445,10 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
  * @param *fout Output file
  */
 void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                        const CurrentMeteo& Mdata, const double crust,
-                                        const double dhs_corr, const double mass_corr,
+                                        const CurrentMeteo& Mdata, const double /*crust*/,
+                                        const double /*dhs_corr*/, const double /*mass_corr*/,
                                         const size_t nCalcSteps, FILE *fout)
 {
-	(void) crust; (void) dhs_corr; (void) mass_corr;
 	if (max_number_sensors == 5)
 		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
 	// 94: change of internal energy (kJ m-2)
@@ -1500,9 +1497,8 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
  * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
+void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double /*crust*/, const double /*dhs_corr*/, const double /*mass_corr*/, const size_t nCalcSteps, FILE *fout)
 {
-	(void) crust; (void) dhs_corr; (void) mass_corr; (void) Sdata;
 	double rho_hn;
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (max_number_sensors == 5)
