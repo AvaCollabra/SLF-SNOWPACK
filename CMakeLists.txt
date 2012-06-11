@@ -296,13 +296,29 @@ ELSE(UNIX)
 		#SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${EnvVarUpdate} $0 \"LIB\"  \"A\" \"HKLM\" \"C:\MyLib\"")
 		SET(CPACK_NSIS_MODIFY_PATH ON)
 		IF(INSTALL_DOC)
-			SET(CPACK_NSIS_MENU_LINKS
+			IF(CPACK_BUNDLE_ALL)
+				SET(CPACK_NSIS_MENU_LINKS
+				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
+				"${DOC_PATH}/examples" "SNOWPACK examples"
+				"https://slfsmm.indefero.net/p/snowpack/" "Home page"
+				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
+				"${METEOIO_DOC}/examples" "MeteoIO examples"
+				"https://slfsmm.indefero.net/p/meteoio/" "MeteoIO Home page")
+			ELSE(CPACK_BUNDLE_ALL)
+				SET(CPACK_NSIS_MENU_LINKS
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://slfsmm.indefero.net/p/snowpack/" "Home page")
+			ENDIF(CPACK_BUNDLE_ALL)
 		ELSEIF(INSTALL_DOC)
-			SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page")
+			IF(CPACK_BUNDLE_ALL)
+				SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page"
+				"https://slfsmm.indefero.net/p/meteoio/" "MeteoIO Home page")
+			ELSE(CPACK_BUNDLE_ALL)
+				SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page")
+			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
+
 		#info for the add/uninstall software administration
 		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")
 		SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.slf.ch")
