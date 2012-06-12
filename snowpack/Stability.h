@@ -107,6 +107,8 @@ class Stability {
 		double setHandHardnessDEFAULT(const ElementData& Edata);
 		double setHandHardnessASARC(const ElementData& Edata);
 		double setHandHardnessMONTI(const ElementData& Edata);
+		
+		double getHandHardnessMonti(const int& F, const double& rho);
 
 		double compCriticalStress(const double& epDotn, const double& T_s);
 

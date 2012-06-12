@@ -115,10 +115,7 @@ double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
 {
 	int    F1, F2, F3; // grain shape
 	double hardness;
-	double gsz;
-
-	// Dereference some values
-	gsz = 2.*Edata.rg;
+	const double gsz = 2.*Edata.rg;
 
 	// Decompose type in its constituents
 	typeToCode(&F1, &F2, &F3, Edata.type);
@@ -208,6 +205,119 @@ double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
 }
 
 /**
+ * @brief Compute hand hardness for a given grain type and density
+ * @param F grain type
+ * @param rho snow density
+ * @return hand hardness
+ */
+double Stability::getHandHardnessMonti(const int& F, const double& rho)
+{
+#ifndef NOSAFECHECKS
+	if (rho<0.) {
+		std::stringstream ss;
+		ss << "Negative density: rho=" << rho;
+		throw IOException(ss.str(), AT);
+	}
+#endif
+	switch(F) {
+		case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
+			const double A = 0.0078;
+			const double B = 0.0105;
+			return (A + B*rho);
+		}
+		case 1: { // Precipitation Particles PP; ori: A = 0.7927; B = 0.0038 (same Bellaire);
+			if ( (rho >= 0.) && (rho < 135.465))
+				return 1.;
+			else 
+				return 2.;
+		}
+		case 2: { // Decomposing and Fragmented precipitation particles DF; ori: A = 84.0713; B = 54.0134;
+			if ( (rho >= 0.) && (rho < 175.435))
+				return 1.;
+			else
+				return 2.;
+		}
+		case 3: { // Rounded Grains RG; ori: A = 0.2027; B = 0.0092; ori: A = 124.3460; B = 58.8401;
+			if ( (rho >= 0.) && (rho <= 183.2036))
+				return 1.;
+			else if ( (rho > 183.2036) && (rho <= 259.2881))
+				return 2.;
+			else if ( (rho > 259.2881) && (rho <= 370.9122))
+				return 3.;
+			else if ( (rho > 370.9122) && (rho <= 606.1735))
+				return 4.;
+			else
+				return 5.;
+		}
+		case 4: { // Faceted Crystals FC; ori: A = 190.5609; B = 46.0518;
+			if ( (rho >= 0.) && (rho <= 214.2381))
+				return 1.;
+			else if ( (rho > 214.2381) && (rho <= 320.3560))
+				return 2.;
+			else if ( (rho > 320.3560) && (rho <= 390.9344))
+				return 3.;
+			else if ( (rho > 390.9344) && (rho <= 495.5506))
+				return 4.;
+			else
+				return 5.;
+		}
+		case 5: { // Depth Hoar DH; ori: A = 215.2649; B = 32.1562;
+			if ( (rho >= 0.) && (rho <= 289.3215))
+				return 1.;
+			else if ( (rho > 289.3215) && (rho <= 402.9477))
+				return 2.;
+			else if ( (rho > 402.9477) && (rho <= 446.4962))
+				return 3.;
+			else if ( (rho > 446.4962) && (rho <= 654.7275))
+				return 4.;
+			else
+				return 5.;
+		}
+		case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
+			const double A = 1. - hoar_density_buried/(250. - hoar_density_buried);
+			const double B = 1./(250. - hoar_density_buried);
+			return (A + B*rho);
+		}
+		case 7: { // Melt Forms MF
+			if ( (rho >= 0.) && (rho <= 147.1635))
+				return 1.;
+			else if ( (rho > 148.1647) && (rho <= 188.2092))
+				return 2.;
+			else if ( (rho > 188.2092) && (rho <= 301.3348))
+				return 3.;
+			else if ( (rho > 301.3348) && (rho <= 466.5184))
+				return 4.;
+			else
+				return 5.;
+		}
+		case 8: { // Ice layer IFil
+			const double A = 6.;
+			const double B = 0.;
+			return (A + B*rho);
+		}
+		case 9: { // Rounding faceted particles FCxr; ori: A = 218.1156; B = 41.5798;
+			if ( (rho >= 0.) && (rho <= 268.7987))
+				return 1.;
+			else if ( (rho > 268.7987) && (rho <= 336.3738))
+				return 2.;
+			else if ( (rho > 336.3738) && (rho <= 419.9667))
+				return 3.;
+			else if ( (rho > 419.9667) && (rho <= 555.6174))
+				return 4.;
+			else
+				return 5.;
+		}
+		default: {
+			std::stringstream ss;
+			ss << "Error: grain type " << F << " is unknown!";
+			throw IOException(ss.str(), AT);
+		}
+	}
+	
+	return IOUtils::nodata; //we should never come here
+}
+
+/**
  * @brief Assign hardness to snow types according to density, Fabiano Monti's version
  * @author Implemented by C. Fierz: Regression by Fabiano Monti 2012 (all types except MFcr).
  * @param Edata
@@ -217,86 +327,31 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
 {
 	int    F1, F2, F3; // grain shape
 	double hardness;
-	double gsz;
-
-	// Dereference some values
-	gsz = 2.*Edata.rg;
 
 	// Decompose type in its constituents
 	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
-		double A, B;
-		switch(F1) {
-			case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
-				A = 1.0;
-				B = 0.0;
-				break;
+		const double hardness_F1 = getHandHardnessMonti(F1, Edata.Rho);
+		const double hardness_F2 = getHandHardnessMonti(F2, Edata.Rho);
+		hardness = 0.5 * (hardness_F1 + hardness_F2);
+		
+		if (F1 == 6) {
+			// Large surface hoar stays longer unstable! 1 dec 2007 (sb)
+			const double grain_size = 2.*Edata.rg;
+			if (grain_size >= 5.) {
+				hardness = 1.;
+			} else {
+				hardness = MIN(hardness, 2.);
 			}
-			case 1: { // Precipitation Particles PP; ori: A = 0.7927; B = 0.0038;
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 2: { // Decomposing and Fragmented precipitation particles DF
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 3: { // Rounded Grains RG; ori: A = 0.2027; B = 0.0092;
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 4: { // Faceted Crystals FC; ori: A = 0.3867; B = 0.0071;
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 5: { // Depth Hoar DH
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
-				A = 1. - hoar_density_buried/(250. - hoar_density_buried);
-				B = 1./(250. - hoar_density_buried);
-				break;
-			}
-			case 7: { // Melt Forms MF
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			case 8: { // Ice layer IFil
-				A = 6.;
-				B = 0.;
-				break;
-			}
-			case 9: { // Rounding faceted particles FCxr
-				A = 1.0;
-				B = 0.0;
-				break;
-			}
-			default: {
-				A = Constants::undefined;
-				B = 0.;
-				break;
-			}
-		}
-		hardness = A + B*Edata.Rho;
-		// Large surface hoar stays longer unstable! 1 dec 2007 (sb)
-		if ((F1 == 6) && (gsz >= 5.)) {
-			hardness = 1;
-		} else if ((F1 == 6 ) && (gsz < 5.)) {
-			hardness = MIN(hardness, 2.);
 		}
 	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
-		if (Edata.theta[WATER] < 0.3 * Edata.res_wat_cont) {
+		const double res_water_cont = Edata.res_wat_cont;
+		if (Edata.theta[WATER] < 0.3 * res_water_cont) {
 			hardness = 5.;
-		} else if (Edata.theta[WATER] < 0.6 * Edata.res_wat_cont) {
+		} else if (Edata.theta[WATER] < 0.6 * res_water_cont) {
 			hardness = 4.5;
-		} else if (Edata.theta[WATER] < 0.85 * Edata.res_wat_cont) {
+		} else if (Edata.theta[WATER] < 0.85 * res_water_cont) {
 			hardness = 4.;
 		} else {
 			hardness = 3.;
