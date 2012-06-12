@@ -62,7 +62,7 @@ Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg),
 	 */
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 	/* Dew point relative to water or ice
 	 * - default: 1

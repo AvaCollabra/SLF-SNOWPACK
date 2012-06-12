@@ -143,15 +143,31 @@
  * - ground temperature (if available)
  * - snow temperatures at various depth (if available and only for comparisons)
  *
- * These parameters MUST be available at least at a hourly time step. Please keep in mind that any inaccuracy on these parameters will have an impact on
+ * These parameters MUST be available at least at a hourly time step.
+ *
+ * @section data_preparation Data preparation
+ * In order to help Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
+ * This enables Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
+ * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation to learn about
+ * the supported file formats, the available filters and resampling/re-accumulation strategies.
+ *
+ * @section data_checks Data checks
+ * Please keep in mind that any inaccuracy on the input parameters will have an impact on
  * the quality of the simulation. Since the modelling is physically-based, manually re-constructing missing data can lead to completely wrong results if not
  * done with great care (the model performing various checks on the physical consistency of the input data, it WILL exclude data points that are not consistent
  * with the other parameters. For example, precipitation occuring simultaneously with quite dry air will be refused).
  *
- * In order to help Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
- * This enables Snowpack to get data from a variety of sources (several input file formats, by connecting to a database, by connecting to a web service) and to
- * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation to learn about
- * the supported file formats, the available filters and resampling/re-accumulation strategies.
+ * \image html clear_sky.png "Data consistency check"
+ * \image latex clear_sky.eps "Data consistency check" width=0.9\textwidth
+ * For example, the figure above allows to check the following points:
+ * - the precipitation are synchronized with the major snow height increase - this is consistent;
+ * - the precipitation happen during hight relative humidity periods - this is consistent;
+ * - during times of precipitation, the air and surface temperatures remain close - this means that the sky is cloudy, this is consistent;
+ * - a few periods of low wind speed coincide with high relative humidity, which could lead to surface hoar formation - look for it in the simulation outputs;
+ * - early in the season, two periods of high wind speed could have lead to drifting snow. The first one occurs during a large snow fall and therefore might be hidden in the data while the second period that experiences a strong snow height decrease could also be driven by rapidly increasing air temperatures - the precipitation might show a large undercatch while the snow might have been wind pressed;
+ * - late in the data set, the snow height measurements fail for an extended period of time at a time of high wind speed - some snow drift might have gone unnoticed.
+ *
+ * When using spurious data or when faced with a bad behaving simulation, one should first look at the consistency of the input data. The vast majority of the problems can be traced back to some low quality data (either for sensor issues or spurious data manipulation at some stage).
  */
 
 /**

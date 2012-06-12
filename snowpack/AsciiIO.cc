@@ -563,6 +563,7 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
+//TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	FILE *PFile=NULL;
 
 	const string stationname = Xdata.meta.getStationName();
@@ -609,6 +610,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	}
 	for (e = nN-nz; e < nN; e++)
 		fprintf(PFile,",%.2f",M_TO_CM((NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z)/cos_sl));
+
 	//  502: element density (kg m-3)
 	fprintf(PFile,"\n0502,%u", nE);
 	for (e = 0; e < nE; e++)
