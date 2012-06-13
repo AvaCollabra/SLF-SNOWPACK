@@ -28,16 +28,19 @@
  * This library is available under LGPL version 3 or above, see <a href="http://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>. The Visual C++ version uses a BSD-licensed port of getopt for Visual C++, with a \subpage getopt_copyright "BSD copyright notice".
  *
  * @section table_of_content Table of content
- * -# Model principles
- *    -# \subpage general "General concepts"
- *    -# \subpage references "References"
- * -# Inputs
- *    -# \subpage requirements "Data requirements"
- *    -# \subpage input_formats "File formats"
- * -# Outputs
- *    -# \subpage output_formats "File formats"
- * -# Simulation configuration
- *    -# \subpage inishell_config "The inishell tool"
+ * -# End User documentation
+ *    -# Model principles
+ *        -# \subpage general "General concepts"
+ *        -# \subpage references "References"
+ *    -# Inputs / Outputs
+ *        -# \subpage requirements "Data requirements"
+ *        -# \subpage input_formats "Input file formats"
+ *        -# \subpage output_formats "Output file formats"
+ *    -# Simulation configuration
+ *        -# \subpage inishell_config "The inishell tool"
+ * -# Programing using Snowpack
+ *        -# \subpage libsnowpack_basics "Programming with libsnowpack"
+ * -# Expanding Snowpack
  */
 
 /**
@@ -47,6 +50,8 @@
  * However, this physical model is also used for other applications such as permafrost investigations (Lütschg et al., 2003),
  * the assessment of snow – vegetation interactions, climate research (Rasmus and Räisänen, 2003; Bavay et al., 2009), mass- and energy balance
  * calculations for arctic areas (Meirold-Mautner and Lehning, 2003) and calculations of chemical solute transport in snow (Waldner et al., 2003).
+ *
+ * @section physical_processes Physical processes
  * \image html basics.png "Principal physical processes included in the SNOWPACK model"
  * \image latex basics.eps "Principal physical processes included in the SNOWPACK model" width=0.9\textwidth
  *
@@ -56,6 +61,7 @@
  * conductivity and viscosity. At present, SNOWPACK is the most advanced snow cover models worldwide in terms of microstructural detail.
  * Therefore, first attempts are being made to estimate snow cover stability from SNOWPACK simulations (Lehning et al., 2003).
  *
+ * @section current_op_usage Operational usage experience
  * SNOWPACK runs operationally
  * on a network of high Alpine automatic weather and snow measurement stations. Presently approximately 100 sites are in operation. These stations
  * measure wind, air temperature, relative humidity, snow depth, surface temperature, ground (soil) temperature, reflected short wave radiation and
@@ -65,10 +71,14 @@
  * and the energy budget. The implemented snow metamorphism formulations yield reasonable grain types and are able to reproduce important processes
  * such as the formation of depth or surface hoar.
  *
+ * @section other_uses Other uses
  * In addition to the stand-alone applications, SNOWPACK is increasingly used in a distributed way (Kuonen et al., 2010).
  * SNOWPACK has been coupled with atmospheric flow and snow drift modules as well as with spatial energy balance models. The coupled models are
- * used to investigate snow deposition and snow cover development in steep terrain (Lehning and others, 2000) and to forecast ski run conditions for racing.
- * However, the current version of SN_GUI does not include the visualization of distributed SNOWPACK calculations.
+ * used to investigate snow deposition and snow cover development in steep terrain (Lehning and others, 2000) and to forecast ski run conditions for racing
+ * (however, the current version of SN_GUI does not include the visualization of distributed SNOWPACK calculations).
+ *
+ * In order to make it easier to integrate Snowpack in other models, it has been repackaged as a library. You can therefore use the Snowpack library in another
+ * model. More details are given in \subpage libsnowpack_basics "Programming with libsnowpack".
  *
  */
 
@@ -160,14 +170,14 @@
  * \image html clear_sky.png "Data consistency check"
  * \image latex clear_sky.eps "Data consistency check" width=0.9\textwidth
  * For example, the figure above allows to check the following points:
- * - the precipitation are synchronized with the major snow height increase - this is consistent;
+ * - the (solid) precipitation are synchronized with the major snow height increase - this is consistent;
  * - the precipitation happen during hight relative humidity periods - this is consistent;
  * - during times of precipitation, the air and surface temperatures remain close - this means that the sky is cloudy, this is consistent;
  * - a few periods of low wind speed coincide with high relative humidity, which could lead to surface hoar formation - look for it in the simulation outputs;
  * - early in the season, two periods of high wind speed could have lead to drifting snow. The first one occurs during a large snow fall and therefore might be hidden in the data while the second period that experiences a strong snow height decrease could also be driven by rapidly increasing air temperatures - the precipitation might show a large undercatch while the snow might have been wind pressed;
  * - late in the data set, the snow height measurements fail for an extended period of time at a time of high wind speed - some snow drift might have gone unnoticed.
  *
- * When using spurious data or when faced with a bad behaving simulation, one should first look at the consistency of the input data. The vast majority of the problems can be traced back to some low quality data (either for sensor issues or spurious data manipulation at some stage).
+ * When using spurious data or when faced with a bad behaving simulation, one should <b>first look at the consistency of the input data</b>. The vast majority of the problems can be traced back to some low quality data (either for sensor issues or spurious data manipulation at some stage).
  */
 
 /**
@@ -347,6 +357,37 @@
  * The Snowpack_adavanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.
  *
+ */
+
+/**
+ * @page libsnowpack_basics "Programming with libsnowpack"
+ * Snowpack is now distributed as a very simple application that delegates most of the work to a library, libsnowpack. This C++ library can easily be integrated in
+ * other models/applications. In order to do so, the following header have to be included:
+ * @code
+ * #include <snowpack/libsnowpack.h>
+ * #include <meteoio/MeteoIO.h>
+ * @endcode
+ * Usually, MeteoIO is used to get the meteorological data and the meteoio meteo data class (mio::MeteoData) is converted to Snowpack meteo data class (CurrentMeteo).
+ * The Snowpack specific configuration options are stored in a SnowpackConfig class that is passed to the various other objects.
+ *
+ * The main computation is performed by the Snowpack class that needs the following data for its Snowpack::runSnowpackModel call:
+ * - the meteo data for the current timestamp as a CurrentMeteo object;
+ * - the information about the specific location where the snowpack is simulated contained in a SnowStation object;
+ * - the boundary conditions in a BoundCond object;
+ * - the surface fluxes in a SurfaceFluxes object.
+ *
+ * In order to initialize some of these objects from data stored in files, a helper class has been designed: SnowpackIO. Of interest are the following calls:
+ * SnowpackIO::readSnowCover, SnowpackIO::writeSnowCover, SnowpackIO::writeProfile, SnowpackIO::writeTimeSeries.
+ *
+ * In order to compute hazard relevant data, the Hazard class has been designed. The stability data is computed by the Stability class. Some information has
+ * to be exchanged between the SnowpackIO object and the Hazard and/or Stability objects. This is handled by the SN_SNOWSOIL_DATA and ZwischenData classes.
+ *
+ * In order to ease debugging, these classes redefine the "<<" operator to show in a compact way their relevant content. For example,
+ * @code
+ * SnowStation station;
+ * std::cout << station;
+ * @endcode
+ * shows the relevant parameters of "station".
  */
 
 #endif

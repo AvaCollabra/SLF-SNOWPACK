@@ -69,7 +69,7 @@ IF(WIN32)
 	# 		include(BundleUtilities)
 	# 		fixup_bundle(\"bin/snowpack\" \"${additionalLib}\" \"${libSearchDirs}\")"
 	# 		COMPONENT libraries)
-		INSTALL(FILES ${METEOIO_LIBRARIES} ${PROJECT_SOURCE_DIR}/lib/libsnowpack*.dll
-			DESTINATION bin COMPONENT exe)
+		FILE(GLOB SNOWPACK_LIB "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
+		INSTALL(FILES ${METEOIO_LIBRARIES} ${SNOWPACK_LIB} DESTINATION bin COMPONENT exe)
 	ENDIF(BUNDLE_METEOIO)
 ENDIF(WIN32)
