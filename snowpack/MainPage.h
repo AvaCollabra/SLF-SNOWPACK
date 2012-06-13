@@ -36,11 +36,12 @@
  *        -# \subpage requirements "Data requirements"
  *        -# \subpage input_formats "Input file formats"
  *        -# \subpage output_formats "Output file formats"
- *    -# Simulation configuration
- *        -# \subpage inishell_config "The inishell tool"
- * -# Programing using Snowpack
+ *    -# Simulation tools
+ *        -# \subpage inishell_config "Configuration with inishell"
+ *        -# \subpage sngui_config "Visualization with sngui"
+ * -# Programing using %Snowpack
  *        -# \subpage libsnowpack_basics "Programming with libsnowpack"
- * -# Expanding Snowpack
+ * -# Expanding %Snowpack
  */
 
 /**
@@ -77,7 +78,7 @@
  * used to investigate snow deposition and snow cover development in steep terrain (Lehning and others, 2000) and to forecast ski run conditions for racing
  * (however, the current version of SN_GUI does not include the visualization of distributed SNOWPACK calculations).
  *
- * In order to make it easier to integrate Snowpack in other models, it has been repackaged as a library. You can therefore use the Snowpack library in another
+ * In order to make it easier to integrate %Snowpack in other models, it has been repackaged as a library. You can therefore use the %Snowpack library in another
  * model. More details are given in \subpage libsnowpack_basics "Programming with libsnowpack".
  *
  */
@@ -92,7 +93,7 @@
  * - Lehning, M., P.B. Bartelt, R.L. Brown, C. Fierz and P. Satyawali. 2002b. A physical SNOWPACK model for the Swiss Avalanche Warning Services. Part III: Meteorological Boundary Conditions, Thin Layer Formulation and Evaluation. Cold Reg. Sci. Technol, 35(3), 169-184.
  * - Lehning, M., C. Fierz and C. Lundy. 2001. An objective snow profile comparison method and its application to SNOWPACK. Cold Reg. Sci. Technol., 33, 253-261.
  * - Lehning, M., J. Doorschot, N. Raderschall and P.B. Bartelt. 2000. Combining snow drift and SNOWPACK models to estimate snow loading in avalanche slopes. In: Snow Engineering, HjorthHansen, Holand, Loset & Norem (eds.), Balkema, 113-122.
- * - Lehning, M., P. Bartelt, R.L. Brown, T. Russi, U. Stöckli and M. Zimmerli. 1999. Snowpack model calculations for avalanche warning based upon a new network of weather and snow stations. Cold Reg. Sci. Technol., 30(1-3), 145-157.
+ * - Lehning, M., P. Bartelt, R.L. Brown, T. Russi, U. Stöckli and M. Zimmerli. 1999. %Snowpack model calculations for avalanche warning based upon a new network of weather and snow stations. Cold Reg. Sci. Technol., 30(1-3), 145-157.
  * - Lehning, M., C. Fierz, B. Brown, B. Jamieson,. 2003. Modelling Instability for the Snow Cover Model SNOWPACK. Ann. of Glaciol., in press.
  * - Lütschg, M., P.B. Bartelt, M. Lehning, V. Stoeckli and W. Haeberli. 2003. Numerical simulation of the interaction processes between snow cover and alpine permafrost. Proceedings of the 8th International Conference on Permafrost, 21-25 July, 2003, Zurich, Switzerland, in press.
  * - Meirold-Mautner, I. and M. Lehning. 2003. Measurement and modeling of the solar shortwave fluxes in snow on Summit/Greenland. J. of Glaciol., in press.
@@ -141,8 +142,8 @@
  */
 
 /**
- * @page requirements "Data requirements"
- * Snowpack performs physical modeling of the various processes taking place between the soil, snow cover and atmosphere in order to
+ * @page requirements Data requirements
+ * %Snowpack performs physical modeling of the various processes taking place between the soil, snow cover and atmosphere in order to
  * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters:
  * - air temperature
  * - relative humidity
@@ -156,8 +157,8 @@
  * These parameters MUST be available at least at a hourly time step.
  *
  * @section data_preparation Data preparation
- * In order to help Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
- * This enables Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
+ * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
+ * This enables %Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
  * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation to learn about
  * the supported file formats, the available filters and resampling/re-accumulation strategies.
  *
@@ -181,8 +182,8 @@
  */
 
 /**
- * @page input_formats "File formats"
- * Several kind of information need to be given to Snowpack for a simulation:
+ * @page input_formats File formats
+ * Several kind of information need to be given to %Snowpack for a simulation:
  * -# the description of the place where the snow pack has to be simulated: latitutde, longitude, elevation, slope, ...
  * -# the time series of the various meteorological parameters
  * -# the intial state of the various soil and snow layers
@@ -256,8 +257,8 @@
  */
 
 /**
- * @page output_formats "File formats"
- * Snowpack creates various output files:
+ * @page output_formats File formats
+ * %Snowpack creates various output files:
  * - the current state of its soil and snow layers in <i>".sno"</i> files, which structure is described in \subpage input_formats "input formats";
  * - the current state of its hazard relevant data in <i>".haz"</i> files, which structure is described in \subpage input_formats "input formats";
  * - a time serie of snow profile in <i>".pro"</i> files;
@@ -345,7 +346,7 @@
  */
 
 /**
- * @page inishell_config "The inishell tool"
+ * @page inishell_config The inishell tool
  * The configuration for a given simulation is kept in a <i>".ini"</i> file. This is an ascii file that contains keys/values structured
  * by sections. It is however highly recommended to use the <a href="https://slfsmm.indefero.net/p/inishell">Inishell</a> tool to generate these files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
@@ -354,21 +355,32 @@
  * The configuration files being an ascii format (<a href="https://en.wikipedia.org/wiki/INI_file">INI format</a>), it is possible to manually
  * copy/paste whole sections of such files between simulations in order to run similar simulations without the need to re-type the whole configuration.
  *
- * The Snowpack_adavanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
+ * The %Snowpack_adavanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.
  *
  */
 
 /**
- * @page libsnowpack_basics "Programming with libsnowpack"
- * Snowpack is now distributed as a very simple application that delegates most of the work to a library, libsnowpack. This C++ library can easily be integrated in
+ * @page sngui_config The sngui tool
+ * The simulation outputs are saved in \a ".pro" files for the time resolved profiles and \a ".met" files for the meteorological data time series
+ * (see section \subpage output_formats "File formats"). These files can be processed with some scripts, relying on GNU plot for generating graphs
+ * but are usually viewed with a graphical application: <a href="http://slfsmm.indefero.net/p/sngui/">sngui</a>. This java application can be
+ * downloaded after registering on the web site.
+ * \image html sngui_overview_small.png "sngui overview"
+ * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
+ *
+ */
+
+/**
+ * @page libsnowpack_basics Programming with libsnowpack
+ * %Snowpack is now distributed as a very simple application that delegates most of the work to a library, libsnowpack. This C++ library can easily be integrated in
  * other models/applications. In order to do so, the following header have to be included:
  * @code
  * #include <snowpack/libsnowpack.h>
  * #include <meteoio/MeteoIO.h>
  * @endcode
- * Usually, MeteoIO is used to get the meteorological data and the meteoio meteo data class (mio::MeteoData) is converted to Snowpack meteo data class (CurrentMeteo).
- * The Snowpack specific configuration options are stored in a SnowpackConfig class that is passed to the various other objects.
+ * Usually, MeteoIO is used to get the meteorological data and the meteoio meteo data class (mio::MeteoData) is converted to %Snowpack meteo data class (CurrentMeteo).
+ * The %Snowpack specific configuration options are stored in a SnowpackConfig class that is passed to the various other objects.
  *
  * The main computation is performed by the Snowpack class that needs the following data for its Snowpack::runSnowpackModel call:
  * - the meteo data for the current timestamp as a CurrentMeteo object;
@@ -387,7 +399,34 @@
  * SnowStation station;
  * std::cout << station;
  * @endcode
- * shows the relevant parameters of "station".
+ * shows the relevant parameters of "station":
+ * @code
+ * <SnowStation>
+ * <station>
+ * <Coords>
+ * Altitude        -999
+ * Lat/Long        (-999°0'0.000000" , -999°0'0.000000")
+ * Lat/Long        (-999 , -999)
+ * X/Y_coords      (-999 , -999)
+ * I/J_indices     (-999 , -999)
+ * Projection      NULL NULL
+ * EPSG            -1
+ * </Coords>
+ * ID: MST96
+ * Name: MST96
+ * Slope: -999 bearing: -999
+ * </station>
+ * 0 element(s) and 0 node(s). Soil=false canopy=false
+ * Soil:   SoilNode=0 depth=0 BareSoil_z0=0
+ * Albedo: mAlbedo=0 cAlbedo=0 SoilAlb=0
+ * Snow:   Measured HS=0 Calculated HS=0 New snow=0 of density=0
+ * Energy: ColdContent=0 dIntEnergy=0 SubSurfaceMelt=x SubSurfaceFrze=x
+ * Snowdrift:      sector=0 windward=0 ErosionLevel=0 ErosionMass=0
+ * Stability:      S_d(0)=0 S_n(0)=0 S_s(0)=0 S_1=0 S_2=0 S_4(0)=0 S_5(0)=0
+ * Kt= 0
+ * </SnowStation>
+ * @endcode
+ *
  */
 
 #endif
