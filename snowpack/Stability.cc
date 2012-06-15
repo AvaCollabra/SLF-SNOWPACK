@@ -210,7 +210,7 @@ double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
  * @param rho snow density
  * @return hand hardness
  */
-double Stability::getHandHardnessMonti(const int& F, const double& rho)
+double Stability::getHandHardnessMonti(const int& F, const double& rho, const double& water_content)
 {
 #ifndef NOSAFECHECKS
 	if (rho<0.) {
@@ -232,46 +232,46 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho)
 				return 2.;
 		}
 		case 2: { // Decomposing and Fragmented precipitation particles DF; ori: A = 84.0713; B = 54.0134;
-			if ( (rho >= 0.) && (rho < 175.435))
+			if ( (rho >= 0.) && (rho <= 214.2380))
 				return 1.;
-			else
+			else if ( (rho > 214.2380) && (rho <= 268.2981))
 				return 2.;
+			else if ( (rho > 268.2981) && (rho <= 387.4305))
+				return 3.;
+			else
+				return 4.;
 		}
 		case 3: { // Rounded Grains RG; ori: A = 0.2027; B = 0.0092; ori: A = 124.3460; B = 58.8401;
-			if ( (rho >= 0.) && (rho <= 183.2036))
+			if ( (rho >= 0.) && (rho <= 189.2103))
 				return 1.;
-			else if ( (rho > 183.2036) && (rho <= 259.2881))
+			else if ( (rho > 189.2103) && (rho <= 277.8087))
 				return 2.;
-			else if ( (rho > 259.2881) && (rho <= 370.9122))
+			else if ( (rho > 277.8087) && (rho <= 368.4093))
 				return 3.;
-			else if ( (rho > 370.9122) && (rho <= 606.1735))
+			else if ( (rho > 368.4093) && (rho <= 442.4917))
 				return 4.;
 			else
 				return 5.;
 		}
 		case 4: { // Faceted Crystals FC; ori: A = 190.5609; B = 46.0518;
-			if ( (rho >= 0.) && (rho <= 214.2381))
+			if ( (rho >= 0.) && (rho <= 247.2748))
 				return 1.;
-			else if ( (rho > 214.2381) && (rho <= 320.3560))
+			else if ( (rho > 247.2748) && (rho <= 319.3549))
 				return 2.;
-			else if ( (rho > 320.3560) && (rho <= 390.9344))
+			else if ( (rho > 319.3549) && (rho <= 400.4450))
 				return 3.;
-			else if ( (rho > 390.9344) && (rho <= 495.5506))
+			else if ( (rho > 400.4450) && (rho <= 517.5751))
 				return 4.;
 			else
 				return 5.;
 		}
 		case 5: { // Depth Hoar DH; ori: A = 215.2649; B = 32.1562;
-			if ( (rho >= 0.) && (rho <= 289.3215))
+			if ( (rho >= 0.) && (rho <= 287.8198))
 				return 1.;
-			else if ( (rho > 289.3215) && (rho <= 402.9477))
+			else if ( (rho > 287.8198) && (rho <= 344.3826))
 				return 2.;
-			else if ( (rho > 402.9477) && (rho <= 446.4962))
-				return 3.;
-			else if ( (rho > 446.4962) && (rho <= 654.7275))
-				return 4.;
 			else
-				return 5.;
+				return 3.;
 		}
 		case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
 			const double A = 1. - hoar_density_buried/(250. - hoar_density_buried);
@@ -279,16 +279,29 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho)
 			return (A + B*rho);
 		}
 		case 7: { // Melt Forms MF
-			if ( (rho >= 0.) && (rho <= 147.1635))
-				return 1.;
-			else if ( (rho > 148.1647) && (rho <= 188.2092))
-				return 2.;
-			else if ( (rho > 188.2092) && (rho <= 301.3348))
-				return 3.;
-			else if ( (rho > 301.3348) && (rho <= 466.5184))
-				return 4.;
-			else
-				return 5.;
+			if(water_content<.03) { //dry snow
+				if ( (rho >= 0.) && (rho <= 213.7375))
+					return 1.;
+				else if ( (rho > 213.7375) && (rho <= 317.3527))
+					return 2.;
+				else if ( (rho > 317.3527) && (rho <= 406.9522))
+					return 3.;
+				else if ( (rho > 406.9522) && (rho <= 739.8220))
+					return 4.;
+				else
+					return 5.;
+			} else { //wet snow
+				if ( (rho >= 0.) && (rho <= 338.3760))
+					return 1.;
+				else if ( (rho > 338.3760) && (rho <= 417.4638))
+					return 2.;
+				else if ( (rho > 417.4638) && (rho <= 541.6018))
+					return 3.;
+				else if ( (rho > 541.6018) && (rho <= 614.6830))
+					return 4.;
+				else
+					return 5.;
+			}
 		}
 		case 8: { // Ice layer IFil
 			const double A = 6.;
@@ -296,13 +309,13 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho)
 			return (A + B*rho);
 		}
 		case 9: { // Rounding faceted particles FCxr; ori: A = 218.1156; B = 41.5798;
-			if ( (rho >= 0.) && (rho <= 268.7987))
+			if ( (rho >= 0.) && (rho <= 259.7887))
 				return 1.;
-			else if ( (rho > 268.7987) && (rho <= 336.3738))
+			else if ( (rho > 259.7887) && (rho <= 326.8632))
 				return 2.;
-			else if ( (rho > 336.3738) && (rho <= 419.9667))
+			else if ( (rho > 326.8632) && (rho <= 396.9411))
 				return 3.;
-			else if ( (rho > 419.9667) && (rho <= 555.6174))
+			else if ( (rho > 396.9411) && (rho <= 484.5384))
 				return 4.;
 			else
 				return 5.;
@@ -332,8 +345,8 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
 	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
-		const double hardness_F1 = getHandHardnessMonti(F1, Edata.Rho);
-		const double hardness_F2 = getHandHardnessMonti(F2, Edata.Rho);
+		const double hardness_F1 = getHandHardnessMonti(F1, Edata.Rho, Edata.theta[WATER]);
+		const double hardness_F2 = getHandHardnessMonti(F2, Edata.Rho, Edata.theta[WATER]);
 		hardness = 0.5 * (hardness_F1 + hardness_F2);
 		
 		if (F1 == 6) {
