@@ -60,16 +60,9 @@ INSTALL(TARGETS ${BINARY}
 ## Bundle MeteoIO
 ###########################################################
 IF(WIN32)
-	SET(BUNDLE_METEOIO ON CACHE BOOL "Pack Snowpack with its dll ON or OFF")
-	IF(BUNDLE_METEOIO)
-		# fixup the bundle
-	# 	LIST(APPEND libSearchDirs ${METEOIO_LIBRARIES})
-	# 	SET(additionalLib ${METEOIO_LIBRARIES})
-	# 	INSTALL(CODE "
-	# 		include(BundleUtilities)
-	# 		fixup_bundle(\"bin/snowpack\" \"${additionalLib}\" \"${libSearchDirs}\")"
-	# 		COMPONENT libraries)
-		FILE(GLOB SNOWPACK_LIB "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
-		INSTALL(FILES ${METEOIO_LIBRARIES} ${SNOWPACK_LIB} DESTINATION bin COMPONENT exe)
-	ENDIF(BUNDLE_METEOIO)
+	IF(CPACK_BUNDLE_ALL) #we consider that if !bundle, the user knows how to handle is library path
+		FILE(GLOB METEOIO_DLL "${METEOIO_ROOT}/lib/libmeteo*.dll")
+		FILE(GLOB SNOWPACK_DLL "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
+		INSTALL(FILES ${METEOIO_DLL} ${SNOWPACK_DLL} DESTINATION bin COMPONENT exe)
+	ENDIF(CPACK_BUNDLE_ALL)
 ENDIF(WIN32)
