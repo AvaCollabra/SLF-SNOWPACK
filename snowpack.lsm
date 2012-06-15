@@ -1,7 +1,7 @@
 Begin4
 Title:          snowpack
-Version:        2.1.0
-Entered-date:   2011-11-10
+Version:        3.0.0
+Entered-date:   2012-06-15
 Description:    SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.
 Keywords:       snow pack model
 Author:         bavay@slf.ch (Mathias Bavay)

@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.4)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
-SET(VERSION_MAJOR 2 CACHE INTERNAL "")
-SET(VERSION_MINOR 1 CACHE INTERNAL "")
+SET(VERSION_MAJOR 3 CACHE INTERNAL "")
+SET(VERSION_MINOR 0 CACHE INTERNAL "")
 SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
@@ -217,6 +217,10 @@ IF(CPACK_BUNDLE_ALL)
 		FILE(GLOB meteoio_docs "${METEOIO_INSTALLED_DOC}/*.*")
 		INSTALL(FILES ${meteoio_docs} DESTINATION ${METEOIO_DOC} COMPONENT documentation)
 	ENDIF(INSTALL_DOC)
+
+	#bundle inishell
+	FILE(GLOB inishell "${CMAKE_SOURCE_DIR}/tools/inish*.jar")
+	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
@@ -292,6 +296,7 @@ ELSE(UNIX)
 	IF(WIN32)
 		SET(CPACK_GENERATOR "NSIS")
 		SET(CPACK_NSIS_MUI_ICON "${CPACK_PACKAGE_ICON}")
+		SET(CPACK_PACKAGE_ICON "${CPACK_PACKAGE_ICON}")
 		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}-${VERSION}")
 		SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${CPACK_PACKAGE_NAME}")
 		#SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${EnvVarUpdate} $0 \"LIB\"  \"A\" \"HKLM\" \"C:\MyLib\"")
@@ -299,6 +304,7 @@ ELSE(UNIX)
 		IF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"bin/inishell.jar" "inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://slfsmm.indefero.net/p/snowpack/" "Home page"
@@ -313,7 +319,9 @@ ELSE(UNIX)
 			ENDIF(CPACK_BUNDLE_ALL)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page"
+				SET(CPACK_NSIS_MENU_LINKS
+				"bin/inishell.jar" "inishell"
+				"https://slfsmm.indefero.net/p/snowpack/" "Home page"
 				"https://slfsmm.indefero.net/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page")

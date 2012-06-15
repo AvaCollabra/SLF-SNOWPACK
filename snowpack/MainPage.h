@@ -42,6 +42,8 @@
  * -# Programing using %Snowpack
  *        -# \subpage libsnowpack_basics "Programming with libsnowpack"
  * -# Expanding %Snowpack
+ *        -# \subpage coding_style "Coding style"
+ *        -# \subpage adding_extra_models "Adding extra models"
  */
 
 /**
@@ -429,9 +431,118 @@
  *
  */
 
+/**
+ * @page coding_style Coding style
+ * @section coding_sty Recomended coding style
+ * The recommended coding style for MeteoIO is the <A HREF="http://www.kernel.org/doc/Documentation/CodingStyle">Kernel coding style</A> with a few exceptions:
+ * - we don't enforce strict 80 characters line width. try to remain reasonable, but don't necessarily cut everything off at 80 characters
+ * - try to intelligently use spaces to visually group elements of a complex formula. If the formula can be split into meaningful elements,
+ *   please do it (using some "const double element = " constructs).
+ * - try to properly qualify variables: for example, if a variable will not be changed, will never be negative and always integer,
+ *   then use "const unsigned int". When some specific types are used for some standard library calls, try to properly use these types (for example, "size_t")
+ * - use C++ method naming convention: a method name starts with lowercase letter and each individual word in a name starts capitalized.
+ *   Usually, no underscores are used in a method. For example, a method that would return the lapse rate contained in an object would be named "getLapseRate()"
+ * - qualify variables and parameters with "const" when appropriate (see <A HREF="http://jriddell.org/const-in-cpp.html">const-in-cpp</A>).
+ *
+ * A few important points to emphasize (from the <A HREF="http://www.kernel.org/doc/Documentation/CodingStyle">Kernel coding style</A>):
+ * - Functions should be short and sweet, and do just one thing.  They should fit on one or two screenfuls of text, and do one thing and do that well.
+ * - If you have a complex function, and you suspect that a less-than-gifted first-year high-school student might not even understand
+ *   what the function is all about, you should adhere to the maximum limits all the more closely.  Use helper functions with descriptive names.
+ * - Comments are good, but there is also a danger of over-commenting.  NEVER try to explain HOW your code works in a comment:
+ *   it's much better to write the code so that the _working_ is obvious, and it's a waste of time to explain badly written code.
+ *
+ * @section code_indentation Indentation
+ * Since every user has his/her own preference for the ideal indentation width, please use <A HREF="http://www.emacswiki.org/emacs/SmartTabs">"smart tabs"</A>.
+ * That practically means:
+ * - indent with tabs
+ * - align with spaces
+ *
+ * This way, each developer can set his/her indentation size as he/she wishes without forcing his/her choice to others...
+ *
+ * @section containers Memory management and Containers
+ * Please do NOT manage memory manually but use <A HREF="https://secure.wikimedia.org/wikipedia/en/wiki/Standard_Template_Library">Standard Template Library (STL)
+ * </A> <A HREF="http://www.cplusplus.com/reference/stl/">containers</A> instead.
+ * This dramatically reduces memory errors (ie: <A HREF="https://secure.wikimedia.org/wikipedia/en/wiki/Segmentation_fault">segfaults</A>), often
+ * offers more performance and provides you with lots of <A HREF="http://www.cplusplus.com/reference/algorithm/">associated algorithms</A>
+ * (like sorting, search, filling, etc).
+ *
+ * When you need your own data class, please design it based on these STL containers (like grid2DObject is based on std::vector). Basically, this means
+ * that you will replace mallocs and arrays by vectors (for 1d, 2d, 3d grids), maps (for multiple key/value pairs), lists (for unordered table), etc
+ *
+ * @section exceptions_handinling Exceptions handling
+ * The recommended C++ usage should be followed: <b>"throw by value, catch by reference"</b> (as specified in <i>C++ Coding Standards: 101 Rules, Guidelines,
+ * and Best Practices</i>, Herb Sutter, Andrei Alexandrescu, 2004, Addison-Wesley Professional). Moreover, we should consider catching by
+ * <b>const reference</b> and not even declaring a variable if not doing anything with it: something like `catch(const IOException&)` would often be enough.
+ *
+ */
+
+/**
+ * @page adding_extra_models Adding extra models
+ * Various processes can already be simulated using different models as configured by the user. This result is achieved by providing a specific model of
+ * the process of interest, together with the proper entry in a std::map container that links a model keyword with its implementation. In order to look at the
+ * required steps, we will take as an example the hand hardness implementation in the Stability class. Please keep in mind that when adding a new model to
+ * a process that already has multiple available choices, only the first and the third steps are required, the other one being already done.
+ *
+ * @section model_implementation Model implementation
+ * A method has to be implemented in the class with the same prototype as the original method. In our example, the original method (setHandHardnessDEFAULT)
+ * has the following prototype:
+ * @code
+ * double setHandHardnessDEFAULT(const ElementData& Edata);
+ * @endcode
+ * so any alternative implementation must use the same prototype. If some parameters would be ignored by some implementation, simply comment out the unused variable:
+ * @code
+ * double my_method(const double& param1, const double /*unused_param*/);
+ * @endcode
+ *
+ * @section function_pointer Function pointer typedef
+ * All these methods sharing the same prototype, a generic function pointer type (actually, a method pointer) can be defined:
+ * @code
+ * typedef double (Stability::*StabMemFn)(const ElementData&);
+ * @endcode
+ *
+ * @section model_map Model map
+ * Once an alternative implementation has been written (and properly declared in the header file), it must be "registered" in the model map. In our exmaple, this map
+ * is defined in the header %file:
+ * @code
+ * static std::map<std::string, StabMemFn> mapHandHardness;
+ * @endcode
+ * and statically filled in the initStaticData() method as following:
+ * @code
+ * const bool Stability::__init = Stability::initStaticData();
+ * bool Stability::initStaticData() {
+ * 	mapHandHardness["DEFAULT"]  = &Stability::setHandHardnessDEFAULT;
+ * 	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
+ * 	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
+ * 	return true;
+ * }
+ * @endcode
+ * This way of fillinf the map ensures that it will be initialized only once and for all, making it consistent and efficient.
+ *
+ * @section model_user_choice User model configuration
+ * The user selection of model must be connected with the proper model implementation. The user selects the model he wants through a key in his
+ * configuration file. We need to read this key and activate the proper implementation, knowing that the proper key <-> implementation matching is done
+ * through the map:
+ * @code
+ * cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
+ * map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
+ * if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
+ * @endcode
+ * This means that in the section "SnowpackAdvanced" of his ini file, the key "HARDNESS_MODEL" must contain one of the strings given in the mapHandHardness
+ * above (ie. either "DEFAULT" or "ASARC" or "MONTI").
+ *
+ * @section calling_model Model call
+ * Finally, the process model has to be called where needed. A helper macro can be defined as
+ * @code
+ * #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
+ * @endcode
+ * and in the code, each time the hand hardness has to be computed, the call becomes:
+ * @code
+ * hardness = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
+ * @endcode
+ *
+ */
+
 #endif
-
-
 
 
 
