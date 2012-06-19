@@ -28,7 +28,6 @@
 #define __UTILS_H__
 
 #include <snowpack/DataClasses.h>
-#include <snowpack/Laws.h>
 
 #include <cstdarg> // needed for va_list
 #include <string>

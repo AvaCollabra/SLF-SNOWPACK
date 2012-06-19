@@ -321,11 +321,11 @@ double Metamorphism::spRateDEFAULT(const ElementData& Edata)
 double Metamorphism::spRateNIED(const ElementData& Edata)
 {
 	double spDot;
-	
+
 	const double dTdZ = fabs(Edata.gradT);
 	const double c = exp(-6000. / Edata.Te); // Original 6000.
 	const double f = c * dTdZ / 17.; // Introduced by ml on 2004-10-11; original CROCUS: c*pow(dTdZ, 0.4)
-	
+
   if ( dTdZ < 15.0 ) { //NIED (H. Hirashima)
     spDot = (15.0 - dTdZ)*0.5e9*c;
 	} else if ( (dTdZ > 15.0) && (dTdZ < 25.0) ) {
@@ -352,21 +352,17 @@ double Metamorphism::spRateNIED(const ElementData& Edata)
  */
 double Metamorphism::TGBondRate(const ElementData& Edata)
 {
-	double A;          // average cross sectional area (m2)
-	double TGradBond;  // micro temp gradient across bonds (K m-1)
-	double flux;       // mass flux of vapor in the pore space - in cgs units
-	double rbDot;      // Bond radius growth rate (mm d-1)
-
 	const double rb = MM_TO_M(Edata.rb);    // initial bond radius (m)
 	const double rg = MM_TO_M(Edata.rg);    // initial grain radius (m)
 	const double TGrad = fabs(Edata.gradT); // absolute value of temp gradient within element (K m-1)
 
-	A = 1./3. * (Constants::pi*(rb*rb + rg*rg) + csPoreArea(Edata));
-	TGradBond = Edata.k[TEMPERATURE] / Constants::conductivity_ice * A / (Constants::pi * rb*rb) * (-TGrad);       // (K m-1) NOTE Why take TGrad neg.?
-	flux = -Constants::diffusion_coefficient_in_air / (Constants::gas_constant * Edata.Te*Edata.Te) * (Constants::lh_sublimation / (Constants::gas_constant * Edata.Te) - 1) * TGradBond;
-	flux *= lw_SaturationPressure(Edata.Te); // (kg s-1 m-2)
+	const double A = 1./3. * (Constants::pi*(rb*rb + rg*rg) + csPoreArea(Edata)); // average cross sectional area (m2)
+	// micro temp gradient across bonds (K m-1)
+	const double TGradBond = Edata.k[TEMPERATURE] / Constants::conductivity_ice * A / (Constants::pi * rb*rb) * (-TGrad);       // (K m-1) NOTE Why take TGrad neg.?
+	double flux = -Constants::diffusion_coefficient_in_air / (Constants::gas_constant * Edata.Te*Edata.Te) * (Constants::lh_sublimation / (Constants::gas_constant * Edata.Te) - 1) * TGradBond; // mass flux of vapor in the pore space - in cgs units
+	flux *= Atmosphere::waterSaturationPressure(Edata.Te); // (kg s-1 m-2)
 	// Bond radius growth rate (m s-1)
-	rbDot = flux / Constants::density_ice * Metamorphism::sa_g_fudge;
+	const double rbDot = flux / Constants::density_ice * Metamorphism::sa_g_fudge; // Bond radius growth rate (mm d-1)
 	// Convert to mm d-1
 	return(M_TO_MM(D_TO_S(rbDot)));
 }
@@ -379,7 +375,7 @@ double Metamorphism::TGBondRate(const ElementData& Edata)
 */
 double Metamorphism::LatticeConstant0(const double& th_ice)
 {
-	double gsz0 = 2*new_snow_grain_rad;
+	const double gsz0 = 2.*new_snow_grain_rad;
 
 	return( pow((1. + 1.)*Metamorphism::ba_g_fudge*gsz0*gsz0*gsz0/th_ice, 1./3.) );
 }
@@ -443,13 +439,13 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 
 	// Intra layer flux, where the direction of flow does not matter! Units: kg/(sm2)
 	intraFlux =  fabs(Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Te*Te) * (Constants::lh_sublimation / (Constants::gas_constant * Te) - 1.) * gradT);
-	intraFlux *= lw_SaturationPressure(Te);
+	intraFlux *= Atmosphere::waterSaturationPressure(Te);
 
 	// Layer to layer flux, where the direction of flow DOES matter! Units: kg/(sm2)
 	botFlux = - Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Tbot*Tbot) * (Constants::lh_sublimation / (Constants::gas_constant * Tbot) - 1.) * gradTbot;
-	botFlux *= lw_SaturationPressure(Tbot);
+	botFlux *= Atmosphere::waterSaturationPressure(Tbot);
 	topFlux = - Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Ttop*Ttop) * (Constants::lh_sublimation / (Constants::gas_constant * Ttop) - 1.) * gradTtop;
-	topFlux *= lw_SaturationPressure(Ttop);
+	topFlux *= Atmosphere::waterSaturationPressure(Ttop);
 	dFluxL2L = -(topFlux - botFlux);
 	// Compute the rate in m s-1
 	rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::density_ice * (2 * new_snow_grain_rad) * gsz);
@@ -604,8 +600,8 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		// Compute the pressure gradient (kinetic or equilibrium growth metamorphism??)
 		T1 = NDS[e].T;
 		T2 = NDS[e+1].T;
-		P1 = lw_SaturationPressure(T1);
-		P2 = lw_SaturationPressure(T2);
+		P1 = Atmosphere::waterSaturationPressure(T1);
+		P2 = Atmosphere::waterSaturationPressure(T2);
 		dPdZ = fabs((P2 - P1) / EMS[e].L) * 0.01;  //  Result is in hPa m-1
 
 		// Equilibrium growth rates for old dry snow
@@ -831,8 +827,8 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		// Compute the pressure gradient (kinetic or equilibrium growth metamorphism??)
 		T1 = NDS[e].T;
 		T2 = NDS[e+1].T;
-		P1 = lw_SaturationPressure(T1);
-		P2 = lw_SaturationPressure(T2);
+		P1 = Atmosphere::waterSaturationPressure(T1);
+		P2 = Atmosphere::waterSaturationPressure(T2);
 		dPdZ = fabs((P2 - P1) / EMS[e].L) * 0.01;  //  Result is in mbar m-1
 
 		// Equilibrium growth rates for old dry snow

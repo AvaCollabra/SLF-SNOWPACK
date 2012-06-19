@@ -31,7 +31,7 @@ using namespace mio;
  * Sun elevation threshold (rad) below which radiation
  * splitting is no longer working; ori Nora: 1.e-2
  */
-const double Radiation::thresh_sun_elevation = 1.e-2; 
+const double Radiation::thresh_sun_elevation = 1.e-2;
 
 /************************************************************
  * non-static section                                       *
@@ -43,7 +43,7 @@ Radiation::Radiation(const mio::Config& cfg)
 	sw_mode %= 10;
 }
 
-double Radiation::ProjectToHorizontal(const double& slope_component, const double& ang_inc, 
+double Radiation::ProjectToHorizontal(const double& slope_component, const double& ang_inc,
                                       const double& sunx, const double& suny, const double& sunz)
 { // Project a radiation component that was computed on slope back to horizontal
 	//HACK: this method does not work for angles of incidence = 90 deg
@@ -292,7 +292,7 @@ void Radiation::computePotentialRadiation(const PositionSun& Psolar, const doubl
 	ma = mr * (pressure / 101325.);
 
 	// the equations for all the transmittances of the individual atmospheric constituents
-	// are from Bird and Hulstrom (1980, 1981) and can be found summarized in Iqbal (1983) 
+	// are from Bird and Hulstrom (1980, 1981) and can be found summarized in Iqbal (1983)
 	// on the quoted pages
 
   	// broadband transmittance by Rayleigh scattering (Iqbal (1983), p.189)
@@ -308,8 +308,8 @@ void Radiation::computePotentialRadiation(const PositionSun& Psolar, const doubl
 
   	// broadband transmittance by water vapor (in Iqbal (1983), p.189):
 
-  	// saturation vapor pressure in Pa 
-	e_stern = lw_SaturationPressure(ta);
+  	// saturation vapor pressure in Pa
+	e_stern = Atmosphere::waterSaturationPressure(ta);
 
 	// Leckner (1978); pressure and temperature correction not necessary since it is
 	// included in its numerical constant (in Iqbal (1983), p.94)
@@ -337,17 +337,17 @@ void Radiation::computePotentialRadiation(const PositionSun& Psolar, const doubl
   	// Iqbal (1983) p. 190
 	tauaa = 1. - (1. - w0) * (1. - ma + pow( ma,1.06 )) * (1. - taua);
 
-	// broadband transmittance function due to aerosols scattering only 
+	// broadband transmittance function due to aerosols scattering only
 	// Iqbal (1983) p. 146 (Bird and Hulstrom (1981))
 	tauas = taua / tauaa;
 
   	// cloudless sky albedo Bird and Hulstrom (1980, 1981) (in Iqbal (1983) p. 190)
-	  // alb_sky = alb_rayleighscattering + alb_aerosolscattering 
+	  // alb_sky = alb_rayleighscattering + alb_aerosolscattering
 	alb_sky = 0.0685 + (1. - fc) * (1. - tauas);
 
 	// direct normal solar irradiance in range 0.3 to 3.0 micrometer (Iqbal (1983) ,p.189)
 	// 0.9751 is for the wavelength range ??
-	// Bintanja (1996) (see Corripio (2002)) introduced a correction beta_z for increased 
+	// Bintanja (1996) (see Corripio (2002)) introduced a correction beta_z for increased
 	// transmittance with altitude that is linear up to 3000 m and than fairly constant up to 5000 - 6000 m
 	if( altitude < 3000. ) {
 		beta_z = 2.2 * 1.e-5 * altitude;
@@ -390,10 +390,10 @@ void Radiation::computeSplittingCoefficient(const PositionSun& Psolar, const dou
 		Rdata.Md = 1.0;
 		return;
 	}
-	
+
 	// clear sky index (ratio global measured to top of atmosphere radiation)
 	const double Mt = Rdata.global_hor / Rdata.toa_h;
-	
+
 	// diffuse fraction: hourly ratio of diffuse to global radiation incident on a horizontal surface
 	// splitting according to a combination of Reindl et al.(1990)'s models (Mt-model and Mt&Psolar.elev-model):
 	if ( Mt >= 0.78 ) {				// Mt in [0.78;1] -> clear day
@@ -424,7 +424,7 @@ void Radiation::computeSplittingCoefficient(const PositionSun& Psolar, const dou
  * @param Alb const double
  * @return int
  */
-void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, 
+void Radiation::projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb,
                                         CurrentMeteo& Mdata, RadiationData& Rdata)
 {
 	if ( Psolar.elev > 0.157 ) { // 9 deg = 0.157 rad
@@ -481,7 +481,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 	}
 	// Compute potential radiation only for Psolar.elev > THRESH_SUN_ELEVATION ...
 	if (Psolar.elev >= Radiation::thresh_sun_elevation) {
-		computePotentialRadiation(Psolar, Xdata.cAlbedo, Xdata.meta.position.getAltitude(), lw_AirPressure(Xdata.meta.position.getAltitude()), Mdata.rh, Mdata.ta, Rdata);
+		computePotentialRadiation(Psolar, Xdata.cAlbedo, Xdata.meta.position.getAltitude(), Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude()), Mdata.rh, Mdata.ta, Rdata);
 	} else {// ... because radiation is only diffuse otherwise
 		Rdata.pot_dir = 0.;
 		Rdata.pot_diffsky = Rdata.global_hor;
@@ -535,7 +535,7 @@ void Radiation::radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, 
 	} else {
 		Rdata.dir_slope = Rdata.dir_hor;
 	}
-	
+
 	// Assign radiation values to Sdata
 	Sdata.sw_hor  += Rdata.global_hor;
 	Sdata.sw_dir  += Rdata.dir_slope;

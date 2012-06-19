@@ -25,7 +25,6 @@
 #include <snowpack/DataClasses.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Utils.h>
-#include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 
 class Canopy {

@@ -20,12 +20,11 @@
 #ifndef __STABILITY_H__
 #define __STABILITY_H__
 
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember)) 
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Laws_sn.h>
-#include <snowpack/Laws.h>
 #include <vector>
 #include <map>
 #include <string>
@@ -68,7 +67,7 @@ class StabilityData {
 class Stability;
 
 typedef double (Stability::*StabMemFn)(const ElementData&);
-typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, const mio::Date&, 
+typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, const mio::Date&,
                                                ElementData&, NodeData&, StabilityData&);
 
 /**
@@ -101,13 +100,13 @@ class Stability {
 
 	private:
 
-		void initStability(const double& psi_ref, StabilityData& STpar, 
+		void initStability(const double& psi_ref, StabilityData& STpar,
 		                   SnowStation& Xdata, std::vector<InstabilityData>& SIdata);
 
 		double setHandHardnessDEFAULT(const ElementData& Edata);
 		double setHandHardnessASARC(const ElementData& Edata);
 		double setHandHardnessMONTI(const ElementData& Edata);
-		
+
 		double getHandHardnessMonti(const int& F, const double& rho, const double& water_content);
 
 		double compCriticalStress(const double& epDotn, const double& T_s);
@@ -117,7 +116,7 @@ class Stability {
 		double compPenetrationDepth(const SnowStation& Xdata);
 
 		void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
-		
+
 		bool setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
 		bool setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
@@ -131,14 +130,14 @@ class Stability {
 		                                   const double& Sk, InstabilityData& SIdata);
 
 		bool classifyProfileStability(SnowStation& Xdata);
-		
+
 		bool recognizeProfileType(const mio::Date& date, SnowStation& Xdata);
 
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
 		static std::map<std::string, StabMemFn> mapHandHardness;
 		static std::map<std::string, StabFnShearStrength> mapShearStrength;
-		
+
 		std::string strength_model, hardness_model;
 		bool plastic;
 		double hoar_density_buried;

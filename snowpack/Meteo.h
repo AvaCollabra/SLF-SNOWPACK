@@ -31,7 +31,6 @@
 #include <snowpack/Snowpack.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Utils.h>
-#include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Canopy.h>
 

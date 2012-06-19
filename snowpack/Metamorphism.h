@@ -27,7 +27,6 @@
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Utils.h>
-#include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 
 #include <cstdio>
@@ -43,7 +42,7 @@
 class SnowStation;
 class Metamorphism;
 
-typedef void (Metamorphism::*MetaModelFn)(const CurrentMeteo&, SnowStation&); 
+typedef void (Metamorphism::*MetaModelFn)(const CurrentMeteo&, SnowStation&);
 typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 
 class Metamorphism {
@@ -61,10 +60,10 @@ class Metamorphism {
 
 		static const double mm_tg_dpdz, ba_g_fudge, sa_g_fudge, max_grain_growth, bond_size_stop;
 		static const double max_grain_bond_ratio, wind_slab_enhance, wind_slab_vw, wind_slab_depth;
-		
+
 	private:
 		double TGBondRate(const ElementData& Edata);
- 
+
 		double LatticeConstant0(const double& th_ice);
 
 		double TGGrainRate(const ElementData& Edata, const double& Tbot, const double& Ttop,
@@ -77,7 +76,7 @@ class Metamorphism {
 
 		void metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& Xdata);
 		void metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdata);
-		
+
 
 		double spRateDEFAULT(const ElementData& Edata);
 		double spRateNIED(const ElementData& Edata);
@@ -86,7 +85,7 @@ class Metamorphism {
 		static bool initStaticData();///<initialize the static containers
 		static std::map<std::string, MetaModelFn> mapMetamorphismModel;
 		static std::map<std::string, MetaSpRateFn> mapSpRate;
-		
+
 		std::string metamorphism_model;
 		double sn_dt, new_snow_grain_rad;
 };

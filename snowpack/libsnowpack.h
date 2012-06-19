@@ -34,7 +34,6 @@
 #include <snowpack/DataClasses.h>
 #include <snowpack/Hazard.h>
 //#include <snowpack/ImisDBIO.h>
-#include <snowpack/Laws.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Metamorphism.h>
 #include <snowpack/Meteo.h>

@@ -25,7 +25,6 @@
 
 #include <snowpack/Constants.h>
 #include <snowpack/Snowpack.h>
-#include <snowpack/Laws.h>
 
 #include <meteoio/MeteoIO.h>
 
@@ -43,15 +42,15 @@ class PositionSun {
 		double eq_time;          ///< Equation of time
 		double solar_time;       ///< True solar time
 		double hr_angle;         ///< Angular displacement of the sun E or W of the local(!) meridian
-		
+
 		double azi_Sacw;         ///< Solar azimuth, anticlockwise from South
 		double azi_Ncw;          ///< Solar azimuth, clockwise from North
 		double elev;             ///< Solar elevation
 		double zen;              ///< Solar zenith angle
-		
+
 		double sunx, suny, sunz; ///< Components of sun(-earth) vector
 		double ang_inc;          ///< Solar incidence (rad)
-		
+
 };
 
 class RadiationData {
@@ -64,7 +63,7 @@ class RadiationData {
 		double dir_hor;          ///< Incoming direct irradiance at the meteo station
 		double dir_slope;        ///< Incoming direct irradiance perpendicular to slope
 		double diffsky;          ///< Incoming diffuse irradiance from the sky
-		
+
 		double toa_h;            ///< Irradiance on surface normal to the sun vector on top of the atmosphere
 		double pot_dir;          ///< Potential incoming direct irradiance perpendicular to the ground
 		double pot_diffsky;      ///< Potential incoming diffuse irradiance from the sky
@@ -110,20 +109,20 @@ class Radiation {
 
 		Radiation(const mio::Config& i_cfg);
 
-		void radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, SurfaceFluxes& Sdata, 
+		void radiationOnSlope(const SnowStation& Xdata, CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
 		                      PositionSun& Psolar, RadiationData& Rdata);
 
-		void flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata, 
+		void flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata,
 		                        PositionSun& Psolar, RadiationData& Rdata);
 
 	private:
 
-		double ProjectToHorizontal(const double& slope_component, const double& ang_inc, const double& sunx, 
+		double ProjectToHorizontal(const double& slope_component, const double& ang_inc, const double& sunx,
 							  const double& suny, const double& sunz);
 
 		//if slope_angle>0, uses slope_angle, slope_azi for computation, otherwise using sx,sy
 		void angleOfIncidence(const double& sx, const double& sy, const double& slope_angle,
-		                      const double& slope_azi, PositionSun& Psolar); 
+		                      const double& slope_azi, PositionSun& Psolar);
 
 		//day_number=day of year day_number_equi=days since March equinox
 		void computeDayNumbers(const mio::Date& date_in, double& day_number, double& day_number_equi);
@@ -135,13 +134,13 @@ class Radiation {
 		void computePositionSun(const double& local_time, const double& Lat, const double& Lon, PositionSun& Psolar);
 
 		//diff/direct balance for RadiationData
-		void computeSplittingCoefficient(const PositionSun& solar, const double& thresh_elev, RadiationData& Rdata); 
+		void computeSplittingCoefficient(const PositionSun& solar, const double& thresh_elev, RadiationData& Rdata);
 
 		void computePotentialRadiation(const PositionSun& Psolar, const double& mean_alb, const double& altitude,
 		                               const double& pressure, const double& rh, const double& ta, RadiationData& Rdata);
 
 		//projection of incoming radiation for a given slope
-		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, CurrentMeteo& Mdata, RadiationData& Rdata); 
+		void projectRadiationOnSlope(const PositionSun& Psolar, const double& Alb, CurrentMeteo& Mdata, RadiationData& Rdata);
 
 		int sw_mode;
 

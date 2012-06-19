@@ -20,7 +20,6 @@ SET(snowpacklib_sources
 	SnowpackIO.cc
 	AsciiIO.cc
 	SnowpackConfig.cc
-	Laws.cc
 	Meteo.cc
 	Saltation.cc
 	Snowpack.cc

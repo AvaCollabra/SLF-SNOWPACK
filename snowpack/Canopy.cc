@@ -140,6 +140,7 @@
 
 #include <snowpack/Canopy.h>
 #include <snowpack/Snowpack.h>
+#include <meteoio/MeteoIO.h>
 
 using namespace std;
 using namespace mio;
@@ -814,7 +815,7 @@ double Canopy::cn_DSaturationPressureDT(const double& L, const double& T)
 		c3 = 272.440 ;
 	}
 
-	dpdt =  lw_SaturationPressure(T) * c2 * c3 / ((c3 + K_TO_C(T)) * (c3 + K_TO_C(T)));
+	dpdt =  Atmosphere::waterSaturationPressure(T) * c2 * c3 / ((c3 + K_TO_C(T)) * (c3 + K_TO_C(T)));
 
 	return(dpdt);
 }
@@ -833,10 +834,10 @@ void Canopy::cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& t
 {
 	if(tc_old > 273.15) {
 		le1 = ce_canopy * cn_DSaturationPressureDT(Constants::lh_vaporization, tc_old);
-		le0 = ce_canopy * (lw_SaturationPressure(tc_old) - vpair) - (le1) * tc_old;
+		le0 = ce_canopy * (Atmosphere::waterSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	} else {
 		le1 = ce_canopy * cn_DSaturationPressureDT(Constants::lh_sublimation, tc_old);
-		le0 = ce_canopy * (lw_SaturationPressure(tc_old) - vpair) - (le1) * tc_old;
+		le0 = ce_canopy * (Atmosphere::waterSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	}
 }
 
@@ -890,7 +891,7 @@ void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const do
 
 	RNCANOPY = r0 + r0change + r1  * TCANOPY * r1change;
 	HCANOPY = h0 + h1 * TCANOPY;
-	LECANOPY = ce_canopy * (lw_SaturationPressure(TCANOPY) - vpair);
+	LECANOPY = ce_canopy * (Atmosphere::waterSaturationPressure(TCANOPY) - vpair);
 
 	// 3b. re-compute in case of condensation/sublimation on canopy
 	if( LECANOPY < 0.0 ) {
@@ -903,7 +904,7 @@ void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const do
 		r1change = pow(TCANOPY, 3) / TC_OLD_POW3;
 		RNCANOPY = r0 + r0change + r1  * TCANOPY * r1change;
 		HCANOPY = h0 + h1 * TCANOPY;
-		LECANOPY = ce_condensation * (lw_SaturationPressure(TCANOPY) - vpair);
+		LECANOPY = ce_condensation * (Atmosphere::waterSaturationPressure(TCANOPY) - vpair);
 	}
 	r1 *= r1change;
 	r0 += r0change;
@@ -981,7 +982,7 @@ void Canopy::cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interc
 			r1change  = *TCANOPY * (*TCANOPY) * (*TCANOPY) / (TC_OLD * TC_OLD * TC_OLD);
 			*RNCANOPY = *r0 + r0change + (*r1)  * (*TCANOPY) * r1change;
 			*HCANOPY  = h0 + h1 * (*TCANOPY);
-			*LECANOPY = ce_canopy * (lw_SaturationPressure(*TCANOPY) - vpair);
+			*LECANOPY = ce_canopy * (Atmosphere::waterSaturationPressure(*TCANOPY) - vpair);
 		} else {
 			*LECANOPYCORR = *LECANOPY;
 		}
@@ -1284,14 +1285,14 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	  */
 	if ( useSoilLayers ) {
 		Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac)*cn_f2f4(Xdata.SoilNode,&Xdata.Edata[0]) *
-				cn_f3((1. - Mdata.rh) * lw_SaturationPressure(Mdata.ta)) / Cdata->lai;
+				cn_f3((1. - Mdata.rh) * Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 	} else {
 		if ( Xdata.getNumberOfElements() > 0 ) {
 			Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac) * cn_f4(0.0) * cn_f3((1. - Mdata.rh) *
-						lw_SaturationPressure(Mdata.ta)) / Cdata->lai;
+						Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 		} else {
 			Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac) * cn_f4(K_TO_C(Mdata.ta)) *
-			cn_f3((1. - Mdata.rh) * lw_SaturationPressure(Mdata.ta)) / Cdata->lai;
+			cn_f3((1. - Mdata.rh) * Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 		}
 	}
 
@@ -1301,17 +1302,17 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	// latent heat interception
 	if ( Mdata.ta < 273.15 ) {
 		ce_condensation  = 0.622 * Constants::lh_sublimation / (Constants::gas_constant_air * Mdata.ta
-							* Canopy::raincrease_snow * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
+		                   * Canopy::raincrease_snow * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
 		ce_interception  = 0.622 * Constants::lh_sublimation / (Constants::gas_constant_air * Mdata.ta
-							* Canopy::raincrease_snow * (ra_e + Cdata->rc));// * wetfraction;
+		                   * Canopy::raincrease_snow * (ra_e + Cdata->rc));// * wetfraction;
 		ce_transpiration = 0.0;
 	} else {
 		ce_condensation  = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
-											 * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
+		                   * (ra_e + Cdata->rc));// * MAX(0.1,wetfraction);
 		ce_interception  = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
-											 * (ra_e + Cdata->rc));// * wetfraction;
+		                   * (ra_e + Cdata->rc));// * wetfraction;
 		ce_transpiration = 0.622 * Constants::lh_vaporization / (Constants::gas_constant_air * Mdata.ta
-											 * (ra_e + Cdata->rstransp + Cdata->rc));// * (1.0-wetfraction);
+		                   * (ra_e + Cdata->rstransp + Cdata->rc));// * (1.0-wetfraction);
 	}
 
 	ce_canopy = ce_interception * MAX(0.001, wetfraction) + ce_transpiration * (1.0 - wetfraction);
@@ -1578,10 +1579,10 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 		cn_LineariseSensibleHeatFlux(ch_canopy, Mdata->ta, h0, h1);
 
 		// compute properties le0 and le1 in eq (4)
-		cn_LineariseLatentHeatFlux(ce_canopy, Xdata->Cdata.temp, Mdata->rh*lw_SaturationPressure(Mdata->ta), le0, le1);
+		cn_LineariseLatentHeatFlux(ce_canopy, Xdata->Cdata.temp, Mdata->rh*Atmosphere::waterSaturationPressure(Mdata->ta), le0, le1);
 
 		/* final canopy energy balance */
-		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata->rh * lw_SaturationPressure(Mdata->ta),
+		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata->rh * Atmosphere::waterSaturationPressure(Mdata->ta),
 						   ce_canopy, ce_condensation, r1p, 1. - Xdata->Cdata.direct_throughfall,
 						   r0, r1, Xdata->Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 
@@ -1590,7 +1591,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 		 * and correct energy balance for overestimated interception evaporation
 		*/
 		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, &LECANOPY, Mdata->ta,
-								 Mdata->rh * lw_SaturationPressure(Mdata->ta), Xdata->Cdata.storage,
+								 Mdata->rh * Atmosphere::waterSaturationPressure(Mdata->ta), Xdata->Cdata.storage,
 								 M_TO_H(calculation_step_length), &CanopyEvaporation, &INTEVAP, &TRANSPIRATION,
 								 &RNCANOPY, &HCANOPY, &Xdata->Cdata.temp, &r0, &r1, h0, h1, &LECANOPYCORR,
 								 r1p, 1. - Xdata->Cdata.direct_throughfall ,wetfrac);

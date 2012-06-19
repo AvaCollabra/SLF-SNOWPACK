@@ -275,10 +275,10 @@ void editMeteoData(mio::MeteoData& md, const string& variant, const double& thre
 	//Add the atmospheric emissivity as a parameter
 	if (!md.param_exists("EA")) md.addParameter("EA");
 	if (variant != "ANTARCTICA") {
-		md("EA") = lw_AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH));
+		md("EA") = SnLaws::AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH));
 	} else {
 		//change min_air_emissivity
-		md("EA") = lw_AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH), 0.31);
+		md("EA") = SnLaws::AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH), 0.31);
 	}
 
 	// Snow stations without separate wind station use their own wind for drifting and blowing snow
@@ -731,7 +731,7 @@ int main (int argc, char *argv[])
 		cfg.addKey("COPY::TSS_A24H", "Input", "TSS");
 		cfg.addKey("TSS_A24H::filter1", "Filters", "mean_avg");
 		cfg.addKey("TSS_A24H::arg1", "Filters", "left 48 86340"); //TODO change # data required to 4
-		
+
 		cfg.addKey("COPY::TSS_A12H", "Input", "TSS");
 		cfg.addKey("TSS_A12H::filter1", "Filters", "mean_avg");
 		cfg.addKey("TSS_A12H::arg1", "Filters", "left 24 43140"); //TODO change # data required to 2
@@ -995,7 +995,7 @@ int main (int argc, char *argv[])
 				hs_a3hl6 = MyMeteol3h[0]("HS_A3H");
 			else
 				hs_a3hl6 = Constants::undefined;
-			
+
 			// START LOOP OVER ASPECTS
 			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set

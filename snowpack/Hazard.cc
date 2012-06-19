@@ -365,7 +365,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
 	if (research_mode) {
 		Hdata.dewpt_def = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T
-		                      - RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
+		                      - Atmosphere::RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
 	} else {
 		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
 	}

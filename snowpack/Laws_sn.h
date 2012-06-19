@@ -30,7 +30,6 @@
 
 #include <snowpack/DataClasses.h>
 #include <snowpack/Constants.h>
-#include <snowpack/Laws.h>
 #include <snowpack/Snowpack.h> //some constants are necessary
 #include <snowpack/Metamorphism.h>
 
@@ -68,7 +67,7 @@ class SnLaws {
 			alb_nied       ///< Japanese version of alb_lehning_2
 		};
 		//@}
-		
+
 		static double conductivity_ice(const double& Temperature);
 		static double conductivity_water(const double& Temperature);
 		static double conductivity_air(void);
@@ -114,6 +113,9 @@ class SnLaws {
 		static double snowViscosityDEFAULT(ElementData& Edata);
 		static double snowViscosityKOJIMA(const ElementData& Edata);
 		static double snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date);
+		// minimum observed air emissivity: default=0.55 (from 1993 data at Weissfluhjoch) - Antarctica=0.31 (from 2006/2007 data of Dome C)
+		static double AirEmissivity(const double input, const double ta, const double rh, const double min_air_emissivity=0.55);
+		static double ArrheniusLaw(const double ActEnergy, const double T, const double T_ref);
 
 		static double min_hn_density, max_hn_density, event_wind_lowlim;
 		static const double smallest_viscosity, field_capacity_soil;

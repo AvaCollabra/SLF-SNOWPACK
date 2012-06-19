@@ -30,7 +30,6 @@
 #define __HAZARD_H__
 
 #include <snowpack/Constants.h>
-#include <snowpack/Laws.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Stability.h>
 #include <meteoio/MeteoIO.h>
