@@ -1173,8 +1173,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	//    that is, no new snow during cloud free conditions!
 	double dt_airsnow = Mdata.ta - t_surf;
 	if (change_bc && !meas_tss) {
-		if (nE>0) {
-			dt_airsnow = Mdata.ta - Xdata.Edata[nE-1].melting_tk;
+		if (nOldE>0) {
+			dt_airsnow = Mdata.ta - Xdata.Edata[nOldE-1].melting_tk;
 		} else {
 			dt_airsnow = Mdata.ta - Constants::melting_tk;
 		}

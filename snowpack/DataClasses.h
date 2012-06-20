@@ -404,7 +404,7 @@ class SnowStation {
 		static bool joinCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
 
-		void compSnowpackInternalEnergyChange(const double sn_dt);
+		void compSnowpackInternalEnergyChange(const double& sn_dt);
 		double getModelledTemperature(const double& z) const;
 
 		size_t getNumberOfElements() const;

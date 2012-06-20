@@ -484,17 +484,17 @@ double ElementData::soilFieldCapacity()
  */
 double ElementData::snowElasticity()
 {
-	double g, h;
-
 	if (Rho > 1000.)
 		return Constants::big;
+
+	double g;
 
 	if (Rho >= 70.) {
 		g = ((Rho / 1000.0) * 8.235) - 0.47;
 	} else {
 		g = ((70. / 1000.0) * 8.235 ) - 0.47;
 	}
-	h = pow(10.0, g);
+	const double h = pow(10.0, g);
 	return (h * 100000.0);
 }
 
@@ -534,7 +534,7 @@ double ElementData::concaveNeckRadius()
  */
 double ElementData::neckLength()
 {
-	double rc = concaveNeckRadius();
+	const double rc = concaveNeckRadius();
 	return ((2. * rg * rc) / (rg + rc));
 }
 
@@ -565,11 +565,10 @@ int ElementData::snowType(const double dendricity, const double sphericity,
                           const double grain_size, const int marker, const double theta_w, const double res_wat_cont)
 {
 	int a=-1,b=-1,c=0;
-	int sw2;
 
 	// Dry snow
 	if (dendricity > 0.) { // Dry dendritic (new) snow: dendricity and sphericityhericity determine the class
-		sw2 = (int)(sphericity*10.);
+		const int sw2 = (int)(sphericity*10.);
 		if (dendricity > 0.80 ) { // ori 0.90, 27 Nov 2007 sb
 			a = 1; b = 1; c = 0;
 		} else if (dendricity > 0.70) { // ori 0.85, 27 Nov 2007 sb
@@ -608,7 +607,7 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 		// Dry non-dendritic snow
 		// Sphericity is most important for "a", while the marker is most important for "b","c"
 		if (grain_size < 0.7) {
-			sw2 = (int)(sphericity*10.);
+			const int sw2 = (int)(sphericity*10.);
 			switch (sw2) {
 				case 0: case 1:
 					a = 4; b = 4; c = 0; break;
@@ -744,10 +743,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	SubSurfaceMelt('x'), SubSurfaceFrze('x'), Cdata(), tag_low(0),
 	useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
 	nNodes(0), nElems(0)
-{
-	Edata = vector<ElementData>();
-	Ndata = vector<NodeData>();
-}
+{}
 
 SnowStation::~SnowStation()
 {
@@ -767,15 +763,13 @@ SnowStation::~SnowStation()
  * @brief Computes the internal energy change of the snowpack during one computation time step (J m-2)
  * @version 11.01
  */
-void SnowStation::compSnowpackInternalEnergyChange(const double sn_dt)
+void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
 {
-	size_t e = SoilNode;
-	double cold_content_in = ColdContent;
-	double melt_freeze_energy = 0.;
-
 	if (nElems > SoilNode) {
+		const double cold_content_in = ColdContent;
+		double melt_freeze_energy = 0.;
 		ColdContent = 0.;
-		for (; e<nElems; e++) {
+		for (size_t e=SoilNode; e<nElems; e++) {
 			melt_freeze_energy -= Edata[e].Qmf * Edata[e].L * sn_dt;
 			ColdContent += Edata[e].coldContent();
 		}
@@ -794,15 +788,12 @@ void SnowStation::compSnowpackInternalEnergyChange(const double sn_dt)
  */
 double SnowStation::getModelledTemperature(const double& z) const
 {
-	int n_up;           // Upper node number
-	double z_up, z_low; // Upper and lower nodes around position z of sensor
-
 	if ( (z == Constants::nodata) || !((getNumberOfNodes() > 1) && (z < cH)) ) {
 		return Constants::nodata;
 	} else {
-		n_up = findUpperNode(z, Ndata, getNumberOfNodes());
-		z_low = (Ndata[n_up-1].z + Ndata[n_up-1].u);
-		z_up = (Ndata[n_up].z + Ndata[n_up].u);
+		const int n_up = findUpperNode(z, Ndata, getNumberOfNodes()); // Upper node number
+		const double z_low = (Ndata[n_up-1].z + Ndata[n_up-1].u); // Lower node around position z of sensor
+		const double z_up = (Ndata[n_up].z + Ndata[n_up].u); // Upper node around position z of sensor
 		return (K_TO_C(Ndata[n_up-1].T + (z - z_low)*(Ndata[n_up].T-Ndata[n_up-1].T)/(z_up-z_low)));
 	}
 }
@@ -856,14 +847,13 @@ bool SnowStation::hasSoilLayers() const
 void SnowStation::joinElements(const unsigned int& number_top_elements)
 {
 	size_t e0, e1;  // Lower (e0) and upper (e1) element index
-	size_t rnE;     // Reduced number of elements
 	size_t nJoin=0; // Number of elements to be removed
 
 	if (nElems - SoilNode < number_top_elements+1) {
 		return;
 	}
 	for (e0 = SoilNode, e1 = SoilNode+1; e0 < nElems-number_top_elements; e0++, e1++) {
-	  if (joinCondition(Edata[e0], Edata[e1])) {
+		if (joinCondition(Edata[e0], Edata[e1])) {
 			mergeElements(Edata[e0], Edata[e1], true);
 			nJoin++;
 			Edata[e1].Rho = Constants::undefined;
@@ -871,7 +861,7 @@ void SnowStation::joinElements(const unsigned int& number_top_elements)
 		}
 	}
 	if (nJoin > 0) {
-		rnE = nElems - nJoin;
+		const size_t rnE = nElems - nJoin; //Reduced number of elements
 		reduceNumberOfElements(rnE);
 	}
 }
@@ -888,11 +878,10 @@ void SnowStation::joinElements(const unsigned int& number_top_elements)
  */
 void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 {
-	unsigned int e0;                    // Lower element index
-	unsigned int eNew;                  // New element index
-	double cH_old, dL=0.;
+	unsigned int eNew = SoilNode; // New element index
+	double dL=0.;
 
-	for (e0 = SoilNode, eNew = SoilNode; e0 < nElems; e0++) {
+	for (size_t e0 = SoilNode; e0 < nElems; e0++) {
 		if (Edata[e0].Rho == Constants::undefined) {
 			if (Edata[e0].L > 0.0) { // Joining elements
 				Ndata[eNew] = Ndata[e0+1];
@@ -920,7 +909,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 
 	resize(rnE);
 
-	cH_old = cH;
+	const double cH_old = cH;
 	cH = Ndata[nNodes-1].z + Ndata[nNodes-1].u;
 	mH -= (cH_old - cH);
 	ErosionLevel = MAX(SoilNode, MIN(ErosionLevel, rnE-1));
@@ -1194,11 +1183,9 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  */
 void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join)
 {
-	double L0, L1, LNew; // Lengths of lower (e0), upper (e1) elements, and "new" element, respectively
-
-	L1 = Edata1.L;
-	L0 = Edata0.L;
-	LNew = L0;
+	const double L1 = Edata1.L; //Length of lower (e0) element
+	const double L0 = Edata0.L; //Length of upper (e1) element
+	double LNew = L0; //Length of "new" element
 
 	if (join) {
 		LNew += L1;
