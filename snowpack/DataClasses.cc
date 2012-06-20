@@ -52,10 +52,10 @@ ZwischenData::ZwischenData()
 
 void ZwischenData::reset()
 {
-	hoar24  = std::vector<double>(48, 0.0);
-	drift24 = std::vector<double>(48, 0.0);
-	hn3     = std::vector<double>(144, 0.0);
-	hn24    = std::vector<double>(144, 0.0);
+	hoar24.resize(48, 0.0);
+	drift24.resize(48, 0.0);
+	hn3.resize(144, 0.0);
+	hn24.resize(144, 0.0);
 }
 
 // Class SnowProfileLayer
@@ -1317,9 +1317,9 @@ CurrentMeteo::CurrentMeteo(const size_t& i_max_number_of_sensors)
 	  rho_hn(0.),
 	  max_number_of_sensors(i_max_number_of_sensors)
 {
-	ts    = vector<double>(max_number_of_sensors, Constants::nodata);
-	zv_ts = vector<double>(max_number_of_sensors, Constants::nodata);
-	conc  = vector<double>(SnowStation::number_of_solutes, 0.);
+	ts.resize(max_number_of_sensors, Constants::nodata);
+	zv_ts.resize(max_number_of_sensors, Constants::nodata);
+	conc.resize(SnowStation::number_of_solutes, 0.);
 }
 
 void CurrentMeteo::reset()

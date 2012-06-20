@@ -352,6 +352,8 @@
  * The configuration for a given simulation is kept in a <i>".ini"</i> file. This is an ascii file that contains keys/values structured
  * by sections. It is however highly recommended to use the <a href="https://slfsmm.indefero.net/p/inishell">Inishell</a> tool to generate these files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
+ * \image html inishell.png "inishell overview"
+ * \image latex inishell.eps "inishell overview" width=0.9\textwidth
  *
  * @section advanced_cfg Advanced configuration
  * The configuration files being an ascii format (<a href="https://en.wikipedia.org/wiki/INI_file">INI format</a>), it is possible to manually
