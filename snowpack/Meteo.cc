@@ -106,62 +106,35 @@ void Meteo::projectPrecipitations(const double& slope_angle, double& precips, do
  */
 void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 {
-	int e, iter = 1, max_iter = 100;
-	const double eps1 = 1.e-3, eps2 = 1.e-5;
-	double ustar, z0 = roughness_length, zref, a2 = 0.16 , vw, z0_old, ustar_old;
-	double d_pump; // Wind pumping displacement depth (m)
-
-	// New variables for stability correction
-	double psi_m = 0., psi_s = 0., Tstar = 0.;
-	double dummy, p0, sat_vap, LH;
-	double z_ratio = 1., stab_ratio = 0.;
-	double Ri;  // Richardson number for simple stability correction
+	const int max_iter = 100;
 
 	// Ideal approximation of pressure and vapor pressure
-	p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
-	const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-	if (Mdata.ta > melting_tk) {
-		LH = Constants::lh_vaporization;
-	} else {
-		LH = Constants::lh_sublimation;
-	}
+	const double p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
+	const double sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
+	const double vw = MAX(0.3, Mdata.vw);
 
-	//sat_vap = lw_SaturationPressure(Mdata.ta);
-	sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
-
-	// Initialize snow surface temperature
+	// Initialize snow surface temperature as well as virtual temperatures for stability
 	const double t_surf = Xdata.Ndata[Xdata.getNumberOfElements()].T;
-	// Initialize virtual temperatures for stability
 	const double ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
 	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
-	/*
-	 * Now start the real thing - iteratively determining stability and possibly adjusting z0 to
-	 * drifting snow and ventilation
-	*/
-	e = Xdata.getNumberOfElements();
-	vw = MAX(0.3, Mdata.vw);
-	// Adjust for snow height
-	if (ALPINE3D) {
-		zref = height_of_wind_value; // Assume model level over actual surface including snow
-	} else {
-		zref = MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
-	}
+	// Adjust for snow height: model level over actual surface for Alpine3D
+	const double zref = (ALPINE3D)? height_of_wind_value : MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
+	// In case of ventilation ... Wind pumping displacement depth (m)
+	const double d_pump = (SnLaws::wind_pump)? SnLaws::compWindPumpingDisplacement(Xdata) : 0.;
 
-	// In case of ventilation ...
-	if (SnLaws::wind_pump) {
-		d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
-	} else {
-		d_pump = 0.;
-	}
-
-	// Iterate to find atmospheric stability
+	// Iterate to find atmospheric stability, possibly adjusting z0 to drifting snow and ventilation
 	// initial guess (neutral)
-	ustar = 0.4 * vw / log((zref - d_pump) / z0);
+	const double eps1 = 1.e-3, eps2 = 1.e-5, a2 = 0.16;
+	double z0 = roughness_length;
+	double ustar_old, z0_old;
+	double psi_m = 0., psi_s = 0., ustar = 0.4 * vw / log((zref - d_pump) / z0);
+	double stab_ratio = 0.;
+	int iter = 1;
 	do {
 		iter++;
 		if (iter > max_iter) {
-			Mdata.z0 = z0 = roughness_length;
+			Mdata.z0 = roughness_length;
 			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 			Mdata.psi_s = 0.;
 			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
@@ -171,13 +144,12 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 		}
 		ustar_old = ustar;
 		z0_old = z0;
-		// Update z0
-		z0 = 0.9 * z0_old + 0.1 * (a2 * ustar*ustar / 2. / Constants::g);
-		z_ratio = log((zref - d_pump) / z0);
+		z0 = 0.9 * z0_old + 0.1 * (a2 * ustar*ustar / 2. / Constants::g); //update z0
+		const double z_ratio = log((zref - d_pump) / z0);
 
 		// Stability corrections
 		if (neutral < 0) { // Switch for Richardson
-			Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / vw / vw;
+			const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / vw / vw;
 			if (Ri < 0.2) { // neutral and unstable
 				stab_ratio = Ri;
 			} else {
@@ -185,7 +157,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 			}
 			if (Ri < 0.) { // unstable
 				stab_ratio = Ri;
-				dummy = pow((1. - 15. * stab_ratio), 0.25);
+				const double dummy = pow((1. - 15. * stab_ratio), 0.25);
 				psi_m = log((0.5 * (1 + dummy*dummy)) * (0.5 * (1 + dummy)) * (0.5 * (1 + dummy)))
 				            - 2. * atan(dummy) + 0.5 * Constants::pi;
 				psi_s = 2. * log(0.5 * (1 + dummy*dummy));
@@ -200,12 +172,12 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 		} else if (neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) { // MO Iteration
 			ustar = 0.4 * vw / (z_ratio - psi_m);
-			Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
+			const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
 			stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * ustar*ustar);
 
 			if (stab_ratio > 0.) { // stable
 				// Stearns & Weidner, 1993
-				dummy = pow((1. + 5. * stab_ratio), 0.25);
+				const double dummy = pow((1. + 5. * stab_ratio), 0.25);
 				psi_m = log(1. + dummy) * log(1. + dummy) + log(1. + dummy*dummy)
 				            - 1. * atan(dummy) - 0.5 * dummy*dummy*dummy + 0.8247; // Original 2.*atan(dummy) - 1.3333
 				// Launiainen and Vihma, 1990
@@ -216,9 +188,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 				//                    * exp(-0.35 * stab_ratio) + 10.71);
 
 				// Stearns & Weidner, 1993, for scalars
-				dummy = sqrt(1. + 5. * stab_ratio);
-				psi_s = log(1. + dummy) * log(1. + dummy)
-				            - 1. * dummy - 0.3 * dummy*dummy*dummy + 1.2804; // Ori: 2. * dummy - 0.66667 * ...
+				const double dummy2 = sqrt(1. + 5. * stab_ratio);
+				psi_s = log(1. + dummy2) * log(1. + dummy2)
+				            - 1. * dummy2 - 0.3 * dummy2*dummy2*dummy2 + 1.2804; // Ori: 2. * dummy2 - 0.66667 * ...
 			} else {
 				// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
 				//dummy = pow((1.-15. * stab_ratio),0.25);
@@ -226,26 +198,24 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 				//            - 2.*atan(dummy) - -1. + dummy - 0.5086;
 
 				// Paulson - the original
-				dummy = pow((1. - 15. * stab_ratio), 0.25);
+				const double dummy = pow((1. - 15. * stab_ratio), 0.25);
 				psi_m = 2. * log(0.5 * (1. + dummy)) + log(0.5 * (1. + dummy*dummy))
 				            - 2. * atan(dummy) + 0.5 * Constants::pi;
 
 				// Stearns & Weidner, 1993, for scalars
-				dummy = pow((1. - 22.5 * stab_ratio), 0.33333);
-				psi_s = pow(log(1. + dummy + dummy*dummy), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy)) + 0.1659;
+				const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
+				psi_s = pow(log(1. + dummy2 + dummy2*dummy2), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 			}
 		} else { // NEUTRAL
 			psi_m = 0.;
 			psi_s = 0.;
 		}
 	} while ( (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
-	// Save the values in the global sn_Mdata data structure to use it later
+
+	// Save the values in the global Mdata data structure to use it later
 	Mdata.ustar = ustar;
 	Mdata.z0 = z0;
 	Mdata.psi_s = psi_s;
-	if ( (log(zref / z0) - psi_s) < 0.01 ) {
-		psi_s = log(zref / z0) - 0.01; // Prevent contragradient fluxes
-	}
 }
 
 /**

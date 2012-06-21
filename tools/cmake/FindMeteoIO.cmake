@@ -1,18 +1,21 @@
 INCLUDE(LibFindMacros)
 
 # Finally the library itself
+GET_FILENAME_COMPONENT(SRC_DIR ${CMAKE_SOURCE_DIR} PATH) #ie goes up one level
+STRING(REPLACE " " "\\ " SRC_DIR ${SRC_DIR})
+
 IF(WIN32)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MeteoIO;UninstallString]" PATH CACHE INTERNAL)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT2 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\MeteoIO;UninstallString]" PATH CACHE INTERNAL)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\MeteoIO]" ABSOLUTE CACHE INTERNAL)
-	#GET_FILENAME_COMPONENT(METEOIO_ROOT4 "C:/Progra~1/MeteoIO*" ABSOLUTE CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT4 "C:/Progra~1/MeteoI*" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
 		${METEOIO_ROOT1}/lib
 		${METEOIO_ROOT2}/lib
 		${METEOIO_ROOT3}/lib
-		"C:/Progra~1/MeteoIO*/lib" )
-
+		${METEOIO_ROOT4}/lib
+		${SRC_DIR}/meteoio/lib)
 	IF(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.lib
@@ -38,6 +41,7 @@ ELSE(WIN32)
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
+			${SRC_DIR}/meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.dylib"
 		)
 	ELSE(APPLE)
@@ -49,6 +53,7 @@ ELSE(WIN32)
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
+			${SRC_DIR}/meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
 		)
 	ENDIF(APPLE)
@@ -57,6 +62,7 @@ ENDIF(WIN32)
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
 GET_FILENAME_COMPONENT(meteoio_libs_root ${METEOIO_LIBRARY} PATH)
 SET(METEOIO_ROOT "${meteoio_libs_root}/../")
+STRING(REPLACE  " " "\\ " METEOIO_ROOT ${METEOIO_ROOT})
 
 # locate main header file
 FIND_PATH(METEOIO_INCLUDE_DIR

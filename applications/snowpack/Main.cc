@@ -1082,7 +1082,7 @@ int main (int argc, char *argv[])
 						// ... and nastily deep "dips" caused by buggy data ...
 						if (time_count_deltaHS > -Constants::eps2) {
 							if ((mH + 0.01) < cH) {
-									time_count_deltaHS += S_TO_D(sn_dt);
+								time_count_deltaHS += S_TO_D(sn_dt);
 							} else {
 								time_count_deltaHS = 0.;
 							}
@@ -1090,7 +1090,7 @@ int main (int argc, char *argv[])
 						// ... or too strong settling
 						if (time_count_deltaHS < Constants::eps2) {
 							if ((mH - 0.01) > cH) {
-									time_count_deltaHS -= S_TO_D(sn_dt);
+								time_count_deltaHS -= S_TO_D(sn_dt);
 							} else {
 								time_count_deltaHS = 0.;
 							}
