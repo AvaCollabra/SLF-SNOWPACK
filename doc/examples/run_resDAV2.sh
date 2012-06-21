@@ -2,7 +2,7 @@
 
 # use  nohup *.sh > fout  to redirect output to named file
 
-TOOL="valgrind --tool=callgrind --simulate-cache=yes --dump-instr=yes --trace-jumps=yes"
+TOOL="valgrind --tool=callgrind --simulate-cache=yes --dump-instr=yes"
 TOOL="/software/bin/valgrind --tool=memcheck --leak-check=full --show-reachable=yes --track-origins=yes --suppressions=../../tools/valgrindOCCI.supp --log-fd=2"
 TOOL="time"
 TOOL=""

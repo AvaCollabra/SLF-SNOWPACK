@@ -1111,12 +1111,10 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
                             SurfaceFluxes& Sdata)
 {
 	bool add_element = false, snow_fall = false, snowed_in = false;
-	size_t nNewE, nHoarE;           // The number of elements to be added
-	size_t nOldE, nE, nOldN, nN;    // Old and new numbers of elements and nodes
 	size_t e, n;                    // Element and node counters
 	double delta_cH = 0.;           // Actual enforced snow depth
-	double rho_hn, hn, hoar;        // New snow data
-	double cos_sl, L0, dL, Theta0;  // Local values
+	double hn, hoar;        // New snow data
+	double L0, dL, Theta0;  // Local values
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
 	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
@@ -1127,12 +1125,10 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	const double HS_threshold_verylargeincrease=0.015;	//very high rate of change of HS (m/hour)
 	const double ThresholdSmallCanopy=1.;			//Set the threshold for the canopy height. Below this threshold, the canopy is considered to be small and snow will fall on top (like grass, or small bushes). Above this threshold, snow will fall through (like in forests). When the canopy is small, the measured snow height will be assigned to the canopy height in case of no snow pack on the ground.
 
-	nOldN = Xdata.getNumberOfNodes();
-	nOldE = Xdata.getNumberOfElements();
-	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-
-	rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
-	                                    Mdata, Xdata, t_surf, variant);
+	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
+	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); //slope cosinus
+	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model, Mdata, Xdata, t_surf, variant); //new snow density
 
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
@@ -1171,14 +1167,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	// Let's check for the solid precipitation thresholds:
 	// -> check relative humidity as well as difference between air and snow surface temperatures,
 	//    that is, no new snow during cloud free conditions!
-	double dt_airsnow = Mdata.ta - t_surf;
-	if (change_bc && !meas_tss) {
-		if (nOldE>0) {
-			dt_airsnow = Mdata.ta - Xdata.Edata[nOldE-1].melting_tk;
-		} else {
-			dt_airsnow = Mdata.ta - Constants::melting_tk;
-		}
-	}
+	const double melting_tk = (nOldE>0)? Xdata.Edata[nOldE-1].melting_tk : Constants::melting_tk;
+	const double dt_airsnow = (change_bc && !meas_tss)? Mdata.ta - melting_tk : Mdata.ta - t_surf; //we use t_surf only if meas_tss & change_bc
 
 	snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dt_airsnow < 3.0))
                      || !enforce_measured_snow_heights || (Xdata.hn > 0.));
@@ -1270,13 +1260,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 
-			nNewE = (int)(hn / (height_new_elem*cos_sl));
+			size_t nAddE = (int)(hn / (height_new_elem*cos_sl));
 
-			if (nNewE < 1) {
+			if (nAddE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
 				if (!ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
 				                      || add_element)) {
-					nNewE = 1;
+					nAddE = 1;
 				} else {
 					Xdata.hn = 0.;
 					Xdata.rho_hn = Constants::undefined;
@@ -1285,6 +1275,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 			cumu_hnw = 0.0;
 			// Check whether surface hoar could be buried
+			size_t nHoarE;
 			hoar = Xdata.Ndata[nOldN-1].hoar;
 			if (nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < Constants::eps2) {
 				// W.E. of surface hoar must be larger than a threshold to be buried
@@ -1304,9 +1295,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 			Xdata.cAlbedo = Snowpack::new_snow_albedo;
 
-			nN = nOldN + nNewE + nHoarE;
-			nE = nOldE + nNewE + nHoarE;
-			Xdata.resize(nE);
+			const size_t nNewN = nOldN + nAddE + nHoarE;
+			const size_t nNewE = nOldE + nAddE + nHoarE;
+			Xdata.resize(nNewE);
 			vector<NodeData>& NDS = Xdata.Ndata;
 			vector<ElementData>& EMS = Xdata.Edata;
 
@@ -1355,7 +1346,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				NDS[nOldN-1].T = (t_surf + Mdata.ta)/2.;
 			double Ln = (hn / nNewE);               // New snow element length
 			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
-			for (n = nOldN+nHoarE; n < nN; n++) {
+			for (n = nOldN+nHoarE; n < nNewN; n++) {
 				NDS[n].T = t_surf;                  // Temperature of the new node
 				NDS[n].z = z0;                      // New nodal position
 				NDS[n].u = 0.0;                     // Initial displacement is 0
@@ -1368,7 +1359,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 
 			// Fill the element data
-			for (e = nOldE; e < nE; e++) {
+			for (e = nOldE; e < nNewE; e++) {
 				// Birthdate
 				EMS[e].depositionDate = Mdata.date;
 				// Temperature
@@ -1498,8 +1489,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}   // End elements
 
 			// Finally, update the computed snowpack height
-			Xdata.cH = NDS[nN-1].z + NDS[nN-1].u;
-			Xdata.ErosionLevel = nE-1;
+			Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
+			Xdata.ErosionLevel = nNewE-1;
 		}
 	} else { // No snowfall
 		if (detect_grass && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel == false))) {
