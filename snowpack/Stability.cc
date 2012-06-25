@@ -213,13 +213,6 @@ double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
  */
 double Stability::getHandHardnessMONTI(const int& F, const double& rho, const double& water_content)
 {
-#ifndef NOSAFECHECKS
-	if (rho<0.) {
-		std::stringstream ss;
-		ss << "Negative density: rho=" << rho;
-		throw IOException(ss.str(), AT);
-	}
-#endif
 	switch(F) {
 		case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
 			const double A = 0.0078;
@@ -229,7 +222,7 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 		case 1: { // Precipitation Particles PP
 			if ( (rho >= 0.) && (rho < 135.465))
 				return 1.;
-			else 
+			else
 				return 2.;
 		}
 		case 2: { // Decomposing and Fragmented precipitation particles DF
@@ -327,7 +320,7 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 			throw IOException(ss.str(), AT);
 		}
 	}
-	
+
 	return IOUtils::nodata; //we should never come here
 }
 
@@ -349,7 +342,7 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
 		const double hardness_F1 = getHandHardnessMONTI(F1, Edata.Rho, Edata.theta[WATER]);
 		const double hardness_F2 = getHandHardnessMONTI(F2, Edata.Rho, Edata.theta[WATER]);
 		hardness = 0.5 * (hardness_F1 + hardness_F2);
-		
+
 		if (F1 == 6) {
 			// Large surface hoar stays longer unstable! 1 dec 2007 (sb)
 			const double grain_size = 2.*Edata.rg;
@@ -881,7 +874,7 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	Edata.s_strength = Sig_c2;
 	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
-	
+
 	// Warning message may be enabled to warn for large differences in snow shear stength models
 	if (prn_wrn
 	        && (((fabs(Sig_c2-Sig_cC)/Sig_cC) > 10.) || ((Sig_c3 > 0.)
@@ -1363,7 +1356,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
 		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
 		compReducedStresses(EMS[e].C, cos_sl, STpar);
-		
+
 		if ( !(CALL_MEMBER_FN(*this, mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
 		                                                               EMS[e], NDS[e+1], STpar))) {
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);

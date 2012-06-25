@@ -72,8 +72,8 @@ void Aggregate::shift(const size_t& nL_ini, std::vector<SnowProfileLayer>& Pdata
 */
 bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfileLayer>& Pdata)
 {
-	unsigned int l_lower = l_upper-1;
-	
+	const unsigned int l_lower = l_upper-1;
+
 	if ((Pdata[l_upper].theta_w < limit_dry) || (Pdata[l_lower].theta_w < limit_dry)) {
 		if (fabs(Pdata[l_upper].theta_w - Pdata[l_lower].theta_w) > limit_dry)
 			return false;
@@ -81,31 +81,31 @@ bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfile
 		if (fabs(Pdata[l_upper].theta_w - Pdata[l_lower].theta_w) > diff_theta_w)
 			return false;
 	}
-	
+
 	if (fabs(Pdata[l_upper].layerDate.getJulianDate() - Pdata[l_lower].layerDate.getJulianDate()) > diff_jul)
 		return false;
-	
+
 	if (Pdata[l_upper].marker != Pdata[l_lower].marker)
 		return false;
-	
+
 	// do not combine layers which are of quite different hardness 020917;Fz
 	if (fabs(Pdata[l_upper].hard - Pdata[l_lower].hard) > 1.0)
 		return false;
-	
+
 	if ((Pdata[l_upper].dendricity == 0) && (Pdata[l_lower].dendricity == 0)){
 		if ( fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
 			return false;
-		
-		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) >	MAX(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
+
+		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) > MAX(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
 			return false;
 	} else {
 		if (fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
 			return false;
-		
+
 		if (fabs(Pdata[l_upper].dendricity - Pdata[l_lower].dendricity) > diff_dd)
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -116,7 +116,7 @@ bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfile
  */
 bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLayer>& Pdata)
 {
-	size_t l_upper = l_lower+1;
+	const size_t l_upper = l_lower+1;
 
 	// if a dry layer is involved
 	if ((Pdata[l_lower].theta_w < limit_dry) || (Pdata[l_upper].theta_w < limit_dry)){
@@ -150,7 +150,7 @@ bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLay
 				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23)) ) &&
 				( ((Pdata[l_lower].marker > 9) &&  (Pdata[l_lower].marker < 13)) ||
 				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23))))) {
-				
+
 				if (Pdata[l_lower].marker != Pdata[l_upper].marker)
 					return false;
 			}
@@ -166,19 +166,17 @@ bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLay
  */
 size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 {
-	bool flag = false;
-	size_t nL, nL_ini = (size_t)Pdata.size();
-	double L0_lower, L0_upper; // lower and upper layer lengths
+	size_t nL_ini = Pdata.size();
+	size_t nL = nL_ini;
 
 	// Initialize number of layers and aggregate only if more than 5 layers
-	nL = nL_ini;
 	if (nL > 5) {
 		// First Run - aggregate similar layers
 		// keep track of the coordinates and length of elements
-		L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+		double L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
 		for (size_t l_upper=nL_ini-2; l_upper > 0; l_upper--) {
-			L0_upper = L0_lower;
-			size_t l_lower = l_upper-1;
+			const double L0_upper = L0_lower;
+			const size_t l_lower = l_upper-1;
 			if (l_lower > 0) {
 				L0_lower = (Pdata[l_lower].height -  Pdata[l_lower-1].height);
 			} else {
@@ -200,10 +198,11 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 
 		// Second Run - aggregate remaining very thin layers
 		if (nL_ini > 2) {
-			L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+			bool flag = false;
+			double L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
 			for(size_t l_upper = nL_ini-2; l_upper > 0; l_upper--) {
-				size_t l_lower = l_upper-1;
-				L0_upper = L0_lower;
+				const size_t l_lower = l_upper-1;
+				const double L0_upper = L0_lower;
 				if (l_lower > 0) {
 					L0_lower = (Pdata[l_lower].height -  Pdata[l_lower-1].height);
 				} else {

@@ -183,7 +183,7 @@ IF(INSTALL_DOC)
 	ELSE(WIN32)
 		SET(DOC_PATH "share/doc/${CMAKE_PROJECT_NAME}")
 	ENDIF(WIN32)
-	SET(DOC_FILES License.txt snowpack/icons/icon.ico)
+	SET(DOC_FILES License.txt Readme.txt snowpack/icons/icon.ico)
 	IF (DOXYGEN_FOUND)
 		INSTALL(DIRECTORY doc/html DESTINATION ${DOC_PATH} COMPONENT documentation)
 		LIST(APPEND DOC_FILES doc/Snowpack_doc.html)
@@ -192,7 +192,7 @@ IF(INSTALL_DOC)
 	ENDIF (DOXYGEN_FOUND)
 
 	INSTALL(FILES ${DOC_FILES} DESTINATION ${DOC_PATH} COMPONENT documentation)
-	INSTALL(DIRECTORY doc/examples DESTINATION ${DOC_PATH} COMPONENT examples PATTERN ".svn" EXCLUDE)
+	INSTALL(DIRECTORY doc/examples USE_SOURCE_PERMISSIONS DESTINATION ${DOC_PATH} COMPONENT examples PATTERN ".svn" EXCLUDE)
 ENDIF(INSTALL_DOC)
 
 ###########################################################
