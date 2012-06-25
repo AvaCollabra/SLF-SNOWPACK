@@ -147,16 +147,16 @@
  * @page requirements Data requirements
  * %Snowpack performs physical modeling of the various processes taking place between the soil, snow cover and atmosphere in order to
  * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters:
- * - air temperature
- * - relative humidity
- * - wind speed
- * - incoming short wave radiation
- * - icoming long wave radiation OR surface temperature
- * - snow height OR precipitation
- * - ground temperature (if available)
- * - snow temperatures at various depth (if available and only for comparisons)
+ * - air temperature (TA)
+ * - relative humidity (RH)
+ * - wind speed (VW)
+ * - incoming short wave radiation (ISWR) or reflected short wave radiation (RSWR)
+ * - incoming long wave radiation (ILWR) OR surface temperature (TSS)
+ * - snow height (HS) OR precipitation (HNW)
+ * - ground temperature (TSG, if available)
+ * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons)
  *
- * These parameters MUST be available at least at a hourly time step.
+ * These parameters \b must be available at least at a hourly time step.
  *
  * @section data_preparation Data preparation
  * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
@@ -167,7 +167,7 @@
  * @section data_checks Data checks
  * Please keep in mind that any inaccuracy on the input parameters will have an impact on
  * the quality of the simulation. Since the modelling is physically-based, manually re-constructing missing data can lead to completely wrong results if not
- * done with great care (the model performing various checks on the physical consistency of the input data, it WILL exclude data points that are not consistent
+ * done with great care (the model performing various checks on the physical consistency of the input data, it \b will exclude data points that are not consistent
  * with the other parameters. For example, precipitation occuring simultaneously with quite dry air will be refused).
  *
  * \image html clear_sky.png "Data consistency check"

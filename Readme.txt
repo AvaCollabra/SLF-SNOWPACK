@@ -6,3 +6,5 @@ In order to run the examples, you will have to copy them to a directory where yo
 		*on Linux: set PATH and LD_LIBRARY_PATH if you install the package to a non-standard location
 		*on Windows: set PATH
 How to do this (and much more) is explained in the online documentation at https://slfsmm.indefero.net/p/snowpack/page/Getting-started/ .
+
+You can find this file after installation in the "doc" directory of Snowpack.
