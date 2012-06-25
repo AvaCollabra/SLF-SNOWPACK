@@ -138,7 +138,7 @@ class Snowpack {
 		bool vw_dendricity;
 		int sw_mode;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
-		double t_crazy_min, t_crazy_max, thresh_rh;
+		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dt_air_snow;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_rad, new_snow_bond_rad;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;

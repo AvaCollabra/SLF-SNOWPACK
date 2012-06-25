@@ -344,7 +344,19 @@
  * [DATA]
  * 0203,01.11.1995 00:30,0.795426,-4.160588,308.899297,293.706000,-15.193297,0.000000,0.000000,0.000000,0.090000,0.000000,-0.100000,0.200000,-0.100000,-999.000000,-0.100000,-999.000000,0.000000,0.000000,0.000000,0.000000,0.000000,-999.000000,95.800000,0.800000,0.800000,278.200000,0.000000,0.00,0.00,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,,,,,,,,,,,0.00,0.000000,0.000000,-1,-1,0.0,6.00,0.0,6.00,0.0,6.00,0.0,6.00,0.0,0.00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,-999.000000,-16.702613,-0.0,-151.3,0.000000,,
  * @endcode
- * Data lines start with an id, followed by the date and the other fileds, as shown in the header.
+ * Data lines start with an id, followed by the date and the other fields, as shown in the header.
+ *
+ * @section SnowSoilTemperatures Snow and/or soil temperatures
+ * Up to 5 snow and/or soil temperatures, either measured or modelled or both can be monitored. \n
+ * Measured temperatures are read in from the input file. If you use the smet format, do not forget to properly
+ * label the columns as TS1, TS2, TS3, etc. If you use the snio format, refer to the documentation. \n
+ * User defined positions (m) should be provided in the SnowpackAdvanced section of the <i>"io.ini"</i> file,
+ *   for example, FIXED_POSITIONS = "0.25 0.50 -0.10":
+ *   - positive values refer to heigths measured from the ground surface (snow only)
+ *   - negative values refer to depths measured from either the ground surface or the snow surface in case no soil
+ *       layers are present
+ *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
+ *       This parameter can be set in the SnowpackAdvanced section of the io.ini file.
  */
 
 /**
@@ -359,7 +371,7 @@
  * The configuration files being an ascii format (<a href="https://en.wikipedia.org/wiki/INI_file">INI format</a>), it is possible to manually
  * copy/paste whole sections of such files between simulations in order to run similar simulations without the need to re-type the whole configuration.
  *
- * The %Snowpack_adavanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
+ * The %Snowpack_advanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.
  *
  */
@@ -486,10 +498,10 @@
  * a process that already has multiple available choices, only the first and the third steps are required, the other one being already done.
  *
  * @section model_implementation Model implementation
- * A method has to be implemented in the class with the same prototype as the original method. In our example, the original method (setHandHardnessDEFAULT)
+ * A method has to be implemented in the class with the same prototype as the original method. In our example, the original method (setHandHardnessMONTI)
  * has the following prototype:
  * @code
- * double setHandHardnessDEFAULT(const ElementData& Edata);
+ * double setHandHardnessMONTI(const ElementData& Edata);
  * @endcode
  * so any alternative implementation must use the same prototype. If some parameters would be ignored by some implementation, simply comment out the unused variable:
  * @code
@@ -512,9 +524,9 @@
  * @code
  * const bool Stability::__init = Stability::initStaticData();
  * bool Stability::initStaticData() {
- * 	mapHandHardness["DEFAULT"]  = &Stability::setHandHardnessDEFAULT;
- * 	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
  * 	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
+ * 	mapHandHardness["BELLAIRE"]  = &Stability::setHandHardnessBELLAIRE;
+ * 	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
  * 	return true;
  * }
  * @endcode

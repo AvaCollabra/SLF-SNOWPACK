@@ -33,8 +33,11 @@ using namespace mio;
 using namespace std;
 
 /// Number of top elements left untouched by the join functions
-const unsigned int SnowStation::number_top_elements = 5;
-unsigned int SnowStation::number_of_solutes = 0;
+const size_t SnowStation::number_top_elements = 5;
+size_t SnowStation::number_of_solutes = 0;
+
+/// Snow elements with a LWC above this threshold are considered at least to be moist
+const double SnowStation::thresh_moist_snow = 0.003;
 
 /// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
 const double SnowStation::join_thresh_l = 0.015;
@@ -201,7 +204,7 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 		Sdata.dIntEnergy += Xdata.dIntEnergy;
 
 	// 5) Compute total masses of snowpack
-	Sdata.mass[MS_TOTALMASS] = Sdata.mass[MS_SWE]= Sdata.mass[MS_WATER] = 0.;
+	Sdata.mass[MS_TOTALMASS] = Sdata.mass[MS_SWE] = Sdata.mass[MS_WATER] = 0.;
 	for (size_t e = Xdata.SoilNode; e < Xdata.getNumberOfElements(); e++) {
 		Sdata.mass[MS_TOTALMASS] += Xdata.Edata[e].M;
 		Sdata.mass[MS_SWE] += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
@@ -788,8 +791,8 @@ void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
  */
 double SnowStation::getModelledTemperature(const double& z) const
 {
-	if ( (z == Constants::nodata) || !((getNumberOfNodes() > 1) && (z < cH)) ) {
-		return Constants::nodata;
+	if ((z == Constants::undefined) || !((getNumberOfNodes() > 1) && (z < cH))) {
+		return Constants::undefined;
 	} else {
 		const int n_up = findUpperNode(z, Ndata, getNumberOfNodes()); // Upper node number
 		const double z_low = (Ndata[n_up-1].z + Ndata[n_up-1].u); // Lower node around position z of sensor
@@ -951,7 +954,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	if (SSdata.nLayers > 0) {
 		Ndata[0].T = SSdata.Ldata[0].tl;
 	} else {
-		Ndata[0].T = C_TO_K(0.0);
+		Ndata[0].T = Constants::melting_tk;
 	}
 	Ndata[0].u = 0.;
 	Ndata[0].f = 0.;
@@ -1011,7 +1014,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[ll].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[ll].SoilC;
-			for (int ii = 0; ii < signed(SnowStation::number_of_solutes); ii++) {
+			for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 				Edata[e].conc[SOIL][ii]  = SSdata.Ldata[ll].cSoil[ii];
 				Edata[e].conc[ICE][ii]  = SSdata.Ldata[ll].cIce[ii];
 				Edata[e].conc[WATER][ii] = SSdata.Ldata[ll].cWater[ii];
@@ -1183,8 +1186,8 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  */
 void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join)
 {
-	const double L1 = Edata1.L; //Length of lower (e0) element
-	const double L0 = Edata0.L; //Length of upper (e1) element
+	const double L1 = Edata1.L; //Length of upper (e1) element
+	const double L0 = Edata0.L; //Length of lower (e0) element
 	double LNew = L0; //Length of "new" element
 
 	if (join) {
@@ -1212,7 +1215,7 @@ void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, 
 	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
 	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);
 
-	for (int ii = 0; ii < signed(SnowStation::number_of_solutes); ii++) {
+	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 		for (unsigned int kk = 0; kk < N_COMPONENTS; kk++) {
 			Edata0.conc[kk][ii] = (L1*Edata1.conc(kk,ii) + L0*Edata0.conc[kk][ii]) / LNew;
 		}
@@ -1309,22 +1312,146 @@ std::ostream& operator<<(std::ostream &os, const SnowStation& mdata)
 	return os;
 }
 
-CurrentMeteo::CurrentMeteo(const size_t& i_max_number_of_sensors)
+CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
 	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
 	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
 	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
 	  hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
 	  rho_hn(0.),
-	  max_number_of_sensors(i_max_number_of_sensors)
+	  numberMeasTemperatures(mio::IOUtils::unodata)
 {
-	ts.resize(max_number_of_sensors, Constants::nodata);
-	zv_ts.resize(max_number_of_sensors, Constants::nodata);
+	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", mio::Config::nothrow);
+	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", mio::Config::nothrow);
+	minDepthSubsurf = i_cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", mio::Config::nothrow);
+	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", mio::Config::nothrow);
+
 	conc.resize(SnowStation::number_of_solutes, 0.);
 }
 
-void CurrentMeteo::reset()
+void CurrentMeteo::reset(const mio::Config& i_cfg)
 {
-	*this = CurrentMeteo(max_number_of_sensors);
+	*this = CurrentMeteo(i_cfg);
+}
+
+/* @brief description:
+* - Measured and/or modelled temperatures can be monitored at fixed positions (m).
+* - At most MAX_NUMBER_MEAS_TEMPERATURES can be monitored (by default 5). Measured temperatures
+*     are read in from the input file. If you use the smet format, do not forget to properly
+*     label the columns: TS1, TS2, TS3, etc.
+* - User defined positions (m) should be provided in the advanced section, for example,
+*     FIXED_POSITIONS = "0.25 0.50 -0.10":
+* 	- positive values refer to heigths measured from the ground surface (snow only)
+* 	- negative values refer to depths measured from either the ground surface or the snow surface in case no soil
+*      layers are present
+* 	- There may be be more FIXED_POSITIONS than measured temperatures. In that case, the first positions are
+*      associated with measured values of TS1, TS2, etc. and the following will be associated with modelled
+*      temperatures only
+* @note:
+* 	- A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output
+*/
+void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
+{
+	for (size_t jj = maxNumberMeasTemperatures; jj-- > 0; ) {
+		stringstream ss;
+		ss << "HTS" << jj+1;
+		if (md.param_exists(ss.str()) && (md(ss.str()) != Constants::undefined)) {
+			fixedPositions.insert(fixedPositions.begin(), md(ss.str()));
+		}
+	}
+	if (numberMeasTemperatures == mio::IOUtils::unodata) {
+		numberMeasTemperatures = getNumberMeasTemperatures(md);
+	}
+	if (numberMeasTemperatures > maxNumberMeasTemperatures) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(),
+		        "Too many measured temperatures (%u). Only the first %u will be used. Check input file!",
+		        numberMeasTemperatures, maxNumberMeasTemperatures);
+		numberMeasTemperatures = maxNumberMeasTemperatures;
+	}
+	if ((numberMeasTemperatures > 0) && (fixedPositions.size() == 0)) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(),
+		        "%u measured temperatures available but no positions. Check FIXED_POSITIONS in SnowpackAdvanced section!",
+		        numberMeasTemperatures);
+	}
+	if (fixedPositions.size() > maxNumberMeasTemperatures) {
+		fixedPositions.resize(maxNumberMeasTemperatures);
+		prn_msg(__FILE__, __LINE__, "wrn", Date(),
+		        "Vector of positions resized to MAX_NUMBER_MEAS_TEMPERATURES (%u). Check FIXED_POSITIONS in SnowpackAdvanced section!",
+		        maxNumberMeasTemperatures);
+	}
+	if (fixedPositions.size() == 0)
+		fixedPositions.clear();
+	
+	size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
+	ts.resize(number_ts, mio::IOUtils::nodata);
+	zv_ts.resize(number_ts, mio::IOUtils::nodata);
+}
+
+/**
+* @brief Returns the number of measured snow/soil temperatures stored in MeteoData
+*/
+size_t CurrentMeteo::getNumberMeasTemperatures() const
+{
+	return numberMeasTemperatures;
+}
+
+size_t CurrentMeteo::getNumberMeasTemperatures(const mio::MeteoData& md)
+{
+	size_t nrMeasTemperatures = 0;
+	size_t numberParams = md.getNrOfParameters();
+	for (size_t ii=0; ii<numberParams; ii++) {
+		stringstream ss;
+		ss << "TS" << nrMeasTemperatures+1;
+		if (md.getNameForParameter(ii) == ss.str()) {
+			nrMeasTemperatures++;
+		}
+	}
+	return nrMeasTemperatures;
+}
+
+void CurrentMeteo::getFixedPositions(std::vector<double>& positions) const
+{
+	positions = fixedPositions;
+}
+
+size_t CurrentMeteo::getNumberFixedRates() const
+{
+	return numberFixedRates;
+}
+
+size_t CurrentMeteo::getMaxNumberMeasTemperatures() const
+{
+	return maxNumberMeasTemperatures;
+}
+
+void CurrentMeteo::copySnowTemperatures(const mio::MeteoData& md, const int current_slope)
+{
+	std::vector<double> positions;
+	getFixedPositions(positions);
+	for (size_t jj=0; jj < positions.size(); jj++) {
+		zv_ts[jj] = positions[jj];
+		ts[jj] = mio::IOUtils::nodata;
+		if (current_slope == 0) {
+			stringstream ss;
+			ss << "TS" << jj+1;
+			if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
+				ts[jj] = md(ss.str());
+			}
+		}
+	}
+}
+
+void CurrentMeteo::copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes)
+{
+	if (i_number_of_solutes > 0) {
+		for (size_t jj=0; jj < i_number_of_solutes; jj++) {
+			conc[jj] = mio::IOUtils::nodata;
+			stringstream ss;
+			ss << "CONC" << jj;
+			conc[jj] = md(ss.str());
+		}
+	} else {
+		return;
+	}
 }
 
 std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)

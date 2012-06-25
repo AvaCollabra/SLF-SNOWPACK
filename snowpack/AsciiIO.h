@@ -69,6 +69,7 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
+		void setNumberSensors(const CurrentMeteo& Mdata);
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                     const CurrentMeteo& Mdata, const double crust,
                                     const double dhs_corr, const double mass_corr,
@@ -91,15 +92,15 @@ class AsciiIO : public SnowpackIOInterface {
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 		double min_depth_subsurf;
-		size_t number_meas_temperatures, number_fixed_heights, number_fixed_rates;
-		size_t number_sensors, max_number_sensors; ///< number of "sensors" that can be monitored
 		double hoar_density_surf, hoar_min_size_surf;
 
 		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 
-		//Defines heights of fixed sensors or/and initial depths of sensors with fixed settling rates
-		std::vector<double> fixed_sensor_depths;
+		//Monitored temperature sensors
+		std::vector<double> fixedPositions;
+		size_t numberMeasTemperatures, maxNumberMeasTemperatures;
+		size_t numberTags, numberFixedSensors, totNumberSensors;
 
 		std::set<std::string> setAppendableFiles;
 

@@ -306,7 +306,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	if ((nN == Xdata.SoilNode+1)
 	        || (water_layer && useSoilLayers && (nN == Xdata.SoilNode+2)
 	                && (EMS[nE-1].theta[ICE] < Snowpack::min_ice_content)
-	                    && (EMS[nE-1].theta[WATER] > 0.003) && (EMS[nE-1].L > 0.0001))) {
+	                    && (EMS[nE-1].theta[WATER] > SnowStation::thresh_moist_snow) && (EMS[nE-1].L > 0.0001))) {
 		return;
 	}
 

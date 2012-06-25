@@ -141,7 +141,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	const bool no_snow = ((nE < Xdata.SoilNode+1) || (EMS[nE-1].theta[SOIL] > 0.));
-	const bool no_wind_data = (Mdata.vw_drift == Constants::nodata);
+	const bool no_wind_data = (Mdata.vw_drift == mio::IOUtils::nodata);
 	if (no_snow || no_wind_data) {
 		cumu_hnw = MAX(0., cumu_hnw);
 		Xdata.ErosionLevel = Xdata.SoilNode;

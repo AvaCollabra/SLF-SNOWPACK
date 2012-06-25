@@ -39,9 +39,9 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["DOORSCHOT"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["FIXED_ALBEDO"] = "-999.";
-	advancedConfig["FIXED_SENSOR_DEPTHS"] = "";
+	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
-	advancedConfig["HARDNESS_MODEL"] = "DEFAULT";
+	advancedConfig["HARDNESS_MODEL"] = "MONTI";
 	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
 	advancedConfig["HN_DENSITY"] = "PARAMETERIZED";
 	advancedConfig["HN_DENSITY_MODEL"] = "LEHNING_NEW";
@@ -54,11 +54,11 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["JAM"] = "false";
 	advancedConfig["JOIN_ELEMENTS"] = "true";
 	advancedConfig["MASS_BALANCE"] = "false";
-	advancedConfig["MAX_NUMBER_SENSORS"] = "5";
+	advancedConfig["MAX_NUMBER_MEAS_TEMPERATURES"] = "5";
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	advancedConfig["MULTISTREAM"] = "true";
-	advancedConfig["NUMBER_FIXED_HEIGHTS"] = "-999";
+	advancedConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
 	advancedConfig["PERP_TO_SLOPE"] = "false";
 	advancedConfig["PLASTIC"] = "false";
@@ -69,6 +69,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SW_MODE_CHANGE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";
 	advancedConfig["THRESH_RH"] = "0.5";
+	advancedConfig["THRESH_DT_AIR_SNOW"] = "3.0";
 	advancedConfig["T_CRAZY_MAX"] = "340.";
 	advancedConfig["T_CRAZY_MIN"] = "210.";
 	advancedConfig["VARIANT"] = "DEFAULT";
@@ -79,12 +80,8 @@ bool SnowpackConfig::initStaticData()
 	//[Input] section
 	inputConfig["METEOPATH"] = "./DATA/input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
-	inputConfig["NUMBER_MEAS_TEMPERATURES"] = "0";
-	inputConfig["RHO_HN"] = "false";
 	inputConfig["SNOW"] = "SMET";
 	inputConfig["SOLUTE_NAMES"] = "NITRATE";
-	inputConfig["USEANETZ"] = "false"; // Operational (ImisIO) only
-	inputConfig["VW_DRIFT"] = "false";
 
 	//[Output] section
 	outputConfig["AVGSUM_TIME_SERIES"] = "true";
@@ -134,12 +131,6 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	}
 
 	string hn_density;  getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, Config::nothrow);
-	if (hn_density == "MEASURED") {
-		bool rho_hn = false;
-		getValue("RHO_HN", "Input", rho_hn, Config::nothrow);
-		if (!rho_hn)
-			throw InvalidArgumentException("HN_DENSITY = " + hn_density + " while RHO_HN = false", AT);
-	}
 	string hn_density_model; getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model, Config::nothrow);
 	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, Config::nothrow);
 	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, Config::nothrow);
@@ -148,15 +139,12 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 	if ((variant == "") || (variant == "DEFAULT")) {
 
 		// Use default settings and ...
-		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.15");
 
 	} else if (variant == "JAPAN") {
 
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
-
-		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.15");
 
 	} else if (variant == "ANTARCTICA") {
 
@@ -183,10 +171,10 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		}
 
 		addKey("FIRST_BACKUP", "Output", "1500.");
-		addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "7");
+		addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
 		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
 		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "7");
+		addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
@@ -197,17 +185,15 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
-		string number_fixed_heights; getValue("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced",
-		                                      number_fixed_heights, Config::nothrow);
-		if (number_fixed_heights == "-999") addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "5");
+		string fixed_positions; getValue("FIXED_POSITIONS", "SnowpackAdvanced", fixed_positions, Config::nothrow);
+		if (fixed_positions == "") addKey("FIXED_POSITIONS", "SnowpackAdvanced", "5");
 		string number_fixed_rates; getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates, Config::nothrow);
 		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		string max_number_sensors; getValue("MAX_NUMBER_SENSORS", "SnowpackAdvanced", max_number_sensors, Config::nothrow);
-		if (max_number_sensors == "") addKey("MAX_NUMBER_SENSORS", "SnowpackAdvanced", "5");
+		string max_number_meas_temperatures;
+		getValue("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", max_number_meas_temperatures, Config::nothrow);
+		if (max_number_meas_temperatures == "") addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, Config::nothrow);
 		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
-
-		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
 
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
@@ -267,80 +253,4 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		ss << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}
-
-	/**
-	 * @brief Defines how depths of snow temperature sensors are read in and output \n
-	 * - If measured snow temperatures are available at fixed heights, user provided sensor depths
-	 *     from the advanced section will be used for output
-	 * - If no measured snow temperatures are available but NUMBER_FIXED_HEIGHTS > 0,
-	 *     default or user provided sensor depths from the advanced section will be used for output
-	 */
-	int number_fixed_heights = get("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", Config::nothrow);
-	const size_t number_meas_temperatures = get("NUMBER_MEAS_TEMPERATURES", "Input", Config::nothrow);
-	vector<double> fixed_sensor_depths = get("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", Config::nothrow);
-	if ((number_meas_temperatures > 0) || (number_fixed_heights > 0)) {
-		if (fixed_sensor_depths.size() == 0) {
-			addKey("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", "0.25 0.50 1.0 1.5 -0.1");
-		}
 	}
-	if (number_fixed_heights == Constants::iundefined) {
-		if (fixed_sensor_depths.size() > 0) {
-			stringstream ss;
-			ss << fixed_sensor_depths.size();
-			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", ss.str());
-			number_fixed_heights = fixed_sensor_depths.size();
-		} else {
-			addKey("NUMBER_FIXED_HEIGHTS", "SnowpackAdvanced", "0");
-			number_fixed_heights = 0;
-		}
-	}
-	if (number_fixed_heights > (int)fixed_sensor_depths.size()) {
-		stringstream ss;
-		ss << number_fixed_heights;
-		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS = "+ss.str()+" > FIXED_SENSOR_DEPTHS.size()", AT);
-	}
-	const int max_number_sensors = get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", Config::nothrow);
-	if (number_fixed_heights > max_number_sensors) {
-		stringstream ss;
-		ss << number_fixed_heights;
-		throw InvalidArgumentException("NUMBER_FIXED_HEIGHTS = "+ss.str()+" > MAX_NUMBER_SENSORS", AT);
-	}
-}
-
-void checkUserConfiguration(mio::Config& /*cfg*/)
-{
-	/*
-	if ( !((NUMBER_MEAS_TEMP > -1) && (NUMBER_MEAS_TEMPERATURES <= MAX_NUMBER_SENSORS)) ) {
-	prn_msg(__FILE__, __LINE__, "err", Date(), "NUMBER_MEAS_TEMPERATURES=%d out of range (0, %d)", NR_MEAS_TEMP, MAX_NUMBER_SENSORS);
-		return ERROR;
-	}
-	NUMBER_SENSORS = NUMBER_FIXED_HEIGHTS + NUMBER_FIXED_RATES;
-	if ( !((NUMBER_SENSORS > -1) && (NUMBER_SENSORS <= MAX_NUMBER_SENSORS)) ) {
-	prn_msg(__FILE__, __LINE__, "err", Date(), "%d NUMBER_FIXED_HEIGHTS + %d NUMBER_FIXED_RATES out of range (0, %d)", NUMBER_FIXED_HEIGHTS, NUMBER_FIXED_RATES, MAX_NUMBER_SENSORS);
-		return ERROR;
-	}
-
-
-	// Print some infos to stdout: research mode
-	if ( !MEAS_TSS && CHANGE_BC ){
-	prn_msg(__FILE__, __LINE__, "wrn", Date(), "(!MEAS_TSS && CHANGE_BC) == 1");
-	prn_msg(__FILE__, __LINE__, "msg", Date(), "Using Neumann boundary conditions because no measured TSS is available");
-		CHANGE_BC = 0;
-	}
-	if ( !SNP_SOIL && CANOPY ) {
-	prn_msg(__FILE__, __LINE__, "wrn", Date(), "Canopy Model is used WITHOUT soil data!");
-	}
-
-
-	// Check a few settings - operational mode
-	if ( SNOW_REDISTRIBUTION && ((NUMBER_SLOPES > 5) || ((NUMBER_SLOPES-1)%4 != 0)) ) {
-	prn_msg(__FILE__, __LINE__, "err", Date(), "NUMBER_SLOPES (%d) not compatible with SNOW_REDISTRIBUTION", NUMBER_SLOPES);
-		exit(EXIT_FAILURE);
-	}
-	if ( CANOPY ) {
-		CANOPY = 0;
-	prn_msg(__FILE__, __LINE__, "wrn", Date(), "CANOPY was set! You may have run into troubles! Reset to 0");
-	}
-	*/
-}
-

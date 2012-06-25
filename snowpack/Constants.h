@@ -46,8 +46,6 @@
 namespace Constants {
 	const double undefined = -999.; ///<This is the snowpack undefined value
 	const int iundefined = -999; ///<This is the snowpack undefined value
-	const double nodata = -999.; ///<This is the snowpack nodata value, see also IOUtils::nodata
-	const int inodata = -999;
 	const double min_percent_values = 0.9;
 
 	const double pi = 3.14159265358979323846;

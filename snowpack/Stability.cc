@@ -66,9 +66,9 @@ const bool Stability::__init = Stability::initStaticData();
 
 bool Stability::initStaticData()
 {
-	mapHandHardness["DEFAULT"]  = &Stability::setHandHardnessDEFAULT;
-	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
 	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
+	mapHandHardness["BELLAIRE"]  = &Stability::setHandHardnessBELLAIRE;
+	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
 
 	mapShearStrength["DEFAULT"] = &Stability::setShearStrengthDEFAULT;
 	mapShearStrength["NIED"]    = &Stability::setShearStrengthSTRENGTH_NIED;
@@ -101,7 +101,7 @@ Stability::Stability(const mio::Config& cfg) : plastic(false)
 
 
 /**
- * @brief Assign hardness to snow types according to density, Swiss version
+ * @brief Assign hardness to snow types according to density, Swiss version by Sascha Bellaire
  * @author Implemented by C. Fierz: Regression by Sascha Bellaire January 2005 (all types except MFcr).
  * The original Swiss regression has been modified for PP, RG and FC to get a better agreement
  * to observed hardness. If there is a new settlement formulation in future, and therefore a
@@ -111,7 +111,7 @@ Stability::Stability(const mio::Config& cfg) : plastic(false)
  * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
+double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
 {
 	int    F1, F2, F3; // grain shape
 	double hardness;
@@ -206,11 +206,12 @@ double Stability::setHandHardnessDEFAULT(const ElementData& Edata)
 
 /**
  * @brief Compute hand hardness for a given grain type and density
+ * @note Implementation according to Fabiano Monti's work, June 2012 (all types except MFcr).
  * @param F grain type
  * @param rho snow density
  * @return hand hardness
  */
-double Stability::getHandHardnessMonti(const int& F, const double& rho, const double& water_content)
+double Stability::getHandHardnessMONTI(const int& F, const double& rho, const double& water_content)
 {
 #ifndef NOSAFECHECKS
 	if (rho<0.) {
@@ -225,50 +226,50 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho, const do
 			const double B = 0.0105;
 			return (A + B*rho);
 		}
-		case 1: { // Precipitation Particles PP; ori: A = 0.7927; B = 0.0038 (same Bellaire);
+		case 1: { // Precipitation Particles PP
 			if ( (rho >= 0.) && (rho < 135.465))
 				return 1.;
 			else 
 				return 2.;
 		}
-		case 2: { // Decomposing and Fragmented precipitation particles DF; ori: A = 84.0713; B = 54.0134;
+		case 2: { // Decomposing and Fragmented precipitation particles DF
 			if ( (rho >= 0.) && (rho <= 214.2380))
 				return 1.;
-			else if ( (rho > 214.2380) && (rho <= 268.2981))
+			else if ((rho > 214.2380) && (rho <= 268.2981))
 				return 2.;
-			else if ( (rho > 268.2981) && (rho <= 387.4305))
+			else if ((rho > 268.2981) && (rho <= 387.4305))
 				return 3.;
 			else
 				return 4.;
 		}
-		case 3: { // Rounded Grains RG; ori: A = 0.2027; B = 0.0092; ori: A = 124.3460; B = 58.8401;
+		case 3: { // Rounded Grains RG
 			if ( (rho >= 0.) && (rho <= 189.2103))
 				return 1.;
-			else if ( (rho > 189.2103) && (rho <= 277.8087))
+			else if ((rho > 189.2103) && (rho <= 277.8087))
 				return 2.;
-			else if ( (rho > 277.8087) && (rho <= 368.4093))
+			else if ((rho > 277.8087) && (rho <= 368.4093))
 				return 3.;
-			else if ( (rho > 368.4093) && (rho <= 442.4917))
+			else if ((rho > 368.4093) && (rho <= 442.4917))
 				return 4.;
 			else
 				return 5.;
 		}
-		case 4: { // Faceted Crystals FC; ori: A = 190.5609; B = 46.0518;
+		case 4: { // Faceted Crystals FC
 			if ( (rho >= 0.) && (rho <= 247.2748))
 				return 1.;
-			else if ( (rho > 247.2748) && (rho <= 319.3549))
+			else if ((rho > 247.2748) && (rho <= 319.3549))
 				return 2.;
-			else if ( (rho > 319.3549) && (rho <= 400.4450))
+			else if ((rho > 319.3549) && (rho <= 400.4450))
 				return 3.;
-			else if ( (rho > 400.4450) && (rho <= 517.5751))
+			else if ((rho > 400.4450) && (rho <= 517.5751))
 				return 4.;
 			else
 				return 5.;
 		}
-		case 5: { // Depth Hoar DH; ori: A = 215.2649; B = 32.1562;
-			if ( (rho >= 0.) && (rho <= 287.8198))
+		case 5: { // Depth Hoar DH
+			if ((rho >= 0.) && (rho <= 287.8198))
 				return 1.;
-			else if ( (rho > 287.8198) && (rho <= 344.3826))
+			else if ((rho > 287.8198) && (rho <= 344.3826))
 				return 2.;
 			else
 				return 3.;
@@ -279,25 +280,25 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho, const do
 			return (A + B*rho);
 		}
 		case 7: { // Melt Forms MF
-			if(water_content<.03) { //dry snow
-				if ( (rho >= 0.) && (rho <= 213.7375))
+			if (water_content < SnowStation::thresh_moist_snow) { //dry melt forms
+				if ((rho >= 0.) && (rho <= 213.7375))
 					return 1.;
-				else if ( (rho > 213.7375) && (rho <= 317.3527))
+				else if ((rho > 213.7375) && (rho <= 317.3527))
 					return 2.;
-				else if ( (rho > 317.3527) && (rho <= 406.9522))
+				else if ((rho > 317.3527) && (rho <= 406.9522))
 					return 3.;
-				else if ( (rho > 406.9522) && (rho <= 739.8220))
+				else if ((rho > 406.9522) && (rho <= 739.8220))
 					return 4.;
 				else
 					return 5.;
-			} else { //wet snow
-				if ( (rho >= 0.) && (rho <= 338.3760))
+			} else { //moist melt forms
+				if ((rho >= 0.) && (rho <= 338.3760))
 					return 1.;
-				else if ( (rho > 338.3760) && (rho <= 417.4638))
+				else if ((rho > 338.3760) && (rho <= 417.4638))
 					return 2.;
-				else if ( (rho > 417.4638) && (rho <= 541.6018))
+				else if ((rho > 417.4638) && (rho <= 541.6018))
 					return 3.;
-				else if ( (rho > 541.6018) && (rho <= 614.6830))
+				else if ((rho > 541.6018) && (rho <= 614.6830))
 					return 4.;
 				else
 					return 5.;
@@ -308,14 +309,14 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho, const do
 			const double B = 0.;
 			return (A + B*rho);
 		}
-		case 9: { // Rounding faceted particles FCxr; ori: A = 218.1156; B = 41.5798;
-			if ( (rho >= 0.) && (rho <= 259.7887))
+		case 9: { // Rounding faceted particles FCxr
+			if ((rho >= 0.) && (rho <= 259.7887))
 				return 1.;
-			else if ( (rho > 259.7887) && (rho <= 326.8632))
+			else if ((rho > 259.7887) && (rho <= 326.8632))
 				return 2.;
-			else if ( (rho > 326.8632) && (rho <= 396.9411))
+			else if ((rho > 326.8632) && (rho <= 396.9411))
 				return 3.;
-			else if ( (rho > 396.9411) && (rho <= 484.5384))
+			else if ((rho > 396.9411) && (rho <= 484.5384))
 				return 4.;
 			else
 				return 5.;
@@ -331,8 +332,8 @@ double Stability::getHandHardnessMonti(const int& F, const double& rho, const do
 }
 
 /**
- * @brief Assign hardness to snow types according to density, Fabiano Monti's version
- * @author Implemented by C. Fierz: Regression by Fabiano Monti 2012 (all types except MFcr).
+ * @brief Assign hardness to snow types according to density
+ * @note Implementation according to Fabiano Monti's work, June 2012 (all types except MFcr).
  * @param Edata
  * @return hand hardness index (1)
  */
@@ -345,8 +346,8 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
 	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
-		const double hardness_F1 = getHandHardnessMonti(F1, Edata.Rho, Edata.theta[WATER]);
-		const double hardness_F2 = getHandHardnessMonti(F2, Edata.Rho, Edata.theta[WATER]);
+		const double hardness_F1 = getHandHardnessMONTI(F1, Edata.Rho, Edata.theta[WATER]);
+		const double hardness_F2 = getHandHardnessMONTI(F2, Edata.Rho, Edata.theta[WATER]);
 		hardness = 0.5 * (hardness_F1 + hardness_F2);
 		
 		if (F1 == 6) {
@@ -590,12 +591,12 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 {
 	unsigned int nN = Xdata.getNumberOfNodes();
 
-	STpar.Sig_c2 = Constants::nodata;
+	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
 	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
 	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
-	STpar.sig_n = Constants::nodata;
-	STpar.sig_s = Constants::nodata;
+	STpar.sig_n = Constants::undefined;
+	STpar.sig_s = Constants::undefined;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
 	for(size_t e=Xdata.SoilNode; e<nN; e++) {

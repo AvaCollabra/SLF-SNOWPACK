@@ -244,13 +244,10 @@ bool SnLaws::setStaticData(const std::string& variant)
 	else
 		SnLaws::ageAlbedo = true;
 
-	// snow extinction coefficients
-	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23}; // values in use since r140
-	double fb_init[5] = {29., 15., 5., 9., 35.}; // values in use since r140
-	double pc_init[5] = {16.3, 16.8, 15.4, 31.0, 20.5}; // values in use since r140
-	//double k_init[5]  = {0.00125, 0.0198, 0.179, 3.74, 178.}; // 31 Jul 2008
-	//double fb_init[5] = {0.5, 0.05, 0.02, 3., 5.}; // fbn1 01 Aug 2008
-	//double fb_init[5] = {0.01, 0.05, 0.05, 3., 3.}; // fbn0 31 Jul 2008
+	// snow extinction coefficients; values in use since r140
+	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23}; 
+	double fb_init[5] = {29., 15., 5., 9., 35.};
+	double pc_init[5] = {16.3, 16.8, 15.4, 31.0, 20.5};
 	swa_k.resize(swa_nBands);
 	swa_pc.resize(swa_nBands);
 	swa_fb.resize(swa_nBands);
@@ -866,7 +863,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
  * @param t_snow Snow surface temperature (K)
  * @param t_atm Temperature of the atmosphere, i.e., air (K)
  * @param e_atm Emissivity of the atmosphere (1)
- * @return LW radiation coefficient (?)
+ * @return LW radiation coefficient (W m-2 K-1)
  */
 double SnLaws::compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm)
 {
@@ -1003,8 +1000,10 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * 	- PAHAUT: Edmond Pahaut's model, introduced Sep 1995 in CROCUS by G. Giraud
  * - EVENT: Driven by event type, that is,
  * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
- * - MEASURED: Use measured new snow density read from meteo input (RHO_HN must be set)
+ * - MEASURED: Use measured new snow density read from meteo input
  * - fixed: Fixed new snow density by assigning HN_DENSITY a number > 0.
+ * @note Set HN_DENSITY_MODEL to SURFACE_SNOW to use surface snow density as a "fixed" value or,
+ *       instead of a parameterized value, as a replacement for missing measured values
  * @param i_hn_density type of density computation
  * @param i_hn_density_model to use
  * @param Mdata Meteorological input
@@ -1039,8 +1038,11 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 			rho = Constants::undefined;
 		}
 	} else { // "FIXED"
-		if (!IOUtils::convertString(rho, i_hn_density, std::dec))
+		if (i_hn_density_model == "SURFACE_SNOW") {
+			rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
+		} else if (!IOUtils::convertString(rho, i_hn_density, std::dec)) {
 			throw ConversionFailedException("Cannot convert  '"+i_hn_density+"' to double", AT);
+		}
 	}
 
 	return rho;
@@ -1208,7 +1210,7 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
 	                 * pow(Edata.theta[ICE], 0.77);
 
 	double sp_fudge;
-	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005)
+	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < SnowStation::thresh_moist_snow)
 		sp_fudge = 0.;
 	else
 		sp_fudge = SnLaws::visc_sp_fudge;
@@ -1236,7 +1238,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 	double thresh_rho1 = 1., thresh_rho2 = 1.; // Thresholds for enhanced viscosity
 	bool use_thresh = false;
 
-	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < 0.005)
+	if (Edata.mk%100 >= 20 && Edata.theta[WATER] < SnowStation::thresh_moist_snow)
 		sp_fudge = 0.;
 	else
 		sp_fudge = SnLaws::visc_sp_fudge;
@@ -1440,7 +1442,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	// Check needed while JAM set!
 	if (true && (Edata.theta[WATER] > 0.3)) {
 		return (1.e9 * SnLaws::smallest_viscosity);
-	} else if (false && (Edata.theta[WATER] >= 0.005)) {
+	} else if (false && (Edata.theta[WATER] >= SnowStation::thresh_moist_snow)) {
 		return SnLaws::snowViscosityKOJIMA(Edata);
 	}
 	// Check that you are not in a ice or/and water layer
@@ -1466,7 +1468,6 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 
 /**
  * @brief Computes an Arrhenius-type temperature dependency
- * @author Charles Fierz
  * @version 9.11
  * @param ActEnergy (J mol-1)
  * @param T snow temperature (K)
@@ -1480,8 +1481,11 @@ double SnLaws::ArrheniusLaw(const double ActEnergy, const double T, const double
 /**
  * @brief Computes air emissivity (1) \n
  * Uses either incoming long wave radiation or either Brutsaert (clear sky) or Omstedt (cloudiness) parametrization \n
- * NOTE ta and rh must be checked values, best containing no Constants::nodata!
- * @author Mathias Bavay et al.
+ * @note
+ * - ta and rh must be checked values, best containing no mio::IOUtils::nodata!
+ * - observed minimum air emissivities:
+ * 	- default: 0.55 (from 1993 data at Weissfluhjoch)
+ * 	- Antarctica: 0.31 (from 2006/2007 data of Dome C)
  * @version 10.04
  * @param input
  * - input between 0 and 1 : fractional cloud cover
@@ -1499,8 +1503,8 @@ double SnLaws::AirEmissivity(const double input, const double ta, const double r
 	if(input > 1.) {
 		ea = input/(Constants::stefan_boltzmann*ta*ta*ta*ta);
 	} else {
-		if((ta == Constants::nodata) || (rh == Constants::nodata)) {
-			return Constants::nodata;
+		if((ta == mio::IOUtils::nodata) || (rh == mio::IOUtils::nodata)) {
+			return Constants::undefined;
 		}
 		if(input <= 0.) {
 			ea = Atmosphere::Brutsaert_emissivity(rh, ta);

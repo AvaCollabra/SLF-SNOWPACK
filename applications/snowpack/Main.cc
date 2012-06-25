@@ -62,13 +62,13 @@ class Slope {
 
 	 bool snow_redistribution;
 	 bool virtual_slopes;
-	 unsigned int nSlopes;
-	 unsigned int station;      ///< main station, flat field or slope
-	 unsigned int sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
-	 unsigned int first;        ///< first sector in computing sequence
-	 unsigned int south;
-	 unsigned int luv;
-	 unsigned int lee;
+	 size_t nSlopes;
+	 size_t station;      ///< main station, flat field or slope
+	 size_t sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
+	 size_t first;        ///< first sector in computing sequence
+	 size_t south;
+	 size_t luv;
+	 size_t lee;
 	 double prevailing_wind_dir;
 
 	 int getSectorDir(const double& dir_or_expo) const;
@@ -133,7 +133,7 @@ int Slope::getSectorDir(const double& dir_or_expo) const
 	double dir = dir_or_expo;
 	if (dir > 360.) dir -= 360.;
 	else if (dir < 0.) dir += 360.;
-	unsigned int sectorDir = int (floor((dir + 0.5*sector_width)/sector_width));
+	size_t sectorDir = int (floor((dir + 0.5*sector_width)/sector_width));
 	sectorDir++;
 	if (sectorDir >= nSlopes) return 1;
 	else return sectorDir;
@@ -149,7 +149,7 @@ void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, do
 {
 	switch (slope_sequence) {
 	case 0:
-		for (unsigned int kk=0; kk<nSlopes; kk++) {
+		for (size_t kk=0; kk<nSlopes; kk++) {
 			vecXdata[kk].windward = false;
 			vecXdata[kk].rho_hn   = 0.;
 			vecXdata[kk].hn       = 0.;
@@ -379,50 +379,6 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double p
 		Mdata.rho_hn = md("RHO_HN");
 }
 
-void editSensorDepths(const mio::MeteoData& md, vector<double>& vecHTS)
-{
-	for (size_t jj = 0; jj < vecHTS.size(); jj++) {
-		stringstream ss;
-		ss << "HTS" << jj+1;
-		if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
-			vecHTS[jj] = md(ss.str());
-		} else {
-			if (jj > 0)
-				vecHTS[jj] = vecHTS[jj-1] + 0.5;
-			break;
-		}
-	}
-}
-
-void copySnowTemperatures(const mio::MeteoData& md, CurrentMeteo& Mdata, vector<double>& vecHTS, const int current_slope)
-{
-	for (size_t jj=0; jj < vecHTS.size(); jj++) {
-		Mdata.zv_ts[jj] = vecHTS[jj];
-		Mdata.ts[jj] = Constants::undefined;
-		if (current_slope == 0) {
-			stringstream ss;
-			ss << "TS" << jj+1;
-			if (md.param_exists(ss.str()) && (md(ss.str()) != mio::IOUtils::nodata)) {
-				Mdata.ts[jj] = md(ss.str());
-			}
-		}
-	}
-}
-
-void copySolutes(const mio::MeteoData& md, CurrentMeteo& Mdata, const unsigned int& i_number_of_solutes)
-{
-	if (i_number_of_solutes > 0) {
-		for (unsigned int jj=0; jj < i_number_of_solutes; jj++) {
-			Mdata.conc[jj] = mio::IOUtils::nodata;
-			stringstream ss;
-			ss << "CONC" << jj;
-			Mdata.conc[jj] = md(ss.str());
-		}
-	} else {
-		return;
-	}
-}
-
 //for a given config (that can be altered) and original meteo data, prepare the snowpack data structures
 //This means that all tweaking of config MUST be reflected in the config object
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
@@ -523,7 +479,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		Mdata.tss = Constants::undefined;
 		cfg.addKey("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", "true");
 		cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
-		cfg.addKey("NUMBER_MEAS_TEMPERATURES", "Input", "false");
 	}
 
 	if (iswr_forced >= 0.) {
@@ -744,13 +699,7 @@ int main (int argc, char *argv[])
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	const double sn_dt = M_TO_S(calculation_step_length); //Calculation time step in seconds
 
-	const size_t max_number_sensors = cfg.get("MAX_NUMBER_SENSORS", "SnowpackAdvanced", mio::Config::nothrow);
-	const size_t number_meas_temperatures = cfg.get("NUMBER_MEAS_TEMPERATURES", "Input", mio::Config::nothrow);
-	vector<double> fixed_sensor_depths;
-	if (number_meas_temperatures > 0)
-		cfg.getValue("FIXED_SENSOR_DEPTHS", "SnowpackAdvanced", fixed_sensor_depths);
-
-	int nSolutes = Constants::inodata;
+	int nSolutes = Constants::iundefined;
 	cfg.getValue("NUMBER_OF_SOLUTES", "Input", nSolutes, mio::Config::nothrow);
 	if (nSolutes > 0) SnowStation::number_of_solutes = unsigned(nSolutes);
 
@@ -825,8 +774,8 @@ int main (int argc, char *argv[])
 		vector<SnowStation> vecXdata(slope.nSlopes, SnowStation(useCanopyModel, useSoilLayers/*, number_of_solutes*/));
 		ZwischenData sn_Zdata;   // "Memory"-data, required for every operational station
 
-		// Meteo data for the current time step (interpolated!)
-		CurrentMeteo Mdata(max_number_sensors/*, number_of_solutes*/);
+		// Create meteo data object to hold interpolated current time steps
+		CurrentMeteo Mdata(cfg);
 		// To collect surface exchange data for output
 		SurfaceFluxes surfFluxes/*(number_of_solutes)*/;
 		// Boundary condition (fluxes)
@@ -864,7 +813,7 @@ int main (int argc, char *argv[])
 					if (vectmpmd.size() == 0)
 						throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 						                           + current_date.toString(mio::Date::ISO), AT);
-					editSensorDepths(vectmpmd[i_stn], fixed_sensor_depths);
+					Mdata.setMeasTempParameters(vectmpmd[i_stn]);
 					vecSSdata[slope.station].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
 					                                    vecSSdata[slope.station].meta);
 				} else {
@@ -1001,8 +950,8 @@ int main (int argc, char *argv[])
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
-				copySnowTemperatures(vecMyMeteo[i_stn], Mdata, fixed_sensor_depths, slope_sequence);
-				copySolutes(vecMyMeteo[i_stn], Mdata, SnowStation::number_of_solutes);
+				Mdata.copySnowTemperatures(vecMyMeteo[i_stn], slope_sequence);
+				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
                                        Psolar, Rdata, cumu_hnw, lw_in, iswr_forced, hs_a3hl6,

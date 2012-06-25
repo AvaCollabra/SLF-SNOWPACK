@@ -103,11 +103,11 @@ class Stability {
 		void initStability(const double& psi_ref, StabilityData& STpar,
 		                   SnowStation& Xdata, std::vector<InstabilityData>& SIdata);
 
-		double setHandHardnessDEFAULT(const ElementData& Edata);
+		double setHandHardnessBELLAIRE(const ElementData& Edata);
 		double setHandHardnessASARC(const ElementData& Edata);
 		double setHandHardnessMONTI(const ElementData& Edata);
 
-		double getHandHardnessMonti(const int& F, const double& rho, const double& water_content);
+		double getHandHardnessMONTI(const int& F, const double& rho, const double& water_content);
 
 		double compCriticalStress(const double& epDotn, const double& T_s);
 

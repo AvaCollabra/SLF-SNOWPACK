@@ -477,7 +477,7 @@ void Radiation::flatFieldRadiation(const SnowStation& Xdata, CurrentMeteo& Mdata
 
 	// Top of atmosphere radiation
 	if ((Rdata.toa_h = Constants::solcon * Psolar.ecc_corr * cos( Psolar.zen )) < 0.) {
-		Rdata.toa_h = Constants::nodata;
+		Rdata.toa_h = Constants::undefined;
 	}
 	// Compute potential radiation only for Psolar.elev > THRESH_SUN_ELEVATION ...
 	if (Psolar.elev >= Radiation::thresh_sun_elevation) {

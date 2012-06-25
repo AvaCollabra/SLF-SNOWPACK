@@ -659,7 +659,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 				}
 			} else { // (OLD) SNOW
 				// WET snow
-				if ( EMS[e].theta[WATER] > 0.005 ) {
+				if (EMS[e].theta[WATER] > SnowStation::thresh_moist_snow) {
 					ddDot = 0.0;
 					spDot = pow(thetam_w, 3.) / 16.;
 					if ( spDot < 2.*cw ) {
@@ -894,7 +894,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 				}
 			} else { // (OLD) SNOW
 				// WET snow
-				if ( EMS[e].theta[WATER] > 0.005 ) {
+				if (EMS[e].theta[WATER] > SnowStation::thresh_moist_snow) {
 					ddDot = 0.0;
 					spDot = pow(thetam_w, 3.) / 16.;
 					if ( spDot < 2.*cw ) {

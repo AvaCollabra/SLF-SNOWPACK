@@ -118,7 +118,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	const double ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
 	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
-	// Adjust for snow height: model level over actual surface for Alpine3D
+	// Adjust for snow height; for Alpine3D: model level over actual surface
 	const double zref = (ALPINE3D)? height_of_wind_value : MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
 	// In case of ventilation ... Wind pumping displacement depth (m)
 	const double d_pump = (SnLaws::wind_pump)? SnLaws::compWindPumpingDisplacement(Xdata) : 0.;
@@ -177,9 +177,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 
 			if (stab_ratio > 0.) { // stable
 				// Stearns & Weidner, 1993
-				const double dummy = pow((1. + 5. * stab_ratio), 0.25);
-				psi_m = log(1. + dummy) * log(1. + dummy) + log(1. + dummy*dummy)
-				            - 1. * atan(dummy) - 0.5 * dummy*dummy*dummy + 0.8247; // Original 2.*atan(dummy) - 1.3333
+				const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
+				psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + dummy1*dummy1)
+				            - 1. * atan(dummy1) - 0.5 * dummy1*dummy1*dummy1 + 0.8247; // Original 2.*atan(dummy1) - 1.3333
 				// Launiainen and Vihma, 1990
 				//psi_m = -17. * (1. - exp(-0.29 * stab_ratio));
 
@@ -193,14 +193,14 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 				            - 1. * dummy2 - 0.3 * dummy2*dummy2*dummy2 + 1.2804; // Ori: 2. * dummy2 - 0.66667 * ...
 			} else {
 				// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
-				//dummy = pow((1.-15. * stab_ratio),0.25);
-				//psi_m = log(1. - dummy) * log(1. - dummy) + log(1. + dummy*dummy)
-				//            - 2.*atan(dummy) - -1. + dummy - 0.5086;
+				//const double dummy0 = pow((1.-15. * stab_ratio),0.25);
+				//psi_m = log(1. - dummy0) * log(1. - dummy0) + log(1. + dummy0*dummy0)
+				//            - 2.*atan(dummy0) - -1. + dummy0 - 0.5086;
 
 				// Paulson - the original
-				const double dummy = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = 2. * log(0.5 * (1. + dummy)) + log(0.5 * (1. + dummy*dummy))
-				            - 2. * atan(dummy) + 0.5 * Constants::pi;
+				const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
+				psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + dummy1*dummy1))
+				            - 2. * atan(dummy1) + 0.5 * Constants::pi;
 
 				// Stearns & Weidner, 1993, for scalars
 				const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);

@@ -75,47 +75,60 @@ class ZwischenData {
  */
 class CurrentMeteo {
 	public:
-		CurrentMeteo(const size_t& i_max_number_of_sensors);
-		void reset();
-
+		CurrentMeteo(const mio::Config& i_cfg);
+		void reset(const mio::Config& i_cfg);
+		void setMeasTempParameters(const mio::MeteoData& md);
+		size_t getNumberMeasTemperatures() const;
+		size_t getNumberFixedRates() const;
+		size_t getMaxNumberMeasTemperatures() const;
+		void getFixedPositions(std::vector<double>& positions) const;
+		void copySnowTemperatures(const mio::MeteoData& md, const int current_slope);
+		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
+		
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
 
-		int    n;      ///< record number of basic meteo input data
+		int n;           ///< record number of basic meteo input data
 
-		mio::Date date;        ///< Date of current meteo data
-		double ta;     ///< Air temperature (K)
-		double rh;     ///< Relative humidity (% or 1)
-		double rh_avg; ///< Running mean of relative humidity (1)
-		double vw;     ///< Wind velocity at snow station (m s-1)
-		double vw_avg; ///< Running mean of wind velocity at snow station (m s-1)
-		double vw_max; ///< Maximum wind velocity at snow station (m s-1)
-		double dw;     ///< Wind direction at snow station (deg)
+		mio::Date date;  ///< Date of current meteo data
+		double ta;       ///< Air temperature (K)
+		double rh;       ///< Relative humidity (% or 1)
+		double rh_avg;   ///< Running mean of relative humidity (1)
+		double vw;       ///< Wind velocity at snow station (m s-1)
+		double vw_avg;   ///< Running mean of wind velocity at snow station (m s-1)
+		double vw_max;   ///< Maximum wind velocity at snow station (m s-1)
+		double dw;       ///< Wind direction at snow station (deg)
 		double vw_drift; ///< Wind velocity for blowing and drifting snow (operational: wind ridge station)
 		double dw_drift; ///< Wind direction of blowing and drifting snow (operational: wind ridge station)
-		double ustar;  ///< The friction velocity (m s-1) computed in mt_MicroMet() and also used later for the MeteoHeat fluxes
-		double z0;          ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
-		double psi_s;       ///< Stability correction for scalar heat fluxes
-		double iswr;        ///< Incoming SHORTWAVE radiation (W m-2)
-		double rswr;        ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
-		double diff;        ///< Diffuse radiation from the sky (W m-2)
-		double elev;        ///< Solar elevation to be used in Canopy.c (rad) => see also
-		double ea;          ///< Atmospheric emissivity (1)
-		double tss;         ///< Snow surface temperature (K)
-		double tss_a12h;    ///< Snow surface temperature averaged over past 12 hours (K)
-		double tss_a24h;    ///< Snow surface temperature averaged over past 24 hours (K)
-		double ts0;         ///< Bottom temperatures of snow/soil pack (K)
-		double hnw;         ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
-		double hs;          ///< The measured height of snow (m)
-		double hs_a3h;      ///< Snow depth averaged over 3 past hours
-		double hs_rate;     ///< The rate of change in snow depth (m h-1)
+		double ustar;    ///< The friction velocity (m s-1) computed in mt_MicroMet() and also used later for the MeteoHeat fluxes
+		double z0;       ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
+		double psi_s;    ///< Stability correction for scalar heat fluxes
+		double iswr;     ///< Incoming SHORTWAVE radiation (W m-2)
+		double rswr;     ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
+		double diff;     ///< Diffuse radiation from the sky (W m-2)
+		double elev;     ///< Solar elevation to be used in Canopy.c (rad) => see also
+		double ea;       ///< Atmospheric emissivity (1)
+		double tss;      ///< Snow surface temperature (K)
+		double tss_a12h; ///< Snow surface temperature averaged over past 12 hours (K)
+		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
+		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
+		double hnw;      ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
+		double hs;       ///< The measured height of snow (m)
+		double hs_a3h;   ///< Snow depth averaged over 3 past hours
+		double hs_rate;  ///< The rate of change in snow depth (m h-1)
 
-		std::vector<double> ts;    ///< Snowpack and/or Soil temperatures (K)
-		std::vector<double> zv_ts; ///< Depth of temperature sensors (m)
+		std::vector<double> ts;    ///< Measured snow or/and soil temperatures (K)
+		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)
 		std::vector<double> conc;  ///< Solute concentrations in precipitation
-		double rho_hn;             ///< Measured new sno density (kg m-3)
+		double rho_hn;             ///< Measured new snow density (kg m-3)
 
 	private:
-		size_t max_number_of_sensors;
+		size_t getNumberMeasTemperatures(const mio::MeteoData& md);
+
+		std::vector<double> fixedPositions; ///< Positions of fixed snow/soil temperatures (m)
+		double minDepthSubsurf;             ///< Sensor must be covered by minDepthSubsurf (m) to be output
+		size_t maxNumberMeasTemperatures;   ///< Max allowed number of measured snow/soil temperatures, depending on variant
+		size_t numberMeasTemperatures;      ///< Number of measured snow/soil temperatures
+		size_t numberFixedRates;
 };
 
 /// @brief The 3 mathematical fields that can be solved
@@ -452,8 +465,9 @@ class SnowStation {
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
-		static const unsigned int number_top_elements;
-		static unsigned int number_of_solutes;  ///< The model treats that number of solutes
+		static const double thresh_moist_snow;
+		static const size_t number_top_elements;
+		static size_t number_of_solutes;  ///< The model treats that number of solutes
 
 	private:
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
@@ -469,7 +483,7 @@ class SnowStation {
 class BoundCond {
 	public:
 		///@brief BoundCond is used to set Neumann boundary conditions
-		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::nodata) {};
+		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {};
 
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation
