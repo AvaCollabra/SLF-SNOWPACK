@@ -1376,16 +1376,17 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 		return (1.e9 * SnLaws::smallest_viscosity);
 
 	const double visc_fudge = SnLaws::snowViscosityFudgeDEFAULT(Edata); // Snow viscosity fudge factor
+
 	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
 	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
 	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
-	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
-
 	const double Te = MIN(Edata.Te, Edata.melting_tk);
 	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
-	const double sig = -Edata.C;       // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+
 	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
+	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
+	const double sig = -Edata.C;       // Overburden stress, that is, absolute value of Cauchy stress (Pa)
 	// HACK multiply sigNeckYield by 100. to avoid yielding on purpose
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
@@ -1440,12 +1441,12 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
 	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
 	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
-	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
-
 	const double Te = MIN(Edata.Te, Edata.melting_tk);
 	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
-	const double sig = -Edata.C;      // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+
 	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
+	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
+	const double sig = -Edata.C;      // Overburden stress, that is, absolute value of Cauchy stress (Pa)
 	// HACK multiply sigNeckYield by 100. to avoid yielding on purpose
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
