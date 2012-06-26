@@ -1368,14 +1368,6 @@ double SnLaws::compSnowViscosity(const std::string& variant, const std::string& 
  */
 double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 {
-	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
-	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
-	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
-	const double sig = -Edata.C;       // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	double visc_macro, visc_micro;     // Structure related multiplying factors
-	double visc_fudge, visc_factor;    // Fit and reference parameters
-	double eta;                        // Viscosity (Pa s)
-
 	// Check needed while JAM set!
 	if (Edata.theta[WATER] > 0.3)
 		return (1.e9 * SnLaws::smallest_viscosity);
@@ -1383,18 +1375,23 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 	if (Edata.theta[ICE] + Edata.theta[WATER] > 0.99)
 		return (1.e9 * SnLaws::smallest_viscosity);
 
-	visc_fudge = SnLaws::snowViscosityFudgeDEFAULT(Edata);
-	visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
-	visc_macro = Edata.neck2VolumetricStrain();
-	visc_micro = Edata.neckStressEnhancement();
-	double Te = MIN(Edata.Te, Edata.melting_tk);
-	eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
+	const double visc_fudge = SnLaws::snowViscosityFudgeDEFAULT(Edata); // Snow viscosity fudge factor
+	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
+	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
+	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
+	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
+	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
+
+	const double Te = MIN(Edata.Te, Edata.melting_tk);
+	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
+	const double sig = -Edata.C;       // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
 	// HACK multiply sigNeckYield by 100. to avoid yielding on purpose
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
 	else // YIELDING, NON-LINEAR
 		eta /= visc_micro*visc_micro*visc_micro * sig*sig;
-	return eta;
+	return eta; // Viscosity (Pa s)
 }
 
 /**
@@ -1418,17 +1415,6 @@ double SnLaws::snowViscosityKOJIMA(const ElementData& Edata)
  */
 double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date)
 {
-	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
-	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
-	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
-	const double sig = -Edata.C;      // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	double Te;                         // Element temperature (K)
-	double visc_macro, visc_micro;           // Structure related multiplying factors
-	double visc_fudge, visc_factor;          // Fit and reference parameters
-	double eta;                        // Viscosity (Pa s)
-
-	Te = MIN(Edata.Te, Edata.melting_tk);
-
 	// TODO Check whether the two commented checks below are needed!
 	// If the element length is SMALLER than the grain size then the thing aint settling ....
 	//  if( Edata.L <= 2.*MM_TO_M(rg) )
@@ -1449,11 +1435,17 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	if (Edata.theta[ICE] + Edata.theta[WATER] > 0.99)
 		return (1.e9 * SnLaws::smallest_viscosity);
 
-	visc_fudge = SnLaws::snowViscosityFudgeCALIBRATION(Edata, date);
-	visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
-	visc_macro = Edata.neck2VolumetricStrain();
-	visc_micro = Edata.neckStressEnhancement();
-	eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
+	const double visc_fudge = SnLaws::snowViscosityFudgeCALIBRATION(Edata, date); // Snow viscosity fudge factor
+	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
+	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
+	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
+	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
+	const double visc_micro = Edata.neckStressEnhancement(); // Micro-structure related factor
+
+	const double Te = MIN(Edata.Te, Edata.melting_tk);
+	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
+	const double sig = -Edata.C;      // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+	const double sigNeckYield = 0.4e6; // Yield stress for ice in neck (Pa)
 	// HACK multiply sigNeckYield by 100. to avoid yielding on purpose
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
@@ -1462,8 +1454,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	//ANT Quickfix for Antarctica only
 	if (SnLaws::setfix && ((date.getJulianDate() - Edata.depositionDate.getJulianDate()) > 60.))
 		eta /= 0.06;
-
-	return eta;
+	return eta; // Viscosity (Pa s)
 }
 
 /**
