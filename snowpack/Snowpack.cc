@@ -585,7 +585,7 @@ void Snowpack::updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xda
 
 /**
  * @brief Imposes Neumann boundary conditions at the surface. \n
- * The initial fluxes are computed in sn_MeteoHeatFluxes. \n
+ * The initial fluxes are computed in updateMeteoHeatFluxes. \n
  * This splitting ensures that the initial fluxes are used for each iteration in the
  * semi-explicit solution while they are not altered by the implicit solution. \n
  * Note that long wave radiation heat transfer is treated as a convection boundary condition
@@ -1046,7 +1046,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			U[n] += ddU[ n ];
 	} while ( NotConverged ); // end Convergence Loop
 
-	unsigned int crazy = 0;
+	size_t crazy = 0;
 	bool prn_date = true;
 	for (n = 0; n < nN; n++) {
 		if ((U[n] > t_crazy_min) && (U[n] < t_crazy_max)) {
@@ -1090,7 +1090,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			crazy++;
 		}
 	}
-	if (crazy) {
+	if (crazy > Xdata.SoilNode + 3) {
 		if (prn_date)
 			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 			        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",

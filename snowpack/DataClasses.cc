@@ -172,16 +172,16 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 	// 3) Ground heat fluxes
 	if (Xdata.getNumberOfElements() > 0) {
 		// 3a) qg0: heat flux at soil/snow boundary
-		if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
+		if (Xdata.SoilNode > 0) { // soil is present
+			Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
+			                 * Xdata.Edata[Xdata.SoilNode-1].gradT;
+		} else if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // no soi available
 			if ((Xdata.getNumberOfElements() < 3)
 			        && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont))
-				Sdata.qg += 0.;
+				Sdata.qg0 += 0.;
 			else
 				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]
 				                 * Xdata.Edata[Xdata.SoilNode].gradT;
-		} else if (Xdata.SoilNode > 0) {
-			Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
-			                 * Xdata.Edata[Xdata.SoilNode-1].gradT;
 		} else {
 			Sdata.qg0 += Constants::undefined;
 		}
