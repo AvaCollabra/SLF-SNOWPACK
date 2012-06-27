@@ -28,6 +28,7 @@
  * This library is available under LGPL version 3 or above, see <a href="http://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>. The Visual C++ version uses a BSD-licensed port of getopt for Visual C++, with a \subpage getopt_copyright "BSD copyright notice".
  *
  * @section table_of_content Table of content
+ * -# \subpage getting_started "Getting Started"
  * -# End User documentation
  *    -# Model principles
  *        -# \subpage general "General concepts"
@@ -44,6 +45,27 @@
  * -# Expanding %Snowpack
  *        -# \subpage coding_style "Coding style"
  *        -# \subpage adding_extra_models "Adding extra models"
+ */
+
+/**
+ * @page getting_started Getting Started
+ * After you installed a binary package or compiled and installed Snowpack, you can run your first simulation.
+ * Please make sure you properly set the proper environement variables for your operating system:
+ *      - on osX: set \em PATH and \em DYLD_FALLBACK_LIBRARY_PATH
+ *      - on Linux: set \em PATH and \em LD_LIBRARY_PATH if you install the package to a non-standard location
+ *      - on Windows: set \em PATH
+ * How to do this (and much more) is explained in the online documentation at https://slfsmm.indefero.net/p/snowpack/page/Getting-started/.
+ *
+ * Now, let's run an example simulation:
+ * -# First, copy the examples as provided with this documentation (the whole \b doc/examples directory) to a directory where you have write access.
+ * -# Then edit the configuration file for the chosen simulation (in cfgfiles), for example \b io_res1exp.ini and set the PLUGINPATH key to
+ *    contain the path to your input plugins (such as \em Applications/Snowpack-3.0.0/lib/meteoio/plugins on osX, \em /usr/local/lib/meteoio/plugins on Linux
+ *    or <i>C:\\Program files\\Snowpack-3.0.0\\lib\\meteoio\\plugins</i> on Windows)
+ * -# Select one of the examples and run its start script, for example <b>./run_res1exp.sh</b> (on Windows, you have to open the script file and copy
+ *    the last command line it contains into a terminal)
+ * -# Once the simulation is finished, the results are available in the \b output directory
+ * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ *
  */
 
 /**
@@ -396,6 +418,8 @@
  * @section advanced_cfg Advanced configuration
  * The configuration files being an ascii format (<a href="https://en.wikipedia.org/wiki/INI_file">INI format</a>), it is possible to manually
  * copy/paste whole sections of such files between simulations in order to run similar simulations without the need to re-type the whole configuration.
+ * It is also possible to use inishell in order to find out which keys are available, which values they can take and what they mean and manually type
+ * them in an existing ini file.
  *
  * The %Snowpack_advanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.

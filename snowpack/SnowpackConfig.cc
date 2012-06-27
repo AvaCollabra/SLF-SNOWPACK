@@ -64,7 +64,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["PLASTIC"] = "false";
 	advancedConfig["PREVAILING_WIND_DIR"] = "0.";
 	advancedConfig["RESEARCH"] = "true";
-	advancedConfig["STATION_NAME"] = "station";
+	advancedConfig["STATION_NAME"] = "station"; //TODO: we should suppress this (not needed anymore)
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_MODE_CHANGE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";

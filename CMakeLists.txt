@@ -144,15 +144,17 @@ INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT librari
 
 IF(SNOWPACK_STANDALONE)
 	ADD_CUSTOM_TARGET(distclean make clean
-		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake
+		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/*.cmake
 		COMMAND cmake -E remove_directory CMakeFiles
 		COMMAND cmake -E remove_directory snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles)
+		COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles
+		COMMAND cmake -E remove_directory tests/CMakeFiles)
 ELSE(SNOWPACK_STANDALONE)
 	ADD_CUSTOM_TARGET(distclean make clean
-		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake
+		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake  tests/*.cmake
 		COMMAND cmake -E remove_directory CMakeFiles
-		COMMAND cmake -E remove_directory snowpack/CMakeFiles)
+		COMMAND cmake -E remove_directory snowpack/CMakeFiles
+		COMMAND cmake -E remove_directory tests/CMakeFiles)
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################
@@ -362,3 +364,12 @@ SET(CPACK_SOURCE_IGNORE_FILES
 )
 
 INCLUDE(CPack)
+
+###########################################################
+## CTest section
+###########################################################
+OPTION(BUILD_TESTING "Build the tests." OFF)
+IF(BUILD_TESTING)
+    INCLUDE(CTest)
+    ADD_SUBDIRECTORY(tests)
+ENDIF(BUILD_TESTING)
