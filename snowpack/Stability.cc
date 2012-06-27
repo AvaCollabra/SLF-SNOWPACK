@@ -206,7 +206,10 @@ double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
 
 /**
  * @brief Compute hand hardness for a given grain type and density
- * @note Implementation according to Fabiano Monti's work, June 2012 (all types except MFcr).
+ * All the information about hardness parameterizations for PP DF RG FC DH MF FCxf are published in 
+ * Monti et al. (in progress)
+ * @author Fabiano Monti
+ * @date 2012-06-27
  * @param F grain type
  * @param rho snow density
  * @return hand hardness
@@ -219,14 +222,15 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 			const double B = 0.0105;
 			return (A + B*rho);
 		}
-		case 1: { // Precipitation Particles PP
-			if ( (rho >= 0.) && (rho < 135.465))
+		case 1: { // Precipitation Particles PP; obtained from median value for hand_hardness_1 (110 kg/m3) + standard Dev (33.9397 kg/m3)
+		          // if not the median value for hand_hardness_2 is 129.5 kg/m3 but it comes from only 6 observations;
+			if ((rho >= 0.) && (rho < 143.9397))
 				return 1.;
 			else
 				return 2.;
 		}
 		case 2: { // Decomposing and Fragmented precipitation particles DF
-			if ( (rho >= 0.) && (rho <= 214.2380))
+			if ((rho >= 0.) && (rho <= 214.2380))
 				return 1.;
 			else if ((rho > 214.2380) && (rho <= 268.2981))
 				return 2.;
@@ -236,7 +240,7 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 				return 4.;
 		}
 		case 3: { // Rounded Grains RG
-			if ( (rho >= 0.) && (rho <= 189.2103))
+			if ((rho >= 0.) && (rho <= 189.2103))
 				return 1.;
 			else if ((rho > 189.2103) && (rho <= 277.8087))
 				return 2.;
@@ -248,7 +252,7 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 				return 5.;
 		}
 		case 4: { // Faceted Crystals FC
-			if ( (rho >= 0.) && (rho <= 247.2748))
+			if ((rho >= 0.) && (rho <= 247.2748))
 				return 1.;
 			else if ((rho > 247.2748) && (rho <= 319.3549))
 				return 2.;
@@ -326,7 +330,9 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 
 /**
  * @brief Assign hardness to snow types according to density
- * @note Implementation according to Fabiano Monti's work, June 2012 (all types except MFcr).
+ * Implementation according to Fabiano Monti's work, June 2012 (all types except MFcr).
+ * @author Fabiano Monti
+ * @date 2012-06-27
  * @param Edata
  * @return hand hardness index (1)
  */
@@ -543,7 +549,7 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 
 /**
  * @brief Returns the layer stability index
- * NOTE:  The intra-layer stability criteria is given by the ratio S_f = S_c/S_n where
+ * The intra-layer stability criteria is given by the ratio S_f = S_c/S_n where
  * S_n is the neck stress and S_c is the critical stress.  The critical stress is determined
  * in the function st_CriticalStress. This function might get a little more involved as
  * time goes on.
@@ -1085,9 +1091,9 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 }  // End classifyProfileStability
 
 /**
- * @brief "Pattern recognition" of 10 profile types according to Schweizer, J. and M. Luetschg (2001).
- * "Characteristics of human-triggered avalanches." Cold Reg. Sci. Technol. 33(2-3): 147-162.
- *  Note that analysis is done on vertical snow height.
+ * @brief "Pattern recognition" of 10 profile types according to Schweizer, J. and M. Luetschg (2001). 
+ * Schweizer, J. and M. Luetschg, <i>Characteristics of human-triggered avalanches</i>, 2001, Cold Reg. Sci. Technol. 33(2-3): 147-162.
+ * Note that analysis is done on vertical snow height.
  * @param *Xdata
  * @param date
  * @return false on error, true otherwise
