@@ -620,6 +620,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				// update volumetric contents, masses and density
 				EMS[e0].theta[WATER]=W0-dThetaW0;
 				EMS[e1].theta[WATER]=W1+dThetaW1;
+				// if water is moved from snow into soil, update MS_RUNOFF:
+				if(e0==Xdata.SoilNode && e1==Xdata.SoilNode-1) {	// if true, we are dealing with the snow-soil interface
+											// we check both, as we might have no soil in domain
+					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += dThetaW1 * Constants::density_water * L1;
+				}
 				EMS[e0].theta[AIR] = 1. - EMS[e0].theta[WATER] - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL];
 				EMS[e1].theta[AIR] = 1. - EMS[e1].theta[WATER] - EMS[e1].theta[ICE] - EMS[e1].theta[SOIL];
 				EMS[e0].M -= L0 * Constants::density_water * dThetaW0;

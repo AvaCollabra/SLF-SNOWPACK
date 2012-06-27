@@ -509,7 +509,7 @@ class SurfaceFluxes {
 		MS_WIND,           ///< Mass loss rate due to wind erosion
 		MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
 		MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
-		MS_RUNOFF,         ///< The total mass loss due to surface runoff; used to check mass balance of snowpack and also to compute cummulative discharge
+		MS_RUNOFF,         ///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 		MS_SOIL_RUNOFF,    ///< Equivalent to MS_RUNOFF but at bottom soil node
 		N_MASS_CHANGES     ///< Total number of different mass change types
 		};
