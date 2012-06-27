@@ -37,7 +37,7 @@
  *        -# \subpage input_formats "Input file formats"
  *        -# \subpage output_formats "Output file formats"
  *    -# Simulation tools
- *        -# \subpage inishell_config "Configuration with inishell"
+ *        -# \subpage configuration "Configuring a simulation"
  *        -# \subpage sngui_config "Visualization with sngui"
  * -# Programing using %Snowpack
  *        -# \subpage libsnowpack_basics "Programming with libsnowpack"
@@ -154,9 +154,26 @@
  * - incoming long wave radiation (ILWR) OR surface temperature (TSS)
  * - snow height (HS) OR precipitation (HNW)
  * - ground temperature (TSG, if available)
- * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons)
+ * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons, see section \ref SnowSoilTemperatures)
  *
  * These parameters \b must be available at least at a hourly time step.
+ *
+ * @section data_recomendations Data recommendations
+ * In case you have all four irradiative components under ventilated and heated conditions,  the cleanest approach in terms of energy flux calculations seems to be by using:
+ * @code
+ * SW_MODE = 2
+ * INCOMING_LONGWAVE = 1
+ * CHANGE_BC = false ;ie Neumann throughout
+ * @endcode
+ *
+ * In case you only have reflected shortwave and snow surface temperature, using Dirichlet boundary condition would be recommended:
+ * @code
+ * SW_MODE = 1
+ * INCOMING_LONGWAVE = 0
+ * MEAS_TSS = true
+ * CHANGE_BC = true
+ * @endcode
+ * For energy balance interpretation the change of internal energy is for that case better than the sum of fluxes.
  *
  * @section data_preparation Data preparation
  * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
@@ -181,6 +198,18 @@
  * - late in the data set, the snow height measurements fail for an extended period of time at a time of high wind speed - some snow drift might have gone unnoticed.
  *
  * When using spurious data or when faced with a bad behaving simulation, one should <b>first look at the consistency of the input data</b>. The vast majority of the problems can be traced back to some low quality data (either for sensor issues or spurious data manipulation at some stage).
+ *
+ * @section SnowSoilTemperatures Snow and/or soil temperatures
+ * Up to 5 snow and/or soil temperatures, either measured or modelled or both can be monitored.
+ * Measured temperatures are read in from the input file. If you use the smet format, do not forget to properly
+ * label the columns as TS1, TS2, TS3, etc. If you use the snio format, refer to the documentation.
+ * User defined positions (m) should be provided in the SnowpackAdvanced section of the \em "io.ini" file,
+ *   for example, FIXED_POSITIONS = "0.25 0.50 -0.10":
+ *   - positive values refer to heigths measured from the ground surface (snow only)
+ *   - negative values refer to depths measured from either the ground surface or the snow surface in case no soil
+ *       layers are present
+ *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
+ *       This parameter can be set in the SnowpackAdvanced section of the io.ini file.
  */
 
 /**
@@ -346,26 +375,23 @@
  * @endcode
  * Data lines start with an id, followed by the date and the other fields, as shown in the header.
  *
- * @section SnowSoilTemperatures Snow and/or soil temperatures
- * Up to 5 snow and/or soil temperatures, either measured or modelled or both can be monitored. \n
- * Measured temperatures are read in from the input file. If you use the smet format, do not forget to properly
- * label the columns as TS1, TS2, TS3, etc. If you use the snio format, refer to the documentation. \n
- * User defined positions (m) should be provided in the SnowpackAdvanced section of the <i>"io.ini"</i> file,
- *   for example, FIXED_POSITIONS = "0.25 0.50 -0.10":
- *   - positive values refer to heigths measured from the ground surface (snow only)
- *   - negative values refer to depths measured from either the ground surface or the snow surface in case no soil
- *       layers are present
- *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
- *       This parameter can be set in the SnowpackAdvanced section of the io.ini file.
  */
 
 /**
- * @page inishell_config The inishell tool
- * The configuration for a given simulation is kept in a <i>".ini"</i> file. This is an ascii file that contains keys/values structured
- * by sections. It is however highly recommended to use the <a href="https://slfsmm.indefero.net/p/inishell">Inishell</a> tool to generate these files
+ * @page configuration Configuring a simulation
+ * The configuration for a given simulation is kept in a <i>".ini"</i> file (see http://en.wikipedia.org/wiki/INI_file). This is an ascii file that contains
+ * keys/values structured by sections. This can be easily edited with a simple text editor. More information about the structure of the file and how to generally deal
+ * with it can be found in MeteoIO's documentation (section "How to build your io.ini configuration file"). However, it is recommended to use the inishell tool for
+ * generating the configuration file for %Snowpack in order to prevent missing important keys, etc
+ *
+ * @section inishell_config The inishell tool
+ * It is highly recommended to use the <a href="https://slfsmm.indefero.net/p/inishell">Inishell</a> tool to generate these ini files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
  * \image html inishell.png "inishell overview"
  * \image latex inishell.eps "inishell overview" width=0.9\textwidth
+ * Each ini file section is shown in a separate tab, each key on its own line. Keys that appear in red are mandatory and will trigger a warning box if trying to
+ * visualize/save an ini file before providing a value for these keys. A help text describing the key is shown on the right. Once all has been configured,
+ * the configuration can be saved to an ini file, ready to be interpreted by %Snowpack.
  *
  * @section advanced_cfg Advanced configuration
  * The configuration files being an ascii format (<a href="https://en.wikipedia.org/wiki/INI_file">INI format</a>), it is possible to manually
