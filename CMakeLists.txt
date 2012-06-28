@@ -227,7 +227,7 @@ IF(CPACK_BUNDLE_ALL)
 
 	#bundle inishell
 	FILE(GLOB inishell "${CMAKE_SOURCE_DIR}/tools/inish*.jar")
-	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
+	INSTALL(FILES "${inishell}" DESTINATION bin COMPONENT exe)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
