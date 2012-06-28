@@ -21,11 +21,19 @@
  /**
  * @mainpage Welcome to SNOWPACK
  * @section intro_sec Introduction
- * SNOWPACK is the operational model of the Swiss avalanche warning service and is available as an integrated software package, made of a library that can be reused
- * in third party applications and a standalone model. It simulates the evolution of the snow cover based on meteorological input data, based on the physical modeling
- * of the various processes taking place. International intercomparison studies show that SNOWPACK is successfully applied to alpine, arctic, maritime and continental snow covers.
+ * SNOWPACK is a multi-purpose snow and land-surface model, which focusses on a detailed description of the mass and energy exchange between the snow,
+ * the atmosphere and optionally with the vegetation cover and the soil. It also includes a detailed treatment of mass and energy fluxes within these media.
  *
- * This library is available under LGPL version 3 or above, see <a href="http://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>. The Visual C++ version uses a BSD-licensed port of getopt for Visual C++, with a \subpage getopt_copyright "BSD copyright notice".
+ * SNOWPACK has originally been developed to support avalanche warning (Lehning et al., 1999) and thus features a very detailed description of snow properties
+ * including weak layer characterization (Stoessel et al., 2009), phase changes and water transport in snow (Hirashima et al., 2010).
+ * A particular feature is the treatment of soil and snow as a continuum with a choice of a few up to several hundred layers. While a main application
+ * is still on avalanche warning in countries from Switzerland (Schirmer et al., 2009) to Japan (Nishimura et al., 2005), the applications range
+ * from climate change assessments (Rasmus et al., 2004; Bavay et al., 2009) and superimposed ice simulations (Obleitner and Lehning, 2004) to
+ * permafrost sensitivity studies (Luetschg et al., 2008) and the simulation of snow storage (Olefs and Lehning, 2010).
+ *
+ * In order to ease the integration of SNOWPACK into other models, it is now structured as a library (libsnowpack) and an application that uses the library to perform
+ * simulations (snowpack). This library is available under LGPL version 3 or above, see <a href="http://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>.
+ * The Visual C++ version uses a BSD-licensed port of getopt for Visual C++, with a \subpage getopt_copyright "BSD copyright notice".
  *
  * @section table_of_content Table of content
  * -# \subpage getting_started "Getting Started"
@@ -111,18 +119,38 @@
  * @page references References
  * In the following some important papers related to the SNOWPACK model are listed. Additional information can be found on the web:
  * www.slf.ch/lwr/prozessmodelle/aufgaben-en.html.
- * - Bartelt, P.B. and M. Lehning. 2002. A physical SNOWPACK model for Avalanche Warning Services. Part I: Numerical Model. Cold Reg. Sci. Technol, 35(3), 123-145.
- * - Colbeck, S.C., E. Akitaya, R. Armstrong, H. Gubler, J. Lafeuille, K. Lied, D. McClung and E. Morris. 1990. The international classification of seasonal snow on the ground. Wallingford, Oxon, U.K., International Commission on Snow and Ice (ICSI), International Association of Scientific Hydrology. http://www.crrel.usace.army.mil/techpub/CRREL_Reports/reports/Seasonal_Snow.pdf
- * - Lehning, M., P.B. Bartelt, R.L. Brown, C. Fierz and P. Satyawali. 2002a. A physical SNOWPACK model for the Swiss Avalanche Warning Services. Part II: Snow Microstructure. Cold Reg. Sci. Technol, 35(3), 147-167.
- * - Lehning, M., P.B. Bartelt, R.L. Brown, C. Fierz and P. Satyawali. 2002b. A physical SNOWPACK model for the Swiss Avalanche Warning Services. Part III: Meteorological Boundary Conditions, Thin Layer Formulation and Evaluation. Cold Reg. Sci. Technol, 35(3), 169-184.
- * - Lehning, M., C. Fierz and C. Lundy. 2001. An objective snow profile comparison method and its application to SNOWPACK. Cold Reg. Sci. Technol., 33, 253-261.
- * - Lehning, M., J. Doorschot, N. Raderschall and P.B. Bartelt. 2000. Combining snow drift and SNOWPACK models to estimate snow loading in avalanche slopes. In: Snow Engineering, HjorthHansen, Holand, Loset & Norem (eds.), Balkema, 113-122.
- * - Lehning, M., P. Bartelt, R.L. Brown, T. Russi, U. Stöckli and M. Zimmerli. 1999. %Snowpack model calculations for avalanche warning based upon a new network of weather and snow stations. Cold Reg. Sci. Technol., 30(1-3), 145-157.
- * - Lehning, M., C. Fierz, B. Brown, B. Jamieson,. 2003. Modelling Instability for the Snow Cover Model SNOWPACK. Ann. of Glaciol., in press.
- * - Lütschg, M., P.B. Bartelt, M. Lehning, V. Stoeckli and W. Haeberli. 2003. Numerical simulation of the interaction processes between snow cover and alpine permafrost. Proceedings of the 8th International Conference on Permafrost, 21-25 July, 2003, Zurich, Switzerland, in press.
- * - Meirold-Mautner, I. and M. Lehning. 2003. Measurement and modeling of the solar shortwave fluxes in snow on Summit/Greenland. J. of Glaciol., in press.
- * - Rasmus, S., J. Räisänen and M. Lehning. 2003. Estimating snow conditions in Finland in the late 21st century using the SNOWPACK–model with regional climate scenario data as input. Ann. of Glaciol., in press.
- * - Spreitzhofer, G, Lehning, M. and C. Fierz. 2004. SN_GUI: A graphical user interface for snowpack modelling. Environmental Modelling & Software, submitted.
+ *
+ * - Lehning, M., Bartelt, P., Brown, R.L., Russi, T., Stöckli, U., Zimmerli, M., <i>%Snowpack Model Calculations for Avalanche Warning based upon
+ *   a new Network of Weather and Snow Stations</i>, 1999, Cold Reg. Sci. Technol., \b 30, 145-157.
+ * - Lehning, M, Bartelt, P.B., Brown, R.L., Fierz, C., Satyawali, P., <i>A physical SNOWPACK model for the Swiss Avalanche Warning Services.
+ *   Part II: Snow Microstructure</i>, 2002, Cold Reg. Sci. Technol., \b 35/3, 147-167.
+ * - Lehning, M, Bartelt, P.B., Brown, R.L., Fierz, C., Satyawali, P., <i>A physical SNOWPACK model for the Swiss Avalanche Warning Services.
+ *   Part III: Meteorological Boundary Conditions, Thin Layer Formation and Evaluation</i>, 2002, Cold Reg. Sci. Technol., \b 35/3, 169-184.
+ * - Fierz, C., P. Riber, E.A. Adams, A.R. Curran, P.M.B. Föhn, M. Lehning and C. Plüss, <i>Evaluation of snow-surface energy balance models in alpine terrain</i>,
+ *   2003, J. Hydrol., \b 282, 76–94.
+ * - Obleitner, F., Lehning, M., <i>Measurements and simulation of snow and superimposed ice at the Kongsvegen glacier, Svalbard (Spitzbergen)</i>,
+ *   2004, J. Geophys. Res., \b 109D, D04106.
+ * - Yamaguchi, S., Sato, A., Lehning, M., <i>Application of the numerical snowpack model (SNOWPACK) to the wet snow region in Japan</i>,
+ *   2004, Ann. Glac., \b 38, 266-272.
+ * - Rasmus, S., Räisänen J., Lehning, M., <i>Estimating snow conditions in Finland in the late 21st century using the SNOWPACK model
+ *   with regional climate scenario data as input</i>, 2004, Ann. Glac., \b 38, 238-244.
+ * - Hirashima, H., Nishimura, K., Baba, E., Hachikubo, A., Lehning, M., <i>SNOWPACK model simulations for snow in Hokkaido, Japan</i>, 2004, Ann. Glac., \b 38, 123–129.
+ * - Nishimura, K., Baba, E., Hirashima, H., Lehning, M., <i>Application of SNOWPACK model to snow avalanche warning in Niseko, Japan</i>, 2005,
+ *   Cold Reg. Sci. Technol., \b 43, 62-70.
+ * - Rasmus, S., Gronholm, T., Lehning, M., <i>Validation of the SNOWPACK model in five different snow zones in Finland</i>, 2007, Boreal Env. Res., \b 12(4), 467-488.
+ * - Lehning, M., Fierz, C., <i>Assessment of snow transport in avalanche terrain</i>, 2008, Cold Reg. Sci. Technol., \b 51, 240-252, DOI: 10.1016/j.coldregions.2007.05.012.
+ * - Luetschg, M., Lehning, M., Haeberli, W., <i>A sensitivity study of factors influencing warm/thin permafrost in the Alps</i>, 2008, J. Glaciol., \b 54/187, 696-704.
+ * - Schirmer, M., Lehning, M., Schweizer, J., <i>Statistical forecasting of avalanche danger using simulated snow cover data</i>, 2009, J. Glaciol., \b 55/193, 761-768.
+ * - Stoessel, F., Manes, C., Guala, M., Fierz, C., Lehning, M., <i>Micrometeorological and morphological observations of surface hoar dynamics on a
+ *   mountain snow covers</i>, 2009, Water Resour. Res., doi:10.1029/2009WR008198.
+ * - Olefs, M., Lehning, M., <i>Textile protection of snow and ice: Measured and simulated effects on the energy and massbalance</i>, 2010, Cold Reg. Sci. Technol.,
+ *   doi:10.1016/j.coldregions.2010.03.011.
+ * - Schirmer, M., Lehning, M., Schweizer, J., <i>Statistical evaluation of local to regional snowpack stability using simulated snow-cover data</i>,
+ *   2010, Cold Reg. Sci. Technol., \b 64/2, 110-118, doi: 10.1016/j.coldregions.2010.04.012.
+ * - Hirashima, H., Yamaguchi, S., Sato, A., Lehning, M., <i>Numerical modeling of liquid water movement through layered snow based on
+ *  new measurements of the water retention curve</i>, 2010, Cold Reg. Sci. Technol., \b 64/2, 94-103, doi: 10.1016/j.coldregions.2010.09.003.
+ * - Bellaire, S., J.B. Jamieson, and C. Fierz, <i>Forcing the snow-cover model SNOWPACK with forecasted weather data</i>, 2011,
+ *   The Cryosphere, \b 5, 1115–1125, 2011, http://dx.doi.org/10.5194/tc-5-1115-2011.
  *
  */
 

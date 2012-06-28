@@ -368,7 +368,7 @@ INCLUDE(CPack)
 ###########################################################
 ## CTest section
 ###########################################################
-OPTION(BUILD_TESTING "Build the tests." OFF)
+OPTION(BUILD_TESTING "Build the QA tests" OFF)
 IF(BUILD_TESTING)
     INCLUDE(CTest)
     ADD_SUBDIRECTORY(tests)
