@@ -8,7 +8,7 @@ altitude         = 3268
 nodata           = -999
 tz               = 8
 source           = WSL-Institute for Snow and Avalanche Research SLF; CFierz, 2011-10
-fields           = timestamp TA RH VW DW ISWR OSWR ILWR TSS TSG PSUM HS ts400 ts200 ts150 ts100 ts050 ts010 ts005 RHO_HN
+fields           = timestamp TA RH VW DW ISWR OSWR ILWR TSS TSG PSUM HS ts1 ts2 ts3 ts4 ts5 ts6 ts7 RHO_HN
 units_offset     = 0 273.15 0 0 0 0 0 0 273.15 273.15 0 0 273.15 273.15 273.15 273.15 273.15 273.15 273.15 0
 units_multiplier = 1 1 0.01 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 [DATA]

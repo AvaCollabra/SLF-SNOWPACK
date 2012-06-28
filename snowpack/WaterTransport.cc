@@ -599,6 +599,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						// In case of no JAM, I would argue that excess water should be
 						// carried down to the bottom prior to be released.
 						// In case of JAM it should be retained in the upper element.
+						// Check also the soil case.
 						excess_water = dThetaW0 - dThetaW1*L1/L0;
 					}
 					if (EMS[e1].theta[SOIL] < Constants::eps2) {
