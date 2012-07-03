@@ -449,7 +449,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double W1, dThetaW1;  // Water to be placed in element "e-1"
 	double Wres;          // Residual water content depending on snow or soil element
 	double Store;         // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
-	double excess_water;  // Excess water that cannot be retained in lower element; volume fraction (1)
+	double excess_water;  // Preferential flow system: excess water that cannot be retained in lower element is stored in excess_water and moved down the domain; units: [m^3/m^2]
 	double z_water;       // Position of upper node of top water-film layer (m)
 
 	size_t nN = Xdata.getNumberOfNodes();
@@ -537,6 +537,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		}
 	}
 
+	// reset excess_water
+	excess_water=0.;
+
 	// Now move water as needed, starting from the top element ...
 	for (e0 = nE-1, e1 = nE-2; e0 >= 1; e0--, e1-- ) {
 		W0 = EMS[e0].theta[WATER];
@@ -560,7 +563,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 		if (e0 == nE-1 && (W0 > 0.0 && W0 <= Wres)) {
 			// In that case you need to update the volumetric air content and the density of the top element
-			// as it may have caught some rain!
+			// as it may have caught some rain! Only top element should be considered, as when rain would have
+			// infiltrated lower elements as well, W0>Wres.
 			EMS[e0].theta[AIR] = MAX(0., 1. - EMS[e0].theta[WATER] - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]);
 			EMS[e0].Rho = (EMS[e0].theta[ICE] * Constants::density_ice)
 			                   + (EMS[e0].theta[WATER] * Constants::density_water)
@@ -575,14 +579,17 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			}
 		}
 
-		if (W0 > Wres) {
+		if (W0 > Wres || excess_water > 0.) {
 			// Then water is being transferred between elements
 			L0 = EMS[e0].L;
 			L1 = EMS[e1].L;
 			W1 = EMS[e1].theta[WATER];
 			dThetaW0 = W0 - Wres;
-			if (dThetaW0 > 0.) {
-				dThetaW1 = dThetaW0*(L0/L1);
+
+			// dThetaW1 is determined by also taking excess_water into account. Maybe excess_water can be stored in this layer.
+			dThetaW0 = MAX(0, dThetaW0);
+			if (dThetaW0 > 0. || excess_water > 0.) {
+				dThetaW1 = dThetaW0*(L0/L1)+(excess_water/L1);
 				// Now check whether there is enough air left - in case of ice, rock or heavy
 				// soil you might not be able to move the water or/and water may refreeze and expand.
 				// Specifically, you might want to create a water table over ice or frozen soil
@@ -600,27 +607,27 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						                           * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]))) {
 							dThetaW0 = W0 - Constants::density_ice/Constants::density_water
 							                    * (1. - EMS[e0].theta[ICE] - EMS[e0].theta[SOIL]);
-							excess_water = dThetaW0 - dThetaW1*L1/L0;
+							excess_water += (dThetaW0*L0 - dThetaW1*L1);
 						} else {
 							excess_water = 0.;
 						}
-					} else { // No JAM
-						// TODO Fz 2009-11-07: Is the idea below really correct?
-						// In case of no JAM, I would argue that excess water should be
-						// carried down to the bottom prior to be released.
-						// In case of JAM it should be retained in the upper element.
-						// Check also the soil case.
-						excess_water = dThetaW0 - dThetaW1*L1/L0;
+						if (EMS[e1].theta[SOIL] < Constants::eps2) {
+							Sdata.mass[SurfaceFluxes::MS_RUNOFF] += excess_water*Constants::density_water;
+						}
+						Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += excess_water*Constants::density_water;
+						// Take care of Solutes
+						for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
+							Sdata.load[ii] += (EMS[e1].conc[WATER][ii] * excess_water
+						                           * Constants::density_water/S_TO_H(sn_dt));
+						}
+						// We have moved the excess_water out of the snowpack.
+						excess_water=0.;
+					} else {
+						excess_water += (dThetaW0*L0 - dThetaW1*L1);
 					}
-					if (EMS[e1].theta[SOIL] < Constants::eps2) {
-						Sdata.mass[SurfaceFluxes::MS_RUNOFF] += excess_water*Constants::density_water*L0;
-					}
-					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += excess_water*Constants::density_water*L0;
-					// Take care of Solutes
-					for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
-						Sdata.load[ii] += (EMS[e1].conc[WATER][ii] * excess_water
-					                           * Constants::density_water*L0/S_TO_H(sn_dt));
-					}
+				} else {
+					// else EMS[e1] can contain all water, so we have no excess_water anymore.
+					excess_water=0.;
 				}
 
 				// Water movement from element e0 to element e1: move solutes also
@@ -628,6 +635,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					EMS[e1].conc[WATER][ii] = (W1 * EMS[e1].conc[WATER][ii] + dThetaW1 * EMS[e0].conc[WATER][ii])
 				                                  / (W1+dThetaW1);
 				}
+
 				// update volumetric contents, masses and density
 				EMS[e0].theta[WATER]=W0-dThetaW0;
 				EMS[e1].theta[WATER]=W1+dThetaW1;
@@ -651,7 +659,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				}
 				// Update surface runoff with soil
 				if (useSoilLayers && e0 == Xdata.SoilNode) {
-					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += L1 * Constants::density_water * dThetaW1;
+					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += L1 * Constants::density_water * dThetaW1 + excess_water * Constants::density_water;
 				}
 			} // end positive water movement
 		}  // end if( W0 > Wres )
@@ -666,7 +674,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	EMS[e0].E = EMS[e0].dE = EMS[e0].Ee = EMS[e0].Ev = EMS[e0].S = 0.0;
 
 	// RUNOFF at bottom of either snowpack or soil
-	W0 = EMS[0].theta[WATER];
+	// If excess_water is left, add it to this element, regardless storage capacity.
+	W0 = EMS[0].theta[WATER] + (excess_water/EMS[e0].L);
 	// Determine the additional storage capacity due to refreezing
 	dth_w = EMS[0].c[TEMPERATURE] * EMS[0].Rho / Constants::lh_fusion / Constants::density_water
 	            * MAX(0., EMS[0].melting_tk-EMS[0].Te);
