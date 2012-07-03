@@ -334,7 +334,13 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		           && (EMS[e1].mk % 100 != 9)) {  // no PLASTIC or WATER_LAYER please
 			if (e1 > Xdata.SoilNode) { //If we have snow elements below to join with
 				SnowStation::mergeElements(EMS[e1-1], EMS[e1], enforce_join);
-			} else { // route liquid water and solute load to output TODO what if soil is present
+			} else {
+				enforce_join=false;
+				if (e1==Xdata.SoilNode && Xdata.SoilNode>0.) {
+					// In case of soil and removal of first snow element above soil:
+					SnowStation::mergeElements(EMS[e1-1], EMS[e1], enforce_join);
+				}
+				// route liquid water and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[e1].M;
 				if (Xdata.SoilNode == 0) { // In case of no soil
 					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[e1].M;
@@ -522,6 +528,10 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e0].theta[WATER] += dThetaW0;
 				EMS[e0].theta[AIR] -= dThetaW0;
 				EMS[e0].M += dThetaW0 * L0 * Constants::density_water;
+				// Update snowpack runoff with rain infiltrating into soil (equal to Store when e0 == Xdata.SoilNode)
+				if (useSoilLayers && e0 == Xdata.SoilNode) {
+					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Store * Constants::density_water;
+				}
 			}
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 		}
