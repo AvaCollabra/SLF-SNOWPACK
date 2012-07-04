@@ -173,9 +173,14 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 	if (Xdata.getNumberOfElements() > 0) {
 		// 3a) qg0: heat flux at soil/snow boundary
 		if (Xdata.SoilNode > 0) { // soil is present
-			Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
+			if(Xdata.getNumberOfElements()-1 < Xdata.SoilNode) {	// no snow present
+				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
 			                 * Xdata.Edata[Xdata.SoilNode-1].gradT;
-		} else if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // no soi available
+			} else {
+				Sdata.qg0 += -((Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]*Xdata.Edata[Xdata.SoilNode].L+Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]*Xdata.Edata[Xdata.SoilNode-1].L)/(Xdata.Edata[Xdata.SoilNode-1].L+Xdata.Edata[Xdata.SoilNode].L)/2.0)
+			                 * ((Xdata.Edata[Xdata.SoilNode].Te-Xdata.Edata[Xdata.SoilNode-1].Te)/((Xdata.Edata[Xdata.SoilNode-1].L+Xdata.Edata[Xdata.SoilNode].L)/2.0));
+			}
+		} else if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // no soil available
 			if ((Xdata.getNumberOfElements() < 3)
 			        && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont))
 				Sdata.qg0 += 0.;
