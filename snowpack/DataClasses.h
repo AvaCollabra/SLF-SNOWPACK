@@ -465,7 +465,7 @@ class SnowStation {
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
-		static const double thresh_moist_snow;
+		static const double thresh_moist_snow, thresh_moist_soil;
 		static const size_t number_top_elements;
 		static size_t number_of_solutes;  ///< The model treats that number of solutes
 

@@ -38,6 +38,7 @@ size_t SnowStation::number_of_solutes = 0;
 
 /// Snow elements with a LWC above this threshold are considered at least to be moist
 const double SnowStation::thresh_moist_snow = 0.003;
+const double SnowStation::thresh_moist_soil = 0.0001;
 
 /// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
 const double SnowStation::join_thresh_l = 0.015;
@@ -854,18 +855,18 @@ bool SnowStation::hasSoilLayers() const
  */
 void SnowStation::joinElements(const unsigned int& number_top_elements)
 {
-	size_t e0, e1;  // Lower (e0) and upper (e1) element index
+	size_t eLower, eUpper;  // Lower (eLower) and upper (eUpper) element index
 	size_t nJoin=0; // Number of elements to be removed
 
 	if (nElems - SoilNode < number_top_elements+1) {
 		return;
 	}
-	for (e0 = SoilNode, e1 = SoilNode+1; e0 < nElems-number_top_elements; e0++, e1++) {
-		if (joinCondition(Edata[e0], Edata[e1])) {
-			mergeElements(Edata[e0], Edata[e1], true);
+	for (eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-number_top_elements; eLower++, eUpper++) {
+		if (joinCondition(Edata[eLower], Edata[eUpper])) {
+			mergeElements(Edata[eLower], Edata[eUpper], true);
 			nJoin++;
-			Edata[e1].Rho = Constants::undefined;
-			e0++; e1++;
+			Edata[eUpper].Rho = Constants::undefined;
+			eLower++; eUpper++;
 		}
 	}
 	if (nJoin > 0) {
@@ -886,31 +887,31 @@ void SnowStation::joinElements(const unsigned int& number_top_elements)
  */
 void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 {
-	unsigned int eNew = SoilNode; // New element index
+	size_t eNew = SoilNode; // New element index
 	double dL=0.;
 
-	for (size_t e0 = SoilNode; e0 < nElems; e0++) {
-		if (Edata[e0].Rho == Constants::undefined) {
-			if (Edata[e0].L > 0.0) { // Joining elements
-				Ndata[eNew] = Ndata[e0+1];
-				Ndata[eNew].z = Ndata[e0+1].z + Ndata[e0+1].u + dL;
-				Ndata[eNew].u = Ndata[e0].udot = 0.;
-				Ndata[eNew].ssi = Ndata[e0+1].ssi;
-				Ndata[eNew].S_s = Ndata[e0+1].S_s;
-				Ndata[eNew].S_n = Ndata[e0+1].S_n;
+	for (size_t e = SoilNode; e < nElems; e++) {
+		if (Edata[e].Rho == Constants::undefined) {
+			if (Edata[e].L > 0.0) { // Joining elements
+				Ndata[eNew] = Ndata[e+1];
+				Ndata[eNew].z = Ndata[e+1].z + Ndata[e+1].u + dL;
+				Ndata[eNew].u = Ndata[e].udot = 0.;
+				Ndata[eNew].ssi = Ndata[e+1].ssi;
+				Ndata[eNew].S_s = Ndata[e+1].S_s;
+				Ndata[eNew].S_n = Ndata[e+1].S_n;
 			} else { // Removing elements for negative length L
-				dL += Edata[e0].L;
+				dL += Edata[e].L;
 			}
 		} else {
-			if (eNew < e0) {
-				Edata[eNew] = Edata[e0];
-				Ndata[eNew+1] = Ndata[e0+1];
+			if (eNew < e) {
+				Edata[eNew] = Edata[e];
+				Ndata[eNew+1] = Ndata[e+1];
 			}
-			Ndata[eNew+1].z = Ndata[e0+1].z + Ndata[e0+1].u + dL;
-			Ndata[eNew+1].u = Ndata[e0+1].udot = 0.;
-			Ndata[eNew+1].ssi = Ndata[e0+1].ssi;
-			Ndata[eNew+1].S_s = Ndata[e0+1].S_s;
-			Ndata[eNew+1].S_n = Ndata[e0+1].S_n;
+			Ndata[eNew+1].z = Ndata[e+1].z + Ndata[e+1].u + dL;
+			Ndata[eNew+1].u = Ndata[e+1].udot = 0.;
+			Ndata[eNew+1].ssi = Ndata[e+1].ssi;
+			Ndata[eNew+1].S_s = Ndata[e+1].S_s;
+			Ndata[eNew+1].S_n = Ndata[e+1].S_n;
 			eNew++;
 		}
 	}
@@ -1070,7 +1071,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	}
 
 	// Cold content
-	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter if Qmf == 0. for all layers
+	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
 
 	// INITIALIZE CANOPY DATA
 	if (useCanopyModel) {
@@ -1185,51 +1186,51 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  * 	- Remaining ice, liquid water, solutes, etc. are added to the lower element
  * 	- The length of the lower element is kept
  * 	- Keep the birthday of the lower element
- * @param *Edata0 Properties of lower element
- * @param *Edata1 Properties of upper element
+ * @param *EdataLow Properties of lower element
+ * @param *EdataUp Properties of upper element
  * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
  */
-void SnowStation::mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join)
+void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& join)
 {
-	const double L1 = Edata1.L; //Length of upper (e1) element
-	const double L0 = Edata0.L; //Length of lower (e0) element
-	double LNew = L0; //Length of "new" element
+	const double L_lower = EdataLower.L; //Length of lower element
+	const double L_upper = EdataUpper.L; //Length of upper element
+	double LNew = L_lower;               //Length of "new" element
 
 	if (join) {
-		LNew += L1;
-		Edata0.depositionDate = Edata1.depositionDate;
-		Edata0.rg = 0.5 * ( Edata0.rg + Edata1.rg );
-		Edata0.dd = 0.5 * ( Edata0.dd + Edata1.dd );
-		Edata0.sp = 0.5 * ( Edata0.sp + Edata1.sp );
-		Edata0.rb = 0.5 * ( Edata0.rb + Edata1.rb );
-		Edata0.opticalEquivalentRadius();
-		Edata0.CDot = 0.5 * ( Edata0.CDot + Edata1.CDot );
-		Edata0.E = Edata0.Ev;
-		Edata0.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
+		LNew += L_upper;
+		EdataLower.depositionDate = EdataUpper.depositionDate;
+		EdataLower.rg = 0.5 * ( EdataLower.rg + EdataUpper.rg );
+		EdataLower.dd = 0.5 * ( EdataLower.dd + EdataUpper.dd );
+		EdataLower.sp = 0.5 * ( EdataLower.sp + EdataUpper.sp );
+		EdataLower.rb = 0.5 * ( EdataLower.rb + EdataUpper.rb );
+		EdataLower.opticalEquivalentRadius();
+		EdataLower.CDot = 0.5 * ( EdataLower.CDot + EdataUpper.CDot );
+		EdataLower.E = EdataLower.Ev;
+		EdataLower.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
 		                 //                 and viscous strains of the elements and average the stress?
 	} else {
-		Edata0.Ee = Edata0.E = Edata0.Ev = Edata0.dE = 0.0;
+		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
 
-	Edata0.L0 = Edata0.L = LNew;
-	Edata0.M += Edata1.M;
-	Edata0.theta[ICE] = (L1*Edata1.theta[ICE] + L0*Edata0.theta[ICE]) / LNew;
-	Edata0.snowResidualWaterContent();
-	// TODO Check whether we have space to accomodate all water percolating into Edata0
-	Edata0.theta[WATER] = (L1*Edata1.theta[WATER] + L0*Edata0.theta[WATER]) / LNew;
-	Edata0.theta[AIR] = 1.0 - Edata0.theta[WATER] - Edata0.theta[ICE];
-	Edata0.Rho = (Edata0.theta[ICE]*Constants::density_ice) + (Edata0.theta[WATER]*Constants::density_water);
+	EdataLower.L0 = EdataLower.L = LNew;
+	EdataLower.M += EdataUpper.M;
+	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
+	EdataLower.snowResidualWaterContent();
+	// TODO Check whether we have space to accomodate all water percolating into EdataLower
+	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
+	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE];
+	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water);
 
 	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 		for (unsigned int kk = 0; kk < N_COMPONENTS; kk++) {
-			Edata0.conc[kk][ii] = (L1*Edata1.conc(kk,ii) + L0*Edata0.conc[kk][ii]) / LNew;
+			EdataLower.conc[kk][ii] = (L_upper*EdataUpper.conc(kk,ii) + L_lower*EdataLower.conc[kk][ii]) / LNew;
 		}
 	}
-	Edata0.dth_w = (L1*Edata1.dth_w + L0*Edata0.dth_w) / LNew;
-	Edata0.Qmf += Edata1.Qmf;
-	Edata0.sw_abs += Edata1.sw_abs;
-	if ((Edata1.mk >= 100) && (Edata0.mk < 100)) {
-		Edata0.mk += (Edata1.mk/100)*100;
+	EdataLower.dth_w = (L_upper*EdataUpper.dth_w + L_lower*EdataLower.dth_w) / LNew;
+	EdataLower.Qmf += EdataUpper.Qmf;
+	EdataLower.sw_abs += EdataUpper.sw_abs;
+	if ((EdataUpper.mk >= 100) && (EdataLower.mk < 100)) {
+		EdataLower.mk += (EdataUpper.mk/100)*100;
 	}
 }
 

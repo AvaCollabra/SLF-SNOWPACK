@@ -555,7 +555,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		*/
 		weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
-		if (Edata.theta[WATER] > 0.0001)
+		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil)
 			C_eff_soil += MAX(0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]));
 		else
 			C_eff_soil += 0.27;
@@ -570,7 +570,8 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Thermal Conductivity of Soil: %lf", C_eff_soil);
 
 	// In case of dry soil, simply use the given conductivity with a possible ventilation part
-	if (SnLaws::wind_pump_soil)
+	// TODO: check whether the second condition should be activated!
+	if (SnLaws::wind_pump_soil /* && Edata.theta[WATER] < 0.0001 */)
 		C_eff_soil += SnLaws::alpha_por_tor_soil * Constants::specific_heat_air
 		                * Edata.soil[SOIL_RHO] * SnLaws::pore_length_soil * SnLaws::pore_length_soil * dvdz;
 	return(C_eff_soil);
@@ -580,23 +581,23 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
  * @brief Computes the enhancement factor for water vapor transport in wet snow
  * @version 9Y.mm
  * @param Xdata
- * @param e Element number
+ * @param i_e Element index to start from
  * @return Enhancement factor
  */
-double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& e)
+double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& i_e)
 {
-	int e1 = e;
+	int e = i_e;
 	double vapor_enhance = 1.;
 
-	while ((e1 >= MAX(signed(Xdata.SoilNode), e-7)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
-		//TODO check limit on theta_water
-		if ((Xdata.Edata[e1].theta[WATER] > 0.001) && (Xdata.Edata[e].theta[ICE] < 0.7))
+	while ((e >= MAX(signed(Xdata.SoilNode), i_e-7)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
+		//TODO: check limit on theta_water and second condition (to be checked on e only??)
+		if ((Xdata.Edata[e].theta[WATER] > SnowStation::thresh_moist_snow) && (Xdata.Edata[i_e].theta[ICE] < 0.7))
 			vapor_enhance = SnLaws::montana_vapor_fudge;
-		e1--;
+		e--;
 	}
 
 	if (vapor_enhance > 1.0)
-		vapor_enhance *= ((8. - (e - e1)) / 7.);
+		vapor_enhance *= ((8. - (i_e - e)) / 7.);
 
 	return (vapor_enhance);
 }
@@ -701,7 +702,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	if (!(C_eff > Constants::conductivity_air))
 		C_eff = Constants::conductivity_air;
 	// Now introduce the effect of windpumping
-	if (SnLaws::wind_pump /* && Edata.theta[WATER] < 0.001 */)
+	if (SnLaws::wind_pump /* && Edata.theta[WATER] < SnowStation::thresh_moist_snow */)
 		C_eff += SnLaws::alpha_por_tor * Constants::specific_heat_air * Edata.Rho * dvdz / (C1*C1);
 	return (C_eff);
 }
