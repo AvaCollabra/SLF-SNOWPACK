@@ -1378,7 +1378,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
 {
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	if (Xdata.SoilNode > 0)
+	if (useSoilLayers)
 		// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 		fprintf(fout,",%f", Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / cos_sl);
 	else
@@ -1386,7 +1386,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Xdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
 		                             - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);
@@ -1414,7 +1414,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
 		fprintf(fout,",%f,%f", M_TO_CM(dhs_corr), mass_corr);
 	else
 		// for example, measured turbulent fluxes (W m-2); see also 1-2
-		fprintf(fout,",,");
+		fprintf(fout,",,%f", (Sdata.meltFreezeEnergy * nCalcSteps) / 1000.);
 }
 
 /**
@@ -1440,7 +1440,7 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Xdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
 		                             - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);
@@ -1491,7 +1491,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Xdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
 			                         - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);
@@ -1672,7 +1672,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 				if (!research_mode)
 					fprintf(fout, ",Snow depth correction,Mass change");
 				else
-					fprintf(fout, ",Measured sensible heat,Measured latent heat");
+					fprintf(fout, ",-,Melt freeze part of internal energy change");
 			}
 
 			fprintf(fout, "\n,,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,degC,degC,degC,degC,W m-2,degC,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,%%,m s-1,m s-1,deg,kg m-2 h-1,cm,cm,mm,cm,cm,cm,kg m-2,kg m-2 h-1,kg m-2 h-1,kg m-2,kg m-2,kg m-2,degC,degC,degC,degC,degC,degC,degC,degC,degC,degC");
@@ -1734,7 +1734,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 				if (!research_mode)
 					fprintf(fout, ",cm,kg m-2");
 				else
-					fprintf(fout, ",W m-2,W m-2");
+					fprintf(fout, ",-,kJ m-2");
 			}
 
 			fprintf(fout, "\n\n[DATA]");

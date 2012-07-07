@@ -107,7 +107,7 @@ class Snowpack {
 
 		bool sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
-					double VaporEnhance);
+		                        double VaporEnhance);
 
 		void updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xdata,
                                    BoundCond& Bdata);

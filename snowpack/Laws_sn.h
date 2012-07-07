@@ -87,7 +87,7 @@ class SnLaws {
 		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz);
 		static double compSnowThermalConductivity(const ElementData& Edata, const double& dvdz);
 
-		static double compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& e);
+		static double compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& i_e);
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 

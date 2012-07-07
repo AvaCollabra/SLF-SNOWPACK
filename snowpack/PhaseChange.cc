@@ -204,7 +204,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 	
 	Edata.checkVolContent();
 	/*
-	 * Freezing within the snowpack can occur if (1) the temperature of the element is below 0
+	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen
 	*/
 	if ((Edata.Te >= T_freeze) || (Edata.theta[WATER] <= PhaseChange::theta_r)) {
@@ -259,7 +259,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		                    (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		Edata.heatCapacity();
 		// Compute the volumetric refreezing power
-		Edata.Qmf = dth_i * Constants::density_ice * Constants::lh_fusion / dt; // (W m-3)
+		Edata.Qmf = (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
 		Edata.dth_w = dth_w;
 		Edata.Te += dT;
 	}
@@ -296,7 +296,7 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 	try {
 		// In the first step:
 		// 1) check the density
-		// 2) set flags for SubSurfaceMelt and SubSurfaceFrze
+		// 2) set flags for SubSurfaceMelt and SubSurfaceFrze TODO Rain on cold snow surface should be added here!
 		
 		//Reset flags
 		Xdata.SubSurfaceMelt = false;

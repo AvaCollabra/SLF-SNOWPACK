@@ -479,7 +479,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 	if (Edata->theta[WATER] > PhaseChange::theta_r + Constants::eps2 && Edata->theta[SOIL] < Constants::eps2)
 		T0[0] = T0[1] = Edata->melting_tk;
 
-	// Find the conductivity of the element
+	// Find the conductivity of the element TODO: check thresholds
 	if (Edata->theta[SOIL] > 0.0) {
 		Keff = SnLaws::compSoilThermalConductivity(*Edata, dvdz);
 	} else if (Edata->theta[ICE] > 0.55 || Edata->theta[ICE] < min_ice_content) {
@@ -914,8 +914,12 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 	// Set the phase change booleans
 	Xdata.SubSurfaceMelt = false;
 	Xdata.SubSurfaceFrze = false;
-	// Determine the displacement depth d_pump
+	// Determine the displacement depth d_pump and the wind pumping speed at the surface
 	d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
+	if (nE > Xdata.SoilNode || SnLaws::wind_pump_soil)
+		v_pump = SnLaws::compWindPumpingVelocity(Mdata, d_pump);
+	else
+		v_pump = 0.0;
 
 	// IMPLICIT INTEGRATION LOOP
 	do {
@@ -926,11 +930,6 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			ddU[n] = dU[n];
 			dU[n] = 0.0;
 		}
-		// Reinialize the wind pumping speed at the surface
-		if (nE > Xdata.SoilNode || SnLaws::wind_pump_soil)
-			v_pump = SnLaws::compWindPumpingVelocity(Mdata, d_pump);
-		else
-			v_pump = 0.0;
 
 		// Assemble matrix
 		e = nE;

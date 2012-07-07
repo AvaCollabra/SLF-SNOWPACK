@@ -35,7 +35,7 @@ const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 bool SnowpackConfig::initStaticData()
 {
 	//[SnowpackAdvanced] section
-	advancedConfig["ALPINE3D"] = "false";
+	advancedConfig["ALPINE3D"] = "false"; //TODO Key is not used yet as ALPINE3D is defined globally in Constants.h
 	advancedConfig["DOORSCHOT"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["FIXED_ALBEDO"] = "-999.";
@@ -253,4 +253,4 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 		ss << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}
-	}
+}

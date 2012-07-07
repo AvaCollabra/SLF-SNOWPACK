@@ -102,8 +102,8 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
-    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), cA(0.), mA(0.), dIntEnergy(0.), drift(0.),
-    dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
+    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), cA(0.), mA(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
+    drift(0.), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
 {
 	mass.resize(N_MASS_CHANGES);
 	load.resize(SnowStation::number_of_solutes);
@@ -129,6 +129,7 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 		cA      = 0.;
 		mA      = 0.;
 		dIntEnergy = 0.;
+		meltFreezeEnergy = 0.;
 		mass[MS_HNW] = 0.;
 		mass[MS_RAIN] = 0.;
 	} else {
@@ -206,8 +207,10 @@ void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& 
 	}
 
 	// 4) Change of internal energy
-	if (Xdata.getNumberOfElements() > Xdata.SoilNode)
+	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
 		Sdata.dIntEnergy += Xdata.dIntEnergy;
+		Sdata.meltFreezeEnergy += Xdata.meltFreezeEnergy;
+	}
 
 	// 5) Compute total masses of snowpack
 	Sdata.mass[MS_TOTALMASS] = Sdata.mass[MS_SWE] = Sdata.mass[MS_WATER] = 0.;
@@ -774,17 +777,16 @@ SnowStation::~SnowStation()
  */
 void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
 {
+	meltFreezeEnergy = 0.;
+	dIntEnergy = 0.;
 	if (nElems > SoilNode) {
 		const double cold_content_in = ColdContent;
-		double melt_freeze_energy = 0.;
 		ColdContent = 0.;
 		for (size_t e=SoilNode; e<nElems; e++) {
-			melt_freeze_energy -= Edata[e].Qmf * Edata[e].L * sn_dt;
+			meltFreezeEnergy -= Edata[e].Qmf * Edata[e].L * sn_dt;
 			ColdContent += Edata[e].coldContent();
 		}
-		dIntEnergy = ColdContent - cold_content_in + melt_freeze_energy;
-	} else {
-		dIntEnergy = 0.;
+		dIntEnergy = ColdContent - cold_content_in + meltFreezeEnergy;
 	}
 }
 

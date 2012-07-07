@@ -458,6 +458,7 @@ class SnowStation {
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double dIntEnergy;          ///< Internal energy change (J m-2)
+		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change (J m-2)
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		CanopyData Cdata;           ///< Pointer to canopy data
@@ -546,6 +547,7 @@ class SurfaceFluxes {
 		double cA;         ///< computed Albedo (used for OUTPUT only)
 		double mA;         ///< measured Albedo (used for OUTPUT only)
 		double dIntEnergy; ///< Internal energy change in J m-2 (used for OUTPUT only)
+		double meltFreezeEnergy; ///< Melt freeze part of internal energy change in J m-2  (used for OUTPUT only)
 
 		/// @brief Other surface data:
 		double drift;      ///< the surface flux of drifting snow in kg m-1 s-1
