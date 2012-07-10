@@ -145,19 +145,28 @@ FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
+# DAVID: WHY twice ??? command should work even if file is not present !
 IF(SNOWPACK_STANDALONE)
 	ADD_CUSTOM_TARGET(distclean make clean
 		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/*.cmake
 		COMMAND cmake -E remove_directory CMakeFiles
 		COMMAND cmake -E remove_directory snowpack/CMakeFiles
 		COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory tests/CMakeFiles)
+		COMMAND cmake -E remove_directory tests/CMakeFiles
+		COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
+		COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
+		COMMAND cmake -E remove_directory tests/res1exp/Testing
+		)
 ELSE(SNOWPACK_STANDALONE)
 	ADD_CUSTOM_TARGET(distclean make clean
 		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake  tests/*.cmake
 		COMMAND cmake -E remove_directory CMakeFiles
 		COMMAND cmake -E remove_directory snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory tests/CMakeFiles)
+		COMMAND cmake -E remove_directory tests/CMakeFiles
+		COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
+		COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
+		COMMAND cmake -E remove_directory tests/res1exp/Testing
+		)
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################

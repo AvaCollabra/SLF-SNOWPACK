@@ -70,6 +70,7 @@ FIND_PATH(METEOIO_INCLUDE_DIR
   #HINTS ${METEOIO_ROOT}/include
   PATHS
 	"${METEOIO_ROOT}/include"
+	"${METEOIO_ROOT}"
 	"~/usr/include"
 	"/usr/local/include"
 	"/usr/include"
