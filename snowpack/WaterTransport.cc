@@ -584,8 +584,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				        * (1. - EMS[eLower].theta[ICE] - EMS[eLower].theta[SOIL]))) {
 					// Deal with excess water ... Look how much you can leave in the lower element eLower.
 					// If you have too much water even for the lower element (more melt or rain per time
-					// step than can be kept in this element) you could choose a smaller calculation time step.
-					// Otherwise excess water will be added to runoff !!!!
+					// step than can be kept in this element), water is transferred to excess_water.
+					// excess_water moves the water downward, trying to insert the water in lower elements.
 					dThetaW_lower = MAX(0., (Constants::density_ice/Constants::density_water
 					                        * (1. - EMS[eLower].theta[ICE] - EMS[eLower].theta[SOIL]) - W_lower));
 					if (jam) {
