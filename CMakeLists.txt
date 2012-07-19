@@ -69,6 +69,7 @@ ELSE(MSVC)
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 		IF(WIN32) #for gcc on windows
 			SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
+			SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
 		ENDIF(WIN32)
 	ENDIF(CMAKE_COMPILER_IS_GNUCXX)
 	IF(WIN32)
@@ -216,7 +217,7 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
-	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*.*") #this contains dynamic, static and import libs
+	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
 	INSTALL(DIRECTORY ${METEOIO_ROOT}/include/meteoio DESTINATION include COMPONENT headers)
 	INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
 	INSTALL(DIRECTORY ${METEOIO_ROOT}/lib/meteoio/plugins DESTINATION lib/meteoio COMPONENT libraries)

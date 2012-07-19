@@ -1,12 +1,10 @@
-The SNOWPACK model ([Lehning 2002a], [Lehning 2002b]) is the operational model of the Swiss avalanche warning service and is available as an integrated software package.
+SNOWPACK is a multi-purpose snow and land-surface model, which focusses on a detailed description of the mass and energy exchange between the snow, the atmosphere and optionally with the vegetation cover and the soil. It also includes a detailed treatment of mass and energy fluxes within these media.
 
-    * Do you want to know how the snow cover develops in the course of the winter?
-    * Are you interested in the mass- and energy interaction in the atmosphere - snow - soil system?
+SNOWPACK has originally been developed to support avalanche warning (Lehning et al., 1999) and thus features a very detailed description of snow properties including weak layer characterization (Stoessel et al., 2009), phase changes and water transport in snow (Hirashima et al., 2010). A particular feature is the treatment of soil and snow as a continuum with a choice of a few up to several hundred layers. While a main application is still on avalanche warning in countries from Switzerland (Schirmer et al., 2009) to Japan (Nishimura et al., 2005), the applications range from climate change assessments (Rasmus et al., 2004; Bavay et al., 2009) and superimposed ice simulations (Obleitner and Lehning, 2004) to permafrost sensitivity studies (Luetschg et al., 2008) and the simulation of snow storage (Olefs and Lehning, 2010).
 
-Then you should take a look at SNOWPACK!
+In order to ease the integration of SNOWPACK into other models, it is now structured as a library (libsnowpack) and an application that uses the library to perform simulations (snowpack). This library is available under LGPL version 3 or above, see www.gnu.org.
 
-It simulates the evolution of the snow cover based on meteorological input data. International intercomparison studies show that SNOWPACK is successfully applied to alpine, arctic, maritime and continental snow covers. It can also be integrated into other models as a library.
-
+References:
     * [Lehning et al., 2002a] Lehning, M., Bartelt, P., Brown, R.L., Fierz, C., and Satyawali, P.K. 2002.
         A physical SNOWPACK model for the Swiss avalanche warning, Part II. Snow microstructure,
         Cold Regions Science and Technology 35, 2002, 147–167.
