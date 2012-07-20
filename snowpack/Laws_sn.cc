@@ -245,7 +245,7 @@ bool SnLaws::setStaticData(const std::string& variant)
 		SnLaws::ageAlbedo = true;
 
 	// snow extinction coefficients; values in use since r140
-	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23}; 
+	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23};
 	double fb_init[5] = {29., 15., 5., 9., 35.};
 	double pc_init[5] = {16.3, 16.8, 15.4, 31.0, 20.5};
 	swa_k.resize(swa_nBands);
@@ -622,9 +622,10 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
  * @version 8.10 (??)
  * @param Edata
  * @param dvdz Wind velocity gradient (s-1)
+ * @param show_warnings If warnings are produced, show them (default=true)
  * @return Thermal conductivity of snow (W K-1 m-1)
  */
-double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const double& dvdz)
+double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const double& dvdz, const bool& show_warnings)
 {
 	const double Lh = Constants::lh_sublimation;
 	const double P = 950.;
@@ -689,7 +690,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 
 	double C_eff  = SnLaws::montana_c_fudge * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (Edata.melting_tk*Edata.melting_tk));
 
-	if (!((C_eff < 5.*Constants::conductivity_ice) && (C_eff > 0.2*Constants::conductivity_air)) && !ALPINE3D) {
+	if (!((C_eff < 5.*Constants::conductivity_ice) && (C_eff > 0.2*Constants::conductivity_air)) && show_warnings) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Conductivity out of range (0.2*Constants::conductivity_air=%.3lf, 5.*Constants::conductivity_ice=%.3lf):", 0.2 * Constants::conductivity_air, 5. * Constants::conductivity_ice);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "C_eff: %lf  C_1: %lf  C_2: %lf  C_3: %lf  C_4: %lf  C_5: %lf", C_eff, C1, C2, C3, C4, C5);
 		prn_msg(__FILE__, __LINE__, "msg-", Date(), "C_Air: %lf  C_Water: %lf  C_Ice: %lf", Constants::conductivity_air, Constants::conductivity_water, Constants::conductivity_ice);

@@ -52,8 +52,9 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
 Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
                    research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false),
                    soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
-                   change_bc(false), meas_tss(false), vw_dendricity(false)
+                   change_bc(false), meas_tss(false), vw_dendricity(false), alpine3d(false)
 {
+	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	cfg.getValue("FIXED_ALBEDO", "SnowpackAdvanced", fixed_albedo);
@@ -142,9 +143,9 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
 	 */
 	cfg.getValue("THRESH_RH", "SnowpackAdvanced", thresh_rh);
 	cfg.getValue("THRESH_DT_AIR_SNOW", "SnowpackAdvanced", thresh_dt_air_snow);
-	
+
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 	meteo_step_length = cfg.get("METEO_STEP_LENGTH", "Snowpack");
 
@@ -486,7 +487,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, do
 		Keff = Edata->theta[AIR] * Constants::conductivity_air + Edata->theta[ICE] * Constants::conductivity_ice +
 		           Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[SOIL] * Edata->soil[SOIL_K];
 	} else {
-		Keff = SnLaws::compSnowThermalConductivity(*Edata, dvdz);
+		Keff = SnLaws::compSnowThermalConductivity(*Edata, dvdz, !alpine3d); //do not show the warning for Alpine3D
 	}
 	// mimics effect of vapour transport if liquid water present in snowpack
 	Keff *= VaporEnhance;
@@ -770,7 +771,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 				cAlb = Xdata.SoilAlb;
 			}
 		}
-		if (!ALPINE3D)
+		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
 			cAlb = MAX(cAlb, Mdata.rswr / Constants::solcon);
 		cAlb = MAX(Xdata.SoilAlb, MIN(0.95, cAlb));
 	} else {
@@ -1052,7 +1053,7 @@ void Snowpack::compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, Bou
 			NDS[n].T = U[n];
 		} else { // Correct for - hopefully transient - crazy temperatures!
 			NDS[n].T = 0.5*(U[n] + NDS[n].T);
-			if (!ALPINE3D) {
+			if (!alpine3d) { //reduce number of warnings for Alpine3D
 				if (!crazy && (nN > Xdata.SoilNode + 3)) {
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)!");
 					prn_msg(__FILE__, __LINE__, "msg-", Date(),
@@ -1268,7 +1269,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			} else { // in case of flat field or PERP_TO_SLOPE
 				hn = delta_cH;
 				// Store new snow depth and density
-				if (!ALPINE3D) {
+				if (!alpine3d) { //Why?
 					Xdata.hn = hn;
 					Xdata.rho_hn = rho_hn;
 				}
@@ -1282,8 +1283,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 			if (nAddE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
-				if (!ALPINE3D && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
-				                      || add_element)) {
+				if (!alpine3d && ((Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)
+				                      || add_element)) { //no virtual slopes in Alpine3D
 					nAddE = 1;
 				} else {
 					Xdata.hn = 0.;
@@ -1597,7 +1598,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
-		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 		t_surf = MIN(melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
 			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
@@ -1629,8 +1630,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
+			const double melting_tk2 = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk2); /*C_TO_K(thresh_change_bc/2.);*/
 			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 

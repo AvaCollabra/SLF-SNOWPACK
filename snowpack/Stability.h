@@ -75,7 +75,7 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
  * @version -
  * @date    -
  * @bug     -
- * @author Michael Lehning \n Charles Fierz \n Sascha Bellaire
+ * @author Michael Lehning and Charles Fierz and Sascha Bellaire
  * @brief This class contains the stability routines for the snowpack model.
  * TODO: update description 2009-10-20 \n
  * Stability is found for each LAYER (i.e. finite element) and INTERFACE (i.e. node).
@@ -89,7 +89,7 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
  */
 class Stability {
 	public:
-		Stability (const mio::Config& i_cfg);
+		Stability (const mio::Config& i_cfg, const bool& i_classify_profiles=true);
 
 		void checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
@@ -138,9 +138,10 @@ class Stability {
 		static std::map<std::string, StabMemFn> mapHandHardness;
 		static std::map<std::string, StabFnShearStrength> mapShearStrength;
 
-		std::string strength_model, hardness_model;
 		bool plastic;
+		bool classify_profiles;
 		double hoar_density_buried;
+		std::string strength_model, hardness_model;
 };
 
 

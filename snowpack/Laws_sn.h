@@ -85,7 +85,7 @@ class SnLaws {
 		                             const double& height_of_meteo_values);
 
 		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz);
-		static double compSnowThermalConductivity(const ElementData& Edata, const double& dvdz);
+		static double compSnowThermalConductivity(const ElementData& Edata, const double& dvdz, const bool& show_warnings=true);
 
 		static double compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& i_e);
 

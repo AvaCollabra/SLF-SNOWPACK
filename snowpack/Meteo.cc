@@ -37,8 +37,10 @@ using namespace mio;
 * non-static section                                       *
 ************************************************************/
 
-Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCanopyModel(false)
+Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCanopyModel(false), alpine3d(false)
 {
+	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
+
 	/**
 	 * @brief Defines the way to deal with atmospheric stability:
 	 * -    0: Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
@@ -100,11 +102,14 @@ void Meteo::projectPrecipitations(const double& slope_angle, double& precips, do
 }
 
 /**
- * @brief Make an iteration to find z0 and ustar at the same time
+ * @brief Atmospheric stability correction for wind values.
+ * This makes an iteration to find z0 and ustar at the same time
  * @param Mdata
  * @param Xdata
+ * @param adjust_VW_height if set to false, assumes a constant measurement height for wind values (default: true, ie.
+ * take into account the snow height decreasing the sensor height above the surface)
  */
-void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
+void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height)
 {
 	const int max_iter = 100;
 
@@ -118,8 +123,8 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata)
 	const double ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
 	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
-	// Adjust for snow height; for Alpine3D: model level over actual surface
-	const double zref = (ALPINE3D)? height_of_wind_value : MAX (0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground));
+	// Adjust for snow height if fixed_height_of_wind=false
+	const double zref = (adjust_VW_height)? MAX(0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground)) : height_of_wind_value ;
 	// In case of ventilation ... Wind pumping displacement depth (m)
 	const double d_pump = (SnLaws::wind_pump)? SnLaws::compWindPumpingDisplacement(Xdata) : 0.;
 
@@ -271,9 +276,11 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
 void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
 	if (useCanopyModel && Xdata->Cdata.lai > 0.) //in Alpine3D, we might have canopy=1 but some pixels have canopy_height=0, lai=0, etc
-		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value);
+		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
 
-	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.)
-		MicroMet(*Xdata, *Mdata);
+	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.) {
+		if(alpine3d) MicroMet(*Xdata, *Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
+		else MicroMet(*Xdata, *Mdata, true);
+	}
 }
 

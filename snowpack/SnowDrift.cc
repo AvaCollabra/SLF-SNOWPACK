@@ -39,8 +39,10 @@ const bool SnowDrift::msg_erosion = false;
  ************************************************************/
 
 SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
-                     enforce_measured_snow_heights(false), snow_redistribution(false)
+                     enforce_measured_snow_heights(false), snow_redistribution(false), alpine3d(false)
 {
+	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
+
 	/**
 	 * @brief Defines how the height of snow is going to be handled
 	 * - false: Depth of snowfall is determined from the water equivalent of snowfall (HNW)
@@ -59,7 +61,7 @@ SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
 	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
 	/*
@@ -126,7 +128,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
  * @param Mdata
  * @param Xdata
  * @param Sdata
- * @param cumu_hnw transfer of eroded mass from ALPINE3D
+ * @param cumu_hnw transfer of eroded mass between two time steps
 */
 void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw)
 {
@@ -157,7 +159,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	if (Xdata.ErosionLevel > nE-1) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "ErosionLevel=%d did get messed up (nE-1=%d)", Xdata.ErosionLevel, nE-1);
 	}
-	if (!ALPINE3D && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle) && Xdata.windward) {
+	if (!alpine3d && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle) && Xdata.windward) {
 		windward = true;
 	}
 	// Scale ustar_max
@@ -167,7 +169,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		ustar_max = 0.;
 	}
 	// Evaluate possible real erosion
-	if (ALPINE3D) {
+	if (alpine3d) {
 		massErode = (-cumu_hnw);
 	} else {
 		try {
@@ -182,8 +184,8 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		}
 		massErode = (real_flux * sn_dt / Hazard::typical_slope_length);
 	}
-	// Real erosion either on flat field or on windward slope or in ALPINE3D
-	if ((snow_redistribution && (((Xdata.mH + 0.02) < (Xdata.cH - Xdata.Ground)) && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))) || ALPINE3D || windward) {
+	// Real erosion either on flat field or on windward slope or in Alpine3D
+	if ((snow_redistribution && (((Xdata.mH + 0.02) < (Xdata.cH - Xdata.Ground)) && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))) || alpine3d || windward) {
 		Xdata.ErosionMass = 0.;
 		// Erode at most one element with a maximal error of +- 5 % on mass ...
 		if (massErode >= 0.95 * EMS[nE-1].M) {
@@ -197,7 +199,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			Xdata.ErosionMass = EMS[nE].M;
 			Xdata.ErosionLevel = MIN(nE-1, Xdata.ErosionLevel);
 			nErode++;
-			if (ALPINE3D) {
+			if (alpine3d) {
 				cumu_hnw = MIN(0., -massErode);
 			}
 		} else if (massErode > 0.) { // ... or take away massErode from top element - partial real erosion
@@ -220,12 +222,12 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			EMS[nE-1].M -= massErode;
 			Xdata.ErosionMass = massErode;
 			nErode = -1;
-			if (ALPINE3D) {
+			if (alpine3d) {
 				cumu_hnw = 0.;
 			}
 		}
 		/* ... or check whether you can do a virtual erosion for drift index generation
-		 * in case of no (or small) real erosion for all cases except ALPINE3D or virtual slopes
+		 * in case of no (or small) real erosion for all cases except Alpine3D or virtual slopes
 		 */
 	}
 	else if (((nSlopes == 1) || (!snow_redistribution && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle))) && (Xdata.ErosionLevel > Xdata.SoilNode)) {
@@ -255,7 +257,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	}
 
 	if ( nErode > 0 ) {
-		if (SnowDrift::msg_erosion && (Xdata.ErosionMass > 0.) && !ALPINE3D) {
+		if (SnowDrift::msg_erosion && (Xdata.ErosionMass > 0.) && !alpine3d) { //reduce number of warnings for Alpine3D
 			if ( windward ) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Eroding %d layer(s) w/ total mass %.3lf kg/m2 (windward: azi=%.1lf, slope=%.1lf)", nErode, Xdata.ErosionMass, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 			} else {

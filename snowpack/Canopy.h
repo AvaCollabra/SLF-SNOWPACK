@@ -33,55 +33,39 @@ class Canopy {
 		Canopy(const mio::Config& i_cfg);
 
 		static void cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
-
 		void runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length,
-						double height_of_wind_val);
-
+		                    double height_of_wind_val, const bool& alpine3d=false);
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
 
  	private:
-
 		double cn_f1(const double& ris);
-
 		double cn_RootFraction(const double& zupper, const double& zlower);
-
 		void cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, ElementData* EMS);
-
 		double cn_f4(const double& tempC);
-
 		double cn_f2f4(const int& SoilNode, ElementData* EMS);
-
 		double cn_f3(const double& vpd);
-
 		double cn_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
-
 		double cn_IntUnload(const double& capacity, const double& storage);
-
 		double cn_IntRate(const double& capacity, const double& storage, const double& prec,
-					   const double& direct, const double& tair);
+		                  const double& direct, const double& tair);
 
 		double cn_CanopyAlbedo(const double& tair, const double& wetfrac);
-
 		double cn_TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double SkyViewFraction,
-						  double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
+		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
 
 		double cn_CanopyShadeSoilCover(const double& HEIGHT, const double& COVER, const double& ELEV);
-
 		double cn_CanopyWetFraction(const double& capacity, const double& storage);
-
 		double cn_CanopyTransmissivity(const double& lai, const double& elev);
 
 		void cn_LineariseNetRadiation(const CurrentMeteo& Mdata,const CanopyData& Cdata, const SnowStation& Xdata,
-								double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
-								const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
-								const double& sigfdirect, double& r1p);
-
+		                              double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
+		                              const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
+		                              const double& sigfdirect, double& r1p);
 		void cn_LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1);
 
 		double cn_DSaturationPressureDT(const double& L, const double& T);
-
 		void cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_old, const double& vpair,
-								  double& le0, double& le1);
+		                                double& le0, double& le1);
 
 		void cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
 							   const double& le1, const double& vpair, const double& ce_canopy,
@@ -99,9 +83,7 @@ class Canopy {
 									 double *LECANOPYCORR, double r1p, double CanopyClosure, double wetfraction);
 
 		double cn_psim(const double& xi);
-
 		double cn_psih(const double& xi);
-
 		double cn_RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
 
 		void cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,

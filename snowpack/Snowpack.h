@@ -136,6 +136,7 @@ class Snowpack {
 		bool soil_flux, useSoilLayers;
 		bool multistream, join_elements, change_bc, meas_tss;
 		bool vw_dendricity;
+		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 		int sw_mode;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dt_air_snow;

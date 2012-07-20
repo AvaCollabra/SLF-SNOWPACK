@@ -80,7 +80,7 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& cfg) : plastic(false)
+Stability::Stability(const mio::Config& cfg, const bool& i_classify_profiles) : plastic(false), classify_profiles(i_classify_profiles)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
@@ -113,14 +113,12 @@ Stability::Stability(const mio::Config& cfg) : plastic(false)
  */
 double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
 {
-	int    F1, F2, F3; // grain shape
-	double hardness;
 	const double gsz = 2.*Edata.rg;
-
-	// Decompose type in its constituents
-	typeToCode(&F1, &F2, &F3, Edata.type);
+	double hardness;
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
+		int F1, F2, F3; // grain shape
+		typeToCode(&F1, &F2, &F3, Edata.type); // Decompose type in its constituents
 		double A, B;
 		switch(F1) {
 			case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
@@ -206,7 +204,7 @@ double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
 
 /**
  * @brief Compute hand hardness for a given grain type and density
- * All the information about hardness parameterizations for PP DF RG FC DH MF FCxf are published in 
+ * All the information about hardness parameterizations for PP DF RG FC DH MF FCxf are published in
  * Monti et al. (in progress)
  * @author Fabiano Monti
  * @date 2012-06-27
@@ -338,13 +336,11 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
  */
 double Stability::setHandHardnessMONTI(const ElementData& Edata)
 {
-	int    F1, F2, F3; // grain shape
 	double hardness;
 
-	// Decompose type in its constituents
-	typeToCode(&F1, &F2, &F3, Edata.type);
-
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
+		int F1, F2, F3; // grain shape
+		typeToCode(&F1, &F2, &F3, Edata.type); // Decompose type in its constituents
 		const double hardness_F1 = getHandHardnessMONTI(F1, Edata.Rho, Edata.theta[WATER]);
 		const double hardness_F2 = getHandHardnessMONTI(F2, Edata.Rho, Edata.theta[WATER]);
 		hardness = 0.5 * (hardness_F1 + hardness_F2);
@@ -385,16 +381,11 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
  */
 double Stability::setHandHardnessASARC(const ElementData& Edata)
 {
-	int    F1, F2, F3;
+	const double gsz = 2.*Edata.rg;
 	double A=0., B=0., C=0.;
-	double hardness;
-	double gsz;
 
-	// Dereference some values
-	gsz     = 2.*Edata.rg;
-
-	// Decompose type in its constituents
-	typeToCode(&F1, &F2, &F3, Edata.type);
+	int F1, F2, F3;
+	typeToCode(&F1, &F2, &F3, Edata.type); // Decompose type in its constituents
 
 	// all types except MFcr
 	if( Edata.mk%100 < 20 ) {
@@ -497,7 +488,8 @@ double Stability::setHandHardnessASARC(const ElementData& Edata)
 	} else { // Ice Formations IF
 		A = 6.;
 	}
-	hardness = A + B*Edata.Rho + C*gsz;
+
+	double hardness = A + B*Edata.Rho + C*gsz;
 	if (F1 == 6) {
 		hardness = MIN(hardness, 2.);
 	}
@@ -517,19 +509,15 @@ double Stability::setHandHardnessASARC(const ElementData& Edata)
  */
 double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 {
-	double sigBrittle=1.e7;   // Brittle fracture stress of ice (Pa)
-	double Pm;                // Hydrostatic pressure that induces melting (Pa)
-	double phi;               // Function of strain rate dependent failure surface
-	double epsa;              // Absolute value of plastic strain rate
-
+	const double sigBrittle=1.e7;   // Brittle fracture stress of ice (Pa)
 	const double C1=-6.6249;     // Constant
 	const double C2=6.0780e-2;   // Constant
 	const double C3=-1.3380e-4;  // Constant
 	const double P1=70.000;      // Constant (Pa)
 
 	// Find the rate dependent friction angle phi
-	epsa = fabs(epsNeckDot);
-	phi = P1*pow(epsa, 0.23)*Constants::pi/180.;
+	const double epsa = fabs(epsNeckDot); // Absolute value of plastic strain rate
+	const double phi = P1*pow(epsa, 0.23)*Constants::pi/180.; // Function of strain rate dependent failure surface
 
 	// Hydrostatic melting pressure
 	// NOTE this function returns negative values for
@@ -538,13 +526,14 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 	//   negative for Ts <= 180.4 K and Ts >= 274 K
 	//   The maximum of the function is reached at 227.2 K
 	//   HACK use this value for temperatures below 227.2 K (Quick and dirty fix;-)
+	double Pm; // Hydrostatic pressure that induces melting (Pa)
 	if (Ts >= 227.2)
 		Pm = (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9;
 	else
 		Pm = (C1 + C2*(227.2) + C3*(227.2)*(227.2)) * 1.e9;
 
 	// Return the critical stress. TODO check that argument of sqrt is correctly written
-	return(Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle))));
+	return (Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle))));
 }
 
 /**
@@ -558,24 +547,22 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
  */
 double Stability::setDeformationRateIndex(ElementData& Edata)
 {
-	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
-	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
-	const double sig = -Edata.C;   // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	double sigNeck;                 // Neck stress (Pa)
-	double epsNeckDot;              // Total strain rate in the neck (s-1)
-	double Te;                      // Element temperature (K)
-
-	Te = MIN(Edata.Te, Edata.melting_tk);
 	// If you have less than 5% ice then say you know you have something unstable
 	if ( Edata.theta[ICE] < 0.05 ) {
 		return(0.1);
 	}
+
+	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
+	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
+	const double sig = -Edata.C;   // Overburden stress, that is, absolute value of Cauchy stress (Pa)
+	const double Te = MIN(Edata.Te, Edata.melting_tk); // Element temperature (K)
+
 	// First find the absolute neck stress
-	sigNeck = Edata.neckStressEnhancement() * (sig);
+	const double sigNeck = Edata.neckStressEnhancement() * (sig); // Neck stress (Pa)
 	// Now find the strain rate in the neck
-	epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1);
+	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1); // Total strain rate in the neck (s-1)
 	// Return the stability index
-	return(MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
+	return (MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 }
 
 /**
@@ -588,7 +575,7 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 void Stability::initStability(const double& psi_ref, StabilityData& STpar,
                               SnowStation& Xdata, std::vector<InstabilityData>& SIdata)
 {
-	unsigned int nN = Xdata.getNumberOfNodes();
+	size_t nN = Xdata.getNumberOfNodes();
 
 	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
@@ -615,13 +602,12 @@ void Stability::initStability(const double& psi_ref, StabilityData& STpar,
 double Stability::compPenetrationDepth(const SnowStation& Xdata)
 {
 	double rho_Pk = Constants::eps2, dz_Pk = Constants::eps2; // Penetration depth Pk, from mean slab density
-	double cos_sl;                            // Cosine of slope angle
 	double top_crust = 0., thick_crust = 0.;  // Crust properties
 	bool crust = false;                       // Checks for crust
 	int e_crust = Constants::iundefined;
 
-	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	unsigned int e = Xdata.getNumberOfElements();
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
+	size_t e = Xdata.getNumberOfElements();
 	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3))) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
 		dz_Pk  += Xdata.Edata[e].L;
@@ -650,8 +636,8 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 	}
 	rho_Pk /= dz_Pk;
 
-  // NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
-	return(MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust)));
+	// NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
+	return (MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust)));
 }
 
 /**
@@ -679,25 +665,23 @@ void Stability::compReducedStresses(const double& stress, const double& cos_sl, 
 bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
                                         ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
-	int    F1, F2, F3;                    // Grain shape
-	double Sig_cC, Sig_c2, Sig_c3;        // Critical shear stress (kPa)
-	double phi;                           // Normal load correction
-	double rho_ri;                        // Snow density relative to ice
-	bool prn_wrn = false;
+	bool prn_wrn = false; //turn to true to print warnings
 
 	// Snow density relative to ice
-	rho_ri = Edata.Rho/Constants::density_ice;
-	// Determine majority grain shape
-	typeToCode(&F1, &F2, &F3, Edata.type);
+	const double rho_ri = Edata.Rho/Constants::density_ice; // Snow density relative to ice
+	int F1, F2, F3; // Grain shape
+	typeToCode(&F1, &F2, &F3, Edata.type); // Determine majority grain shape
 
 	// Determine critical shear stress of element (kPa)
 	// 1. Conway
-	Sig_cC = 19.5*rho_ri*rho_ri;
-		// 2. Grain Type dependent mostly from Jamieson,
-		//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
-	phi = 0.;
-	Sig_c2 = -1.0;
-	Sig_c3 = -1.0;
+	const double Sig_cC = 19.5*rho_ri*rho_ri;
+
+	// 2. Grain Type dependent mostly from Jamieson,
+	//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
+	double phi = 0.; // Normal load correction
+	double Sig_c2 = -1.0; // Critical shear stress (kPa)
+	double Sig_c3 = -1.0; // Critical shear stress (kPa)
+
 	switch( F1 ) {
 		case 0: // Graupel, from O. Abe, Ann. Glaciol. 38 (2004), size-effect corrected
 			Sig_c2 = 0.65*(82.*pow(rho_ri, 2.8));
@@ -805,10 +789,10 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	// Determine critical shear stress of element (kPa)
-  // 1. Conway
+	// 1. Conway
 	Sig_cC = 19.5*rho_ri*rho_ri;
-		// 2. Grain Type dependent mostly from Jamieson,
-		//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
+	// 2. Grain Type dependent mostly from Jamieson,
+	//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
 	phi = 0.;
 	Sig_c2 = -1.0;
 	Sig_c3 = -1.0;
@@ -1091,7 +1075,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 }  // End classifyProfileStability
 
 /**
- * @brief "Pattern recognition" of 10 profile types according to Schweizer, J. and M. Luetschg (2001). 
+ * @brief "Pattern recognition" of 10 profile types according to Schweizer, J. and M. Luetschg (2001).
  * Schweizer, J. and M. Luetschg, <i>Characteristics of human-triggered avalanches</i>, 2001, Cold Reg. Sci. Technol. 33(2-3): 147-162.
  * Note that analysis is done on vertical snow height.
  * @param *Xdata
@@ -1506,7 +1490,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			break;
 	}
 
-	if (!ALPINE3D) {
+	if (classify_profiles) {
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
 		if (!recognizeProfileType(Mdata.date, Xdata)) {

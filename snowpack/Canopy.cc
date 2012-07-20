@@ -1404,9 +1404,10 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
  * @param Xdata Profile
  * @param roughness_length
  * @param height_of_wind_val
+ * @param alpine3d changes the computation of zref. No idea what is the reason //HACK
  */
-
-void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length, double height_of_wind_val)
+ //HACK: put an explicit name instead of "alpine3d"
+void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roughness_length, double height_of_wind_val, const bool& alpine3d)
 {
 
 	// local mass flux variables
@@ -1501,7 +1502,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * 2006-03-01: introduced new definition of reference height above canopy for Alpine3D applications
 	 * 2006-06-02: this should work also without soil data, since Xdata->Ground is initialized to 0.0
 	*/
-	if ( ALPINE3D ) {
+	if ( alpine3d ) {
 		zref = MAX (2.0 + (Xdata->Cdata.height - (Xdata->cH - Xdata->Ground)), Xdata->Cdata.height + height_of_wind_val - (Xdata->cH - Xdata->Ground));
 	} else {
 		zref = MAX(2.0 + (Xdata->Cdata.height - (Xdata->cH - Xdata->Ground)), height_of_wind_val - (Xdata->cH - Xdata->Ground));

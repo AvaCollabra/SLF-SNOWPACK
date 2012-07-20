@@ -26,9 +26,6 @@
 #ifndef __CONSTANTS_H__
 #define __CONSTANTS_H__
 
-/// @brief Defines whether a distributed or 1D use of SNOWPACK is foreseen
-#define ALPINE3D 0
-
 /**
  * @brief _VERSION is given as a compilation flag to tell us what is the version number \n
  * Please only use SN_VERSION in the code
