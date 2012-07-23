@@ -275,10 +275,10 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  */
 void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 {
-	if (useCanopyModel && Xdata->Cdata.lai > 0.) //in Alpine3D, we might have canopy=1 but some pixels have canopy_height=0, lai=0, etc
+	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
 
-	if (!(useCanopyModel && Xdata->Cdata.lai > 0.) || Xdata->Cdata.zdispl < 0.) {
+	if (!(useCanopyModel) || Xdata->Cdata.zdispl < 0.) {
 		if(alpine3d) MicroMet(*Xdata, *Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
 		else MicroMet(*Xdata, *Mdata, true);
 	}

@@ -1523,8 +1523,8 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	 * ce_canopy        = latent heat total
 	 * cm_canopy        = momentum (through the canopy, i.e to estimate wind speed below)
 	*/
-	cn_CanopyTurbulentExchange(*Mdata, zref, z0m_ground, wetfrac,
-						  *Xdata, ch_canopy, ce_canopy, ce_transpiration, ce_interception, ce_condensation);
+	cn_CanopyTurbulentExchange(*Mdata, zref, z0m_ground, wetfrac, *Xdata, ch_canopy, ce_canopy,
+	                           ce_transpiration, ce_interception, ce_condensation);
 
 
 	/*

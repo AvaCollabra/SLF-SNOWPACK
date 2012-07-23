@@ -35,8 +35,7 @@ INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 
 IF(UNIX)
-	LIST(APPEND SN_LINKS "dl")
-	LIST(APPEND SN_LINKS "pthread")
+	LIST(APPEND SN_LINKS "dl;pthread")
 ENDIF(UNIX)
 
 #Prepare executable

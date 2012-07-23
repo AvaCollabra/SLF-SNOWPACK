@@ -51,7 +51,7 @@ ELSE(WIN32)
 		DOC "Location of the libsnowpack, like /usr/lib"
 		)
 	ENDIF(APPLE)
-END(WIN32)
+ENDIF(WIN32)
 
 #build LIBSNOWPACK_ROOT so we can provide a hint for searching for the header file
 GET_FILENAME_COMPONENT(snowpack_libs_root ${LIBSNOWPACK_LIBRARY} PATH)
