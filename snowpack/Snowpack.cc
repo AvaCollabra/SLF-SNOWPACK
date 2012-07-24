@@ -1269,7 +1269,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			} else { // in case of flat field or PERP_TO_SLOPE
 				hn = delta_cH;
 				// Store new snow depth and density
-				if (!alpine3d) { //Why?
+				if (!alpine3d) {
+					//in snowpack, we compute first hn on flat field,
+					//then we copy this value to the slopes
 					Xdata.hn = hn;
 					Xdata.rho_hn = rho_hn;
 				}

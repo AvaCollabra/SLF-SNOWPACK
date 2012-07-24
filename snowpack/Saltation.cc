@@ -103,7 +103,7 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
  * @return u
  */
 double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0,
-												 const double& u_start, const double& slope_angle)
+                         const double& u_start, const double& slope_angle)
 {
 	double u, hs, r, ustar, ustarz, dudz, z_act;
 	double dz = 0.00002;
@@ -146,8 +146,8 @@ double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS
  * @return bool
  */
 bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const double& slope_angle, const double& dg,
-                          const double& tauA, const double& tauS, const double& z0,
-                          double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max)
+                           const double& tauA, const double& tauS, const double& z0,
+                           double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max)
 {
 	int nt = 0;
 	const double DT = 0.0005;

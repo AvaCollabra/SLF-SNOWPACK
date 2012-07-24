@@ -1574,7 +1574,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 
 		// compute properties r0 and r1 in eq (2) (and downward lw and sw for snowpack model)
 		cn_LineariseNetRadiation(*Mdata, Xdata->Cdata, *Xdata, iswrac, rsnet, ilwrac, r0, r1,
-							canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
+		                         canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
 
 		// compute properties h0 and h1 in eq (3)
 		cn_LineariseSensibleHeatFlux(ch_canopy, Mdata->ta, h0, h1);
@@ -1584,18 +1584,18 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 
 		/* final canopy energy balance */
 		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata->rh * Atmosphere::waterSaturationPressure(Mdata->ta),
-						   ce_canopy, ce_condensation, r1p, 1. - Xdata->Cdata.direct_throughfall,
-						   r0, r1, Xdata->Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
+		                       ce_canopy, ce_condensation, r1p, 1. - Xdata->Cdata.direct_throughfall,
+		                       r0, r1, Xdata->Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 
 		/*
 		 * Partition latent heat flux on interception and transpiration
 		 * and correct energy balance for overestimated interception evaporation
 		*/
 		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, &LECANOPY, Mdata->ta,
-								 Mdata->rh * Atmosphere::waterSaturationPressure(Mdata->ta), Xdata->Cdata.storage,
-								 M_TO_H(calculation_step_length), &CanopyEvaporation, &INTEVAP, &TRANSPIRATION,
-								 &RNCANOPY, &HCANOPY, &Xdata->Cdata.temp, &r0, &r1, h0, h1, &LECANOPYCORR,
-								 r1p, 1. - Xdata->Cdata.direct_throughfall ,wetfrac);
+		                               Mdata->rh * Atmosphere::waterSaturationPressure(Mdata->ta), Xdata->Cdata.storage,
+		                               M_TO_H(calculation_step_length), &CanopyEvaporation, &INTEVAP, &TRANSPIRATION,
+		                               &RNCANOPY, &HCANOPY, &Xdata->Cdata.temp, &r0, &r1, h0, h1, &LECANOPYCORR,
+		                               r1p, 1. - Xdata->Cdata.direct_throughfall ,wetfrac);
 
 		newstorage = Xdata->Cdata.storage - INTEVAP;
 

@@ -112,8 +112,19 @@ bool SnowpackConfig::initStaticData()
 
 SnowpackConfig::~SnowpackConfig() {}
 
+SnowpackConfig::SnowpackConfig(const mio::Config& i_cfg) : Config(i_cfg),
+                               enforce_measured_snow_heights(false)
+{
+	setDefaults();
+}
+
 SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filename),
                                enforce_measured_snow_heights(false)
+{
+	setDefaults();
+}
+
+void SnowpackConfig::setDefaults()
 {
 	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, Config::nothrow);
 
