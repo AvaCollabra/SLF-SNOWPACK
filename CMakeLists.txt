@@ -127,8 +127,9 @@ ENDIF(DEST STREQUAL "optimized")
 
 ###########################################################
 #finally, SET compile flags
-SET(CMAKE_CXX_FLAGS_RELEASE "${_VERSION} ${EXTRA} ${ARCH} ${OPTIM} ${CFLAGS} ${PLATFORM}" CACHE STRING "" FORCE)
-SET(CMAKE_CXX_FLAGS_DEBUG "${DEBUG} ${_VERSION} ${EXTRA} ${ARCH} ${CFLAGS} ${PLATFORM} ${WARNINGS} ${EXTRA_WARNINGS}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS "${_VERSION} ${ARCH} ${CFLAGS} ${PLATFORM} ${EXTRA}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE "${OPTIM}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_DEBUG "${DEBUG} ${WARNINGS} ${EXTRA_WARNINGS}" CACHE STRING "" FORCE)
 
 MESSAGE(STATUS "DEBUG CXXFLAGS  : ${CMAKE_CXX_FLAGS_DEBUG}")
 MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
@@ -146,29 +147,18 @@ FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
-# DAVID: WHY twice ??? command should work even if file is not present !
-IF(SNOWPACK_STANDALONE)
-	ADD_CUSTOM_TARGET(distclean make clean
-		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/*.cmake
-		COMMAND cmake -E remove_directory CMakeFiles
-		COMMAND cmake -E remove_directory snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory tests/CMakeFiles
-		COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
-		COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
-		COMMAND cmake -E remove_directory tests/res1exp/Testing
-		)
-ELSE(SNOWPACK_STANDALONE)
-	ADD_CUSTOM_TARGET(distclean make clean
-		COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake  tests/*.cmake
-		COMMAND cmake -E remove_directory CMakeFiles
-		COMMAND cmake -E remove_directory snowpack/CMakeFiles
-		COMMAND cmake -E remove_directory tests/CMakeFiles
-		COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
-		COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
-		COMMAND cmake -E remove_directory tests/res1exp/Testing
-		)
-ENDIF(SNOWPACK_STANDALONE)
+ADD_CUSTOM_TARGET(distclean make clean
+	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
+	COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/*.cmake
+	COMMAND cmake -E remove_directory CMakeFiles
+	COMMAND cmake -E remove_directory snowpack/CMakeFiles
+	COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles
+	COMMAND cmake -E remove_directory tests/CMakeFiles
+	COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
+	COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
+	COMMAND cmake -E remove_directory tests/res1exp/Testing
+	)
+
 
 ###########################################################
 #for the uninstall target
