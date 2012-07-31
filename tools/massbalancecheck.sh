@@ -25,20 +25,20 @@ met_file=$1
 
 # Check if file exists
 if [ ! -e "${met_file}" ]; then
-	echo "massbalancecheck.sh: ERROR:: file ${met_file} does not exist or cannot be opened!" > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: file ${met_file} does not exist or cannot be opened!" > /dev/stderr
 	exit
 fi
 
 # Check if file is not empty
 if [ ! -s "${met_file}" ]; then
-	echo "massbalancecheck.sh: ERROR:: file ${met_file} is empty!" > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: file ${met_file} is empty!" > /dev/stderr
 	exit
 fi
 
 # Read header from met file
 header=`cat ${met_file} | grep -m 1 ^ID`
 if [ -z "${header}" ]; then
-	echo "massbalancecheck.sh: ERROR:: no header found." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: no header found." > /dev/stderr
 	exit
 fi
 
@@ -61,43 +61,47 @@ colwinddrift=`echo ${header} | sed 's/,/\n/g' | grep -n "Eroded mass" | awk -F: 
 
 error=0
 if [ -z "${coldatetime}" ]; then
-	echo "massbalancecheck.sh: ERROR:: date/time not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: date/time not found in one of the columns." > /dev/stderr
+	error=1
+fi
+if [ -z "${colrainrate}" ]; then
+	echo "massbalancecheck.sh: ERROR: snow rate not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colsnowrate}" ]; then
-	echo "massbalancecheck.sh: ERROR:: snow rate not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: snow rate not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colhsmeasured}" ]; then
-	echo "massbalancecheck.sh: ERROR:: measured hs not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: measured hs not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colhsmodel}" ]; then
-	echo "massbalancecheck.sh: ERROR:: modeled hs not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: modeled hs not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colSWE}" ]; then
-	echo "massbalancecheck.sh: ERROR:: SWE not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: SWE not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colLWC}" ]; then
-	echo "massbalancecheck.sh: ERROR:: LWC not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: LWC not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colrunoff_surf}" ]; then
-	echo "massbalancecheck.sh: ERROR:: snowpack runoff not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: snowpack runoff not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colsubl}" ]; then
-	echo "massbalancecheck.sh: ERROR:: sublimation not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: sublimation not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colevap}" ]; then
-	echo "massbalancecheck.sh: ERROR:: evaporation not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: evaporation not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colwinddrift}" ]; then
-	echo "massbalancecheck.sh: ERROR:: evaporation not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: evaporation not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ "${error}" -eq 1 ]; then
@@ -107,14 +111,14 @@ fi
 # -- Determine file resolution
 nsamplesperday=`cat ${met_file} | sed '1,/\[DATA\]/d' | awk -F, '{print $'${coldatetime}'}' | awk '{print $1}' | sort | uniq -c | awk '{print $1}' | sort -nu | tail -1`
 if [ -z "${nsamplesperday}" ]; then
-	echo "massbalancecheck.sh: ERROR:: file resolution could not be determined." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: file resolution could not be determined." > /dev/stderr
 	exit
 fi
 
 
 # Create header
 echo "#Date time measured_HS modelled_HS SWE     LWC    rain_rate snow_rate snowpack_runoff subl   evap   winderosion deltaSWE massbalance mass_in mass_out"
-echo "#--   --   --          --          --      --     M+        M+        M+              M+     M+     M+          M+       error       totals  totals"
+echo "#--   --   --          --          --      --     M+        M+        M+              M+     M+     M+          M-       error       totals  totals"
 echo "#-    -    cm          cm          kg_m-2  kg_m-2 kg_m-2    kg_m-2    kg_m-2          kg_m-2 kg_m-2 kg_m-2      kg_m-2   kg_m-2      kg_m-2  kg_m-2"
 
 
@@ -131,9 +135,9 @@ sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%
 #  -- Now do all the other calculations
 #     First, determine deltaSWE when it is not the first line read in (if so, we cannot determine the mass balance, as the previous value of SWE is unknown).
 awk '{n++; if(n>1) \
-	{deltaSWE=-1.0*($5-prevSWE); \
+	{deltaSWE=($5-prevSWE); \
 	#Determine mass balance error:
-	massbalance=$7+$8+$9+$10+$11+$12+deltaSWE; \
+	massbalance=$7+$8+$9+$10+$11+$12-deltaSWE; \
 	#Determine mass input in system (taking the terms only when they are positive)
 	mass_in=(($7>0.0)?$7:0)+(($8>0.0)?$8:0)+(($9>0.0)?$9:0)+(($10>0.0)?$10:0)+(($11>0.0)?$11:0)+(($12>0.0)?$12:0); \
 	#Determine mass output in system (taking the terms only when they are negative)
