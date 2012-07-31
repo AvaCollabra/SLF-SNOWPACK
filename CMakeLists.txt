@@ -371,8 +371,32 @@ INCLUDE(CPack)
 ###########################################################
 ## CTest section
 ###########################################################
-OPTION(BUILD_TESTING "Build the QA tests" OFF)
+
+## Special build type configuration for Covarage Testing.
+# Attantion: Coverage testing right now only works with g++ (or comercial tools)
+## Add the tests itselfs
+OPTION(BUILD_TESTING "Build the tests." OFF)
 IF(BUILD_TESTING)
-    INCLUDE(CTest)
-    ADD_SUBDIRECTORY(tests)
+
+	# Coverage statistic rign now only supportet with GCC (GNUGXX)
+	IF(CMAKE_COMPILER_IS_GNUCXX)
+		OPTION(BUILD_TESTING_WITH_COVERAGE "Use gcc flags to make covarage tests" OFF)
+	
+		IF(BUILD_TESTING_WITH_COVERAGE)
+			# force the correct flags to make coverage trought a build type
+			SET(CMAKE_BUILD_TYPE coverage)
+			SET(CMAKE_CXX_FLAGS_COVERAGE "-Wall -O0 -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
+			SET(CMAKE_C_FLAGS_COVERAGE "-Wall -O0 -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
+			MARK_AS_ADVANCED(FORCE CMAKE_CXX_FLAGS_COVERAGE CMAKE_C_FLAGS_COVERAGE)
+			
+			# Force debug mode, so that no optimisation is made to get "Correct" results of coverage testing
+			SET(CMAKE_BUILD_TYPE "coverage" CACHE STRING "Choose the type of build, options are: debug release coverage " FORCE)
+			SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
+			
+		ENDIF(BUILD_TESTING_WITH_COVERAGE)
+	ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+
+	INCLUDE(CTest) # This makes ENABLE_TESTING() and gives support for Dashboard
+	ADD_SUBDIRECTORY(tests)
 ENDIF(BUILD_TESTING)
+
