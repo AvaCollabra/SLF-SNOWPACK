@@ -120,7 +120,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 /**
  * @brief Erodes Elements from the top and computes the associated mass flux
  * @brief Even so the code is quite obscure, it should cover all of the following cases:
- * -# AlPINE3D simulations with the eroded mass already prescribed by -cumu_hnw
+ * -# externally provided eroded mass given with forced_massErode
  * -# Flat field simulation, where two flux values are computed from vw and vw_drift,
  *    using either the true snow surface or the ErosionLevel marker (virtual erosion layer), respectively.
  * -# Windward virtual slope simulations with vw_drift and the true snow surface
@@ -128,15 +128,14 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
  * @param Mdata
  * @param Xdata
  * @param Sdata
- * @param cumu_hnw transfer of eroded mass between two time steps
+ * @param forced_massErode if greater than 0, force the eroded mass to the given value (instead of computing it)
 */
-void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw)
+void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& forced_massErode)
 {
 	int nErode = 0;                           // number of eroded elements and erosion level
 	bool windward = false;                    // Set to true for windward slope
 	double real_flux = 0., virtual_flux = 0.; // mass flux, either real or virtual
 	double massErode = 0.;                    // eroded mass loss due to erosion
-	double ustar_max;
 
 	unsigned int nE = Xdata.getNumberOfElements();
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -145,7 +144,6 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	const bool no_snow = ((nE < Xdata.SoilNode+1) || (EMS[nE-1].theta[SOIL] > 0.));
 	const bool no_wind_data = (Mdata.vw_drift == mio::IOUtils::nodata);
 	if (no_snow || no_wind_data) {
-		cumu_hnw = MAX(0., cumu_hnw);
 		Xdata.ErosionLevel = Xdata.SoilNode;
 		Xdata.ErosionMass = 0.;
 		if (no_snow) {
@@ -163,14 +161,11 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		windward = true;
 	}
 	// Scale ustar_max
-	if ( Mdata.vw > 0.1 ) {
-		ustar_max = Mdata.ustar * Mdata.vw_drift / Mdata.vw;
-	} else {
-		ustar_max = 0.;
-	}
+	const double ustar_max = (Mdata.vw>0.1) ? Mdata.ustar * Mdata.vw_drift / Mdata.vw : 0.;
+
 	// Evaluate possible real erosion
-	if (alpine3d) {
-		massErode = (-cumu_hnw);
+	if (forced_massErode>0.) {
+		massErode = forced_massErode;
 	} else {
 		try {
 			if (enforce_measured_snow_heights && !windward) {
@@ -199,12 +194,8 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			Xdata.ErosionMass = EMS[nE].M;
 			Xdata.ErosionLevel = MIN(nE-1, Xdata.ErosionLevel);
 			nErode++;
-			if (alpine3d) {
-				cumu_hnw = MIN(0., -massErode);
-			}
+			forced_massErode = MAX(0., massErode);
 		} else if (massErode > 0.) { // ... or take away massErode from top element - partial real erosion
-			double dL;
-
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Inconsistent Mass:%lf   L*Rho:%lf", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho);
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
@@ -212,7 +203,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			if (windward) {
 				Xdata.rho_hn = EMS[nE-1].Rho;
 			}
-			dL = -massErode / (EMS[nE-1].Rho);
+			const double dL = -massErode / (EMS[nE-1].Rho);
 			NDS[nE].z += dL;
 			EMS[nE-1].L0 = EMS[nE-1].L = EMS[nE-1].L + dL;
 			Xdata.cH += dL;
@@ -222,9 +213,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			EMS[nE-1].M -= massErode;
 			Xdata.ErosionMass = massErode;
 			nErode = -1;
-			if (alpine3d) {
-				cumu_hnw = 0.;
-			}
+			forced_massErode = 0.;
 		}
 		/* ... or check whether you can do a virtual erosion for drift index generation
 		 * in case of no (or small) real erosion for all cases except Alpine3D or virtual slopes

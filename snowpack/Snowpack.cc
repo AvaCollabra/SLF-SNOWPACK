@@ -1619,7 +1619,11 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
 		// routine and later used to compute the Meteo Heat Fluxes
-		snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_hnw);
+		if(!alpine3d) { //HACK: we need to set to 0 the external drift
+			double tmp=0.;
+			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, tmp);
+		} else
+			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_hnw);
 
 		// Reinitialize and compute the initial meteo heat fluxes
 		memset((&Bdata), 0, sizeof(BoundCond));
