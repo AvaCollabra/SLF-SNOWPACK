@@ -701,7 +701,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 
 	// Variables used a lot
 	if ( Xdata.getNumberOfElements() > 0 ) {
-		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// ground surface temperature
+		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 		ag = Xdata.cAlbedo;
 	} else {
 		TG = Mdata.ta;
@@ -1257,7 +1257,7 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 			vw_zdisplcan = ustar_below / karman * (log(zdisplcan / zomg) -
 					cn_psim(aeta_g) + cn_psim(aeta_g * zomg / (zdisplcan)));
 			// 2. estimate aeta above surface
-			if ( Xdata.getNumberOfElements() > 0){
+			if (Xdata.getNumberOfElements() > 0){
 				aeta_g = cn_RichardsonToAeta(zdisplcan, Cdata->temp, Cdata->temp -
 					Xdata.Ndata[Xdata.getNumberOfElements()].T, vw_zdisplcan, zomg, zohg, 5);
 			} else {
@@ -1284,7 +1284,7 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	  * and skip soil moisture function
 	  */
 	if ( useSoilLayers ) {
-		Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac)*cn_f2f4(Xdata.SoilNode,&Xdata.Edata[0]) *
+		Cdata->rstransp = Canopy::rsmin * cn_f1(Cdata->iswrac)*cn_f2f4(Xdata.SoilNode, &Xdata.Edata[0]) *
 				cn_f3((1. - Mdata.rh) * Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 	} else {
 		if ( Xdata.getNumberOfElements() > 0 ) {
@@ -1337,15 +1337,15 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
  */
 void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac, double *iswrac, double *rswrac, double *iswrbc, double *rswrbc, double *ilwrac, double *rlwrac, double *ilwrbc, double *rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect)
 {
-	double TC, TG, ag, sigf, ec, eg, RAG, RAV, CanopyClosureDiffuse, rswrac_loc;
+	double TC, Tsfc, ag, sigf, ec, eg, RAG, RAV, CanopyClosureDiffuse, rswrac_loc;
 	double rswrbc_loc, rswrac_loc2, iswrbc_loc2, rswrbc_loc2, iswrbc_loc;
 
 	// Variables used a lot
-	if ( Xdata.getNumberOfElements() > 0 ) {
-		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// ground surface temperature
+	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
+		Tsfc = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// Snow surface temperature
 		ag=Xdata.cAlbedo;
 	} else {
-		TG = Mdata.ta;
+		Tsfc = Mdata.ta;	// Surface temperature
 		ag = Xdata.SoilAlb;
 	}
 
@@ -1365,10 +1365,10 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	rswrbc_loc2 = iswrbc_loc2 * ag;
 
 	// Longwave radiation fluxes above and below canopy:
-	RAG = (1. - sigf) * eg * ( *ilwrac - Constants::stefan_boltzmann * TG * TG * TG * TG) - eg * ec * sigf * Constants::stefan_boltzmann * (TG*TG*TG*TG - TC*TC*TC*TC) / (1. - sigf * (1. - ec) * (1. - eg));
-	RAV = sigf * (ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC) + (Constants::stefan_boltzmann * ec * eg * (TG*TG*TG*TG - TC*TC*TC*TC) + (1.0 - sigf) * (1.0 - eg) * ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC)) / (1.0 - sigf * (1.0 - ec)* ( 1.0 - eg)));
-	*ilwrbc = RAG / eg + Constants::stefan_boltzmann * TG*TG*TG*TG;
-	*rlwrbc = - (1 - eg)* (*ilwrbc) + eg * Constants::stefan_boltzmann * TG*TG*TG*TG;
+	RAG = (1. - sigf) * eg * ( *ilwrac - Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc) - eg * ec * sigf * Constants::stefan_boltzmann * (Tsfc*Tsfc*Tsfc*Tsfc - TC*TC*TC*TC) / (1. - sigf * (1. - ec) * (1. - eg));
+	RAV = sigf * (ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC) + (Constants::stefan_boltzmann * ec * eg * (Tsfc*Tsfc*Tsfc*Tsfc - TC*TC*TC*TC) + (1.0 - sigf) * (1.0 - eg) * ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC)) / (1.0 - sigf * (1.0 - ec)* ( 1.0 - eg)));
+	*ilwrbc = RAG / eg + Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc;
+	*rlwrbc = - (1 - eg)* (*ilwrbc) + eg * Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc;
 	*rlwrac = *ilwrac - RAG - RAV;
 
 	// Scaling of results with CanopyClosureDiffuse and CanopyClosureDirect
@@ -1385,9 +1385,9 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
 
 	// Longwave fluxes (treat as diffuse)
-	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * TG * TG * TG * TG * (1.0-CanopyClosureDiffuse);
+	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc*Tsfc*Tsfc*Tsfc * (1.0-CanopyClosureDiffuse);
 	*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
-	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * TG * TG * TG * TG * (1.0-CanopyClosureDiffuse);
+	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc*Tsfc*Tsfc*Tsfc * (1.0-CanopyClosureDiffuse);
 }
 
 /**
@@ -1666,10 +1666,10 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	Xdata->Cdata.wetfraction = wetfrac;
 	Xdata->Cdata.intcapacity += intcapacity;
 	Xdata->Cdata.canopyalb += canopyalb;
-	if ( Xdata->getNumberOfElements() > 0 ) {
+	if (Xdata->getNumberOfElements() > Xdata->SoilNode) { // In case of snow on the ground
 		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->cAlbedo,
 					Xdata->Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
-	} else {
+	} else { // No snow on the ground
 		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->SoilAlb,
 					Xdata->Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
 	}

@@ -45,6 +45,9 @@ const double Snowpack::new_snow_albedo = 0.9;
 /// @brief Min volumetric ice content allowed
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
 
+//to use an even stronger wind slab densification
+const bool Snowpack::enhanced_wind_slab = false;
+
 /************************************************************
  * non-static section                                       *
  ************************************************************/
@@ -387,7 +390,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			if ((EMS[e].theta[WATER] < 0.01)
 			      && (Mdata.vw > Metamorphism::wind_slab_vw)
 			        && ((dz < Metamorphism::wind_slab_depth) || (e == nE-1))) {
-				if (variant == "ANTARCTICA") {
+				if (Snowpack::enhanced_wind_slab) { //NOTE tested with Antarctic variant: effects primarily low density snow
 					// fits original parameterization at Metamorphism::wind_slab_vw + 0.6 m/s
 					wind_slab += 2.7 * Metamorphism::wind_slab_enhance
 					                 * dv*dv*dv * (1. - dz / (1.25 * Metamorphism::wind_slab_depth));
@@ -1600,7 +1603,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
-		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 		t_surf = MIN(melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
 			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
@@ -1632,8 +1635,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			const double melting_tk2 = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk2); /*C_TO_K(thresh_change_bc/2.);*/
+			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compSnowTemperatures(Xdata, Mdata, Bdata);
 		}
 
