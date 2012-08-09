@@ -132,13 +132,8 @@ class Snowpack {
 		std::string hn_density, hn_density_model, viscosity_model, variant;
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
-		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
-		bool soil_flux, useSoilLayers;
-		bool multistream, join_elements, change_bc, meas_tss;
-		bool vw_dendricity;
-		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
-		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 		int sw_mode;
+		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dt_air_snow;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
@@ -147,12 +142,16 @@ class Snowpack {
 		double minimum_l_element;
 		double fixed_albedo;
 		double t_surf;
+		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
+		bool soil_flux, useSoilLayers;
+		bool multistream, join_elements, change_bc, meas_tss;
+		bool vw_dendricity;
+		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
+		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
-
-		double meteo_step_length;
 }; //end class Snowpack
 
 #endif

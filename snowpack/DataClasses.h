@@ -84,7 +84,7 @@ class CurrentMeteo {
 		void getFixedPositions(std::vector<double>& positions) const;
 		void copySnowTemperatures(const mio::MeteoData& md, const int current_slope);
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
-		
+
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
 
 		int n;           ///< record number of basic meteo input data
@@ -427,6 +427,7 @@ class SnowStation {
 
 		mio::StationData meta;      ///< Station meta data
 
+		CanopyData Cdata;           ///< Pointer to canopy data
 		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
 		double cAlbedo;             ///< Computed snow albedo
 		double mAlbedo;             ///< Measured snow albedo
@@ -438,7 +439,6 @@ class SnowStation {
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
-		bool windward;              ///< True for windward (luv) slope
 		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
 		double ErosionMass;         ///< Eroded mass either real or virtually (storage if less than one element)
 		int S_class1;               ///< Stability class based on hand hardness, grain class ...
@@ -456,13 +456,10 @@ class SnowStation {
 		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
+		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double dIntEnergy;          ///< Internal energy change (J m-2)
 		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change (J m-2)
-		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
-		CanopyData Cdata;           ///< Pointer to canopy data
-		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all
 
 		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
 		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
@@ -471,9 +468,14 @@ class SnowStation {
 		static size_t number_of_solutes;  ///< The model treats that number of solutes
 
 	private:
-		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
+		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
+
+	public: //for alignement reasons, we keep chars and bools at the end
+		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
+		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
+		bool windward;              ///< True for windward (luv) slope
 };
 
 /**

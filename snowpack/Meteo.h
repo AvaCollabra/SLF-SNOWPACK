@@ -52,9 +52,9 @@ class Meteo {
 		static double getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param,
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 
+		double roughness_length, height_of_wind_value;
 		int neutral;
 		bool research_mode, useCanopyModel, alpine3d;
-		double roughness_length, height_of_wind_value;
 };
 
 #endif //END of Meteo.h

@@ -748,13 +748,12 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 }
 
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
-	meta(), cAlbedo(0.), mAlbedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
-	mH(0.), Ground(0.), hn(0.), rho_hn(0.), windward(false), ErosionLevel(0), ErosionMass(0.),
+	meta(), Cdata(), cAlbedo(0.), mAlbedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
+	mH(0.), Ground(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
-	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), ColdContent(0.), dIntEnergy(0.),
-	SubSurfaceMelt('x'), SubSurfaceFrze('x'), Cdata(), tag_low(0),
-	useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
-	nNodes(0), nElems(0)
+	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.),
+	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
+	SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false)
 {}
 
 SnowStation::~SnowStation()

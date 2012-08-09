@@ -68,13 +68,13 @@ class Hazard {
 		                const SnowStation& Xdata);
 
 		const mio::Config& cfg;
-		bool research_mode, enforce_measured_snow_heights, force_rh_water;
 		double sn_dt;
 		double i_time_zone;
 		int hazard_steps_between;
 		int nHz;
 		double hoar_density_surf, hoar_min_size_surf;
 		static const double minimum_drift, maximum_drift;
+		bool research_mode, enforce_measured_snow_heights, force_rh_water;
 };
 
 #endif

@@ -55,12 +55,12 @@ class WaterTransport {
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		std::string variant;
-		bool useSoilLayers, water_layer, jam;
 		double thresh_rain;
 		double sn_dt;
 		double hoar_thresh_rh;
 		double hoar_thresh_vw;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
+		bool useSoilLayers, water_layer, jam;
 };
 #endif //End of WaterTransport.h

@@ -137,10 +137,11 @@ class Stability {
 		static std::map<std::string, StabMemFn> mapHandHardness;
 		static std::map<std::string, StabFnShearStrength> mapShearStrength;
 
-		bool plastic;
-		bool classify_profiles;
 		double hoar_density_buried;
 		std::string strength_model, hardness_model;
+
+		bool plastic;
+		bool classify_profiles;
 };
 
 

@@ -85,15 +85,7 @@ class AsciiIO : public SnowpackIOInterface {
 
 		static const bool r_in_n, t_srf, t_gnd;
 
-		double time_zone; ///< input data time zone
-
-		double calculation_step_length, hazard_steps_between, ts_days_between;
-		int sw_mode;
-		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
-		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
-		double min_depth_subsurf;
-		double hoar_density_surf, hoar_min_size_surf;
-
+		std::set<std::string> setAppendableFiles;
 		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 
@@ -102,9 +94,12 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t numberMeasTemperatures, maxNumberMeasTemperatures;
 		size_t numberTags, numberFixedSensors, totNumberSensors;
 
-		std::set<std::string> setAppendableFiles;
-
-		//std::ofstream fout;//Output file streams
+		double time_zone; ///< input data time zone
+		double calculation_step_length, hazard_steps_between, ts_days_between;
+		double min_depth_subsurf, hoar_density_surf, hoar_min_size_surf;
+		int sw_mode;
+		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
+		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
 };
 
 #endif //End of AsciiIO.h

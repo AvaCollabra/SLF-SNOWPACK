@@ -57,26 +57,25 @@ using namespace mio;
  */
 class Slope {
 
- public:
-	 Slope(const mio::Config& i_cfg);
+	public:
+		Slope(const mio::Config& i_cfg);
 
-	 bool snow_redistribution;
-	 bool virtual_slopes;
-	 size_t nSlopes;
-	 size_t station;      ///< main station, flat field or slope
-	 size_t sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
-	 size_t first;        ///< first sector in computing sequence
-	 size_t south;
-	 size_t luv;
-	 size_t lee;
-	 double prevailing_wind_dir;
+		double prevailing_wind_dir;
+		size_t nSlopes;
+		size_t station;      ///< main station, flat field or slope
+		size_t sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		size_t first;        ///< first sector in computing sequence
+		size_t south;
+		size_t luv;
+		size_t lee;
+		bool snow_redistribution, virtual_slopes;
 
-	 int getSectorDir(const double& dir_or_expo) const;
-	 void setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
+		int getSectorDir(const double& dir_or_expo) const;
+		void setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
- private:
-	 const mio::Config& cfg;
-	 double sector_width;
+	private:
+		const mio::Config& cfg;
+		double sector_width;
 };
 
 /************************************************************
@@ -110,14 +109,12 @@ struct MainControl
  * non-static section                                       *
  ************************************************************/
 
-Slope::Slope(const mio::Config& i_cfg) : cfg(i_cfg)
+Slope::Slope(const mio::Config& i_cfg) : station(0), first(1), cfg(i_cfg)
 {
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
 	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
 	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
 
-	station = 0;
-	first = 1;
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::Config::nothrow);
 	sector_width = 360./MAX(1, nSlopes-1);
 	south = getSectorDir(180.);
