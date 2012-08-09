@@ -1269,7 +1269,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		// 34-39: total mass, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 51-52 & 93
 		fprintf(TFile,",%f,%f,%f,%f,%f,%f", Sdata.mass[SurfaceFluxes::MS_TOTALMASS]/cos_sl,
 		        Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl, Sdata.mass[SurfaceFluxes::MS_RAIN],
-		          Sdata.mass[SurfaceFluxes::MS_RUNOFF]/cos_sl, Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]/cos_sl,
+		          Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF]/cos_sl, Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]/cos_sl,
 		            Sdata.mass[SurfaceFluxes::MS_EVAPORATION]/cos_sl);
 	} else {
 		fprintf(TFile,",,,,,,");

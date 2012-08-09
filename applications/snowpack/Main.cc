@@ -1012,8 +1012,8 @@ int main (int argc, char *argv[])
 					if (mode == "OPERATIONAL") {
 						if (!cumsum_mass) {
 							// Cumulate flat field runoff in operational mode
-							qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_RUNOFF];
-							cumsum_runoff += surfFluxes.mass[SurfaceFluxes::MS_RUNOFF];
+							qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
+							cumsum_runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
 						}
 						/*
 						 * Snow depth and mass corrections (deflate-inflate):
@@ -1123,8 +1123,8 @@ int main (int argc, char *argv[])
 						surfFluxes.mass[SurfaceFluxes::MS_RAIN] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 						surfFluxes.mass[SurfaceFluxes::MS_HNW] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 						if ((mode == "OPERATIONAL") && (!cumsum_mass)) {
-							surfFluxes.mass[SurfaceFluxes::MS_RUNOFF] = cumsum_runoff;
-							surfFluxes.mass[SurfaceFluxes::MS_RUNOFF] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
+							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] = cumsum_runoff;
+							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 							cumsum_runoff = 0.;
 						}
 					}

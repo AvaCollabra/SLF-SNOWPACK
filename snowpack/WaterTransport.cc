@@ -339,7 +339,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
 				}
 				// route liquid water and solute load to runoff
-				Sdata.mass[SurfaceFluxes::MS_RUNOFF] += EMS[eUpper].M;
+				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
 				if (Xdata.SoilNode == 0) { // In case of no soil
 					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[eUpper].M;
 					for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
@@ -515,7 +515,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e].M += dThetaW * L * Constants::density_water;
 				// Update snowpack runoff with rain infiltrating into soil (equal to Store when e == Xdata.SoilNode)
 				if (useSoilLayers && e == Xdata.SoilNode) {
-					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Store * Constants::density_water;
+					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += Store * Constants::density_water;
 				}
 			}
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
@@ -597,7 +597,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 							excess_water = 0.;
 						}
 						if (EMS[eLower].theta[SOIL] < Constants::eps2) {
-							Sdata.mass[SurfaceFluxes::MS_RUNOFF] += excess_water*Constants::density_water;
+							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += excess_water*Constants::density_water;
 						}
 						Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += excess_water*Constants::density_water;
 						// Take care of Solutes
@@ -644,7 +644,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				}
 				// Update surface runoff with soil
 				if (useSoilLayers && eUpper == Xdata.SoilNode) {
-					Sdata.mass[SurfaceFluxes::MS_RUNOFF] += L_lower * Constants::density_water * dThetaW_lower + excess_water * Constants::density_water;
+					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += L_lower * Constants::density_water * dThetaW_lower + excess_water * Constants::density_water;
 				}
 			} // end positive water movement
 		}  // end if( W_upper > Wres )
@@ -683,7 +683,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		                 + (EMS[0].theta[WATER] * Constants::density_water)
 		                     + (EMS[0].theta[SOIL] * EMS[0].soil[SOIL_RHO]);
 		if (EMS[0].theta[SOIL] < Constants::eps2) {
-			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += dM;
+			Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM;
 		}
 		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += dM;
 		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
@@ -738,7 +738,6 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
 		if (Mdata.ta >= C_TO_K(thresh_rain)) {
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
-			Sdata.mass[SurfaceFluxes::MS_RUNOFF] += Mdata.hnw;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += Mdata.hnw;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += Mdata.conc[ii] * Mdata.hnw /*/ S_TO_H(sn_dt)*/;
