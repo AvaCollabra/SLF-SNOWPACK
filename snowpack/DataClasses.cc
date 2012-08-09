@@ -853,17 +853,17 @@ bool SnowStation::hasSoilLayers() const
  * The elements being very similar and thus the microstructure parameters being approximately equal
  * as defined in joinCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
- * @param number_top_elements The number of surface elements to be left untouched
+ * @param i_number_top_elements The number of surface elements to be left untouched
  */
-void SnowStation::joinElements(const unsigned int& number_top_elements)
+void SnowStation::joinElements(const unsigned int& i_number_top_elements)
 {
 	size_t eLower, eUpper;  // Lower (eLower) and upper (eUpper) element index
 	size_t nJoin=0; // Number of elements to be removed
 
-	if (nElems - SoilNode < number_top_elements+1) {
+	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
 	}
-	for (eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-number_top_elements; eLower++, eUpper++) {
+	for (eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
 		if (joinCondition(Edata[eLower], Edata[eUpper])) {
 			mergeElements(Edata[eLower], Edata[eUpper], true);
 			nJoin++;
@@ -1388,7 +1388,7 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 	}
 	if (fixedPositions.size() == 0)
 		fixedPositions.clear();
-	
+
 	size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
 	ts.resize(number_ts, mio::IOUtils::nodata);
 	zv_ts.resize(number_ts, mio::IOUtils::nodata);

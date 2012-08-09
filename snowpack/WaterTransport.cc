@@ -457,9 +457,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				nE++;
 				nN++;
 				Xdata.ErosionLevel = nE-1;
-
 				Xdata.resize(nE);
-				vector<ElementData>& EMS = Xdata.Edata;
 
 				// Temperature of the uppermost node
 				NDS[nN-1].T = Mdata.ta;

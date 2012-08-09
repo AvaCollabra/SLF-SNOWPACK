@@ -908,10 +908,10 @@ int main (int argc, char *argv[])
 			meteoRead_timer.start();
 			io.getMeteoData(current_date, vecMyMeteo);
 			if(meteo_step_length<0.) {
-				std::stringstream ss;
+				std::stringstream ss2;
 				meteo_step_length = io.getAvgSamplingRate();
-				ss << meteo_step_length;
-				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss.str());
+				ss2 << meteo_step_length;
+				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss2.str());
 			}
 			meteoRead_timer.stop();
 			const double thresh_rh = cfg.get("THRESH_RH", "SnowpackAdvanced");

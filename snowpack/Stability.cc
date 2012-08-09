@@ -570,17 +570,17 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
  * @param STpar
  * @param *Xdata
  * @param SIdata
- * @param psi_ref Reference slope angle (deg)
+ * @param i_psi_ref Reference slope angle (deg)
  */
-void Stability::initStability(const double& psi_ref, StabilityData& STpar,
+void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
                               SnowStation& Xdata, std::vector<InstabilityData>& SIdata)
 {
 	size_t nN = Xdata.getNumberOfNodes();
 
 	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
-	STpar.cos_psi_ref = cos(DEG_TO_RAD(psi_ref));
-	STpar.sin_psi_ref = sin(DEG_TO_RAD(psi_ref));
+	STpar.cos_psi_ref = cos(DEG_TO_RAD(i_psi_ref));
+	STpar.sin_psi_ref = sin(DEG_TO_RAD(i_psi_ref));
 	STpar.sig_n = Constants::undefined;
 	STpar.sig_s = Constants::undefined;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
@@ -1131,10 +1131,10 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 		hard.resize(nE_s, 0.0);
 		red_hard.resize(nE_s, 0.0);
 		deltaN.resize(nE_s, 0.0);
-	} catch(const exception& e){
+	} catch(const exception& ex){
 		prn_msg(__FILE__, __LINE__, "err", date,
 			   "Cannot allocate space for temporary objects in Stability::recognizeProfileType");
-		throw IOException(e.what(), AT); //this will catch all allocation exceptions
+		throw IOException(ex.what(), AT); //this will catch all allocation exceptions
 	}
 
 	// Absolute and reduced hardness profiles (N)

@@ -41,7 +41,7 @@ SmetIO::SmetIO(const mio::Config& cfg) : useSoilLayers(false), perp_to_slope(fal
 	}
 
 	cfg.getValue("METEOPATH", "Input", inpath, Config::nothrow);
-	string snowpath("");
+	snowpath = string("");
 	cfg.getValue("SNOWPATH", "Input", snowpath, Config::nothrow);
 	if (snowpath != "") {
 		i_snopath = snowpath;

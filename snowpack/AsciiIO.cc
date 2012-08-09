@@ -98,7 +98,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyM
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
-	
+
 }
 /*
 AsciiIO::~AsciiIO() throw()
@@ -402,7 +402,6 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-	size_t ii, e;
 	FILE *fout=NULL;
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snoold";
 
@@ -425,7 +424,6 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 
 	int yyyy,mm,dd,hh,mi;
 	date.getDate(yyyy,mm,dd,hh,mi);
-
 	fprintf(fout, "\nProfileDate= %04d %02d %02d %02d %02d", yyyy, mm, dd, hh, mi);
 
 	// Last checked Snow Depth used for data Control of next run
@@ -459,20 +457,20 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	fprintf(fout, "\nYYYY MM DD HH MI Layer_Thick           T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V");
 	fprintf(fout, "  Vol_Frac_S    Rho_S Conduc_S HeatCapac_S         rg        rb        dd        sp");
 	fprintf(fout, "    mk    mass_hoar  ne           CDot         metamo");
-	for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
+	for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 		fprintf(fout, "             cIce            cWater              cAir             cSoil");
 	}
-	for (e = 0; e < Xdata.getNumberOfElements(); e++) {
-		int YYYY, MM, DD, hh, mm;
-		EMS[e].depositionDate.getDate(YYYY, MM, DD, hh, mm);
-		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, hh, mm);
+	for (size_t e = 0; e < Xdata.getNumberOfElements(); e++) {
+		int YYYY, MM, DD, HH, Min;
+		EMS[e].depositionDate.getDate(YYYY, MM, DD, HH, Min);
+		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, HH, Min);
 		fprintf(fout, " %11.6f %11.6f %11.6f %11.6f %11.6f",  EMS[e].L,
 			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
 		fprintf(fout," %11.6f %8.1f %8.1f %11.1f %10.6f %9.6f %9.6f %9.6f %6u %12.6f    1",
 			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
 			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
 		fprintf(fout," %14.6f %14.6f", EMS[e].CDot, EMS[e].metamo);
-		for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
+		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			fprintf(fout, " %16.6f %17.7f %17.7f %17.7f", EMS[e].conc(ICE,ii), EMS[e].conc(WATER,ii),
 			        EMS[e].conc(AIR,ii), EMS[e].conc(SOIL,ii));
 		}
@@ -480,22 +478,22 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 
 	// Print out the hoar hazard data info, contained in Zdata (needed for flat field only)
 	fprintf(fout,"\nSurfaceHoarIndex\n");
-	for (ii = 0; ii < 48; ii++) {
+	for (size_t ii = 0; ii < 48; ii++) {
 		fprintf(fout," %f ", Zdata.hoar24[ii]);
 	}
 	// Print out the drift hazard data info
 	fprintf(fout,"\nDriftIndex\n");
-	for (ii = 0; ii < 48; ii++) {
+	for (size_t ii = 0; ii < 48; ii++) {
 		fprintf(fout," %f ", Zdata.drift24[ii]);
 	}
 	// Print out the 3 hour new snowfall hazard data info
 	fprintf(fout,"\nThreeHourNewSnow\n");
-	for (ii = 0; ii < 144; ii++) {
+	for (size_t ii = 0; ii < 144; ii++) {
 		fprintf(fout," %f ", Zdata.hn3[ii]);
 	}
 	// Print out the 24 hour new snowfall hazard data info
 	fprintf(fout,"\nTwentyFourHourNewSnow\n");
-	for (ii = 0; ii < 144; ii++) {
+	for (size_t ii = 0; ii < 144; ii++) {
 		fprintf(fout," %f ", Zdata.hn24[ii]);
 	}
 	fprintf(fout, "\nEnd");

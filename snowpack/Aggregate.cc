@@ -174,6 +174,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 		// First Run - aggregate similar layers
 		// keep track of the coordinates and length of elements
 		double L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+
 		for (size_t l_upper=nL_ini-2; l_upper > 0; l_upper--) {
 			const double L0_upper = L0_lower;
 			const size_t l_lower = l_upper-1;
@@ -199,7 +200,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 		// Second Run - aggregate remaining very thin layers
 		if (nL_ini > 2) {
 			bool flag = false;
-			double L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+			L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height); //reset L0_lower
 			for(size_t l_upper = nL_ini-2; l_upper > 0; l_upper--) {
 				const size_t l_lower = l_upper-1;
 				const double L0_upper = L0_lower;
