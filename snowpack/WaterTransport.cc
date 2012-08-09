@@ -400,7 +400,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			EMS[e].theta[WATER] *= multif;
 			EMS[e].theta[ICE]   *= multif;
 		} else {
-			dL  = -L / 3.; //TODO check whether this approach is correct
+			dL  = -L / 3.; //TODO check whether this approach is correct even though it is a "very old SNOWPACK approach"
 			EMS[e].theta[WATER] *= 1.5;
 			EMS[e].theta[ICE]   *= 1.5;
 		}

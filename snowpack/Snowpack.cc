@@ -45,9 +45,6 @@ const double Snowpack::new_snow_albedo = 0.9;
 /// @brief Min volumetric ice content allowed
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
 
-//to use an even stronger wind slab densification
-const bool Snowpack::enhanced_wind_slab = false;
-
 /************************************************************
  * non-static section                                       *
  ************************************************************/
@@ -55,7 +52,8 @@ const bool Snowpack::enhanced_wind_slab = false;
 Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
                    research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false),
                    soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
-                   change_bc(false), meas_tss(false), vw_dendricity(false), alpine3d(false)
+                   change_bc(false), meas_tss(false), vw_dendricity(false),
+                   enhanced_wind_slab(false), alpine3d(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -176,6 +174,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
 		vw_dendricity = false;
 		rh_lowlim = 0.7;
 		bond_factor_rh = 3.0;
+		enhanced_wind_slab = true;
 	} else {
 		new_snow_dd = 1.0;
 		new_snow_sp = 0.5;
@@ -184,6 +183,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
 		vw_dendricity = true;
 		rh_lowlim = 1.0;
 		bond_factor_rh = 1.0;
+		enhanced_wind_slab = false;
 	}
 
 	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
@@ -390,7 +390,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			if ((EMS[e].theta[WATER] < 0.01)
 			      && (Mdata.vw > Metamorphism::wind_slab_vw)
 			        && ((dz < Metamorphism::wind_slab_depth) || (e == nE-1))) {
-				if (Snowpack::enhanced_wind_slab) { //NOTE tested with Antarctic variant: effects primarily low density snow
+				if (Snowpack::enhanced_wind_slab) { //NOTE tested with Antarctic variant: effects heavily low density snow
 					// fits original parameterization at Metamorphism::wind_slab_vw + 0.6 m/s
 					wind_slab += 2.7 * Metamorphism::wind_slab_enhance
 					                 * dv*dv*dv * (1. - dz / (1.25 * Metamorphism::wind_slab_depth));

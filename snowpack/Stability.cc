@@ -560,7 +560,7 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 	// First find the absolute neck stress
 	const double sigNeck = Edata.neckStressEnhancement() * (sig); // Neck stress (Pa)
 	// Now find the strain rate in the neck
-	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1); // Total strain rate in the neck (s-1)
+	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1); // Total strain rate in the neck (s-1) NOTE is it used here only?
 	// Return the stability index
 	return (MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 }
@@ -667,7 +667,6 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 {
 	bool prn_wrn = false; //turn to true to print warnings
 
-	// Snow density relative to ice
 	const double rho_ri = Edata.Rho/Constants::density_ice; // Snow density relative to ice
 	int F1, F2, F3; // Grain shape
 	typeToCode(&F1, &F2, &F3, Edata.type); // Determine majority grain shape

@@ -339,9 +339,9 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
  * - NOTE: AVGSUM_TIME_SERIES should not be set
  * @author Charles Fierz
  * @version 10.03
- * @param *Xdata
- * @param *Sdata
- * @param *tot_mass_in Total mass after last time step (kg m-2)
+ * @param Xdata
+ * @param Sdata
+ * @param tot_mass_in Total mass after last time step (kg m-2)
  * @return bool if mass error occured, putting balance terms on screen
  */
 bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in)

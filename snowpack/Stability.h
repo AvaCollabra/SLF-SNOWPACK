@@ -75,7 +75,6 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
  * @version -
  * @date    -
  * @bug     -
- * @author Michael Lehning and Charles Fierz and Sascha Bellaire
  * @brief This class contains the stability routines for the snowpack model.
  * TODO: update description 2009-10-20 \n
  * Stability is found for each LAYER (i.e. finite element) and INTERFACE (i.e. node).
