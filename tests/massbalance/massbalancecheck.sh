@@ -143,11 +143,11 @@ awk '{n++; if(n>1) \
 	#Determine mass output in system (taking the terms only when they are negative)
 	mass_out=(($7<0.0)?$7:0)+(($8<0.0)?$8:0)+(($9<0.0)?$9:0)+(($10<0.0)?$10:0)+(($11<0.0)?$11:0)+(($12<0.0)?$12:0); \
 	#Do the statistics (mass balance error sum, min and max values)
-	massbalancesum+=massbalance; if(massbalance>maxmassbalance){maxmassbalance=massbalance; maxmassbalancedate=$1; maxmassbalancetime=$2}; if(massbalance<minmassbalance){minmassbalance=massbalance; minmassbalancedate=$1; minmassbalancetime=$2}; \
+	massbalancesum+=massbalance; massbalancesum2+=sqrt(massbalance*massbalance); if(massbalance>maxmassbalance){maxmassbalance=massbalance; maxmassbalancedate=$1; maxmassbalancetime=$2}; if(massbalance<minmassbalance){minmassbalance=massbalance; minmassbalancedate=$1; minmassbalancetime=$2}; \
 	#Write to stdout
 	print $0, deltaSWE, massbalance, mass_in, mass_out}; \
 #Store the line written out, so for the next line, we have the SWE of the previous line available (needed to determine deltaSWE):
 prevLine=$0; prevSWE=$5;} \
 #Write out statistics to stderr:
-END {printf "Sum of mass balance error: %.6f\nMaximum positive mass balance error: %.6f at %08d, %04d\nMinimum negative mass balance error: %.6f at %08d, %04d\n", massbalancesum, maxmassbalance, maxmassbalancedate, maxmassbalancetime, minmassbalance, minmassbalancedate, minmassbalancetime > "/dev/stderr"}'
+END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of mass balance error (kg_m-2): %.6f\nSum of absolute mass balance error (kg_m-2): %.6f\nMaximum positive mass balance error (kg_m-2): %.6f at %08d, %04d\nMinimum negative mass balance error (kg_m-2): %.6f at %08d, %04d\n", massbalancesum, massbalancesum2, maxmassbalance, maxmassbalancedate, maxmassbalancetime, minmassbalance, minmassbalancedate, minmassbalancetime > "/dev/stderr"}'
 
