@@ -514,8 +514,12 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e].theta[AIR] -= dThetaW;
 				EMS[e].M += dThetaW * L * Constants::density_water;
 				// Update snowpack runoff with rain infiltrating into soil (equal to Store when e == Xdata.SoilNode)
-				if (useSoilLayers && e == Xdata.SoilNode) {
+				if (e == Xdata.SoilNode) {
 					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += Store * Constants::density_water;
+				}
+				// Update soil runoff with rain (equal to Store when e == 0)
+				if (e == 0) {
+					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += Store * Constants::density_water;
 				}
 			}
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
@@ -642,7 +646,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						throw IOException("Cannot transfer water within the snowpack in transportWater()", AT);
 					}
 				}
-				// Update surface runoff with soil
+				// Update snowpack runoff with soil. Note: in case of no soil layers, or lowest soil element: the runoff for the lowest element is updated outside the loop.
 				if (useSoilLayers && eUpper == Xdata.SoilNode) {
 					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += L_lower * Constants::density_water * dThetaW_lower + excess_water * Constants::density_water;
 				}
