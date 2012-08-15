@@ -150,7 +150,7 @@ INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT librari
 
 ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
-	COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/*.cmake
+	COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/cmake_install.cmake tests/CTestTestfile.cmake
 	COMMAND cmake -E remove_directory CMakeFiles
 	COMMAND cmake -E remove_directory snowpack/CMakeFiles
 	COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles

@@ -30,9 +30,12 @@ IF(WIN32)
 			)
 	ENDIF(MSVC)
 ELSE(WIN32)
+	IF(POPC)
+		SET(POPC_EXT "popc")
+	ENDIF(POPC)
 	IF(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio
+		NAMES meteoio${POPC_EXT}
 		PATHS
 			"/Applications/MeteoIO/lib"
 			ENV LD_LIBRARY_PATH
@@ -46,7 +49,7 @@ ELSE(WIN32)
 		)
 	ELSE(APPLE)
 		FIND_LIBRARY(METEOIO_LIBRARY
-		NAMES meteoio
+		NAMES meteoio${POPC_EXT}
 		PATHS
 			ENV LD_LIBRARY_PATH
 			"~/usr/lib"
