@@ -3,25 +3,47 @@
 # Note: for the first time step, no mass balance check can be done, because SWE of previous time step is unknown. Therefore, it is zero by definition.
 # Example for quickly plotting in gnuplot the mass balance, provided the output file is called output.txt:
 # pl "<(cat ./output.txt | awk '{sum+=$15; print sum}')" u 1 w l title 'mass in', "<(cat ./output.txt | awk '{sum+=$16; print -1.0*sum}')" w l title 'mass out', "<(cat ./output.txt | awk '{sum=$5; print 1.0*sum}')" w l title 'storage (SWE)'
-if [ $# -lt 1 ] || [ $# -gt 1 ]; then
+if [ $# -lt 1 ]; then
         echo "This script reads a met-file (provided as first argument) and writes the mass balance on the stdout and statistics to stderr." > /dev/stderr
-	echo "Invoke with: ./massbalancecheck.sh <met file>" > /dev/stderr
+	echo "Invoke with: ./massbalancecheck.sh <met file> [firstdate=YYYYMMDD] [lastdate=YYYYMMDD]" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Note: 1) the mass balance represents only the snow cover mass balance!" > /dev/stderr
 	echo "      2) the mass balance can only be properly checked when the output resolution of the met file is the" > /dev/stderr
 	echo "         same as the snowpack calculation step length." > /dev/stderr
 	echo "      3) the first time stamp in the met file is not shown in the mass balance, as one cannot determine" > /dev/stderr
 	echo "         this for the first time step (delta SWE cannot be determined)." > /dev/stderr
+	echo "      4) using options firstdate and lastdate, one can define a period over which the mass balance should be" > /dev/stderr
+	echo "         determined. Default is full period in met-file. No spaces in command line options are allowed!" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Examples:" > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met > output.txt	Writes mass balance in output.txt and shows overall mass balance statistics on screen." > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met > /dev/null	Just shows overall mass balance statistics on screen." > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met | less		View the mass balance in less." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.met > output.txt	  Writes mass balance in output.txt and shows overall" > /dev/stderr
+	echo "							     mass balance statistics on screen." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.met > /dev/null	  Just shows overall mass balance statistics on screen." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.met | less		  View the mass balance in less." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.met firstdate=20071001 lastdate=20080323" > /dev/stderr
+	echo "							  Determines mass balance between 1st of October 2007" > /dev/stderr
+	echo "							     up to and including 23rd of March 2008." > /dev/stderr
         exit
 fi
 
+
+# Initial settings
+firstdate=0
+lastdate=99999999
+
+
 # Get met file name from first argument
 met_file=$1
+
+
+# Read command line parameters
+if [ $# -gt 1 ]; then
+	for i in `seq 2 $#`
+	do
+		eval "let \$$i"
+	done
+fi
+
 
 # Check if file exists
 if [ ! -e "${met_file}" ]; then
@@ -132,6 +154,8 @@ sed '1,/\[DATA\]/d' ${met_file} | \
 awk -F, '{n++; if(n==1){prevSWE=1}; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', $'${colSWE}', $'${colLWC}', ($'${colSWE}'>0.0)?($'${colrainrate}'*(24/'${nsamplesperday}')):0, ($'${colSWE}'>0.0)?($'${colsnowrate}'*(24/'${nsamplesperday}')):0, -1.*$'${colrunoff_surf}', (prevSWE>0.0||$'${colSWE}'>0.0)?($'${colsubl}'):0, (prevSWE>0.0||$'${colSWE}'>0.0)?($'${colevap}'):0, ($'${colwinddrift}'>0)?-1.0*($'${colwinddrift}'):0; prevSWE=$'${colSWE}'}' | \
 #  -- Reformat time
 sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%02d", $3, $2, $1, $4, $5; for(i=6; i<=NF; i++) {printf " %s", $i}; printf "\n"}' | \
+# Now select period
+awk '($1>='${firstdate}' && $1<='${lastdate}') {print $0}' | \
 #  -- Now do all the other calculations
 #     First, determine deltaSWE when it is not the first line read in (if so, we cannot determine the mass balance, as the previous value of SWE is unknown).
 awk '{n++; if(n>1) \
