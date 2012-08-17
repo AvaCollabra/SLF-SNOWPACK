@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #warning: the order IS important (they depend on each other)
 
 log_echo() {
