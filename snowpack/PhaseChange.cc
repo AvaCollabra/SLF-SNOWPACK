@@ -201,7 +201,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 {
 	double T_freeze;		// Melting temperature
 	T_freeze=Edata.freezing_tk;	// Retrieve melting temperature from ElementData
-	
+
 	Edata.checkVolContent();
 	/*
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
@@ -269,8 +269,8 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * @brief Driving routine for subsurface melting and refreezing as well as surface melting.
  * The basic equation in both subsurface processes is: \n
  * d_th(i) = A * dt \n
- * with th(i) volumetric ice content (1), c_p(T) specific heat capacity of ice (J kg-1 K-1), \n
- * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K ), \n
+ * with th(i) volumetric ice content (1), c_p(T) specific heat capacity of ice (J kg-1 K-1),
+ * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K ),
  * and the coefficient: \n
  * A = c_p(T) * th(i) * Q_f \n
  * ql_Rest is the Energy that is transferred from the upper element to the lower one
@@ -278,8 +278,9 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
  * @param Sdata
  * @param Xdata
  * @param date_in is the current date
+ * @param verbose print detailed warnings for various situations? (default=true)
  */
-void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in)
+void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in, const bool& verbose)
 {
 	size_t e, nE;
 	double ql_Rest;
@@ -297,24 +298,24 @@ void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata
 		// In the first step:
 		// 1) check the density
 		// 2) set flags for SubSurfaceMelt and SubSurfaceFrze TODO Rain on cold snow surface should be added here!
-		
+
 		//Reset flags
 		Xdata.SubSurfaceMelt = false;
 		Xdata.SubSurfaceFrze = false;
 
 		for (e = 0; e < nE; e++) {
 			if (EMS[e].theta[SOIL] == 0.0) {
-				if (!(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
+				if (verbose && !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
 					prn_msg(__FILE__, __LINE__, "wrn", date_in, "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
 				}
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
-			if (!EMS[e].checkVolContent()) {
+			if (verbose && !EMS[e].checkVolContent()) {
 				prn_msg(__FILE__, __LINE__, "msg+", date_in,
 				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
-			
+
 			// Set flags
 			if (EMS[e].Te > EMS[e].melting_tk && EMS[e].theta[ICE] > Constants::eps2)
 				Xdata.SubSurfaceMelt = true;

@@ -1645,7 +1645,10 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		}
 
 		// See if any SUBSURFACE phase changes are occuring
-		phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
+		if(!alpine3d)
+			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
+		else
+			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date, false);
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
