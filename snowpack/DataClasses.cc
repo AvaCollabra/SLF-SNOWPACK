@@ -1525,39 +1525,26 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata)
 {
 	os << "<SurfaceFluxes>" << endl;
 	os << std::setprecision(10);
-	os << "lw_in:    " << mdata.lw_in << endl;
-	os << "lw_out:   " << mdata.lw_out << endl;
-	os << "lw_net:   " << mdata.lw_net << endl;
-	os << "qs:       " << mdata.qs << endl;
-	os << "ql:       " << mdata.ql << endl;
-	os << "hoar:     " << mdata.hoar << endl;
-	os << "qr:       " << mdata.qr << endl;
-	os << "qg:       " << mdata.qg << endl;
-	os << "qg0:   " << mdata.qg0 << endl;
-	os << "sw_hor:    " << mdata.sw_hor << endl;
-	os << "sw_in:       " << mdata.sw_in << endl;
-	os << "sw_out:    " << mdata.sw_out << endl;
-	os << "qw:     " << mdata.qw << endl;
-	os << "sw_dir:     " << mdata.sw_dir << endl;
-	os << "sw_diff:     " << mdata.sw_diff << endl;
-	os << "cA:     " << mdata.cA << endl;
-	os << "mA:       " << mdata.mA << endl;
-	os << "dIntEnergy:      " << mdata.dIntEnergy << endl;
-	os << "drift:      " << mdata.drift << endl;
+	os << "Long wave: lw_in=" << mdata.lw_in << " lw_out=" << mdata.lw_out << " lw_net=" << mdata.lw_net << endl;
+	os << "Short wave: sw_in=" << mdata.sw_in << " sw_out=" << mdata.sw_out << " qw=" << mdata.qw << endl;
+	os << "Short wave: sw_hor=" << mdata.sw_hor << " sw_dir=" << mdata.sw_dir << " sw_diff=" << mdata.sw_diff << endl;
+	os << "Albedo: mA=" << mdata.mA << " cA=" << mdata.cA << endl;
+	os << "Energy: qs=" << mdata.qs << " ql=" << mdata.ql << " qw=" << mdata.qw << " qr=" << mdata.qr << " qg=" << mdata.qg << " gq0=" << mdata.qg0 << endl;
+	os << "Energy: dIntEnergy=" << mdata.dIntEnergy << endl;
+	os << "Mass change: hoar=" << mdata.hoar << " drift=" << mdata.drift << " snow depth correction=" << mdata.dhs_corr << endl;
+	os << "Snow: mRho_hn=" << mdata.mRho_hn << " cRho_hn=" << mdata.cRho_hn << endl;
 
 	stringstream ss;
+	os << mdata.mass.size() << " mass fluxes: ";
 	for (unsigned int ii=1; ii<mdata.mass.size(); ii++) {
-		ss << ""; ss << ii;
-		os << "mass[" << ss.str() << "]:    " << mdata.mass[ii] << endl;
+		os << mdata.mass[ii] << " ";
 	}
+	os << endl;
+	os << mdata.load.size() << " solutes fluxes: ";
 	for (unsigned int ii=1; ii<mdata.load.size(); ii++) {
-		ss << ""; ss << ii;
-		os << "load[" << ss.str() << "]: " << mdata.load[ii] << endl;
+		os << mdata.load[ii] << " ";
 	}
-	os << "dhs_corr: " << mdata.dhs_corr << endl;
-	os << "cRho_hn:   " << mdata.cRho_hn << endl;
-	os << "mRho_hn:   " << mdata.mRho_hn << endl;
-
+	os << endl;
 	os << "</SurfaceFluxes>" << endl;
 
 	return os;

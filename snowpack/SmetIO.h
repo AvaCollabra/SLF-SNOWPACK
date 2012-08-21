@@ -34,6 +34,8 @@ class SmetIO : public SnowpackIOInterface {
 	public:
 		SmetIO(const mio::Config& i_cfg);
 
+		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
+
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
@@ -49,7 +51,7 @@ class SmetIO : public SnowpackIOInterface {
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
-		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true);
+		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 		void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const;
 		void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date,
 		                      smet::SMETWriter& smet_writer) const;

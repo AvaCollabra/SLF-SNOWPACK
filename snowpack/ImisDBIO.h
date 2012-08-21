@@ -32,6 +32,8 @@ class ImisDBIO : public SnowpackIOInterface{
 	public:
 		ImisDBIO(const mio::Config& i_cfg);
 
+		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
+
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 

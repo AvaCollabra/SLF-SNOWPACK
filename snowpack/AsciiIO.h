@@ -32,6 +32,8 @@ class AsciiIO : public SnowpackIOInterface {
 	public:
 		AsciiIO(const mio::Config& i_cfg);
 
+		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
+
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
@@ -51,7 +53,7 @@ class AsciiIO : public SnowpackIOInterface {
 		bool parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 		bool parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 
-		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true);
+		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
 		bool checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata, const char *ext, ...);
 

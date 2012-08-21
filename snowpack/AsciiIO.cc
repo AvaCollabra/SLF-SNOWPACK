@@ -115,6 +115,22 @@ void AsciiIO::cleanup() throw()
 */
 
 /**
+ * @brief This routine checks if the specified snow cover data exists
+ * @param i_snowfile file containing the initial state of the snowpack
+ * @param stationID
+ * @return true if the file exists
+ */
+bool AsciiIO::snowCoverExists(const std::string& i_snowfile, const std::string& /*stationID*/) const
+{
+	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+	if (snofilename.rfind(".snoold") == string::npos) {
+		snofilename += ".snoold";
+	}
+
+	return IOUtils::fileExists(snofilename);
+}
+
+/**
  * @brief This routine reads the status of the snow cover at program start
  * @version 10.02
  * @note reads the old-styled sno-file format
@@ -501,7 +517,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	fclose(fout);
 }
 
-std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp)
+std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
 	const string filename_prefix = path + "/" + fnam;

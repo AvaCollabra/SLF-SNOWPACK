@@ -53,6 +53,17 @@ ImisDBIO::ImisDBIO(const mio::Config& cfg)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
 }
 
+/**
+ * @brief This routine checks if the specified snow cover data exists
+ * @param i_snowfile file containing the initial state of the snowpack
+ * @param stationID
+ * @return true if the file exists
+ */
+bool ImisDBIO::snowCoverExists(const std::string& /*i_snowfile*/, const std::string& /*stationID*/) const
+{
+	throw IOException("Nothing implemented here!", AT);
+}
+
 void ImisDBIO::readSnowCover(const std::string& /*i_snowfile*/, const std::string& /*stationID*/,
                              SN_SNOWSOIL_DATA& /*SSdata*/, ZwischenData& /*Zdata*/)
 {
@@ -68,7 +79,7 @@ void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xd
 }
 
 void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/,
-                               const CurrentMeteo& /*Mdata*/, const ProcessDat& /*Hdata*/, 
+                               const CurrentMeteo& /*Mdata*/, const ProcessDat& /*Hdata*/,
                                const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);

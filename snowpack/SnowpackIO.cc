@@ -74,6 +74,15 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 	}
 }
 
+bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const
+{
+	if (input_snow_as_smet){
+		return smetio.snowCoverExists(i_snowfile, stationID);
+	} else {
+		return asciiio.snowCoverExists(i_snowfile, stationID);
+	}
+}
+
 void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                                SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {

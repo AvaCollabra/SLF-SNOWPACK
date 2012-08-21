@@ -51,6 +51,23 @@ SmetIO::SmetIO(const mio::Config& cfg) : useSoilLayers(false), perp_to_slope(fal
 }
 
 /**
+ * @brief This routine checks if the specified snow cover data exists
+ * @param i_snowfile file containing the initial state of the snowpack
+ * @param stationID
+ * @return true if the file exists
+ */
+bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /*stationID*/) const
+{
+	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+
+	if (snofilename.rfind(".sno") == string::npos) {
+		snofilename += ".sno";
+	}
+
+	return IOUtils::fileExists(snofilename);
+}
+
+/**
  * @brief This routine reads the status of the snow cover at program start
  * @version 11.02
  * @param i_snowfile file containing the initial state of the snowpack
@@ -576,7 +593,7 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
 	throw IOException("Nothing implemented here!", AT);
 }
 
-std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp)
+std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
 	string filename_prefix = path + "/" + fnam;
