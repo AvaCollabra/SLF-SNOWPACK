@@ -418,7 +418,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-	FILE *fout=NULL;
+	std::ofstream fout;
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snoold";
 
 	if (forbackup){
@@ -428,93 +428,98 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	}
 
 	const vector<ElementData>& EMS = Xdata.Edata;
-	fout = fopen(snofilename.c_str(), "w");
-	if (fout == NULL) {
+	fout.open(snofilename.c_str());
+	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", date,"Cannot open profile OUTPUT file: %s", snofilename.c_str());
 		throw FileAccessException("Cannot dump final Xdata to file "+snofilename, AT);
 	}
 
 	// Header, Station Name and Julian Day
-	fprintf(fout, "[SNOWPACK_INITIALIZATION]");
-	fprintf(fout, "\nStationName= %s", Xdata.meta.getStationName().c_str());
+	fout << fixed;
+	fout << "[SNOWPACK_INITIALIZATION]\n";
+	fout << "StationName= " << Xdata.meta.getStationName() << "\n";
 
 	int yyyy,mm,dd,hh,mi;
 	date.getDate(yyyy,mm,dd,hh,mi);
-	fprintf(fout, "\nProfileDate= %04d %02d %02d %02d %02d", yyyy, mm, dd, hh, mi);
+	fout << "ProfileDate= " << setfill('0') << setw(4) << yyyy << " " << setw(2) << mm << " " << setw(2) << dd << " " << setw(2) << hh << " " << setw(2) << mi << "\n";
 
 	// Last checked Snow Depth used for data Control of next run
-	fprintf(fout, "\nHS_Last= %f", Xdata.cH - Xdata.Ground);
+	fout << "HS_Last= " << Xdata.cH - Xdata.Ground << "\n";
 
 	// Latitude, Longitude, Altitude, Slope Angle, Slope Azimut
-	fprintf(fout, "\nLatitude= %.4f",   Xdata.meta.position.getLat());
-	fprintf(fout, "\nLongitude= %.4f",  Xdata.meta.position.getLon());
-	fprintf(fout, "\nAltitude= %.0f",   Xdata.meta.position.getAltitude());
-	fprintf(fout, "\nSlopeAngle= %.2f", Xdata.meta.getSlopeAngle());
-	fprintf(fout, "\nSlopeAzi= %.2f",   Xdata.meta.getAzimuth());
+	fout << "Latitude= " << fixed << setprecision(4) << Xdata.meta.position.getLat() << "\n";
+	fout << "Longitude= "<< fixed << setprecision(4) << Xdata.meta.position.getLon() << "\n";
+	fout << "Altitude= " << fixed << setprecision(0) <<  Xdata.meta.position.getAltitude() << "\n";
+	fout << "SlopeAngle= " << fixed << setprecision(2) << Xdata.meta.getSlopeAngle() << "\n";
+	fout << "SlopeAzi= " << fixed << setprecision(2) << Xdata.meta.getAzimuth() << "\n";
 
 	// Number of Soil Layer Data; in case of no soil used to store the erosion level
-	fprintf(fout, "\nnSoilLayerData= %u", Xdata.SoilNode);
+	fout << "nSoilLayerData= " << Xdata.SoilNode << "\n";
 	// Number of Snow Layer Data
-	fprintf(fout, "\nnSnowLayerData= %u", Xdata.getNumberOfElements() - Xdata.SoilNode);
+	fout << "nSnowLayerData= " << Xdata.getNumberOfElements() - Xdata.SoilNode << "\n";
 
 	// Ground Characteristics (introduced June 2006)
-	fprintf(fout, "\nSoilAlbedo= %.2f", Xdata.SoilAlb);
-	fprintf(fout, "\nBareSoil_z0= %.3f", Xdata.BareSoil_z0);
+	fout << "SoilAlbedo= " << setprecision(2) << Xdata.SoilAlb << "\n";
+	fout << "BareSoil_z0= " << setprecision(3) << Xdata.BareSoil_z0 << "\n";
 	// Canopy Characteristics
-	fprintf(fout, "\nCanopyHeight= %.2f",Xdata.Cdata.height);
-	fprintf(fout, "\nCanopyLeafAreaIndex= %.6f",Xdata.Cdata.lai);
-	fprintf(fout, "\nCanopyDirectThroughfall= %.2f",Xdata.Cdata.direct_throughfall);
+	fout << "CanopyHeight= " << setprecision(2) << Xdata.Cdata.height << "\n";
+	fout << "CanopyLeafAreaIndex= " << setprecision(6) << Xdata.Cdata.lai << "\n";
+	fout << "CanopyDirectThroughfall= " << setprecision(2) << Xdata.Cdata.direct_throughfall << "\n";
 	// Additional parameters
-	fprintf(fout,"\nWindScalingFactor= %f",SSdata.WindScalingFactor);
-	fprintf(fout,"\nErosionLevel= %u",Xdata.ErosionLevel);
-	fprintf(fout,"\nTimeCountDeltaHS= %f",SSdata.TimeCountDeltaHS);
+	fout << "WindScalingFactor= " << SSdata.WindScalingFactor << "\n";
+	fout << "ErosionLevel= " << Xdata.ErosionLevel << "\n";
+	fout << "TimeCountDeltaHS= " << SSdata.TimeCountDeltaHS << "\n";
 
 	// Layer Data
-	fprintf(fout, "\nYYYY MM DD HH MI Layer_Thick           T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V");
-	fprintf(fout, "  Vol_Frac_S    Rho_S Conduc_S HeatCapac_S         rg        rb        dd        sp");
-	fprintf(fout, "    mk    mass_hoar  ne           CDot         metamo");
+	fout << "YYYY MM DD HH MI Layer_Thick           T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V";
+	fout << "  Vol_Frac_S    Rho_S Conduc_S HeatCapac_S         rg        rb        dd        sp";
+	fout << "    mk    mass_hoar  ne           CDot         metamo";
 	for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-		fprintf(fout, "             cIce            cWater              cAir             cSoil");
+		fout << "             cIce            cWater              cAir             cSoil";
 	}
+	fout << "\n";
 	for (size_t e = 0; e < Xdata.getNumberOfElements(); e++) {
 		int YYYY, MM, DD, HH, Min;
 		EMS[e].depositionDate.getDate(YYYY, MM, DD, HH, Min);
-		fprintf(fout, "\n%04d %02d %02d %02d %02d", YYYY, MM, DD, HH, Min);
-		fprintf(fout, " %11.6f %11.6f %11.6f %11.6f %11.6f",  EMS[e].L,
-			Xdata.Ndata[e+1].T, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
-		fprintf(fout," %11.6f %8.1f %8.1f %11.1f %10.6f %9.6f %9.6f %9.6f %6u %12.6f    1",
-			EMS[e].theta[SOIL], EMS[e].soil[SOIL_RHO], EMS[e].soil[SOIL_K], EMS[e].soil[SOIL_C],
-			EMS[e].rg, EMS[e].rb, EMS[e].dd,  EMS[e].sp, EMS[e].mk, Xdata.Ndata[e+1].hoar);
-		fprintf(fout," %14.6f %14.6f", EMS[e].CDot, EMS[e].metamo);
+
+		fout << noshowpoint << noshowpos << setfill('0');
+		fout << setw(4) << YYYY << " " << setw(2) << MM << " " << setw(2) << DD << " " << setw(2) << HH << " " << setw(2) << Min << " ";
+
+		fout << setfill(' ') << showpoint << showpos;
+		fout << setw(11) << setprecision(6) << EMS[e].L << " " << Xdata.Ndata[e+1].T << " " << EMS[e].theta[ICE] << " " << EMS[e].theta[WATER] << " " << EMS[e].theta[AIR];
+		fout << setw(11) << setprecision(6) << EMS[e].theta[SOIL] << " " << setw(8) << setprecision(1) << EMS[e].soil[SOIL_RHO] << " " << EMS[e].soil[SOIL_K] << " " << setw(11) << setprecision(1) << EMS[e].soil[SOIL_C] << setw(10) << setprecision(6) << EMS[e].rg << " " << setw(9) << setprecision(6) << EMS[e].rb << " " << EMS[e].dd << " " << EMS[e].sp << " " << setw(6) << EMS[e].mk << " " << setw(12) << setprecision(6) << Xdata.Ndata[e+1].hoar << "    1";
+		fout << " " << setw(14) << setprecision(6) << EMS[e].CDot << " " << EMS[e].metamo;
+
 		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-			fprintf(fout, " %16.6f %17.7f %17.7f %17.7f", EMS[e].conc(ICE,ii), EMS[e].conc(WATER,ii),
-			        EMS[e].conc(AIR,ii), EMS[e].conc(SOIL,ii));
+			fout << " " << setw(16) << setprecision(6) << EMS[e].conc(ICE,ii) << " " << setw(17) << setprecision(6) << EMS[e].conc(WATER,ii) << " " << EMS[e].conc(AIR,ii) << " " << EMS[e].conc(SOIL,ii);
 		}
+		fout << "\n";
 	}
 
+	fout << setfill(' ') << showpoint << showpos << setw(10) << setprecision(6);
 	// Print out the hoar hazard data info, contained in Zdata (needed for flat field only)
-	fprintf(fout,"\nSurfaceHoarIndex\n");
+	fout << "SurfaceHoarIndex\n";
 	for (size_t ii = 0; ii < 48; ii++) {
-		fprintf(fout," %f ", Zdata.hoar24[ii]);
+		fout << " " << Zdata.hoar24[ii] << " ";
 	}
 	// Print out the drift hazard data info
-	fprintf(fout,"\nDriftIndex\n");
+	fout << "\nDriftIndex\n";
 	for (size_t ii = 0; ii < 48; ii++) {
-		fprintf(fout," %f ", Zdata.drift24[ii]);
+		fout << " " << Zdata.drift24[ii] << " ";
 	}
 	// Print out the 3 hour new snowfall hazard data info
-	fprintf(fout,"\nThreeHourNewSnow\n");
+	fout << "\nThreeHourNewSnow\n";
 	for (size_t ii = 0; ii < 144; ii++) {
-		fprintf(fout," %f ", Zdata.hn3[ii]);
+		fout << " " << Zdata.hn3[ii] << " ";
 	}
 	// Print out the 24 hour new snowfall hazard data info
-	fprintf(fout,"\nTwentyFourHourNewSnow\n");
+	fout << "\nTwentyFourHourNewSnow\n";
 	for (size_t ii = 0; ii < 144; ii++) {
-		fprintf(fout," %f ", Zdata.hn24[ii]);
+		fout << " " << Zdata.hn24[ii] << " ";
 	}
-	fprintf(fout, "\nEnd");
+	fout << "\nEnd";
 
-	fclose(fout);
+	fout.close();
 }
 
 std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
