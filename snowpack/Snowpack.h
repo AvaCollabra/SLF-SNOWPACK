@@ -105,12 +105,11 @@ class Snowpack {
 
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
-		bool sn_ElementKtMatrix(ElementData *Edata, double dt, double dvdz, double T0[ N_OF_INCIDENCES ],
+		bool sn_ElementKtMatrix(ElementData *Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
-		                        double VaporEnhance);
+		                        const double VaporEnhance);
 
-		void updateMeteoHeatFluxes(const CurrentMeteo& Mdata, SnowStation& Xdata,
-                                   BoundCond& Bdata);
+ 		void updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
 
 		void neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& Bdata, const SnowStation& Xdata,
 		                               const double& T_snow, const double& T_iter,
@@ -121,7 +120,7 @@ class Snowpack {
 		                                   double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                                   double Fe[ N_OF_INCIDENCES ]);
 
-		void compSnowTemperatures(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata);
+		void compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata);
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);

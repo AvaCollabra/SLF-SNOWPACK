@@ -691,22 +691,23 @@ double Canopy::cn_CanopyTransmissivity(const double& lai, const double& elev)
  * @param *r1p
  */
 void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
-							   double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
-							   const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
-							   const double& sigfdirect, double& r1p)
+                                      double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
+                                      const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
+                                      const double& sigfdirect, double& r1p)
 {
-	double TC_old, TG, eg, ag;
+	double TC_old, Tsfc, eg, ag;
 	double star; double psi; double r0p;
 	double CanopyClosure, elev, diffuse, direct, RadFracDiffuse, rsnetdir, sigf;
 
 	// Variables used a lot
-	if ( Xdata.getNumberOfElements() > 0 ) {
-		TG = Xdata.Ndata[Xdata.getNumberOfElements()].T;
-		ag = Xdata.cAlbedo;
+	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
+		Tsfc = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// Snow surface temperature
+		ag=Xdata.cAlbedo;
 	} else {
-		TG = Mdata.ta;
+		Tsfc = Mdata.ta;	// Surface temperature
 		ag = Xdata.SoilAlb;
 	}
+
 	/*
 	 * Canopy Closure = Canopy Soil Cover Fraction, is made a function of solar elevation for direct shortwave
 	 * First, check whether the solar elevation and splitted radiation data makes there is sense
@@ -752,7 +753,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 
 	// RNC = RNSC + RNLC: r0p and r1p correpsonds to RNC(t) = r0p + r1p * TC(t)^4
 	r0p = rsnet + Cdata.sigf * ((Cdata.ec + psi / star) *
-		ilwrac + Cdata.ec * eg * Constants::stefan_boltzmann * (TG * TG * TG * TG) / star);
+	ilwrac + Cdata.ec * eg * Constants::stefan_boltzmann * Optim::pow4(Tsfc) / star);
 	r1p = -Cdata.sigf * (Cdata.ec * Constants::stefan_boltzmann + Cdata.ec * eg * Constants::stefan_boltzmann /
 		star + psi * Constants::stefan_boltzmann / star);
 
@@ -763,8 +764,8 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 
 	TC_old = Cdata.temp;
 
-	r0 = r0p - 3. * r1p * (TC_old*TC_old*TC_old*TC_old);
-	r1 = 4.* r1p * (TC_old * TC_old * TC_old);
+	r0 = r0p - 3. * r1p * Optim::pow4(TC_old);
+	r1 = 4.* r1p * Optim::pow3(TC_old);
 
 	// Scaling by CanopyClosure (= 1-SkyViewFraction)
 	rsnet *= CanopyClosure;
@@ -1337,42 +1338,39 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
  */
 void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac, double *iswrac, double *rswrac, double *iswrbc, double *rswrbc, double *ilwrac, double *rlwrac, double *ilwrbc, double *rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect)
 {
-	double TC, Tsfc, ag, sigf, ec, eg, RAG, RAV, CanopyClosureDiffuse, rswrac_loc;
-	double rswrbc_loc, rswrac_loc2, iswrbc_loc2, rswrbc_loc2, iswrbc_loc;
-
-	// Variables used a lot
-	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
-		Tsfc = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// Snow surface temperature
+	double Tsfc4, ag;
+	if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // Snow surface
+		Tsfc4 = Optim::pow4(Xdata.Ndata[Xdata.getNumberOfElements()].T);
 		ag=Xdata.cAlbedo;
-	} else {
-		Tsfc = Mdata.ta;	// Surface temperature
+	} else { // Ground surface
+		Tsfc4 = Optim::pow4(Mdata.ta);	// Surface temperature
 		ag = Xdata.SoilAlb;
 	}
 
-	TC = Xdata.Cdata.temp;
-	sigf = Xdata.Cdata.sigf;
-	ec = Xdata.Cdata.ec;
-	eg = 1.0;
+	double const TC4 = Optim::pow4(Xdata.Cdata.temp);
+	double const sigf = Xdata.Cdata.sigf;
+	double const ec = Xdata.Cdata.ec;
+	double const eg = 1.0;
 
 	// Diffuse Shortwave radiation fluxes above and below canopy
-	rswrac_loc = *iswrac * (sigf * ac + ag * (1.0 - sigf) * (1.0 - sigf) / (1.0 - sigf * ac * ag));
-	iswrbc_loc = *iswrac * (1. - sigf) / (1.0 - sigf * ac * ag);
-	rswrbc_loc = iswrbc_loc * ag;
+	double const rswrac_loc = *iswrac * (sigf * ac + ag * (1.0 - sigf) * (1.0 - sigf) / (1.0 - sigf * ac * ag));
+	double const iswrbc_loc = *iswrac * (1. - sigf) / (1.0 - sigf * ac * ag);
+	double const rswrbc_loc = iswrbc_loc * ag;
 
 	// Direct Shortwave radiation fluxes above and below canopy
-	rswrac_loc2 = *iswrac * (sigfdirect * ac + ag * (1.0 - sigfdirect) * (1.0 - sigfdirect) / (1.0 - sigfdirect * ac * ag));
-	iswrbc_loc2 = *iswrac * (1. - sigfdirect) / (1.0 - sigfdirect * ac * ag);
-	rswrbc_loc2 = iswrbc_loc2 * ag;
+	double const rswrac_loc2 = *iswrac * (sigfdirect * ac + ag * (1.0 - sigfdirect) * (1.0 - sigfdirect) / (1.0 - sigfdirect * ac * ag));
+	double const iswrbc_loc2 = *iswrac * (1. - sigfdirect) / (1.0 - sigfdirect * ac * ag);
+	double const rswrbc_loc2 = iswrbc_loc2 * ag;
 
 	// Longwave radiation fluxes above and below canopy:
-	RAG = (1. - sigf) * eg * ( *ilwrac - Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc) - eg * ec * sigf * Constants::stefan_boltzmann * (Tsfc*Tsfc*Tsfc*Tsfc - TC*TC*TC*TC) / (1. - sigf * (1. - ec) * (1. - eg));
-	RAV = sigf * (ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC) + (Constants::stefan_boltzmann * ec * eg * (Tsfc*Tsfc*Tsfc*Tsfc - TC*TC*TC*TC) + (1.0 - sigf) * (1.0 - eg) * ec * ( *ilwrac - Constants::stefan_boltzmann * TC*TC*TC*TC)) / (1.0 - sigf * (1.0 - ec)* ( 1.0 - eg)));
-	*ilwrbc = RAG / eg + Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc;
-	*rlwrbc = - (1 - eg)* (*ilwrbc) + eg * Constants::stefan_boltzmann * Tsfc*Tsfc*Tsfc*Tsfc;
+	double const RAG = (1. - sigf) * eg * ( *ilwrac - Constants::stefan_boltzmann * Tsfc4 - eg * ec * sigf * Constants::stefan_boltzmann * (Tsfc4 - TC4)) / (1. - sigf * (1. - ec) * (1. - eg));
+	double const RAV = sigf * (ec * ( *ilwrac - Constants::stefan_boltzmann * TC4) + (Constants::stefan_boltzmann * ec * eg * (Tsfc4 - TC4) + (1.0 - sigf) * (1.0 - eg) * ec * ( *ilwrac - Constants::stefan_boltzmann * TC4)) / (1.0 - sigf * (1.0 - ec)* ( 1.0 - eg)));
+	*ilwrbc = RAG / eg + Constants::stefan_boltzmann * Tsfc4;
+	*rlwrbc = - (1 - eg)* (*ilwrbc) + eg * Constants::stefan_boltzmann * Tsfc4;
 	*rlwrac = *ilwrac - RAG - RAV;
 
 	// Scaling of results with CanopyClosureDiffuse and CanopyClosureDirect
-	CanopyClosureDiffuse = 1. - Xdata.Cdata.direct_throughfall;
+	double const CanopyClosureDiffuse = 1. - Xdata.Cdata.direct_throughfall;
 
 	// Shortwave fluxes (diffuse)
 	*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
@@ -1385,9 +1383,9 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
 
 	// Longwave fluxes (treat as diffuse)
-	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc*Tsfc*Tsfc*Tsfc * (1.0-CanopyClosureDiffuse);
+	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
 	*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
-	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc*Tsfc*Tsfc*Tsfc * (1.0-CanopyClosureDiffuse);
+	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
 }
 
 /**

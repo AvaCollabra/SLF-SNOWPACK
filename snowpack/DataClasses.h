@@ -479,15 +479,13 @@ class SnowStation {
 };
 
 /**
- * @name Surface data
- * @note Some of the most important results of the simulation are contained in these data structures
- */
-//@{
+* @brief BoundCond is used to set Neumann boundary conditions
+*/
 class BoundCond {
+	
 	public:
-		///@brief BoundCond is used to set Neumann boundary conditions
 		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {};
-
+		
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation
 		double qs;      ///< sensible heat
@@ -496,7 +494,12 @@ class BoundCond {
 		double qg;      ///< geothermal heat flux or heat flux at lower boundary
 };
 
-class SurfaceFluxes {
+/**
+* @name Surface data
+* @note Some of the most important results of the simulation are contained in these data structures
+*/
+//@{
+	class SurfaceFluxes {
 	public:
 		/**
 		 * @brief The different types of mass fluxes:
@@ -522,9 +525,8 @@ class SurfaceFluxes {
 		SurfaceFluxes();
 
 		void reset(const bool& cumsum_mass);
-		void CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& Bdata,
-		                          SnowStation& Xdata, const CurrentMeteo& Mdata,
-		                          const bool& useSoilLayers, const bool& soil_flux);
+		void compSnowSoilHeatFlux(SnowStation& Xdata);
+		void collectSurfaceFluxes(BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
 
 		/**
 		 * @brief Energy fluxes:
@@ -558,6 +560,7 @@ class SurfaceFluxes {
 		double dhs_corr;   ///< operational mode only: snow depth correction in case of squeezing or blow-up (m)
 		double cRho_hn;    ///< Computed new snow density (kg m-3)
 		double mRho_hn;    ///< Measured new snow density (kg m-3)
+
 };
 //@}
 

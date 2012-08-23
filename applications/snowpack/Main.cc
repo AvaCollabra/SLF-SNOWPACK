@@ -989,8 +989,7 @@ int main (int argc, char *argv[])
 				}
 
 				/***** OUTPUT SECTION *****/
-				surfFluxes.CollectSurfaceFluxes(surfFluxes, sn_Bdata, vecXdata[slope.sector], Mdata,
-				                                useSoilLayers, soil_flux);
+				surfFluxes.collectSurfaceFluxes(sn_Bdata, vecXdata[slope.sector], Mdata);
 				if (slope.sector == slope.station) { // station field only (usualy flat)
 					size_t i_hz = mn_ctrl.HzStep;
 					// Calculate consistent lw_in for virtual slopes

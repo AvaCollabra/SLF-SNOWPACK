@@ -138,87 +138,81 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 }
 
 /**
- * @brief Assign surface data from SnowStation to SurfaceFluxes.
- * @param Sdata
+* @brief Compute ground heat flux at soil/snow boundary
+* @param Xdata
+*/
+void SurfaceFluxes::compSnowSoilHeatFlux(SnowStation& Xdata) {
+	if (Xdata.SoilNode > 0) { // with soil
+		ElementData& E_snow = Xdata.Edata[Xdata.SoilNode];
+		ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
+		
+		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
+			qg0 += -E_soil.k[TEMPERATURE]
+			* E_soil.gradT;
+		} else { // with soil & snow
+			qg0 += -((E_soil.k[TEMPERATURE] * E_snow.L + E_snow.k[TEMPERATURE] * E_soil.L) / (E_soil.L + E_snow.L) / 2.0)
+			* ((E_snow.Te - E_soil.Te) / ((E_soil.L + E_snow.L)/2.0));
+		}
+	} else if (Xdata.getNumberOfElements() > 0) { // without soil but with snow
+		if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
+			qg0 += 0.;
+		} else {
+			qg0 += -Xdata.Edata[0].k[TEMPERATURE] * Xdata.Edata[0].gradT;
+		}
+	} else { // neither soil nor snow
+		qg0 = Constants::undefined;
+	}
+}
+
+/**
+ * @brief Assign surface data from SnowStation and BoundCond to SurfaceFluxes.
  * @param Bdata
  * @param Xdata
  * @param Mdata
- * @param useSoilLayers then the model also deals with soil layers
- * @param soil_flux strength of soil heat flux at greater depth (where it can be considered to be constant)
  */
-void SurfaceFluxes::CollectSurfaceFluxes(SurfaceFluxes& Sdata, const BoundCond& Bdata,
-                                         SnowStation& Xdata, const CurrentMeteo& Mdata,
-                                         const bool& useSoilLayers, const bool& soil_flux)
+void SurfaceFluxes::collectSurfaceFluxes(BoundCond& Bdata,
+                                         SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
 	// 1) Short wave fluxes and Albedo.
 	//     Depending on settings (sw_mode) and conditions,
 	//     sw_in and sw_out may differ slightly from the original input
-	Sdata.sw_in  += Mdata.iswr;
-	Sdata.sw_out += Mdata.rswr;
-	Sdata.qw     += Mdata.iswr - Mdata.rswr;
+	sw_in  += Mdata.iswr;
+	sw_out += Mdata.rswr;
+	qw     += Mdata.iswr - Mdata.rswr;
 
-	Sdata.cA += Xdata.cAlbedo;
+	cA += Xdata.cAlbedo;
 	if (Xdata.mAlbedo != Constants::undefined)
-		Sdata.mA += Xdata.mAlbedo;
+		mA += Xdata.mAlbedo;
 	else
-		Sdata.mA = Constants::undefined;
+		mA = Constants::undefined;
 
-	// 2) Long wave and heat fluxes.
-	Sdata.qs += Bdata.qs;
-	//Sdata->ql += Bdata->ql; //HACK needed because latent heat ql not linearized w/ respect to Tss!!!
-	Sdata.qr += Bdata.qr;
-	Sdata.lw_out += Bdata.lw_out;
-	Sdata.lw_net += Bdata.lw_net;
-	Sdata.lw_in  += (Bdata.lw_net + Bdata.lw_out);
+	// 2) Long wave fluxes.
+	lw_out += Bdata.lw_out;
+	lw_net += Bdata.lw_net;
+	lw_in  += (Bdata.lw_net + Bdata.lw_out);
+	
+	// 3) Turbulent fluxes.
+	qs += Bdata.qs;
+	//ql += Bdata.ql; //HACK needed because latent heat ql not linearized w/ respect to Tss!!!
+	qr += Bdata.qr;
 
-	// 3) Ground heat fluxes
-	if (Xdata.getNumberOfElements() > 0) {
-		// 3a) qg0: heat flux at soil/snow boundary
-		if (Xdata.SoilNode > 0) { // soil is present
-			if(Xdata.getNumberOfElements()-1 < Xdata.SoilNode) {	// no snow present
-				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]
-			                 * Xdata.Edata[Xdata.SoilNode-1].gradT;
-			} else {
-				Sdata.qg0 += -((Xdata.Edata[Xdata.SoilNode-1].k[TEMPERATURE]*Xdata.Edata[Xdata.SoilNode].L+Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]*Xdata.Edata[Xdata.SoilNode-1].L)/(Xdata.Edata[Xdata.SoilNode-1].L+Xdata.Edata[Xdata.SoilNode].L)/2.0)
-			                 * ((Xdata.Edata[Xdata.SoilNode].Te-Xdata.Edata[Xdata.SoilNode-1].Te)/((Xdata.Edata[Xdata.SoilNode-1].L+Xdata.Edata[Xdata.SoilNode].L)/2.0));
-			}
-		} else if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // no soil available
-			if ((Xdata.getNumberOfElements() < 3)
-			        && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont))
-				Sdata.qg0 += 0.;
-			else
-				Sdata.qg0 += -Xdata.Edata[Xdata.SoilNode].k[TEMPERATURE]
-				                 * Xdata.Edata[Xdata.SoilNode].gradT;
-		} else {
-			Sdata.qg0 += Constants::undefined;
-		}
-		// 3b) qg : geothermal heat flux or heat flux at bottom of snow in case of no soil
-		if (useSoilLayers && soil_flux) {
-			Sdata.qg += Bdata.qg;
-		} else if ((Xdata.getNumberOfElements() < 3)
-		               && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
-			Sdata.qg += 0.;
-		} else {
-			Sdata.qg += -Xdata.Edata[0].k[TEMPERATURE] * Xdata.Edata[0].gradT;
-		}
-	} else {
-		Sdata.qg0 += Constants::undefined;
-		Sdata.qg  += Constants::undefined;
-	}
+	// 4) Ground heat fluxes
+	//    The ground heat flux at soil/snow boundary is computed after compTemperatureProfile
+	qg += Bdata.qg;
 
-	// 4) Change of internal energy
+	// 5) Change of internal energy
 	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
-		Sdata.dIntEnergy += Xdata.dIntEnergy;
-		Sdata.meltFreezeEnergy += Xdata.meltFreezeEnergy;
+		dIntEnergy += Xdata.dIntEnergy;
+		meltFreezeEnergy += Xdata.meltFreezeEnergy;
 	}
 
-	// 5) Compute total masses of snowpack
-	Sdata.mass[MS_TOTALMASS] = Sdata.mass[MS_SWE] = Sdata.mass[MS_WATER] = 0.;
+	// 6) Compute total masses of snowpack
+	mass[MS_TOTALMASS] = mass[MS_SWE] = mass[MS_WATER] = 0.;
 	for (size_t e = Xdata.SoilNode; e < Xdata.getNumberOfElements(); e++) {
-		Sdata.mass[MS_TOTALMASS] += Xdata.Edata[e].M;
-		Sdata.mass[MS_SWE] += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
-		Sdata.mass[MS_WATER] += Xdata.Edata[e].L * (Xdata.Edata[e].theta[WATER]
-		                            * Constants::density_water);
+		mass[MS_TOTALMASS] += Xdata.Edata[e].M;
+		mass[MS_SWE] += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
+		mass[MS_WATER] += Xdata.Edata[e].L * (Xdata.Edata[e].theta[WATER]
+		                      * Constants::density_water);
 	}
 }
 
@@ -779,13 +773,13 @@ void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
 	meltFreezeEnergy = 0.;
 	dIntEnergy = 0.;
 	if (nElems > SoilNode) {
-		const double cold_content_in = ColdContent;
+		const double i_cold_content = ColdContent;
 		ColdContent = 0.;
 		for (size_t e=SoilNode; e<nElems; e++) {
 			meltFreezeEnergy -= Edata[e].Qmf * Edata[e].L * sn_dt;
 			ColdContent += Edata[e].coldContent();
 		}
-		dIntEnergy = ColdContent - cold_content_in + meltFreezeEnergy;
+		dIntEnergy = ColdContent - i_cold_content + meltFreezeEnergy;
 	}
 }
 
