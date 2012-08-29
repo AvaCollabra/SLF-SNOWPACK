@@ -578,6 +578,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			// dThetaW_lower is determined by also taking excess_water into account. Maybe excess_water can be stored in this layer.
 			dThetaW_upper = MAX(0, dThetaW_upper);
 			if (dThetaW_upper > 0. || excess_water > 0.) {
+				// dThetaW_lower is determined by also taking excess_water into account. Maybe excess_water can be stored in this layer.
 				double dThetaW_lower = dThetaW_upper*(L_upper/L_lower)+(excess_water/L_lower);
 				// Now check whether there is enough air left - in case of ice, rock or heavy
 				// soil you might not be able to move the water or/and water may refreeze and expand.
@@ -588,15 +589,23 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					// If you have too much water even for the lower element (more melt or rain per time
 					// step than can be kept in this element), water is transferred to excess_water.
 					// excess_water moves the water downward, trying to insert the water in lower elements.
+					const double i_dThetaW_lower=dThetaW_lower;		//Make backup
 					dThetaW_lower = MAX(0., (Constants::density_ice/Constants::density_water
 					                        * (1. - EMS[eLower].theta[ICE] - EMS[eLower].theta[SOIL]) - W_lower));
 					if (jam) {
-						dThetaW_upper = dThetaW_lower*L_lower/L_upper;
+						// In case of jam, the change in water content in the upper layer is the maximum possible
+						// change in water content in the lower layer minus excess_water. This means excess_water
+						// has the right of way to fill up the lower element. If the lower element cannot contain
+						// all excess_water, it is transferred to the upper element. TODO: actually, if we fill
+						// the upper layer completely and we still have excess_water left, we should put it in
+						// the layer above the upper layer and so forth.
+						dThetaW_upper = dThetaW_lower*L_lower/L_upper - excess_water/L_upper;
 						if ((W_upper - dThetaW_upper) > (Constants::density_ice/Constants::density_water
 						                           * (1. - EMS[eUpper].theta[ICE] - EMS[eUpper].theta[SOIL]))) {
+							const double i_dThetaW_upper = dThetaW_upper;	//Make backup
 							dThetaW_upper = W_upper - Constants::density_ice/Constants::density_water
 							                    * (1. - EMS[eUpper].theta[ICE] - EMS[eUpper].theta[SOIL]);
-							excess_water += (dThetaW_upper*L_upper - dThetaW_lower*L_lower);
+							excess_water = (i_dThetaW_upper-dThetaW_upper)*L_upper;
 						} else {
 							excess_water = 0.;
 						}
@@ -612,7 +621,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						// We have moved the excess_water out of the snowpack.
 						excess_water=0.;
 					} else {
-						excess_water += (dThetaW_upper*L_upper - dThetaW_lower*L_lower);
+						// All the water that could not be stored in eLower is considered excess_water.
+						excess_water = (i_dThetaW_lower-dThetaW_lower)*L_lower;
 					}
 				} else {
 					// else EMS[eLower] can contain all water, so we have no excess_water anymore.
