@@ -158,7 +158,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice)
 		                     + (EMS[nE-1].theta[WATER] * Constants::density_water)
 		                         + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
-	} else {
+	} else if (ql < -Constants::eps2) {
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE-1;
