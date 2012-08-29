@@ -1213,8 +1213,8 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.snowResidualWaterContent();
 	// TODO Check whether we have space to accomodate all water percolating into EdataLower
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
-	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE];
-	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water);
+	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
+	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
 
 	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 		for (unsigned int kk = 0; kk < N_COMPONENTS; kk++) {
