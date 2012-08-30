@@ -2,23 +2,44 @@
 # Provide met file as first argument.
 # Example for quickly plotting in gnuplot the energy balance, provided the output file is called output.txt:
 # pl "<(cat ./output.txt | awk '{sum+=$16; print sum}')" u 1 w l title 'energy in', "<(cat ./output.txt | awk '{sum+=$17; print -1.0*sum}')" w l title 'energy out', "<(cat ./output.txt | awk '{sum+=$15; print 1.0*sum}')" w l title 'storage'
-if [ $# -lt 1 ] || [ $# -gt 1 ]; then
+if [ $# -lt 1 ]; then
         echo "This script reads a met-file (provided as first argument) and writes the energy balance on the stdout and statistics to stderr." > /dev/stderr
-	echo "Invoke with: ./energybalancecheck.sh <met file>" > /dev/stderr
+	echo "Invoke with: ./energybalancecheck.sh <met file> [firstdate=YYYYMMDD] [lastdate=YYYYMMDD]" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Note: 1) the energy balance represents only the snow cover energy balance!" > /dev/stderr
 	echo "      2) the energy balance can only be properly checked when the output resolution of the met file is the" > /dev/stderr
 	echo "         same as the snowpack calculation step length." > /dev/stderr
+	echo "      3) using options firstdate and lastdate, one can define a period over which the mass balance should be" > /dev/stderr
+	echo "         determined. Default is full period in met-file. No spaces in command line options are allowed!" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Examples:" > /dev/stderr
 	echo " ./energybalancecheck.sh WFJ2_flat.met > output.txt	Writes energy balance in output.txt and shows overall energy balance statistics on screen." > /dev/stderr
 	echo " ./energybalancecheck.sh WFJ2_flat.met > /dev/null	Just shows overall energy balance statistics on screen." > /dev/stderr
 	echo " ./energybalancecheck.sh WFJ2_flat.met | less		View the energy balance in less." > /dev/stderr
+	echo " ./energybalancecheck.sh WFJ2_flat.met firstdate=20071001 lastdate=20080323" > /dev/stderr
+	echo "								  Determines energy balance between 1st of October 2007" > /dev/stderr
+	echo "								     up to and including 23rd of March 2008." > /dev/stderr
         exit
 fi
 
+
+# Initial settings
+firstdate=0
+lastdate=99999999
+
+
 # Get met file name from first argument
 met_file=$1
+
+
+# Read command line parameters
+if [ $# -gt 1 ]; then
+	for i in `seq 2 $#`
+	do
+		eval "let \$$i"
+	done
+fi
+
 
 # Check if file exists
 if [ ! -e "${met_file}" ]; then
@@ -142,6 +163,8 @@ sed '1,/\[DATA\]/d' ${met_file} | \
 awk -F, '{n++; if(n==1) {prevHS=1}; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', ($'${colhsmodel}'>0.0)?($'${colSHF}'):0, ($'${colhsmodel}'>0.0)?($'${colLHF}'):0, ($'${colhsmodel}'>0.0)?-1.0*($'${colOLWR}'):0, ($'${colhsmodel}'>0.0)?($'${colILWR}'):0, ($'${colhsmodel}'>0.0)?-1.0*($'${colRSWR}'):0, ($'${colhsmodel}'>0.0)?($'${colISWR}'):0, ($'${colhsmodel}'>0.0)?($'${colsoilheat}'):0, ($'${colhsmodel}'>0.0)?($'${colRainNRG}'):0, ($'${colhsmodel}'>0.0)?($'${colPhchEnergy}'*(1000.0/((24.0/'${nsamplesperday}')*3600))):0, ($'${colhsmodel}'>0.0 && $'${colIntNRG}'!=-999.0)?(1000.0*$'${colIntNRG}'/((24.0/'${nsamplesperday}')*3600)+$'${colsoilheat}'):0; prevHS=$'${colhsmodel}'}' | \
 #  -- Reformat time
 sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%02d", $3, $2, $1, $4, $5; for(i=6; i<=NF; i++) {printf " %s", $i}; printf "\n"}' | \
+# Now select period
+awk '($1>='${firstdate}' && $1<='${lastdate}') {print $0}' | \
 #  -- Now do all the other calculations
 #     except for the first line (for the first line, we cannot determine the energy balance, as the previous value of modeled HS is unknown, so we don't know whether there was a snowpack).
 awk '{n++; if(n>1) \
@@ -152,9 +175,9 @@ awk '{n++; if(n>1) \
 	#Determine energy output in system (taking the terms only when they are negative)
 	energy_out=(($5<0.0)?$5:0)+(($6<0.0)?$6:0)+(($7<0.0)?$7:0)+(($8<0.0)?$8:0)+(($9<0.0)?$9:0)+(($10<0.0)?$10:0)+(($11<0.0)?$11:0)+(($12<0.0)?$12:0); \
 	#Do the statistics (energy balance error sum, min and max values)
-	energybalancesum+=energybalance; if(energybalance>maxenergybalance){maxenergybalance=energybalance; maxenergybalancedate=$1; maxenergybalancetime=$2}; if(energybalance<minenergybalance){minenergybalance=energybalance; minenergybalancedate=$1; minenergybalancetime=$2}; \
+	energybalancesum+=energybalance; energybalancesum2+=sqrt(energybalance*energybalance); if(energybalance>maxenergybalance){maxenergybalance=energybalance; maxenergybalancedate=$1; maxenergybalancetime=$2}; if(energybalance<minenergybalance){minenergybalance=energybalance; minenergybalancedate=$1; minenergybalancetime=$2}; \
 	#Write to stdout
 	print $0, energybalance, energy_in, energy_out}; \
 #Write out statistics to stderr:
-END {printf "Sum of energy balance error: %.6f\nMaximum positive energy balance error: %.6f at %08d, %04d\nMinimum negative energy balance error: %.6f at %08d, %04d\n", energybalancesum, maxenergybalance, maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
+END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of energy balance error: %.6f\nSum of absolute mass balance error (kg_m-2): %.6f\nMaximum positive energy balance error: %.6f at %08d, %04d\nMinimum negative energy balance error: %.6f at %08d, %04d\n", energybalancesum, energybalancesum2, maxenergybalance, maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
 
