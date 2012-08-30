@@ -69,7 +69,7 @@ done
 
 printf "\n\t%s\n" "Running variant '${variant}' of either (dflt | ant | cal | opera)"
 
-headerFile=/home/fierz/usr/share/metFields.${variant}.txt
+headerFile=./metFields.${variant}.txt
 if [ ${p} -eq 1 ]; then
 	head -21 ${headerFile}
 	printf "\t%s\n"  "Enter your choice as a field list for cut, e.g. 3,6-8,12-"
