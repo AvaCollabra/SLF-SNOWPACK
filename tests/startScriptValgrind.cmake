@@ -25,16 +25,10 @@ SET(CTEST_MEMORYCHECK_COMMAND "/usr/bin/valgrind")
 #set cMake command to be used
 SET(CTEST_CMAKE_COMMAND "\"${CMAKE_EXECUTABLE_NAME}\"")
 	
-#also possible to set initial cache values for config to set that the test are build
-# BUILD NAME SET HERE DROUG CACHE.. OLD WAY TO OD BUT ONLY WORKING WAY
-SET(CTEST_INITIAL_CACHE "
-	BUILD_TESTING:BOOL=ON
-	BUILD_TESTING_WITH_COVERAGE:BOOL=OFF	
-")
-	
+# run tests
 ctest_start(Nightly)
 ctest_update(SOURCE "${CTEST_SOURCE_DIRECORTY}")
-ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" )
+ctest_configure(BUILD "${CTEST_BINARY_DIRECTORY}" OPTIONS "-DBUILD_TESTING=ON BUILD_TESTING_WITH_COVERAGE=OFF")
 ctest_build(BUILD "${CTEST_BINARY_DIRECTORY}" )
 ctest_memcheck(BUILD "${CTEST_BINARY_DIRECTORY}" )
 ctest_submit()

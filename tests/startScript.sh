@@ -25,7 +25,7 @@ make distclean
 make distclean
 /usr/bin/ctest -S ${SN_ROOT}/tests/startScriptNightly.cmake -V > ${SN_ROOT}/tests/startScriptNightly.log 2>&1
 
-make clean
+make distclean
 /usr/bin/ctest -S ${SN_ROOT}/tests/startScriptValgrind.cmake -V > ${SN_ROOT}/tests/startScriptValgrind.log 2>&1
 
 log_echo "SNOWPACK testing done!"
