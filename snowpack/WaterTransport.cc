@@ -364,6 +364,13 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			Xdata.Ndata[Xdata.SoilNode].T = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
 	}
+	
+	if(rnE>=Xdata.SoilNode) {
+		Xdata.ColdContent = 0.;
+		for (size_t e=Xdata.SoilNode; e<rnE; e++) {
+			Xdata.ColdContent += EMS[e].coldContent();
+		}
+	}
 }
 
 /**
