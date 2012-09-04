@@ -85,8 +85,8 @@
  * calculations for arctic areas (Meirold-Mautner and Lehning, 2003) and calculations of chemical solute transport in snow (Waldner et al., 2003).
  *
  * @section physical_processes Physical processes
- * \image html basics.png "Principal physical processes included in the SNOWPACK model"
- * \image latex basics.eps "Principal physical processes included in the SNOWPACK model" width=0.9\textwidth
+ * \image html physical_processes.png "Principal physical processes included in the SNOWPACK model"
+ * \image latex physical_processes.eps "Principal physical processes included in the SNOWPACK model" width=0.9\textwidth
  *
  * A graphical review of the physical processes described by the SNOWPACK model is given in the above figure. SNOWPACK is based on a Lagrangian
  * finite element implementation and solves the instationary heat transfer and settlement equations. Phase changes and transport of water vapor and
