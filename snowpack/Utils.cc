@@ -437,7 +437,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	double ddL, dL = 0.;                          // Length changes
 	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
 	const double mH = Xdata.mH - Xdata.Ground;    // Enforced snow depth
-	double cH_old;                                // Temporary snow depth
+	//double cH_old;                                // Temporary snow depth
 	bool prn_CK = false;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -519,7 +519,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			EMS[e].E  = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
 		}
 		// Update the overall height
-		cH_old    = Xdata.cH;
+		//cH_old    = Xdata.cH;
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
 		//Xdata.mH -= (cH_old - Xdata.cH);
 	} else {

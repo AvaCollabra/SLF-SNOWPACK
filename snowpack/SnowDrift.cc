@@ -83,19 +83,18 @@ SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
  */
 double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle)
 {
-	double weight, binding, ustar_thresh, tau_thresh, tau;
-	double sig = 300.;
+	const double sig = 300.;
 	double Qsalt = 0., Qsusp = 0., c_salt; // The mass fluxes in saltation and suspension (kg m-1 s-1)
 
 	// Compute basic quantities that are needed: friction velocity, z0, threshold vw
 	// For now assume logarithmic wind profile; TODO change this later
-	weight = 0.02 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
+	const double weight = 0.02 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
 	// weight = Edata.Rho*(Edata.sp + 1.)*Constants::g*MM_TO_M(Edata.rg);
-	binding = 0.0015 * sig * Edata.N3 * (Edata.rb*Edata.rb) / (Edata.rg*Edata.rg);
-	tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
-	ustar_thresh = sqrt(tau_thresh / Constants::density_air);
+	const double binding = 0.0015 * sig * Edata.N3 * (Edata.rb*Edata.rb) / (Edata.rg*Edata.rg);
+	const double tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
+	//const double ustar_thresh = sqrt(tau_thresh / Constants::density_air);
 	// fprintf(stdout, "weight: %lf   binding:%lf  tau_th:%lf\n",weight, binding, tau_thresh);
-	tau = Constants::density_air * pow(ustar, 2);
+	const double tau = Constants::density_air * pow(ustar, 2);
 
 	// First, look whether there is any transport at all: use formulation of Schmidt
 	if ( tau_thresh > tau ) {

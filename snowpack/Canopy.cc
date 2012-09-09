@@ -697,7 +697,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 {
 	double TC_old, Tsfc, eg, ag;
 	double star; double psi; double r0p;
-	double CanopyClosure, elev, diffuse, direct, RadFracDiffuse, rsnetdir, sigf;
+	double CanopyClosure, elev, diffuse, direct, RadFracDiffuse, rsnetdir;
 
 	// Variables used a lot
 	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
@@ -723,7 +723,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 		RadFracDirect = 0.0;
 		RadFracDiffuse = 1.0;
 	}
-	sigf = Cdata.sigf;
+	const double sigf = Cdata.sigf;
 	// Canopy Closure for diffuse shortwave and longwave
 	CanopyClosure = 1. - Xdata.Cdata.direct_throughfall; //HACK: we already pass Cdata
 
@@ -740,21 +740,21 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 	// net absorbed by canopy
 
 	// first only diffuse fraction
-	rsnet = RadFracDiffuse * iswrac * (1. - canopyalb) * Cdata.sigf *
-		(1. + ag * (1. - Cdata.sigf) / (1. - Cdata.sigf * ag * canopyalb));
+	rsnet = RadFracDiffuse * iswrac * (1. - canopyalb) * sigf *
+		(1. + ag * (1. - sigf) / (1. - sigf * ag * canopyalb));
 	// Longwave radiation above canopy:
 	ilwrac = Mdata.ea * Constants::stefan_boltzmann * (Mdata.ta * Mdata.ta * Mdata.ta * Mdata.ta);
 
 	// Longwave absorbed by canopy: auxiliary variables
 	eg = 1.0; // emissivity of ground assumed to be 1
-	star = 1. - Cdata.sigf * (1. - Cdata.ec) * (1. - eg);
-	psi = (1. - Cdata.sigf) * (1. - Cdata.ec) * Cdata.ec;
+	star = 1. - sigf * (1. - Cdata.ec) * (1. - eg);
+	psi = (1. - sigf) * (1. - Cdata.ec) * Cdata.ec;
 
 
 	// RNC = RNSC + RNLC: r0p and r1p correpsonds to RNC(t) = r0p + r1p * TC(t)^4
-	r0p = rsnet + Cdata.sigf * ((Cdata.ec + psi / star) *
+	r0p = rsnet + sigf * ((Cdata.ec + psi / star) *
 	ilwrac + Cdata.ec * eg * Constants::stefan_boltzmann * Optim::pow4(Tsfc) / star);
-	r1p = -Cdata.sigf * (Cdata.ec * Constants::stefan_boltzmann + Cdata.ec * eg * Constants::stefan_boltzmann /
+	r1p = -sigf * (Cdata.ec * Constants::stefan_boltzmann + Cdata.ec * eg * Constants::stefan_boltzmann /
 		star + psi * Constants::stefan_boltzmann / star);
 
 	/*
@@ -803,7 +803,7 @@ void Canopy::cn_LineariseSensibleHeatFlux(const double& ch_canopy, const double&
 double Canopy::cn_DSaturationPressureDT(const double& L, const double& T)
 {
 	double dpdt;
-	double c1, c2, c3;
+	double c1, c2, c3; //HACK: c1 never used!
 
 	// dpdt = lw_SaturationPressure(T) * L / (Constants::gas_constant * T * T);
 	if ( L != Constants::lh_sublimation ) {

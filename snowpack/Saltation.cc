@@ -299,24 +299,23 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
                                  const double& tau_th, double& flux, double& z_max, double& ubar, double& cs)
 {
 	int    iter = 0, maxit = 40;
-	double tauA, u0, angle_e_rad;
+	double tauA;
 	double u_i, angle_i_rad, t_i;
 	double eps = 0.001, tauA_old;
-	double Nae, n_ae;
-	double mass;
+	double Nae;
 	double hsalt, udisturb, ulog;
 
 	// Initialize mass, entrainment number and surface shear stress
-	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3.);
-	angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
+	const double mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3.);
+	const double angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
 	//  n_ae = 1./(1.09*mass*sqrt(tauS/DENSITY_AIR));
-	n_ae  = 0.5 / 8. / Constants::pi / dg / dg;
+	const double n_ae  = 0.5 / 8. / Constants::pi / dg / dg;
 	//  n_ae = 200000;
 	tauA = (tauS + tau_th) / 2;
 
 	// Compute trajectories until stationary
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
-	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
+	const double u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 	//  u0 = 3.7*sqrt(tauS-tau_th);
 
 	iter=0;
@@ -382,26 +381,24 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const double& tauA, const double& slope_angle,
                                 const double& dg, const double& tau_th, double& z_max, double& ubar)
 {
-	int j;
-	double u0, angle_e_rad;
 	double u_i, angle_i_rad, t_i;
-	double hsalt1, hsalt2=0., mass; //so that the compiler doesn't complain about uninitialized var
+	double hsalt2=0.;
 
 	// Initialize mass
-	mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3);
+	//const double mass = Constants::density_ice * 4. / 3. * Constants::pi * pow((dg / 2.), 3); //never used
 	// Compute trajectories until stationary
-	angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
+	const double angle_e_rad = DEG_TO_RAD(Saltation::angle_ej);
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
-	u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
+	double u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 
 	// Compute the first trajectory
 	sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max);
-	hsalt1 = z_max;
+	const double hsalt1 = z_max;
 	u0 = Saltation::elas * u_i;
 	// u0 = sqrt(ELAS*DSQR(u_i)) ;
 
 	// Compute three trajectories to see whether they are growing
-	for (j = 0; j < 3; j++) {
+	for (unsigned int j = 0; j < 3; j++) {
 		sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max);
 		hsalt2 = z_max;
 		u0 = Saltation::elas * u_i;

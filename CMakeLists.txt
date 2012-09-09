@@ -296,7 +296,12 @@ IF(UNIX)
 		SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 		SET(CPACK_DEBIAN_PACKAGE_NAME "snowpack")
 		SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
-		SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio") #objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
+		#objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
+		IF(CPACK_BUNDLE_ALL)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
+		ELSE(CPACK_BUNDLE_ALL)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio")
+		ENDIF(CPACK_BUNDLE_ALL)
 		SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
 		SET(CPACK_RPM_PACKAGE_NAME "snowpack")
 		SET(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
