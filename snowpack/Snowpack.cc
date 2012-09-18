@@ -1630,12 +1630,6 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compTemperatureProfile(Xdata, Mdata, Bdata);
 		}
-
-		// Compute the final heat fluxes
-		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
-		                      // linearized w/ respect to Tss and thus remains unchanged
-		                      // throughout the temperature iterations!!!
-		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 		Sdata.compSnowSoilHeatFlux(Xdata);
 
 		// Inialize PhaseChange
@@ -1647,6 +1641,12 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		else
 			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date, false);
 
+		// Compute the final heat fluxes
+		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
+		                      // linearized w/ respect to Tss and thus remains unchanged
+		                      // throughout the temperature iterations!!!
+		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+		
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
 
