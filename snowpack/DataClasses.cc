@@ -1226,7 +1226,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		}
 	}
 	EdataLower.dth_w = (L_upper*EdataUpper.dth_w + L_lower*EdataLower.dth_w) / LNew;
-	EdataLower.Qmf += EdataUpper.Qmf;
+	EdataLower.Qmf = (EdataUpper.Qmf*L_upper + EdataLower.Qmf*L_lower)/LNew;	//Note: Qmf has units W/m^3, so it needs to be scaled with element lengths.
 	EdataLower.sw_abs += EdataUpper.sw_abs;
 	if ((EdataUpper.mk >= 100) && (EdataLower.mk < 100)) {
 		EdataLower.mk += (EdataUpper.mk/100)*100;
