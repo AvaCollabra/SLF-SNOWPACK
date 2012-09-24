@@ -600,7 +600,7 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
 }
 
 // SNOWPACK MAIN **************************************************************
-int main (int argc, char *argv[])
+void real_main (int argc, char *argv[])
 {
 	if (argc==1) Usage(string(argv[0]));
 
@@ -1236,6 +1236,15 @@ int main (int argc, char *argv[])
 		cout << "                       ========================================================================" << endl;
 	}
 	cout << "                       FINISHED running SLF " << mode << " Snowpack Model on " << ctime(&nowEND) << endl;
+}
+
+int main(int argc, char *argv[]) {
+	try {
+		real_main(argc, argv);
+	} catch (const std::exception &e) {
+		std::cerr << e.what();
+		exit(1);
+	}
 
 	return 0;
 }
