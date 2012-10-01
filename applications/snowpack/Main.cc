@@ -323,7 +323,8 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	return true;
 }
 
-void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double prevailing_wind_dir, const double wind_scaling_factor)
+void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
+                   const double prevailing_wind_dir, const double wind_scaling_factor)
 {
 	Mdata.date   = md.date;
 	Mdata.ta     = md(MeteoData::TA);
@@ -341,17 +342,8 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double p
 	Mdata.dw_drift = md("DW_DRIFT");
 	if (Mdata.dw_drift == mio::IOUtils::nodata) Mdata.dw_drift = prevailing_wind_dir;
 
-	if (md(MeteoData::ISWR) == mio::IOUtils::nodata) {
-		Mdata.iswr   = 0.0;
-	} else {
-		Mdata.iswr   = md(MeteoData::ISWR);
-	}
-
-	if (md(MeteoData::RSWR) == mio::IOUtils::nodata){
-		Mdata.rswr   = 0.0;
-	} else {
-		Mdata.rswr   = md(MeteoData::RSWR);
-	}
+	Mdata.iswr   = md(MeteoData::ISWR);
+	Mdata.rswr   = md(MeteoData::RSWR);
 
 	Mdata.ea  = md("EA");
 	Mdata.tss = md(MeteoData::TSS);
@@ -376,6 +368,26 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata, const double p
 		Mdata.rho_hn = md("RHO_HN");
 }
 
+/**
+ * @brief Make sure that both short wave fluxes get at least a "realistic" value but measured albedo only if both fluxes are measured
+ * @note To be done only for flat field or single slope station
+ * @param Mdata
+ * @param vecXdata
+ * @param slope
+ */
+void setShortWave(CurrentMeteo& Mdata, SnowStation& Xdata)
+{
+	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
+		{Xdata.mAlbedo = Mdata.rswr / Mdata.iswr;}
+	else
+		{Xdata.mAlbedo = Constants::undefined;}
+
+	if (Mdata.iswr == mio::IOUtils::nodata)
+		{Mdata.iswr = Mdata.rswr / Xdata.cAlbedo;}
+	if (Mdata.rswr == mio::IOUtils::nodata)
+		{Mdata.rswr = Mdata.iswr * Xdata.cAlbedo;}
+}
+
 //for a given config (that can be altered) and original meteo data, prepare the snowpack data structures
 //This means that all tweaking of config MUST be reflected in the config object
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
@@ -393,27 +405,26 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
-	const bool incoming_longwave = cfg.get("INCOMING_LONGWAVE", "Snowpack");
 	int sw_mode = 0;
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	sw_mode %= 10;
+	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
+
 	if (Mdata.tss == mio::IOUtils::nodata) {
 		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use clear sky
 		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
-	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
-
-	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output");
-	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output");
 
 	Radiation radiation(cfg);
 	Meteo meteo(cfg);
 
 	// Reset Surface and Canopy Data to zero if you seek current values
+	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output");
 	if (!avgsum_time_series) {
+		const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output");
 		surfFluxes.reset(cumsum_mass);
 		if (useCanopyModel)
 			vecXdata[slope.sector].Cdata.reset(cumsum_mass);
@@ -434,11 +445,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		if (!Meteo::compHSrate(Mdata, vecXdata[slope.station], hs_a3hl6))
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 
-		// Estimate measured albedo, works only if both parameters are available
-		if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
-			vecXdata[slope.station].mAlbedo = Mdata.rswr / Mdata.iswr;
-		else
-			vecXdata[slope.station].mAlbedo = Constants::undefined;
+		// Set short wave fluxes and measured albedo
+		setShortWave(Mdata, vecXdata[slope.station]);
 
 		// Split flat field radiation and compute potential radiation
 		radiation.flatFieldRadiation(vecXdata[slope.station], Mdata, Psolar, Rdata);
@@ -490,7 +498,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		radiation.radiationOnSlope(vecXdata[slope.sector], Mdata, surfFluxes, Psolar, Rdata);
 
 		if (((sw_mode == 1) || (sw_mode == 2))
-			    && (vecXdata[slope.sector].meta.getSlopeAngle() > Constants::min_slope_angle)) {
+			    && (vecXdata[slope.sector].meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
 			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
 		//HACK A3D: resynchronize Mdata with the solar and radiation parameters
@@ -544,11 +552,11 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		}
 
 		// Check whether to use incoming longwave as estimated from station field
+		const bool incoming_longwave = cfg.get("INCOMING_LONGWAVE", "Snowpack");
 		if (!incoming_longwave) {
 			double ea = 0.;
 			if ((lw_in > 50.) && (lw_in < 300.)) {
-				ea = lw_in/Mdata.ta/Mdata.ta/Mdata.ta/Mdata.ta;
-				ea /= Constants::stefan_boltzmann;
+				ea = Atmosphere::blkBody_Emissivity(lw_in, Mdata.ta);
 			}
 			if ((ea > 0.55) && (ea < 1.0)) {
 				Mdata.ea = ea;
@@ -643,6 +651,18 @@ void real_main (int argc, char *argv[])
 		cfg.addKey("VW_AVG::arg1", "Filters", "soft 101 360000");
 		cfg.addKey("RH_AVG::filter1", "Filters", "mean_avg");
 		cfg.addKey("RH_AVG::arg1", "Filters", "soft 101 360000");
+	}
+
+	const int tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
+	if ((tst_sw_mode % 10) == 2) {
+		// Make sure there is not only one of ISWR and RSWR available
+		bool iswr_inp=true, rswr_inp = true;
+		cfg.getValue("ISWR_INP","Input",iswr_inp,Config::nothrow);
+		cfg.getValue("RSWR_INP","Input",rswr_inp,Config::nothrow);
+		if (!(iswr_inp && rswr_inp)) {
+			cerr << "[E] SW_MODE = 2: Please set both ISWR_INP and RSWR_INP to true in [Input]-section of io.ini!\n";
+			exit(1);
+		}
 	}
 
 	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
