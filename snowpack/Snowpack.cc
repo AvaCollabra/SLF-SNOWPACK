@@ -620,7 +620,6 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		// Semi-explicit
 		// Latent heat transfer and net longwave radiation
 		Fe[1] += Bdata.ql + Bdata.lw_net;
-		Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 		// Sensible heat transfer and advected rain energy
 		S_eb = Bdata.qs + Bdata.qr;
 		if ((T_air - T_iter) != 0.)
@@ -772,7 +771,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	case 0: // use incoming SW flux only
 		Mdata.rswr = Mdata.iswr * Albedo;
 		break;
-	case 1: // use reflected SW flux only
+	case 1: // use r SW flux only
 		Mdata.iswr = Mdata.rswr / Albedo;
 		break;
 		// ... while the ground is still snow covered according to HS measurements
