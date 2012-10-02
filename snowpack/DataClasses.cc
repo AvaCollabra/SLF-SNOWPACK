@@ -1210,7 +1210,12 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	} else {
 		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
-
+	
+	// Now check if, in case of removal of the upper layer (join==false), the lower layer can store all ICE. If not, increase the element length.
+	if(join == false && (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew > 1.0 + Constants::eps2) {
+		LNew += L_upper;
+	}
+	
 	EdataLower.L0 = EdataLower.L = LNew;
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
