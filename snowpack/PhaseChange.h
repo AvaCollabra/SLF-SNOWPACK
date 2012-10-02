@@ -38,7 +38,7 @@ class PhaseChange {
 		PhaseChange(const mio::Config& i_cfg);
 		void initialize(SnowStation& Xdata);								//Call before first call to compPhaseChange in a time step
 		void finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in);	//Call after last call to compPhaseChange in a time step
-		void compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step
+		void compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step
 
 		static const double theta_r; ///< Residual Water Content,  for now we say  0.0
 

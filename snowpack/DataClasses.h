@@ -104,6 +104,7 @@ class CurrentMeteo {
 		double psi_s;    ///< Stability correction for scalar heat fluxes
 		double iswr;     ///< Incoming SHORTWAVE radiation (W m-2)
 		double rswr;     ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
+		double mAlbedo;  ///< Measured snow albedo
 		double diff;     ///< Diffuse radiation from the sky (W m-2)
 		double elev;     ///< Solar elevation to be used in Canopy.c (rad) => see also
 		double ea;       ///< Atmospheric emissivity (1)
@@ -429,8 +430,8 @@ class SnowStation {
 
 		CanopyData Cdata;           ///< Pointer to canopy data
 		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
-		double cAlbedo;             ///< Computed snow albedo
-		double mAlbedo;             ///< Measured snow albedo
+		double pAlbedo;             ///< Parameterized snow albedo
+		double Albedo;              ///< Snow albedo used by the model
 		double SoilAlb;             ///< Soil albedo
 		double BareSoil_z0;         ///< Bare soil roughness in m
 		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
@@ -548,8 +549,8 @@ class BoundCond {
 		double qw;         ///< net shortwave radiation at the surface (absorbed within the snowpack)
 		double sw_dir;     ///< incoming direct shortwave radiation; on slopes: projected
 		double sw_diff;    ///< incoming diffuse shortwave radiation
-		double cA;         ///< computed Albedo (used for OUTPUT only)
-		double mA;         ///< measured Albedo (used for OUTPUT only)
+		double pAlbedo;    ///< parameterized Albedo (used for OUTPUT only)
+		double mAlbedo;    ///< measured Albedo (used for OUTPUT only)
 		double dIntEnergy; ///< Internal energy change in J m-2 (used for OUTPUT only)
 		double meltFreezeEnergy; ///< Melt freeze part of internal energy change in J m-2  (used for OUTPUT only)
 

@@ -620,6 +620,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		// Semi-explicit
 		// Latent heat transfer and net longwave radiation
 		Fe[1] += Bdata.ql + Bdata.lw_net;
+		Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 		// Sensible heat transfer and advected rain energy
 		S_eb = Bdata.qs + Bdata.qr;
 		if ((T_air - T_iter) != 0.)
@@ -714,7 +715,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 
 	void *Kt;                                    // Avoids dereferencing the pointer
 	double *U=NULL, *dU=NULL, *ddU=NULL;         // Solution vectors
-	double cAlb;                                 // Computed albedo
+	double Albedo;                               // Albedo used by the model
 
 	// Dereference the pointers
 	Kt = Xdata.Kt;
@@ -736,14 +737,14 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				eAlbedo--;
 		default: // Snow, glacier ice, PLASTIC, or soil
 			if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
-				cAlb = SnLaws::parameterizedSnowAlbedo(fixed_albedo, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+				Albedo = SnLaws::parameterizedSnowAlbedo(fixed_albedo, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
 			} else { // PLASTIC, or soil
-				cAlb = Xdata.SoilAlb;
+				Albedo = Xdata.SoilAlb;
 			}
 			break;
 		}
 	} else { // Soil
-		cAlb = Xdata.SoilAlb;
+		Albedo = Xdata.SoilAlb;
 	}
 
 	if (!(useCanopyModel && (Xdata.Cdata.height > 3.5))) {
@@ -756,31 +757,32 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
 			if ((hs < 0.02) || (NDS[nN-1].T > C_TO_K(3.5))
 			                  || ((hs < 0.05) && (NDS[nN-1].T > C_TO_K(1.7)))) {
-				cAlb = Xdata.SoilAlb;
+				Albedo = Xdata.SoilAlb;
 			}
 		}
 		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
-			cAlb = MAX(cAlb, Mdata.rswr / Constants::solcon);
-		cAlb = MAX(Xdata.SoilAlb, MIN(0.95, cAlb));
+			Albedo = MAX(Albedo, Mdata.rswr / Constants::solcon);
+		Albedo = MAX(Xdata.SoilAlb, MIN(0.95, Albedo));
 	} else {
-		cAlb = MAX(0.05, MIN(0.99, cAlb));
+		Albedo = MAX(0.05, MIN(0.99, Albedo));
 	}
+	Xdata.pAlbedo = Albedo; // Assign albedo, either parameterized or measured, to Xdata
 
-	switch (sw_mode) {
-	case 0: // need to assign rswr a correct value
-		Mdata.rswr = Mdata.iswr * cAlb;
+	switch (sw_mode) { // Assign iswr and rswr correct values according to switch value
+	case 0: // use incoming SW flux only
+		Mdata.rswr = Mdata.iswr * Albedo;
 		break;
-	case 1: // need to assign iswr a correct value
-		Mdata.iswr = Mdata.rswr / cAlb;
+	case 1: // use reflected SW flux only
+		Mdata.iswr = Mdata.rswr / Albedo;
 		break;
 		// ... while the ground is still snow covered according to HS measurements
 	case 2: // use measured albedo ...
-		if (Xdata.mAlbedo != Constants::undefined) {
-			if ((!((Xdata.mAlbedo < 2.*Xdata.SoilAlb)
-			        && ((Xdata.cH - Xdata.Ground) > 0.05))) && Xdata.mAlbedo <= 0.95)
-				cAlb = Xdata.mAlbedo;
+		if (Mdata.mAlbedo != Constants::undefined) {
+			if ((!((Mdata.mAlbedo < 2.*Xdata.SoilAlb)
+			        && ((Xdata.cH - Xdata.Ground) > 0.05))) && Mdata.mAlbedo <= 0.95)
+				Albedo = Mdata.mAlbedo;
 			else
-				Mdata.rswr = Mdata.iswr * cAlb;
+				Mdata.rswr = Mdata.iswr * Albedo;
 		} else {
 			Mdata.rswr = Mdata.iswr = 0.;
 		}
@@ -790,10 +792,10 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		exit(EXIT_FAILURE);
 		break;
 	}
-	Xdata.cAlbedo = cAlb; // Assign albedo to Xdata
+	Xdata.Albedo = Albedo; // Assign albedo, either parameterized or measured, to Xdata
 	const double I0 = Mdata.iswr - Mdata.rswr; // Net irradiance perpendicular to slope
 	if (I0 < 0.) {
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date, " iswr:%lf  rswr:%lf  cAlb:%lf", Mdata.iswr, Mdata.rswr, cAlb);
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, " iswr:%lf  rswr:%lf  Albedo:%lf", Mdata.iswr, Mdata.rswr, Albedo);
 		exit(EXIT_FAILURE);
 	}
 
@@ -1304,7 +1306,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				Xdata.Ndata[nOldN-1].hoar = 0.;
 			}
 
-			Xdata.cAlbedo = Snowpack::new_snow_albedo;
+			Xdata.Albedo = Snowpack::new_snow_albedo;
 
 			const size_t nNewN = nOldN + nAddE + nHoarE;
 			const size_t nNewE = nOldE + nAddE + nHoarE;
@@ -1637,9 +1639,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
 		if(!alpine3d)
-			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
+			phasechange.compPhaseChange(Xdata, Mdata.date);
 		else
-			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date, false);
+			phasechange.compPhaseChange(Xdata, Mdata.date, false);
 
 		// Compute the final heat fluxes
 		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
@@ -1656,9 +1658,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		// See if any SUBSURFACE phase changes are occuring due to updated water content (infiltrating rain/melt water in cold snow layers)
 		if(!alpine3d)
-			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date);
+			phasechange.compPhaseChange(Xdata, Mdata.date);
 		else
-			phasechange.compPhaseChange(Sdata, Xdata, Mdata.date, false);
+			phasechange.compPhaseChange(Xdata, Mdata.date, false);
 
 		// Finalize PhaseChange
 		phasechange.finalize(Sdata, Xdata, Mdata.date);

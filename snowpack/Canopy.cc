@@ -702,7 +702,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 	// Variables used a lot
 	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
 		Tsfc = Xdata.Ndata[Xdata.getNumberOfElements()].T;	// Snow surface temperature
-		ag=Xdata.cAlbedo;
+		ag=Xdata.Albedo;
 	} else {
 		Tsfc = Mdata.ta;	// Surface temperature
 		ag = Xdata.SoilAlb;
@@ -1341,7 +1341,7 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	double Tsfc4, ag;
 	if (Xdata.getNumberOfElements() > Xdata.SoilNode) { // Snow surface
 		Tsfc4 = Optim::pow4(Xdata.Ndata[Xdata.getNumberOfElements()].T);
-		ag=Xdata.cAlbedo;
+		ag=Xdata.Albedo;
 	} else { // Ground surface
 		Tsfc4 = Optim::pow4(Mdata.ta);	// Surface temperature
 		ag = Xdata.SoilAlb;
@@ -1665,7 +1665,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 	Xdata->Cdata.intcapacity += intcapacity;
 	Xdata->Cdata.canopyalb += canopyalb;
 	if (Xdata->getNumberOfElements() > Xdata->SoilNode) { // In case of snow on the ground
-		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->cAlbedo,
+		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->Albedo,
 					Xdata->Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
 	} else { // No snow on the ground
 		Xdata->Cdata.totalalb +=  cn_TotalAlbedo(canopyalb, Xdata->Cdata.sigf, Xdata->SoilAlb,

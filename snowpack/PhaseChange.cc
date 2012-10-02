@@ -364,12 +364,11 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
  * A = c_p(T) * th(i) * Q_f \n
  * ql_Rest is the Energy that is transferred from the upper element to the lower one
  * in case of complete melting of the former
- * @param Sdata
  * @param Xdata
  * @param date_in is the current date
  * @param verbose print detailed warnings for various situations? (default=true)
  */
-void PhaseChange::compPhaseChange(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in, const bool& verbose)
+void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose)
 {
 	size_t e, nE;
 	double ql_Rest;

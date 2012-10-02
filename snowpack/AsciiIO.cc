@@ -1248,7 +1248,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,");
 	if (out_sw)
 		// 6-9: Shortwave radiation fluxes (W m-2) and computed albedo (1)
-		fprintf(TFile,",%f,%f,%f,%f", Sdata.sw_out, Sdata.sw_in, Sdata.qw, Sdata.cA);
+		fprintf(TFile,",%f,%f,%f,%f", Sdata.sw_out, Sdata.sw_in, Sdata.qw, Sdata.pAlbedo);
 	else
 		fprintf(TFile,",,,,");
 	if (out_meteo)
@@ -1264,7 +1264,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,,");
 	if (out_sw)
 		// 18-22: projected solar radiation (W m-2), meas. albedo (1)
-		fprintf(TFile,",%f,%f,%f,%f,%f", Sdata.sw_hor, Sdata.sw_in, Sdata.sw_dir, Sdata.sw_diff, Sdata.mA);
+		fprintf(TFile,",%f,%f,%f,%f,%f", Sdata.sw_hor, Sdata.sw_in, Sdata.sw_dir, Sdata.sw_diff, Sdata.mAlbedo);
 	else
 		fprintf(TFile,",,,,,");
 	if (out_meteo)

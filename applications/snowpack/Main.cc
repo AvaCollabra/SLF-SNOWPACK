@@ -378,14 +378,14 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 void setShortWave(CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
-		{Xdata.mAlbedo = Mdata.rswr / Mdata.iswr;}
+		{Mdata.mAlbedo = Mdata.rswr / Mdata.iswr;}
 	else
-		{Xdata.mAlbedo = Constants::undefined;}
+		{Mdata.mAlbedo = Constants::undefined;}
 
 	if (Mdata.iswr == mio::IOUtils::nodata)
-		{Mdata.iswr = Mdata.rswr / Xdata.cAlbedo;}
+		{Mdata.iswr = Mdata.rswr / Xdata.Albedo;}
 	if (Mdata.rswr == mio::IOUtils::nodata)
-		{Mdata.rswr = Mdata.iswr * Xdata.cAlbedo;}
+		{Mdata.rswr = Mdata.iswr * Xdata.Albedo;}
 }
 
 //for a given config (that can be altered) and original meteo data, prepare the snowpack data structures

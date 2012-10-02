@@ -102,7 +102,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
-    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), cA(0.), mA(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
+    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
     drift(0.), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
 {
 	mass.resize(N_MASS_CHANGES);
@@ -126,8 +126,8 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 		qw      = 0.;
 		sw_dir  = 0.;
 		sw_diff = 0.;
-		cA      = 0.;
-		mA      = 0.;
+		pAlbedo = 0.;
+		mAlbedo = 0.;
 		dIntEnergy = 0.;
 		meltFreezeEnergy = 0.;
 		mass[MS_HNW] = 0.;
@@ -180,11 +180,11 @@ void SurfaceFluxes::collectSurfaceFluxes(BoundCond& Bdata,
 	sw_out += Mdata.rswr;
 	qw     += Mdata.iswr - Mdata.rswr;
 
-	cA += Xdata.cAlbedo;
-	if (Xdata.mAlbedo != Constants::undefined)
-		mA += Xdata.mAlbedo;
+	pAlbedo += Xdata.pAlbedo;
+	if (Mdata.mAlbedo != Constants::undefined)
+		mAlbedo += Mdata.mAlbedo;
 	else
-		mA = Constants::undefined;
+		mAlbedo = Constants::undefined;
 
 	// 2) Long wave fluxes.
 	lw_out += Bdata.lw_out;
@@ -742,7 +742,7 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 }
 
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
-	meta(), Cdata(), cAlbedo(0.), mAlbedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
+	meta(), Cdata(), pAlbedo(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
 	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
@@ -940,7 +940,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	size_t ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
 	int real_soil_no_sandwich = 1;  // Switch to count real soil layers
 
-	cAlbedo = SSdata.Albedo;
+	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
 
@@ -1210,12 +1210,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	} else {
 		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
-	
-	// Now check if, in case of removal of the upper layer (join==false), the lower layer can store all ICE. If not, increase the element length.
-	if(join == false && (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew > 1.0 + Constants::eps2) {
-		LNew += L_upper;
-	}
-	
+
 	EdataLower.L0 = EdataLower.L = LNew;
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
@@ -1284,39 +1279,39 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 }
 
-std::ostream& operator<<(std::ostream &os, const SnowStation& mdata)
+std::ostream& operator<<(std::ostream &os, const SnowStation& Xdata)
 {
 	os << "<SnowStation>" << "\n";
-	os << mdata.meta;
+	os << Xdata.meta;
 	os << setprecision(4);
 	//os << fixed;
-	os << mdata.nElems << " element(s) and " << mdata.nNodes << " node(s).";
-	if(mdata.useSoilLayers)
+	os << Xdata.nElems << " element(s) and " << Xdata.nNodes << " node(s).";
+	if(Xdata.useSoilLayers)
 		os << " Soil=true";
 	else
 		os << " Soil=false";
-	if(mdata.useCanopyModel)
+	if(Xdata.useCanopyModel)
 		os << " canopy=true";
 	else
 		os << " canopy=false";
 	os << "\n";
 
-	os << "Soil:\tSoilNode=" << mdata.SoilNode  << " depth=" << mdata.Ground << " BareSoil_z0=" << mdata.BareSoil_z0 << "\n";
-	os << "Albedo:\tmAlbedo=" << mdata.mAlbedo << " cAlbedo=" << mdata.cAlbedo << " SoilAlb=" << mdata.SoilAlb << "\n";
-	os << "Snow:\tMeasured HS=" << mdata.mH << " Calculated HS=" << mdata.cH << " New snow=" << mdata.hn << " of density=" << mdata.rho_hn << "\n";
-	os << "Energy:\tColdContent=" << mdata.ColdContent << " dIntEnergy=" << mdata.dIntEnergy << " SubSurfaceMelt=" << mdata.SubSurfaceMelt << " SubSurfaceFrze=" << mdata.SubSurfaceFrze << "\n";
-	os << "Snowdrift:\tsector=" << mdata.sector << " windward=" << mdata.windward << " ErosionLevel=" << mdata.ErosionLevel << " ErosionMass=" << mdata.ErosionMass << "\n";
-	os << "Stability:\tS_d(" << mdata.z_S_d << ")=" << mdata.S_d << " S_n(" << mdata.z_S_n << ")=" << mdata.S_n << " S_s(" << mdata.z_S_s << ")=" << mdata.S_s;
-	os << " S_1=" << mdata.S_class1 << " S_2=" << mdata.S_class2 << " S_4(" << mdata.z_S_4 << ")=" << mdata.S_4 << " S_5(" << mdata.z_S_5 << ")=" << mdata.S_5 << "\n";
+	os << "Soil:\tSoilNode=" << Xdata.SoilNode  << " depth=" << Xdata.Ground << " BareSoil_z0=" << Xdata.BareSoil_z0 << "\n";
+	os << "Albedo:\tAlbedo=" << Xdata.Albedo << " pAlbedo=" << Xdata.pAlbedo << " SoilAlb=" << Xdata.SoilAlb << "\n";
+	os << "Snow:\tMeasured HS=" << Xdata.mH << " Calculated HS=" << Xdata.cH << " New snow=" << Xdata.hn << " of density=" << Xdata.rho_hn << "\n";
+	os << "Energy:\tColdContent=" << Xdata.ColdContent << " dIntEnergy=" << Xdata.dIntEnergy << " SubSurfaceMelt=" << Xdata.SubSurfaceMelt << " SubSurfaceFrze=" << Xdata.SubSurfaceFrze << "\n";
+	os << "Snowdrift:\tsector=" << Xdata.sector << " windward=" << Xdata.windward << " ErosionLevel=" << Xdata.ErosionLevel << " ErosionMass=" << Xdata.ErosionMass << "\n";
+	os << "Stability:\tS_d(" << Xdata.z_S_d << ")=" << Xdata.S_d << " S_n(" << Xdata.z_S_n << ")=" << Xdata.S_n << " S_s(" << Xdata.z_S_s << ")=" << Xdata.S_s;
+	os << " S_1=" << Xdata.S_class1 << " S_2=" << Xdata.S_class2 << " S_4(" << Xdata.z_S_4 << ")=" << Xdata.S_4 << " S_5(" << Xdata.z_S_5 << ")=" << Xdata.S_5 << "\n";
 
-	os << "Kt= " << hex << mdata.Kt << dec << "\n";
-	/*for (unsigned int ii=1; ii<mdata.Ndata.size(); ii++) {
-		os << mdata.Ndata[ii];
+	os << "Kt= " << hex << Xdata.Kt << dec << "\n";
+	/*for (unsigned int ii=1; ii<Xdata.Ndata.size(); ii++) {
+		os << Xdata.Ndata[ii];
 	}
-	for (unsigned int ii=1; ii<mdata.Edata.size(); ii++) {
-		os << mdata.Edata[ii];
+	for (unsigned int ii=1; ii<Xdata.Edata.size(); ii++) {
+		os << Xdata.Edata[ii];
 	}*/
-	//os << "Canopy=" << mdata.Cdata;
+	//os << "Canopy=" << Xdata.Cdata;
 
 	os << "</SnowStation>\n";
 	return os;
@@ -1464,32 +1459,33 @@ void CurrentMeteo::copySolutes(const mio::MeteoData& md, const size_t& i_number_
 	}
 }
 
-std::ostream& operator<<(std::ostream &os, const CurrentMeteo& mdata)
+std::ostream& operator<<(std::ostream &os, const CurrentMeteo& Mdata)
 {
 	const double to_deg = 180. / mio::Cst::PI;
 	os << "<CurrentMeteo>" << endl;
-	os << mdata.date.toString(Date::ISO) << " " << mdata.n << " fields\n";
+	os << Mdata.date.toString(Date::ISO) << " " << Mdata.n << " fields\n";
 
-	os << setw(8) << "TA=" << mdata.ta << " TSS=" << mdata.tss << " TSG=" << mdata.ts0 << "\n";
-	os << setw(8) << "RH=" << mdata.rh << " rh_avg=" << mdata.rh_avg << "\n";
-	os << setw(8) << "ISWR=" << mdata.iswr << " RSWR=" << mdata.rswr << " diff=" << mdata.diff << " Sun_elev=" << mdata.elev*to_deg << "° EA=" << mdata.ea << "\n";
-	os << setw(8) << "HNW=" << mdata.hnw << " HS=" << mdata.hs << " rho_hn=" << mdata.rho_hn << "\n";
-	os << setw(8) << "VW=" << mdata.vw << " vw_avg=" << mdata.vw_avg << " vw_max=" << mdata.vw_max << " vw_drift=" << mdata.vw_drift << "\n";
-	os << setw(8) << "DW=" << mdata.dw << "\n";
-	os << setw(8) << "U*=" << mdata.ustar << " z0=" << mdata.z0 << " psi_s=" << mdata.psi_s << "\n";
+	os << setw(8) << "TA=" << Mdata.ta << " TSS=" << Mdata.tss << " TSG=" << Mdata.ts0 << "\n";
+	os << setw(8) << "RH=" << Mdata.rh << " rh_avg=" << Mdata.rh_avg << "\n";
+	os << setw(8) << "ISWR=" << Mdata.iswr << " RSWR=" << Mdata.rswr << " mAlbedo=" << Mdata.mAlbedo << "\n";
+	os << setw(8) << "diff=" << Mdata.diff << " Sun_elev=" << Mdata.elev*to_deg << "° EA=" << Mdata.ea << "\n";
+	os << setw(8) << "HNW=" << Mdata.hnw << " HS=" << Mdata.hs << " rho_hn=" << Mdata.rho_hn << "\n";
+	os << setw(8) << "VW=" << Mdata.vw << " vw_avg=" << Mdata.vw_avg << " vw_max=" << Mdata.vw_max << " vw_drift=" << Mdata.vw_drift << "\n";
+	os << setw(8) << "DW=" << Mdata.dw << "\n";
+	os << setw(8) << "U*=" << Mdata.ustar << " z0=" << Mdata.z0 << " psi_s=" << Mdata.psi_s << "\n";
 
 	//os << std::setprecision(10);
 	stringstream ss;
-	if(mdata.ts.size()>0) os << "     ";
-	for (unsigned int ii=0; ii<mdata.ts.size(); ii++) {
-		os << "ts(" << mdata.zv_ts[ii] << ")=" << mdata.ts[ii] << " ";
+	if(Mdata.ts.size()>0) os << "     ";
+	for (unsigned int ii=0; ii<Mdata.ts.size(); ii++) {
+		os << "ts(" << Mdata.zv_ts[ii] << ")=" << Mdata.ts[ii] << " ";
 	}
-	if(mdata.ts.size()>0) os << "\n";
-	if(mdata.conc.size()>0) os << "     ";
-	for (unsigned int ii=0; ii<mdata.conc.size(); ii++) {
-		os << "conc[" << ii << "]=" << mdata.conc[ii] << " ";
+	if(Mdata.ts.size()>0) os << "\n";
+	if(Mdata.conc.size()>0) os << "     ";
+	for (unsigned int ii=0; ii<Mdata.conc.size(); ii++) {
+		os << "conc[" << ii << "]=" << Mdata.conc[ii] << " ";
 	}
-	if(mdata.conc.size()>0) os << "\n";
+	if(Mdata.conc.size()>0) os << "\n";
 
 	os << "</CurrentMeteo>" << endl;
 	return os;
@@ -1505,7 +1501,7 @@ std::ostream& operator<<(std::ostream &os, const SN_SNOWSOIL_DATA& data)
 	os << "nLayers:                    " << data.nLayers << "\n";
 	os << "TODO LayerDATA\n";
 	/*for (unsigned int ii=1; ii<data.LayerData.size(); ii++) {
-		os << "<LayerData index=" << ii << ">\n" << mdata.Ldata[ii] << "</LayerData>\n";
+		os << "<LayerData index=" << ii << ">\n" << data.Ldata[ii] << "</LayerData>\n";
 	}
 	*/
 	os << "HS_last:                    " << data.HS_last << "\n";
@@ -1524,28 +1520,28 @@ std::ostream& operator<<(std::ostream &os, const SN_SNOWSOIL_DATA& data)
 }
 
 
-std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata)
+std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& Sdata)
 {
 	os << "<SurfaceFluxes>" << endl;
 	os << std::setprecision(10);
-	os << "Long wave: lw_in=" << mdata.lw_in << " lw_out=" << mdata.lw_out << " lw_net=" << mdata.lw_net << endl;
-	os << "Short wave: sw_in=" << mdata.sw_in << " sw_out=" << mdata.sw_out << " qw=" << mdata.qw << endl;
-	os << "Short wave: sw_hor=" << mdata.sw_hor << " sw_dir=" << mdata.sw_dir << " sw_diff=" << mdata.sw_diff << endl;
-	os << "Albedo: mA=" << mdata.mA << " cA=" << mdata.cA << endl;
-	os << "Energy: qs=" << mdata.qs << " ql=" << mdata.ql << " qw=" << mdata.qw << " qr=" << mdata.qr << " qg=" << mdata.qg << " gq0=" << mdata.qg0 << endl;
-	os << "Energy: dIntEnergy=" << mdata.dIntEnergy << endl;
-	os << "Mass change: hoar=" << mdata.hoar << " drift=" << mdata.drift << " snow depth correction=" << mdata.dhs_corr << endl;
-	os << "Snow: mRho_hn=" << mdata.mRho_hn << " cRho_hn=" << mdata.cRho_hn << endl;
+	os << "Long wave: lw_in=" << Sdata.lw_in << " lw_out=" << Sdata.lw_out << " lw_net=" << Sdata.lw_net << endl;
+	os << "Short wave: sw_in=" << Sdata.sw_in << " sw_out=" << Sdata.sw_out << " qw=" << Sdata.qw << endl;
+	os << "Short wave: sw_hor=" << Sdata.sw_hor << " sw_dir=" << Sdata.sw_dir << " sw_diff=" << Sdata.sw_diff << endl;
+	os << "Albedo: mAlbedo=" << Sdata.mAlbedo << " pAlbedo=" << Sdata.pAlbedo << endl;
+	os << "Energy: qs=" << Sdata.qs << " ql=" << Sdata.ql << " qw=" << Sdata.qw << " qr=" << Sdata.qr << " qg=" << Sdata.qg << " gq0=" << Sdata.qg0 << endl;
+	os << "Energy: dIntEnergy=" << Sdata.dIntEnergy << endl;
+	os << "Mass change: hoar=" << Sdata.hoar << " drift=" << Sdata.drift << " snow depth correction=" << Sdata.dhs_corr << endl;
+	os << "Snow: mRho_hn=" << Sdata.mRho_hn << " cRho_hn=" << Sdata.cRho_hn << endl;
 
 	stringstream ss;
-	os << mdata.mass.size() << " mass fluxes: ";
-	for (unsigned int ii=1; ii<mdata.mass.size(); ii++) {
-		os << mdata.mass[ii] << " ";
+	os << Sdata.mass.size() << " mass fluxes: ";
+	for (unsigned int ii=1; ii<Sdata.mass.size(); ii++) {
+		os << Sdata.mass[ii] << " ";
 	}
 	os << endl;
-	os << mdata.load.size() << " solutes fluxes: ";
-	for (unsigned int ii=1; ii<mdata.load.size(); ii++) {
-		os << mdata.load[ii] << " ";
+	os << Sdata.load.size() << " solutes fluxes: ";
+	for (unsigned int ii=1; ii<Sdata.load.size(); ii++) {
+		os << Sdata.load[ii] << " ";
 	}
 	os << endl;
 	os << "</SurfaceFluxes>" << endl;
