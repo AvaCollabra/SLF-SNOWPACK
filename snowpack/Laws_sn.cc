@@ -1473,45 +1473,42 @@ double SnLaws::ArrheniusLaw(const double ActEnergy, const double T, const double
 }
 
 /**
- * @brief Computes air emissivity (1) \n
- * Uses either incoming long wave radiation or either Brutsaert (clear sky) or Omstedt (cloudiness) parametrization \n
- * @note
- * - ta and rh must be checked values, best containing no mio::IOUtils::nodata!
- * - observed minimum air emissivities:
+ * @brief Compute the air emissivity
+ * It relies on mio::ILWR_parametrized to get a parametrized ILWR if no measured ILWR is available.
+ * This in turn relies either on  Brutsaert (clear sky) or Omstedt (cloudiness) or Crawford(cloudiness from ISWR).
+ * The air temperature and relative humidity should be available for meanigful results.
+ * In any case, the returned air emissivity will be between min_air_emissivity and 1, min_air_emissivity depending
+ * on the variant.
+ * @param md meteorological conditions
+ * @param variant variant to use for the minimum allowed air emissivity
+ * @note observed minimum air emissivities:
  * 	- default: 0.55 (from 1993 data at Weissfluhjoch)
  * 	- Antarctica: 0.31 (from 2006/2007 data of Dome C)
- * @version 10.04
- * @param input
- * - input between 0 and 1 : fractional cloud cover
- * - input greater than 1 : incoming longwave radiation (W m-2)
- * - input less than or equal to 0 : use clear sky parameterization of Brutsaert
- * @param ta Checked air temperature (K)
- * @param rh Checked relative humidity (1)
- * @param min_air_emissivity minimum allowed air emissivity (1)
  * @return air emissivity in range [MIN_AIR_EMISSIVITY,1.] (1)
  */
-double SnLaws::AirEmissivity(const double input, const double ta, const double rh, const double min_air_emissivity)
+double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 {
-	double ea;
+	double ea = IOUtils::nodata;
+	const double ILWR = (md(MeteoData::ILWR)>1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 
-	if(input > 1.) {
-		ea = input/(Constants::stefan_boltzmann*ta*ta*ta*ta);
-	} else {
-		if((ta == mio::IOUtils::nodata) || (rh == mio::IOUtils::nodata)) {
-			return Constants::undefined;
-		}
-		if(input <= 0.) {
-			ea = Atmosphere::Brutsaert_emissivity(rh, ta);
-		} else {
-			ea = Atmosphere::Omstedt_emissivity(rh, ta, input);
-		}
+	if(ILWR!=IOUtils::nodata)
+		ea = Atmosphere::blkBody_Emissivity(ILWR, md(MeteoData::TA));
+	else {
+		const double cloudiness = (md(MeteoData::ILWR)>0. && md(MeteoData::ILWR)<=1.)? md(MeteoData::ILWR) : IOUtils::nodata;
+		const double ilwr_p = Atmosphere::ILWR_parametrized(md.meta.position.getLat(), md.meta.position.getLon(), md.meta.position.getAltitude(),
+	                                        md.date.getJulianDate(), md.date.getTimeZone(),
+	                                        md(MeteoData::RH), md(MeteoData::TA), IOUtils::nodata, cloudiness); //we don't even try Crawford, the benefits are way too small
+		if(ilwr_p!=IOUtils::nodata && md(MeteoData::TA)!=IOUtils::nodata)
+			ea = Atmosphere::blkBody_Emissivity(ilwr_p, md(MeteoData::TA));
 	}
-	if(ea < min_air_emissivity) {
-		return min_air_emissivity;
-	} else if(ea < 1.) {
-		return ea;
+
+	double min_emissivity;
+	if (variant != "ANTARCTICA") {
+		min_emissivity = 0.55;
 	} else {
-		return 1.;
+		min_emissivity = 0.31;
 	}
+	if(ea==IOUtils::nodata || ea<min_emissivity) ea = min_emissivity;
+	return ea;
 }
 

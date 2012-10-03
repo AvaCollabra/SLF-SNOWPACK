@@ -114,7 +114,7 @@ class SnLaws {
 		static double snowViscosityKOJIMA(const ElementData& Edata);
 		static double snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& date);
 		// minimum observed air emissivity: default=0.55 (from 1993 data at Weissfluhjoch) - Antarctica=0.31 (from 2006/2007 data of Dome C)
-		static double AirEmissivity(const double input, const double ta, const double rh, const double min_air_emissivity=0.55);
+		static double AirEmissivity(mio::MeteoData& md, const std::string& variant);
 		static double ArrheniusLaw(const double ActEnergy, const double T, const double T_ref);
 
 		static double min_hn_density, max_hn_density, event_wind_lowlim;

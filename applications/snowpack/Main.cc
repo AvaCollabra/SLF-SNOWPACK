@@ -271,12 +271,7 @@ void editMeteoData(mio::MeteoData& md, const string& variant, const double& thre
 
 	//Add the atmospheric emissivity as a parameter
 	if (!md.param_exists("EA")) md.addParameter("EA");
-	if (variant != "ANTARCTICA") {
-		md("EA") = SnLaws::AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH));
-	} else {
-		//change min_air_emissivity
-		md("EA") = SnLaws::AirEmissivity(md(MeteoData::ILWR), md(MeteoData::TA), md(MeteoData::RH), 0.31);
-	}
+	md("EA") = SnLaws::AirEmissivity(md, variant);
 
 	// Snow stations without separate wind station use their own wind for drifting and blowing snow
 	if (!md.param_exists("VW_DRIFT")) {
