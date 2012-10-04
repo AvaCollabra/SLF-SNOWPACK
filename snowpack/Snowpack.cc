@@ -606,7 +606,6 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
                                          double Fe[ N_OF_INCIDENCES ])
 {
 	double alpha, gamma, delta;  //  The heat exchange coefficients
-	double S_eb;
 	double T_air = Mdata.ta;
 
 	// First zero out the interiour node contribution
