@@ -619,17 +619,8 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > PhaseChange::theta_r + Constants::eps		// Water and ice ...
 	   && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps)					// ... coexisting
 	     && (T_iter != T_snow)) {
-		// Semi-explicit
-		// Latent heat transfer and net longwave radiation
-		Fe[1] += Bdata.ql + Bdata.lw_net;
-		// Sensible heat transfer and advected rain energy
-		S_eb = Bdata.qs + Bdata.qr;
-		if ((T_air - T_iter) != 0.)
-			alpha = MAX (0.0, S_eb / (T_air - T_iter));
-		else
-			alpha = 1.0;
-		Se[1][1] += alpha;
-		Fe[1] += alpha * T_air;
+		// Explicit
+		Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 	} else { // Implicit
 		// Sensible heat transfer: linear dependence on snow surface temperature
 		alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
