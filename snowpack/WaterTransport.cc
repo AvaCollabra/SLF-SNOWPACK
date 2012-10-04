@@ -158,11 +158,12 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice)
 		                     + (EMS[nE-1].theta[WATER] * Constants::density_water)
 		                         + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
-	} else if (ql < -Constants::eps2) {
+	} else if (ql < -Constants::eps2 && nE > 0) {
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
-		size_t e = nE-1;
+		size_t e = nE;
 		while ((e > 0) && (ql < -Constants::eps2)) {  // While energy is available
+			e--;
 			/*
 			* Determine the amount of potential sublimation/evaporation and collect some variables
 			* that will be continuously used: L0 and M
@@ -233,7 +234,6 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			// Update remaining volumetric contents and density
 			EMS[e].theta[AIR] = MAX(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
 			EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER] * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-			e--;
 		}
 		// Now take care of left over solute mass.
 		if (e == 0) { // Add Solute Mass to Runoff TODO HACK CHECK
