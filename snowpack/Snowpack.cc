@@ -613,10 +613,12 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 	Se[0][0] = Se[0][1] = Se[1][0] = Se[1][1] = Fe[0] = Fe[1] = 0.0;
 
 	/*
-	 * Now branch between phase change cases (semi-explicit treatment) and dry snowpack dynamics
+	 * Now branch between phase change cases (semi-explicit treatment) and dry snowpack dynamics/ice-free soil dynamics
 	 * (implicit treatment)
 	*/
-	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > PhaseChange::theta_r + Constants::eps) && (T_iter != T_snow)) {
+	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > PhaseChange::theta_r + Constants::eps		// Water and ice ...
+	   && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps)					// ... coexisting
+	     && (T_iter != T_snow)) {
 		// Semi-explicit
 		// Latent heat transfer and net longwave radiation
 		Fe[1] += Bdata.ql + Bdata.lw_net;
