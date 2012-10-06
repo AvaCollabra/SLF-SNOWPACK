@@ -271,7 +271,7 @@ void editMeteoData(mio::MeteoData& md, const string& variant, const double& thre
 
 	//Add the atmospheric emissivity as a parameter
 	if (!md.param_exists("EA")) md.addParameter("EA");
-	md("EA") = SnLaws::AirEmissivity(md, variant);
+		md("EA") = SnLaws::AirEmissivity(md, variant);
 
 	// Snow stations without separate wind station use their own wind for drifting and blowing snow
 	if (!md.param_exists("VW_DRIFT")) {
@@ -321,7 +321,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
                    const double prevailing_wind_dir, const double wind_scaling_factor)
 {
-	Mdata.date   = md.date;
+	Mdata.date   = Date::rnd(md.date, 1.);
 	Mdata.ta     = md(MeteoData::TA);
 	Mdata.rh     = md(MeteoData::RH);
 	if (md.param_exists("RH_AVG"))
@@ -818,7 +818,7 @@ void real_main (int argc, char *argv[])
 					            vecStationIDs[i_stn].c_str());
 					// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
 					vector<mio::MeteoData> vectmpmd;
-					current_date = vecSSdata[slope.station].profileDate;
+					current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1.);
 					prebuffering_timer.start();
 					io.getMeteoData(current_date, vectmpmd);
 					prebuffering_timer.stop();
@@ -892,8 +892,7 @@ void real_main (int argc, char *argv[])
 			current_date -= calculation_step_length/1440;
 		}
 
-		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate()
-		                        + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
@@ -972,7 +971,7 @@ void real_main (int argc, char *argv[])
 				// Notify user every fifteen days of date being processed
 				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulianDate()) + 15.5;
 				if ((mode == "RESEARCH") && (slope.sector == slope.station)
-				        && booleanTime(current_date.getJulianDate(false), 15., notify_start, calculation_step_length)) {
+				        && booleanTime(current_date.getJulianDate(), 15., notify_start, calculation_step_length)) {
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					            "Station %s (%d slope(s)): advanced to %s (%f) station time",
 					                vecSSdata[slope.station].meta.stationID.c_str(), slope.nSlopes,
@@ -1058,7 +1057,7 @@ void real_main (int argc, char *argv[])
 						// If the error persisted for at least one day => apply correction
 						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
 							deflateInflate(Mdata, vecXdata[slope.station],
-											qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
+							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							if (prn_check) {
 								prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
 								        "InflDefl (i_hz=%u): dhs=%f, dmass=%f, counter=%f",
@@ -1203,7 +1202,7 @@ void real_main (int argc, char *argv[])
 				}
 			} //end loop on sectors
 			computed_one_timestep = true;
-		} while ((dateEnd - current_date).getJulianDate(true) > calculation_step_length/(2.*1440));
+		} while ((dateEnd.getJulianDate() - current_date.getJulianDate()) > calculation_step_length/(2.*1440));
 		//end loop on timesteps
 
 		if (computed_one_timestep) {

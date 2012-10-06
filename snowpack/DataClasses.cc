@@ -145,7 +145,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(SnowStation& Xdata) {
 	if (Xdata.SoilNode > 0) { // with soil
 		ElementData& E_snow = Xdata.Edata[Xdata.SoilNode];
 		ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
-
+		
 		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
 			qg0 += -E_soil.k[TEMPERATURE]
 			* E_soil.gradT;
@@ -190,7 +190,7 @@ void SurfaceFluxes::collectSurfaceFluxes(BoundCond& Bdata,
 	lw_out += Bdata.lw_out;
 	lw_net += Bdata.lw_net;
 	lw_in  += (Bdata.lw_net + Bdata.lw_out);
-
+	
 	// 3) Turbulent fluxes.
 	qs += Bdata.qs;
 	//ql += Bdata.ql; //HACK needed because latent heat ql not linearized w/ respect to Tss!!!
@@ -1001,7 +1001,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	for (ll = 0, e = 0; ll<SSdata.nLayers; ll++) {
 		for (le = 0; le < SSdata.Ldata[ll].ne; le++, e++) {
 			// Element's JulianQ Date
-			Edata[e].depositionDate = SSdata.Ldata[ll].layerDate;
+			Edata[e].depositionDate = Date::rnd(SSdata.Ldata[ll].layerDate, 1.);
 			// Temperature data
 			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
@@ -1185,8 +1185,8 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  * 	- Remaining ice, liquid water, solutes, etc. are added to the lower element
  * 	- The length of the lower element is kept
  * 	- Keep the birthday of the lower element
- * @param EdataLower Properties of lower element
- * @param EdataUpper Properties of upper element
+ * @param *EdataLow Properties of lower element
+ * @param *EdataUp Properties of upper element
  * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& join)
@@ -1211,12 +1211,6 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
 
-	// Now check if, in case of removal of the upper layer (join==false), the lower layer can store all ICE. If not, increase the element length.
-	if(join == false && (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew > 1.0 + Constants::eps2) {
-		LNew += L_upper;
-	}
-
-	// Update element properties
 	EdataLower.L0 = EdataLower.L = LNew;
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
