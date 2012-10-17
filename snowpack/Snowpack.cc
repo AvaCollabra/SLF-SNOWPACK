@@ -559,27 +559,27 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
 	const double& Tair = Mdata.ta;
 	const double& Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
-	
+
 	Bdata.qs = MIN (350., MAX (-350., alpha * (Tair - Tss)));
-	
+
 	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
-	
+
 	if ((Xdata.getNumberOfElements() > 0)
 		/*&& (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= min_ice_content)*/) { //HACK: how should we handle large fluxes?
 		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
 	}
-	
+
 	if (Tair >= C_TO_K(thresh_rain)) {
 		const double gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (Tair - Tss);
 	} else {
 		Bdata.qr = 0.;
 	}
-	
+
 	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
 	Bdata.lw_out = Constants::emissivity_snow * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
-	
+
 	Bdata.qg = geo_heat;
 }
 
@@ -704,21 +704,21 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	double Se[N_OF_INCIDENCES][N_OF_INCIDENCES]; // Element stiffnes matrix
 	double Fe[N_OF_INCIDENCES];                  // Element right hand side vector
 
-	void *Kt;                                    // Avoids dereferencing the pointer
 	double *U=NULL, *dU=NULL, *ddU=NULL;         // Solution vectors
 	double Albedo;                               // Albedo used by the model
 
 	// Dereference the pointers
-	Kt = Xdata.Kt;
+	void *Kt = Xdata.Kt;
 	vector<NodeData>& NDS = Xdata.Ndata;
-	size_t nN = Xdata.getNumberOfNodes();
 	vector<ElementData>& EMS = Xdata.Edata;
-	size_t nE = Xdata.getNumberOfElements();
+
+	const size_t nN = Xdata.getNumberOfNodes();
+	const size_t nE = Xdata.getNumberOfElements();
 	// SNOW ALBEDO
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if ((nE > Xdata.SoilNode)) { //Snow, glacier, ice, water, or plastic layer
 		size_t eAlbedo = nE-1;
-		size_t marker = EMS[eAlbedo].mk % 10;
+		const size_t marker = EMS[eAlbedo].mk % 10;
 		switch (marker) {
 		case 9: // WATER_LAYER
 			if (eAlbedo > Xdata.SoilNode)
@@ -895,7 +895,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
 	unsigned int MaxItnTemp = 200; // maximum 200 iterations for temperature field
-	double ControlTemp = 0.01;	  // solution convergence to within 0.01 degC
+	double ControlTemp = 0.01;    // solution convergence to within 0.01 degC
 	double MaxTDiff;              // maximum temperature difference for convergence
 	double TDiff;                 // temperature difference for convergence check
 	// Set the phase change booleans
@@ -1639,7 +1639,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		                      // linearized w/ respect to Tss and thus remains unchanged
 		                      // throughout the temperature iterations!!!
 		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
-		
+
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
 

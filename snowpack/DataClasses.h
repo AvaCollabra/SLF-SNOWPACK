@@ -106,6 +106,7 @@ class CurrentMeteo {
 		double rswr;     ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
 		double mAlbedo;  ///< Measured snow albedo
 		double diff;     ///< Diffuse radiation from the sky (W m-2)
+		double dir_h;    ///< Horizontal direct radiation from the sky (W m-2)
 		double elev;     ///< Solar elevation to be used in Canopy.c (rad) => see also
 		double ea;       ///< Atmospheric emissivity (1)
 		double tss;      ///< Snow surface temperature (K)
@@ -483,10 +484,10 @@ class SnowStation {
 * @brief BoundCond is used to set Neumann boundary conditions
 */
 class BoundCond {
-	
+
 	public:
 		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {};
-		
+
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation
 		double qs;      ///< sensible heat

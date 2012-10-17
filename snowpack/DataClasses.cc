@@ -145,7 +145,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(SnowStation& Xdata) {
 	if (Xdata.SoilNode > 0) { // with soil
 		ElementData& E_snow = Xdata.Edata[Xdata.SoilNode];
 		ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
-		
+
 		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
 			qg0 += -E_soil.k[TEMPERATURE]
 			* E_soil.gradT;
@@ -190,7 +190,7 @@ void SurfaceFluxes::collectSurfaceFluxes(BoundCond& Bdata,
 	lw_out += Bdata.lw_out;
 	lw_net += Bdata.lw_net;
 	lw_in  += (Bdata.lw_net + Bdata.lw_out);
-	
+
 	// 3) Turbulent fluxes.
 	qs += Bdata.qs;
 	//ql += Bdata.ql; //HACK needed because latent heat ql not linearized w/ respect to Tss!!!
@@ -1320,7 +1320,7 @@ std::ostream& operator<<(std::ostream &os, const SnowStation& Xdata)
 CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
 	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
 	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
-	  iswr(0.), rswr(0.), diff(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
+	  iswr(0.), rswr(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
 	  hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
 	  rho_hn(0.),
 	  numberMeasTemperatures(mio::IOUtils::unodata)
@@ -1468,7 +1468,7 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& Mdata)
 	os << setw(8) << "TA=" << Mdata.ta << " TSS=" << Mdata.tss << " TSG=" << Mdata.ts0 << "\n";
 	os << setw(8) << "RH=" << Mdata.rh << " rh_avg=" << Mdata.rh_avg << "\n";
 	os << setw(8) << "ISWR=" << Mdata.iswr << " RSWR=" << Mdata.rswr << " mAlbedo=" << Mdata.mAlbedo << "\n";
-	os << setw(8) << "diff=" << Mdata.diff << " Sun_elev=" << Mdata.elev*to_deg << "° EA=" << Mdata.ea << "\n";
+	os << setw(8) << "diff=" << Mdata.diff << " dir_h=" << Mdata.dir_h << " Sun_elev=" << Mdata.elev*to_deg << "° EA=" << Mdata.ea << "\n";
 	os << setw(8) << "HNW=" << Mdata.hnw << " HS=" << Mdata.hs << " rho_hn=" << Mdata.rho_hn << "\n";
 	os << setw(8) << "VW=" << Mdata.vw << " vw_avg=" << Mdata.vw_avg << " vw_max=" << Mdata.vw_max << " vw_drift=" << Mdata.vw_drift << "\n";
 	os << setw(8) << "DW=" << Mdata.dw << "\n";
