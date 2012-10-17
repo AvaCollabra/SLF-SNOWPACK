@@ -885,7 +885,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		ddU[n] = 0.0;
 		if (!(U[n] > 50. && U[n] < 500.)) {
 			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
-			prn_msg(__FILE__, __LINE__, "msg", Date(), "At snow node n=%d (nN=%d): T=%.2lf", n, nN, U[n]);
+			prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
 			free(U); free(dU); free(ddU);
 			throw IOException("Runtime error in sn_SnowTemperature", AT);
 		}
@@ -894,7 +894,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	unsigned int iteration = 0;   // iteration counter (not really required)
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
-	unsigned int MaxItnTemp = 40; // maximum 40 iterations for temperature field
+	unsigned int MaxItnTemp = 200; // maximum 200 iterations for temperature field
 	double ControlTemp = 0.01;	  // solution convergence to within 0.01 degC
 	double MaxTDiff;              // maximum temperature difference for convergence
 	double TDiff;                 // temperature difference for convergence check
