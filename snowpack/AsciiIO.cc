@@ -169,7 +169,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		fclose(fin);
 		throw InvalidFormatException("Can not read ProfileDate in file "+snofilename, AT);
 	}
-	SSdata.profileDate = Date(YYYY, MM, DD, HH, MI, time_zone);
+	SSdata.profileDate = Date::rnd(Date(YYYY, MM, DD, HH, MI, time_zone), 1.);
 
 	// Last checked measured Snow Height used for data Control of next run
 	if (fscanf(fin, "\nHS_Last=%lf", &SSdata.HS_last) != 1) {
@@ -298,7 +298,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading date: read %d fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
-		SSdata.Ldata[ll].layerDate = Date(YYYY, MM, DD, HH, MI, time_zone);
+		SSdata.Ldata[ll].layerDate = Date::rnd(Date(YYYY, MM, DD, HH, MI, time_zone), 1.);
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 			        "Layer %u from bottom is younger (%f) than ProfileDate (%f) !!!",

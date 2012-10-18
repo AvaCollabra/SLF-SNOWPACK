@@ -144,6 +144,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 	*/
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date = read_snosmet_header(sno_reader, stationID, SSdata);
+	profile_date.rnd(1.);
 
 	//Read actual data
 	vector<string> vec_timestamp;
@@ -167,6 +168,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 	for (size_t ll=0; ll<SSdata.nLayers; ll++) {
 		//firstly deal with date
 		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  in_dflt_TZ);
+		SSdata.Ldata[ll].layerDate.rnd(1.);
 
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
