@@ -391,18 +391,14 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
                             double& cumu_hnw, const double& lw_in, double& iswr_forced, const double hs_a3hl6,
                             double& tot_mass_in)
 {
-	/**
-	 * @brief Switch defining whether input data (solar radiation, snow depth and precipitation rates)
-	 * is from EB\@ALPINE3D \n
-	 * Set to false in stand-alone applications.
-	 */
+	SnowStation &flatfield = vecXdata[slope.station]; //alias: the flatfield station
+	SnowStation &sector = vecXdata[slope.sector]; //alias: the current slope
+	//Switch defining whether input data (solar radiation, snow depth and precipitation rates) is from EB\@ALPINE3D
+	// Set to false in stand-alone applications.
 	const bool ebalance_switch = false;
 
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
-	int sw_mode = 0;
-	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
-	sw_mode %= 10;
 	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 
 	if (Mdata.tss == mio::IOUtils::nodata) {
@@ -422,12 +418,12 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output");
 		surfFluxes.reset(cumsum_mass);
 		if (useCanopyModel)
-			vecXdata[slope.sector].Cdata.reset(cumsum_mass);
+			sector.Cdata.reset(cumsum_mass);
 
 		const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
 		if (mass_balance) {
 			// Do an initial mass balance check
-			if (!massBalanceCheck(vecXdata[slope.sector], surfFluxes, tot_mass_in))
+			if (!massBalanceCheck(sector, surfFluxes, tot_mass_in))
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Mass error during initial check!");
 		}
 	}
@@ -437,14 +433,14 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	if (slope.sector == slope.station) {
 		// Check for growing grass
-		if (!Meteo::compHSrate(Mdata, vecXdata[slope.station], hs_a3hl6))
+		if (!Meteo::compHSrate(Mdata, flatfield, hs_a3hl6))
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 
 		// Set short wave fluxes and measured albedo
-		setShortWave(Mdata, vecXdata[slope.station]);
+		setShortWave(Mdata, flatfield);
 
 		// Split flat field radiation and compute potential radiation
-		radiation.flatFieldRadiation(vecXdata[slope.station], Mdata, Psolar, Rdata);
+		radiation.flatFieldRadiation(flatfield, Mdata, Psolar, Rdata);
 		iswr_forced = -1.0; //initialize on station field
 		if (sw_mode_change) {
 			/*
@@ -456,10 +452,10 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			double hs, iswr_factor;
 			// What snow depth should be used?
 			if (enforce_measured_snow_heights &&
-				   (vecXdata[slope.station].meta.getSlopeAngle() < Constants::min_slope_angle)) {
-				hs = vecXdata[slope.station].mH - vecXdata[slope.station].Ground;
+				   (flatfield.meta.getSlopeAngle() < Constants::min_slope_angle)) {
+				hs = flatfield.mH - flatfield.Ground;
 			} else {
-				hs = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
+				hs = flatfield.cH - flatfield.Ground;
 			}
 			iswr_factor=(Mdata.rswr+0.01)/(Rdata.pot_dir+Rdata.pot_diffsky+0.00001); //avoiding "0/0"
 			if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
@@ -469,7 +465,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 				iswr_forced = Rdata.dir_hor + Rdata.diffsky;
 				cfg.addKey("SW_MODE", "Snowpack", "2");  // as both Mdata.iswr and Mdata.rswr were reset
-				sw_mode = 2;
 			}
 		}
 
@@ -480,46 +475,47 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		cfg.addKey("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", "true");
 		cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 	}
+	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //we read it AFTER the potential cfg.addKey()
 
 	if (iswr_forced >= 0.) {
 		// iswr_forced=-1 when starting on flat field. If iswr was recomputed, then iswr_forced>=0
 		Mdata.iswr = iswr_forced;
-		if ((Mdata.rswr/Mdata.iswr) < (2.0*vecXdata[slope.sector].SoilAlb))
-			Mdata.rswr = Mdata.iswr*2.0 * vecXdata[slope.sector].SoilAlb;
+		if ((Mdata.rswr/Mdata.iswr) < (2.0*sector.SoilAlb))
+			Mdata.rswr = Mdata.iswr*2.0 * sector.SoilAlb;
 	}
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
 	if (!(ebalance_switch || perp_to_slope)) {
-		radiation.radiationOnSlope(vecXdata[slope.sector], Mdata, surfFluxes, Psolar, Rdata);
+		radiation.radiationOnSlope(sector, Mdata, surfFluxes, Psolar, Rdata);
 
 		if (((sw_mode == 1) || (sw_mode == 2))
-			    && (vecXdata[slope.sector].meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
+			    && (sector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
 			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
 		//HACK A3D: resynchronize Mdata with the solar and radiation parameters
 		Mdata.elev = Psolar.elev;
 		Mdata.diff = Rdata.diffsky;
-		meteo.projectPrecipitations(vecXdata[slope.sector].meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
+		meteo.projectPrecipitations(sector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(&Mdata, &vecXdata[slope.sector]);
+	meteo.compMeteo(&Mdata, &sector);
 
 	// Update precipitation memory
 	if (slope.sector == slope.station) {
 		cumu_hnw += Mdata.hnw;
 		if (Mdata.hs != mio::IOUtils::nodata) {
-			vecXdata[slope.station].mH = Mdata.hs + vecXdata[slope.station].Ground;
+			flatfield.mH = Mdata.hs + flatfield.Ground;
 		}
 	}
 
 	if (slope.sector != slope.station) { // Meteo data for virtual slope simulations
 		double hn_slope = 0., rho_hn_slope = SnLaws::min_hn_density;
 		// Compute new snow water equivalent and density
-		if (vecXdata[slope.station].hn > 0.) {
+		if (flatfield.hn > 0.) {
 			// Assign new snow depth and density from station field (usually flat)
-			hn_slope = vecXdata[slope.station].hn * cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle()));
-			rho_hn_slope = vecXdata[slope.station].rho_hn;
+			hn_slope = flatfield.hn * cos(DEG_TO_RAD(sector.meta.getSlopeAngle()));
+			rho_hn_slope = flatfield.rho_hn;
 		}
 
 		/*
@@ -540,10 +536,10 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		}
 
 		// Check whether snow depth on slope needs to be changed
-		if ((hn_slope > 0.) && (vecXdata[slope.station].cH > 0.01)) {
+		if ((hn_slope > 0.) && (flatfield.cH > 0.01)) {
 			// Increase snow depth
-			vecXdata[slope.sector].hn  = hn_slope;
-			vecXdata[slope.sector].rho_hn = rho_hn_slope;
+			sector.hn  = hn_slope;
+			sector.rho_hn = rho_hn_slope;
 		}
 
 		// Check whether to use incoming longwave as estimated from station field
