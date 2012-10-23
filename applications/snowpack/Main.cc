@@ -388,7 +388,7 @@ void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata)
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
                             const Slope& slope, SnowpackConfig& cfg,
                             SunObject &sun,
-                            double& cumu_hnw, const double& lw_in, double& iswr_forced, const double hs_a3hl6,
+                            double& cumu_hnw, const double& lw_in, const double hs_a3hl6,
                             double& tot_mass_in)
 {
 	SnowStation &flatfield = vecXdata[slope.station]; //alias: the flatfield station
@@ -430,7 +430,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 		// Set iswr/rswr and measured albedo
 		setShortWave(Mdata, flatfield);
-		Meteo::compRadiation(flatfield, sun, cfg, Mdata, iswr_forced);
+		Meteo::compRadiation(flatfield, sun, cfg, Mdata);
 	} else { // Virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "false");
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
@@ -440,13 +440,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	}
 
 	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //it must be after calling compRadiation!
-
-	if (iswr_forced >= 0.) {
-		// iswr_forced=-1 when starting on flat field. If iswr was recomputed, then iswr_forced>=0
-		Mdata.iswr = iswr_forced;
-		if ((Mdata.rswr/Mdata.iswr) < (2.0*sector.SoilAlb))
-			Mdata.rswr = Mdata.iswr*2.0 * sector.SoilAlb;
-	}
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
 	if (!(ebalance_switch || perp_to_slope)) {
@@ -727,7 +720,6 @@ void real_main (int argc, char *argv[])
 			throw mio::IOException("Please set NUMBER_SLOPES to 1, 5 or 9", AT);
 
 		double lw_in = Constants::undefined;    // Storage for LWin from flat field energy balance
-		double iswr_forced = -1; //if iswr was wrongly evaluated, this contains the incoming pot. radiation
 
 		// Used to scale wind for blowing and drifting snowpack (from statistical analysis)
 		double wind_scaling_factor = cfg.get("WIND_SCALING_FACTOR", "SnowpackAdvanced");
@@ -921,7 +913,7 @@ void real_main (int argc, char *argv[])
 				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
-                                       sun, cumu_hnw, lw_in, iswr_forced, hs_a3hl6,
+                                       sun, cumu_hnw, lw_in, hs_a3hl6,
                                        tot_mass_in);
 
 				// Notify user every fifteen days of date being processed

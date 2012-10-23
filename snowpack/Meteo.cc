@@ -284,7 +284,7 @@ void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 	}
 }
 
-void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata, double &iswr_forced)
+void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata)
 {
 	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10;
 	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
@@ -316,7 +316,6 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 		Mdata.iswr = dir_h + diff;
 	}
 
-	iswr_forced = -1.0;
 	if (sw_mode_change) {
 		// Sometimes, there is no snow left on the ground at the station (-> rswr is small)
 		// but there is still some snow left in the simulation, which then is hard to melt
@@ -330,7 +329,11 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 		if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
 			dir_h = H_direct;
 			diff = H_diffuse;
-			iswr_forced = dir_h+diff;
+			Mdata.iswr = dir_h+diff;
+			if (Mdata.iswr>0. && (Mdata.rswr/Mdata.iswr) < (2.0*station.SoilAlb))
+				Mdata.rswr = Mdata.iswr*2.0 * station.SoilAlb;
+			else
+				Mdata.rswr = 0.;
 			cfg.addKey("SW_MODE", "Snowpack", "2");  // as both Mdata.iswr and Mdata.rswr were reset
 		}
 	}
