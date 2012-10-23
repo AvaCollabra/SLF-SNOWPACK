@@ -38,7 +38,6 @@
 #include <snowpack/Metamorphism.h>
 #include <snowpack/Meteo.h>
 #include <snowpack/PhaseChange.h>
-#include <snowpack/Radiation.h>
 #include <snowpack/Saltation.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/SnowpackConfig.h>

@@ -32,7 +32,6 @@ SET(snowpacklib_sources
 	Hazard.cc
 	Metamorphism.cc
 	PhaseChange.cc
-	Radiation.cc
 	SnowDrift.cc
 	Solver.cc
 )

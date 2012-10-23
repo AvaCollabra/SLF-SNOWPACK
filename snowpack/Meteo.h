@@ -27,6 +27,9 @@
 #ifndef __METEO_H__
 #define __METEO_H__
 
+#include <meteoio/MeteoIO.h>
+
+#include <snowpack/SnowpackConfig.h>
 #include <snowpack/Constants.h>
 #include <snowpack/Snowpack.h>
 #include <snowpack/Hazard.h>
@@ -43,6 +46,8 @@ class Meteo {
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
 		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double hs_a3hl6);
 		void compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata);
+		static void compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata, double &iswr_forced);
+		static void radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes);
 		void setStability(const int& i_neutral);
 		int getStability() const;
 

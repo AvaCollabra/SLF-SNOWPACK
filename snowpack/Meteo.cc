@@ -284,3 +284,83 @@ void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
 	}
 }
 
+void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata, double &iswr_forced)
+{
+	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10;
+	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
+	const bool enforce_hs = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
+	const double iswr_ref = (sw_mode == 1)?  Mdata.rswr/station.Albedo : Mdata.iswr;
+
+	sun.calculateRadiation(Mdata.ta, Mdata.rh, station.Albedo);
+	double H_toa, H_direct, H_diffuse;
+	sun.getHorizontalRadiation(H_toa, H_direct, H_diffuse);
+	const double Md = sun.getSplitting(iswr_ref);
+
+	double dir_h, diff;
+	if ((iswr_ref > 0.) && (H_direct > 0.)) {
+		dir_h = (1. - Md)*iswr_ref;
+		diff = Md*iswr_ref;
+	} else {
+		if (iswr_ref > 0.) {
+			dir_h = 0.;
+			diff = MAX(Md*iswr_ref, H_diffuse);
+		} else {
+			dir_h = 0.;
+			diff = 0.;
+		}
+	}
+
+	if (sw_mode == 1) {
+		Mdata.rswr = (dir_h + diff)*station.Albedo;
+	} else {
+		Mdata.iswr = dir_h + diff;
+	}
+
+	iswr_forced = -1.0;
+	if (sw_mode_change) {
+		// Sometimes, there is no snow left on the ground at the station (-> rswr is small)
+		// but there is still some snow left in the simulation, which then is hard to melt
+		// if we find this is such a situation, we set iswr to the potential radiation.
+		// Such a correction is only needed for flat field, the others will inherit it
+		// What snow depth should be used?
+		const bool use_hs_meas = enforce_hs && (station.meta.getSlopeAngle() < Constants::min_slope_angle);
+		const double hs = (use_hs_meas)? station.mH - station.Ground : station.cH - station.Ground;
+		const double iswr_factor = Mdata.rswr / (dir_h+diff+Constants::eps); //avoiding "0/0"
+
+		if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
+			dir_h = H_direct;
+			diff = H_diffuse;
+			iswr_forced = dir_h+diff;
+			cfg.addKey("SW_MODE", "Snowpack", "2");  // as both Mdata.iswr and Mdata.rswr were reset
+		}
+	}
+
+	Mdata.diff = diff;
+	Mdata.dir_h = dir_h;
+	double azimuth, elevation;
+	sun.position.getHorizontalCoordinates(azimuth, elevation);
+	Mdata.elev = elevation*mio::Cst::to_rad;
+}
+
+void Meteo::radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes)
+{
+	//diff remains the same as on flat field
+	double dir_slope;
+	if(sector.meta.getSlopeAngle() > Constants::min_slope_angle) {
+		dir_slope = sun.position.getHorizontalOnSlope(sector.meta.getAzimuth(), sector.meta.getSlopeAngle(), Mdata.dir_h, 9.);
+		if ( (Mdata.dir_h+Mdata.diff) > 0. ) {
+			Mdata.iswr = MIN(dir_slope + Mdata.diff, Constants::solcon);
+			Mdata.rswr = sector.Albedo*Mdata.iswr;
+		} else {
+			Mdata.iswr = 0.;
+			Mdata.rswr = 0.;
+		}
+	} else {
+		dir_slope = Mdata.dir_h;
+	}
+
+	// Assign radiation values to Sdata
+	surfFluxes.sw_hor  += (Mdata.dir_h+Mdata.diff);
+	surfFluxes.sw_dir  += dir_slope;
+	surfFluxes.sw_diff += Mdata.diff;
+}

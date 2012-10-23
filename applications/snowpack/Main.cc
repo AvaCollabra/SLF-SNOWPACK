@@ -370,7 +370,7 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
  * @param vecXdata
  * @param slope
  */
-void setShortWave(CurrentMeteo& Mdata, SnowStation& Xdata)
+void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata)
 {
 	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
 		{Mdata.mAlbedo = Mdata.rswr / Mdata.iswr;}
@@ -387,29 +387,21 @@ void setShortWave(CurrentMeteo& Mdata, SnowStation& Xdata)
 //This means that all tweaking of config MUST be reflected in the config object
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
                             const Slope& slope, SnowpackConfig& cfg,
-                            PositionSun& Psolar, RadiationData& Rdata,
+                            SunObject &sun,
                             double& cumu_hnw, const double& lw_in, double& iswr_forced, const double hs_a3hl6,
                             double& tot_mass_in)
 {
 	SnowStation &flatfield = vecXdata[slope.station]; //alias: the flatfield station
 	SnowStation &sector = vecXdata[slope.sector]; //alias: the current slope
-	//Switch defining whether input data (solar radiation, snow depth and precipitation rates) is from EB\@ALPINE3D
-	// Set to false in stand-alone applications.
-	const bool ebalance_switch = false;
-
+	const bool ebalance_switch = false; //Are solar radiation and precip inputs coming from Alpine3D?
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
-	const bool enforce_measured_snow_heights = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
-	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
-
+	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	if (Mdata.tss == mio::IOUtils::nodata) {
 		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use clear sky
 		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
-	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
-
-	Radiation radiation(cfg);
 	Meteo meteo(cfg);
 
 	// Reset Surface and Canopy Data to zero if you seek current values
@@ -436,38 +428,9 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		if (!Meteo::compHSrate(Mdata, flatfield, hs_a3hl6))
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 
-		// Set short wave fluxes and measured albedo
+		// Set iswr/rswr and measured albedo
 		setShortWave(Mdata, flatfield);
-
-		// Split flat field radiation and compute potential radiation
-		radiation.flatFieldRadiation(flatfield, Mdata, Psolar, Rdata);
-		iswr_forced = -1.0; //initialize on station field
-		if (sw_mode_change) {
-			/*
-			 * Sometimes, there is no snow left on the ground at the station (-> rswr is small)
-			 * but there is still some snow left in the simulation, which then is hard to melt
-			 * if we find this is such a situation, we set iswr to the potential radiation.
-			 * Such a correction is only needed for flat field, the others will inherit it
-			*/
-			double hs, iswr_factor;
-			// What snow depth should be used?
-			if (enforce_measured_snow_heights &&
-				   (flatfield.meta.getSlopeAngle() < Constants::min_slope_angle)) {
-				hs = flatfield.mH - flatfield.Ground;
-			} else {
-				hs = flatfield.cH - flatfield.Ground;
-			}
-			iswr_factor=(Mdata.rswr+0.01)/(Rdata.pot_dir+Rdata.pot_diffsky+0.00001); //avoiding "0/0"
-			if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
-				Rdata.dir_hor = Rdata.pot_dir;
-				Rdata.diffsky = Rdata.pot_diffsky;
-				Rdata.global_hor = Rdata.dir_hor + Rdata.diffsky;
-
-				iswr_forced = Rdata.dir_hor + Rdata.diffsky;
-				cfg.addKey("SW_MODE", "Snowpack", "2");  // as both Mdata.iswr and Mdata.rswr were reset
-			}
-		}
-
+		Meteo::compRadiation(flatfield, sun, cfg, Mdata, iswr_forced);
 	} else { // Virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "false");
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
@@ -475,7 +438,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		cfg.addKey("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", "true");
 		cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 	}
-	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //we read it AFTER the potential cfg.addKey()
+
+	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //it must be after calling compRadiation!
 
 	if (iswr_forced >= 0.) {
 		// iswr_forced=-1 when starting on flat field. If iswr was recomputed, then iswr_forced>=0
@@ -486,20 +450,16 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
 	if (!(ebalance_switch || perp_to_slope)) {
-		radiation.radiationOnSlope(sector, Mdata, surfFluxes, Psolar, Rdata);
-
-		if (((sw_mode == 1) || (sw_mode == 2))
-			    && (sector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
+		Meteo::radiationOnSlope(sector, sun, Mdata, surfFluxes);
+		if ( ((sw_mode == 1) || (sw_mode == 2))
+		     && (sector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
 			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
-		//HACK A3D: resynchronize Mdata with the solar and radiation parameters
-		Mdata.elev = Psolar.elev;
-		Mdata.diff = Rdata.diffsky;
 		meteo.projectPrecipitations(sector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(&Mdata, &sector);
+	meteo.compMeteo(&Mdata, &sector); //HACK: remove pointers
 
 	// Update precipitation memory
 	if (slope.sector == slope.station) {
@@ -760,6 +720,8 @@ void real_main (int argc, char *argv[])
 		meteoRead_timer.reset();
 		prebuffering_timer.reset();
 
+		SunObject sun(accessible_stations[i_stn].position.getLat(), accessible_stations[i_stn].position.getLon(), accessible_stations[i_stn].position.getAltitude());
+		sun.setElevationThresh(0.6);
 		Slope slope(cfg);
 		if (slope.snow_redistribution && !((slope.nSlopes != 1) || (slope.nSlopes != 5) || (slope.nSlopes != 9)))
 			throw mio::IOException("Please set NUMBER_SLOPES to 1, 5 or 9", AT);
@@ -934,10 +896,8 @@ void real_main (int argc, char *argv[])
 			getOutputControl(mn_ctrl, current_date, vecSSdata[slope.station].profileDate, calculation_step_length,
 			                 tsstart, tsdaysbetween, profstart, profdaysbetween,
 			                 first_backup, backup_days_between);
-
 			//Radiation data
-			RadiationData Rdata;   // Radiation splitting data
-			PositionSun   Psolar;  // Parameters to determine the position of the sun
+			sun.setDate(current_date.getJulianDate(), current_date.getTimeZone());
 
 			std::vector<mio::MeteoData> MyMeteol3h;
 			try {
@@ -961,7 +921,7 @@ void real_main (int argc, char *argv[])
 				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
-                                       Psolar, Rdata, cumu_hnw, lw_in, iswr_forced, hs_a3hl6,
+                                       sun, cumu_hnw, lw_in, iswr_forced, hs_a3hl6,
                                        tot_mass_in);
 
 				// Notify user every fifteen days of date being processed
