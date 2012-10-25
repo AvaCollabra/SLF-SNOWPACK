@@ -257,7 +257,7 @@ void versionUserRuntime(const double& time_zone, char *version, char *computatio
 	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());
 	snprintf(compilation_date, MAX_STRING_LENGTH-1, "%s, %s", __DATE__, __TIME__);
 
-	*jul_computation_date = localdate.getJulianDate();
+	*jul_computation_date = localdate.getJulian();
 	//logname=getlogin(); //other options possible, see man
 	const std::string logname = IOUtils::getLogName();
 	snprintf(user, MAX_STRING_LENGTH, "%s", logname.c_str());
@@ -460,7 +460,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
-		if (EMS[nE-1].depositionDate.getJulianDate() <= EMS[soil_node].depositionDate.getJulianDate())
+		if (EMS[nE-1].depositionDate.getJulian() <= EMS[soil_node].depositionDate.getJulian())
 			return;
 
 		if (prn_CK) { //HACK
@@ -473,10 +473,10 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		dhs_corr = mH - cH;
 		for (e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
-			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
-				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
-				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
-				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
+			        && (Mdata.date.getJulian() > EMS[e].depositionDate.getJulian())) {
+				const double surf_date = EMS[nE-1].depositionDate.getJulian();
+				const double current_layer_date = EMS[e].depositionDate.getJulian();
+				const double first_snow_date = EMS[soil_node].depositionDate.getJulian();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
 				// Rounding errors could produce very small negative numbers ...
 				if (age_fraction < 0.) {
@@ -495,10 +495,10 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		// Squeeze or blow-up
 		for (e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
-			        && (Mdata.date.getJulianDate() > EMS[e].depositionDate.getJulianDate())) {
-				const double surf_date = EMS[nE-1].depositionDate.getJulianDate();
-				const double current_layer_date = EMS[e].depositionDate.getJulianDate();
-				const double first_snow_date = EMS[soil_node].depositionDate.getJulianDate();
+			        && (Mdata.date.getJulian() > EMS[e].depositionDate.getJulian())) {
+				const double surf_date = EMS[nE-1].depositionDate.getJulian();
+				const double current_layer_date = EMS[e].depositionDate.getJulian();
+				const double first_snow_date = EMS[soil_node].depositionDate.getJulian();
 				double age_fraction = (surf_date - current_layer_date) / (surf_date - first_snow_date);
 				// Rounding errors could produce very small negative numbers ...
 				if (age_fraction < 0.) {

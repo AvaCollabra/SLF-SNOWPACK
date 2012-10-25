@@ -335,7 +335,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	double sum_hn = 0., sum_hnw = 0.;
 	int e = nE-1;
 	for (unsigned int kk = 0; kk <= 5; kk++) {
-		while ((e >= signed(Xdata.SoilNode)) && ((Mdata.date.getJulianDate() - EMS[e].depositionDate.getJulianDate()) < (H_TO_D(t_hn[kk])))) {
+		while ((e >= signed(Xdata.SoilNode)) && ((Mdata.date.getJulian() - EMS[e].depositionDate.getJulian()) < (H_TO_D(t_hn[kk])))) {
 				sum_hn  += EMS[e].L;
 			sum_hnw += EMS[e].L * EMS[e].Rho;
 			e--;

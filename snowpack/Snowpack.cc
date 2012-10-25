@@ -347,7 +347,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	const double SigC_fac = Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	while (e-- > 0) {
 		double oldStress = EMS[e].C;
-		double age = MAX(0., Mdata.date.getJulianDate() - EMS[e].depositionDate.getJulianDate());
+		double age = MAX(0., Mdata.date.getJulian() - EMS[e].depositionDate.getJulian());
 		if (e < nE-1)
 			SigC -= (EMS[e+1].M / 2.) * SigC_fac;
 		EMS[e].C = SigC -= (EMS[e].M / 2.) * SigC_fac;
@@ -407,7 +407,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 				dL = MIN(0., minimum_l_element - L0);
 		} else { //SH
 			if (NDS[e+1].hoar > 0.006) { // TODO Large initial size, i.e., deposited hoar mass/HOAR_DENSITY_BURIED ??
-				if ((Mdata.date.getJulianDate() - EMS[e].depositionDate.getJulianDate()) < 21.)
+				if ((Mdata.date.getJulian() - EMS[e].depositionDate.getJulian()) < 21.)
 					dL = MM_TO_M(-0.391 * S_TO_D(sn_dt));
 				else
 					dL = MM_TO_M(-0.0807 * S_TO_D(sn_dt));

@@ -82,7 +82,7 @@ bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfile
 			return false;
 	}
 
-	if (fabs(Pdata[l_upper].layerDate.getJulianDate() - Pdata[l_lower].layerDate.getJulianDate()) > diff_jul)
+	if (fabs(Pdata[l_upper].layerDate.getJulian() - Pdata[l_lower].layerDate.getJulian()) > diff_jul)
 		return false;
 
 	if (Pdata[l_upper].marker != Pdata[l_lower].marker)
@@ -125,7 +125,7 @@ bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLay
 			return false;
 
 		// do not combine layers which are of quite different age
-		if (fabs(Pdata[l_lower].layerDate.getJulianDate() - Pdata[l_upper].layerDate.getJulianDate()) > 2 * diff_jul)
+		if (fabs(Pdata[l_lower].layerDate.getJulian() - Pdata[l_upper].layerDate.getJulian()) > 2 * diff_jul)
 			return false;
 
 		// do not combine layers with different grain classes

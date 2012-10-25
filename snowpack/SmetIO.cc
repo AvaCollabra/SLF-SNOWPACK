@@ -173,7 +173,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 				   "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) !!!",
-				   ll+1, SSdata.Ldata[ll].layerDate.getJulianDate(), SSdata.profileDate.getJulianDate());
+				   ll+1, SSdata.Ldata[ll].layerDate.getJulian(), SSdata.profileDate.getJulian());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
 
@@ -355,7 +355,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 
 	if (forbackup){
 		stringstream ss;
-		ss << (int)(date.getJulianDate() + 0.5);
+		ss << (int)(date.getJulian() + 0.5);
 		snofilename += ss.str();
 		hazfilename += ss.str();
 	}

@@ -302,7 +302,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 			        "Layer %u from bottom is younger (%f) than ProfileDate (%f) !!!",
-			        ll+1, SSdata.Ldata[ll].layerDate.getJulianDate(), SSdata.profileDate.getJulianDate());
+			        ll+1, SSdata.Ldata[ll].layerDate.getJulian(), SSdata.profileDate.getJulian());
 			throw IOException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 		if ((nFields = fscanf(fin, " %lf %lf %lf %lf %lf %lf",
@@ -423,7 +423,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 
 	if (forbackup){
 		stringstream ss;
-		ss << (int)(date.getJulianDate() + 0.5);
+		ss << (int)(date.getJulian() + 0.5);
 		snofilename += ss.str();
 	}
 
@@ -1031,7 +1031,7 @@ bool AsciiIO::parseMetFile(const char& eoln, const mio::Date& start_date, std::i
 						+ "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
 					IOUtils::convertString(current_date, tmpdate, time_zone);
 
-					if (current_date.getJulianDate() < (start_date.getJulianDate()-0.00001)) {
+					if (current_date.getJulian() < (start_date.getJulian()-0.00001)) {
 						append=true;
 					} else {
 						break; //the start date of the simulation is newer/equal than current_date
@@ -1086,7 +1086,7 @@ bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::i
 						                 + "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
 						IOUtils::convertString(current_date, tmpdate, time_zone);
 
-						if (current_date.getJulianDate() < (start_date.getJulianDate()-0.00001)){
+						if (current_date.getJulian() < (start_date.getJulian()-0.00001)){
 							append=true;
 						} else {
 							break; //the start date of the simulation is newer/equal than current_date

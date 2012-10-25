@@ -54,7 +54,7 @@ class ImisDBIO : public SnowpackIOInterface{
 		void deleteHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const mio::Date& dateStart, const mio::Date& dateEnd,
 		                 oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
-
+		void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind);
 		void insertHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
 		                 const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);

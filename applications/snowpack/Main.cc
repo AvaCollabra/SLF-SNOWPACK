@@ -523,8 +523,8 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
                       const double& first_backup, const double& backup_days_between)
 {
 //HACK: put all tsstart, tsdaysbetween, etc in MainControl as well as current timestep
-	const double Dstep = step.getJulianDate();
-	const double Dsno_step = sno_step.getJulianDate();
+	const double Dstep = step.getJulian();
+	const double Dsno_step = sno_step.getJulian();
 	if (mn_ctrl.resFirstDump) {
 		mn_ctrl.HzDump = false;
 		mn_ctrl.TsDump = true;
@@ -829,7 +829,7 @@ void real_main (int argc, char *argv[])
 		if (vecSSdata[slope.station].profileDate > dateEnd) {
 			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
 			        "Starting time (%.5lf) larger than end time(%.5lf), station %s!",
-			        vecSSdata[slope.station].profileDate.getJulianDate(), dateEnd.getJulianDate(),
+			        vecSSdata[slope.station].profileDate.getJulian(), dateEnd.getJulian(),
 			        vecStationIDs[i_stn].c_str());
 			continue; //goto next station
 		}
@@ -842,14 +842,14 @@ void real_main (int argc, char *argv[])
 			current_date -= calculation_step_length/1440;
 		}
 
-		mn_ctrl.Duration = (dateEnd.getJulianDate() - vecSSdata[slope.station].profileDate.getJulianDate() + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.station].profileDate.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", vecSSdata[slope.station].profileDate, "Start simulation for %s on julian date %f, UTC%+2.0f",
-				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.getJulianDate(), vecSSdata[slope.station].profileDate.getTimeZone());
+				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.getJulian(), vecSSdata[slope.station].profileDate.getTimeZone());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
@@ -889,7 +889,7 @@ void real_main (int argc, char *argv[])
 			                 tsstart, tsdaysbetween, profstart, profdaysbetween,
 			                 first_backup, backup_days_between);
 			//Radiation data
-			sun.setDate(current_date.getJulianDate(), current_date.getTimeZone());
+			sun.setDate(current_date.getJulian(), current_date.getTimeZone());
 
 			std::vector<mio::MeteoData> MyMeteol3h;
 			try {
@@ -917,13 +917,13 @@ void real_main (int argc, char *argv[])
                                        tot_mass_in);
 
 				// Notify user every fifteen days of date being processed
-				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulianDate()) + 15.5;
+				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulian()) + 15.5;
 				if ((mode == "RESEARCH") && (slope.sector == slope.station)
-				        && booleanTime(current_date.getJulianDate(), 15., notify_start, calculation_step_length)) {
+				        && booleanTime(current_date.getJulian(), 15., notify_start, calculation_step_length)) {
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					            "Station %s (%d slope(s)): advanced to %s (%f) station time",
 					                vecSSdata[slope.station].meta.stationID.c_str(), slope.nSlopes,
-					                    current_date.toString(mio::Date::DIN).c_str(), current_date.getJulianDate());
+					                    current_date.toString(mio::Date::DIN).c_str(), current_date.getJulian());
 				}
 
 				// SNOWPACK model (Temperature and Settlement computations)
@@ -1135,8 +1135,8 @@ void real_main (int argc, char *argv[])
 					                          vecSSdata[slope.sector], sn_Zdata, true);
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					        "Backup Xdata dumped for station %s [%.2f days, step %d]", ss.str().c_str(),
-					        (current_date.getJulianDate()
-					            - (vecSSdata[slope.station].profileDate.getJulianDate() + 0.5/24)),
+					        (current_date.getJulian()
+					            - (vecSSdata[slope.station].profileDate.getJulian() + 0.5/24)),
 					        mn_ctrl.nStep);
 				}
 
@@ -1150,7 +1150,7 @@ void real_main (int argc, char *argv[])
 				}
 			} //end loop on sectors
 			computed_one_timestep = true;
-		} while ((dateEnd.getJulianDate() - current_date.getJulianDate()) > calculation_step_length/(2.*1440));
+		} while ((dateEnd.getJulian() - current_date.getJulian()) > calculation_step_length/(2.*1440));
 		//end loop on timesteps
 
 		if (computed_one_timestep) {

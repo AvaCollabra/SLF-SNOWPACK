@@ -302,7 +302,7 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 {
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
-	double age = Mdata.date.getJulianDate() - Edata.depositionDate.getJulianDate();
+	double age = Mdata.date.getJulian() - Edata.depositionDate.getJulian();
 
 	if (i_fixed_albedo != Constants::undefined) {
 		Alb = i_fixed_albedo;
@@ -1122,7 +1122,7 @@ double SnLaws::compLoadingRateStress(const std::string& i_viscosity_model, Eleme
 
 double SnLaws::loadingRateStressDEFAULT(ElementData& Edata, const mio::Date& date)
 {
-	const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
+	const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 
 	double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
 	if (Edata.theta[WATER] > Constants::eps)
@@ -1138,7 +1138,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 	switch (visc) {
 	case visc_dflt: case visc_cal: case visc_ant:  { // new calibration
 		double sigMetamo = 0.;
-		const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
+		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
 		if (Edata.theta[WATER] > Constants::eps)
 			sigReac *= 0.37 * (1. + Edata.theta[WATER]); // 0.2 ; 0.37
@@ -1162,7 +1162,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 	}
 	case visc_897: { // r897
 		double sigReac = 0., sigMetamo = 0.;
-		const double age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
+		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
 		Edata.EDot = sigReac;
 		//if ( 1 && (Edata->dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/ ) {
@@ -1236,7 +1236,7 @@ double SnLaws::snowViscosityFudgeDEFAULT(const ElementData& Edata)
 double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date)
 {
 	double visc_fudge, sp_fudge;
-	double const age = MAX(0., date.getJulianDate() - Edata.depositionDate.getJulianDate());
+	double const age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 	double thresh_rho1 = 1., thresh_rho2 = 1.; // Thresholds for enhanced viscosity
 	bool use_thresh = false;
 
@@ -1455,7 +1455,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	else // YIELDING, NON-LINEAR
 		eta /= visc_micro*visc_micro*visc_micro * sig*sig;
 	//ANT Quickfix for Antarctica only
-	if (SnLaws::setfix && ((date.getJulianDate() - Edata.depositionDate.getJulianDate()) > 60.))
+	if (SnLaws::setfix && ((date.getJulian() - Edata.depositionDate.getJulian()) > 60.))
 		eta /= 0.06;
 	return eta; // Viscosity (Pa s)
 }
@@ -1496,7 +1496,7 @@ double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 	else {
 		const double cloudiness = (md(MeteoData::ILWR)>0. && md(MeteoData::ILWR)<=1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 		const double ilwr_p = Atmosphere::ILWR_parametrized(md.meta.position.getLat(), md.meta.position.getLon(), md.meta.position.getAltitude(),
-	                                        md.date.getJulianDate(), md.date.getTimeZone(),
+	                                        md.date.getJulian(), md.date.getTimeZone(),
 	                                        md(MeteoData::RH), md(MeteoData::TA), IOUtils::nodata, cloudiness); //we don't even try Crawford, the benefits are way too small
 		if(ilwr_p!=IOUtils::nodata && md(MeteoData::TA)!=IOUtils::nodata)
 			ea = Atmosphere::blkBody_Emissivity(ilwr_p, md(MeteoData::TA));

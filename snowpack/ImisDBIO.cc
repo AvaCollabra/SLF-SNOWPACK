@@ -154,8 +154,8 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 	for(size_t ll=0; ll<nL; ll++) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[ll].profileDate.getJulianDate() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[ll].layerDate.getJulianDate() - 2415021. + 0.5; //HACK
+		const double profile_date = Pdata[ll].profileDate.getJulian() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata[ll].layerDate.getJulian() - 2415021. + 0.5; //HACK
 
 		fprintf(PFile,"%.5f,%s,%d,%.2f,", profile_date, Pdata[ll].stationname.c_str(),
 		        Pdata[ll].loc_for_snow, Pdata[ll].height);
@@ -168,8 +168,8 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
 		//HACK: these legacy offset should be removed.
 		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[nL-1].profileDate.getJulianDate() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[nL-1].layerDate.getJulianDate() - 2415021. + 0.5; //HACK
+		const double profile_date = Pdata[nL-1].profileDate.getJulian() - 2415021. + 0.5; //HACK
+		const double layer_date = Pdata[nL-1].layerDate.getJulian() - 2415021. + 0.5; //HACK
 		double gsz_SH = NDS[nE].hoar / hoar_density_surf;
 		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
 
@@ -286,6 +286,94 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	conn->terminateStatement(stmt);
 
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
+}
+
+void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind)
+{
+	if (Hdata_ind.dewpt_def != -1) cerr << Hdata.dewpt_def << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hoar_ind6 != -1) cerr << Hdata.hoar_ind6 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hoar_ind24 != -1) cerr << Hdata.hoar_ind24 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.wind_trans != -1) cerr << Hdata.wind_trans << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.hn3 != -1)       cerr << Hdata.hn3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hn6 != -1)       cerr << Hdata.hn6 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hn12 != -1)      cerr << Hdata.hn12 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hn24 != -1)      cerr << Hdata.hn24 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hn72 != -1)      cerr << Hdata.hn72 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hn72_24 != -1)   cerr << Hdata.hn72_24 << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.hnw3 != -1)        cerr << Hdata.hnw3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hnw6 != -1)        cerr << Hdata.hnw6 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hnw12 != -1)       cerr << Hdata.hnw12 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hnw24 != -1)       cerr << Hdata.hnw24 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.hnw72 != -1)       cerr << Hdata.hnw72 << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.hoar_size != -1)  cerr << Hdata.hoar_size << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.wind_trans24 != -1) cerr << Hdata.wind_trans24 << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.stab_class1 != -1)  cerr << Hdata.stab_class1 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_class2 != -1)  cerr << Hdata.stab_class2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index1 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height1 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index4 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height4 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index5 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height5 << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.ch != -1)     cerr << Hdata.ch << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.crust != -1)  cerr << Hdata.crust << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.en_bal != -1) cerr << Hdata.en_bal << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.sw_net != -1)  cerr << Hdata.sw_net << ",";
+	else cerr << "NULL,";
+
+	if (Hdata_ind.t_top1 != -1)  cerr << Hdata.t_top1 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.t_top2 != -1)  cerr << Hdata.t_top2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.swe != -1)      cerr << Hdata.swe << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.tot_lwc != -1)  cerr << Hdata.tot_lwc << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << ",";
+	else cerr << "NULL,";
+
+	cerr << "\n";
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
@@ -423,7 +511,14 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		if (Hdata_ind[i].runoff != -1)   stmt->setNumber(param++, Hdata[i].runoff);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		rows_inserted += stmt->executeUpdate(); // execute the statement stmt
+		try {
+			rows_inserted += stmt->executeUpdate(); // execute the statement stmt
+		} catch (const exception& e) {
+			cerr << "[E] for station" << stationName << statNum << " at " << dateH.toString(mio::Date::ISO) << "\t";
+			print_Hdata_query(Hdata[i], Hdata_ind[i]);
+			cerr << "sn_version=" << sn_version << " comp_date=" << dateSn.toString(mio::Date::ISO) << "\n";
+			throw; //rethrow the exception
+		}
 		conn->terminateStatement(stmt);
 	}
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
