@@ -894,7 +894,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	unsigned int iteration = 0;   // iteration counter (not really required)
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
-	unsigned int MaxItnTemp = 200; // maximum 200 iterations for temperature field
+	unsigned int MaxItnTemp = 40; // maximum 40 iterations for temperature field
 	double ControlTemp = 0.01;    // solution convergence to within 0.01 degC
 	double MaxTDiff;              // maximum temperature difference for convergence
 	double TDiff;                 // temperature difference for convergence check
@@ -905,6 +905,13 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	const double d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
 	double v_pump = (nE > Xdata.SoilNode || SnLaws::wind_pump_soil)? SnLaws::compWindPumpingVelocity(Mdata, d_pump) : 0.0;
 
+	// The temperature equation was found to show slow convergence with only 1 or 2 elements left.
+	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
+	// are left, their temperature gets very sensitive to energy input and during the iterations, the temperature gets out of the
+	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:	
+	if(nN==2) MaxItnTemp = 200;
+	if(nN==1) MaxItnTemp = 2000;
+	
 	// IMPLICIT INTEGRATION LOOP
 	do {
 		iteration++;
@@ -999,7 +1006,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		 */
 		if (U[nE] + ddU[nE] > EMS[nE-1].melting_tk || EMS[nE-1].theta[WATER] > 0.) {
 			ControlTemp = 0.007;
-			MaxItnTemp = 200; // NOTE originally 100;
+			MaxItnTemp = MAX(MaxItnTemp, 200); // NOTE originally 100;
 		}
 		NotConverged = (MaxTDiff > ControlTemp);
 		if (iteration > MaxItnTemp) {
