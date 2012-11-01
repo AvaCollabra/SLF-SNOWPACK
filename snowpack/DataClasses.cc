@@ -1185,8 +1185,8 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  * 	- Remaining ice, liquid water, solutes, etc. are added to the lower element
  * 	- The length of the lower element is kept
  * 	- Keep the birthday of the lower element
- * @param *EdataLow Properties of lower element
- * @param *EdataUp Properties of upper element
+ * @param EdataLower Properties of lower element
+ * @param EdataUpper Properties of upper element
  * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& join)

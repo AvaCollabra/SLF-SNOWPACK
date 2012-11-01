@@ -210,7 +210,7 @@ double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
  * @date 2012-06-27
  * @param F grain type
  * @param rho snow density
- * @return hand hardness
+ * @return hand hardness index (1)
  */
 double Stability::getHandHardnessMONTI(const int& F, const double& rho, const double& water_content)
 {
