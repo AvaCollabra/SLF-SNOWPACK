@@ -307,11 +307,11 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.stab_class1 = 0;     Hdata_ind.stab_class1 = 0;
 	Hdata.stab_class2 = 5;     Hdata_ind.stab_class2 = 0;
 
-	Hdata.stab_index1 = 6.;    Hdata_ind.stab_index1 = 0;
-	Hdata.stab_index2 = 6.;    Hdata_ind.stab_index2 = 0;
-	Hdata.stab_index3 = 6.;    Hdata_ind.stab_index3 = 0;
-	Hdata.stab_index4 = 6.;    Hdata_ind.stab_index4 = 0;
-	Hdata.stab_index5 = 6.;    Hdata_ind.stab_index5 = 0;
+	Hdata.stab_index1 = Stability::max_stability;    Hdata_ind.stab_index1 = 0;
+	Hdata.stab_index2 = Stability::max_stability;    Hdata_ind.stab_index2 = 0;
+	Hdata.stab_index3 = Stability::max_stability;    Hdata_ind.stab_index3 = 0;
+	Hdata.stab_index4 = Stability::max_stability;    Hdata_ind.stab_index4 = 0;
+	Hdata.stab_index5 = Stability::max_stability;    Hdata_ind.stab_index5 = 0;
 	Hdata.stab_height1 = hs;   Hdata_ind.stab_height1 = 0;
 	Hdata.stab_height2 = hs;   Hdata_ind.stab_height2 = 0;
 	Hdata.stab_height3 = hs;   Hdata_ind.stab_height3 = 0;
@@ -400,52 +400,56 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 		Hdata.stab_class1 = Xdata.S_class1;
 	else
 		Hdata_ind.stab_class1 = -1;
-
 	// Stability class
 	if ((Xdata.S_class2 <= 5) && (Xdata.S_class2 >= 1))
 		Hdata.stab_class2 = Xdata.S_class2;
 	else
 		Hdata_ind.stab_class2 = -1;
-	// Stability index: Deformation index
-	if ((Xdata.S_d < (Stability::max_stability + Constants::eps)) && (Xdata.S_d > 0.)) {
+	// 1: Stability index: Deformation index
+	if ((Xdata.S_d < (Stability::max_stability + Constants::eps)) && (Xdata.S_d > 0.))
 		Hdata.stab_index1 = Xdata.S_d;
-		Hdata.stab_height1 = M_TO_CM(Xdata.z_S_d / cos_sl);
-	} else {
+	else
 		Hdata_ind.stab_index1 = -1;
+	if ((Xdata.z_S_d < (hs + Constants::eps)) && (Xdata.z_S_d > 0.))
+		Hdata.stab_height1 = M_TO_CM(Xdata.z_S_d / cos_sl);
+	else
 		Hdata_ind.stab_height1 = -1;
-	}
-	// Natural stability index Sn38
-	if ((Xdata.S_n < (Stability::max_stability + Constants::eps)) && (Xdata.S_n > 0.)) {
+	// 2: Natural stability index Sn38
+	if ((Xdata.S_n < (Stability::max_stability + Constants::eps)) && (Xdata.S_n > 0.))
 		Hdata.stab_index2 = Xdata.S_n;
-		Hdata.stab_height2 = M_TO_CM(Xdata.z_S_n / cos_sl);
-	} else {
+	else
 		Hdata_ind.stab_index2 = -1;
+	if ((Xdata.z_S_n < (hs + Constants::eps)) && (Xdata.z_S_n > 0.))
+		Hdata.stab_height2 = M_TO_CM(Xdata.z_S_n / cos_sl);
+	else
 		Hdata_ind.stab_height2 = -1;
-	}
-	// Skier stability index Sk38
-	if ((Xdata.S_s < (Stability::max_stability + Constants::eps)) && (Xdata.S_s > 0.)) {
+	// 3: Skier stability index Sk38
+	if ((Xdata.S_s < (Stability::max_stability + Constants::eps)) && (Xdata.S_s > 0.))
 		Hdata.stab_index3 = Xdata.S_s;
-		Hdata.stab_height3 = M_TO_CM(Xdata.z_S_s / cos_sl);
-	} else {
+	else
 		Hdata_ind.stab_index3 = -1;
+	if ((Xdata.z_S_s < (hs + Constants::eps)) && (Xdata.z_S_s > 0.))
+		Hdata.stab_height3 = M_TO_CM(Xdata.z_S_s / cos_sl);
+	else
 		Hdata_ind.stab_height3 = -1;
-	}
-	// Structural stability index SSI
-	if ((Xdata.S_4 < (Stability::max_stability + Constants::eps)) && (Xdata.S_4 > 0.)) {
+	// 4: Structural stability index SSI
+	if ((Xdata.S_4 < (Stability::max_stability + Constants::eps)) && (Xdata.S_4 > 0.))
 		Hdata.stab_index4 = Xdata.S_4;
-		Hdata.stab_height4 = M_TO_CM(Xdata.z_S_4 / cos_sl);
-	} else {
+	else
 		Hdata_ind.stab_index4 = -1;
+	if ((Xdata.z_S_4 < (hs + Constants::eps)) && (Xdata.z_S_4 > 0.))
+		Hdata.stab_height4 = M_TO_CM(Xdata.z_S_4 / cos_sl);
+	else
 		Hdata_ind.stab_height4 = -1;
-	}
-	// ???Index???
-	if ((Xdata.S_5 < (Stability::max_stability + Constants::eps)) && (Xdata.S_5 > 0.)) {
+	// 5: ???Index???
+	if ((Xdata.S_5 < (Stability::max_stability + Constants::eps)) && (Xdata.S_5 > 0.))
 		Hdata.stab_index5 = Xdata.S_5;
-		Hdata.stab_height5 = M_TO_CM(Xdata.z_S_5 / cos_sl);
-	} else {
+	else
 		Hdata_ind.stab_index5 = -1;
+	if ((Xdata.z_S_5 < (hs + Constants::eps)) && (Xdata.z_S_5 > 0.))
+		Hdata.stab_height5 = M_TO_CM(Xdata.z_S_5 / cos_sl);
+	else
 		Hdata_ind.stab_height5 = -1;
-	}
 
 	// Surface crust [type == 772] computed for southerly aspect outside compHazard()
 

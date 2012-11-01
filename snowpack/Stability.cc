@@ -566,16 +566,16 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 }
 
 /**
- * @brief Initializes strenght parameters
+ * @brief Initializes stability parameters
  * @param STpar
- * @param *Xdata
+ * @param Xdata
  * @param SIdata
  * @param i_psi_ref Reference slope angle (deg)
  */
 void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
                               SnowStation& Xdata, std::vector<InstabilityData>& SIdata)
 {
-	size_t nN = Xdata.getNumberOfNodes();
+	const size_t nN = Xdata.getNumberOfNodes();
 
 	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
@@ -585,14 +585,18 @@ void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
 	STpar.sig_s = Constants::undefined;
 	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
-	for(size_t e=Xdata.SoilNode; e<nN; e++) {
-		SIdata[e].ssi      = Stability::max_stability;
-		Xdata.Ndata[e].S_n = Stability::max_stability;
-		Xdata.Ndata[e].S_s = Stability::max_stability;
-		if (e < nN-1) {
-			Xdata.Edata[e].S_dr = Stability::max_stability;
+	for(size_t n=Xdata.SoilNode; n<nN; n++) {
+		SIdata[n].ssi      = Stability::max_stability;
+		Xdata.Ndata[n].S_n = Stability::max_stability;
+		Xdata.Ndata[n].S_s = Stability::max_stability;
+		if (n < nN-1) {
+			Xdata.Edata[n].S_dr = Stability::max_stability;
 		}
 	}
+
+	Xdata.S_d = Xdata.S_n = Xdata.S_s = Xdata.S_4 = Xdata.S_5 = Stability::max_stability;
+	Xdata.z_S_d = Xdata.z_S_n = Xdata.z_S_s = Xdata.z_S_4 = Xdata.z_S_5 = 0.;
+	Xdata.S_class1 = Xdata.S_class2 = -1;
 }
 
 /**
@@ -1330,15 +1334,11 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	vector<InstabilityData> SIdata = vector<InstabilityData>(nN); // Parameters for structural instabilities
 
-	// Return if bare soil or PLASTIC
-	if ( (nE < Xdata.SoilNode+1) || plastic ) {
-		Xdata.S_d = Xdata.S_n = Xdata.S_s = Xdata.S_4 = Stability::max_stability;
-		Xdata.z_S_d = Xdata.z_S_n = Xdata.z_S_s = Xdata.z_S_4 = 0.;
-		Xdata.S_class1 = Xdata.S_class2 = -1;
+	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
+	if ( (nE < Xdata.SoilNode+1) || plastic ) { // Return if bare soil or PLASTIC
 		return;
 	}
 
-	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
 	Pk = compPenetrationDepth(Xdata);
 	e = nE;
 	while (e-- > Xdata.SoilNode) {

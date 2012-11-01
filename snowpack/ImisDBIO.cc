@@ -290,6 +290,9 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind)
 {
+	const size_t posB=sqlInsertHdata.find("dewpt_def");
+	const size_t posE=sqlInsertHdata.find_first_of(')');
+	cerr << "\n[E] SDB inserted    : " << sqlInsertHdata.substr(posB,posE-posB) << "\n[E] SDB with values : ";
 	if (Hdata_ind.dewpt_def != -1) cerr << Hdata.dewpt_def << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.hoar_ind6 != -1) cerr << Hdata.hoar_ind6 << ",";
@@ -299,6 +302,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.wind_trans != -1) cerr << Hdata.wind_trans << ",";
 	else cerr << "NULL,";
 
+	cerr << "\n[E] SDB               ";
 	if (Hdata_ind.hn3 != -1)       cerr << Hdata.hn3 << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.hn6 != -1)       cerr << Hdata.hn6 << ",";
@@ -311,7 +315,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	else cerr << "NULL,";
 	if (Hdata_ind.hn72_24 != -1)   cerr << Hdata.hn72_24 << ",";
 	else cerr << "NULL,";
-
+	cerr << "\t";
 	if (Hdata_ind.hnw3 != -1)        cerr << Hdata.hnw3 << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.hnw6 != -1)        cerr << Hdata.hnw6 << ",";
@@ -323,11 +327,13 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.hnw72 != -1)       cerr << Hdata.hnw72 << ",";
 	else cerr << "NULL,";
 
+	cerr << "\n[E] SDB               ";
 	if (Hdata_ind.hoar_size != -1)  cerr << Hdata.hoar_size << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.wind_trans24 != -1) cerr << Hdata.wind_trans24 << ",";
 	else cerr << "NULL,";
 
+	cerr << "\n[E] SDB               ";
 	if (Hdata_ind.stab_class1 != -1)  cerr << Hdata.stab_class1 << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.stab_class2 != -1)  cerr << Hdata.stab_class2 << ",";
@@ -336,23 +342,24 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	else cerr << "NULL,";
 	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height1 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index2 << ",";
+	if (Hdata_ind.stab_index2 != -1)  cerr << Hdata.stab_index2 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height2 << ",";
+	if (Hdata_ind.stab_height2 != -1) cerr << Hdata.stab_height2 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index3 << ",";
+	if (Hdata_ind.stab_index3 != -1)  cerr << Hdata.stab_index3 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height3 << ",";
+	if (Hdata_ind.stab_height3 != -1) cerr << Hdata.stab_height3 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index4 << ",";
+	if (Hdata_ind.stab_index4 != -1)  cerr << Hdata.stab_index4 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height4 << ",";
+	if (Hdata_ind.stab_height4 != -1) cerr << Hdata.stab_height4 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index5 << ",";
+	if (Hdata_ind.stab_index5 != -1)  cerr << Hdata.stab_index5 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height5 << ",";
+	if (Hdata_ind.stab_height5 != -1) cerr << Hdata.stab_height5 << ",";
 	else cerr << "NULL,";
 
+	cerr << "\n[E] SDB               ";
 	if (Hdata_ind.ch != -1)     cerr << Hdata.ch << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.crust != -1)  cerr << Hdata.crust << ",";
@@ -361,17 +368,18 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	else cerr << "NULL,";
 	if (Hdata_ind.sw_net != -1)  cerr << Hdata.sw_net << ",";
 	else cerr << "NULL,";
-
+	cerr << "\t";
 	if (Hdata_ind.t_top1 != -1)  cerr << Hdata.t_top1 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.t_top2 != -1)  cerr << Hdata.t_top2 << ",";
+	if (Hdata_ind.t_top2 != -1)  cerr << Hdata.t_top2 << "";
 	else cerr << "NULL,";
+	cerr << "\t";
 	if (Hdata_ind.swe != -1)      cerr << Hdata.swe << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.tot_lwc != -1)  cerr << Hdata.tot_lwc << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << ",";
-	else cerr << "NULL,";
+	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << "";
+	else cerr << "NULL";
 
 	cerr << "\n";
 }
@@ -469,21 +477,21 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height1);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index2);
+		if (Hdata_ind[i].stab_index2 != -1)  stmt->setNumber(param++, Hdata[i].stab_index2);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height2);
+		if (Hdata_ind[i].stab_height2 != -1) stmt->setNumber(param++, Hdata[i].stab_height2);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index3);
+		if (Hdata_ind[i].stab_index3 != -1)  stmt->setNumber(param++, Hdata[i].stab_index3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height3);
+		if (Hdata_ind[i].stab_height3 != -1) stmt->setNumber(param++, Hdata[i].stab_height3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index4);
+		if (Hdata_ind[i].stab_index4 != -1)  stmt->setNumber(param++, Hdata[i].stab_index4);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height4);
+		if (Hdata_ind[i].stab_height4 != -1) stmt->setNumber(param++, Hdata[i].stab_height4);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index5);
+		if (Hdata_ind[i].stab_index5 != -1)  stmt->setNumber(param++, Hdata[i].stab_index5);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height5);
+		if (Hdata_ind[i].stab_height5 != -1) stmt->setNumber(param++, Hdata[i].stab_height5);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		if (Hdata_ind[i].ch != -1)     stmt->setNumber(param++, Hdata[i].ch);
@@ -514,9 +522,9 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		try {
 			rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
-			cerr << "[E] for station" << stationName << statNum << " at " << dateH.toString(mio::Date::ISO) << "\t";
+			cerr << "[E] SDB for station " << stationName << statNum << " at " << dateH.toString(mio::Date::ISO) << "";
+			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << sn_version << "\tcalculation_date: " << dateSn.toString(mio::Date::ISO) << "";
 			print_Hdata_query(Hdata[i], Hdata_ind[i]);
-			cerr << "sn_version=" << sn_version << " comp_date=" << dateSn.toString(mio::Date::ISO) << "\n";
 			throw; //rethrow the exception
 		}
 		conn->terminateStatement(stmt);
