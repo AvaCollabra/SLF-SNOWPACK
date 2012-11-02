@@ -109,7 +109,10 @@ struct MainControl
  * non-static section                                       *
  ************************************************************/
 
-Slope::Slope(const mio::Config& i_cfg) : station(0), first(1), cfg(i_cfg)
+Slope::Slope(const mio::Config& i_cfg)
+       : prevailing_wind_dir(0.), nSlopes(0), station(0), sector(0),
+         first(1), south(0), luv(0), lee(0), snow_redistribution(false), virtual_slopes(false),
+         cfg(i_cfg), sector_width(0)
 {
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
 	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);

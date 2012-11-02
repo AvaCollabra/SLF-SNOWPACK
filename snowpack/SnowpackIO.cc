@@ -24,16 +24,14 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), smetio(cfg), imisdbio(cfg)
-{
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : imisdbio(i_cfg),
 #else
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), smetio(cfg)
-{
+SnowpackIO::SnowpackIO(const mio::Config& i_cfg) :
 #endif
-	//Actual constructor code following
-	outputprofile_as_ascii = false;
-	outputprofile_as_imis  = false;
-
+              asciiio(i_cfg), smetio(i_cfg),
+              cfg(i_cfg), outputprofile_as_ascii(false), outputprofile_as_imis(false),
+              output_snow_as_smet(false), input_snow_as_smet(false)
+{
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
 	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
 	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", Config::nothrow);
@@ -55,22 +53,14 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : cfg(i_cfg), asciiio(cfg), sme
 	}
 
 	//Format of initial snow profile:
-	string in_snow;
-	cfg.getValue("SNOW", "Input", in_snow, Config::nothrow);
-
+	const string in_snow = cfg.get("SNOW", "Input", Config::nothrow);
 	if (in_snow == "SMET"){ //TODO: document Input::SNOW = SMET or SNOOLD
 		input_snow_as_smet = true;
-	} else {
-		input_snow_as_smet = false;
 	}
 	//Format of transitional and final snow profile(s):
-	string out_snow;
-	cfg.getValue("SNOW", "Output", out_snow, Config::nothrow);
-
+	const string out_snow = cfg.get("SNOW", "Output", Config::nothrow);
 	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
-	} else {
-		output_snow_as_smet = false;
 	}
 }
 

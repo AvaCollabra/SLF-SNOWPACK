@@ -41,9 +41,15 @@ const bool AsciiIO::t_gnd = false;
 /************************************************************
  * non-static section                                       *
  ************************************************************/
-
-AsciiIO::AsciiIO(const mio::Config& cfg) : avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false),
-                 research_mode(false), perp_to_slope(false)
+AsciiIO::AsciiIO(const mio::Config& cfg)
+         : setAppendableFiles(), hn_density(), hn_density_model(), variant(), experiment(),
+           inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
+           fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
+           totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
+           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
+           sw_mode(0), avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
+           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
+           out_load(false), out_stab(false), out_canopy(false)
 {
 	/**
 	 * @brief Defines how heights/depths of snow or/and soil temperatures are read in and output \n

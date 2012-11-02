@@ -39,7 +39,8 @@ const bool SnowDrift::msg_erosion = false;
  ************************************************************/
 
 SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
-                     enforce_measured_snow_heights(false), snow_redistribution(false), alpine3d(false)
+                     enforce_measured_snow_heights(false), snow_redistribution(false), alpine3d(false),
+                     sn_dt(0.), nSlopes(0)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 

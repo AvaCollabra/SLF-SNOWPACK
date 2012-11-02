@@ -50,8 +50,9 @@ const double SnowStation::join_thresh_sp = 0.05;    ///< Sphericity (1)
 const double SnowStation::join_thresh_rg = 0.125;   ///< Grain radius (mm)
 
 ZwischenData::ZwischenData()
+              : hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0)
 {
-	reset();
+	//reset();
 }
 
 void ZwischenData::reset()
@@ -62,13 +63,14 @@ void ZwischenData::reset()
 	hn24.resize(144, 0.0);
 }
 
-// Class SnowProfileLayer
-SnowProfileLayer::SnowProfileLayer() : profileDate(), layerDate(),
-                                       height(0.), rho(0.), T(0.), gradT(0.), strain_rate(0.),
-                                       theta_i(0.), theta_w(0.),
-                                       grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
-                                       coordin_num(0.), marker(0), type(0), hard(0.)
-{}
+SnowProfileLayer::SnowProfileLayer()
+                  : sn_version(), sn_computation_date(), sn_jul_computation_date(0.), sn_user(),
+                    profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
+                    layerDate(), height(0.), rho(0.), T(0.), gradT(0.), strain_rate(0.),
+                    theta_i(0.), theta_w(0.), grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
+                    bond_size(0.), coordin_num(0.), marker(0), type(0), hard(0.)
+{
+}
 
 /**
  * @brief Determines the averaged quantities of the current layer with another layer
@@ -103,10 +105,8 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
     sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
-    drift(0.), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
+    drift(0.), mass(N_MASS_CHANGES), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
 {
-	mass.resize(N_MASS_CHANGES);
-	load.resize(SnowStation::number_of_solutes);
 }
 
 void SurfaceFluxes::reset(const bool& cumsum_mass)
@@ -319,22 +319,15 @@ void CanopyData::initializeSurfaceExchangeData()
 
 // Class ElementData
 ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
-                             Te(0.), gradT(0.), Rho(0.), M(0.), sw_abs(0.),
+                             Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
+                             theta(N_COMPONENTS), conc(N_COMPONENTS, SnowStation::number_of_solutes), k(N_SN_FIELDS), c(N_SN_FIELDS), soil(N_SOIL_FIELDS),
+                             Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), rg_opt(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), dhf(0.)
 {
-	theta.resize(N_COMPONENTS);
-	conc.resize(N_COMPONENTS, SnowStation::number_of_solutes);
-	k.resize(N_SN_FIELDS);
-	c.resize(N_SN_FIELDS);
-	soil.resize(N_SOIL_FIELDS);
-
-	// Set initial melting and freezing temperatures
-	melting_tk=Constants::melting_tk;
-	freezing_tk=Constants::freezing_tk;
 }
 
 /**
@@ -742,13 +735,73 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 }
 
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
-	meta(), Cdata(), pAlbedo(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
+	meta(), Cdata(), sector(0), pAlbedo(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), cH(0.),
 	mH(0.), Ground(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
-	z_S_4(0.), S_5(0.), z_S_5(0.), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
+	z_S_4(0.), S_5(0.), z_S_5(0.), Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
 	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
 	SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false)
-{}
+{
+}
+
+SnowStation::SnowStation(const SnowStation& c) :
+	meta(c.meta), Cdata(c.Cdata), sector(c.sector), pAlbedo(c.pAlbedo), Albedo(c.Albedo), SoilAlb(c.SoilAlb),
+        BareSoil_z0(c.BareSoil_z0), SoilNode(c.SoilNode), cH(c.cH),
+	mH(c.mH), Ground(c.Ground), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
+	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n), S_s(c.S_s),
+        z_S_s(c.z_S_s), S_4(c.S_4),
+	z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5), Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), dIntEnergy(c.dIntEnergy), meltFreezeEnergy(c.meltFreezeEnergy),
+	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers),
+	SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward)
+{
+}
+
+SnowStation& SnowStation::operator=(const SnowStation& source) {
+	if(this != &source) {
+		meta = source.meta;
+		Cdata = source.Cdata;
+		sector = source.sector;
+		pAlbedo = source.pAlbedo;
+		Albedo = source.Albedo;
+		SoilAlb = source.SoilAlb;
+		BareSoil_z0 = source.BareSoil_z0;
+		SoilNode = source.SoilNode;
+		cH = source.cH;
+		mH = source.mH;
+		Ground = source.Ground;
+		hn = source.hn;
+		rho_hn = source.rho_hn;
+		ErosionLevel = source.ErosionLevel;
+		ErosionMass = source.ErosionMass;
+		S_class1 = source.S_class1;
+		S_class2 = source.S_class2;
+		S_d = source.S_d;
+		z_S_d = source.z_S_d;
+		S_n = source.S_n;
+		z_S_n = source.z_S_n;
+		S_s = source.S_s;
+		z_S_s = source.z_S_s;
+		S_4 = source.S_4;
+		z_S_4 = source.z_S_4;
+		S_5 = source.S_5;
+		z_S_5 = source.z_S_5;
+		Ndata = source.Ndata;
+		Edata = source.Edata;
+		Kt = source.Kt;
+		tag_low = source.tag_low;
+		ColdContent = source.ColdContent;
+		dIntEnergy = source.dIntEnergy;
+		meltFreezeEnergy = source.meltFreezeEnergy;
+		nNodes = source.nNodes;
+		nElems = source.nElems;
+		useCanopyModel = source.useCanopyModel;
+		useSoilLayers = source.useSoilLayers;
+		SubSurfaceMelt = source.SubSurfaceMelt;
+		SubSurfaceFrze = source.SubSurfaceFrze;
+		windward = source.windward;
+	}
+	return *this;
+}
 
 SnowStation::~SnowStation()
 {
@@ -1318,19 +1371,18 @@ std::ostream& operator<<(std::ostream &os, const SnowStation& Xdata)
 }
 
 CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
-	: n(0), date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
-	  vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
-	  iswr(0.), rswr(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-	  hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
-	  rho_hn(0.),
-	  numberMeasTemperatures(mio::IOUtils::unodata)
+        : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
+          vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
+          iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
+          hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
+          ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.), n(0),
+          fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
+	  numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
 	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", mio::Config::nothrow);
 	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", mio::Config::nothrow);
 	minDepthSubsurf = i_cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", mio::Config::nothrow);
 	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", mio::Config::nothrow);
-
-	conc.resize(SnowStation::number_of_solutes, 0.);
 }
 
 void CurrentMeteo::reset(const mio::Config& i_cfg)
@@ -1549,13 +1601,10 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& Sdata)
 	return os;
 }
 
-
 LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
-                     phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.), SoilRho(0.), SoilK(0.), SoilC(0.),
+                     phiIce(0.), phiWater(0.), phiVoids(0.), phiSoil(0.),
+                     cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes), cSoil(SnowStation::number_of_solutes),
+                     SoilRho(0.), SoilK(0.), SoilC(0.),
                      rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
 {
-	cIce.resize(SnowStation::number_of_solutes);
-	cWater.resize(SnowStation::number_of_solutes);
-	cVoids.resize(SnowStation::number_of_solutes);
-	cSoil.resize(SnowStation::number_of_solutes);
 }

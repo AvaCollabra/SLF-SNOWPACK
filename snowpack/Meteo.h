@@ -52,11 +52,11 @@ class Meteo {
 		int getStability() const;
 
  	private:
-		Canopy canopy;
 		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height=true);
 		static double getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param,
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 
+		Canopy canopy;
 		double roughness_length, height_of_wind_value;
 		int neutral;
 		bool research_mode, useCanopyModel, alpine3d;

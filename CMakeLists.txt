@@ -65,7 +65,7 @@ ELSE(MSVC)
 	SET(WARNINGS "-Wall")
 	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpadded -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal
-	SET(EXTRA_WARNINGS "-Wextra -pedantic")
+	SET(EXTRA_WARNINGS "-Wextra -pedantic") #-Weffc++
 	IF(CMAKE_COMPILER_IS_GNUCXX)
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 		IF(WIN32) #for gcc on windows

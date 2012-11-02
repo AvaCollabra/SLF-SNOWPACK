@@ -42,8 +42,8 @@
  * right-hand-side vector {B} is overwritten by the solution vector {X}
  * When the linear system of equations stam from a FE method for a vector field or a similar
  * one is possible and advantageous to define a multiplicity factor M which is nothing but the
- * dimension of the vector field. In this case the linear system of equations is defined as we 
- * would work with a scalar field instead of a vector field. In this case each defined 
+ * dimension of the vector field. In this case the linear system of equations is defined as we
+ * would work with a scalar field instead of a vector field. In this case each defined
  * equation and unknown is replaced by a set of M equations and M unknowns and each
  * coefficients of the matrix [A] is replaced by a full (MxM) matrix. Thus, if a the
  * multiplicity factor greather than one has been defined the true number of equations and
@@ -55,7 +55,7 @@
  * multiple-minimum-degree algorithm described by: [Alan Geroge, Joseph W.H. Liu, The
  * Evolution of the minimum degree ordering algorithm, SIAM Review, Vol. 31, No. 1 pp 1-19,
  * March 1989].
- * All direct-solver (ds-)functions return 0 = FALSE if succesfull, respectively 1 = TRUE with 
+ * All direct-solver (ds-)functions return 0 = FALSE if succesfull, respectively 1 = TRUE with
  * an error message on standard output if an error has occurred.
  */
 
@@ -95,7 +95,7 @@
 	} else {                                                                               \
   		GD_MALLOC(  POINTER, TYPE, N, MSG );                                           \
 	}                                                                                      \
-} 
+}
 
 #define GD_FREE( POINTER )                                                                     \
 {                                                                                              \
@@ -144,25 +144,25 @@
    int  k_;                                                                           \
    for( s_=0.0, x_=X, k_=N; 0<k_--; ) s_ += (*x_++);                                           \
    RESULT = s_;                                                                                \
-}      
+}
 
 #define VD_SCALE( N, A, X )                                                                    \
 {  FLOAT a_, *x_;                                                                     \
    int  k_;                                                                           \
    for( a_=A, x_=X, k_=N; 0<k_--; )  (*x_++) *= a_;                                            \
-}                       
+}
 
 #define VD_COPY( N, A, X )                                                                     \
 {  FLOAT  a_, *x_;                                                                    \
    int  k_;                                                                           \
    for( a_=A, x_=X, k_=N; 0<k_--; )  (*x_++) = a_;                                             \
-} 
+}
 
 #define VD_SCALE_SET( N, A, X, Y )                                                             \
 {  FLOAT  a_, *x_, *y_;                                                               \
    int  k_;                                                                           \
    for( a_=A, x_=X, y_=Y, k_=N; 0<k_--; )  (*y_++) = a_ * (*x_++);                             \
-}  
+}
 
 #define VD_AXPY(N, A, X, Y )      /* Y[] = A*X[] + Y[] */                                      \
 {  FLOAT  a_, *x_, *y_;                                                               \
@@ -175,14 +175,14 @@
    int  n_, k_;                                                                       \
    for (x_=X, y_=Y+JUMP[0], a_=A, n_=0; n_<N_B; y_+= JUMP[++n_])                               \
    for (k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                           \
-}  
+}
 
 #define VD_AXPY_POS(N_B, N, POS, A, X, Y ) /* Y[] = A*X[] + Y[] BLOCK-WISE IN Y */             \
 {  FLOAT  a_, *x_, *y_;                                                               \
    int  n_, k_;                                                                       \
    for (x_=X, y_=Y+POS[0], a_=A, n_=0; n_<N_B; y_= Y+POS[++n_])                                \
    for (k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                           \
-}  
+}
 
 #define VD_DOT_POS(N_B, N, POS, X, Y, RESULT) /* RESULT = X[]*Y[]  BLOCK-WISE IN Y */          \
 {  FLOAT  r_, *x_, *y_;                                                               \
@@ -190,7 +190,7 @@
    for (x_=X, y_=Y+POS[0], r_=0.0, n_=0; n_<N_B; y_= Y+POS[++n_])                              \
    for (k_=N[n_]; 0<k_--;  ) r_ += (*x_++)*(*y_++) ;                                           \
    RESULT = r_;                                                                                \
-}  
+}
 
 #define VD_DOT_SPARSE( N, X, INDX, Y, RESULT)                                                  \
 {  int    k_, *indx_;                                                                 \
@@ -205,7 +205,7 @@
    FLOAT  a_, *x_, *y_;                                                               \
    a_ = A;  x_ = X;  y_ = Y;  indx_ = INDX;                                                    \
    for ( k_=N; 0<k_--; )   y_[ (*indx_++) ] += a_ * (*x_++) ;                                  \
-} 
+}
 
 /*
  * END VectorData definitions
@@ -270,32 +270,32 @@ typedef struct
 #define  FLOAT double
 #define  SD_MARKED    (1<<30) /* An flag bit used for permutation. Use:(1<<15) on PC */
 
-typedef struct 
-{ 
+typedef struct
+{
 	int                Row0;
 	int                Row1;
-	int                nCol; 
-	int                nColBlock; 
-	int                iColBlock; 
+	int                nCol;
+	int                nColBlock;
+	int                iColBlock;
 	int                iFloat;
-	
+
 }  SD_ROW_BLOCK_DATA;
 
 typedef struct
-{  
-	int                 Dim; 
+{
+	int                 Dim;
 	int                *pPerm;
 	int                 nRowBlock;
-	SD_ROW_BLOCK_DATA  *pRowBlock; 
-	int                 nColBlock; 
+	SD_ROW_BLOCK_DATA  *pRowBlock;
+	int                 nColBlock;
 	int                *pFirstColBlock;
 	int                *pSizeColBlock;
 	int                 SizeBlockJump;
 	int                *pBlockJump;
-	int                 SizeUpper; 
+	int                 SizeUpper;
 	FLOAT              *pUpper;
 
-}  SD_BLOCK_MATRIX_DATA; 
+}  SD_BLOCK_MATRIX_DATA;
 
 
 #define SD_P_FIRST_COL_BLOCK(pMAT,pROW) (pMAT->pFirstColBlock + pROW->iColBlock)
@@ -310,7 +310,7 @@ typedef struct
       else if ( ROW > mid_->Row1 ) low_  = mid_ + 1;                                           \
       else { pROW=mid_;  break;  }                                                             \
    }                                                                                           \
-} 
+}
 
 /*
 * SPARSE MATRIX DATA USED INITIALLY TO READ THE CONNECTIVITY MATRIX
@@ -328,38 +328,38 @@ typedef struct
 #endif
 
 typedef struct SD_COL_DATA
-{ 
+{
 	int                  Col;
-	
+
 	#ifdef SPARSE_BINARY_TREE
 	struct SD_COL_DATA  *Right, *Left;
 	#else
 	struct SD_COL_DATA  *Next;
 	#endif
-	
+
 } SD_COL_DATA;
 
 typedef struct SD_ROW_DATA
 {
 	SD_COL_DATA  *Col;
-	
+
 }  SD_ROW_DATA;
 
 typedef struct
-{  
+{
 	int                    nRow;
 	int                   *pPerm;
 	int                   *pPermInv;
 	int                    nSupernode;
 	int                   *pSupernode;
-	
-	SD_ROW_DATA           *pRow;     
+
+	SD_ROW_DATA           *pRow;
 	SD_CHUNK_DATA          PoolCol;
 	SD_COL_DATA           *FreeCol;
 	int                    nFreeCol;
-	int                    nCol;  
+	int                    nCol;
 
-}  SD_CON_MATRIX_DATA; 
+}  SD_CON_MATRIX_DATA;
 
 #define SD_ROW_NUM(pROW, pMAT)    ( pROW - (pMAT)->pRow  )
 #define SD_ROW(     NUM, pMAT)    ( (pMAT)->pRow[NUM]    )
@@ -377,40 +377,40 @@ typedef struct
 */
 
 typedef struct SD_COL_BLOCK_DATA
-{ 
+{
 	int Col0, Col1;
 	struct SD_COL_BLOCK_DATA  *Next;
-  
+
 } SD_COL_BLOCK_DATA;
 
-typedef union 
-{ 
+typedef union
+{
 	SD_ROW_BLOCK_DATA     UnusedData;
-	struct 
-	{  
+	struct
+	{
 		int                Row0;
 		int                Row1;
-	}  Any; 
-	struct 
-	{  
+	}  Any;
+	struct
+	{
 		int                Row0;
 		int                Row1;
 		SD_COL_BLOCK_DATA *ColBlock;
-	}  Data; 
+	}  Data;
 }  SD_TMP_ROW_BLOCK_DATA;
 
 typedef struct
-{  
+{
 	int                    nRow;
 	int                   *pPerm;
-	
-	int                    nRowBlock; 
+
+	int                    nRowBlock;
 	SD_TMP_ROW_BLOCK_DATA *pRowBlock;
 	int                    nColBlock;
 	SD_CHUNK_DATA          PoolColBlock;
 	SD_COL_BLOCK_DATA     *FreeColBlock;
 
-}  SD_TMP_CON_MATRIX_DATA; 
+}  SD_TMP_CON_MATRIX_DATA;
 
 /**
  * @struct SD_MATRIX_DATA
@@ -424,22 +424,22 @@ typedef struct
 typedef enum StateType {ConMatrix, BlockConMatrix, BlockMatrix}  StateType;
 
 typedef  struct
-{  
+{
 	int   nEq;
-	int   nDeletedEq; 
+	int   nDeletedEq;
 	int   Multiplicity;
-	
+
 	StateType State;
 	/*	enum
 	{  ConMatrix,
 	BlockConMatrix,
-	BlockMatrix  
+	BlockMatrix
 	}  State;
 	*/
-	union 
+	union
 	{  SD_CON_MATRIX_DATA      Con;
 	SD_TMP_CON_MATRIX_DATA  TmpCon;
-	SD_BLOCK_MATRIX_DATA    Block; 
+	SD_BLOCK_MATRIX_DATA    Block;
 	}  Mat;
 
 }  SD_MATRIX_DATA;
@@ -518,18 +518,18 @@ typedef  SD_MATRIX_DATA MYTYPE;
       else if ( COL > SD_COL(pC_) ) {  ppCOL = &pC_->Right; pC_ = pC_->Right;  }               \
       else {  FOUND = 1; break;  }                                                             \
    }                                                                                           \
-} 
+}
 
 #define SD_INSERT_COL(ppCOL, pCOL, COL)                                                        \
 {  pCOL->Left = pCOL->Right  = 0;                                                              \
    pCOL->Col  = COL;                                                                           \
    *ppCOL     = pCOL;                                                                          \
-} 
+}
 
 #else
 
 #define SD_TRAVERSE_COL(pCOL, pFUNCTION, pVOID)                                                \
- {  SD_COL_DATA *pC_; for(pC_=pCOL; pC_; pC_=pC_->Next) pFUNCTION(pC_, pVOID);  } 
+ {  SD_COL_DATA *pC_; for(pC_=pCOL; pC_; pC_=pC_->Next) pFUNCTION(pC_, pVOID);  }
 
 #define SD_FIND_COL(pROOT_COL, COL, ppCOL, FOUND)                                              \
 {  SD_COL_DATA *pC_ ;                                                                          \
@@ -540,13 +540,13 @@ typedef  SD_MATRIX_DATA MYTYPE;
    {  if ( COL > SD_COL(pC_)  )  { ppCOL = &pC_->Next; pC_ = pC_->Next;  }                     \
       else { if ( COL == SD_COL(pC_) ) FOUND = 1;  break;  }                                   \
    }                                                                                           \
-} 
+}
 
 #define SD_INSERT_COL(ppCOL, pCOL, COL)                                                        \
 {  pCOL->Col  = COL;                                                                           \
    pCOL->Next = *ppCOL;                                                                        \
    *ppCOL     = pCOL;                                                                          \
-} 
+}
 
 #define SD_ADD_COL_1(COL, pADD_COL)                                                            \
 {  SD_COL_DATA **ppC_, *pC_;                                                                   \
@@ -573,7 +573,7 @@ typedef struct  {
 } pBLOCK;
 
 #define BLOCK_INIT(BLOCK,pCOL0,pSIZE) { BLOCK.pC0 = pCOL0; BLOCK.pSize = pSIZE; }
-#define BLOCK_NEXT(BLOCK)             ( BLOCK.pC0++,       BLOCK.pSize++ ) 
+#define BLOCK_NEXT(BLOCK)             ( BLOCK.pC0++,       BLOCK.pSize++ )
 #define BLOCK_C0(BLOCK)                 BLOCK.pC0[0]
 #define BLOCK_C1(BLOCK)                (BLOCK.pC0[0]+BLOCK.pSize[0])
 #define BLOCK_SIZE(BLOCK)               BLOCK.pSize[0]
@@ -598,7 +598,7 @@ typedef struct  {
       }                                                                                        \
       else   break;                                                                            \
    }                                                                                           \
-} 
+}
 
 /*
 * Macros to compute the triangular factorization on a symmetric matrix stored packed row-wise
@@ -666,7 +666,7 @@ typedef struct  {
       }                                                                                        \
       Mat_k0  += DIM0 - k_;                                                                    \
    }                                                                                           \
-} 
+}
 
 #else
 void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, FLOAT *MAT0, int DIM0,
@@ -751,7 +751,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 	}
 }
 #endif
- 
+
 /*
 * This macro compute for a matrix stored packed row-wise in a one dimensional array the
 * position of a diagonal element in a given row.
@@ -785,7 +785,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
       if ( COL >= col_[0]+size_[0] ) {  FOUND = 0; }                                           \
       else                           {  FOUND = 1;  OFFSET += COL - col_[0] - delta_;  }       \
    }                                                                                           \
-} 
+}
 
 
 
@@ -937,147 +937,147 @@ typedef enum SD_MATRIX_WHAT
  */
 int ds_Solve(SD_MATRIX_WHAT Code, MYTYPE *pMat, double *pX);
 
-FLOAT BlockMatrixElement 
-  (  /* SD_BLOCK_MATRIX_DATA * pMat , 
-     int Row , 
+FLOAT BlockMatrixElement
+  (  /* SD_BLOCK_MATRIX_DATA * pMat ,
+     int Row ,
      int Col */
-  ); 
-int PrintNumMatrix 
-  ( /*  SD_BLOCK_MATRIX_DATA * pMat , 
+  );
+int PrintNumMatrix
+  ( /*  SD_BLOCK_MATRIX_DATA * pMat ,
      int Permuted */
-  ); 
-int TestBlockFormat 
+  );
+int TestBlockFormat
   (  /* SD_BLOCK_MATRIX_DATA * pMat */
-  ); 
-int TestNumericalFact 
-  (  /* SD_BLOCK_MATRIX_DATA * pMat , 
+  );
+int TestNumericalFact
+  (  /* SD_BLOCK_MATRIX_DATA * pMat ,
      int StoreNewData  */
-  ); 
-int ds_AssembleMatrix 
-  (  /* SD_MATRIX_DATA * pMat0 , 
-     int nEq , 
-     int Eq [ ] , 
-     int Dim , 
+  );
+int ds_AssembleMatrix
+  (  /* SD_MATRIX_DATA * pMat0 ,
+     int nEq ,
+     int Eq [ ] ,
+     int Dim ,
      FLOAT * ElMat */
-  ); 
-int ds_AssembleRowCoeff 
-  (  SD_MATRIX_DATA * pMat0 , 
-     int Row , 
-     int nCol , 
-     int * pCol , 
-     FLOAT Diagonal , 
-     FLOAT * Coeff 
-  ); 
-int Permute 
-  (  int N , 
-     int * Perm , 
-     FLOAT * Vector 
-  ); 
-int PermuteWithMult 
-  (  int N , 
-     int Mult , 
-     int * Perm , 
-     FLOAT * Vector 
-  ); 
-int InvertMatrix 
-  (  SD_BLOCK_MATRIX_DATA * pMat 
-  ); 
-int MatrixVector 
-  (  SD_BLOCK_MATRIX_DATA * pMat , 
-     FLOAT * X , 
-     FLOAT * Y 
-  ); 
-int InverseMatrixVector 
-  (  SD_BLOCK_MATRIX_DATA * pMat , 
-     FLOAT * X 
-  ); 
+  );
+int ds_AssembleRowCoeff
+  (  SD_MATRIX_DATA * pMat0 ,
+     int Row ,
+     int nCol ,
+     int * pCol ,
+     FLOAT Diagonal ,
+     FLOAT * Coeff
+  );
+int Permute
+  (  int N ,
+     int * Perm ,
+     FLOAT * Vector
+  );
+int PermuteWithMult
+  (  int N ,
+     int Mult ,
+     int * Perm ,
+     FLOAT * Vector
+  );
+int InvertMatrix
+  (  SD_BLOCK_MATRIX_DATA * pMat
+  );
+int MatrixVector
+  (  SD_BLOCK_MATRIX_DATA * pMat ,
+     FLOAT * X ,
+     FLOAT * Y
+  );
+int InverseMatrixVector
+  (  SD_BLOCK_MATRIX_DATA * pMat ,
+     FLOAT * X
+  );
 
 //For SymFact:
-int PrintInitialConFormat 
-  (  /* SD_CON_MATRIX_DATA * pMat , 
+int PrintInitialConFormat
+  (  /* SD_CON_MATRIX_DATA * pMat ,
      char * Msg */
-  ); 
-int PrintTmpConFormat 
-  ( /* SD_TMP_CON_MATRIX_DATA * pMat , 
+  );
+int PrintTmpConFormat
+  ( /* SD_TMP_CON_MATRIX_DATA * pMat ,
      char * Msg */
-  ); 
-int PrintConFormat 
-  (  /* SD_BLOCK_MATRIX_DATA * pMat , 
+  );
+int PrintConFormat
+  (  /* SD_BLOCK_MATRIX_DATA * pMat ,
      char * Msg */
-  ); 
-int PSInitialConFormat 
-  (  /* char * FileName , 
-     SD_CON_MATRIX_DATA * pMat , 
+  );
+int PSInitialConFormat
+  (  /* char * FileName ,
+     SD_CON_MATRIX_DATA * pMat ,
      int Permuted */
-  ); 
-int PSTmpConFormat 
-  (  /* char * FileName , 
+  );
+int PSTmpConFormat
+  (  /* char * FileName ,
      SD_TMP_CON_MATRIX_DATA * pMat */
-  ); 
-int AssembleConnectivityPermuted 
-  (  /* SD_CON_MATRIX_DATA * pMat , 
-     int * Perm , 
-     int nInc , 
+  );
+int AssembleConnectivityPermuted
+  (  /* SD_CON_MATRIX_DATA * pMat ,
+     int * Perm ,
+     int nInc ,
      int * Inc  */
-  ); 
-int SimpleSymbolicFact 
+  );
+int SimpleSymbolicFact
   (  /* SD_CON_MATRIX_DATA * pMat */
-  ); 
-int CheckCon 
+  );
+int CheckCon
   (  /* SD_TMP_CON_MATRIX_DATA * pMat */
-  ); 
-int CheckFillIn 
+  );
+int CheckFillIn
   (  /* SD_TMP_CON_MATRIX_DATA * pMat */
-  ); 
-int CheckEqualMat 
-  ( /*  SD_CON_MATRIX_DATA * pMat0 , 
+  );
+int CheckEqualMat
+  ( /*  SD_CON_MATRIX_DATA * pMat0 ,
      SD_TMP_CON_MATRIX_DATA * pMat1 */
-  ); 
-int CheckSupernode 
-  (  /* SD_CON_MATRIX_DATA * pMat , 
-     int * pSize , 
+  );
+int CheckSupernode
+  (  /* SD_CON_MATRIX_DATA * pMat ,
+     int * pSize ,
      int * pPermInv */
-  ); 
-int BuildSparseConFormat 
-  (  /* SD_CON_MATRIX_DATA * pMat , 
-     int * pRowStart0 , 
+  );
+int BuildSparseConFormat
+  (  /* SD_CON_MATRIX_DATA * pMat ,
+     int * pRowStart0 ,
      int * pColumn0  */
-  ); 
-int ComputePermutation 
+  );
+int ComputePermutation
   (  /* SD_CON_MATRIX_DATA * pMat */
-  ); 
-int ComputeTmpConMatrix 
-  (  /* SD_CON_MATRIX_DATA * pMat0 , 
+  );
+int ComputeTmpConMatrix
+  (  /* SD_CON_MATRIX_DATA * pMat0 ,
      SD_TMP_CON_MATRIX_DATA * pMat  */
-  ); 
-int ComputeFillIn 
+  );
+int ComputeFillIn
   (  /* SD_TMP_CON_MATRIX_DATA * pMat */
-  ); 
-int ComputeBlockMatrix 
-  ( /*  SD_TMP_CON_MATRIX_DATA * pTmpMat , 
-     SD_BLOCK_MATRIX_DATA * pMat , 
+  );
+int ComputeBlockMatrix
+  ( /*  SD_TMP_CON_MATRIX_DATA * pTmpMat ,
+     SD_BLOCK_MATRIX_DATA * pMat ,
      int Mult */
-  ); 
-int AllocateConData 
-  (  int Dim , 
-     SD_CON_MATRIX_DATA * pMat 
-  ); 
-int ReleaseConMatrix 
-  (   SD_CON_MATRIX_DATA * pMat 
-  ); 
-int ReleaseBlockMatrix 
-  ( SD_BLOCK_MATRIX_DATA * pMat 
-  ); 
-int ds_DefineConnectivity 
-  (  /* SD_MATRIX_DATA * pMat0 , 
-     int nEq , 
-     int Eq [ ] , 
-     int nEl , 
+  );
+int AllocateConData
+  (  int Dim ,
+     SD_CON_MATRIX_DATA * pMat
+  );
+int ReleaseConMatrix
+  (   SD_CON_MATRIX_DATA * pMat
+  );
+int ReleaseBlockMatrix
+  ( SD_BLOCK_MATRIX_DATA * pMat
+  );
+int ds_DefineConnectivity
+  (  /* SD_MATRIX_DATA * pMat0 ,
+     int nEq ,
+     int Eq [ ] ,
+     int nEl ,
      int Dim  */
-  ); 
-int SymbolicFact 
-  ( SD_MATRIX_DATA * pMat 
-  ); 
+  );
+int SymbolicFact
+  ( SD_MATRIX_DATA * pMat
+  );
 
 
 

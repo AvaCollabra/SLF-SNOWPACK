@@ -85,8 +85,7 @@ class AsciiIO : public SnowpackIOInterface {
                                     const double dhs_corr, const double mass_corr,
                                     const size_t nCalcSteps, FILE *fout);
 
-		static const bool r_in_n, t_srf, t_gnd;
-
+	private:
 		std::set<std::string> setAppendableFiles;
 		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
@@ -102,6 +101,8 @@ class AsciiIO : public SnowpackIOInterface {
 		int sw_mode;
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
+
+		static const bool r_in_n, t_srf, t_gnd;
 };
 
 #endif //End of AsciiIO.h

@@ -80,7 +80,9 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& cfg, const bool& i_classify_profiles) : plastic(false), classify_profiles(i_classify_profiles)
+Stability::Stability(const mio::Config& cfg, const bool& i_classify_profiles)
+           : strength_model(), hardness_model(), hoar_density_buried(IOUtils::nodata), plastic(false),
+             classify_profiles(i_classify_profiles)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);

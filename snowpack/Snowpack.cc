@@ -49,11 +49,17 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
  * non-static section                                       *
  ************************************************************/
 
-Snowpack::Snowpack(const mio::Config& i_cfg) : cfg(i_cfg),
-                   research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false),
-                   soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
-                   change_bc(false), meas_tss(false), vw_dendricity(false),
-                   enhanced_wind_slab(false), alpine3d(false)
+Snowpack::Snowpack(const mio::Config& i_cfg)
+          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
+            sw_mode(0), meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
+            height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dt_air_snow(0.),
+            new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
+            new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
+            minimum_l_element(0.), fixed_albedo(0.), t_surf(0.),
+            research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
+            soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
+            change_bc(false), meas_tss(false), vw_dendricity(false),
+            enhanced_wind_slab(false), alpine3d(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -908,10 +914,10 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// The temperature equation was found to show slow convergence with only 1 or 2 elements left.
 	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
 	// are left, their temperature gets very sensitive to energy input and during the iterations, the temperature gets out of the
-	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:	
+	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:
 	if(nN==2) MaxItnTemp = 200;
 	if(nN==1) MaxItnTemp = 2000;
-	
+
 	// IMPLICIT INTEGRATION LOOP
 	do {
 		iteration++;

@@ -43,6 +43,7 @@ const double PhaseChange::theta_s = 1.0;
  ************************************************************/
 
 PhaseChange::PhaseChange(const mio::Config& cfg)
+             : sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -272,19 +273,19 @@ void PhaseChange::initialize(SnowStation& Xdata)
 	size_t e, nE;
 	ElementData* EMS;
 	nE = Xdata.getNumberOfElements(); EMS = &Xdata.Edata[0];
-	
+
 	// Initialize and Determine Energy Content
 	for (e = 0; e < nE; e++) {
 		EMS[e].dth_w = EMS[e].Qmf = 0.;
 	}
-	
+
 	// Get cold content
 	cold_content_in=Xdata.ColdContent;
-	
+
 	// Reset meltFreezeEnergy and dIntEnergy
 	Xdata.meltFreezeEnergy=0.;
 	Xdata.dIntEnergy=0.;
-	
+
 	return;
 }
 
@@ -296,14 +297,14 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 	size_t e, nE;
 	double sum_Qmf=0.;
 	cold_content_out=0.;
-	
+
 	ElementData* EMS;
 	bool prn_CK = false;
 	nE = Xdata.getNumberOfElements(); EMS = &Xdata.Edata[0]; vector<NodeData>& NDS = Xdata.Ndata;
 
 	try {
 		// In the final step compute temperature and temperature gradient, check both density and mass balance
-		for (e = 0; e < nE; e++) {  
+		for (e = 0; e < nE; e++) {
 			//Check Nodal temperatures
 			double thresh_th_w;
 			// In soils, some water may still be liquid below freezing
@@ -321,7 +322,7 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 				if (e > 0) // NOTE Bottom soil node temperature cannot be changed
 					NDS[e].T = EMS[e].melting_tk;
 			}
-			
+
 			//Restructure temperature arrays
 			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
@@ -348,7 +349,7 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 	} catch (const exception& ) {
 		throw;
 	}
-	
+
 	return;
 }
 

@@ -87,8 +87,6 @@ class CurrentMeteo {
 
 		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
 
-		int n;           ///< record number of basic meteo input data
-
 		mio::Date date;  ///< Date of current meteo data
 		double ta;       ///< Air temperature (K)
 		double rh;       ///< Relative humidity (% or 1)
@@ -122,6 +120,7 @@ class CurrentMeteo {
 		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)
 		std::vector<double> conc;  ///< Solute concentrations in precipitation
 		double rho_hn;             ///< Measured new snow density (kg m-3)
+		int n;                     ///< record number of basic meteo input data
 
 	private:
 		size_t getNumberMeasTemperatures(const mio::MeteoData& md);
@@ -198,8 +197,8 @@ class LayerData {
  */
 class SN_SNOWSOIL_DATA {
 	public:
-		SN_SNOWSOIL_DATA() : meta(), profileDate(0., 0.), nN(0), Height(0.),
-                     nLayers(0), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
+		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
+                     nLayers(0), Ldata(), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
                      Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
                      WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
 		{
@@ -264,15 +263,15 @@ class ElementData {
 		double melting_tk;	   ///< melt temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		double freezing_tk;	   ///< freezing temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, AIR (1)
-		double Rho;                ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
 		mio::Array2D<double> conc; ///< Concentration for chemical constituents in (kg m-3)
-		double M;                  ///< the total mass of the element (kg m-2)
 		std::vector<double> k;     ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
 		//   Stored in order to visualize constitutive laws
 		//   Will be used for creep field hydraulic conductivity in m3 s kg-1
 		std::vector<double> c;     ///< For example, specific heat of TEMPERATURE field (J kg)
 		//   Will also be used for creep specific snow water capacity  in m3 J-1
 		std::vector<double> soil;  ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
+		double Rho;                ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
+		double M;                  ///< the total mass of the element (kg m-2)
 		double sw_abs;             ///< total absorbed shortwave radiation by the element (W m-2)
 		// Snow Metamorphism Data
 		double rg;                 ///< grain radius (mm)
@@ -407,9 +406,11 @@ class CanopyData {
 class SnowStation {
 	public:
 		SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
+		SnowStation(const SnowStation& c);
 
 		friend std::ostream& operator<<(std::ostream& os, const SnowStation& mdata);
 		~SnowStation();
+		SnowStation& operator=(const SnowStation&); ///<Assignement operator
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
 		void resize(const unsigned int& number_of_elements);
@@ -501,7 +502,7 @@ class BoundCond {
 * @note Some of the most important results of the simulation are contained in these data structures
 */
 //@{
-	class SurfaceFluxes {
+class SurfaceFluxes {
 	public:
 		/**
 		 * @brief The different types of mass fluxes:

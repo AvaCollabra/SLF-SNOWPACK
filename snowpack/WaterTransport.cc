@@ -24,7 +24,11 @@
 using namespace std;
 using namespace mio;
 
-WaterTransport::WaterTransport(const mio::Config& cfg) : useSoilLayers(false), water_layer(false), jam(false)
+WaterTransport::WaterTransport(const mio::Config& cfg)
+                : variant(), thresh_rain(IOUtils::nodata), sn_dt(IOUtils::nodata),
+                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata),
+                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
+                  minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -364,7 +368,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			Xdata.Ndata[Xdata.SoilNode].T = MIN(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
 	}
-	
+
 	if(rnE>=Xdata.SoilNode) {
 		Xdata.ColdContent = 0.;
 		for (size_t e=Xdata.SoilNode; e<rnE; e++) {

@@ -128,9 +128,10 @@ class Snowpack {
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
 		                  SurfaceFluxes& Sdata);
 
-		std::string hn_density, hn_density_model, viscosity_model, variant;
+	private:
 		const mio::Config& cfg;
 		BoundaryCondition surfaceCode;
+		std::string hn_density, hn_density_model, viscosity_model, variant;
 		int sw_mode;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;

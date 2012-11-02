@@ -37,7 +37,9 @@ using namespace mio;
 * non-static section                                       *
 ************************************************************/
 
-Meteo::Meteo(const mio::Config& cfg) : canopy(cfg), research_mode(false), useCanopyModel(false), alpine3d(false)
+Meteo::Meteo(const mio::Config& cfg)
+       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), neutral(0),
+         research_mode(false), useCanopyModel(false), alpine3d(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 

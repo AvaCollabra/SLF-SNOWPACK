@@ -48,8 +48,9 @@ const double Hazard::maximum_drift = 5.0;
  * non-static section                                       *
  ************************************************************/
 
-Hazard::Hazard(const mio::Config& i_cfg, const double duration) : cfg(i_cfg),
-               research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
+Hazard::Hazard(const mio::Config& i_cfg, const double duration)
+        : cfg(i_cfg), sn_dt(IOUtils::nodata), i_time_zone(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata),
+          hazard_steps_between(0), nHz(0), research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -135,12 +136,9 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
 double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const double rho, const int nHours,
                           double slope_angle, const int shift)
 {
-	int    i, nValues;
-	double sumindex = 0., flux, ero_depo = 0.;
-
 	switch (shift) {
 		case 1: // Shift drift data
-			for(i=47; i>0; i--) {
+			for(int i=47; i>0; i--) {
 				vecDrift[i] = vecDrift[i-1];
 			}
 		case 0: // Overwrite old_drift[0]
@@ -149,7 +147,9 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 			break;
 	}
 
-	for (i = 0, nValues = 0; i < 2*nHours; i++ ) {
+	int nValues=0;
+	double sumindex = 0.;
+	for (int i = 0; i < 2*nHours; i++ ) {
 		if (vecDrift[i] == Constants::undefined){
 			continue;
 		} else {
@@ -157,11 +157,11 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 			nValues++;
 		}
 	}
-	if (nValues <= int(floor(Constants::min_percent_values * 2 * nHours))) {
+	if (nValues <= int(floor(Constants::min_percent_values * 2. * nHours))) {
 		return Constants::undefined;
 	} else {
-		flux = H_TO_S(MAX(0,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
-		ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
+		const double flux = H_TO_S( MAX(0.,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
+		double ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
 		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(DEG_TO_RAD(slope_angle)));
 		ero_depo /= cos(DEG_TO_RAD(slope_angle));
 		return ero_depo;
@@ -189,7 +189,7 @@ void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
  */
 double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
 {
-	double b=9.5, c=265.5;
+	const double b=9.5, c=265.5;
 
 	TA = K_TO_C(TA);
 	TSS = K_TO_C(TSS);
@@ -210,18 +210,17 @@ double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
  */
 double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar, const int nHours, const int shift)
 {
-	int i, nValues;
-	double hoar_ind = 0.;
-
 	// Shift hoar data
 	if (shift)
-		for (i = 47; i > 0; i-- ) {
+		for (int i = 47; i > 0; i-- ) {
 			oldHoar[i] = oldHoar[i-1];
 		}
 	oldHoar[0] = newHoar;
 
 	// Determine hoar_ind
-	for (i = 0, nValues = 0; i < 2*nHours; i++ ) {
+	int nValues = 0;
+	double hoar_ind = 0.;
+	for (int i = 0; i < 2*nHours; i++ ) {
 		if (oldHoar[i] == Constants::undefined){
 			continue;
 		} else {
@@ -238,7 +237,7 @@ double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar,
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
 	double crust_dep=0., crust_height=0.;
-	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	if (Xdata.getNumberOfElements() > 0) {
 		unsigned int e = Xdata.getNumberOfElements()-1;
@@ -277,9 +276,9 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                         const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, ZwischenData& Zdata,
                         const SnowStation& Xdata)
 {
-	unsigned int nE = Xdata.getNumberOfElements();
-	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	double hs = Xdata.cH / cos_sl;
+	const unsigned int nE = Xdata.getNumberOfElements();
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double hs = Xdata.cH / cos_sl;
 
 	const ElementData *EMS;  // Pointer to element data
 	EMS = &Xdata.Edata[0];

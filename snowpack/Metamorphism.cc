@@ -259,6 +259,7 @@ double Metamorphism::ddRate(const ElementData& Edata)
  ************************************************************/
 
 Metamorphism::Metamorphism(const mio::Config& cfg)
+              : metamorphism_model(), sn_dt(0.), new_snow_grain_rad(0.)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");

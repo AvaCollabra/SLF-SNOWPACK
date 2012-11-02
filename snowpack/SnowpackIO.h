@@ -53,15 +53,14 @@ class SnowpackIO : public SnowpackIOInterface {
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
-		const mio::Config& cfg;
-		bool outputprofile_as_ascii, outputprofile_as_imis;
-		bool output_snow_as_smet, input_snow_as_smet;
-
-		AsciiIO asciiio;
-		SmetIO smetio;
 #ifdef IMISDBIO
 		ImisDBIO imisdbio;
 #endif
+		AsciiIO asciiio;
+		SmetIO smetio;
+		const mio::Config& cfg;
+		bool outputprofile_as_ascii, outputprofile_as_imis;
+		bool output_snow_as_smet, input_snow_as_smet;
 };
 
 #endif //End of SnowpackIO.h
