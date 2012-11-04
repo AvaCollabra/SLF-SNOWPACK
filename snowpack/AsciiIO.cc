@@ -27,9 +27,6 @@ using namespace mio;
  * static section                                           *
  ************************************************************/
 
-/// @brief Defines whether hardness (R) is output either in N (Swiss scale) or steps
-const bool AsciiIO::r_in_n = true;
-
 /// @brief Defines whether surface temperature is included in comparison; If no
 ///        values are provided in Master-file, they will be extrapolated
 const bool AsciiIO::t_srf = false;
@@ -87,6 +84,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("OUT_STAB", "Output", out_stab);
 	cfg.getValue("OUT_SW", "Output", out_sw);
 	cfg.getValue("OUT_T", "Output", out_t);
+	cfg.getValue("R_IN_N", "Output", r_in_n, Config::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, Config::nothrow);
 	if (snowpath != "") {
 		o_snopath = snowpath;
@@ -693,7 +691,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		fprintf(PFile,",%.2f",NDS[e+1].S_s);
 	//  534: hand hardness ...
 	fprintf(PFile,"\n0534,%u" ,nE-Xdata.SoilNode);
-	if (AsciiIO::r_in_n) { // ... either converted to newtons according to the ICSSG 2009
+	if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
 		for (e = Xdata.SoilNode; e < nE; e++)
 			fprintf(PFile,",%.1f",-1.*(19.3*pow(EMS[e].hard, 2.4)));
 	} else { // ... or in index steps (1)

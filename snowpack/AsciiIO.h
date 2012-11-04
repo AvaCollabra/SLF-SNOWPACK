@@ -101,8 +101,9 @@ class AsciiIO : public SnowpackIOInterface {
 		int sw_mode;
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy;
+		bool r_in_n;
 
-		static const bool r_in_n, t_srf, t_gnd;
+		static const bool t_srf, t_gnd;
 };
 
 #endif //End of AsciiIO.h
