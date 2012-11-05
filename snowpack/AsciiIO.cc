@@ -46,7 +46,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
            sw_mode(0), avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
-           out_load(false), out_stab(false), out_canopy(false)
+           out_load(false), out_stab(false), out_canopy(false), r_in_n(false)
 {
 	/**
 	 * @brief Defines how heights/depths of snow or/and soil temperatures are read in and output \n
@@ -84,7 +84,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("OUT_STAB", "Output", out_stab);
 	cfg.getValue("OUT_SW", "Output", out_sw);
 	cfg.getValue("OUT_T", "Output", out_t);
-	cfg.getValue("R_IN_N", "Output", r_in_n, Config::nothrow);
+	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, Config::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, Config::nothrow);
 	if (snowpath != "") {
 		o_snopath = snowpath;

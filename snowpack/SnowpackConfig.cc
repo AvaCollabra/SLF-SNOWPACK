@@ -101,7 +101,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
-	outputConfig["R_IN_N"] = "true";
+	outputConfig["HARDNESS_IN_NEWTON"] = "true";
 	outputConfig["SNOW"] = "SMET";
 
 	return true;
