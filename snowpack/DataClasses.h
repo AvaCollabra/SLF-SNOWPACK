@@ -608,6 +608,16 @@ class SnowProfileLayer {
 
 /// Structure of double values for output to SDB
 struct ProcessDat {
+	ProcessDat() : sn_version(), sn_computation_date(), sn_jul_computation_date(0.),
+	               sn_compilation_date(), sn_user(),
+	               date(), nHz(0), stat_abbrev(), loc_for_snow(0), loc_for_wind(0),
+	               ch(0), swe(0), tot_lwc(0), runoff(0), dewpt_def(0), hoar_size(0), hoar_ind6(0), hoar_ind24(0),
+	               wind_trans(0), wind_trans24(0), hn_half_hour(0), hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0),
+	               hnw_half_hour(0), hnw3(0), hnw6(0), hnw12(0), hnw24(0), hnw72(0), stab_class1(0), stab_class2(0), stab_index1(0),
+	               stab_index2(0), stab_index3(0), stab_index4(0), stab_index5(0), stab_height1(0), stab_height2(0), stab_height3(0),
+	               stab_height4(0), stab_height5(0), crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0), dhs_corr(0), mass_corr(0)
+	{}
+
 	// Version used, date, user, ...
 	char sn_version[MAX_STRING_LENGTH];          ///< SNOWPACK version
 	char sn_computation_date[MAX_STRING_LENGTH]; ///< Date of computation

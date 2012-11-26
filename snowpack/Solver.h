@@ -652,10 +652,10 @@ typedef struct  {
 */
 #if 1
 #define FACT_SYM_MAT_BLOCK(N_PIVOT,TOT_ROW,N_ROW,N_COL,MAT0,DIM0,MAT1,DIM1,N_BLOCK,N,JUMP)     \
-{  int n_k, i_, k_, dim_i;  FLOAT Pivot, *Mat_k0, *Mat_k, *Mat_i;                              \
-   for ( Mat_k0=MAT0, k_=0, n_k=N_PIVOT; n_k>0; n_k--, k_++ )                                  \
+{  int n_k, i_, k__, dim_i;  FLOAT Pivot, *Mat_k0, *Mat_k, *Mat_i;                              \
+   for ( Mat_k0=MAT0, k__=0, n_k=N_PIVOT; n_k>0; n_k--, k__++ )                                  \
    {  Pivot = 1./(*Mat_k0);                                                                    \
-      Mat_k = Mat_k0 + TOT_ROW - k_;                                                           \
+      Mat_k = Mat_k0 + TOT_ROW - k__;                                                           \
       Mat_i = MAT1;                                                                            \
       dim_i = DIM1;                                                                            \
       N[0]  = N_COL;                                                                           \
@@ -664,7 +664,7 @@ typedef struct  {
          N[0]-- ;                                                                              \
          Mat_i += (dim_i)--;                                                                   \
       }                                                                                        \
-      Mat_k0  += DIM0 - k_;                                                                    \
+      Mat_k0  += DIM0 - k__;                                                                    \
    }                                                                                           \
 }
 
@@ -672,11 +672,11 @@ typedef struct  {
 void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, FLOAT *MAT0, int DIM0,
                          FLOAT *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
 {
-	int n_k, i_, k_, dim_i;
+	int n_k, i_, k__, dim_i;
 	FLOAT Pivot, *Mat_k0, *Mat_k, *Mat_i;
-	for ( Mat_k0 = MAT0, k_ = 0, n_k = N_PIVOT; n_k > 0; n_k--, k_++ ) {
+	for ( Mat_k0 = MAT0, k__ = 0, n_k = N_PIVOT; n_k > 0; n_k--, k__++ ) {
 		Pivot = 1. / (*Mat_k0);
-		Mat_k = Mat_k0 + TOT_ROW - k_;
+		Mat_k = Mat_k0 + TOT_ROW - k__;
 		Mat_i = MAT1;
 		dim_i = DIM1;
 		N[0]  = N_COL;
@@ -685,7 +685,7 @@ void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, FLOAT *
 			N[0]-- ;
 			Mat_i += (dim_i)--;
 		}
-		Mat_k0  += DIM0 - k_;
+		Mat_k0  += DIM0 - k__;
 	}
 }
 #endif

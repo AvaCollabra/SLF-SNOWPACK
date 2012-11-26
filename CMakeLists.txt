@@ -64,15 +64,15 @@ ELSE(MSVC)
 	ENDIF(PLUGIN_IMISIO)
 	SET(WARNINGS "-Wall")
 	SET(PROFILING "-pg -fprofile-arcs")
-	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpadded -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal
-	SET(EXTRA_WARNINGS "-Wextra -pedantic") #-Weffc++
-	IF(CMAKE_COMPILER_IS_GNUCXX)
+	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
+	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
+	IF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID) #Android does not like ansi...
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 		IF(WIN32) #for gcc on windows
 			SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
 			SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
 		ENDIF(WIN32)
-	ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+	ENDIF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID)
 	IF(WIN32)
 		LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
 	ENDIF(WIN32)
