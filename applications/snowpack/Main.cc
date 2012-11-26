@@ -554,6 +554,98 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
 	mn_ctrl.XdataDump = booleanTime(Dstep, backup_days_between, bool_start, calculation_step_length);
 }
 
+bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& cfg, const size_t& i_stn, Slope& slope, mio::Date &current_date, vector<SN_SNOWSOIL_DATA> &vecSSdata, vector<SnowStation> &vecXdata, ZwischenData &sn_Zdata, CurrentMeteo& Mdata, double &wind_scaling_factor, double &time_count_deltaHS)
+{
+	string snowfile("");
+	stringstream ss;
+	ss.str("");
+	ss << "SNOWFILE" << i_stn+1;
+	cfg.getValue(ss.str(), "Input", snowfile, mio::Config::nothrow);
+
+	for (size_t sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
+		try {
+			if (sector == slope.station) {
+				if (snowfile == "") {
+					snowfile = vecStationIDs[i_stn];
+				} else {
+					const size_t pos_dot = snowfile.rfind(".");
+					const size_t pos_slash = snowfile.rfind("/");
+					if (((pos_dot != string::npos) && (pos_dot > pos_slash)) ||
+						((pos_dot != string::npos) && (pos_slash == string::npos))) //so that the dot is not in a directory name
+						snowfile.erase(pos_dot, snowfile.size()-pos_dot);
+				}
+				snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.station], sn_Zdata);
+				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Reading snow cover data for station %s",
+				        vecStationIDs[i_stn].c_str());
+				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
+				vector<mio::MeteoData> vectmpmd;
+				current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1.);
+				io.getMeteoData(current_date, vectmpmd);
+				if (vectmpmd.size() == 0)
+					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
+					                       + current_date.toString(mio::Date::ISO), AT);
+				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
+				vecSSdata[slope.station].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
+				                                vecSSdata[slope.station].meta);
+			} else {
+				stringstream sec_snowfile;
+				sec_snowfile << snowfile << sector;
+				ss.str("");
+				ss << vecSSdata[slope.station].meta.getStationID() << sector;
+				snowpackio.readSnowCover(sec_snowfile.str(), ss.str(), vecSSdata[sector], sn_Zdata);
+				vecSSdata[sector].meta.position = vecSSdata[slope.station].meta.getPosition();
+				vecSSdata[sector].meta.stationName = vecSSdata[slope.station].meta.getStationName();
+			}
+			vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
+		} catch (const exception& e){
+			if (sector == slope.first){
+				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+						"No virtual slopes! Computation for main station %s only!",
+						vecStationIDs[i_stn].c_str());
+				slope.nSlopes = 1;
+				if ((mode == "OPERATIONAL")
+					&& (vecSSdata[slope.station].meta.getSlopeAngle() > Constants::min_slope_angle)) {
+					cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "1");
+				}
+				break;
+			} else {
+				cout << e.what();
+				throw;
+			}
+		}
+
+		// Operational mode ONLY: Pass ... wind_factor, snow depth discrepancy time counter
+		if ((sector == slope.station) && (mode == "OPERATIONAL")) {
+			wind_scaling_factor = vecSSdata[slope.station].WindScalingFactor;
+			time_count_deltaHS = vecSSdata[slope.station].TimeCountDeltaHS;
+		}
+	}
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished Initializing station %s", vecStationIDs[i_stn].c_str());
+
+	//CHECK date inconsistencies between sno files
+	bool dates_consistent(true);
+	for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
+		if (vecSSdata[sector].profileDate != vecSSdata[slope.station].profileDate) {
+			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
+				"Date virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
+			dates_consistent = false;
+
+		}
+	}
+	if (!dates_consistent) return false; //go to next station
+
+	// Do not go ahead if starting time is larger than maxtime!
+	if (vecSSdata[slope.station].profileDate > dateEnd) {
+		prn_msg(__FILE__, __LINE__, "err", mio::Date(),
+			"Starting time (%.5lf) larger than end time(%.5lf), station %s!",
+			vecSSdata[slope.station].profileDate.getJulian(), dateEnd.getJulian(),
+			vecStationIDs[i_stn].c_str());
+		return false; //goto next station
+	}
+
+	return true;
+}
+
 // SNOWPACK MAIN **************************************************************
 void real_main (int argc, char *argv[])
 {
@@ -564,7 +656,6 @@ void real_main (int argc, char *argv[])
 	//feenableexcept(FE_ALL_EXCEPT);
 #endif
 	const bool prn_check = false;
-	mio::Timer prebuffering_timer;
 	mio::Timer meteoRead_timer;
 	mio::Timer run_timer;
 	run_timer.start();
@@ -714,10 +805,7 @@ void real_main (int argc, char *argv[])
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on station %s", vecStationIDs[i_stn].c_str());
 		run_timer.reset();
 		meteoRead_timer.reset();
-		prebuffering_timer.reset();
 
-		SunObject sun(accessible_stations[i_stn].position.getLat(), accessible_stations[i_stn].position.getLon(), accessible_stations[i_stn].position.getAltitude());
-		sun.setElevationThresh(0.6);
 		Slope slope(cfg);
 		if (slope.snow_redistribution && !((slope.nSlopes != 1) || (slope.nSlopes != 5) || (slope.nSlopes != 9)))
 			throw mio::IOException("Please set NUMBER_SLOPES to 1, 5 or 9", AT);
@@ -749,93 +837,10 @@ void real_main (int argc, char *argv[])
 		if (mode == "OPERATIONAL") cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "0");
 
 		mio::Date current_date;
-		string snowfile("");
-		stringstream ss;
-		ss.str("");
-		ss << "SNOWFILE" << i_stn+1;
-		cfg.getValue(ss.str(), "Input", snowfile, mio::Config::nothrow);
-		for (size_t sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
-			try {
-				if (sector == slope.station) {
-					if (snowfile == "") {
-						snowfile = vecStationIDs[i_stn];
-					} else {
-						const size_t pos_dot = snowfile.rfind(".");
-						const size_t pos_slash = snowfile.rfind("/");
-						if (((pos_dot != string::npos) && (pos_dot > pos_slash)) ||
-						    ((pos_dot != string::npos) && (pos_slash == string::npos))) //so that the dot is not in a directory name
-							snowfile.erase(pos_dot, snowfile.size()-pos_dot);
-					}
-					snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.station], sn_Zdata);
-					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Reading snow cover data for station %s",
-					            vecStationIDs[i_stn].c_str());
-					// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
-					vector<mio::MeteoData> vectmpmd;
-					current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1.);
-					prebuffering_timer.start();
-					io.getMeteoData(current_date, vectmpmd);
-					prebuffering_timer.stop();
-					if (vectmpmd.size() == 0)
-						throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
-						                           + current_date.toString(mio::Date::ISO), AT);
-					Mdata.setMeasTempParameters(vectmpmd[i_stn]);
-					vecSSdata[slope.station].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
-					                                    vecSSdata[slope.station].meta);
-				} else {
-					stringstream sec_snowfile;
-					sec_snowfile << snowfile << sector;
-					ss.str("");
-					ss << vecSSdata[slope.station].meta.getStationID() << sector;
-					snowpackio.readSnowCover(sec_snowfile.str(), ss.str(), vecSSdata[sector], sn_Zdata);
-					vecSSdata[sector].meta.position = vecSSdata[slope.station].meta.getPosition();
-					vecSSdata[sector].meta.stationName = vecSSdata[slope.station].meta.getStationName();
-				}
-				vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
-			} catch (const exception& e){
-				if (sector == slope.first){
-					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
-					            "No virtual slopes! Computation for main station %s only!",
-					                vecStationIDs[i_stn].c_str());
-					slope.nSlopes = 1;
-					if ((mode == "OPERATIONAL")
-					        && (vecSSdata[slope.station].meta.getSlopeAngle() > Constants::min_slope_angle)) {
-						cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "1");
-					}
-					break;
-				} else {
-					cout << e.what();
-					throw;
-				}
-			}
-
-			// Operational mode ONLY: Pass ... wind_factor, snow depth discrepancy time counter
-			if ((sector == slope.station) && (mode == "OPERATIONAL")) {
-				wind_scaling_factor = vecSSdata[slope.station].WindScalingFactor;
-				time_count_deltaHS = vecSSdata[slope.station].TimeCountDeltaHS;
-			}
-		}
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished Initializing station %s", vecStationIDs[i_stn].c_str());
-
-		//CHECK date inconsistencies between sno files
-		bool dates_consistent(true);
-		for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
-			if (vecSSdata[sector].profileDate != vecSSdata[slope.station].profileDate) {
-				prn_msg(__FILE__, __LINE__, "err", mio::Date(),
-				        "Date virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
-				dates_consistent = false;
-
-			}
-		}
-		if (!dates_consistent) continue; //go to next station
-
-		// Do not go ahead if starting time is larger than maxtime!
-		if (vecSSdata[slope.station].profileDate > dateEnd) {
-			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
-			        "Starting time (%.5lf) larger than end time(%.5lf), station %s!",
-			        vecSSdata[slope.station].profileDate.getJulian(), dateEnd.getJulian(),
-			        vecStationIDs[i_stn].c_str());
-			continue; //goto next station
-		}
+		meteoRead_timer.start();
+		const bool read_slope_status = readSlopeMeta(io, snowpackio, cfg, i_stn, slope, current_date, vecSSdata, vecXdata, sn_Zdata, Mdata, wind_scaling_factor, time_count_deltaHS);
+		meteoRead_timer.stop();
+		if(!read_slope_status) continue; //something went wrong, move to the next station
 
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
@@ -845,6 +850,8 @@ void real_main (int argc, char *argv[])
 			current_date -= calculation_step_length/1440;
 		}
 
+		SunObject sun(vecSSdata[slope.station].meta.position.getLat(), vecSSdata[slope.station].meta.position.getLon(), vecSSdata[slope.station].meta.position.getAltitude());
+		sun.setElevationThresh(0.6);
 		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.station].profileDate.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
@@ -1103,7 +1110,7 @@ void real_main (int argc, char *argv[])
 					if (mn_ctrl.HzStep > 0)
 						i_hz = mn_ctrl.HzStep - 1;
 					wind_trans24 = qr_Hdata.at(i_hz).wind_trans24;
-					ss.str("");
+					std::stringstream ss;
 					ss << vecStationIDs[i_stn];
 					if (slope.sector != slope.station) {
 						ss << slope.sector;
@@ -1131,7 +1138,7 @@ void real_main (int argc, char *argv[])
 
 				// ... backup Xdata (*.sno<JulianDate>)
 				if (mn_ctrl.XdataDump) {
-					ss.str("");
+					std::stringstream ss;
 					ss << vecStationIDs[i_stn];
 					if (slope.sector != slope.station) ss << slope.sector;
 					snowpackio.writeSnowCover(current_date, vecXdata[slope.sector],
@@ -1184,10 +1191,8 @@ void real_main (int argc, char *argv[])
 				}
 			}
 		}
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Prebuffering meteo data       : %lf s",
-		        prebuffering_timer.getElapsed());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Total time to read meteo data : %lf s",
-		        meteoRead_timer.getElapsed() + prebuffering_timer.getElapsed());
+		        meteoRead_timer.getElapsed());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Runtime for station %s: %lf s",
 		        vecStationIDs[i_stn].c_str(), run_timer.getElapsed());
 	}
