@@ -25,6 +25,7 @@
  */
 
 #include <snowpack/Snowpack.h>
+#include <assert.h>
 
 using namespace mio;
 using namespace std;
@@ -336,27 +337,24 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
  */
 void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	size_t e;       // Element counter
-	double L0, dL;  // Element length and change of length
-	bool prn_WRN = false;
-
-	size_t nN = Xdata.getNumberOfNodes();
+	const bool prn_WRN = false;
+	const size_t nN = Xdata.getNumberOfNodes();
 	if (nN == (Xdata.SoilNode + 1))
 		return;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
-	size_t nE = Xdata.getNumberOfElements();
 	vector<ElementData>& EMS = Xdata.Edata;
-	e = nE;
+	const size_t nE = Xdata.getNumberOfElements();
+	size_t e = nE; // Element counter
 	double SigC = 0.; // Cauchy stress
-	double Sig0 = 0.; // "Sintering" stress
 	const double SigC_fac = Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	while (e-- > 0) {
-		double oldStress = EMS[e].C;
-		double age = MAX(0., Mdata.date.getJulian() - EMS[e].depositionDate.getJulian());
+		const double oldStress = EMS[e].C;
+		const double age = MAX(0., Mdata.date.getJulian() - EMS[e].depositionDate.getJulian());
 		if (e < nE-1)
 			SigC -= (EMS[e+1].M / 2.) * SigC_fac;
-		EMS[e].C = SigC -= (EMS[e].M / 2.) * SigC_fac;
+		SigC -= (EMS[e].M / 2.) * SigC_fac;
+		EMS[e].C = SigC;
 		if (EMS[e].CDot / SigC > 0.05) {
 			EMS[e].CDot *= exp(-0.037 * S_TO_D(sn_dt));
 		} else {
@@ -388,8 +386,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 				EMS[e].k[SETTLEMENT] = eta = SnLaws::smallest_viscosity;
 			}
 		}
-		Sig0 = SnLaws::compLoadingRateStress(viscosity_model, EMS[e], Mdata.date);
-		L0 = EMS[e].L;
+		const double Sig0 = SnLaws::compLoadingRateStress(viscosity_model, EMS[e], Mdata.date); // "Sintering" stress
+		const double L0 = EMS[e].L;
+		double dL;
 
 		if (EMS[e].mk%100 != 3) { //ALL except SH
 			double wind_slab=1.;
@@ -441,6 +440,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			EMS[e].theta[WATER] *= 0.99;
 			EMS[e].M = EMS[e].L0 * ((EMS[e].theta[ICE] * Constants::density_ice)
 			                           + (EMS[e].theta[WATER] * Constants::density_water));
+			assert(EMS[e].M>=0.); //mass must be positive
 		}
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER]
@@ -476,9 +476,6 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
  */
 bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], const double VaporEnhance)
 {
-	double k, c;    // conductivity and heat capacity
-	double Keff;    // the effective thermal conductivity
-
 	// Gather the data which is required to compute the element stiffness and force vector
 	Fe[0] = Fe[1] = 0.0;
 	if (Edata->L < 0.0) {
@@ -487,6 +484,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, const double dv
 	}
 
 	// Find the conductivity of the element TODO: check thresholds
+	double Keff;    // the effective thermal conductivity
 	if (Edata->theta[SOIL] > 0.0) {
 		Keff = SnLaws::compSoilThermalConductivity(*Edata, dvdz);
 	} else if (Edata->theta[ICE] > 0.55 || Edata->theta[ICE] < min_ice_content) {
@@ -498,7 +496,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, const double dv
 	// mimics effect of vapour transport if liquid water present in snowpack
 	Keff *= VaporEnhance;
 	Edata->k[TEMPERATURE] = Keff;
-	k = Keff/Edata->L;   // Divide by the length to save from doing it during the matrix operations
+	const double k = Keff/Edata->L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
 	// Evaluate the stiffness matrix
 	Se[0][0] = Se[1][1] = k; Se[0][1] = Se[1][0] = -k;
@@ -526,7 +524,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, const double dv
 
 	// Now add the heat capacitity matrix
 	Edata->heatCapacity();
-	c = Edata->c[TEMPERATURE] * Edata->L * Edata->Rho / (6. * dt);
+	const double c = Edata->c[TEMPERATURE] * Edata->L * Edata->Rho / (6. * dt); //heat capacity
 	Se[0][0] += 2. * c;
 	Se[1][1] += 2. * c;
 	Se[0][1] += c;
@@ -611,24 +609,22 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
                                          double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
                                          double Fe[ N_OF_INCIDENCES ])
 {
-	double alpha, gamma, delta;  //  The heat exchange coefficients
-	double T_air = Mdata.ta;
+	const double T_air = Mdata.ta;
+	const size_t nE = Xdata.getNumberOfElements();
 
 	// First zero out the interiour node contribution
 	Se[0][0] = Se[0][1] = Se[1][0] = Se[1][1] = Fe[0] = Fe[1] = 0.0;
 
-	/*
-	 * Now branch between phase change cases (semi-explicit treatment) and dry snowpack dynamics/ice-free soil dynamics
-	 * (implicit treatment)
-	*/
-	if ((Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > PhaseChange::theta_r + Constants::eps		// Water and ice ...
-	   && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps)					// ... coexisting
+	// Now branch between phase change cases (semi-explicit treatment) and
+	// dry snowpack dynamics/ice-free soil dynamics (implicit treatment)
+	if ((Xdata.Edata[nE-1].theta[WATER] > PhaseChange::theta_r + Constants::eps		// Water and ice ...
+	   && Xdata.Edata[nE-1].theta[ICE] > Constants::eps)					// ... coexisting
 	     && (T_iter != T_snow)) {
 		// Explicit
 		Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 	} else { // Implicit
 		// Sensible heat transfer: linear dependence on snow surface temperature
-		alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
+		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
 		Se[1][1] += alpha;
 		Fe[1] +=alpha * T_air;
 		// Latent heat transfer: NON-linear dependence on snow surface temperature
@@ -636,12 +632,12 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		Fe[1] += Bdata.ql;
 		// Advected rain energy: linear dependence on snow surface temperature
 		if (T_air >= C_TO_K(thresh_rain)) {
-			gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
+			const double gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
 			Se[1][1] += gamma;
 			Fe[1] += gamma * T_air;
 		}
 		// Net longwave radiation: NON-linear dependence on snow surface temperature
-		delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
+		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
 		Fe[1] += delta * pow( Mdata.ea, 0.25 ) * T_air;
 	} // end else
@@ -664,17 +660,14 @@ void Snowpack::neumannBoundaryConditionsSoil(const double& flux, const double& T
                                              double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
                                              double Fe[ N_OF_INCIDENCES ])
 {
-	double alpha;  //  The heat exchange coefficients
-	double T_pseudo;
-
 	// First zero out the interiour node contribution
 	Se[0][0] = Se[0][1] = Se[1][0] = Se[1][1] = Fe[0] = Fe[1] = 0.0;
 
 	// Use the numerical trick of an assumed temperature difference of 1 K over the boundary
-	T_pseudo = T_snow - 1.;
+	const double T_pseudo = T_snow - 1.;
 
 	// For the implicit solution, we need to define a pseudo-exchange coefficient
-	alpha = flux / (T_pseudo - T_snow);
+	const double alpha = flux / (T_pseudo - T_snow); // The heat exchange coefficients
 	Se[1][1] += alpha;
 	Fe[1] += alpha * T_pseudo;
 
@@ -902,8 +895,6 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// Set the default solution routine convergence parameters
 	unsigned int MaxItnTemp = 40; // maximum 40 iterations for temperature field
 	double ControlTemp = 0.01;    // solution convergence to within 0.01 degC
-	double MaxTDiff;              // maximum temperature difference for convergence
-	double TDiff;                 // temperature difference for convergence check
 	// Set the phase change booleans
 	Xdata.SubSurfaceMelt = false;
 	Xdata.SubSurfaceFrze = false;
@@ -996,9 +987,9 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		// Update the solution vectors and check for convergence
 		for (n = 0; n < nN; n++)
 			ddU[n] = dU[n] - ddU[n];
-		MaxTDiff = fabs(ddU[0]);
+		double MaxTDiff = fabs(ddU[0]);  // maximum temperature difference for convergence
 		for (n = 1; n < nN; n++) {
-			TDiff = fabs(ddU[n]);
+			const double TDiff = fabs(ddU[n]); // temperature difference for convergence check
 			if (TDiff > MaxTDiff)
 				MaxTDiff = TDiff;
 		}
@@ -1336,6 +1327,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++)
 					EMS[nOldE-1].conc[ICE][ii] *= L0*Theta0/(EMS[nOldE-1].theta[ICE]*EMS[nOldE-1].L);
 				EMS[nOldE-1].M -= hoar;
+				assert(EMS[nOldE-1].M>=0.); //the mass must be positive
 				EMS[nOldE-1].theta[AIR] = MAX(0., 1.0 - EMS[nOldE-1].theta[WATER]
 				                                - EMS[nOldE-1].theta[ICE] - EMS[nOldE-1].theta[SOIL]);
 				EMS[nOldE-1].Rho = (EMS[nOldE-1].theta[ICE] * Constants::density_ice)
@@ -1389,6 +1381,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 					EMS[e].Rho = hoar_density_buried;
 				// Mass
 				EMS[e].M = EMS[e].L0*EMS[e].Rho;
+				assert(EMS[e].M>=0.); //mass must be positive
 				// Volumetric components
 				EMS[e].theta[SOIL]  = 0.0;
 				EMS[e].theta[ICE]   = EMS[e].Rho/Constants::density_ice;

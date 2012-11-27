@@ -21,6 +21,8 @@
 #include <snowpack/WaterTransport.h>
 #include <snowpack/Snowpack.h>
 
+#include <assert.h>
+
 using namespace std;
 using namespace mio;
 
@@ -156,6 +158,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			}
 		}
 		EMS[nE-1].M += dM;
+		assert(EMS[nE-1].M>=0.); //mass must be positive
 
 		// Update remaining volumetric contents and density
 		EMS[nE-1].theta[AIR] = MAX(0., 1.0 - EMS[nE-1].theta[WATER] - EMS[nE-1].theta[ICE] - EMS[nE-1].theta[SOIL]);
@@ -195,6 +198,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					}
 				}
 				EMS[e].M += dM;
+				assert(EMS[e].M>=0.); //mass must be positive
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				ql -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 			}
@@ -227,6 +231,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					}
 				}
 				EMS[e].M += dM;
+				assert(EMS[e].M>=0.); //mass must be positive
 				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 				ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
@@ -483,6 +488,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[nE-1].L0 = EMS[nE-1].L = z_water;
 				EMS[nE-1].Rho = Constants::density_water;
 				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
+				assert(EMS[nE-1].M>=0.); //mass must be positive
 				EMS[nE-1].theta[WATER] = 1.0;
 				EMS[nE-1].mk = 19;
 				//NOTE all other microstructure parameters should better be set to Constants::undefined but ...
@@ -501,6 +507,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);
 				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
+				assert(EMS[nE-1].M>=0.); //mass must be positive
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			}
 
@@ -524,6 +531,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e].theta[WATER] += dThetaW;
 				EMS[e].theta[AIR] -= dThetaW;
 				EMS[e].M += dThetaW * L * Constants::density_water;
+				assert(EMS[e].M>=0.); //mass must be positive
 				// Update snowpack runoff with rain infiltrating into soil (equal to Store when e == Xdata.SoilNode)
 				if (e == Xdata.SoilNode) {
 					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += Store * Constants::density_water;
@@ -652,7 +660,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[eUpper].theta[AIR] = 1. - EMS[eUpper].theta[WATER] - EMS[eUpper].theta[ICE] - EMS[eUpper].theta[SOIL];
 				EMS[eLower].theta[AIR] = 1. - EMS[eLower].theta[WATER] - EMS[eLower].theta[ICE] - EMS[eLower].theta[SOIL];
 				EMS[eUpper].M -= L_upper * Constants::density_water * dThetaW_upper;
+				assert(EMS[eUpper].M>=0.); //mass must be positive
 				EMS[eLower].M += L_lower * Constants::density_water * dThetaW_lower;
+				assert(EMS[eLower].M>=0.); //mass must be positive
 				EMS[eUpper].Rho = (EMS[eUpper].theta[ICE] * Constants::density_ice)
 				                  + (EMS[eUpper].theta[WATER] * Constants::density_water)
 				                      + (EMS[eUpper].theta[SOIL] * EMS[eUpper].soil[SOIL_RHO]);
@@ -677,7 +687,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 	// The TOP element is very important because it is always losing mass--the strain state
 	// is becoming more and more deformed.  Update the strain state of the top element.
-	size_t eTop = nE-1;
+	const size_t eTop = nE-1;
 	EMS[eTop].L0 = EMS[eTop].L;
 	NDS[nN-1].z += NDS[nN-1].u; NDS[nN-1].u = 0.0;
 	NDS[nN-2].z += NDS[nN-2].u; NDS[nN-2].u = 0.0;
@@ -702,6 +712,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	                 && (EMS[0].theta[SOIL] < Constants::eps2))) {
 		const double dM = EMS[0].L * Constants::density_water * (W0 - Wres);
 		EMS[0].M -= dM;
+		assert(EMS[0].M>=0.); //mass must be positive
 		EMS[0].theta[WATER] = Wres;
 		EMS[0].theta[AIR] = 1. - EMS[0].theta[WATER] - EMS[0].theta[ICE] - EMS[0].theta[SOIL];
 		EMS[0].Rho = (EMS[0].theta[ICE] * Constants::density_ice)

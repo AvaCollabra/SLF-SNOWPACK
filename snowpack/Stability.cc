@@ -654,7 +654,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
  */
 void Stability::compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar)
 {
-	STpar.sig_n = -stress*(STpar.cos_psi_ref*STpar.cos_psi_ref)/(cos_sl*cos_sl)/1000.;
+	STpar.sig_n = -stress*mio::Optim::pow2(STpar.cos_psi_ref/cos_sl)/1000.;
 	STpar.sig_s = (STpar.sig_n)*STpar.sin_psi_ref/STpar.cos_psi_ref;
 }
 

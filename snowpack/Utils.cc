@@ -24,6 +24,7 @@
  */
 
 #include <snowpack/Utils.h>
+#include <assert.h>
 
 using namespace std;
 using namespace mio;
@@ -116,7 +117,7 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
  * - In case regular dumps are requested throughout the day, it is best to set start to 0.0.
  *   This is the preferred setting in operational mode with *_START = 0.0
  * - This version is the result of various efforts (Lehning, Kowalski, Fierz, Loewe)
- * @author Michael Lehning \n Julia Kowalski \n Charles Fierz \n Mathias Bavay
+ * @author Michael Lehning, Julia Kowalski, Charles Fierz, Mathias Bavay
  * @version 9.mm
  * @param JulianDate Julian Date
  * @param days_between number of days between two outputs
@@ -127,8 +128,6 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
 bool booleanTime(const double& JulianDate, double days_between,
                  const double& start, const double& calculation_step_length)
 {
-	int ret;
-	double jul_frc;
 	const double step = M_TO_D(calculation_step_length);	//step length in days (converted from minutes)
 
 	if ( JulianDate < (start - 0.5*step) ) {
@@ -141,10 +140,10 @@ bool booleanTime(const double& JulianDate, double days_between,
 	days_between = floor(days_between / step + 0.5) * step;//how to implement a replacement to round() using only floor()!
 	if (days_between == 0.) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Days_between is zero. Please consider changing data output intervals!");
-		return 0;
+		return false;
 	}
-	jul_frc = (JulianDate - start) / days_between - floor((JulianDate - start) / days_between);
-	ret = ( (jul_frc > (days_between - 0.5 * step) / days_between) || (jul_frc < 0.5 * step / days_between) );
+	const double jul_frc = (JulianDate - start) / days_between - floor((JulianDate - start) / days_between);
+	const int ret = ( (jul_frc > (days_between - 0.5 * step) / days_between) || (jul_frc < 0.5 * step / days_between) );
 	return (ret != 0);
 }
 
@@ -515,6 +514,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			NDS[e+1].u  = 0.0;
 			mass_corr += ddL * EMS[e].Rho;
 			EMS[e].M += ddL * EMS[e].Rho;
+			assert(EMS[e].M>=0.); //mass must be positive
 			EMS[e].L0 = EMS[e].L += ddL;
 			EMS[e].E  = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
 		}

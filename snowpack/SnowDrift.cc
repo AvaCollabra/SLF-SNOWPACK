@@ -19,6 +19,7 @@
 */
 
 #include <snowpack/SnowDrift.h>
+#include <assert.h>
 
 using namespace mio;
 using namespace std;
@@ -199,6 +200,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Inconsistent Mass:%lf   L*Rho:%lf", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho);
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
+				assert(EMS[nE-1].M>=0.); //mass must be positive
 			}
 			if (windward) {
 				Xdata.rho_hn = EMS[nE-1].Rho;
@@ -211,6 +213,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			NDS[nE].u = 0.0;
 			NDS[nE].hoar = 0.;
 			EMS[nE-1].M -= massErode;
+			assert(EMS[nE-1].M>=0.); //mass must be positive
 			Xdata.ErosionMass = massErode;
 			nErode = -1;
 			forced_massErode = 0.;

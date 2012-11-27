@@ -28,6 +28,7 @@
 #include <snowpack/Utils.h>
 #include <snowpack/Canopy.h>
 #include <snowpack/Metamorphism.h>
+#include <assert.h>
 
 using namespace mio;
 using namespace std;
@@ -1106,6 +1107,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = 0.;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
+			assert(Edata[e].M>=0.); //mass must be positive
 		} // end of element layer for
 	} // end of layer for
 	if (SSdata.ErosionLevel > 0) {
