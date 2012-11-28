@@ -243,6 +243,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			// Update remaining volumetric contents and density
 			EMS[e].theta[AIR] = MAX(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
 			EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER] * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
+			assert(EMS[e].Rho>0.); //we want positive density
 		}
 		// Now take care of left over solute mass.
 		if (e == 0) { // Add Solute Mass to Runoff TODO HACK CHECK
@@ -577,6 +578,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			EMS[eUpper].Rho = (EMS[eUpper].theta[ICE] * Constants::density_ice)
 			                   + (EMS[eUpper].theta[WATER] * Constants::density_water)
 			                       + (EMS[eUpper].theta[SOIL] * EMS[eUpper].soil[SOIL_RHO]);
+			assert(EMS[eUpper].Rho>0.); //we want positive density
 			if ( EMS[eUpper].theta[SOIL] < Constants::eps2 ) {
 				if ( !(EMS[eUpper].Rho > Constants::min_rho && EMS[eUpper].Rho <= Constants::max_rho) ) {
 					prn_msg(__FILE__, __LINE__, "err", Mdata.date,
@@ -666,9 +668,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[eUpper].Rho = (EMS[eUpper].theta[ICE] * Constants::density_ice)
 				                  + (EMS[eUpper].theta[WATER] * Constants::density_water)
 				                      + (EMS[eUpper].theta[SOIL] * EMS[eUpper].soil[SOIL_RHO]);
+				assert(EMS[eUpper].Rho>0.); //we want positive density
 				EMS[eLower].Rho = (EMS[eLower].theta[ICE] * Constants::density_ice)
 				                  + (EMS[eLower].theta[WATER] * Constants::density_water)
 				                      + (EMS[eLower].theta[SOIL] * EMS[eLower].soil[SOIL_RHO]);
+				assert(EMS[eLower].Rho>0.); //we want positive density
 				if (EMS[eUpper].theta[SOIL] < Constants::eps2) {
 					if (!(EMS[eUpper].theta[AIR] >= -Constants::eps)) {
 						prn_msg(__FILE__, __LINE__, "err", Mdata.date,
@@ -718,6 +722,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		EMS[0].Rho = (EMS[0].theta[ICE] * Constants::density_ice)
 		                 + (EMS[0].theta[WATER] * Constants::density_water)
 		                     + (EMS[0].theta[SOIL] * EMS[0].soil[SOIL_RHO]);
+		assert(EMS[0].Rho>0.); //we want positive density
 		if (EMS[0].theta[SOIL] < Constants::eps2) {
 			Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM;
 		}
