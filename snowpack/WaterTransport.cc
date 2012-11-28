@@ -709,8 +709,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		       EMS[0].soilFieldCapacity() + dth_w);
 	}
 	Wres = MAX (0., Wres);
-	// If excess_water is left, add it to this element, regardless storage capacity.
-	const double W0 = EMS[0].theta[WATER] + (excess_water/EMS[0].L);
+
+	const double W0 = EMS[0].theta[WATER];
 	if ((W0 > Wres) // NOTE: if water_layer is set, do not drain water element on top of soil
 	        && !(water_layer && (EMS[0].theta[ICE] < Snowpack::min_ice_content)
 	                 && (EMS[0].theta[SOIL] < Constants::eps2))) {
@@ -723,10 +723,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		                 + (EMS[0].theta[WATER] * Constants::density_water)
 		                     + (EMS[0].theta[SOIL] * EMS[0].soil[SOIL_RHO]);
 		assert(EMS[0].Rho>0.); //we want positive density
+		// Note that remaining excess_water should also be routed to MS_SOIL_RUNOFF and MS_SNOWPACK_RUNOFF
 		if (EMS[0].theta[SOIL] < Constants::eps2) {
-			Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM;
+			Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM + (excess_water * Constants::density_water);
 		}
-		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += dM;
+		Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += dM + (excess_water * Constants::density_water);
 		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			Sdata.load[ii] +=  (EMS[0].conc[WATER][ii] * dM / S_TO_H(sn_dt));
 		}
