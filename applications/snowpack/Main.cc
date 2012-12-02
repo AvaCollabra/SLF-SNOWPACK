@@ -1084,7 +1084,8 @@ void real_main (int argc, char *argv[])
 					} else {
 						surfFluxes.mass[SurfaceFluxes::MS_RAIN] = cumsum_rain;
 						surfFluxes.mass[SurfaceFluxes::MS_HNW] = cumsum_snow;
-						if (slope.sector == slope.lee) {
+						// Add eroded snow from luv to precipitations on lee slope
+						if ((slope.nSlopes > 1) && (slope.sector == slope.lee) && (cumsum_erosion[slope.luv] > Constants::eps)) {
 							surfFluxes.mass[SurfaceFluxes::MS_HNW] += cumsum_erosion[slope.luv]
 							        / cos(DEG_TO_RAD(vecXdata[slope.luv].meta.getSlopeAngle()));
 						}
@@ -1122,7 +1123,8 @@ void real_main (int argc, char *argv[])
 						surfFluxes.reset(cumsum_mass);
 						if (useCanopyModel) vecXdata[slope.sector].Cdata.reset(cumsum_mass);
 					}
-					surfFluxes.mRho_hn = surfFluxes.cRho_hn = Constants::undefined;
+					surfFluxes.cRho_hn = Constants::undefined;
+					surfFluxes.mRho_hn = surfFluxes.cRho_hn;
 					// reset cumulative variables
 					if (slope_sequence == slope.nSlopes-1) {
 						cumsum_erosion.assign(cumsum_erosion.size(), 0.);

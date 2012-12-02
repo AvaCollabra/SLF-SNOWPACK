@@ -1081,7 +1081,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			}
 			Edata[e].Rho = Edata[e].theta[ICE]*Constants::density_ice +
 				Edata[e].theta[WATER]*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
-			assert(Edata[e].Rho>=0.); //we want positive density
+			assert(Edata[e].Rho >= 0.); //we want positive density
 			// conductivities, specific heat and moisture content
 			Edata[e].k[TEMPERATURE] = Edata[e].k[SEEPAGE] = Edata[e].k[SETTLEMENT] = 0.;
 			Edata[e].heatCapacity();
@@ -1108,7 +1108,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = 0.;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
-			assert(Edata[e].M>=0.); //mass must be positive
+			assert(Edata[e].M >= (.Constants::eps2)); //mass must be positive
 		} // end of element layer for
 	} // end of layer for
 	if (SSdata.ErosionLevel > 0) {

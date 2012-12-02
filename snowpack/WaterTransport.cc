@@ -158,18 +158,18 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			}
 		}
 		EMS[nE-1].M += dM;
-		assert(EMS[nE-1].M>=0.); //mass must be positive
+		assert(EMS[nE-1].M >= (-Constants::eps2)); //mass must be positive
 
 		// Update remaining volumetric contents and density
 		EMS[nE-1].theta[AIR] = MAX(0., 1.0 - EMS[nE-1].theta[WATER] - EMS[nE-1].theta[ICE] - EMS[nE-1].theta[SOIL]);
 		EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice)
 		                     + (EMS[nE-1].theta[WATER] * Constants::density_water)
 		                         + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
-	} else if (ql < -Constants::eps2 && nE > 0) {
+	} else if ((ql < (-Constants::eps2)) && (nE > 0)) {
 		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
-		while ((e > 0) && (ql < -Constants::eps2)) {  // While energy is available
+		while ((e > 0) && (ql < (-Constants::eps2))) {  // While energy is available
 			e--;
 			/*
 			* Determine the amount of potential sublimation/evaporation and collect some variables
@@ -198,11 +198,11 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					}
 				}
 				EMS[e].M += dM;
-				assert(EMS[e].M>=0.); //mass must be positive
+				assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				ql -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 			}
-			if (ql < -Constants::eps2) {
+			if (ql < (-Constants::eps2)) {
 				// If there is no water or if there was not enough water ...
 				const double theta_i0 = EMS[e].theta[ICE];
 				M = theta_i0*Constants::density_ice*L0;
@@ -231,9 +231,9 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					}
 				}
 				EMS[e].M += dM;
-				 //if we remove the whole mass, we might have some small inconcistencies between mass and theta[ICE]*density*L -> negative
+				//if we remove the whole mass, we might have some small inconcistencies between mass and theta[ICE]*density*L -> negative
 				//but the whole element will be removed anyway when getting out of here
-				assert(EMS[e].M>=(-Constants::eps2));
+				assert(EMS[e].M >= (-Constants::eps2));
 				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 				ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
@@ -324,7 +324,8 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	while (eUpper-- > Xdata.SoilNode) {
 		enforce_join = true;
 		if ((EMS[eUpper].L < minimum_l_element) || (EMS[eUpper].mk%100 == 3)) {
-			if ((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element)) {
+			if (((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element))
+				    || (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content)) {
 				enforce_join = false;
 			}
 			if (EMS[eUpper].mk%100 == 3) {
@@ -342,7 +343,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if (((EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_join)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  // no PLASTIC or WATER_LAYER please
-			if (eUpper > Xdata.SoilNode) { //If we have snow elements below to join with
+			if (enforce_join && (eUpper > Xdata.SoilNode)) { //If we have snow elements below to join with
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
 			} else {
 				enforce_join=false;
@@ -350,7 +351,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// In case of soil and removal of first snow element above soil:
 					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
 				}
-				// route liquid water and solute load to runoff
+				// route mass and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
 				if (Xdata.SoilNode == 0) { // In case of no soil
 					Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[eUpper].M;
@@ -491,7 +492,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[nE-1].L0 = EMS[nE-1].L = z_water;
 				EMS[nE-1].Rho = Constants::density_water;
 				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
-				assert(EMS[nE-1].M>=0.); //mass must be positive
+				assert(EMS[nE-1].M >= (-Constants::eps2)); //mass must be positive
 				EMS[nE-1].theta[WATER] = 1.0;
 				EMS[nE-1].mk = 19;
 				//NOTE all other microstructure parameters should better be set to Constants::undefined but ...
@@ -510,7 +511,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);
 				EMS[nE-1].M = EMS[nE-1].L0 * EMS[nE-1].Rho;
-				assert(EMS[nE-1].M>=0.); //mass must be positive
+				assert(EMS[nE-1].M >= (-Constants::eps2)); //mass must be positive
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
 			}
 
@@ -534,7 +535,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[e].theta[WATER] += dThetaW;
 				EMS[e].theta[AIR] -= dThetaW;
 				EMS[e].M += dThetaW * L * Constants::density_water;
-				assert(EMS[e].M>=0.); //mass must be positive
+				assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 				// Update snowpack runoff with rain infiltrating into soil (equal to Store when e == Xdata.SoilNode)
 				if (e == Xdata.SoilNode) {
 					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += Store * Constants::density_water;
@@ -664,9 +665,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[eUpper].theta[AIR] = 1. - EMS[eUpper].theta[WATER] - EMS[eUpper].theta[ICE] - EMS[eUpper].theta[SOIL];
 				EMS[eLower].theta[AIR] = 1. - EMS[eLower].theta[WATER] - EMS[eLower].theta[ICE] - EMS[eLower].theta[SOIL];
 				EMS[eUpper].M -= L_upper * Constants::density_water * dThetaW_upper;
-				assert(EMS[eUpper].M>=0.); //mass must be positive
+				assert(EMS[eUpper].M >= (-Constants::eps2)); //mass must be positive
 				EMS[eLower].M += L_lower * Constants::density_water * dThetaW_lower;
-				assert(EMS[eLower].M>=0.); //mass must be positive
+				assert(EMS[eLower].M >= (-Constants::eps2)); //mass must be positive
 				EMS[eUpper].Rho = (EMS[eUpper].theta[ICE] * Constants::density_ice)
 				                  + (EMS[eUpper].theta[WATER] * Constants::density_water)
 				                      + (EMS[eUpper].theta[SOIL] * EMS[eUpper].soil[SOIL_RHO]);
@@ -718,7 +719,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	                 && (EMS[0].theta[SOIL] < Constants::eps2))) {
 		const double dM = EMS[0].L * Constants::density_water * (W0 - Wres);
 		EMS[0].M -= dM;
-		assert(EMS[0].M>=0.); //mass must be positive
+		assert(EMS[0].M >= (-Constants::eps2)); //mass must be positive
 		EMS[0].theta[WATER] = Wres;
 		EMS[0].theta[AIR] = 1. - EMS[0].theta[WATER] - EMS[0].theta[ICE] - EMS[0].theta[SOIL];
 		EMS[0].Rho = (EMS[0].theta[ICE] * Constants::density_ice)
