@@ -1274,7 +1274,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	if (out_meteo)
 		// 23-26: rH (%), wind (m s-1), wind_drift (m s-1), wind_dir (deg),
 		// 27: solid precipitation rate (kg m-2 h-1),
-		// 28-29: modeled and enforced vertical snow depth (cm)
+		// 28-29: modeled and enforced vertical snow depth (cm); see also 51
 		fprintf(TFile,",%f,%f,%f,%f,%f,%.2f,%.2f", 100.*Mdata.rh, Mdata.vw, Mdata.vw_drift, Mdata.dw,
 		        Sdata.mass[SurfaceFluxes::MS_HNW], M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl),
 		        M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl));
@@ -1291,8 +1291,8 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,,");
 	}
 	if (out_mass) {
-		// 34-39: total mass, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 51-52 & 93
-		fprintf(TFile,",%f,%f,%f,%f,%f,%f", Sdata.mass[SurfaceFluxes::MS_TOTALMASS]/cos_sl,
+		// 34-39: SWE, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 52 & 93
+		fprintf(TFile,",%f,%f,%f,%f,%f,%f", Sdata.mass[SurfaceFluxes::MS_SWE]/cos_sl,
 		        Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl, Sdata.mass[SurfaceFluxes::MS_RAIN],
 		          Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF]/cos_sl, Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]/cos_sl,
 		            Sdata.mass[SurfaceFluxes::MS_EVAPORATION]/cos_sl);
@@ -1310,19 +1310,23 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fprintf(TFile,",,,,,,,,,,");
 	}
 	if (maxNumberMeasTemperatures == 5) {
-		// 50: Either input snow depth HS or solute load at ground surface
-		if (!out_load)
+		// 50: Solute load at ground surface
+		if (out_load)
+			fprintf(TFile,",%f", Sdata.load[0]);
+		else
+			fprintf(TFile,",");
+		// 51: input snow depth HS (cm); see also 28-29
+		if (out_meteo)
 			fprintf(TFile,",%.2f", M_TO_CM(Mdata.hs)/cos_sl);
 		else
-			fprintf(TFile,",%f", Sdata.load[0]);
+			fprintf(TFile,",");
+		// 52: LWC (kg m-2); see also 34-39
 		if (out_mass)
-		// 51-52: SWE (for checks) and LWC (kg m-2); see also 34-39
-			fprintf(TFile,",%f,%f", Sdata.mass[SurfaceFluxes::MS_SWE]/cos_sl,
-			        Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl);
+			fprintf(TFile,",%f", Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl);
 		else
-			fprintf(TFile,",,");
+			fprintf(TFile,",");
+		// 53-64: Stability Time Series, heights in cm
 		if (out_stab) {
-			// 53-64: Stability Time Series, heights in cm
 			fprintf(TFile,",%d,%d,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f",
 			        Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d,
 			          M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s,
@@ -1330,8 +1334,8 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,");
 		}
+		// 65-92 (28 columns)
 		if (out_canopy && useCanopyModel)
-			// 65-92 (28 columns)
 			Canopy::cn_DumpCanopyData(TFile, &Xdata.Cdata, &Sdata, cos_sl);
 		else
 			fprintf(TFile,",,,,,,,,,,,,,,,,,,,,,,,,,,,,");
@@ -1401,11 +1405,12 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
 {
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 	if (useSoilLayers)
-		// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 		fprintf(fout,",%f", Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / cos_sl);
 	else
 		fprintf(fout,",");
+	// 94-95:
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
@@ -1457,9 +1462,9 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
                                         const double /*dhs_corr*/, const double /*mass_corr*/,
                                         const size_t nCalcSteps, FILE *fout)
 {
-	if (maxNumberMeasTemperatures == 5)
+	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
 		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
-	// 94: change of internal energy (kJ m-2)
+	// 94-95:
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
@@ -1509,8 +1514,9 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 {
 	double rho_hn;
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
-	if (maxNumberMeasTemperatures == 5)
+	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
 		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+	// 94-95:
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
@@ -1622,10 +1628,10 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			}
 			fprintf(fout, "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100");
 			fprintf(fout, "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)");
-			fprintf(fout, ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),Total snowpack mass,Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter)");
+			fprintf(fout, ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter)");
 			fprintf(fout, ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)");
 			if (maxNumberMeasTemperatures == 5) {
-				fprintf(fout, ",Measured snow depth HS or Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
+				fprintf(fout, ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
 				if (useCanopyModel && out_canopy) {
 					fprintf(fout, ",Interception storage,Canopy surface  temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation canopy,Sensible heat flux into the canopy,Latent heat flux into the canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the canopy,Latent heat flux to the canopy,Longwave radiation up above canopy,Longwave radiation down above canopy");
 					fprintf(fout, ",Net longwave radiation above canopy,Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation above canopy,Total land surface albedo,Total net radiation,Surface (radiative) temperature,Precipitation Above Canopy,Total Evapotranspiration");
@@ -1700,7 +1706,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 
 			fprintf(fout, "\n,,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,degC,degC,degC,degC,W m-2,degC,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,%%,m s-1,m s-1,deg,kg m-2 h-1,cm,cm,mm,cm,cm,cm,kg m-2,kg m-2 h-1,kg m-2 h-1,kg m-2,kg m-2,kg m-2,degC,degC,degC,degC,degC,degC,degC,degC,degC,degC");
 			if (maxNumberMeasTemperatures == 5) {
-				fprintf(fout, ",cm or kg m-2,kg m-2,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1");
+				fprintf(fout, ",kg m-2,cm,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1");
 				if (out_canopy && useCanopyModel) {
 					fprintf(fout, ",kg m-2,degC,-,-,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,kg m-2 per timestep,kg m-2 per timestep,kg m-2,kg m-2,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,degC,kg m-2,kg m-2 per timestep");
 				} else {
