@@ -1081,7 +1081,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			}
 			Edata[e].Rho = Edata[e].theta[ICE]*Constants::density_ice +
 				Edata[e].theta[WATER]*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
-			assert(Edata[e].Rho >= 0.); //we want positive density
+			assert(Edata[e].Rho >= 0. || Edata[e].Rho==IOUtils::nodata); //we want positive density
 			// conductivities, specific heat and moisture content
 			Edata[e].k[TEMPERATURE] = Edata[e].k[SEEPAGE] = Edata[e].k[SETTLEMENT] = 0.;
 			Edata[e].heatCapacity();

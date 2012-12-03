@@ -1124,7 +1124,7 @@ void real_main (int argc, char *argv[])
 						if (useCanopyModel) vecXdata[slope.sector].Cdata.reset(cumsum_mass);
 					}
 					surfFluxes.cRho_hn = Constants::undefined;
-					surfFluxes.mRho_hn = surfFluxes.cRho_hn;
+					surfFluxes.mRho_hn = Constants::undefined;
 					// reset cumulative variables
 					if (slope_sequence == slope.nSlopes-1) {
 						cumsum_erosion.assign(cumsum_erosion.size(), 0.);

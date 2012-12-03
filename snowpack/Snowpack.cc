@@ -1333,7 +1333,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				EMS[nOldE-1].Rho = (EMS[nOldE-1].theta[ICE] * Constants::density_ice)
 				                      + (EMS[nOldE-1].theta[WATER] * Constants::density_water)
 				                        + (EMS[nOldE-1].theta[SOIL]  * EMS[nOldE-1].soil[SOIL_RHO]);
-				assert(EMS[nOldE-1].Rho>=0.); //we want positive density
+				assert(EMS[nOldE-1].Rho>=0. || EMS[nOldE-1].Rho==IOUtils::nodata); //we want positive density
 				// Take care of old surface node
 				NDS[nOldN-1].z += dL + NDS[nOldN-1].u;
 				NDS[nOldN-1].u = 0.0;
@@ -1380,7 +1380,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				EMS[e].Rho = rho_hn;
 				if (nHoarE && e == nOldE)
 					EMS[e].Rho = hoar_density_buried;
-				assert(EMS[e].Rho>=0.); //we want positive density
+				assert(EMS[e].Rho>=0. || EMS[e].Rho==IOUtils::nodata); //we want positive density
 				// Mass
 				EMS[e].M = EMS[e].L0*EMS[e].Rho;
 				assert(EMS[e].M>=0.); //mass must be positive
