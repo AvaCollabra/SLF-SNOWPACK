@@ -929,13 +929,14 @@ void SnowStation::joinElements(const unsigned int& i_number_top_elements)
 }
 
 /**
- * @brief Remove the upper "marked" element of two (snow only) \n
- * -# Joining two elements:
- *  - density is undefined
- *  - take the uppermost node of both
- * -# Removing melted or thin elements
- *  - density is undefined AND length negative (*= -1.) as the latter will be used!
- *  - keep upper node of lowest element
+ * @brief Remove the upper "marked" element of two (snow only)
+ * - Joining two elements
+ *    - density is undefined
+ *    - take the uppermost node of both
+ * - Removing melted or thin elements
+ *    - density is undefined AND length negative (*= -1.) as the latter will be used!
+ *    - keep upper node of lowest element
+ *
  * @param rnE Reduced number of elements
  */
 void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
