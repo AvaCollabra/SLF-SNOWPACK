@@ -1255,15 +1255,15 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	if (join) {
 		LNew += L_upper;
 		EdataLower.depositionDate = EdataUpper.depositionDate;
-		EdataLower.rg = 0.5 * ( EdataLower.rg + EdataUpper.rg );
-		EdataLower.dd = 0.5 * ( EdataLower.dd + EdataUpper.dd );
-		EdataLower.sp = 0.5 * ( EdataLower.sp + EdataUpper.sp );
-		EdataLower.rb = 0.5 * ( EdataLower.rb + EdataUpper.rb );
+		EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+		EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+		EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+		EdataLower.rb = ( EdataLower.theta[ICE]*L_lower*EdataLower.rb + EdataUpper.theta[ICE]*L_upper*EdataUpper.rb ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		EdataLower.opticalEquivalentRadius();
-		EdataLower.CDot = 0.5 * ( EdataLower.CDot + EdataUpper.CDot );
+		EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		EdataLower.E = EdataLower.Ev;
-		EdataLower.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
-		                 //                 and viscous strains of the elements and average the stress?
+		EdataLower.Ee = 0.0;	// TODO (very old) Check whether not simply add the elastic
+					//                 and viscous strains of the elements and average the stress?
 	} else {
 		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
@@ -1271,10 +1271,20 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.L0 = EdataLower.L = LNew;
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
-	EdataLower.snowResidualWaterContent();
-	// TODO Check whether we have space to accomodate all water percolating into EdataLower
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
 	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
+	// For snow, check if there is enough space to store all ice if all water would freeze. This also takes care of cases where theta[AIR]<0.
+	if (join==false && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.)) {
+		// Note: we can only do this for snow, as for soil, it is not possible to adapt the element length.
+		// If there is not enough space, adjust element length:
+		EdataLower.theta[AIR]=EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.);
+		const double tmpsum=EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER];
+		LNew*=tmpsum;
+		EdataLower.theta[AIR]/=tmpsum;
+		EdataLower.theta[ICE]/=tmpsum;
+		EdataLower.theta[WATER]/=tmpsum;
+	}
+	EdataLower.snowResidualWaterContent();
 	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
 
 	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {

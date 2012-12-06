@@ -341,11 +341,12 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		}
 		if (((EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_join)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
-		           && (EMS[eUpper].mk % 100 != 9)) {  // no PLASTIC or WATER_LAYER please
-			if (eUpper > Xdata.SoilNode) { //If we have snow elements below to join with
+		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
+			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to join with
+				enforce_join=true;		// We always join snow elements, except if it is the lowest one.
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
-			} else {
-				enforce_join=false;
+			} else {				// We are dealing with first snow element above soil
+				enforce_join=false;		// This one cannot be joined with the layer below (which is soil).
 				if (eUpper==Xdata.SoilNode && Xdata.SoilNode>0.) {
 					// In case of soil and removal of first snow element above soil:
 					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
