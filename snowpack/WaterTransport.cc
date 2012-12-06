@@ -425,7 +425,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			EMS[e].theta[ICE]   *= 1.5;
 		}
 
-		for (size_t eAbove = e; eAbove < nE; e++) {
+		for (size_t eAbove = e; eAbove < nE; eAbove++) {
 			NDS[eAbove+1].z += dL + NDS[eAbove+1].u;
 			NDS[eAbove+1].u = 0.0;
 			EMS[eAbove].E = EMS[eAbove].dE= EMS[eAbove].Ee=EMS[eAbove].Ev=0.0;
