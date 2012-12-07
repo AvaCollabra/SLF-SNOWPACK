@@ -130,7 +130,7 @@ class Stability {
 
 		bool classifyProfileStability(SnowStation& Xdata);
 
-		bool recognizeProfileType(const mio::Date& date, SnowStation& Xdata);
+		bool recognizeProfileType(SnowStation& Xdata);
 
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers

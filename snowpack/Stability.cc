@@ -87,10 +87,10 @@ Stability::Stability(const mio::Config& cfg, const bool& i_classify_profiles)
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
 
-	map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
+	const map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
 	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
 
-	map<string, StabFnShearStrength>::const_iterator it2 = mapShearStrength.find(strength_model);
+	const map<string, StabFnShearStrength>::const_iterator it2 = mapShearStrength.find(strength_model);
 	if (it2 == mapShearStrength.end()) throw InvalidArgumentException("Unknown strength model: "+strength_model, AT);
 
 	//To build a sandwich with a non-snow layer (plastic or wood chips) on top;
@@ -528,11 +528,7 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 	//   negative for Ts <= 180.4 K and Ts >= 274 K
 	//   The maximum of the function is reached at 227.2 K
 	//   HACK use this value for temperatures below 227.2 K (Quick and dirty fix;-)
-	double Pm; // Hydrostatic pressure that induces melting (Pa)
-	if (Ts >= 227.2)
-		Pm = (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9;
-	else
-		Pm = (C1 + C2*(227.2) + C3*(227.2)*(227.2)) * 1.e9;
+	const double Pm = (Ts >= 227.2)? (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9 : (C1 + C2*(227.2) + C3*(227.2)*(227.2)) * 1.e9;
 
 	// Return the critical stress. TODO check that argument of sqrt is correctly written
 	return (Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle))));
@@ -903,10 +899,9 @@ double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
  */
 double Stability::setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar)
 {
-	double delta_sig; // Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
-
 	if ( depth_lay > Constants::eps ) {
-		delta_sig = (2.*0.5*cos(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad + DEG_TO_RAD(STpar.psi_ref)));
+		// Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
+		double delta_sig = (2.*0.5*cos(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad + DEG_TO_RAD(STpar.psi_ref)));
 		delta_sig /= Constants::pi*STpar.cos_psi_ref*depth_lay;
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
@@ -957,23 +952,13 @@ double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, co
  */
 bool Stability::classifyProfileStability(SnowStation& Xdata)
 {
-	unsigned int e, e_weak, count=0;
-	int S = 5, S0;
-	int F1, F2, F3;                            // Grain shape
-	double mH = 0., thH, maxH = 0., minH = 7.; // Mean Hardness and Threshold
-	double mH_u, delta_H;
-	double h_Slab;
-	double cos_sl;
-
 	// Dereference the element pointer containing micro-structure data
-	unsigned int nE = Xdata.getNumberOfElements();
+	const size_t nE = Xdata.getNumberOfElements();
 	vector<ElementData>& EMS = Xdata.Edata;
 	vector<NodeData>& NDS = Xdata.Ndata;
 
 	// Initialize
-	S0 = S;
-	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	h_Slab = EMS[nE-1].L/cos_sl;
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	// Classify only for Snowpacks thicker than Stability::minimum_slab (vertically)
 	if ( (NDS[nE].z+NDS[nE].u)/cos_sl < Stability::minimum_slab ) {
@@ -982,29 +967,28 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 	}
 
 	// First, find mean, maximum and minimum hardness
-	for (e = Xdata.SoilNode; e < nE; e++) {
+	double mH = 0., maxH = 0., minH = 7.; // Mean Hardness and Threshold
+	for (size_t e = Xdata.SoilNode; e < nE; e++) {
 		maxH = MAX (maxH, EMS[e].hard);
 		minH = MIN (minH, EMS[e].hard);
 		mH += EMS[e].hard;
 	}
-
-	// Find mean hardness of profile and determine threshold for critical transitions
-	mH /= nE;
-	thH = MIN (0.5*mH, 1.);
+	mH /= nE; //mean hardness of profile
+	const double thH = MIN (0.5*mH, 1.); //threshold for critical transitions
 
 	// Now make the classification for all critical transitions and keep track ....
-	for (e = nE-2; e > Xdata.SoilNode; e--) {
+	double h_Slab = EMS[nE-1].L/cos_sl;
+	unsigned int count=0;
+	int S = 5;
+	for (size_t e = nE-2; e > Xdata.SoilNode; e--) {
 		h_Slab += EMS[e].L/cos_sl;
-		delta_H = EMS[e+1].hard - EMS[e].hard;
+		const double delta_H = EMS[e+1].hard - EMS[e].hard;
 		if ( fabs(delta_H) > thH ) {
 			count++;
-			if ( delta_H < 0. ) {
-				e_weak = e+1;
-			} else {
-				e_weak = e;
-			}
+			const size_t e_weak = (delta_H < 0.)? e+1 : e;
 
 			// Decompose grain type to determine majority shape F1
+			int F1, F2, F3; // Grain shape
 			typeToCode(&F1, &F2, &F3, EMS[e_weak].type);
 
 			// Remember that S is initialized to 5!!!
@@ -1014,8 +998,8 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 					S = 1;
 				}
 			} else { // Then do some stuff for dry snow
-				mH_u = 0.;
-				for (unsigned int ii = e_weak; ii < nE; ii++) {
+				double mH_u = 0.;
+				for (size_t ii = e_weak; ii < nE; ii++) {
 					mH_u += EMS[e].hard;
 				}
 				mH_u /= (nE - e_weak);
@@ -1050,9 +1034,6 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 					S = MIN (S, 3);
 				}
 			} // end dry snow
-			if ( S < S0 ) {
-				S0 = S;
-			}
 		} // if weak layer found; also end of loop over elements
 	} // end for
 
@@ -1084,87 +1065,63 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
  * Schweizer, J. and M. Luetschg, <i>Characteristics of human-triggered avalanches</i>, 2001, Cold Reg. Sci. Technol. 33(2-3): 147-162.
  * Note that analysis is done on vertical snow height.
  * @param *Xdata
- * @param date
  * @return false on error, true otherwise
  */
-bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
+bool Stability::recognizeProfileType(SnowStation& Xdata)
 {
-	ElementData *EMS;                              // Element pointer
-
-	int    prf_type=-1;                             // Profile type
-	vector<double> z_el;                            // Vertical element heigth (m)
-	vector<double> L_el;                            // Vertical element thickness (m)
-	vector<double> hard;                            // Hardness in N
-	vector<double> red_hard;                        // Reduced hardness in N
-	vector<double> deltaN;                          // Difference in hardness between layers in N
-
 	// Temporary variables
-	int    e, e_min, e_el, e_max, nE_s;             // Counters
-	int    mf_base, weak_base;                      // Booleans
-	int    n_window=5;                              // Window half-width in number of elements
-	double cos_sl;                                  // cos of slope angle
-	double cH;                                      // Vertical snow depth
-	double L_base_0=0.2, L_base, L_sum;             // Lengths (m)
-	double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
+	const size_t n_window=5;                              // Window half-width in number of elements
+	const double L_base_0=0.2;
+	const double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
                                                      // (N) and (N m-1), respectively
-	double thresh_hard;                             // Hardness threshold (N)
-	double mean_hard, mean_red_hard, mean_gsz;      // Means
-	double sum_red_hard;
-	double red_hard_min, red_hard_max, deltaN_max;             // Extremes
-	double z_red_hard_min, z_red_hard_max, z_deltaN_max;       // Extremes' abs. heights
-	double pos_min, pos_max, pos_max_deltaN;                   // Extremes' rel. heights
 
 	// cos of slope angle to convert height and thickness to vertical values
-	cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	// Vertical snow depth
-	cH = (Xdata.cH - Xdata.Ground)/cos_sl;
+	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl;
 
 	// Check for snow profile shallower than 1.5*L_base_0 m (not classifiable)
 	if ( cH <= 1.5*L_base_0 ) {
 		Xdata.S_class1 = -1;
 		return true;
-	} else {
-		nE_s = Xdata.getNumberOfElements() - Xdata.SoilNode;
 	}
+
+	const size_t nE_s = Xdata.getNumberOfElements() - Xdata.SoilNode;
 
 	// Dereference element and node pointers
-	EMS = &Xdata.Edata[0];
+	ElementData *EMS = &Xdata.Edata[0];
 	vector<NodeData>& NDS = Xdata.Ndata;
 
-	try { // Allocate space for temporary vectors
-		z_el.resize(nE_s, 0.0);
-		L_el.resize(nE_s, 0.0);
-		hard.resize(nE_s, 0.0);
-		red_hard.resize(nE_s, 0.0);
-		deltaN.resize(nE_s, 0.0);
-	} catch(const exception& ex){
-		prn_msg(__FILE__, __LINE__, "err", date,
-			   "Cannot allocate space for temporary objects in Stability::recognizeProfileType");
-		throw IOException(ex.what(), AT); //this will catch all allocation exceptions
-	}
+	//temporary vectors
+	vector<double> z_el(nE_s, 0.0);                            // Vertical element heigth (m)
+	vector<double> L_el(nE_s, 0.0);                            // Vertical element thickness (m)
+	vector<double> hard(nE_s, 0.0);                            // Hardness in N
+	vector<double> red_hard(nE_s, 0.0);                        // Reduced hardness in N
+	vector<double> deltaN(nE_s, 0.0);                          // Difference in hardness between layers in N
 
 	// Absolute and reduced hardness profiles (N)
-	for (e = nE_s-1; e >= 0; e--) {
-		z_el[e] = (((NDS[e+Xdata.SoilNode].z + NDS[e+Xdata.SoilNode].u) +
-				(NDS[e+Xdata.SoilNode+1].z + NDS[e+Xdata.SoilNode+1].u))/2.)/cos_sl;
-		L_el[e] = EMS[e+Xdata.SoilNode].L/cos_sl;
-		hard[e] = min_hard*pow(EMS[e+Xdata.SoilNode].hard, 2.3607);
-		red_hard[e] = hard[e] - (min_hard + slope_hard*(cH - z_el[e]));
-		if ( e == nE_s-1 ) {
-			deltaN[e] = fabs(red_hard[e] - min_hard);
+	for (int idx = nE_s-1; idx >= 0; idx--) {
+		z_el[idx] = (((NDS[idx+Xdata.SoilNode].z + NDS[idx+Xdata.SoilNode].u) +
+				(NDS[idx+Xdata.SoilNode+1].z + NDS[idx+Xdata.SoilNode+1].u))/2.)/cos_sl;
+		L_el[idx] = EMS[idx+Xdata.SoilNode].L/cos_sl;
+		hard[idx] = min_hard*pow(EMS[idx+Xdata.SoilNode].hard, 2.3607);
+		red_hard[idx] = hard[idx] - (min_hard + slope_hard*(cH - z_el[idx]));
+		if ( (unsigned)idx == nE_s-1 ) {
+			deltaN[idx] = fabs(red_hard[idx] - min_hard);
 		} else {
-			deltaN[e] = fabs(red_hard[e] - red_hard[e+1]);
+			deltaN[idx] = fabs(red_hard[idx] - red_hard[idx+1]);
 		}
 	}
 
 	// Check for base strength (bottom L_base_0 m of snow cover)
 	// not considering basal melt-freeze crusts
-	L_base = L_base_0;
-	L_sum = 0.;
-	mean_hard = mean_red_hard = mean_gsz = 0.;
-	thresh_hard = 19.472*pow(4., 2.3607);
-	mf_base = (hard[0] > thresh_hard);
-	e = 0;
+	double L_base = L_base_0;
+	double L_sum = 0.;
+	double mean_hard=0., mean_red_hard=0.,mean_gsz = 0.; // Means
+	const double thresh_hard = 19.472*pow(4., 2.3607); // Hardness threshold (N)
+	int mf_base = (hard[0] > thresh_hard); //HACK: this is actually a boolean
+	size_t e = 0; //element index
+
 	while ( L_sum <= L_base ) {
 		if ( mf_base && (hard[e] < thresh_hard) ) {
 			mf_base = 0;
@@ -1178,27 +1135,30 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 		mean_gsz += L_el[e]*(2.*EMS[e+Xdata.SoilNode].rg);
 		e++;
 	}
-
 	// Averages
 	mean_hard /= L_sum;
 	mean_red_hard /= L_sum;
 	mean_gsz /= L_sum;
 
 	// Weak or strong base?
-	weak_base = ((mean_hard <= 275.) && (mean_gsz > 0.9));
+	const bool weak_base = ((mean_hard <= 275.) && (mean_gsz > 0.9));
 
 	// Seek extremes over profile depth
 	// Initialise
-	e_min = e_el = MIN (e, nE_s - 1);
-	e_max = MIN (e_el + n_window, nE_s - 1);
-	L_sum = 0.;
-	sum_red_hard = 0.;
-	red_hard_max = -9999.;
-	red_hard_min = 9999.;
-	deltaN_max = -9999.;
-	z_red_hard_min = z_red_hard_max = z_deltaN_max = 9999.;
+	size_t e_min = MIN(e, nE_s - 1); //e is >=0
+	size_t e_el = MIN(e, nE_s - 1); //e is >=0
+	size_t e_max = MIN(e_el + n_window, nE_s - 1);
+	// Extremes and extremes' absolute heights
+	double sum_red_hard = 0.;
+	double red_hard_max = -9999.;
+	double red_hard_min = 9999.;
+	double deltaN_max = -9999.;
+	double z_red_hard_min = 9999.;
+	double z_red_hard_max = 9999.;
+	double z_deltaN_max = 9999.;
 
 	// First evaluation
+	L_sum = 0.;
 	for (e = e_min; e <= e_max; e++) {
 		L_sum += L_el[e];
 		sum_red_hard += L_el[e]*red_hard[e];
@@ -1246,13 +1206,12 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 	}
 
 	// Classify
-	double hard_max; // Max. Hardness at position of maximum
-
-	hard_max = red_hard_max + (min_hard + slope_hard*(cH - z_red_hard_max));
+	// Max. Hardness at position of maximum
+	const double hard_max = red_hard_max + (min_hard + slope_hard*(cH - z_red_hard_max));
+	int prf_type=-1; // Profile type
 	if ( weak_base ) {
 		// Position of extremes
-		pos_max = (z_red_hard_max - L_base)/(cH - L_base);
-		pos_min = (z_red_hard_min - L_base)/(cH - L_base);
+		const double pos_max = (z_red_hard_max - L_base)/(cH - L_base);
 		// Assign weak profile type
 		if ( red_hard_max < 50. ) {
 			prf_type = 1;
@@ -1269,9 +1228,9 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
 		}
 	} else {// strong base
 		// Position of extremes
-		pos_max = (z_red_hard_max - L_base)/(cH - L_base);
-		pos_min = (z_red_hard_min - L_base)/(cH - L_base);
-		pos_max_deltaN = (z_deltaN_max - L_base)/(cH - L_base);
+		const double pos_max = (z_red_hard_max - L_base)/(cH - L_base);
+		const double pos_min = (z_red_hard_min - L_base)/(cH - L_base);
+		const double pos_max_deltaN = (z_deltaN_max - L_base)/(cH - L_base);
 
 		// Assign strong profile type
 		if ( (pos_max_deltaN > 0.85) && (hard_max > thresh_hard) ) {
@@ -1319,30 +1278,24 @@ bool Stability::recognizeProfileType(const mio::Date& date, SnowStation& Xdata)
  */
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	size_t e;             // Counter
-	size_t Swl_lemon;     // Lemon counter
-	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
-	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
-	double Pk;                       // Penetration depth
-	double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
-
-	StabilityData  STpar;        // Stability parameters
+	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
 
 	// Dereference the element pointer containing micro-structure data
-	size_t nN = Xdata.getNumberOfNodes();
-	size_t nE = nN-1;
+	const size_t nN = Xdata.getNumberOfNodes();
+	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	vector<InstabilityData> SIdata = vector<InstabilityData>(nN); // Parameters for structural instabilities
+	StabilityData  STpar;        // Stability parameters
 
 	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
 	if ( (nE < Xdata.SoilNode+1) || plastic ) { // Return if bare soil or PLASTIC
 		return;
 	}
 
-	Pk = compPenetrationDepth(Xdata);
-	e = nE;
+	const double Pk = compPenetrationDepth(Xdata); // Penetration depth
+	size_t e = nE; // Counter
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
 		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
@@ -1363,7 +1316,9 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
 	// Initialize
-	Swl_lemon = 0;
+	size_t Swl_lemon = 0; // Lemon counter
+	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
+	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
 	Swl_d = Swl_n = Swl_ssi = Swl_Sk38 = INIT_STABILITY;
 	zwl_d = zwl_n = zwl_ssi = zwl_Sk38 = Xdata.cH;
 
@@ -1494,7 +1449,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	if (classify_profiles) {
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
-		if (!recognizeProfileType(Mdata.date, Xdata)) {
+		if (!recognizeProfileType(Xdata)) {
 			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (recognizeProfileType)");
 		}
 	}
