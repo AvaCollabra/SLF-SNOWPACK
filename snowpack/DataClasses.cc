@@ -1266,7 +1266,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	if (join) {
 		LNew += L_upper;
 		EdataLower.depositionDate = EdataUpper.depositionDate;
-		if( (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
+		if( EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
 			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
