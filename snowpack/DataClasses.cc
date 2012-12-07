@@ -1266,12 +1266,14 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	if (join) {
 		LNew += L_upper;
 		EdataLower.depositionDate = EdataUpper.depositionDate;
-		EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
-		EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
-		EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
-		EdataLower.rb = ( EdataLower.theta[ICE]*L_lower*EdataLower.rb + EdataUpper.theta[ICE]*L_upper*EdataUpper.rb ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+		if( (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
+			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+			EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+			EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+			EdataLower.rb = ( EdataLower.theta[ICE]*L_lower*EdataLower.rb + EdataUpper.theta[ICE]*L_upper*EdataUpper.rb ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+			EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+		}
 		EdataLower.opticalEquivalentRadius();
-		EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		EdataLower.E = EdataLower.Ev;
 		EdataLower.Ee = 0.0;	// TODO (very old) Check whether not simply add the elastic
 					//                 and viscous strains of the elements and average the stress?
