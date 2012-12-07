@@ -1,6 +1,9 @@
 INCLUDE(LibFindMacros)
 
 # Finally the library itself
+GET_FILENAME_COMPONENT(SRC_DIR ${CMAKE_SOURCE_DIR} PATH) #ie goes up one level
+STRING(REPLACE " " "\\ " SRC_DIR ${SRC_DIR})
+
 IF(WIN32)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT2 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
@@ -10,6 +13,7 @@ IF(WIN32)
 		${LIBSNOWPACK_ROOT1}/lib
 		${LIBSNOWPACK_ROOT2}/lib
 		${LIBSNOWPACK_ROOT3}/lib
+		${SRC_DIR}/snowpack/lib
 		"C:/Program Files/Snowpack/lib" )
 
 	IF(MSVC)
@@ -37,6 +41,7 @@ ELSE(WIN32)
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
+			${SRC_DIR}/snowpack/lib
 		DOC "Location of the libsnowpack, like /usr/lib/libsnowpack.dylib"
 		)
 	ELSE(APPLE)
@@ -48,6 +53,7 @@ ELSE(WIN32)
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
+			${SRC_DIR}/snowpack/lib
 		DOC "Location of the libsnowpack, like /usr/lib"
 		)
 	ENDIF(APPLE)
@@ -63,6 +69,7 @@ FIND_PATH(LIBSNOWPACK_INCLUDE_DIR
   #HINTS ${LIBSNOWPACK_ROOT}/include
   PATHS
 	"${LIBSNOWPACK_ROOT}/include"
+	"${LIBSNOWPACK_ROOT}"
 	"~/usr/include"
 	"/usr/local/include"
 	"/usr/include"

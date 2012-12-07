@@ -347,11 +347,23 @@ bool ElementData::checkVolContent()
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.4f", sum);
 		ret = false;
 	}
-	if ((theta[SOIL] < -Constants::eps) || (theta[ICE] < -Constants::eps)
-	        || (theta[WATER] < -Constants::eps) || (theta[AIR] < -Constants::eps) ) {
-		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative volumetric content!");
+	if(theta[SOIL] < -Constants::eps) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative SOIL volumetric content: %1.4f", theta[SOIL]);
 		ret = false;
 	}
+	if(theta[ICE] < -Constants::eps) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative ICE volumetric content: %1.4f", theta[ICE]);
+		ret = false;
+	}
+	if(theta[WATER] < -Constants::eps) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative WATER volumetric content: %1.4f", theta[WATER]);
+		ret = false;
+	}
+	if(theta[AIR] < -Constants::eps) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative AIR volumetric content: %1.4f", theta[AIR]);
+		ret = false;
+	}
+
 	return ret;
 }
 
@@ -929,14 +941,13 @@ void SnowStation::joinElements(const unsigned int& i_number_top_elements)
 }
 
 /**
- * @brief Remove the upper "marked" element of two (snow only)
- * - Joining two elements
- *    - density is undefined
- *    - take the uppermost node of both
- * - Removing melted or thin elements
- *    - density is undefined AND length negative (*= -1.) as the latter will be used!
- *    - keep upper node of lowest element
- *
+ * @brief Remove the upper "marked" element of two (snow only) \n
+ * -# Joining two elements:
+ *  - density is undefined
+ *  - take the uppermost node of both
+ * -# Removing melted or thin elements
+ *  - density is undefined AND length negative (*= -1.) as the latter will be used!
+ *  - keep upper node of lowest element
  * @param rnE Reduced number of elements
  */
 void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
