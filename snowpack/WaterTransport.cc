@@ -60,7 +60,7 @@ WaterTransport::WaterTransport(const mio::Config& cfg)
 	cfg.getValue("HOAR_THRESH_VW", "SnowpackAdvanced", hoar_thresh_vw);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
 	//To build up a water table over impermeable layers
@@ -102,15 +102,14 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 {
 	double dL=0., dM=0.;     // Length and mass chamges
 	double M=0.;             // Initial mass and volumetric content (water or ice)
-	double Tss;              // Surface Temperature
 	double hoar=0.0;         // Actual change in hoar mass
 	double cH_old;           // Temporary variable to hold height of snow
 
-	size_t nN = Xdata.getNumberOfNodes();
-	size_t nE = nN-1;
+	const size_t nN = Xdata.getNumberOfNodes();
+	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	Tss = NDS[nE].T;
+	const double Tss = NDS[nE].T; // Surface Temperature
 
 	/*
 	 * If there are elements and ql > 0:
@@ -307,10 +306,8 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
  */
 void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	bool enforce_join = false;  // To enforce merging in special cases
-
-	size_t nN = Xdata.getNumberOfNodes();
-	size_t rnN = nN, nE = nN-1, rnE = nN-1;
+	const size_t nN = Xdata.getNumberOfNodes(), nE = nN-1;
+	size_t rnN = nN, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	if ((nN == Xdata.SoilNode+1)
@@ -322,7 +319,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	size_t eUpper = nE; // Index of the upper element, the properties of which will be transferred to the lower adjacent one
 	while (eUpper-- > Xdata.SoilNode) {
-		enforce_join = true;
+		bool enforce_join = true;
 		if ((EMS[eUpper].L < minimum_l_element) || (EMS[eUpper].mk%100 == 3)) {
 			if ((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element)) {
 				enforce_join = false;
@@ -394,10 +391,10 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
  */
 void WaterTransport::adjustDensity(SnowStation& Xdata)
 {
-	size_t nN = Xdata.getNumberOfNodes();
+	const size_t nN = Xdata.getNumberOfNodes();
 	if (nN == Xdata.SoilNode + 1) return;
 
-	size_t nE = nN-1;
+	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
@@ -439,7 +436,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 			throw IOException("Cannot evaluate mass balance in adjust density routine", AT);
 		}
 	}
-	double cH_old = Xdata.cH;
+	const double cH_old = Xdata.cH;
 	Xdata.cH = NDS[Xdata.getNumberOfNodes()-1].z + NDS[Xdata.getNumberOfNodes()-1].u;
 	Xdata.mH -= (cH_old - Xdata.cH);
 }
@@ -455,10 +452,6 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
  */
 void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	double Wres;          // Residual water content depending on snow or soil element
-	double Store;         // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
-	double z_water;       // Position of upper node of top water-film layer (m)
-
 	size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -469,7 +462,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		return;
 	} else { // add rainfall to snow/soil pack
 		if ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain))) {
-			Store = Mdata.hnw / Constants::density_water;
+			double Store = Mdata.hnw / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
@@ -481,8 +474,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 				// Temperature of the uppermost node
 				NDS[nN-1].T = Mdata.ta;
-				// The new nodal position
-				z_water = MIN(Store, MAX(0.001, 0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))));
+				// The new nodal position of upper node of top water-film layer (m)
+				const double z_water = MIN(Store, MAX(0.001, 0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()))));
 				NDS[nN-1].z = NDS[nN-2].z + NDS[nN-2].u + z_water;
 				Store -= z_water;
 				// Fill the element data
@@ -506,7 +499,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			               && ((useSoilLayers && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95))
 			                       || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95)))) {
 				// Put rain water in existing wet layer
-				z_water = MIN(Store, MAX(0.0, (0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())) - EMS[nE-1].L)));
+				// The new nodal position of upper node of top water-film layer (m)
+				const double z_water = MIN(Store, MAX(0.0, (0.01 * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())) - EMS[nE-1].L)));
 				NDS[nN-1].z += z_water;
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);
@@ -520,12 +514,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			while (Store > 0.0 && e > 0.) {
 				e--;	//This construct with e=nE and e-- is to circumvent troubles with the unsigned ints.
 				const double L = EMS[e].L;
-				double dThetaW;
-				if(e>0) {	//Check how much space is left to put rain water in.
-					dThetaW = MIN(Constants::density_ice/Constants::density_water*EMS[e].theta[AIR],Store/L);
-				} else {	//For the lowest layer, put all rain water in, to prevent loosing the mass.
-					dThetaW = Store / L;
-				}
+				//Check how much space is left to put rain water in OR for the lowest layer, put all rain water in, to prevent loosing the mass.
+				const double dThetaW = (e>0)? MIN(Constants::density_ice/Constants::density_water*EMS[e].theta[AIR], Store/L) : Store / L;
+
 				Store -= dThetaW*L;
 				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[e].conc[WATER][ii] = (L * dThetaW * Mdata.conc[ii]
@@ -552,6 +543,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	// Preferential flow system: excess water that cannot be retained in lower element is stored in
 	//   excess_water and moved down the domain; NOTE units: [m^3/m^2]
 	double excess_water=0.;
+	double Wres;          // Residual water content depending on snow or soil element
 
 	// Now move water as needed, starting from the top element ...
 	for (size_t eUpper = nE-1, eLower = nE-2; eUpper >= 1; eUpper--, eLower-- ) {
@@ -597,10 +589,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			const double L_upper = EMS[eUpper].L;
 			const double L_lower = EMS[eLower].L;
 			const double W_lower = EMS[eLower].theta[WATER];
-			double dThetaW_upper = W_upper - Wres;
+			double dThetaW_upper = MAX(0, W_upper - Wres);
 
 			// dThetaW_lower is determined by also taking excess_water into account. Maybe excess_water can be stored in this layer.
-			dThetaW_upper = MAX(0, dThetaW_upper);
 			if (dThetaW_upper > 0. || excess_water > 0.) {
 				// dThetaW_lower is determined by also taking excess_water into account. Maybe excess_water can be stored in this layer.
 				double dThetaW_lower = dThetaW_upper*(L_upper/L_lower)+(excess_water/L_lower);
