@@ -288,23 +288,20 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 }
 
 /**
- * @brief Remove snow elements that either have no more ice or are too thin \n
- * -# Starting from the surface, remove or join as many snow elements as you can; check also the lowest snow element
- * -# Remove or join:
- * 	- Remove watery elements by adding their contents to the lower element \n
- *	  => Use sn_ReduceNumberElements() to get rid of unwanted elements
- * 	- Join too thin elements with their lower neighbour; keep buried SH and tagged layers longer on \n
- * 	  but enforce join for uncovered but previously buried SH \n
+ * @brief Merging snow elements \n
+ * - Starting from the surface, merge as many snow elements as you can; \n
+ * 	  Merge too thin elements with their lower neighbour; keep buried SH and tagged layers longer on \n
+ * 	  but enforce merging for uncovered but previously buried SH \n
  * 	  => Use SnowStation::mergeElements() to compute the properties of the lower element
  * - NOTE
- * 	- Water will be transported AFTER elements have been removed.
+ * 	- Only the top or last element on the ground will be effectively removed if needed
+ * 	- Water will be transported AFTER elements have been merged.
  * 	- If WATER_LAYER is set with soil, make sure that you keep a potential wet water layer over soil or ice
  * 	- Reset ground surface temperature if no snow is left and there is no soil
  * @param *Xdata
  * @param *Sdata
- * @param ta Air temperature (K)
  */
-void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
+void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
 	const size_t nN = Xdata.getNumberOfNodes(), nE = nN-1;
 	size_t rnN = nN, rnE = nN-1;
@@ -319,28 +316,28 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	size_t eUpper = nE; // Index of the upper element, the properties of which will be transferred to the lower adjacent one
 	while (eUpper-- > Xdata.SoilNode) {
-		bool enforce_join = true;
+		bool enforce_merge = true;  // To enforce merging in special cases
 		if ((EMS[eUpper].L < minimum_l_element) || (EMS[eUpper].mk%100 == 3)) {
 			if ((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element)) {
-				enforce_join = false;
+				enforce_merge = false;
 			}
 			if (EMS[eUpper].mk%100 == 3) {
 				if ((eUpper < nE-1) && (EMS[eUpper].L >= MM_TO_M(0.75*hoar_min_size_buried
 				                                     * (hoar_density_surf/hoar_density_buried)))
 				                    && (EMS[eUpper].Rho <= 300.)) {
-					enforce_join = false;
+					enforce_merge = false;
 				} else {
-					enforce_join = true;
+					enforce_merge = true;
 				}
 			}
 		} else {
-			enforce_join = false;
+			enforce_merge = false;
 		}
-		if (((EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_join)
+		if (((EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_merge)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
-			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to join with
-				// We always join snow elements, except if it is the top element.
+			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
+				// We always merge snow elements, except if it is the top element.
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], (eUpper==rnE-1)?(false):(true));
 			} else {				// We are dealing with first snow element above soil
 				if (eUpper==Xdata.SoilNode && Xdata.SoilNode>0.) {
@@ -368,7 +365,7 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			rnE--;
 			rnN--;
 			EMS[eUpper].Rho = Constants::undefined;
-			if (!enforce_join)
+			if (!enforce_merge)
 				EMS[eUpper].L *= -1.;
 			if ((eUpper < nE-1) && (EMS[eUpper+1].Rho < 0.) && (EMS[eUpper+1].L > 0.)) {
 				EMS[eUpper+1].L *= -1.;
@@ -790,7 +787,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	}
 
 	compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
-	removeElements(Xdata, Sdata);
+	mergingElements(Xdata, Sdata);
 
 	try {
 		adjustDensity(Xdata);

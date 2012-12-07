@@ -416,9 +416,9 @@ class SnowStation {
 		void resize(const unsigned int& number_of_elements);
 
 		void reduceNumberOfElements(const unsigned int& rnE);
-		void joinElements(const unsigned int& number_top_elements);
-		static bool joinCondition(const ElementData& Edata0, const ElementData& Edata1);
-		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& join);
+		void combineElements(const unsigned int& number_top_elements);
+		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
+		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge);
 
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
 		double getModelledTemperature(const double& z) const;
@@ -464,8 +464,8 @@ class SnowStation {
 		double dIntEnergy;          ///< Internal energy change (J m-2)
 		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change (J m-2)
 
-		static const double join_thresh_l, join_thresh_ice, join_thresh_water;
-		static const double join_thresh_dd, join_thresh_sp, join_thresh_rg;
+		static const double comb_thresh_l, comb_thresh_ice, comb_thresh_water;
+		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;
 		static const double thresh_moist_snow, thresh_moist_soil;
 		static const size_t number_top_elements;
 		static size_t number_of_solutes;  ///< The model treats that number of solutes

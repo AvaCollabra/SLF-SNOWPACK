@@ -48,7 +48,7 @@ class WaterTransport {
 
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
-		void removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		void adjustDensity(SnowStation& Xdata);
 

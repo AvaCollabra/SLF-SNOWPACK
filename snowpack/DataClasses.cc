@@ -42,13 +42,13 @@ const double SnowStation::thresh_moist_snow = 0.003;
 const double SnowStation::thresh_moist_soil = 0.0001;
 
 /// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
-const double SnowStation::join_thresh_l = 0.015;
+const double SnowStation::comb_thresh_l = 0.015;
 /// Volumetric ice content (1), i.e., about 46 kg m-3
-const double SnowStation::join_thresh_ice = 0.05;
-const double SnowStation::join_thresh_water = 0.01; ///< Water content (1)
-const double SnowStation::join_thresh_dd = 0.2;     ///< Dendricity (1)
-const double SnowStation::join_thresh_sp = 0.05;    ///< Sphericity (1)
-const double SnowStation::join_thresh_rg = 0.125;   ///< Grain radius (mm)
+const double SnowStation::comb_thresh_ice = 0.05;
+const double SnowStation::comb_thresh_water = 0.01; ///< Water content (1)
+const double SnowStation::comb_thresh_dd = 0.2;     ///< Dendricity (1)
+const double SnowStation::comb_thresh_sp = 0.05;    ///< Sphericity (1)
+const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 
 ZwischenData::ZwischenData()
               : hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0)
@@ -910,39 +910,39 @@ bool SnowStation::hasSoilLayers() const
 /**
  * @brief If more than NUMBER_TOP_ELEMENTS snow elements exist, attempt to reduce their number in the FEM mesh,
  * leaving NUMBER_TOP_ELEMENTS surface elements untouched \n
- * Pairs of elements within the snow cover satisfying the join conditions of joinCondition() are merged
+ * Pairs of elements within the snow cover satisfying the conditions of combineCondition() are combined
  * by placing everything in the lower element, setting the density of upper element to Constants::undefined,
  * and getting rid of node in between. \n
  * The elements being very similar and thus the microstructure parameters being approximately equal
- * as defined in joinCondition(), simply average the microstructure properties \n
+ * as defined in combineCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
  */
-void SnowStation::joinElements(const unsigned int& i_number_top_elements)
+void SnowStation::combineElements(const unsigned int& i_number_top_elements)
 {
 	size_t eLower, eUpper;  // Lower (eLower) and upper (eUpper) element index
-	size_t nJoin=0; // Number of elements to be removed
+	size_t nRemove=0;       // Number of elements to be removed
 
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
 	}
 	for (eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
-		if (joinCondition(Edata[eLower], Edata[eUpper])) {
+		if (combineCondition(Edata[eLower], Edata[eUpper])) {
 			mergeElements(Edata[eLower], Edata[eUpper], true);
-			nJoin++;
+			nRemove++;
 			Edata[eUpper].Rho = Constants::undefined;
 			eLower++; eUpper++;
 		}
 	}
-	if (nJoin > 0) {
-		const size_t rnE = nElems - nJoin; //Reduced number of elements
+	if (nRemove > 0) {
+		const size_t rnE = nElems - nRemove; //Reduced number of elements
 		reduceNumberOfElements(rnE);
 	}
 }
 
 /**
  * @brief Remove the upper "marked" element of two (snow only) \n
- * -# Joining two elements:
+ * -# Merging two elements:
  *  - density is undefined
  *  - take the uppermost node of both
  * -# Removing melted or thin elements
@@ -957,7 +957,7 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
 
 	for (size_t e = SoilNode; e < nElems; e++) {
 		if (Edata[e].Rho == Constants::undefined) {
-			if (Edata[e].L > 0.0) { // Joining elements
+			if (Edata[e].L > 0.0) { // Merging elements
 				Ndata[eNew] = Ndata[e+1];
 				Ndata[eNew].z = Ndata[e+1].z + Ndata[e+1].u + dL;
 				Ndata[eNew].u = Ndata[e].udot = 0.;
@@ -1188,7 +1188,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 }
 
 /**
- * @brief Boolean routine to check whether two snow elements can be joined
+ * @brief Boolean routine to check whether two snow elements can be combined
  * -# NO ACTION will be taken if one of the two elements is
  * 	- a soil element
  * 	- larger than join_thresh_l
@@ -1196,20 +1196,20 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
  * 	- dry surface hoar (mk=3),
  * 	- dendritic but not both
  * -# OTHERWISE we use criteria for dendricity, sphericity, volumetric ice or water content, grain size and marker
- * - NOTE July 2006: whatever type of thin elements are treated in wt_ElementRemoval()
+ * - NOTE Whatever type of thin elements are treated in WaterTransport::mergingElements()
  * @param Edata0 Lower element
  * @param Edata1 Upper element
- * @return true if the two elements should be joined, false otherwise
+ * @return true if the two elements should be combined, false otherwise
  */
-bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Edata1)
+bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1)
 {
-	if ( (Edata0.L > join_thresh_l) || (Edata1.L > join_thresh_l) )
+	if ( (Edata0.L > comb_thresh_l) || (Edata1.L > comb_thresh_l) )
 		return false;
 
 	if ( Edata0.mk%100 != Edata1.mk%100 )
 		return false;
 
-	if ( fabs(Edata0.sp - Edata1.sp) > join_thresh_sp )
+	if ( fabs(Edata0.sp - Edata1.sp) > comb_thresh_sp )
 		return false;
 
 	if ( Edata0.theta[SOIL] > 0. || Edata1.theta[SOIL] > 0. )
@@ -1221,20 +1221,20 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
 	if ( (Edata0.mk%100 == 3) || (Edata1.mk%100 == 3) )
 		return false;
 
-	if ( (Edata0.dd > join_thresh_dd || Edata1.dd > join_thresh_dd) &&
-		!(Edata0.dd > join_thresh_dd && Edata1.dd > join_thresh_dd) ) {
+	if ( (Edata0.dd > comb_thresh_dd || Edata1.dd > comb_thresh_dd) &&
+		!(Edata0.dd > comb_thresh_dd && Edata1.dd > comb_thresh_dd) ) {
 		return false;
-	} else if ( fabs(Edata0.dd - Edata1.dd) > join_thresh_dd ) {
+	} else if ( fabs(Edata0.dd - Edata1.dd) > comb_thresh_dd ) {
 		return false;
 	}
 
-	if ( fabs(Edata0.theta[ICE] - Edata1.theta[ICE]) > join_thresh_ice )
+	if ( fabs(Edata0.theta[ICE] - Edata1.theta[ICE]) > comb_thresh_ice )
 		return false;
 
-	if ( fabs(Edata0.theta[WATER] - Edata1.theta[WATER]) > join_thresh_water )
+	if ( fabs(Edata0.theta[WATER] - Edata1.theta[WATER]) > comb_thresh_water )
 		return false;
 
-	if ( fabs(Edata0.rg - Edata1.rg) > join_thresh_rg )
+	if ( fabs(Edata0.rg - Edata1.rg) > comb_thresh_rg )
 		return false;
 
 	return true;
@@ -1257,16 +1257,16 @@ bool SnowStation::joinCondition(const ElementData& Edata0, const ElementData& Ed
  * @param EdataUpper Properties of upper element
  * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
  */
-void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& join)
+void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& merge)
 {
 	const double L_lower = EdataLower.L; //Length of lower element
 	const double L_upper = EdataUpper.L; //Length of upper element
 	double LNew = L_lower;               //Length of "new" element
 
-	if (join) {
+	if (merge) {
 		LNew += L_upper;
 		EdataLower.depositionDate = EdataUpper.depositionDate;
-		if( EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
+		if (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
 			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
@@ -1275,8 +1275,8 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		}
 		EdataLower.opticalEquivalentRadius();
 		EdataLower.E = EdataLower.Ev;
-		EdataLower.Ee = 0.0;	// TODO (very old) Check whether not simply add the elastic
-					//                 and viscous strains of the elements and average the stress?
+		EdataLower.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
+		                     //                 and viscous strains of the elements and average the stress?
 	} else {
 		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
 	}
@@ -1287,7 +1287,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
 	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
 	// For snow, check if there is enough space to store all ice if all water would freeze. This also takes care of cases where theta[AIR]<0.
-	if (join==false && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.)) {
+	if (merge==false && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.)) {
 		// Note: we can only do this for snow, as for soil, it is not possible to adapt the element length.
 		// If there is not enough space, adjust element length:
 		EdataLower.theta[AIR]=EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.);

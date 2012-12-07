@@ -58,7 +58,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg)
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
             minimum_l_element(0.), fixed_albedo(0.), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
-            soil_flux(false), useSoilLayers(false), multistream(false), join_elements(false),
+            soil_flux(false), useSoilLayers(false), multistream(false), combine_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
             enhanced_wind_slab(false), alpine3d(false)
 {
@@ -163,7 +163,7 @@ Snowpack::Snowpack(const mio::Config& i_cfg)
 	cfg.getValue("MULTISTREAM", "SnowpackAdvanced", multistream);
 
 	//Defines whether joining elements will be considered at all
-	cfg.getValue("JOIN_ELEMENTS", "SnowpackAdvanced", join_elements);
+	cfg.getValue("COMBINE_ELEMENTS", "SnowpackAdvanced", combine_elements);
 
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
 	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
@@ -1679,6 +1679,6 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 	metamorphism.runMetamorphismModel(Mdata, Xdata);
 
-	if (join_elements)
-		Xdata.joinElements(SnowStation::number_top_elements);
+	if (combine_elements)
+		Xdata.combineElements(SnowStation::number_top_elements);
 }
