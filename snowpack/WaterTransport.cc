@@ -340,13 +340,20 @@ void WaterTransport::removeElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to join with
-				enforce_join=true;		// We always join snow elements, except if it is the lowest one.
-				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
+				// We always join snow elements, except if it is the top element.
+				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], (eUpper==rnE-1)?(false):(true));
 			} else {				// We are dealing with first snow element above soil
-				enforce_join=false;		// This one cannot be joined with the layer below (which is soil).
 				if (eUpper==Xdata.SoilNode && Xdata.SoilNode>0.) {
 					// In case of soil and removal of first snow element above soil:
-					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], enforce_join);
+					// First, make sure there is no ice anymore, as we do not want to transfer ice over soil-snow interface:
+					EMS[eUpper].theta[WATER]+=EMS[eUpper].theta[ICE]*(Constants::density_ice/Constants::density_water);
+					// Take care of energy used for melting the ice:
+					const double A = (EMS[eUpper-1].c[TEMPERATURE] * EMS[eUpper-1].Rho) / ( Constants::density_ice * Constants::lh_fusion );
+					EMS[eUpper-1].Te -= EMS[eUpper].theta[ICE] / A;
+					// Set amount of ice to 0.
+					EMS[eUpper].theta[ICE]=0.;
+					// Now do actual merging of the elements:
+					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], false);
 				}
 				// route mass and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
