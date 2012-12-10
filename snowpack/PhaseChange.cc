@@ -81,7 +81,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 
 	const double T_melt=Edata.melting_tk;		// Retrieve melting temperature from ElementData
 
-	Edata.checkVolContent();
+	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Now see if any melting is going on -- this implies that (1) the temperature of the element
 	 * is above the melting temperature (2) there is something to melt and (3) there is enough
@@ -152,6 +152,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		if ( Edata.theta[WATER] >= 1.0 ) {
 			Edata.theta[WATER] = 1.0;
 		}
+
 		// Make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 		if (!Edata.checkVolContent()) {
 			prn_msg(__FILE__, __LINE__, "err", date_in, "Sum theta[I,W,A,S] > 1");
@@ -201,7 +202,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 {
 	const double T_freeze=Edata.freezing_tk;	// Retrieve melting temperature from ElementData
 
-	Edata.checkVolContent();
+	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen

@@ -85,24 +85,24 @@ SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
  */
 double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle)
 {
-	const double sig = 300.;
-	double Qsalt = 0., Qsusp = 0., c_salt; // The mass fluxes in saltation and suspension (kg m-1 s-1)
-
 	// Compute basic quantities that are needed: friction velocity, z0, threshold vw
 	// For now assume logarithmic wind profile; TODO change this later
 	const double weight = 0.02 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
 	// weight = Edata.Rho*(Edata.sp + 1.)*Constants::g*MM_TO_M(Edata.rg);
-	const double binding = 0.0015 * sig * Edata.N3 * (Edata.rb*Edata.rb) / (Edata.rg*Edata.rg);
+	const double sig = 300.;
+	const double binding = 0.0015 * sig * Edata.N3 * Optim::pow2(Edata.rb/Edata.rg);
 	const double tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
 	//const double ustar_thresh = sqrt(tau_thresh / Constants::density_air);
 	// fprintf(stdout, "weight: %lf   binding:%lf  tau_th:%lf\n",weight, binding, tau_thresh);
-	const double tau = Constants::density_air * pow(ustar, 2);
+	const double tau = Constants::density_air * Optim::pow2(ustar);
 
 	// First, look whether there is any transport at all: use formulation of Schmidt
 	if ( tau_thresh > tau ) {
 		return (0.0);
 	}
+
 	// Compute the saltation mass flux (after Pomeroy and Gray)
+	double Qsalt = 0., Qsusp = 0., c_salt; // The mass fluxes in saltation and suspension (kg m-1 s-1)
 	if (!saltation.compSaltation(tau, tau_thresh, slope_angle, MM_TO_M(2.*Edata.rg), Qsalt, c_salt)) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Saltation computation failed");
 		throw IOException("Saltation computation failed", AT);
@@ -134,9 +134,7 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& forced_massErode)
 {
 	int nErode = 0;                           // number of eroded elements and erosion level
-	bool windward = false;                    // Set to true for windward slope
 	double real_flux = 0., virtual_flux = 0.; // mass flux, either real or virtual
-	double massErode = 0.;                    // eroded mass loss due to erosion
 
 	unsigned int nE = Xdata.getNumberOfElements();
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -158,6 +156,8 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	if (Xdata.ErosionLevel > nE-1) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "ErosionLevel=%d did get messed up (nE-1=%d)", Xdata.ErosionLevel, nE-1);
 	}
+
+	bool windward = false; // Set to true for windward slope
 	if (!alpine3d && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle) && Xdata.windward) {
 		windward = true;
 	}
@@ -165,8 +165,9 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	const double ustar_max = (Mdata.vw>0.1) ? Mdata.ustar * Mdata.vw_drift / Mdata.vw : 0.;
 
 	// Evaluate possible real erosion
-	if (forced_massErode>0.) {
-		massErode = forced_massErode;
+	double massErode = 0.; // eroded mass loss due to erosion
+	if (alpine3d) {
+		massErode = MAX(0., forced_massErode); //just in case...
 	} else {
 		try {
 			if (enforce_measured_snow_heights && !windward) {
@@ -180,6 +181,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		}
 		massErode = (real_flux * sn_dt / Hazard::typical_slope_length);
 	}
+
 	// Real erosion either on flat field or on windward slope or in Alpine3D
 	if ((snow_redistribution && (((Xdata.mH + 0.02) < (Xdata.cH - Xdata.Ground)) && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))) || alpine3d || windward) {
 		Xdata.ErosionMass = 0.;
@@ -221,8 +223,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		/* ... or check whether you can do a virtual erosion for drift index generation
 		 * in case of no (or small) real erosion for all cases except Alpine3D or virtual slopes
 		 */
-	}
-	else if (((nSlopes == 1) || (!snow_redistribution && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle))) && (Xdata.ErosionLevel > Xdata.SoilNode)) {
+	} else if (((nSlopes == 1) || (!snow_redistribution && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle))) && (Xdata.ErosionLevel > Xdata.SoilNode)) {
 		virtual_flux = compMassFlux(EMS[Xdata.ErosionLevel], ustar_max, DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 		// Convert to eroded snow mass
 		if ((massErode = virtual_flux*sn_dt / Hazard::typical_slope_length) > 0.) {
