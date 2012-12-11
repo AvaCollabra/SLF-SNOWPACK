@@ -316,7 +316,8 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	size_t eUpper = nE; // Index of the upper element, the properties of which will be transferred to the lower adjacent one
 	while (eUpper-- > Xdata.SoilNode) {
-		bool enforce_merge = true;  // To enforce merging in special cases
+		bool enforce_merge = true;	// To enforce merging in special cases
+		bool merged = true;		// true: element is finally merged, false: element is finally removed.
 		if ((EMS[eUpper].L < minimum_l_element) || (EMS[eUpper].mk%100 == 3)) {
 			if ((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element)) {
 				enforce_merge = false;
@@ -337,10 +338,16 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
-				// We always merge snow elements, except if it is the top element.
-				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], (eUpper==rnE-1)?(false):(true));
+				// We always merge snow elements, except if it is the top element, which is removed
+				if (eUpper == rnE-1) {
+					merged = false;
+				} else {
+					merged = true;
+				}
+				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged);
 			} else {				// We are dealing with first snow element above soil
-				if (eUpper==Xdata.SoilNode && Xdata.SoilNode>0.) {
+				merged=false;
+				if (eUpper == Xdata.SoilNode && Xdata.SoilNode > 0.) {
 					// In case of soil and removal of first snow element above soil:
 					// First, make sure there is no ice anymore, as we do not want to transfer ice over soil-snow interface:
 					EMS[eUpper].theta[WATER]+=EMS[eUpper].theta[ICE]*(Constants::density_ice/Constants::density_water);
@@ -350,7 +357,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// Set amount of ice to 0.
 					EMS[eUpper].theta[ICE]=0.;
 					// Now do actual merging of the elements:
-					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], false);
+					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged);
 				}
 				// route mass and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
@@ -365,8 +372,8 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			rnE--;
 			rnN--;
 			EMS[eUpper].Rho = Constants::undefined;
-			if (!enforce_merge)
-				EMS[eUpper].L *= -1.;
+			if (!merged)
+				EMS[eUpper].L *= -1.;	// Mark element as "removed".
 			if ((eUpper < nE-1) && (EMS[eUpper+1].Rho < 0.) && (EMS[eUpper+1].L > 0.)) {
 				EMS[eUpper+1].L *= -1.;
 			}
