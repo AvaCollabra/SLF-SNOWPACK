@@ -339,6 +339,11 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
 bool ElementData::checkVolContent()
 {
 	bool ret = true;
+	if(fabs(L*Rho - M) > 0.001) {
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Inconsistent mass: M = %1.4f, L*Rho = %1.4f * %1.4f = %1.4f", M, L, Rho, L*Rho);
+		ret = false;
+	}
+
 	double sum = 0.;
 	for (unsigned int i = 0; i < N_COMPONENTS; i++) {
 		sum += theta[i];
@@ -943,11 +948,11 @@ void SnowStation::combineElements(const unsigned int& i_number_top_elements)
 /**
  * @brief Remove the upper "marked" element of two (snow only) \n
  * -# Merging two elements:
- *  - density is undefined
- *  - take the uppermost node of both
+ *     -# density is undefined
+ *     -# take the uppermost node of both
  * -# Removing melted or thin elements
- *  - density is undefined AND length negative (*= -1.) as the latter will be used!
- *  - keep upper node of lowest element
+ *     -# density is undefined AND length negative (*= -1.) as the latter will be used!
+ *     -# keep upper node of lowest element
  * @param rnE Reduced number of elements
  */
 void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
@@ -1255,7 +1260,7 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
  * 	- Keep the birthday of the lower element
  * @param EdataLower Properties of lower element
  * @param EdataUpper Properties of upper element
- * @param join True if upper element is to be joined with lower one, false if upper element is to be removed
+ * @param merge True if upper element is to be joined with lower one, false if upper element is to be removed
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& merge)
 {

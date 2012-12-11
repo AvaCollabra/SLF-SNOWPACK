@@ -3,7 +3,7 @@ SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 0 CACHE INTERNAL "")
+SET(VERSION_MINOR 1 CACHE INTERNAL "")
 SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
@@ -208,10 +208,10 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
+	MESSAGE("METEOIO_LIBRARY=${METEOIO_LIBRARY} METEOIO_INCLUDE_DIR=${METEOIO_INCLUDE_DIR} METEOIO_ROOT=${METEOIO_ROOT}")
 	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
-	INSTALL(DIRECTORY ${METEOIO_ROOT}/include/meteoio DESTINATION include COMPONENT headers)
+	INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
 	INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
-	INSTALL(DIRECTORY ${METEOIO_ROOT}/lib/meteoio/plugins DESTINATION lib/meteoio COMPONENT libraries)
 	IF(INSTALL_DOC)
 		IF(WIN32)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/doc")
@@ -324,31 +324,31 @@ ELSE(UNIX)
 				"bin/inishell.jar" "inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://slfsmm.indefero.net/p/snowpack/" "Home page"
+				"https://models.slf.ch/p/snowpack/" "Home page"
 				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
 				"${METEOIO_DOC}/examples" "MeteoIO examples"
-				"https://slfsmm.indefero.net/p/meteoio/" "MeteoIO Home page")
+				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://slfsmm.indefero.net/p/snowpack/" "Home page")
+				"https://models.slf.ch/p/snowpack/" "Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
 				"bin/inishell.jar" "inishell"
-				"https://slfsmm.indefero.net/p/snowpack/" "Home page"
-				"https://slfsmm.indefero.net/p/meteoio/" "MeteoIO Home page")
+				"https://models.slf.ch/p/snowpack/" "Home page"
+				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://slfsmm.indefero.net/p/snowpack/" "Home page")
+				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
 
 		#info for the add/uninstall software administration
 		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")
 		SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.slf.ch")
-		SET(CPACK_NSIS_HELP_LINK "https://slfsmm.indefero.net/p/snowpack")
+		SET(CPACK_NSIS_HELP_LINK "https://models.slf.ch/p/snowpack")
 		SET(CPACK_NSIS_CONTACT "Mathias.Bavay@wsl.ch")
 	ENDIF(WIN32)
 ENDIF(UNIX)

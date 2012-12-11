@@ -142,6 +142,8 @@
 #include <snowpack/Snowpack.h>
 #include <meteoio/MeteoIO.h>
 
+#include <assert.h>
+
 using namespace std;
 using namespace mio;
 
@@ -391,7 +393,9 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 
 			// Update volumetric water content in layer
 			EMS[e].theta[WATER] -= d_theta;
+			assert(EMS[e].theta[WATER] >= -Constants::eps);
 			EMS[e].theta[AIR] += d_theta;
+			assert(EMS[e].theta[AIR] >= -Constants::eps);
 		}
 		// Depth of the upper edge of layer below
 		zupper += EMS[e].L;
@@ -407,7 +411,9 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 			waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
 
 	EMS[RootLayer].theta[WATER] -= d_theta;
+	assert(EMS[RootLayer].theta[WATER] >= -Constants::eps);
 	EMS[RootLayer].theta[AIR] += d_theta;
+	assert(EMS[RootLayer].theta[AIR] >= -Constants::eps);
 	waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
 
 	// Check if water content is below wilting point in last layer

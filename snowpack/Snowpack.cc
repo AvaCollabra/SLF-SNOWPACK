@@ -286,6 +286,7 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
 	Edata->theta[ICE] = MIN (0.999999, Edata->theta[ICE] * dVol);
 	Edata->theta[WATER] = MIN (0.999999, Edata->theta[WATER] * dVol);
 	Edata->theta[AIR] = 1.0 - Edata->theta[ICE] - Edata->theta[WATER] - Edata->theta[SOIL];
+	Edata->checkVolContent();
 	if (!(Edata->theta[AIR] <= 1.0 && Edata->theta[AIR] >= -0.05)) {
 		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata->theta[AIR], ddE);
 		prn_msg(__FILE__, __LINE__, "msg", Date(), "ELEMENT SIZE: L0=%e L=%e", Edata->L0, Edata->L);
@@ -824,7 +825,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	 * Initialize element data.
 	*/
 	for (e = 0; e < nE; e++) {
-		int Nodes[2] = {e, e+1};
+		int Nodes[2] = {(int)e, (int)e+1};
 		ds_DefineConnectivity( (MYTYPE*)Kt, 2, Nodes , 1, 0 );
 	}
 
