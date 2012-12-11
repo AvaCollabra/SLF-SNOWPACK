@@ -167,7 +167,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	// Evaluate possible real erosion
 	double massErode = 0.; // eroded mass loss due to erosion
 	if (alpine3d) {
-		massErode = MAX(0., forced_massErode); //just in case...
+		massErode = MAX(0., -forced_massErode); //negative mass is erosion
 	} else {
 		try {
 			if (enforce_measured_snow_heights && !windward) {
@@ -197,7 +197,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			Xdata.ErosionMass = EMS[nE].M;
 			Xdata.ErosionLevel = MIN(nE-1, Xdata.ErosionLevel);
 			nErode++;
-			forced_massErode = MAX(0., massErode);
+			forced_massErode = -massErode;
 		} else if (massErode > 0.) { // ... or take away massErode from top element - partial real erosion
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Inconsistent Mass:%lf   L*Rho:%lf", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho);

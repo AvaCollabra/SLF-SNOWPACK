@@ -1251,6 +1251,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		if ((delta_cH >= height_new_elem * cos_sl)
 		        || (Xdata.hn > 0.)
 		            || add_element) {
+			cumu_hnw = 0.0; // we use the mass through delta_cH
+
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 				hn = Xdata.hn;
 				rho_hn = Xdata.rho_hn;
@@ -1282,7 +1284,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 					return;
 				}
 			}
-			cumu_hnw = 0.0;
+
 			// Check whether surface hoar could be buried
 			size_t nHoarE;
 			hoar = Xdata.Ndata[nOldN-1].hoar;
@@ -1602,7 +1604,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			}
 		}
 
-		// If it is SNOWING, find out how much, prepare for new FEM data
+		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_hnw is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_hnw, Sdata);
 
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
