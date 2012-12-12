@@ -339,10 +339,10 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
 bool ElementData::checkVolContent()
 {
 	bool ret = true;
-	if(fabs(L*Rho - M) > 0.001) {
+	/*if(fabs(L*Rho - M) > 0.001) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Inconsistent mass: M = %1.4f, L*Rho = %1.4f * %1.4f = %1.4f", M, L, Rho, L*Rho);
 		ret = false;
-	}
+	}*/
 
 	double sum = 0.;
 	for (unsigned int i = 0; i < N_COMPONENTS; i++) {
