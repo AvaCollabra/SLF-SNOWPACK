@@ -1291,17 +1291,6 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
 	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
-	// For snow, check if there is enough space to store all ice if all water would freeze. This also takes care of cases where theta[AIR]<0.
-	if (merge==false && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.)) {
-		// Note: we can only do this for snow, as for soil, it is not possible to adapt the element length.
-		// If there is not enough space, adjust element length:
-		EdataLower.theta[AIR]=EdataLower.theta[WATER]*(Constants::density_water/Constants::density_ice-1.);
-		const double tmpsum=EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER];
-		LNew*=tmpsum;
-		EdataLower.theta[AIR]/=tmpsum;
-		EdataLower.theta[ICE]/=tmpsum;
-		EdataLower.theta[WATER]/=tmpsum;
-	}
 	EdataLower.snowResidualWaterContent();
 	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
 
