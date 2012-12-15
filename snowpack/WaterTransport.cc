@@ -344,7 +344,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				} else {
 					merged = true;
 				}
-				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged);
+				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==nE-1));
 			} else {				// We are dealing with first snow element above soil
 				merged=false;
 				if (eUpper == Xdata.SoilNode && Xdata.SoilNode > 0.) {
@@ -357,7 +357,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// Set amount of ice to 0.
 					EMS[eUpper].theta[ICE]=0.;
 					// Now do actual merging of the elements:
-					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged);
+					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==nE-1));
 				}
 				// route mass and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;

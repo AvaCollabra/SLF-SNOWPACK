@@ -490,7 +490,7 @@ void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 {
 	compHazard(Hdata, Hdata_ind, Mdata, Sdata, Zdata, Xdata_station);
 
-	// Compute snow transport on flat fiels if needed
+	// Compute snow transport on flat field if needed
 	if (!virtual_slope) {
 		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, Sdata.drift,
                   Xdata_station.meta.getSlopeAngle());

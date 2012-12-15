@@ -418,7 +418,7 @@ class SnowStation {
 		void reduceNumberOfElements(const unsigned int& rnE);
 		void combineElements(const unsigned int& number_top_elements);
 		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
-		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge);
+		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
 
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
 		double getModelledTemperature(const double& z) const;

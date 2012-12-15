@@ -270,7 +270,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 
 void PhaseChange::initialize(SnowStation& Xdata)
 {
-	// Initialize PhaseCahnge: execute this function before doing any call to PhaseChange::compPhaseChange for the current time step, to reset the energy balance values.
+	// Initialize PhaseChange: execute this function before doing any call to PhaseChange::compPhaseChange for the current time step, to reset the energy balance values.
 	size_t e, nE;
 	ElementData* EMS;
 	nE = Xdata.getNumberOfElements(); EMS = &Xdata.Edata[0];
