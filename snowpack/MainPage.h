@@ -41,6 +41,7 @@
  *    -# Model principles
  *        -# \subpage general "General concepts"
  *        -# \subpage references "References"
+ *        -# \subpage uses "Use cases"
  *    -# Inputs / Outputs
  *        -# \subpage requirements "Data requirements"
  *        -# \subpage input_formats "Input file formats"
@@ -62,13 +63,10 @@
  *      - on osX: set \em PATH and \em DYLD_FALLBACK_LIBRARY_PATH
  *      - on Linux: set \em PATH and \em LD_LIBRARY_PATH if you install the package to a non-standard location
  *      - on Windows: set \em PATH
- * How to do this (and much more) is explained in the online documentation at https://slfsmm.indefero.net/p/snowpack/page/Getting-started/.
+ * How to do this (and much more) is explained in the online documentation at https://models.slf.ch/p/snowpack/page/Getting-started/.
  *
  * Now, let's run an example simulation:
  * -# First, copy the examples as provided with this documentation (the whole \b doc/examples directory) to a directory where you have write access.
- * -# Then edit the configuration file for the chosen simulation (in cfgfiles), for example \b io_res1exp.ini and set the PLUGINPATH key to
- *    contain the path to your input plugins (such as \em Applications/Snowpack-3.0.0/lib/meteoio/plugins on osX, \em /usr/local/lib/meteoio/plugins on Linux
- *    or <i>C:\\Program files\\Snowpack-3.0.0\\lib\\meteoio\\plugins</i> on Windows)
  * -# Select one of the examples and run its start script, for example <b>./run_res1exp.sh</b> (on Windows, you have to open the script file and copy
  *    the last command line it contains into a terminal)
  * -# Once the simulation is finished, the results are available in the \b output directory
@@ -94,25 +92,40 @@
  * conductivity and viscosity. At present, SNOWPACK is the most advanced snow cover models worldwide in terms of microstructural detail.
  * Therefore, first attempts are being made to estimate snow cover stability from SNOWPACK simulations (Lehning et al., 2003).
  *
- * @section current_op_usage Operational usage experience
- * SNOWPACK runs operationally
- * on a network of high Alpine automatic weather and snow measurement stations. Presently approximately 100 sites are in operation. These stations
- * measure wind, air temperature, relative humidity, snow depth, surface temperature, ground (soil) temperature, reflected short wave radiation and
- * three temperatures within the snowpack. The measurements are hourly transferred to the SLF and drive the model. SNOWPACK produces supplementary
- * information regarding the state of the snowpack at the sites of the automatic stations. The model is connected to a relational data base which
- * stores the measurements as well as the model results. Validations of SNOWPACK suggest that the calculations are reliable in terms of the mass balance
- * and the energy budget. The implemented snow metamorphism formulations yield reasonable grain types and are able to reproduce important processes
- * such as the formation of depth or surface hoar.
+ * @section model_structure Structure of the physical modeling
+ * @subsection model_foundations Model Foundations
+ * \image html snowpack_column.png "The SNOWPACK soil/snow/canopy column"
+ * \image latex snowpack_column.eps "The SNOWPACK soil/snow/canopy column" width=0.5\textwidth
+ * The SNOWPACK model is built around a 1D soil/snow/canopy column (see figure above). This in effect neglects lateral transfers and only considers vertical
+ * gradients and transfers. The snow is modeled as a three phase porous medium (ice/liquid water/water vapor) but can also contain an arbitrary amount of soil
+ * in order to simulate from purely soil layers to snow layers, including ice lenses, permafrost, ponding, etc An arbitrary number of layers can be simulated,
+ * according to needs. Because of its lagragian grid, SNOWPACK can simulate very thin layers if needed (ice crust, hoar).
  *
- * @section other_uses Other uses
- * In addition to the stand-alone applications, SNOWPACK is increasingly used in a distributed way (Kuonen et al., 2010).
- * SNOWPACK has been coupled with atmospheric flow and snow drift modules as well as with spatial energy balance models. The coupled models are
- * used to investigate snow deposition and snow cover development in steep terrain (Lehning and others, 2000) and to forecast ski run conditions for racing
- * (however, the current version of SN_GUI does not include the visualization of distributed SNOWPACK calculations).
  *
- * In order to make it easier to integrate %Snowpack in other models, it has been repackaged as a library. You can therefore use the %Snowpack library in another
- * model. More details are given in \subpage libsnowpack_basics "Programming with libsnowpack".
+ * @subsection model_hierarchy Model Hierarchy
+ * At the core of the model, are a few state variables. These are used to model the microstructure, including its
+ * metamorphic developments. This in turns allows to build bulk constitutive properties that are necessary to compute the core conservation equations. Finally, a few
+ * "side models" provide the necessary connections to meteorological forcing, real world measurements and parameters and other properties. Therefore the model
+ * can be described by the following hierarchical structure (see figure below):
+ *    - a few state variables: density, temperature, liquid water content that must be known for each layer;
+ *    - from these state variables, four primary (independent) microstructure parameters are derived: grain size, bond radius, sphericity and dendricity. As a matter
+ *      of convenience, the coordination number will also be computed and used. Equilibrium growth metamorphism and kinetic metamorphism will drive the
+ *      temporal evolution of these parameters according to various models.
+ *    - from the microstructure parameters, the macroscopic properties will be computed: thermal conductivity and viscosity. This will include pressure sintering,
+ *      the strain amplification on the necks and its feedback on the metamorphism as well as both linear and non-linear viscosity ranges.
+ *    - these bulk properties then allow computing the core equations: mass and energy conservation as well as the settling. The energy balance will include
+ *      the solar radiation absorption, the sublimation/deposition of water vapor, the melting and refreezing of water as well as the heat conduction. By enforcing
+ *      the three phase approach, only two mass conservations will be required: for the liquid water and the water vapor.
+ *    - finally, auxiliary models provide the necessary "glue": the snow surface and ground boundary conditions (using either Neumann to enforce fluxes or Dirichlet to
+ *      enforce temperatures or even swapping between the two depending on the conditions), a new snow density parametrization (that depends on the local climate),
+ *      an albedo and short wave absorption parametrization and a snowdrift model.
+ *    - some post-processing models will be added to provide more relevant outputs: a hardness model, several snow stability index, a snow classification.
  *
+ * \image html snowpack_physics.png "Structure of the SNOWPACK model"
+ * \image latex snowpack_physics.eps "Structure of the SNOWPACK model" width=0.9\textwidth
+ *
+ * These concepts are visible through the source code, as well as through some keys in the configuration file. Therefore, please keep them in mind when preparing your
+ * simulations!
  */
 
 /**
@@ -152,6 +165,33 @@
  * - Bellaire, S., J.B. Jamieson, and C. Fierz, <i>Forcing the snow-cover model SNOWPACK with forecasted weather data</i>, 2011,
  *   The Cryosphere, \b 5, 1115–1125, 2011, http://dx.doi.org/10.5194/tc-5-1115-2011.
  *
+ */
+
+/**
+ * @page uses Use cases
+ * SNOWPACK is widely used for research purposes all around the world in more than 35 institutions. The model has been successfully applied to the Alps,
+ * Scandinavia, Northen America, Japan, Russia, even Antartica. It has lead (together with Alpine3D, its spatially distributed derivative) to more than
+ * 60 ISI publications. It has been used for hydrological studies, climate change impact studies, snow stability questions, road weather applications,
+ * permafrost research, snow farming...
+ *
+ * @section current_op_usage Operational usage experience
+ * SNOWPACK runs operationally
+ * on a network of high Alpine automatic weather and snow measurement stations. Presently approximately 100 sites are in operation. These stations
+ * measure wind, air temperature, relative humidity, snow depth, surface temperature, ground (soil) temperature, reflected short wave radiation and
+ * three temperatures within the snowpack. The measurements are hourly transferred to the SLF and drive the model. SNOWPACK produces supplementary
+ * information regarding the state of the snowpack at the sites of the automatic stations. The model is connected to a relational data base which
+ * stores the measurements as well as the model results. Validations of SNOWPACK suggest that the calculations are reliable in terms of the mass balance
+ * and the energy budget. The implemented snow metamorphism formulations yield reasonable grain types and are able to reproduce important processes
+ * such as the formation of depth or surface hoar.
+ *
+ * @section other_uses Other uses
+ * In addition to the stand-alone applications, SNOWPACK is increasingly used in a distributed way (Kuonen et al., 2010).
+ * SNOWPACK has been coupled with atmospheric flow and snow drift modules as well as with spatial energy balance models. The coupled models are
+ * used to investigate snow deposition and snow cover development in steep terrain (Lehning and others, 2000) and to forecast ski run conditions for racing
+ * (however, the current version of SN_GUI does not include the visualization of distributed SNOWPACK calculations).
+ *
+ * In order to make it easier to integrate %Snowpack in other models, it has been repackaged as a library. You can therefore use the %Snowpack library in another
+ * model. More details are given in \subpage libsnowpack_basics "Programming with libsnowpack".
  */
 
 /**
@@ -212,21 +252,19 @@
  * In case you have all four irradiative components under ventilated and heated conditions,  the cleanest approach in terms of energy flux calculations seems to be by using:
  * @code
  * SW_MODE = 2
- * INCOMING_LONGWAVE = 1
- * CHANGE_BC = false ;ie Neumann throughout
+ * CHANGE_BC = false   ;ie Neumann throughout
  * @endcode
  *
  * In case you only have reflected shortwave and snow surface temperature, using Dirichlet boundary condition would be recommended:
  * @code
  * SW_MODE = 1
- * INCOMING_LONGWAVE = 0
- * MEAS_TSS = true
+ * MEAS_TSS = true    ;our surface temperature measurement is good and can be used for validation criteria
  * CHANGE_BC = true
  * @endcode
  * For energy balance interpretation the change of internal energy is for that case better than the sum of fluxes.
  *
  * @section data_preparation Data preparation
- * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO library</a> is used.
+ * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://models.slf.ch/p/meteoio">MeteoIO library</a> is used.
  * This enables %Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
  * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation to learn about
  * the supported file formats, the available filters and resampling/re-accumulation strategies.
@@ -270,7 +308,7 @@
  * -# the intial state of the various soil and snow layers
  *
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
- * handled by <a href="https://slfsmm.indefero.net/p/meteoio">MeteoIO</a>, so please look at its documentation.
+ * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please look at its documentation.
  *
  * The intial state of the layers is now given in the SMET ascii file format. This format is described in MeteoIO's documentation of the SMET plugin.
  * Here, two files will be needed: one to contain the layers information and one that contains the temporal data relevant for hazard evaluation (this
@@ -435,7 +473,7 @@
  * generating the configuration file for %Snowpack in order to prevent missing important keys, etc
  *
  * @section inishell_config The inishell tool
- * It is highly recommended to use the <a href="https://slfsmm.indefero.net/p/inishell">Inishell</a> tool to generate these ini files
+ * It is highly recommended to use the <a href="https:/models.slf.ch/p/inishell">Inishell</a> tool to generate these ini files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
  * \image html inishell.png "inishell overview"
  * \image latex inishell.eps "inishell overview" width=0.9\textwidth
@@ -458,7 +496,7 @@
  * @page sngui_config The sngui tool
  * The simulation outputs are saved in \a ".pro" files for the time resolved profiles and \a ".met" files for the meteorological data time series
  * (see section \subpage output_formats "File formats"). These files can be processed with some scripts, relying on GNU plot for generating graphs
- * but are usually viewed with a graphical application: <a href="http://slfsmm.indefero.net/p/sngui/">sngui</a>. This java application can be
+ * but are usually viewed with a graphical application: <a href="http://models.slf.ch/p/sngui/">sngui</a>. This java application can be
  * downloaded after registering on the web site.
  * \image html sngui_overview_small.png "sngui overview"
  * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
@@ -561,7 +599,7 @@
  * When you need your own data class, please design it based on these STL containers (like grid2DObject is based on std::vector). Basically, this means
  * that you will replace mallocs and arrays by vectors (for 1d, 2d, 3d grids), maps (for multiple key/value pairs), lists (for unordered table), etc
  *
- * @section exceptions_handinling Exceptions handling
+ * @section exceptions_handling Exceptions handling
  * The recommended C++ usage should be followed: <b>"throw by value, catch by reference"</b> (as specified in <i>C++ Coding Standards: 101 Rules, Guidelines,
  * and Best Practices</i>, Herb Sutter, Andrei Alexandrescu, 2004, Addison-Wesley Professional). Moreover, we should consider catching by
  * <b>const reference</b> and not even declaring a variable if not doing anything with it: something like `catch(const IOException&)` would often be enough.

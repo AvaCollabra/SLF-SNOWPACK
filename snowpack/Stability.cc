@@ -1100,7 +1100,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	vector<double> deltaN(nE_s, 0.0);                          // Difference in hardness between layers in N
 
 	// Absolute and reduced hardness profiles (N)
-	for (int idx = nE_s-1; idx >= 0; idx--) {
+	for (int idx = static_cast<int>(nE_s)-1; idx >= 0; idx--) {
 		z_el[idx] = (((NDS[idx+Xdata.SoilNode].z + NDS[idx+Xdata.SoilNode].u) +
 				(NDS[idx+Xdata.SoilNode+1].z + NDS[idx+Xdata.SoilNode+1].u))/2.)/cos_sl;
 		L_el[idx] = EMS[idx+Xdata.SoilNode].L/cos_sl;
