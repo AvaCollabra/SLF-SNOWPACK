@@ -338,13 +338,13 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
-				// We always merge snow elements, except if it is the top element, which is removed
-				if (eUpper == rnE-1) {
+				// We always merge snow elements, except if it is the top element, which is removed when the ice contents is below the threshold.
+				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
 					merged = false;
 				} else {
 					merged = true;
 				}
-				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==nE-1));
+				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
 			} else {				// We are dealing with first snow element above soil
 				merged=false;
 				if (eUpper == Xdata.SoilNode && Xdata.SoilNode > 0.) {
@@ -357,7 +357,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// Set amount of ice to 0.
 					EMS[eUpper].theta[ICE]=0.;
 					// Now do actual merging of the elements:
-					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==nE-1));
+					SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
 				}
 				// route mass and solute load to runoff
 				Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
@@ -372,9 +372,11 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			rnE--;
 			rnN--;
 			EMS[eUpper].Rho = Constants::undefined;
-			if (!merged)
+			if (!merged) {
 				EMS[eUpper].L *= -1.;	// Mark element as "removed".
+			}
 			if ((eUpper < nE-1) && (EMS[eUpper+1].Rho < 0.) && (EMS[eUpper+1].L > 0.)) {
+				// When upper+1 element is not marked to be removed, but we merge the upper element, we should remove the upper+1 element.
 				EMS[eUpper+1].L *= -1.;
 			}
 		}
