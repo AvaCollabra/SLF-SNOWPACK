@@ -80,9 +80,9 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& cfg, const bool& i_classify_profiles)
+Stability::Stability(const mio::Config& cfg, const bool& i_classify_profile)
            : strength_model(), hardness_model(), hoar_density_buried(IOUtils::nodata), plastic(false),
-             classify_profiles(i_classify_profiles)
+             classify_profile(i_classify_profile)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
@@ -1069,11 +1069,10 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
  */
 bool Stability::recognizeProfileType(SnowStation& Xdata)
 {
-	// Temporary variables
 	const size_t n_window=5;                              // Window half-width in number of elements
 	const double L_base_0=0.2;
 	const double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
-                                                     // (N) and (N m-1), respectively
+	                                                      // (N) and (N m-1), respectively
 
 	// cos of slope angle to convert height and thickness to vertical values
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
@@ -1086,7 +1085,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 		return true;
 	}
 
-	const size_t nE_s = Xdata.getNumberOfElements() - Xdata.SoilNode;
+	const size_t nE_s = Xdata.getNumberOfElements() - Xdata.SoilNode; //number of snow elements
 
 	// Dereference element and node pointers
 	ElementData *EMS = &Xdata.Edata[0];
@@ -1101,10 +1100,10 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 
 	// Absolute and reduced hardness profiles (N)
 	for (int idx = static_cast<int>(nE_s)-1; idx >= 0; idx--) {
-		z_el[idx] = (((NDS[idx+Xdata.SoilNode].z + NDS[idx+Xdata.SoilNode].u) +
-				(NDS[idx+Xdata.SoilNode+1].z + NDS[idx+Xdata.SoilNode+1].u))/2.)/cos_sl;
-		L_el[idx] = EMS[idx+Xdata.SoilNode].L/cos_sl;
-		hard[idx] = min_hard*pow(EMS[idx+Xdata.SoilNode].hard, 2.3607);
+		const size_t ii = idx+Xdata.SoilNode; //true element index
+		z_el[idx] = ( (NDS[ii].z + NDS[ii].u) + (NDS[ii+1].z + NDS[ii+1].u) ) * .5 / cos_sl;
+		L_el[idx] = EMS[ii].L/cos_sl;
+		hard[idx] = min_hard*pow(EMS[ii].hard, 2.3607);
 		red_hard[idx] = hard[idx] - (min_hard + slope_hard*(cH - z_el[idx]));
 		if ( (unsigned)idx == nE_s-1 ) {
 			deltaN[idx] = fabs(red_hard[idx] - min_hard);
@@ -1146,7 +1145,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	// Seek extremes over profile depth
 	// Initialise
 	size_t e_min = MIN(e, nE_s - 1); //e is >=0
-	size_t e_el = MIN(e, nE_s - 1); //e is >=0
+	size_t e_el = e_min;
 	size_t e_max = MIN(e_el + n_window, nE_s - 1);
 	// Extremes and extremes' absolute heights
 	double sum_red_hard = 0.;
@@ -1165,13 +1164,13 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	}
 
 	// Use window width of 2*n_window+1 elements
-	while ( e_el <= nE_s-1 ) {
+	while ( e_el <= (nE_s-1) ) {
 		if ( (e_el - e_min) > n_window ) {
 			L_sum -= L_el[e_min];
 			sum_red_hard -= L_el[e_min]*red_hard[e_min];
 			e_min++;
 		}
-		if ( (e_max < nE_s-1) && ((e_max - e_el) < n_window) ) {
+		if ( (e_max < (nE_s-1)) && ((e_max - e_el) < n_window) ) {
 			e_max++;
 			L_sum += L_el[e_max];
 			sum_red_hard += L_el[e_max]*red_hard[e_max];
@@ -1190,10 +1189,10 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 
 	// Find extremes for deltaN (no window required)
 	e = 0;
-	while ( (z_el[e] < L_base_0) && (e < nE_s-1) ) {
+	while ( (z_el[e] < L_base_0) && (e < (nE_s-1)) ) {
 		e++;
 	}
-	for (; e < nE_s-1; e++) {
+	for (; e < (nE_s-1); e++) {
 		if ( deltaN[e] > deltaN_max ) {
 			deltaN_max = deltaN[e];
 			z_deltaN_max = z_el[e];
@@ -1446,7 +1445,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			break;
 	}
 
-	if (classify_profiles) {
+	if (classify_profile) {
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
 		if (!recognizeProfileType(Xdata)) {

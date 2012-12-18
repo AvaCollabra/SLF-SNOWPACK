@@ -765,6 +765,7 @@ void real_main (int argc, char *argv[])
 	double first_backup = 0.;
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::Config::nothrow);
 
+	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::Config::nothrow);
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
 	const double profstart = cfg.get("PROF_START", "Output");
 	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
@@ -938,7 +939,7 @@ void real_main (int argc, char *argv[])
 
 				// SNOWPACK model (Temperature and Settlement computations)
 				Snowpack snowpack(tmpcfg); //the snowpack model to use
-				Stability stability(tmpcfg);
+				Stability stability(tmpcfg, classify_profile);
 				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumu_hnw, sn_Bdata, surfFluxes);
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
 

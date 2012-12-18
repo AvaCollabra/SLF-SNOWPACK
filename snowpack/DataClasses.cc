@@ -1261,6 +1261,7 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
  * @param EdataLower Properties of lower element
  * @param EdataUpper Properties of upper element
  * @param merge True if upper element is to be joined with lower one, false if upper element is to be removed
+ * @param topElement set to true if the upper element is at the very top of the snow pack
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& merge, const bool& topElement)
 {

@@ -58,18 +58,34 @@
 
 /**
  * @page getting_started Getting Started
- * After you installed a binary package or compiled and installed Snowpack, you can run your first simulation.
+ * After you installed a binary package or compiled and installed %Snowpack, you can run your first simulation.
  * Please make sure you properly set the proper environement variables for your operating system:
  *      - on osX: set \em PATH and \em DYLD_FALLBACK_LIBRARY_PATH
  *      - on Linux: set \em PATH and \em LD_LIBRARY_PATH if you install the package to a non-standard location
  *      - on Windows: set \em PATH
  * How to do this (and much more) is explained in the online documentation at https://models.slf.ch/p/snowpack/page/Getting-started/.
  *
- * Now, let's run an example simulation:
+ * @section Running_an_example Running an example simulation
+ * In order to run an example simulation, please follow the steps below:
  * -# First, copy the examples as provided with this documentation (the whole \b doc/examples directory) to a directory where you have write access.
- * -# Select one of the examples and run its start script, for example <b>./run_res1exp.sh</b> (on Windows, you have to open the script file and copy
- *    the last command line it contains into a terminal)
- * -# Once the simulation is finished, the results are available in the \b output directory
+ * -# Open a terminal and go to the directory where you copied the simulation you want to run
+ * -# Select one of the examples and run its start script, for example <i>./run_res1exp.sh</i> (on Windows, you have to open the script file and copy
+ *    the last command line it contains into a terminal). You can also manually run %Snowpack, by typing something like
+ *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
+ * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
+ * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ *
+ * @section Running_own_simulation Running your own simulation
+ * Once you have been able to run an example simulation, you can try to run your own simulation. This involves the following steps:
+ * -# First, gather the meteorological data that you need to drive the simulation. Please have a look at \subpage requirements "Data requirements";
+ * -# Then, write the data in a format that <a href="https://models.slf.ch/p/meteoio">meteoio</a> can read for %Snowpack, for example SMET (see the file
+ *    format specification included in the meteoio's documentation and follow it);
+ * -# Once your data is ready, you can \subpage configuration "configure your simulation", using <a href="https://models.slf.ch/p/inishell">inishell</a>. Please keep in
+ *    mind that the default choices in inishell are such that if you don't change them, a simple simulation should work. And do \b not change parameters in
+ *    the SnowpackAdvanced section! (this section is reserved for some specific use cases where a deeper control on the operation of the model is required).
+ * -# Then, run the simulation from a terminal (after going to the directory where your simulation is) with a command line such as
+ *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
+ * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
  * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
  *
  */

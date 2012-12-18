@@ -88,7 +88,7 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
  */
 class Stability {
 	public:
-		Stability (const mio::Config& i_cfg, const bool& i_classify_profiles=true);
+		Stability (const mio::Config& i_cfg, const bool& i_classify_profile=false);
 
 		void checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
@@ -140,7 +140,7 @@ class Stability {
 		std::string strength_model, hardness_model;
 		double hoar_density_buried;
 		bool plastic;
-		bool classify_profiles;
+		bool classify_profile;
 };
 
 
