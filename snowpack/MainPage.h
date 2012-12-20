@@ -257,8 +257,8 @@
  * - relative humidity (RH)
  * - wind speed (VW)
  * - incoming short wave radiation (ISWR) or reflected short wave radiation (RSWR)
- * - incoming long wave radiation (ILWR) OR surface temperature (TSS)
- * - snow height (HS) OR precipitation (HNW)
+ * - incoming long wave radiation (ILWR) or surface temperature (TSS)
+ * - precipitation (HNW) or snow height (HS)
  * - ground temperature (TSG, if available)
  * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons, see section \ref SnowSoilTemperatures)
  *
