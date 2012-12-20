@@ -907,7 +907,8 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
 	// are left, their temperature gets very sensitive to energy input and during the iterations, the temperature gets out of the
 	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:
-	if(nN==2) MaxItnTemp = 200;
+	if(nN==3) MaxItnTemp = 200;
+	if(nN==2) MaxItnTemp = 400;
 	if(nN==1) MaxItnTemp = 2000;
 
 	// IMPLICIT INTEGRATION LOOP
