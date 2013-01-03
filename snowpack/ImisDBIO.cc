@@ -90,17 +90,14 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
  */
 void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata)
 {
-	size_t nE = Xdata.getNumberOfElements();
+	const size_t nE = Xdata.getNumberOfElements();
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
 	}
 
-	FILE *PFile=NULL;
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const vector<ElementData>& EMS = Xdata.Edata;
-
-	vector<SnowProfileLayer> Pdata;
-	Pdata.resize(nE);
+	vector<SnowProfileLayer> Pdata(nE);
 
 	// Generate the profile data from the element data (1 layer = 1 element)
 	size_t snowloc = 0;
@@ -111,7 +108,7 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
 
-	for(size_t e=0, ll=0; e<nE; e++) {
+	for(size_t e=0, ll=0; e<nE; e++, ll++) {
 		// Write version and computation date
 		Pdata[ll].sn_version = Hdata.sn_version;
 		Pdata[ll].sn_computation_date = Hdata.sn_computation_date;
@@ -141,14 +138,14 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 		Pdata[ll].marker = EMS[e].mk%100;
 		Pdata[ll].type = EMS[e].type;
 		Pdata[ll].hard = EMS[e].hard;
-		ll++;
 	}
 
-	size_t nL = Aggregate::aggregate(Pdata);
+	const size_t nL = Aggregate::aggregate(Pdata);
 
-	if (!(PFile = fopen(profile_filename.c_str(), "a"))) {
-		prn_msg(__FILE__, __LINE__, "err", dateOfProfile, "Cannot open Profile file: %s", profile_filename.c_str());
-		throw FileAccessException(profile_filename, AT);
+	//open profile file and write to it
+	std::ofstream Pfile(profile_filename.c_str(), std::ios::out | std::fstream::app);
+	if(!Pfile) {
+		throw FileAccessException("[E] Can not open file "+profile_filename, AT);
 	}
 
 	for(size_t ll=0; ll<nL; ll++) {
@@ -157,12 +154,10 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 		const double profile_date = Pdata[ll].profileDate.getJulian() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[ll].layerDate.getJulian() - 2415021. + 0.5; //HACK
 
-		fprintf(PFile,"%.5f,%s,%d,%.2f,", profile_date, Pdata[ll].stationname.c_str(),
-		        Pdata[ll].loc_for_snow, Pdata[ll].height);
-		fprintf(PFile,"%.5f,%.0f,%.1f,%.0f,%.4e,%.0f,%.0f,%.2f,%.2f,%.1f,%.1f,%.2f,%d\n",
-		        layer_date, Pdata[ll].rho, Pdata[ll].T, Pdata[ll].gradT, Pdata[ll].strain_rate,
-		        Pdata[ll].theta_w, Pdata[ll].theta_i, Pdata[ll].dendricity, Pdata[ll].sphericity,
-		        Pdata[ll].coordin_num, Pdata[ll].grain_size, Pdata[ll].bond_size, Pdata[ll].type);
+		Pfile << fixed << setprecision(6) << profile_date << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
+		Pfile << setprecision(6) << layer_date << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
+		Pfile << setprecision(1) << Pdata[ll].theta_w << "," << Pdata[ll].theta_i << "," << setprecision(3) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
+		Pfile << setprecision(2) << Pdata[ll].coordin_num << "," << Pdata[ll].grain_size << "," << setprecision(3) << Pdata[ll].bond_size << "," << Pdata[ll].type << "\n";
 	}
 
 	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
@@ -173,14 +168,12 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 		double gsz_SH = NDS[nE].hoar / hoar_density_surf;
 		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
 
-		fprintf(PFile,"%.5f,%s,%d,%.2f,", profile_date, Pdata[nL-1].stationname.c_str(),
-		        Pdata[nL-1].loc_for_snow, Pdata[nL-1].height + M_TO_CM(gsz_SH));
-		fprintf(PFile,"%.5f,%.0f,%.1f,%.0f,%.4e,%.0f,%.0f,%.2f,%.2f,%.1f,%.1f,%.2f,%d\n",
-		        layer_date, hoar_density_surf, Tss, Pdata[nL-1].gradT, 0.,
-		        0., hoar_density_surf/Constants::density_ice, 0., 0., 2., M_TO_MM(gsz_SH), 0.6667*M_TO_MM(gsz_SH), 660);
+		Pfile << fixed << setprecision(6) << profile_date << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
+		Pfile << setprecision(6) << layer_date << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
+		Pfile << hoar_density_surf/Constants::density_ice << ",0.00,0.00,2.0," << setprecision(2) << M_TO_MM(gsz_SH) << "," << setprecision(3) << 0.6667*M_TO_MM(gsz_SH) << ",660\n";
 	}
 
-	fclose(PFile);
+	Pfile.close();
 }
 
 bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
@@ -282,7 +275,7 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
 	stmt->setDate(4, enddate);         // set 5th variable's value (enddate)
 
-	unsigned int rows_deleted = stmt->executeUpdate();
+	const unsigned int rows_deleted = stmt->executeUpdate();
 	conn->terminateStatement(stmt);
 
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
@@ -403,7 +396,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	for (int i = 0; i<num; i++){
 		if (Hdata[i].date == mio::Date()) break; //catch the case that not all Hdata has been set properly
 
-		vector<int> hzdate = vector<int>(5);
+		vector<int> hzdate(5);
 		mio::Date dateH(Hdata[i].date);
 		dateH.setTimeZone(time_zone);
 		dateH.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
