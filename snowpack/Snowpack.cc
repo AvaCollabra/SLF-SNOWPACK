@@ -409,8 +409,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			}
 			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0) / eta;
 			dL = L0 * sn_dt * EMS[e].EvDot;
-			if ((L0 + dL) < minimum_l_element)
-				dL = MIN(0., minimum_l_element - L0);
+			// Limit dL when the element length drops below minimum_l_element. This element will be merged in WaterTransport::mergingElements later on.
+			if ((L0 + dL) < (1.-Constants::eps)*minimum_l_element)
+				dL = MIN(0., (1.-Constants::eps)*minimum_l_element - L0);	// Make sure the element length gets smaller than minimum_l_element.
 		} else { //SH
 			if (NDS[e+1].hoar > 0.006) { // TODO Large initial size, i.e., deposited hoar mass/HOAR_DENSITY_BURIED ??
 				if ((Mdata.date.getJulian() - EMS[e].depositionDate.getJulian()) < 21.)
