@@ -96,9 +96,7 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 		if (haz_date != sno_date)
 			throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
 	} else {
-		prn_msg(__FILE__, __LINE__, "wrn", Date(),
-				"Hazard file %s does not exist. Initialize Zdata to zero.", hazfilename.c_str());
-
+		//prn_msg(__FILE__, __LINE__, "wrn", Date(), "Hazard file %s does not exist. Initialize Zdata to zero.", hazfilename.c_str());
 		Zdata.reset();
 	}
 }
