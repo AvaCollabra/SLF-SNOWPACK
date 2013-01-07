@@ -85,6 +85,8 @@ class AsciiIO : public SnowpackIOInterface {
                                     const double dhs_corr, const double mass_corr,
                                     const size_t nCalcSteps, FILE *fout);
 
+		void readTags(std::vector<TaggingData>& TAGdata, const std::string& filename, const CurrentMeteo&  Mdata);
+
 	private:
 		std::set<std::string> setAppendableFiles;
 		std::string hn_density, hn_density_model, variant, experiment;

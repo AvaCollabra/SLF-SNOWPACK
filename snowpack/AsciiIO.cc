@@ -1889,3 +1889,53 @@ bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vecto
 	return true;
 }
 
+/**
+ * @brief Reads labels and dates from file for tagging
+ * @author Thomas Egger
+ * @param TAGdata
+ * @param filename Filename to read from
+ * @param Mdata To pass zv_ts[] values for initialization
+ */
+void AsciiIO::readTags(std::vector<TaggingData>& TAGdata, const std::string& filename, const CurrentMeteo&  Mdata)
+{
+	int tag_low = 1, tag_top = 99;
+	int repos_low = 1, repos_top = 99;
+	
+	Config tagging_config(filename);
+	tagging_config.getValue("NUMBER_TAGS", numberTags);
+	tagging_config.getValue("TAG_LOW", tag_low);
+	tagging_config.getValue("TAG_TOP", tag_top);
+	tagging_config.getValue("REPOS_LOW", repos_low);
+	tagging_config.getValue("REPOS_TOP", repos_top);
+	
+	totNumberSensors += numberTags;
+
+	tag_low = MAX(1, MIN(tag_low, numberTags));
+	tag_top = MIN(tag_top, numberTags);
+	repos_low = MAX(1, repos_low);
+	repos_top = MIN(repos_top, numberTags);
+	
+	TAGdata = vector<TaggingData>(numberTags + 1);
+
+	for (size_t tag=1; tag<=numberTags; tag++) {
+		stringstream ss;
+		ss << setw(2) << setfill('0') << tag;
+
+		tagging_config.getValue("LABEL_" + ss.str(), TAGdata[tag-1].label);
+		
+		string date_string = "";
+		tagging_config.getValue("DATE_" + ss.str(), date_string);
+		IOUtils::convertString(TAGdata[tag-1].date, date_string, time_zone);
+
+		if ( (tag >= repos_low) && (tag <= repos_top) ) {
+			int depth = fixedPositions.size() + tag - 1;
+			if (Mdata.zv_ts.size() > depth) {
+				TAGdata[tag-1].previous_depth = Mdata.zv_ts[depth];
+			} else { //HACK: can I do this? does this make sense?
+				TAGdata[tag-1].previous_depth = IOUtils::nodata;
+			}
+		} else {
+			TAGdata[tag-1].previous_depth = IOUtils::nodata;
+		}
+	}
+}

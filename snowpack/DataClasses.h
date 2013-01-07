@@ -724,4 +724,23 @@ struct ProcessInd {
 	short t_top2;
 };
 
+/// @brief Class for recording reference properties of tagged elements
+class TaggingData {
+	public:
+		std::string label;             ///< Label for output file header
+		mio::Date date;                ///< date at which to start tagging
+		//char label[MAX_STRING_LENGTH]; ///< Label for output file header
+		//double JulianDate;             ///< Julian date at which to start tagging
+
+		// Repositioning
+		int elem;                      ///< Index of tagged element
+		double previous_depth;         ///< Last position of corresponding fixed rate sensor perpendicular to slope (m)
+		// Viscosity
+		double etaNS;                  ///< New snow viscosity according to M. Lehning
+		double etaMSU;                 ///< Snow viscosity (Montana model)
+		// Metamorphism
+		double ML2L;                   ///< layer to layer flux
+		double lp;                     ///< lattice constant
+};
+
 #endif
