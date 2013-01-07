@@ -1190,6 +1190,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Cdata.rs=0.0;
 		Cdata.rstransp=0.0;
 	}
+	
+	// Set time step to -1, so we can determine the first time ReSolver1d is called.
+	ReSolver_dt=-1.;
 }
 
 /**

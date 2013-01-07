@@ -28,6 +28,7 @@
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Laws_sn.h>
+#include <snowpack/ReSolver1d.h>
 
 #include <meteoio/MeteoIO.h>
 
@@ -45,7 +46,11 @@ class WaterTransport {
 		void compTransportMass(const CurrentMeteo& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 	private:
-
+		//The following 3 functions are used in WaterTransport model "NIED"
+		double BisFunc(double X, double P[]);
+		double Bisection(double minval, double maxval, double P[]);
+		void KHCalcNaga(double RG, double Dens, double ThR, double WatCnt, double SatuK, double *Rh, double *Rk);
+	  
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		void mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
@@ -54,7 +59,16 @@ class WaterTransport {
 
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
+		ReSolver1d RichardsEquationSolver1d;
+		
 		std::string variant;
+		
+		//To prevent string comparisons, we define an enumerated list:
+		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
+		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
+
+		std::string watertransportmodel_snow;
+		std::string watertransportmodel_soil;
 		double thresh_rain;
 		double sn_dt;
 		double hoar_thresh_rh;

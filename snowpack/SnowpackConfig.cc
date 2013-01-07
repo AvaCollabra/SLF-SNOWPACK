@@ -75,8 +75,10 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["VARIANT"] = "DEFAULT";
 	advancedConfig["VISCOSITY_MODEL"] = "DEFAULT";
 	advancedConfig["WATER_LAYER"] = "false";
+	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
+	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
-
+	
 	//[Input] section
 	inputConfig["METEOPATH"] = "./DATA/input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
@@ -148,7 +150,10 @@ void SnowpackConfig::setDefaults()
 	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, Config::nothrow);
 	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, Config::nothrow);
 	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, Config::nothrow);
+	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, Config::nothrow);
+	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, Config::nothrow);
 
+	
 	if ((variant == "") || (variant == "DEFAULT")) {
 
 		// Use default settings and ...
@@ -158,7 +163,9 @@ void SnowpackConfig::setDefaults()
 		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
-
+		if (watertransportmodel_snow == "") addKey("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", "NIED");
+		if (watertransportmodel_soil == "") addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
+		
 	} else if (variant == "ANTARCTICA") {
 
 		if (hn_density == "") addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");

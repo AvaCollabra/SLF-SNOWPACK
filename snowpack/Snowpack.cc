@@ -213,6 +213,9 @@ Snowpack::Snowpack(const mio::Config& i_cfg)
 	//Minimum surface hoar size to be buried (mm). Increased by 50% for Dirichlet bc.
 	cfg.getValue("HOAR_MIN_SIZE_BURIED", "SnowpackAdvanced", hoar_min_size_buried);
 
+	//Watertransport models
+	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
+	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 }
 
 /**
@@ -619,8 +622,9 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 
 	// Now branch between phase change cases (semi-explicit treatment) and
 	// dry snowpack dynamics/ice-free soil dynamics (implicit treatment)
-	if ((Xdata.Edata[nE-1].theta[WATER] > PhaseChange::theta_r + Constants::eps		// Water and ice ...
-	   && Xdata.Edata[nE-1].theta[ICE] > Constants::eps)					// ... coexisting
+	const double theta_r=((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+	if ((Xdata.Edata[nE-1].theta[WATER] > theta_r + Constants::eps		// Water and ice ...
+	   && Xdata.Edata[nE-1].theta[ICE] > Constants::eps)			// ... coexisting
 	     && (T_iter != T_snow)) {
 		// Explicit
 		Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
@@ -1121,8 +1125,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	bool add_element = false, snow_fall = false, snowed_in = false;
 	size_t e, n;                    // Element and node counters
 	double delta_cH = 0.;           // Actual enforced snow depth
-	double hn, hoar;        // New snow data
-	double L0, dL, Theta0;  // Local values
+	double hn=0., hoar;		// New snow data
+	double L0, dL, Theta0;		// Local values
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
 	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS

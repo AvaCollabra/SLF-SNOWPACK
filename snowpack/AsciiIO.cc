@@ -490,8 +490,8 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 		fout << setw(4) << YYYY << " " << setw(2) << MM << " " << setw(2) << DD << " " << setw(2) << HH << " " << setw(2) << Min << " ";
 
 		fout << setfill(' ') << showpoint << showpos;
-		fout << setw(11) << setprecision(6) << EMS[e].L << " " << Xdata.Ndata[e+1].T << " " << EMS[e].theta[ICE] << " " << EMS[e].theta[WATER] << " " << EMS[e].theta[AIR];
-		fout << setw(11) << setprecision(6) << EMS[e].theta[SOIL] << " " << setw(8) << setprecision(1) << EMS[e].soil[SOIL_RHO] << " " << EMS[e].soil[SOIL_K] << " " << setw(11) << setprecision(1) << EMS[e].soil[SOIL_C] << " " << setw(10) << setprecision(6) << EMS[e].rg << " " << setw(9) << setprecision(6) << EMS[e].rb << " " << EMS[e].dd << " " << EMS[e].sp << " " << setw(6) << EMS[e].mk << " " << setw(12) << setprecision(6) << Xdata.Ndata[e+1].hoar << "    1";
+		fout << setw(11) << setprecision(6) << EMS[e].L << " " << Xdata.Ndata[e+1].T << " " << setw(19) << setprecision(14) << EMS[e].theta[ICE] << " " << EMS[e].theta[WATER] << " " << EMS[e].theta[AIR];
+		fout << setw(19) << setprecision(14) << EMS[e].theta[SOIL] << " " << setw(8) << setprecision(1) << EMS[e].soil[SOIL_RHO] << " " << EMS[e].soil[SOIL_K] << " " << setw(11) << setprecision(1) << EMS[e].soil[SOIL_C] << " " << setw(10) << setprecision(6) << EMS[e].rg << " " << setw(9) << setprecision(6) << EMS[e].rb << " " << EMS[e].dd << " " << EMS[e].sp << " " << setw(6) << EMS[e].mk << " " << setw(12) << setprecision(6) << Xdata.Ndata[e+1].hoar << "    1";
 		fout << " " << setw(14) << setprecision(6) << EMS[e].CDot << " " << EMS[e].metamo;
 
 		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {

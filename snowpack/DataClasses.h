@@ -470,6 +470,8 @@ class SnowStation {
 		static const size_t number_top_elements;
 		static size_t number_of_solutes;  ///< The model treats that number of solutes
 
+		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
+
 	private:
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)

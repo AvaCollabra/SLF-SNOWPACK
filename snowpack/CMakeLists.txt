@@ -28,6 +28,7 @@ SET(snowpacklib_sources
 	Utils.cc
 	Stability.cc
 	WaterTransport.cc
+	ReSolver1d.cc
 	Canopy.cc
 	Hazard.cc
 	Metamorphism.cc

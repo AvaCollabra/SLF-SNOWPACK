@@ -40,9 +40,16 @@ class PhaseChange {
 		void finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in);	//Call after last call to compPhaseChange in a time step
 		void compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step
 
-		static const double theta_r; ///< Residual Water Content,  for now we say  0.0
+		static const double RE_theta_r; ///< Residual Water Content for snow, when using water transport model "RICHARDSEQUATION"
+		static const double theta_r;    ///< Residual Water Content for snow and soil, when using water transport model "BUCKET" or "NIED"
 
 	private:
+		//To prevent string comparisons, we define an enumerated list:
+		enum watertransportmodels{BUCKET, NIED, RICHARDSEQUATION};
+		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
+		
+		std::string watertransportmodel_snow;
+		std::string watertransportmodel_soil;
 		void compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt,
 		                        double& ql_Rest, const mio::Date& date_in);
 		void compSubSurfaceFrze(ElementData& Edata, const unsigned int nSolutes, const double& dt,

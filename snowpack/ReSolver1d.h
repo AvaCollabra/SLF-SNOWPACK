@@ -1,0 +1,90 @@
+/*
+ *  SNOWPACK stand-alone
+ *
+ *  Copyright WSL Institute for Snow and Avalanche Research SLF, DAVOS, SWITZERLAND
+*/
+/*  This file is part of Snowpack.
+    Snowpack is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Snowpack is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
+*/
+/**
+ * @file ReSolver1d.h
+ * @version 10.02
+ */
+
+#ifndef __RESOLVER1D_H__
+#define __RESOLVER1D_H__
+
+// #include <snowpack/Constants.h>
+#include <snowpack/DataClasses.h>
+// #include <snowpack/Laws_sn.h>
+
+#include <meteoio/MeteoIO.h>
+
+/**
+ * @class ReSolver1d
+ * @version 10.02
+ * @author Nander Wever
+ * @bug Prone to bugs at any changes! Be aware!
+ * @brief This module contains the solver for the 1d Richards Equation for the 1d snowpack model
+ */
+class ReSolver1d {
+
+	public:
+		ReSolver1d(const mio::Config& cfg);	// Class constructor
+		void SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
+
+		double surfacefluxrate;		// Surfacefluxrate for solving RE. It is either surface of snow, in case of snowpack and solving RE for snow, or surface of soil, when no snowpack and/or solving RE only for soil.
+		double soilsurfacesourceflux;	// Soilsurfacesourceflux for solving RE. This is used when we use RE for snow AND there is a snowpack AND the lowest snow element is removed.
+
+		
+	private:
+		std::string variant;
+		
+		//To prevent string comparisons, we define an enumerated list:
+		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
+		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
+
+		std::string watertransportmodel_snow;
+		std::string watertransportmodel_soil;
+		double sn_dt;
+		bool useSoilLayers, water_layer;
+		
+		
+		//Soil types
+		enum SoilTypes{SNOW, ORGANIC, LOAM, SILTLOAM, SANDYLOAM, FINESAND, GRAVELSAND, CLAY};
+		//K_Average types
+		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, INTEGRAL, WEIGHTEDAVERAGE, MINIMUMVALUE}; // Note: INTEGRAL is not really correctly implemented, because k_ip12(i-1) != k_im12(i). So the hydraulic conductivity at the boundary nodes is different for the upper cell than the lower cell. I think this will introduce mass-imbalance.
+		//Van genuchten model types
+		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI, YAMAGUCHI_ADAPTED, DAANEN};
+		//Solvers
+		enum SOLVERS{DGESVD, DGTSV, TDMA};
+		//Boundary conditions
+		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY};
+
+				
+		// Van Genuchten functions
+		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
+		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
+		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
+		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
+		void SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he);
+		
+		// Solvers
+		int TDMASolver (int n, double *a, double *b, double *c, double *v, double *x);
+#ifdef CLAPACK
+		int pinv(int m, int n, int lda, double *a);
+#endif
+	
+};
+#endif //End of WaterTransport.h
