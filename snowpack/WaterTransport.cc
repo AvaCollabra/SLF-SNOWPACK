@@ -845,9 +845,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	}
 	
 	// Determine the number of iterations for the water transport
-	int niterations;
+	size_t niterations;
 	if(iwatertransportmodel_snow==NIED || iwatertransportmodel_soil==NIED) {
-		niterations=sn_dt/60.;	// Hirashima (2010) proposes maximum time step of 60s.
+		niterations=int(double(sn_dt/double(60.)));	// Hirashima (2010) proposes maximum time step of 60s.
 	} else {
 		niterations=1;
 	}
@@ -1214,7 +1214,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	}
 	
 	if(iwatertransportmodel_snow == RICHARDSEQUATION && !useSoilLayers) {
-		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers is not tested! Especially runoff at base of snowpack should be reviewed.");
+		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers is not implemented and tested! It is not clear which lower boundary condition makes sense and the snow-soil interfaceflux is only defined with soil.");
 		throw;
 	}
 

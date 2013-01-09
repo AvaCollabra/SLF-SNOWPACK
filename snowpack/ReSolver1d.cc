@@ -2058,7 +2058,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 			actualtopfluxcheck+=((delta_theta_dt[uppernode]*dt)*dz[uppernode])+(((h_n[uppernode]-h_n[uppernode-1])/dz_down[uppernode])+cos_sl)*k_np1_m_im12[uppernode]*dt;
 			actualtopflux+=TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
-			actualbottomflux+=-1.*((delta_theta_dt[lowernode]*dt)*dz[lowernode]-((((h_n[lowernode+1]-h_n[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+			actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
 			
 			massbalanceerror_sum+=massbalanceerror;
 			if(WriteOutNumerics_Level1==true) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
@@ -2220,7 +2220,10 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 
 	if(WriteOutNumerics_Level0==true) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f CHK2: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0., actualtopfluxcheck/snowpack_dt, totalwateroverflow, massbalanceerror_sum);
 
-	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m2 (almost equal to mm/m2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
+	//Update soil runoff (mass[MS_SOIL_RUNOFF] = kg/m^2). Note: it does not matter whether SNOWPACK is run with soil or not. MS_SOIL_RUNOFF is always runoff from lower boundary.
+	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += actualbottomflux*Constants::density_water;
+	
+	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m^2 (almost equal to mm/m^2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux1*Constants::density_water;
 	
