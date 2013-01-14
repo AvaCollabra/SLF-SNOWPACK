@@ -98,6 +98,9 @@ const double SnLaws::montana_c_fudge = 0.13;
 
 /// @brief Factor controlling increase in water vapor transport and thus energy transport in wet snow
 const double SnLaws::montana_vapor_fudge = 2.5;
+
+/// @brief Defines the formerly used MONTANA fudge factor for old wet snow settling (up to snowpack_r8.0).
+const double SnLaws::montana_v_water_fudge = 20.;
 //@}
 
 /**
@@ -1510,5 +1513,125 @@ double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 	}
 	if(ea==IOUtils::nodata || ea<min_emissivity) ea = min_emissivity;
 	return ea;
+}
+
+/**
+ * @brief MONTANA snow viscosity (non-dendritic snow, i.e. if dd=0.); From bb_lw_VS_Montana() (Laws.c r7.7) \n
+ * Bob Brown's MICRO-STRUCTURE lawClearly the BEST law we have right now
+ * but also the most UNSTABLE:  note that the viscosity is not only a function of the grain
+ * dimensions, but also a function of the overburden stress.
+ * A series of equations that collectively give the viscosity Vis = S/eDot.
+ * The microstructure parameters rb and rg are obtained through Edata pointer and are in mm.
+ * The secondary microstructure parameters  L and rc are also calculated in mm. This means that
+ * the dimensions of rg, rb, L, &  rc are in mm since they show up in the following equations
+ * as ratios to give dimensionless numbers.
+ * NOTE: The theory is NOT valid for NEW SNOW or WET SNOW. However, we try it for wet snow, since it
+ * makes sense for wet snow and is related to the wet snow bond growth (Pressure Sintering)
+ * If the snow is new, however, then use LEHNING's law, or any other law ... No, do not use any other law, they don't work.
+ * @author Guess!
+ * @version Antediluvienne
+ * @param *Edata
+ * @return Snow viscosity Montana style
+ */
+double SnLaws::SnowViscosityMSU(const ElementData& Edata)
+{
+	double N3;                // 3-D coordination number (from Brown's density function)
+	double theta_i, theta_w;  // ice volume fraction and water volume fraction
+	double rb;                // bond radius (m)
+	double rc;                // concave radius of neck
+	double rg;                // grain radius (m)
+	double L;                 // neck length
+	double dd, sp;            // dendricity & sphericity
+	double epdot = 1.76e-7;   // unit strain rate (at stress = 1 MPa) (1/sec)
+	double Q = 67000.;        // J/mol
+	double R = 8.31;          // gas constant J/mol/K
+	double T;                 // temperature (K)
+	double Sig1 = 0.5e6;      // unit stress  Pa  from Sinha's formulation
+	double Tref = 263.0;      // reference temperature in K
+	double S;                 // applied stress (Pa)
+	double rho;               // density kg m-3
+	double Linvis0;           // Linear initial viscosity
+	double SneckYield = 0.4e6;// Yield stress for ice in neck (Pa)
+	double Sneck;             // Neck stress
+	double Vis, Vis0, Vis1;   // viscosity
+	double fudge;             // Bob's fudge factor that controls settling and bond growth
+	double th_i_f = 0.35, f_2 = 0.02; // Empirical constants to control dry snow viscosity fudge
+	double res_wat_cont;
+
+	// Dereference the CONTINUUM Parameters
+	rho = Edata.Rho;   T = Edata.Te;
+	S   = Edata.C;                         // Snow stress
+	theta_i = Edata.theta[ICE];            // Ice volume fraction
+	theta_w = Edata.theta[WATER];          // Water volume fraction
+
+	// Dereference the MICRO-STRUCTURE Parameters
+	N3 = Edata.N3;
+	rg = Edata.rg;
+	rb = Edata.rb;
+	rc = Edata.concaveNeckRadius();
+	L = 2.*rg*rc/(rg + rc);
+	dd = Edata.dd;
+	sp = Edata.sp;
+
+	// Perry introduced this CUTOFF to avoid numerical instabilities with higher densities; might
+	// not need it any more, since the problem turned out to be in the stress calculation.
+	if ( theta_i + theta_w > 0.99 ) {
+		return(Constants::big);
+	}
+	if ( theta_w > 0.3 ) {
+		return(1e9*SnLaws::smallest_viscosity);  // ONLY WITH JAM IN WaterTransport.c
+	}
+
+	// Introduced this little check when the ice matrix is completely melted away -- in this case
+	// set the viscosity to a high number to give the water in the element time to percolate away
+
+	if ( theta_i <= 0.000001 ) {
+		return(Constants::big);
+	}
+
+	// If the element length is SMALLER than the grain size then things aint settling ....
+	if ( Edata.L <= 2.*rg/1000. ) {
+		return(Constants::big);
+	}
+
+	res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
+	if ( dd <= 0. && Edata.theta[WATER] < res_wat_cont ) {
+		// First check to see if neck stress (Sneck) is >= SneckYield = 0.4 MPa.
+		Sneck = (4.0/(N3*theta_i))*(rg/rb)*(rg/rb)*(-S);   // Work with absolute value of stress
+		// Determine the fudge factor that takes into account bond-ice imperfections and liquid water
+		fudge = 0.1/theta_i + 0.8*(exp((th_i_f - theta_i)/f_2)/(1. + exp((th_i_f - theta_i)/f_2)));
+		fudge = 4.0*fudge + SnLaws::montana_v_water_fudge*theta_w;
+		// Determine Linvis0 (Temperature dependent)
+		Linvis0 = pow(Sig1,3.)/(pow(SneckYield,2.)*pow(fudge,3.) * epdot)*exp((-Q/R)*(1./Tref - 1./T));
+
+		// Now branch to either non- linear or linear viscosity based on value of Sneck.
+		if ( Sneck > SneckYield ) {  // YIELDING, non-linear
+			// The units here are in m, s and Pa. Vis has dimensions of Pa s.
+			// Note that the viscosity is a function of the square of the applied stress.
+			// Density does not show up explicitly, but is buried implicitly in the equation
+			// because N3, L, rg and rb all change with time as the material deforms.
+			Vis = (L/(2.*rg + L))*epdot*exp( (Q/R)*(1./Tref - 1./T) );
+			Vis0 = (rg*rg)/(rb*rb);
+			Vis1 =  ( (4.*fudge) / (N3*theta_i*Sig1) ) * Vis0;
+			Vis = Vis*S*S*Vis1*Vis1*Vis1;
+
+			Vis = 1/Vis;
+		} else { // NOT YIELDING, linear
+		// This viscocity is not a function of stress and is therefore a linear viscosity.  Its value
+		// depends on rb, rg, N3, theta_i and T. The expression  ((N3*theta_i)/(4.))*((rb*rb)/(rg*rg))
+		// determines the neck stress relative to the snow stress. The expression   ((rg + L)/(3.*L))
+		// relates the neck strains to the global volumetric strains. The term MONTANA_V_FUDGE is a
+		// correction factor to account for stress concentrations in the neck.
+			Vis = Linvis0*((2.*rg + L)/(L));
+			Vis = Vis*((N3*theta_i)/4.)*((rb*rb)/(rg*rg));
+		}
+	} else { // NEW SNOW VICOSITY -- Use LEHNING rule for now.
+		Vis = SnLaws::NewSnowViscosityLehning(Edata);
+	}
+	// Set lower limit in case S is very small or mass in layer approaches zero
+	if (Vis <= SnLaws::smallest_viscosity) {
+		Vis = SnLaws::smallest_viscosity;
+	}
+	return(Vis);
 }
 

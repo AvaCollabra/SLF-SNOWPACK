@@ -82,6 +82,7 @@ class CurrentMeteo {
 		size_t getNumberFixedRates() const;
 		size_t getMaxNumberMeasTemperatures() const;
 		void getFixedPositions(std::vector<double>& positions) const;
+		size_t getNumberFixedPositions() const;
 		void copySnowTemperatures(const mio::MeteoData& md, const int current_slope);
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
 
@@ -241,12 +242,12 @@ class ElementData {
 		double extinction();
 		void opticalEquivalentRadius();
 		void snowResidualWaterContent();
-		static double snowResidualWaterContent(const double theta_i);
+		static double snowResidualWaterContent(const double& theta_i);
 		double soilFieldCapacity();
 
 		double snowElasticity();
 		double neckStressEnhancement();
-		double concaveNeckRadius();
+		double concaveNeckRadius() const;
 		double neckLength();
 		double neck2VolumetricStrain();
 
@@ -427,6 +428,8 @@ class SnowStation {
 		size_t getNumberOfNodes() const;
 		bool isGlacier(const bool& hydro=false) const;
 		bool hasSoilLayers() const;
+
+		size_t find_tag(const size_t& tag) const;
 
 		mio::StationData meta;      ///< Station meta data
 
@@ -725,8 +728,13 @@ struct ProcessInd {
 };
 
 /// @brief Class for recording reference properties of tagged elements
-class TaggingData {
+class Tag {
 	public:
+		void compute_properties(const ElementData& Edata);
+		void reposition_tag(const bool& useSoilLayers, const double& z, SnowStation& Xdata);
+
+		static const bool metamo_expl; ///< set while using the explicit metamorphism model
+
 		std::string label;             ///< Label for output file header
 		mio::Date date;                ///< date at which to start tagging
 		//char label[MAX_STRING_LENGTH]; ///< Label for output file header
@@ -741,6 +749,21 @@ class TaggingData {
 		// Metamorphism
 		double ML2L;                   ///< layer to layer flux
 		double lp;                     ///< lattice constant
+};
+
+class TaggingData {
+	public:
+		TaggingData(const double& i_calculation_step_length);
+		void resize(size_t i_size);
+		void update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata);
+
+		bool useSoilLayers, surface_write;
+		double calculation_step_length;
+		size_t tag_low, tag_top, repos_low, repos_top;
+		std::vector<Tag> tags;
+		
+	private:
+		size_t number_tags;
 };
 
 #endif

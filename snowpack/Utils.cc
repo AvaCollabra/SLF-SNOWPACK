@@ -234,6 +234,28 @@ int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
 }
 
 /**
+ * @brief Returns sensor position perpendicular to slope (m) \n
+ * Negative vertical height indicates depth from either snow or ground surface \n
+ * NOTE: Depth from snow surface cannot be used with SNP_SOIL set
+ * @author Charles Fierz
+ * @version 10.02
+ * @param z_vert Vertical position of the sensor (m)
+ * @param hs_ref Height of snow to refer to (m)
+ * @param Ground Ground level (m)
+ * @param SlopeAngle (rad)
+ */
+double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, const double& hs_ref, const double& Ground, const double& SlopeAngle)
+{
+	if (z_vert == IOUtils::nodata) {
+		return IOUtils::nodata;
+	} else if (!useSoilLayers && (z_vert < 0.)) {
+		return (MAX(Ground, hs_ref + z_vert * cos(SlopeAngle)));
+	} else {
+		return (Ground + z_vert * cos(SlopeAngle));
+	}
+}
+
+/**
  * @brief Fill the snowpack version number, date of computation, user, ...
  * @author Mathias Bavay
  * @version 8.mm

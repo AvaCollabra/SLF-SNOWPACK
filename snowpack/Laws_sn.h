@@ -100,6 +100,7 @@ class SnLaws {
 		                                 const std::string& variant);
 
 		static double NewSnowViscosityLehning(const ElementData& Edata);
+		static double SnowViscosityMSU(const ElementData& Edata);
 
 		static double snowViscosityTemperatureTerm(const double& Te);
 		static double compLoadingRateStress(const std::string& variant, ElementData& Edata,
@@ -146,7 +147,7 @@ class SnLaws {
 		static std::vector<double> swa_k, swa_pc, swa_fb;
 		static const bool soil_evaporation;
 		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil;
-		static const double montana_c_fudge, montana_vapor_fudge;
+		static const double montana_c_fudge, montana_vapor_fudge, montana_v_water_fudge;
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
 };
 

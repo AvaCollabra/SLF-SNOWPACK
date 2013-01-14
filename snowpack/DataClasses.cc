@@ -447,7 +447,7 @@ void ElementData::snowResidualWaterContent()
 	res_wat_cont = snowResidualWaterContent(theta[ICE]);
 }
 
-double ElementData::snowResidualWaterContent(const double theta_i)
+double ElementData::snowResidualWaterContent(const double& theta_i)
 {
 	double resWatCont;
 
@@ -534,7 +534,7 @@ double ElementData::neckStressEnhancement()
  * @version 9.mm
  * @return Concave neck radius (mm)
  */
-double ElementData::concaveNeckRadius()
+double ElementData::concaveNeckRadius() const
 {
 	if ( (rg - rb) < Constants::eps ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb);
@@ -905,6 +905,22 @@ size_t SnowStation::getNumberOfElements() const
 size_t SnowStation::getNumberOfNodes() const
 {
 	return nNodes;
+}
+
+/**
+ * @brief Find element with corresponding tag or return IOUtils::npos if not found
+ * @param tag Tag to look for
+ * @return Index of tagged element, IOUtils::npos if not found
+ */
+size_t SnowStation::find_tag(const size_t& tag) const
+{
+	for (size_t e=0; e<nElems; e++) {
+		if (Edata[e].mk/100 == tag) {
+			return e;
+		}
+	}
+
+	return IOUtils::npos;
 }
 
 bool SnowStation::hasSoilLayers() const
@@ -1507,6 +1523,11 @@ void CurrentMeteo::getFixedPositions(std::vector<double>& positions) const
 	positions = fixedPositions;
 }
 
+size_t CurrentMeteo::getNumberFixedPositions() const
+{
+	return fixedPositions.size();
+}
+
 size_t CurrentMeteo::getNumberFixedRates() const
 {
 	return numberFixedRates;
@@ -1644,4 +1665,117 @@ LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
                      rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
 {
+}
+
+/// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
+const bool Tag::metamo_expl = false;
+
+/**
+ * @brief Compute tag properties
+ * @author Charles Fierz
+ * @version 10.05
+ * @param Edata
+ */
+void Tag::compute_properties(const ElementData& Edata)
+{
+	etaNS  = SnLaws::NewSnowViscosityLehning(Edata);
+	etaMSU = SnLaws::SnowViscosityMSU(Edata);
+
+	// set ML2L and lp to NODATA if not using the explicit metamorphism model
+	if (!Tag::metamo_expl) {
+		ML2L = lp = IOUtils::nodata;
+	}
+}
+
+/**
+ * @brief Reposition tag
+ * @author Charles Fierz
+ * @version 10.03
+ * @bug Don't  be surprised ...
+ * @param z Position of corresponding sensor perpendicular to slope (m)
+ * @param Xdata
+ */
+void Tag::reposition_tag(const bool& useSoilLayers, const double& z, SnowStation& Xdata)
+{
+	double z_pos = getPerpSensorPosition(useSoilLayers, z, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
+
+	//INITIAL_HS = Xdata.cH; //HACK: why set this value here?
+	Xdata.Edata[elem].mk %= 100;
+
+	const int n_up = findUpperNode(z, Xdata.Ndata, Xdata.getNumberOfNodes()); // Upper node number
+
+	elem = n_up - 1;
+	compute_properties(Xdata.Edata.at(n_up-1));
+}
+
+TaggingData::TaggingData(const double& i_calculation_step_length) : useSoilLayers(false), surface_write(false), 
+													   tag_low(1), tag_top(99), repos_low(1), repos_top(99) 
+{
+	calculation_step_length = i_calculation_step_length;
+}
+
+void TaggingData::resize(size_t i_size)
+{
+	if ((i_size != IOUtils::npos) && (i_size > 0)) {
+		tags.resize(i_size);
+		number_tags = i_size - 1;
+	} else {
+		//throw exception
+	}
+}
+
+/**
+ * @brief Update tags
+ * -# Event driven tagging according to TAG_EVENT
+ * -# Tagging of surface element on given date
+ * @author Charles Fierz
+ * @version 10.04
+ * @param TAGdata
+ * @param Mdata
+ * @param Xdata
+ */
+void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
+{
+	int e;
+
+	const bool TAG_EVENT = false;
+
+	if ( (tags.back().date == Date()) && TAG_EVENT ) {
+		tags.back().date = Mdata.date;
+	}
+
+	for(size_t tag = 1; tag <= number_tags; tag++) { //HACK: check indices
+		if ((e = Xdata.find_tag(tag)) >= 0){
+			tags[tag-1].elem = e;
+			tags[tag-1].compute_properties(Xdata.Edata[e]);
+
+		} else if ((Xdata.Edata.back().mk < 100) && (Mdata.date >= tags[tag-1].date) 
+				 && (Mdata.date < (tags[tag-1].date + M_TO_D(calculation_step_length))) ) {
+			Xdata.Edata.back().mk += tag*100;
+			tags[tag-1].compute_properties(Xdata.Edata.back());
+		} else {
+			//???
+			continue;
+		}
+
+		if ((tag >= repos_low) && (tag <= repos_top)) {
+			int depth = Mdata.getNumberFixedPositions() + tag - 1;
+
+			if ((Mdata.zv_ts[depth] > tags[tag-1].previous_depth)) {
+				tags[tag-1].reposition_tag(useSoilLayers, Mdata.zv_ts[depth], Xdata);
+			}
+			tags[tag-1].previous_depth = Mdata.zv_ts[depth];
+		}
+	}
+
+	for (size_t tag = repos_low; tag <= repos_top; tag++) { // TODO make sure that no marker has been overwritten
+		if ( Xdata.Edata[tags[tag-1].elem].mk < 100 ) {
+			Xdata.Edata[tags[tag-1].elem].mk += tag*100;
+		}
+	}
+
+	if ( surface_write ) { // There ARE NUMBER_TAGS tags structures!!!
+		tags[number_tags].compute_properties(Xdata.Edata.back());
+	}
+
 }

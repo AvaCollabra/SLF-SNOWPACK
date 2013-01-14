@@ -87,5 +87,6 @@ void cumulate(double& accu, const double value);
 
 void checkOldOutputFiles(const mio::Date& i_date, const std::string& stationID);
 
+double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, const double& hs_ref, const double& Ground, const double& SlopeAngle);
 
 #endif //End of Utils.h
