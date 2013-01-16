@@ -42,7 +42,7 @@ class ReSolver1d {
 
 	public:
 		ReSolver1d(const mio::Config& cfg);	// Class constructor
-		void SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		double surfacefluxrate;		// Surfacefluxrate for solving RE. It is either surface of snow, in case of snowpack and solving RE for snow, or surface of soil, when no snowpack and/or solving RE only for soil.
 		double soilsurfacesourceflux;	// Soilsurfacesourceflux for solving RE. This is used when we use RE for snow AND there is a snowpack AND the lowest snow element is removed.
@@ -76,8 +76,8 @@ class ReSolver1d {
 		// Van Genuchten functions
 		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
 		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
-		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
-		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
+		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e);
+		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i);
 		void SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he);
 		
 		// Solvers

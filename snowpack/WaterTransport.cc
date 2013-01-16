@@ -1099,7 +1099,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 	//Now solve richards equation:
 	if(iwatertransportmodel_snow == RICHARDSEQUATION || iwatertransportmodel_soil == RICHARDSEQUATION) {
-		RichardsEquationSolver1d.SolveRichardsEquation(Mdata, Xdata, Sdata);
+		RichardsEquationSolver1d.SolveRichardsEquation(Xdata, Sdata);
 	}
 
 	// The TOP element is very important because it is always losing mass--the strain state

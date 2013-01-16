@@ -30,8 +30,9 @@ using namespace mio;
 
 
 ReSolver1d::ReSolver1d(const mio::Config& cfg)
-                : variant(), sn_dt(IOUtils::nodata),
-                  useSoilLayers(false), water_layer(false)
+                : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
+		  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+	          sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -136,7 +137,7 @@ double ReSolver1d::fromTHETAtoHforICE(double theta, double theta_r, double theta
  * @param h_e Air entry pressure
  * @param h_d Dry limit of pressure head
  */
-double ReSolver1d::fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d)
+double ReSolver1d::fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e)
 {
 	double returnvalue=0.;
 	//Van Genuchten (1980), Equation 21:
@@ -164,10 +165,10 @@ double ReSolver1d::fromHtoTHETA(double h, double theta_r, double theta_s, double
  * @param h_d Dry limit of pressure head
  * @param theta_i Ice content (m^3/m^3)
  */
-double ReSolver1d::fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i)
+double ReSolver1d::fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i)
 {
 	//To have same return value as fromHtoTHETA, call this function with theta_i==0.
-	return fromHtoTHETA(h, theta_r, theta_s, alpha, m, n, Sc, h_e, h_d)-(theta_i*(Constants::density_ice/Constants::density_water));
+	return fromHtoTHETA(h, theta_r, theta_s, alpha, m, n, Sc, h_e)-(theta_i*(Constants::density_ice/Constants::density_water));
 }
 
 
@@ -460,7 +461,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
  * @param Xdata
  * @param Sdata
  */
-void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata)
+void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
 // Main references used to write this code, as a reference to understand the working of this code:
 // - Celia, M, A., Bouloutas, E.T., Zabra, R.L. (1990) A general mass-conservative numerical solution for the unsaturated flow equation Water Resources Research (26:7), 1483-1496.
@@ -647,7 +648,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 	int stats_niters=0;				//Number of iterations over the SNOWPACK time step, excluding the ones before a rewind.
 	int stats_nsteps=0;				//Number of time steps in the RE solver over the SNOWPACK time step.
 	int bs_stats_totiter=0;				//Soil freezing/thawing solver: total number of iterations over all layers over the SNOWPACK time step,
-	int bs_stats_maxiter=0;				//Soil freezing/thawing solver: maximum number of iterations in a certain layers over the SNOWPACK time step.
+	size_t bs_stats_maxiter=0;			//Soil freezing/thawing solver: maximum number of iterations in a certain layers over the SNOWPACK time step.
 	//Counters, etc.
 	int i, j, k;					//Counters for layers
 	const size_t nmemstates=1;			//Number of memory states, used to store changes of delta_h between iterations. Currently not used, but possible use is to check if delta_h is blowing up.
@@ -998,8 +999,8 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 	
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
         for (i = uppernode; i >= lowernode; i--) {	//Cycle over all Richards solver domain layers
-  		//Now calculate the theta that should be considered "dry soil". We submit 2*h_d to the function, to make sure it won't be tempted to send theta_d back, which is not defined yet...
-		theta_d[i]=fromHtoTHETAforICE(h_d, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 2.*h_d, 0.);
+  		//Now calculate the theta that should be considered "dry soil".
+		theta_d[i]=fromHtoTHETAforICE(h_d, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 0.);
 		
 		//Now check if this case is not too extreme
 		if(theta_d[i]<theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
@@ -1085,7 +1086,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 		if(activelayer[i]==true) {
 			// Now calculate initial pressure head:
 			h_n[i]=fromTHETAtoHforICE(EMS[SnowpackElement[i]].theta[WATER], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
-			theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
+			theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
 		} else {
 			theta_n[i]=EMS[SnowpackElement[i]].theta[WATER];
 			h_n[i]=h_d;
@@ -1127,7 +1128,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 		h_n[uppernode]=htop;
 
 		wateroverflow[uppernode]+=(theta_n[uppernode]);	//First we remove all water from the lowest element
-		theta_n[uppernode]=fromHtoTHETAforICE(h_n[uppernode], theta_r[uppernode], theta_s[uppernode], alpha[uppernode], m[uppernode], n[uppernode], Sc[uppernode], h_e[uppernode], h_d, theta_i_n[uppernode]);
+		theta_n[uppernode]=fromHtoTHETAforICE(h_n[uppernode], theta_r[uppernode], theta_s[uppernode], alpha[uppernode], m[uppernode], n[uppernode], Sc[uppernode], h_e[uppernode], theta_i_n[uppernode]);
 		wateroverflow[uppernode]-=(theta_n[uppernode]);	//Then we add the saturated boundary water content from the lowest element.
 	}
 
@@ -1138,7 +1139,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 		h_n[lowernode]=hbottom;
 
 		wateroverflow[lowernode]+=(theta_n[lowernode]);	//First we remove all water from the lowest element
-		theta_n[lowernode]=fromHtoTHETAforICE(h_n[lowernode], theta_r[lowernode], theta_s[lowernode], alpha[lowernode], m[lowernode], n[lowernode], Sc[lowernode], h_e[lowernode], h_d, theta_i_n[lowernode]);
+		theta_n[lowernode]=fromHtoTHETAforICE(h_n[lowernode], theta_r[lowernode], theta_s[lowernode], alpha[lowernode], m[lowernode], n[lowernode], Sc[lowernode], h_e[lowernode], theta_i_n[lowernode]);
 		wateroverflow[lowernode]-=(theta_n[lowernode]);	//Then we add the saturated boundary water content from the lowest element.
 	}
 
@@ -1176,7 +1177,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 
 
 		//Set Solver
-		SOLVERS ActiveSolver=PreferredSolver;	//We set the active solver to the preferred solver
+		ActiveSolver=PreferredSolver;		//We set the active solver to the preferred solver
 
 
 		//Initialize values for the first iteration (iteration m)
@@ -1207,7 +1208,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 			for (i = uppernode; i >= lowernode; i--) {
 				if(activelayer[i]==true) {
 					//Calculate theta from h
-					theta_np1_m[i]=fromHtoTHETAforICE(h_np1_m[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+					theta_np1_m[i]=fromHtoTHETAforICE(h_np1_m[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
 
 					//Determine Se
 					if(h_np1_m[i]<h_e[i]) {			//See Ippisch (2006)
@@ -1706,7 +1707,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 						h_np1_mp1[i]=h_np1_m[i]+delta_h[memstate%nmemstates][i];
 						
 						//Calculate theta
-						theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+						theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
 
 						//Repartition ice/water based on new head
 						if(i<nsoillayers_richardssolver && AllowSoilFreezing==true) {
@@ -1714,11 +1715,11 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
   							const double hw0=h_np1_mp1[i];
 							T_melt[i]=T_0+((Constants::g*T_0)/delF)*hw0;
 							// Bisection-Secant method, see wikipedia: http://en.wikipedia.org/wiki/False_position_method
-							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*(EMS[SnowpackElement[i]].Te-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d)
+							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*(EMS[SnowpackElement[i]].Te-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])
 							//      +
 							//   (theta_i_np1_mp1[i]*(Constants::density_ice/Constants::density_water))
 							//      -
-							//   fromHtoTHETA(hw0, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d);
+							//   fromHtoTHETA(hw0, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]);
 							//      = 0.
 							// Solving this equation for theta_i_np1_mp1[i] (which influences theta_np1_mp1 and Te)
 							
@@ -1776,16 +1777,16 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 									BS_iter++;
 									delta_Te_ak=(ak) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
 									delta_Te_bk=(bk) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ak=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ak)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d)) - theta_np1_mp1[i];
-									delta_w_bk=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_bk)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d)) - theta_np1_mp1[i];
+									delta_w_ak=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ak)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
+									delta_w_bk=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_bk)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 									//Now calculate bisect
 									ck1=(ak+bk)/2.;
 									delta_Te_ck1=(ck1) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ck1=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ck1)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d)) - theta_np1_mp1[i];
+									delta_w_ck1=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ck1)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 									//Now check secant
 									ck=((delta_w_bk + bk*(Constants::density_ice/Constants::density_water))*ak  -  (delta_w_ak + ak*(Constants::density_ice/Constants::density_water))*bk)  /  ((delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) - (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)));
 									delta_Te_ck=(ck) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ck=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ck)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d)) - theta_np1_mp1[i];
+									delta_w_ck=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te+delta_Te_ck)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 									//Now check if bisect or sectant is a better approximation
 									if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water))>fabs(delta_w_ck1+ck1*(Constants::density_ice/Constants::density_water))) {
 										ck=ck1;
@@ -1820,7 +1821,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 								EMS[SnowpackElement[i]].Te+=delta_Te;
 							} else {
 								theta_i_np1_mp1[i]=0.;
-								theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, 0.);
+								theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 0.);
 							}
 							//Update BS-solver statistics
 							bs_stats_totiter+=BS_iter;
@@ -2001,7 +2002,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 					mass1=0.;					//Because we fiddle around with theta, we should update mass1 (mass at beginning of time step)
 					for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 						h_n[i]=MAX(h_d, MIN(0., h_n[i]));
-						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
 						if(theta_n[i]<theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
 							SafeMode_MBE+=(theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
 							theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
@@ -2037,7 +2038,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 			//Prepare for next time step:
 			for (i = uppernode; i >= lowernode; i--) {				//Cycle through all Richards solver domain layers.
 				if(activelayer[i]==true) {
-					theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_m[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_mp1[i]);
+					theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_m[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_mp1[i]);
 				} else {
 					theta_np1_mp1[i]=theta_n[i];
 				}
@@ -2132,8 +2133,8 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 	for (i = uppernode; i >= lowernode; i--) {						//We loop over all Richards solver domain layers
 		if(EMS[SnowpackElement[i]].theta[SOIL]>Constants::eps2) {			//We are in soil
 			if(activelayer[i]==true) {						//If we have more water than theta_r, we copy the end state from the solver
-				//EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_d[i]);
-				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+				//EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_d[i]);
+				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
 				EMS[i].theta[ICE]+=dz[i]*theta_i_n[i];
 				/////EMS[i].theta[ICE]+=dz[i]*theta_i_n[i]*(Constants::density_water/Constants::density_ice);
 			} else {								//We are in "dry" conditions, and we just copy the initial state.
@@ -2141,8 +2142,8 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 			}
 		} else {									//We are in snow
 			if(activelayer[i]==true) {
-				//EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_d[i]);
-				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+				//EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_d[i]);
+				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
 			} else {
 				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*theta_n[i];
 			}
@@ -2227,7 +2228,6 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux1*Constants::density_water;
 	
-	double ql;
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && toplayer>nsoillayers_snowpack) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
@@ -2236,11 +2236,6 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
 		double ql=(refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
 		
-		size_t nN = Xdata.getNumberOfNodes();
-		size_t nE = nN-1;
-		vector<NodeData>& NDS = Xdata.Ndata;
-		vector<ElementData>& EMS = Xdata.Edata;
-		double Tss = NDS[nE].T;
 		double hoar=0.;
 		double dL=0.;
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
@@ -2289,11 +2284,11 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 	}
 	
 	//If we could not handle all incoming water at top boundary AND we have snow AND we solve RE for snow:
-	if(refusedtopflux>0. && toplayer>Xdata.SoilNode) {
+	if(refusedtopflux>0. && toplayer>int(Xdata.SoilNode)) {
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
 	}
 	//If we could not handle all snowpack runoff when not modelling snow with RE:
-	if(refusedtopflux>0. && toplayer==Xdata.SoilNode && Xdata.getNumberOfElements()>Xdata.SoilNode ){
+	if(refusedtopflux>0. && toplayer==int(Xdata.SoilNode) && Xdata.getNumberOfElements()>Xdata.SoilNode ){
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
 	}
 	//We want wateroverflow in the snow to be a source/sink term. Therefore, these lines are inactive.
@@ -2312,7 +2307,7 @@ void ReSolver1d::SolveRichardsEquation(const CurrentMeteo& Mdata, SnowStation& X
 			if(AllowSoilFreezing == true) {
 				//This, I'm not sure how to do. I now set the melting and freezing temperature equal to the element temperature, so that PhaseChange.cc would not do anything anymore with these layers.
 				//So for soil layers with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
-				//const double hw0=fromTHETAtoH(EMS[i].theta[WATER]+EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_m[i]);
+				//const double hw0=fromTHETAtoH(EMS[i].theta[WATER]+EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d);
 				EMS[i].melting_tk=EMS[i].Te ;//T_0+((Constants::g*T_0)/delF)*hw0;
 				EMS[i].freezing_tk=EMS[i].melting_tk;
 			} else {
