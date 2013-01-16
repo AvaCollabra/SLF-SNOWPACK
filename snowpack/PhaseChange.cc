@@ -36,7 +36,7 @@ using namespace std;
 const double PhaseChange::theta_r = 0.0;
 const double PhaseChange::RE_theta_r = 1E-4;
 
-//Saturated Water Content, for now we say  1.0
+//Saturated Water Content, for now we say 1.0
 const double PhaseChange::theta_s = 1.0;
 
 /************************************************************
@@ -44,7 +44,9 @@ const double PhaseChange::theta_s = 1.0;
  ************************************************************/
 
 PhaseChange::PhaseChange(const mio::Config& cfg)
-             : sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)
+             : iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
+	       watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+	       sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -228,8 +230,8 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen
 	*/
-	const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && Edata.theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && Edata.theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
-	if ((Edata.Te >= T_freeze) || (Edata.theta[WATER] <= theta_r)) {
+	const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && Edata.theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && Edata.theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+	if ((Edata.Te >= T_freeze) || (Edata.theta[WATER] <= cmp_theta_r)) {
 		return;
 	} else {
 		double dT = T_freeze - Edata.Te;
@@ -239,17 +241,17 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		double dth_i = A * dT;
 		double dth_w = - (Constants::density_ice / Constants::density_water) * dth_i;
 		// Make sure that there is enough water to refreeze
-		if ((Edata.theta[WATER] + dth_w) < theta_r) {
-			dth_w = - fabs( Edata.theta[WATER] - theta_r );
+		if ((Edata.theta[WATER] + dth_w) < cmp_theta_r) {
+			dth_w = - fabs( Edata.theta[WATER] - cmp_theta_r );
 			dth_i = - (Constants::density_water / Constants::density_ice) * dth_w;
 			dT = dth_i / A;
 		}
 		// See if the element is pure ICE
-		if ((Edata.theta[ICE] + theta_r + dth_i + Edata.theta[SOIL]) >= 1.0) {
-			dth_w = - fabs( Edata.theta[WATER] - theta_r );
+		if ((Edata.theta[ICE] + cmp_theta_r + dth_i + Edata.theta[SOIL]) >= 1.0) {
+			dth_w = - fabs( Edata.theta[WATER] - cmp_theta_r );
 			dth_i = - (Constants::density_water / Constants::density_ice) * dth_w;
-			Edata.theta[ICE] = 1.0 - Edata.theta[SOIL];
-			Edata.theta[WATER] = theta_r;
+			Edata.theta[WATER] = cmp_theta_r;
+			Edata.theta[ICE] = 1.0 - Edata.theta[SOIL] - Edata.theta[WATER];
 			Edata.theta[AIR] = 0.0;
 		} else {
 			// Concentration of solutes
@@ -423,11 +425,11 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
-			const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+			const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
 			// Set flags
 			if (EMS[e].Te > EMS[e].melting_tk && EMS[e].theta[ICE] > Constants::eps2)
 				Xdata.SubSurfaceMelt = true;
-			if (EMS[e].Te < EMS[e].freezing_tk && EMS[e].theta[WATER] > theta_r + Constants::eps2)
+			if (EMS[e].Te < EMS[e].freezing_tk && EMS[e].theta[WATER] > cmp_theta_r + Constants::eps2)
 				Xdata.SubSurfaceFrze = true;
 		}
 
