@@ -28,7 +28,9 @@ using namespace std;
 using namespace mio;
 
 WaterTransport::WaterTransport(const mio::Config& cfg)
-                : RichardsEquationSolver1d(cfg), variant(), thresh_rain(IOUtils::nodata), sn_dt(IOUtils::nodata),
+                : RichardsEquationSolver1d(cfg), variant(), 
+		  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+		  thresh_rain(IOUtils::nodata), sn_dt(IOUtils::nodata),
                   hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata),
                   hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
                   minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)

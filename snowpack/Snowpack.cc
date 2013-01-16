@@ -51,7 +51,7 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
  ************************************************************/
 
 Snowpack::Snowpack(const mio::Config& i_cfg)
-          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
+          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             sw_mode(0), meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dt_air_snow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
