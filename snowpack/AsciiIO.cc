@@ -1927,7 +1927,7 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 
 		if ( (tag >= TAGdata.repos_low) && (tag <= TAGdata.repos_top) ) {
 			int depth = fixedPositions.size() + tag - 1;
-			if (Mdata.zv_ts.size() > depth) {
+			if ((int)Mdata.zv_ts.size() > depth) {
 				TAGdata.tags[tag-1].previous_depth = Mdata.zv_ts[depth];
 			} else { //HACK: can I do this? does this make sense?
 				TAGdata.tags[tag-1].previous_depth = IOUtils::nodata;

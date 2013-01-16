@@ -730,6 +730,8 @@ struct ProcessInd {
 /// @brief Class for recording reference properties of tagged elements
 class Tag {
 	public:
+		Tag();
+
 		void compute_properties(const ElementData& Edata);
 		void reposition_tag(const bool& useSoilLayers, const double& z, SnowStation& Xdata);
 

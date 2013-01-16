@@ -1670,6 +1670,10 @@ LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
 const bool Tag::metamo_expl = false;
 
+Tag::Tag() : label(""), date(), elem(-1), previous_depth(IOUtils::nodata), 
+		   etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
+{}
+
 /**
  * @brief Compute tag properties
  * @author Charles Fierz
@@ -1695,9 +1699,9 @@ void Tag::compute_properties(const ElementData& Edata)
  * @param z Position of corresponding sensor perpendicular to slope (m)
  * @param Xdata
  */
-void Tag::reposition_tag(const bool& useSoilLayers, const double& z, SnowStation& Xdata)
+void Tag::reposition_tag(const bool&, const double& z, SnowStation& Xdata)
 {
-	double z_pos = getPerpSensorPosition(useSoilLayers, z, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
+	//HACK: double z_pos = getPerpSensorPosition(useSoilLayers, z, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
 
 	//INITIAL_HS = Xdata.cH; //HACK: why set this value here?
 	Xdata.Edata[elem].mk %= 100;
@@ -1709,10 +1713,9 @@ void Tag::reposition_tag(const bool& useSoilLayers, const double& z, SnowStation
 }
 
 TaggingData::TaggingData(const double& i_calculation_step_length) : useSoilLayers(false), surface_write(false), 
-													   tag_low(1), tag_top(99), repos_low(1), repos_top(99) 
-{
-	calculation_step_length = i_calculation_step_length;
-}
+													   calculation_step_length(i_calculation_step_length),
+													   tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0) 
+{}
 
 void TaggingData::resize(size_t i_size)
 {
