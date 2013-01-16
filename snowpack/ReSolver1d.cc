@@ -271,7 +271,7 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 	}
 
 	//Now, workspace size is returned in work.
-	lwork = work[0];
+	lwork = int(work[0]);
 
 	//Then allocate work again for the determined workspace size
 	work = (double *)calloc(lwork * sizeof(*work), sizeof(double));
@@ -283,7 +283,7 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 			printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Falling back on DGESVD.\n", info);
 			dgesvd_(&jobu, &jobvt, (integer*) &m, (integer*) &n, a, (integer*) &lda, s, u, (integer*) &m, vt, (integer*) &n, work, (integer*) &lwork, (integer*) &info);
 			//Now, workspace size is returned in work.
-			lwork = work[0];
+			lwork = int(work[0]);
 
 			//Then allocate work again for the determined workspace size
 			free(work);								//First free the previously allocated work.
