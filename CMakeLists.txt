@@ -35,6 +35,8 @@ ENDIF(SNOWPACK_STANDALONE)
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
 
+SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
+
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
 OPTION( BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON )
@@ -62,6 +64,9 @@ ELSE(MSVC)
 	IF(PLUGIN_IMISIO)
 		SET(EXTRA "${EXTRA} -DIMISDBIO")
 	ENDIF(PLUGIN_IMISIO)
+	IF(ENABLE_LAPACK)
+		SET(EXTRA "${EXTRA} -DCLAPACK")
+	ENDIF(ENABLE_LAPACK)
 	SET(WARNINGS "-Wall")
 	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded

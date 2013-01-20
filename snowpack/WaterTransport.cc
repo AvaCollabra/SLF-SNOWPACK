@@ -28,7 +28,7 @@ using namespace std;
 using namespace mio;
 
 WaterTransport::WaterTransport(const mio::Config& cfg)
-                : RichardsEquationSolver1d(cfg), variant(), 
+                : RichardsEquationSolver1d(cfg), variant(),
 		  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
 		  thresh_rain(IOUtils::nodata), sn_dt(IOUtils::nodata),
                   hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata),
@@ -80,7 +80,7 @@ WaterTransport::WaterTransport(const mio::Config& cfg)
 
 	//Minimum element length (m)
 	cfg.getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", minimum_l_element);
-	
+
 	//Water transport model snow
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	iwatertransportmodel_snow=UNDEFINED;
@@ -91,7 +91,7 @@ WaterTransport::WaterTransport(const mio::Config& cfg)
 	} else if (watertransportmodel_snow=="RICHARDSEQUATION") {
 		iwatertransportmodel_snow=RICHARDSEQUATION;
 	}
-	
+
 	//Water transport model soil
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 	iwatertransportmodel_soil=UNDEFINED;
@@ -184,30 +184,27 @@ double WaterTransport::Bisection(double minval, double maxval, double P[])
  */
 void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCnt, double SatuK, double *Rh, double *Rk)
 {
-	double PA, PN, PM;
-	double LTh, ThS, SEffSub;
-	double hL, hM, hN, hSlo;
-	double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
+	const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
 
 	// This is a very ill-confined piece of code!
 	if ( fabs(ThR) < Constants::eps2 ) {
 		ThR += Constants::eps;
 	}
-	PA = 6.97 * (RG) + 1.985;
-	PN = 7.593 * (1.0 / (RG * RG)) + 5.03;
-	PM = 1.0 - (1.0 / PN);
-	ThS = (1000. - (Dens / 0.917)) / 10.0 * 0.9 / 100.0;
-	LTh = (WatCnt-ThR) / (ThS - ThR);
+	const double PA = 6.97 * (RG) + 1.985;
+	const double PN = 7.593 * (1.0 / (RG * RG)) + 5.03;
+	const double PM = 1.0 - (1.0 / PN);
+	const double ThS = (1000. - (Dens / 0.917)) / 10.0 * 0.9 / 100.0;
+	const double LTh = (WatCnt-ThR) / (ThS - ThR);
 
 	if ( 1 ) { // NIED code
 		if (WatCnt <= ThR * 1.01) {
-			SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
-			hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+			double SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
+			const double hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
 			SEffSub = ((ThR * 1.011) - ThR) / (ThS - ThR);
-			hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+			const double hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
 			SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
-			hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			hSlo = (hL - hN) / (ThR * 0.002);
+			const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+			const double hSlo = (hL - hN) / (ThR * 0.002);
 			*Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
 		} else {
 			if (LTh > 1.) {
@@ -227,13 +224,13 @@ void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCn
 		}
 	} else { //Fz 2010-05-02
 		if (WatCnt <= ThR * 1.01) {
-			SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
-			hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+			double SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
+			const double hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
 			SEffSub = MAX( ((ThR * 1.011) - ThR) / (ThS - ThR) , avoid_neg);
-			hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+			const double hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
 			SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
-			hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			hSlo = (hL - hN) / (ThR * 0.002);
+			const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+			const double hSlo = (hL - hN) / (ThR * 0.002);
 			*Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
 		}
 		if (LTh < 0.) {
@@ -618,13 +615,13 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							}
 						}
 					}
-					
+
 					// route mass and solute load to runoff
 					if (iwatertransportmodel_snow != RICHARDSEQUATION || (rnE-1)==Xdata.SoilNode) {	//When snow water transport is solved by Richards Equation, we calculate this there.
 															//Note: the second clause is necessary, because when we remove the last snow element, there is no way for the Richards Solver to figure out that this surfacefluxrate is still coming from the snowpack.
 						Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
 					}
-					
+
 					if (Xdata.SoilNode == 0) { // In case of no soil
 						Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += EMS[eUpper].M;
 						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
@@ -746,7 +743,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	
+
 	//NIED (H. Hirashima) //Fz HACK Below follow some NIED specific declarations; please describe
 	std::vector<double> Such(nE, 0.);		//Suction pressure head
 	std::vector<double> HydK(nE, 0.);		//Hydraulic Conductivity
@@ -845,7 +842,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw;
 		}
 	}
-	
+
 	// Determine the number of iterations for the water transport
 	size_t niterations;
 	if(iwatertransportmodel_snow==NIED || iwatertransportmodel_soil==NIED) {
@@ -854,7 +851,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		niterations=1;
 	}
 	WatCalc=niterations;
-	
+
 	double excess_water=0.;
 	double Wres;          // Residual water content depending on snow or soil element
 
@@ -954,9 +951,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						P[1] = EMS[eUpper].rg * 2.0; P[2] = EMS[eUpper].theta[ICE] * 0.917*1000; P[3] = ThR; P[4] = EMS[eUpper].theta[WATER]; P[5] = Such[eUpper];
 						P[6] = EMS[eLower].rg * 2.0; P[7] = EMS[eLower].theta[ICE] * 0.917*1000; P[8] = ThR; P[9] = EMS[eLower].theta[WATER]; P[10] = Such[eLower];
 						P[11] = L_upper; P[12] = L_lower;
-						
+
  						qlim = Bisection (qlim1, qlim0, P);
-						
+
 						q0 = HydK[eUpper] * ((Such[eLower] - Such[eUpper]) / ((EMS[eUpper].L+EMS[eLower].L)/2.)+1.);
 						if (qlim < Constants::eps) {
 							FluxQ = qlim;
@@ -1199,7 +1196,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Unknown watertransport model for snow.");
 		throw;
 	}
-	
+
 	if(iwatertransportmodel_soil != BUCKET && iwatertransportmodel_soil != NIED && iwatertransportmodel_soil != RICHARDSEQUATION) {
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Unknown watertransport model for soil.");
 		throw;
@@ -1209,12 +1206,12 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "You can only use RICHARDSEQUATION for snow when you also use RICHARDSEQUATION for soil!");
 		throw;
 	}
-	
+
 	if(iwatertransportmodel_soil == NIED) {
 	  	prn_msg( __FILE__, __LINE__, "err", Mdata.date, "You can only use NIED for snow, not for soil (soil parameters of the Van Genuchten model not implemented)!");
 		throw;
 	}
-	
+
 	if(iwatertransportmodel_snow == RICHARDSEQUATION && !useSoilLayers) {
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers is not implemented and tested! It is not clear which lower boundary condition makes sense and the snow-soil interfaceflux is only defined with soil.");
 		throw;

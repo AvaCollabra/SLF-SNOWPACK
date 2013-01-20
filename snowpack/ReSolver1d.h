@@ -25,10 +25,7 @@
 #ifndef __RESOLVER1D_H__
 #define __RESOLVER1D_H__
 
-// #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
-// #include <snowpack/Laws_sn.h>
-
 #include <meteoio/MeteoIO.h>
 
 /**
@@ -47,10 +44,10 @@ class ReSolver1d {
 		double surfacefluxrate;		// Surfacefluxrate for solving RE. It is either surface of snow, in case of snowpack and solving RE for snow, or surface of soil, when no snowpack and/or solving RE only for soil.
 		double soilsurfacesourceflux;	// Soilsurfacesourceflux for solving RE. This is used when we use RE for snow AND there is a snowpack AND the lowest snow element is removed.
 
-		
+
 	private:
 		std::string variant;
-		
+
 		//To prevent string comparisons, we define an enumerated list:
 		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
 		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
@@ -59,8 +56,8 @@ class ReSolver1d {
 		std::string watertransportmodel_soil;
 		double sn_dt;
 		bool useSoilLayers, water_layer;
-		
-		
+
+
 		//Soil types
 		enum SoilTypes{SNOW, ORGANIC, LOAM, SILTLOAM, SANDYLOAM, FINESAND, GRAVELSAND, CLAY};
 		//K_Average types
@@ -72,19 +69,16 @@ class ReSolver1d {
 		//Boundary conditions
 		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY};
 
-				
+
 		// Van Genuchten functions
 		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
 		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
 		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e);
 		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i);
 		void SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he);
-		
+
 		// Solvers
 		int TDMASolver (int n, double *a, double *b, double *c, double *v, double *x);
-#ifdef CLAPACK
 		int pinv(int m, int n, int lda, double *a);
-#endif
-	
 };
 #endif //End of WaterTransport.h

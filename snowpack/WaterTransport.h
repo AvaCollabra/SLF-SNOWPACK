@@ -50,7 +50,7 @@ class WaterTransport {
 		double BisFunc(double X, double P[]);
 		double Bisection(double minval, double maxval, double P[]);
 		void KHCalcNaga(double RG, double Dens, double ThR, double WatCnt, double SatuK, double *Rh, double *Rk);
-	  
+
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		void mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
@@ -60,9 +60,9 @@ class WaterTransport {
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		ReSolver1d RichardsEquationSolver1d;
-		
+
 		std::string variant;
-		
+
 		//To prevent string comparisons, we define an enumerated list:
 		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
 		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
@@ -78,3 +78,4 @@ class WaterTransport {
 		bool useSoilLayers, water_layer, jam;
 };
 #endif //End of WaterTransport.h
+

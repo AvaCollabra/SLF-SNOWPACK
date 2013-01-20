@@ -319,12 +319,12 @@ typedef struct
 // #define SPARSE_BINARY_TREE
 
 #ifdef  DEBUG_SOLVER
-#define SD_FILLED     ( 1<<30 )
-#define SD_DEBUG_BIT  ( SD_FILLED )
-#define SD_COL(pCOL)  ( (pCOL)->Col & (~SD_DEBUG_BIT) )
+	#define SD_FILLED     ( 1<<30 )
+	#define SD_DEBUG_BIT  ( SD_FILLED )
+	#define SD_COL(pCOL)  ( (pCOL)->Col & (~SD_DEBUG_BIT) )
 #else
-#define SD_FILLED     0
-#define SD_COL(pCOL)  ( (pCOL)->Col )
+	#define SD_FILLED     0
+	#define SD_COL(pCOL)  ( (pCOL)->Col )
 #endif
 
 typedef struct SD_COL_DATA
