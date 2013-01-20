@@ -37,6 +37,13 @@ SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 
+#build for use with POPC in parallel objects
+SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
+
+IF(POPC)
+	ADD_DEFINITIONS(-D_POPC_)
+	SET(POPC_EXT "popc")
+ENDIF(POPC)
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
 OPTION( BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON )
