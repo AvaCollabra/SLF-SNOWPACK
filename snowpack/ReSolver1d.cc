@@ -612,7 +612,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	std::vector<double> dz_(nE, 0.);		//Layer distance for the finite differences, see Rathfelder (2004).
 	int uppernode=-1;				//Upper node of Richards solver domain
 	int lowernode=-1;				//Lower node of Richards solver domain
-	std::vector<int>SnowpackElement(nE,0.);		//Dictionary between snowpack domain and Richards solver domain. SnowpackElement[j]=i means layer j in Richards solver is layer i in snowpack domain.
+	std::vector<int>SnowpackElement(nE,0);		//Dictionary between snowpack domain and Richards solver domain. SnowpackElement[j]=i means layer j in Richards solver is layer i in snowpack domain.
 							//Then, using EMS[SnowpackElement[j]], we can refer to the SNOWPACK domain from the Richards solver domain.
 	int toplayer;					//highest layer (top of snowpack, or top of soil in case of no soil)
 	const int nsoillayers_snowpack=Xdata.SoilNode;	//where does the soil start? Note, when toplayer is set to nsoillayers_snowpack, only soil is treated with Richards equation.
@@ -677,7 +677,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double totalsourcetermflux=0.;			//Stores the total applied source term flux (it's a kind of boundary flux, but then in the middle of the domain).
 
 	//Declare all numerical arrays and matrices:
-	std::vector< std::vector<double> > delta_h(nmemstates, std::vector<double> (nE,0));	//Change in pressure head per iteration
+	std::vector< std::vector<double> > delta_h(nmemstates, std::vector<double> (nE,0.));	//Change in pressure head per iteration
 	std::vector<double> delta_h_dt(nE, 0.);		//Change in pressure head per time step.
 	std::vector<double> delta_theta(nE, 0.);	//Change in volumetric water content per iteration
 	std::vector<double> delta_theta_dt(nE, 0.);	//Change in volumetric water content per time step.
@@ -729,7 +729,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	std::vector<double> wateroverflow(nE, 0.);		//Array for all the water that is >theta_s (m^3/m^3)]. This water is just thrown away in the model and is a leak in the mass balance.
 
         //For soil freezing/thawing
-	std::vector<double> T_melt(nE, 0);			//Contains the freezing point depression due to unsaturated conditions (K)
+	std::vector<double> T_melt(nE, 0.);			//Contains the freezing point depression due to unsaturated conditions (K)
 	const double T_0=Constants::freezing_tk;		//Freezing temperature of water at atmospheric pressure (K)
 	const double delF=Constants::lh_fusion;			//Heat associated with freezing
 

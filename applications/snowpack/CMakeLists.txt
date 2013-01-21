@@ -13,7 +13,11 @@ SET(snowpack-app_sources
 	${getopt_src}
 )
 
-SET(SN_LINKS "snowpack")
+IF(POPC)
+        SET(SN_LINKS "snowpackpopc")
+ELSE(POPC)
+        SET(SN_LINKS "snowpack")
+ENDIF(POPC)
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR})
 
 FIND_PACKAGE(MeteoIO REQUIRED)
