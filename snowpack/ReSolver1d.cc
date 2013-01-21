@@ -19,8 +19,8 @@
 */
 #include <snowpack/ReSolver1d.h>
 #ifdef CLAPACK
-	#include <f2c.h>
-	#include <clapack.h>
+	#include <snowpack/f2c.h>
+	#include <snowpack/clapack.h>
 #endif
 #include <string.h>
 
