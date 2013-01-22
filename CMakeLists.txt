@@ -26,20 +26,16 @@ IF(SNOWPACK_STANDALONE)
 		SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 	ENDIF(HAVE_FEENABLE)
 	ADD_SUBDIRECTORY(applications/snowpack)
-#ELSE(SNOWPACK_STANDALONE)
-#	SET(DEBUG_ARITHM OFF CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################
 #plugins and applications
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
-
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 
 #build for use with POPC in parallel objects
 SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
-
 IF(POPC)
 	ADD_DEFINITIONS(-D_POPC_)
 	SET(POPC_EXT "popc")
