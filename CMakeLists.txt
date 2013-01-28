@@ -37,7 +37,7 @@ SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 #build for use with POPC in parallel objects
 SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
 IF(POPC)
-	FIND_PACKAGE(Popc REQUIRED)
+	#FIND_PACKAGE(Popc REQUIRED)
 	SET(METEOIO_LIBRARY "METEOIO_LIBRARY-NOTFOUND" CACHE FILEPATH "Cleared." FORCE)
 	FIND_PACKAGE(MeteoIO)
 	SET(CMAKE_CXX_COMPILER popcc) #this does not work, the user still has to do it manually
