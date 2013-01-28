@@ -37,7 +37,12 @@ SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 #build for use with POPC in parallel objects
 SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
 IF(POPC)
-	ADD_DEFINITIONS(-D_POPC_)
+	FIND_PACKAGE(Popc REQUIRED)
+	SET(METEOIO_LIBRARY "METEOIO_LIBRARY-NOTFOUND" CACHE FILEPATH "Cleared." FORCE)
+	FIND_PACKAGE(MeteoIO)
+	SET(CMAKE_CXX_COMPILER popcc) #this does not work, the user still has to do it manually
+	#INCLUDE(CMakeForceCompiler)
+	#CMAKE_FORCE_CXX_COMPILER(popcc POPCC)
 	SET(POPC_EXT "popc")
 ENDIF(POPC)
 ###########################################################
@@ -73,7 +78,11 @@ ELSE(MSVC)
 	SET(WARNINGS "-Wall")
 	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
-	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
+	IF(POPC)
+		SET(EXTRA_WARNINGS "-Wextra -Wno-ignored-qualifiers")
+	ELSE(POPC)
+		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
+	ENDIF(POPC)
 	IF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID) #Android does not like ansi...
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 		IF(WIN32) #for gcc on windows
