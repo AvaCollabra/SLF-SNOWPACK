@@ -553,8 +553,6 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 
 	const string stationname = Xdata.meta.getStationName();
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
-
-	size_t e, nz;
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -563,7 +561,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	//Check whether file exists, if so check whether data can be appended
 	//or file needs to be deleted
 	if (IOUtils::fileExists(filename)) {
-		bool append = appendFile(filename, i_date, "pro");
+		const bool append = appendFile(filename, i_date, "pro");
 		if (!append && remove(filename.c_str()) != 0)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
 	}
@@ -582,10 +580,8 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	fprintf(PFile,"\n0500,%s", i_date.toString(Date::DIN).c_str());
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
-	if (useSoilLayers)
-		nz = nN;
-	else
-		nz = nE;
+	const size_t nz = (useSoilLayers)? nN : nE;
+
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
 	fprintf(PFile,"\n0501,%u", nz);
 	if (nz < 1) {
@@ -593,45 +589,45 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		fclose(PFile);
 		return;
 	}
-	for (e = nN-nz; e < nN; e++)
+	for (size_t e = nN-nz; e < nN; e++)
 		fprintf(PFile,",%.2f",M_TO_CM((NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z)/cos_sl));
 
 	//  502: element density (kg m-3)
 	fprintf(PFile,"\n0502,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.1f",EMS[e].Rho);
 	//  503: element temperature (degC)
 	fprintf(PFile,"\n0503,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.2f",K_TO_C(EMS[e].Te));
 	//  506: liquid water content by volume (%)
 	fprintf(PFile,"\n0506,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.1f",100.*EMS[e].theta[WATER]);
 	// *508: dendricity (1)
 	fprintf(PFile,"\n0508,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",EMS[e].dd);
 	// *509: sphericity (1)
 	fprintf(PFile,"\n0509,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",EMS[e].sp);
 	// *510: coordination number (1)
 	fprintf(PFile,"\n0510,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.1f",EMS[e].N3);
 
 	// *511: bond size (mm)
 	fprintf(PFile,"\n0511,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",2.*EMS[e].rb);
 	//  512: grain size (mm)
 	fprintf(PFile,"\n0512,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",2.*EMS[e].rg);
 	//  513: grain type (Swiss code F1F2F3)
 	fprintf(PFile,"\n0513,%u", nE+1-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%03u",EMS[e].type);
 	// surface hoar at surface? (depending on boundary conditions)
 	if (M_TO_MM(NDS[nN-1].hoar/hoar_density_surf) > hoar_min_size_surf)
@@ -640,67 +636,67 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		fprintf(PFile,",0");
 	// *515: ice volume fraction (%)
 	fprintf(PFile,"\n0515,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.0f",100.*EMS[e].theta[ICE]);
 	// *516: air volume fraction (%)
 	fprintf(PFile,"\n0516,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.0f",100.*EMS[e].theta[AIR]);
 	// *517: stress (kPa)
 	fprintf(PFile,"\n0517,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.3e",1.e-3*EMS[e].C);
 	// *518: viscosity (GPa s)
 	fprintf(PFile,"\n0518,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.3e",1.e-9*EMS[e].k[SETTLEMENT]);
 	// *519: soil volume fraction (%)
 	fprintf(PFile,"\n0519,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.0f",100.*EMS[e].theta[SOIL]);
 	// *520: temperature gradient (K m-1)
 	fprintf(PFile,"\n0520,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.3e",EMS[e].gradT);
 	// *521: thermal conductivity (W K-1 m-1)
 	fprintf(PFile,"\n0521,%u", nE);
-	for (e = 0; e < nE; e++)
+	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.3e",EMS[e].k[TEMPERATURE]);
 	// *522: absorbed shortwave radiation (W m-2)
 	fprintf(PFile,"\n0522,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.1f",EMS[e].sw_abs);
 	// *523: viscous deformation rate (1.e-6 s-1)
 	fprintf(PFile,"\n0523,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.1f",1.e6*EMS[e].EvDot);
 	//  530: position (cm) and minimum stability indices
 	fprintf(PFile,"\n0530,%d", 8);
 	fprintf(PFile,",%d,%d,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f", Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d, M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s);
 	//  531: deformation rate stability index Sdef
 	fprintf(PFile,"\n0531,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",EMS[e].S_dr);
 	// *532: natural stability index Sn38
 	fprintf(PFile,"\n0532,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode;  e < nE; e++)
+	for (size_t e = Xdata.SoilNode;  e < nE; e++)
 		fprintf(PFile,",%.2f",NDS[e+1].S_n);
 	//  533: stability index Sk38
 	fprintf(PFile,"\n0533,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",NDS[e+1].S_s);
 	//  534: hand hardness ...
 	fprintf(PFile,"\n0534,%u" ,nE-Xdata.SoilNode);
 	if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
-		for (e = Xdata.SoilNode; e < nE; e++)
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fprintf(PFile,",%.1f",-1.*(19.3*pow(EMS[e].hard, 2.4)));
 	} else { // ... or in index steps (1)
-		for (e = Xdata.SoilNode; e < nE; e++)
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fprintf(PFile,",%.1f", -EMS[e].hard);
 	}
 	// *535: optical equivalent grain size OGS (mm)
 	fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
 
 	if (variant == "CALIBRATION")
@@ -720,17 +716,16 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
  */
 void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 {
-	size_t e, ii, jj;
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const vector<NodeData>& NDS = Xdata.Ndata;
 
 	if (out_load) {
 		// *6nn: e.g. solute concentration
-		for (jj = 2; jj < N_COMPONENTS-1; jj++) {
-			for (ii = 0; ii < Xdata.number_of_solutes; ii++) {
+		for (size_t jj = 2; jj < N_COMPONENTS-1; jj++) {
+			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				fprintf(fout,"\n06%02u,%u" , 10*jj + ii,nE-Xdata.SoilNode);
-				for (e = Xdata.SoilNode; e < nE; e++) {
+				for (size_t e = Xdata.SoilNode; e < nE; e++) {
 					fprintf(fout,",%.1f",EMS[e].conc(ii,jj));
 				}
 			}
@@ -739,25 +734,25 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
 		// 600-profile specials
 		// *601: snow shear strength (kPa)
 		fprintf(fout,"\n0601,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE; e++)
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fprintf(fout,",%.2f",EMS[e].s_strength);
 		// *602: grain size difference (mm)
 		fprintf(fout,"\n0602,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE-1; e++)
+		for (size_t e = Xdata.SoilNode; e < nE-1; e++)
 			fprintf(fout,",%.2f",2.*fabs(EMS[e].rg - EMS[e+1].rg));
 		fprintf(fout,",0.");
 		// *603: hardness difference (1)
 		fprintf(fout,"\n0603,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE-1; e++)
+		for (size_t e = Xdata.SoilNode; e < nE-1; e++)
 			fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
 		fprintf(fout,",0.");
 		//  *604: ssi index
 		fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE; e++)
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fprintf(fout,",%.2f",NDS[e+1].ssi);
 		// *605: inverse texture index ITI (Mg m-4)
 		fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
-		for (e = Xdata.SoilNode; e < nE; e++) {
+		for (size_t e = Xdata.SoilNode; e < nE; e++) {
 			if (EMS[e].dd < 0.005)
 				fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
 			else
@@ -775,33 +770,31 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
  */
 void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 {
-	size_t e;
 	const size_t nE = Xdata.getNumberOfElements();
-
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	// 600-profile specials
 	// *601: snow shear strength (kPa)
 	fprintf(fout,"\n0601,%u",nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(fout,",%.2f",EMS[e].s_strength);
 	// *602: grain size difference (mm)
 	fprintf(fout,"\n0602,%u",nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE-1; e++)
+	for (size_t e = Xdata.SoilNode; e < nE-1; e++)
 		fprintf(fout,",%.2f",2.*fabs(EMS[e].rg - EMS[e+1].rg));
 	fprintf(fout,",0.");
 	// *603: hardness difference (1)
 	fprintf(fout,"\n0603,%u",nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE-1; e++)
+	for (size_t e = Xdata.SoilNode; e < nE-1; e++)
 		fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
 	fprintf(fout,",0.");
 	//  *604: ssi index
 	fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++)
+	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(fout,",%.2f",NDS[e+1].ssi);
 	// *605: inverse texture index ITI (Mg m-4)
 	fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
-	for (e = Xdata.SoilNode; e < nE; e++) {
+	for (size_t e = Xdata.SoilNode; e < nE; e++) {
 		if (EMS[e].dd < 0.005)
 			fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
 		else
@@ -811,38 +804,38 @@ void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 	// 700-profile specials for settling comparison
 	// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
 	fprintf(fout,"\n0701,%u",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++)
+	for (size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].f));
 	// *702: SNOWPACK: reaction to overload (% h-1) //ratio -Sig0 to load EMS[e].C (1)
 	fprintf(fout,"\n0702,%u",nE-Xdata.SoilNode);
-	for(e=Xdata.SoilNode; e<nE; e++)
+	for(size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EDot));
 	// *703: SNOWPACK: settling rate due to load (% h-1)
 	fprintf(fout,"\n0703,%u",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++)
+	for (size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].udot));
 	// *704: SNOWPACK: total settling rate (% h-1)
 	fprintf(fout,"\n0704,%u",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++)
+	for (size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EvDot));
 	// *705: SNOWPACK: bond to grain ratio (1)
 	fprintf(fout,"\n0705,%u",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++)
+	for (size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout,",%.4f", EMS[e].rb / EMS[e].rg);
 	// *706: SNOWPACK: addLoad to load (%)
 	fprintf(fout,"\n0706,%u",nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++)
+	for (size_t e=Xdata.SoilNode; e<nE; e++)
 		fprintf(fout,",%.4f", 100.*EMS[e].S);
 	// SNTHERM.89
 	// *891: SNTHERM: settling rate due to load (% h-1)
 	fprintf(fout,"\n0891,%u" ,nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++) {
+	for (size_t e=Xdata.SoilNode; e<nE; e++) {
 		const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
 		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].C/eta_sntherm));
 	}
 	// *892: SNTHERM: settling rate due to metamorphism (% h-1)
 	fprintf(fout,"\n0892,%u" ,nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++) {
+	for (size_t e=Xdata.SoilNode; e<nE; e++) {
 		double evdot = -2.778e-6*exp(-0.04*(273.15 - EMS[e].Te));
 		if (EMS[e].Rho > 150.)
 			evdot *= exp(-0.046*(EMS[e].Rho-150.));
@@ -852,7 +845,7 @@ void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
 	}
 	// *893: SNTHERM: viscosity (GPa s)
 	fprintf(fout,"\n0893,%u" ,nE-Xdata.SoilNode);
-	for (e=Xdata.SoilNode; e<nE; e++) {
+	for (size_t e=Xdata.SoilNode; e<nE; e++) {
 		const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
 		fprintf(fout,",%.2f", 1.e-9*eta_sntherm);
 	}
@@ -875,28 +868,28 @@ size_t AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double
                                   const size_t& ii, const SnowStation& Xdata)
 {
 	size_t jj=2;
-	double perp_pos, temp;
+	double perp_pos;
 
 	//HACK:
 	/// @note Initial height of snow needed to compute sensor position from ground if FIXED_RATES is set
-	double INITIAL_HS=0;
+	const double INITIAL_HS=0;
 
 	if (ii < fixedPositions.size()) {
 		perp_pos = compPerpPosition(z_vert, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
 	} else {
-		if ((perp_pos = compPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.meta.getSlopeAngle()))
-			    == Constants::undefined) {
+		perp_pos = compPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.meta.getSlopeAngle());
+		if (perp_pos == Constants::undefined) {
 			fprintf(fout, ",");
 		} else {
 			fprintf(fout, ",%.2f", M_TO_CM(perp_pos)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
 		}
 		jj++;
 	}
-	temp = Xdata.getModelledTemperature(perp_pos);
+	const double temp = Xdata.getModelledTemperature(perp_pos);
 	fprintf(fout, ",%.2f", temp);
 	if (ii < numberMeasTemperatures) {
-		temp = checkMeasuredTemperature(T, perp_pos, Xdata.mH);
-		fprintf(fout,",%.2f", temp);
+		const double tmp = checkMeasuredTemperature(T, perp_pos, Xdata.mH);
+		fprintf(fout,",%.2f", tmp);
 	} else {
 		fprintf(fout, ",");
 	}
@@ -979,25 +972,26 @@ int AsciiIO::findTaggedElement(const size_t& tag, const SnowStation& Xdata)
 size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
                                           const CurrentMeteo& Mdata, const SnowStation& Xdata)
 {
-	size_t jj = 2;
 	const size_t ii = numberFixedSensors + (tag-1);
-	int e;
-	double perp_pos, temp;
-	if ((e = findTaggedElement(tag, Xdata)) >= 0) {
+	const int e = findTaggedElement(tag, Xdata);
+	size_t jj = 2;
+	double perp_pos;
+	if (e >= 0) {
+		const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 		perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
 		                + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
-		fprintf(fout,",%.2f,%.2f", M_TO_CM(perp_pos)
-		            / cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())), K_TO_C(Xdata.Edata[e].Te));
+		fprintf(fout,",%.2f,%.2f", M_TO_CM(perp_pos) / cos_sl, K_TO_C(Xdata.Edata[e].Te));
 	} else {
 		fprintf(fout,",,%.2f", Constants::undefined);
 	}
 	if (ii < numberMeasTemperatures) {
-		if ((perp_pos = compPerpPosition(Mdata.zv_ts[ii], Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle()))
+		if ((perp_pos = compPerpPosition(Mdata.zv_ts.at(ii), Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle()))
 			    == Constants::undefined) {
 			fprintf(fout,",,%.2f", Constants::undefined);
 		} else {
-			fprintf(fout,",%.2f", M_TO_CM(perp_pos)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
-			temp = checkMeasuredTemperature(Mdata.ts[ii], perp_pos, Xdata.mH);
+			const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+			fprintf(fout,",%.2f", M_TO_CM(perp_pos)/cos_sl);
+			const double temp = checkMeasuredTemperature(Mdata.ts.at(ii), perp_pos, Xdata.mH);
 			fprintf(fout,",%.2f", temp);
 		}
 		jj += 2;
@@ -1145,7 +1139,7 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	if (fin.fail()) throw FileAccessException(filename, AT);
 	if (fout.fail()) throw FileAccessException(filename_tmp, AT);
 
-	char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
+	const char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
 
 	try {
 		bool append_possible = false; //the temporary file will be copied
@@ -1303,7 +1297,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	if (out_t && (fixedPositions.size() || Mdata.getNumberFixedRates())) {
 		size_t jj = 0;
 		for (size_t ii = 0; ii < MIN(5, fixedPositions.size()); ii++)
-			jj += writeTemperatures(TFile, Mdata.zv_ts[ii], Mdata.ts[ii], ii, Xdata);
+			jj += writeTemperatures(TFile, Mdata.zv_ts.at(ii), Mdata.ts.at(ii), ii, Xdata);
 		for (; jj < 10; jj++)
 			fprintf(TFile,",");
 	} else {
@@ -1343,7 +1337,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		// 50-93 (44 columns)
 		size_t ii, jj = 0;
 		for (ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
-			if ((jj += writeTemperatures(TFile, Mdata.zv_ts[ii], Mdata.ts[ii], ii, Xdata)) > 44) {
+			if ((jj += writeTemperatures(TFile, Mdata.zv_ts.at(ii), Mdata.ts.at(ii), ii, Xdata)) > 44) {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date,
 				        "There is not enough space to accomodate your temperature sensors: j=%u > 44!", jj);
 				throw IOException("Writing Time Series data failed", AT);
@@ -1512,7 +1506,6 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
  */
 void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double /*crust*/, const double /*dhs_corr*/, const double /*mass_corr*/, const size_t nCalcSteps, FILE *fout)
 {
-	double rho_hn;
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
 		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
@@ -1533,6 +1526,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	}
 	// 96-100: new snow densities: measured, in use, newLe, bellaire, and crocus (kg m-3)
 	if (Sdata.cRho_hn > 0.) {
+		double rho_hn;
 		fprintf(fout,",%.1f,%.1f", Sdata.mRho_hn, Sdata.cRho_hn);
 		rho_hn = SnLaws::compNewSnowDensity(hn_density, "LEHNING_NEW", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", rho_hn);
@@ -1541,6 +1535,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 		rho_hn = SnLaws::compNewSnowDensity(hn_density, "PAHAUT", Mdata, Xdata, t_surf, variant);
 		fprintf(fout,",%.1f", rho_hn);
 	} else {
+		double rho_hn;
 		double mRho_hn = Constants::undefined;
 		if (Mdata.rho_hn != mio::IOUtils::nodata)
 			mRho_hn = -Mdata.rho_hn;
@@ -1904,14 +1899,14 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 	tagging_config.getValue("TAG_TOP", TAGdata.tag_top);
 	tagging_config.getValue("REPOS_LOW", TAGdata.repos_low);
 	tagging_config.getValue("REPOS_TOP", TAGdata.repos_top);
-	
+
 	totNumberSensors += numberTags;
 
 	TAGdata.tag_low = MAX(1, MIN(TAGdata.tag_low, numberTags));
 	TAGdata.tag_top = MIN(TAGdata.tag_top, numberTags);
 	TAGdata.repos_low = MAX(1, TAGdata.repos_low);
 	TAGdata.repos_top = MIN(TAGdata.repos_top, numberTags);
-	
+
 	TAGdata.resize(numberTags + 1);
 	TAGdata.useSoilLayers = useSoilLayers;
 
@@ -1920,7 +1915,7 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 		ss << setw(2) << setfill('0') << tag;
 
 		tagging_config.getValue("LABEL_" + ss.str(), TAGdata.tags[tag-1].label);
-		
+
 		string date_string = "";
 		tagging_config.getValue("DATE_" + ss.str(), date_string);
 		IOUtils::convertString(TAGdata.tags[tag-1].date, date_string, time_zone);
