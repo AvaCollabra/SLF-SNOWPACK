@@ -78,7 +78,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
-	
+
 	//[Input] section
 	inputConfig["METEOPATH"] = "./DATA/input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
@@ -153,7 +153,7 @@ void SnowpackConfig::setDefaults()
 	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, Config::nothrow);
 	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, Config::nothrow);
 
-	
+
 	if ((variant == "") || (variant == "DEFAULT")) {
 
 		// Use default settings and ...
@@ -165,7 +165,7 @@ void SnowpackConfig::setDefaults()
 		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
 		if (watertransportmodel_snow == "") addKey("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", "NIED");
 		if (watertransportmodel_soil == "") addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
-		
+
 	} else if (variant == "ANTARCTICA") {
 
 		if (hn_density == "") addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
@@ -223,19 +223,19 @@ void SnowpackConfig::setDefaults()
 	 * That is, loop through advancedConfig (then inputConfig & outputConfig) and check whether user has set
 	 * the parameter in the corresponding section, if not add default value
 	 */
-	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); it++){
+	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); ++it){
 		//[SnowpackAdvanced] section
 		string value; getValue(it->first, "SnowpackAdvanced", value, Config::nothrow);
 		if (value == "") addKey(it->first, "SnowpackAdvanced", it->second);
 	}
 
-	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); it++){
+	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); ++it){
 		//[Input] section
 		string value; getValue(it->first, "Input", value, Config::nothrow);
 		if (value == "") addKey(it->first, "Input", it->second);
 	}
 
-	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); it++){
+	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); ++it){
 		//[Output] section
 		string value; getValue(it->first, "Output", value, Config::nothrow);
 		if (value == "") addKey(it->first, "Output", it->second);

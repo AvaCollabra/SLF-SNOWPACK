@@ -817,6 +817,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		SubSurfaceMelt = source.SubSurfaceMelt;
 		SubSurfaceFrze = source.SubSurfaceFrze;
 		windward = source.windward;
+		ReSolver_dt = source.ReSolver_dt;
 	}
 	return *this;
 }
@@ -1206,7 +1207,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Cdata.rs=0.0;
 		Cdata.rstransp=0.0;
 	}
-	
+
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
 	ReSolver_dt=-1.;
 }
@@ -1477,7 +1478,7 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 		        numberMeasTemperatures, maxNumberMeasTemperatures);
 		numberMeasTemperatures = maxNumberMeasTemperatures;
 	}
-	if ((numberMeasTemperatures > 0) && (fixedPositions.size() == 0)) {
+	if ((numberMeasTemperatures > 0) && (fixedPositions.empty())) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(),
 		        "%u measured temperatures available but no positions. Check FIXED_POSITIONS in SnowpackAdvanced section!",
 		        numberMeasTemperatures);
@@ -1585,17 +1586,16 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& Mdata)
 	os << setw(8) << "U*=" << Mdata.ustar << " z0=" << Mdata.z0 << " psi_s=" << Mdata.psi_s << "\n";
 
 	//os << std::setprecision(10);
-	stringstream ss;
-	if(Mdata.ts.size()>0) os << "     ";
+	if(!Mdata.ts.empty()) os << "     ";
 	for (unsigned int ii=0; ii<Mdata.ts.size(); ii++) {
 		os << "ts(" << Mdata.zv_ts[ii] << ")=" << Mdata.ts[ii] << " ";
 	}
-	if(Mdata.ts.size()>0) os << "\n";
+	if(!Mdata.ts.empty()) os << "\n";
 	if(Mdata.conc.size()>0) os << "     ";
 	for (unsigned int ii=0; ii<Mdata.conc.size(); ii++) {
 		os << "conc[" << ii << "]=" << Mdata.conc[ii] << " ";
 	}
-	if(Mdata.conc.size()>0) os << "\n";
+	if(!Mdata.conc.empty()) os << "\n";
 
 	os << "</CurrentMeteo>" << endl;
 	return os;
@@ -1670,7 +1670,7 @@ LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
 const bool Tag::metamo_expl = false;
 
-Tag::Tag() : label(""), date(), elem(-1), previous_depth(IOUtils::nodata), 
+Tag::Tag() : label(""), date(), elem(-1), previous_depth(IOUtils::nodata),
 		   etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
 {}
 
@@ -1712,9 +1712,9 @@ void Tag::reposition_tag(const bool&, const double& z, SnowStation& Xdata)
 	compute_properties(Xdata.Edata.at(n_up-1));
 }
 
-TaggingData::TaggingData(const double& i_calculation_step_length) : useSoilLayers(false), surface_write(false), 
+TaggingData::TaggingData(const double& i_calculation_step_length) : useSoilLayers(false), surface_write(false),
 													   calculation_step_length(i_calculation_step_length),
-													   tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0) 
+													   tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0)
 {}
 
 void TaggingData::resize(size_t i_size)
@@ -1752,7 +1752,7 @@ void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 			tags[tag-1].elem = e;
 			tags[tag-1].compute_properties(Xdata.Edata[e]);
 
-		} else if ((Xdata.Edata.back().mk < 100) && (Mdata.date >= tags[tag-1].date) 
+		} else if ((Xdata.Edata.back().mk < 100) && (Mdata.date >= tags[tag-1].date)
 				 && (Mdata.date < (tags[tag-1].date + M_TO_D(calculation_step_length))) ) {
 			Xdata.Edata.back().mk += tag*100;
 			tags[tag-1].compute_properties(Xdata.Edata.back());

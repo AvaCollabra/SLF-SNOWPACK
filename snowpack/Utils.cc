@@ -420,7 +420,6 @@ double forcedErosion(const double hs, SnowStation& Xdata)
 	int    nErode=0;        // Counters
 	double massErode=0.;    // Eroded mass (kg m-2)
 
-	massErode=0.;
 	while ( (Xdata.getNumberOfElements() > Xdata.SoilNode) && (hs + 0.01) < (Xdata.cH - Xdata.Ground) ) {
 		massErode += Xdata.Edata[Xdata.getNumberOfElements()-1].M;
 		Xdata.cH -= Xdata.Edata[Xdata.getNumberOfElements()-1].L;
@@ -453,9 +452,6 @@ double forcedErosion(const double hs, SnowStation& Xdata)
 void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
 {
 	const size_t nE = Xdata.getNumberOfElements(), soil_node = Xdata.SoilNode;
-	size_t e;
-	double factor_corr, sum_total_correction=0.;  // Correction factors
-	double ddL, dL = 0.;                          // Length changes
 	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
 	const double mH = Xdata.mH - Xdata.Ground;    // Enforced snow depth
 	//double cH_old;                                // Temporary snow depth
@@ -478,7 +474,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			        mH, cH);
 		}
 	} else if (cH > Constants::eps){ // assume settling error
-
+        double factor_corr=0., sum_total_correction=0.;
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
 		if (EMS[nE-1].depositionDate.getJulian() <= EMS[soil_node].depositionDate.getJulian())
@@ -492,7 +488,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		dhs_corr = mH - cH;
-		for (e = soil_node; e < nE; e++) {
+		for (size_t e = soil_node; e < nE; e++) {
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulian() > EMS[e].depositionDate.getJulian())) {
 				const double surf_date = EMS[nE-1].depositionDate.getJulian();
@@ -514,7 +510,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		}
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
-		for (e = soil_node; e < nE; e++) {
+		for (size_t e = soil_node; e < nE; e++) {
+            double ddL, dL=0.; // Length changes
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulian() > EMS[e].depositionDate.getJulian())) {
 				const double surf_date = EMS[nE-1].depositionDate.getJulian();

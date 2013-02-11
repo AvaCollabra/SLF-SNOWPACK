@@ -51,7 +51,7 @@ PhaseChange::PhaseChange(const mio::Config& cfg)
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
-	
+
 	//Water transport model snow
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	if (watertransportmodel_snow=="BUCKET") {
@@ -61,7 +61,7 @@ PhaseChange::PhaseChange(const mio::Config& cfg)
 	} else if (watertransportmodel_snow=="RICHARDSEQUATION") {
 		iwatertransportmodel_snow=RICHARDSEQUATION;
 	}
-	
+
 	//Water transport model soil
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 	if (watertransportmodel_soil=="BUCKET") {
@@ -97,11 +97,6 @@ PhaseChange::PhaseChange(const mio::Config& cfg)
 void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt,
                                      double& ql_Rest, const mio::Date& date_in)
 {
-	double dT;    // Edata.melting_tk - Te > 0
-	double A;     // coefficient A ( see notes below )
-	double dth_i; // change in volumetric ice content
-	double dth_w; // change in volumetric water content
-
 	const double T_melt=Edata.melting_tk;		// Retrieve melting temperature from ElementData
 
 	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
@@ -114,7 +109,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 	        || (Edata.theta[ICE] <= 0.0) || (Edata.theta[WATER] >= PhaseChange::theta_s)) {
 		return;
 	} else {
-		dT = T_melt - Edata.Te;
+		double dT = T_melt - Edata.Te; // Edata.melting_tk - Te > 0
 		// Now we take into account that there might be some extra energy that could not
 		// be used by the element above because of complete melting
 		dT -= ql_Rest / (Edata.c[TEMPERATURE] * Edata.Rho * Edata.L);
@@ -123,9 +118,9 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		}
 		// Determine the DECREASE in ice content and the INCREASE of water content
 		// Adapt A to compute mass changes
-		A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion );
-		dth_i = A * dT;
-		dth_w = - (Constants::density_ice / Constants::density_water) * dth_i;
+		const double A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion );
+		double dth_i = A * dT; // change in volumetric ice content
+		double dth_w = - (Constants::density_ice / Constants::density_water) * dth_i; // change in volumetric water content
 		// It could happen that there is enough energy available to melt more ice than is present.
 		// You can only melt so much ice as is there ....
 		if ( (Edata.theta[ICE] + dth_i) < 0.0 ) {

@@ -35,7 +35,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) :
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
 	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
 	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", Config::nothrow);
-	if (vecProfileOutput.size() == 0) {
+	if (vecProfileOutput.empty()) {
 		outputprofile_as_ascii = true;
 		outputprofile_as_imis  = false;
 	} else if (vecProfileOutput.size() > 2) {

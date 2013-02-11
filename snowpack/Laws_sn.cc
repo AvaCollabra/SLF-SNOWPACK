@@ -530,7 +530,7 @@ double SnLaws::compWindGradientSnow(const ElementData& Edata, double& v_pump)
  */
 double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const double& dvdz)
 {
-	double C_eff_soil, C_eff_soil_max, weight;
+	double C_eff_soil;
 	const double c_clay = 1.3, c_sand = 0.27;
 	const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
 	const double beta1 = 6., beta2 = 4.978, c_mineral = 2.9;
@@ -544,7 +544,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 	 * 10000: means rock, which is also no soil but Ingo seems not to understand this.
 	*/
 	if ((Edata.rg > 0.) && (Edata.rg < 10000.)) {
-		C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
+		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
 				* SnLaws::conductivity_water(Edata.Te) + Edata.theta[ICE]
 					* SnLaws::conductivity_ice(Edata.Te);
 
@@ -556,7 +556,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		 * and Nixon, while the water influence was deduced from deVries and
 		 * Afgan in "Heat and Mass Transfer in the Biosphere".
 		*/
-		weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
+		const double weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
 		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil)
 			C_eff_soil += MAX(0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]));
@@ -1093,17 +1093,13 @@ double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 		const double T_r = 265.15; // Reference temperature (K), from Schweizer et al. (2004)
 		return ((1. / SnLaws::ArrheniusLaw(Q_fac * Q, Te, T_r))
 		             * (0.3 * pow((Constants::melting_tk - Te), criticalExp) + 0.4));
-		break;
 	}
 	case t_term_arrhenius:
 		return (1. / SnLaws::ArrheniusLaw(Q, Te, 263.));
-		break;
 	case t_term_stk: // Master thesis, September 2009
 		return (0.35 * sqrt(274.15 - Te));
-		break;
 	default: // as of revision 243, used up to revision 837 (deprecated)
 		return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
-		break;
 	}
 }
 
@@ -1161,12 +1157,11 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		return sigReac;
 // 		return (sigReac + sigMetamo);
 // 		return 0.;
-		break;
 	}
 	case visc_897: { // r897
-		double sigReac = 0., sigMetamo = 0.;
+		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
-		sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
+		const double sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
 		Edata.EDot = sigReac;
 		//if ( 1 && (Edata->dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/ ) {
 		if (1 && (Edata.dd > Constants::eps) /*((Edata->dd < 0.9) && (Edata->dd > 0.3))*/) {
@@ -1180,7 +1175,6 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 			}
 		}
 		return (sigReac + sigMetamo);
-		break;
 	}
 	case visc_837: case visc_stk: { // as of revision 837
 		double sig0 = 0.;
@@ -1191,13 +1185,11 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 			sig0 = facIS * Metamorphism::ddRate(Edata) * sigTension / MM_TO_M(Edata.rg);
 		}
 		return sig0;
-		break;
 	}
 	default:
 		prn_msg(__FILE__, __LINE__, "err", Date(),
 				"visc=%d not a valid choice for loadingRateStress!", visc);
 		throw IOException("Choice not implemented yet!", AT);
-		break;
 	}
 }
 

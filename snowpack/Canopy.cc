@@ -325,11 +325,11 @@ double Canopy::cn_f1(const double& ris)
 double Canopy::cn_RootFraction(const double& zupper, const double& zlower)
 {
 	double rf = 0.0;
-	const double ar = 6.706; // evergreen needleleaf trees
-	const double br = 2.175; // evergreen needleleaf trees
 
 	// Constants.h: Canopy::rootdepth, default 0.5
 	if ( zupper < Canopy::rootdepth ) {
+        const double ar = 6.706; // evergreen needleleaf trees
+        const double br = 2.175; // evergreen needleleaf trees
 		// fraction of roots below root depth (according to exponential distribution)
 		const double tail = 0.5 * (exp(-ar * Canopy::rootdepth)+ exp(-br * Canopy::rootdepth));
 		// multiplicative factor to distribute tail on layers above root depth
@@ -1155,13 +1155,12 @@ void Canopy::cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double&
 	// 2.2 Stability correction (adopted from Beljaars and Holtslag, 1991)
 	double psim = 0.0;
 	double psih = 0.0;
-	double aeta = 0.0;
 
 	if ( Canopy::canopy_stabilitycorrection ) {
 		/*
 		 * 2.2.1 Get Aeta = Monin-Obukhov stabilityparameter from Richardson number
 		 */
-		aeta = cn_RichardsonToAeta(refheight - zdisplcan, Mdata.ta,
+		const double aeta = cn_RichardsonToAeta(refheight - zdisplcan, Mdata.ta,
 			Mdata.ta - Cdata->temp, vw_local, zomc, zohc, 5);
 		psih = -cn_psih(aeta) + cn_psih(aeta * zohc / (refheight - zdisplcan));
 		psim = -cn_psim(aeta) + cn_psim(aeta * zomc / (refheight - zdisplcan));

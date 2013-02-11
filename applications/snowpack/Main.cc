@@ -581,7 +581,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 				vector<mio::MeteoData> vectmpmd;
 				current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1.);
 				io.getMeteoData(current_date, vectmpmd);
-				if (vectmpmd.size() == 0)
+				if (vectmpmd.empty())
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 					                       + current_date.toString(mio::Date::ISO), AT);
 				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
@@ -779,7 +779,7 @@ void real_main (int argc, char *argv[])
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::Config::nothrow);
 
 	//If the user provides the stationIDs - operational use case
-	if (vecStationIDs.size() > 0) { //This means that the user provides the station IDs on the command line
+	if (!vecStationIDs.empty()) { //This means that the user provides the station IDs on the command line
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 			stringstream ss;
 			ss << "STATION" << i_stn+1; //For the IMIS plugin of MeteoIO, this key denotes the station id
@@ -794,7 +794,7 @@ void real_main (int argc, char *argv[])
 
 	vector<StationData> accessible_stations;
 	io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
-	if (vecStationIDs.size() == 0) {
+	if (vecStationIDs.empty()) {
 		for (size_t ii=0; ii<accessible_stations.size(); ii++) {
 			vecStationIDs.push_back(accessible_stations[ii].getStationID()); //HACK: accessible_stations should be directly used
 		}

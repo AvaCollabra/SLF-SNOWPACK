@@ -236,11 +236,12 @@ double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar,
 
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
-	double crust_dep=0., crust_height=0.;
+	double crust_height=0.;
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	if (Xdata.getNumberOfElements() > 0) {
 		unsigned int e = Xdata.getNumberOfElements()-1;
+		double crust_dep = 0.;
 		while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
 			if ((Xdata.Edata[e].type == 772) || (Xdata.Edata[e].type == 880)) {
 				crust_height += Xdata.Edata[e].L/cos_sl;
@@ -473,7 +474,6 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 
 	// Snow temperatures t_top1 and t_top2 in degC at 5 cm and 10 cm below the surface, respectively
 	double h_top1 = hs - 0.05;
-	h_top1 = hs - 0.05;
 	Hdata.t_top1 = Xdata.getModelledTemperature(h_top1);
 	if ( !((Hdata.t_top1 > -50.) && (Hdata.t_top1 <= 0.)) )
 		Hdata_ind.t_top1 = -1;
