@@ -878,9 +878,9 @@ void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
  * @author Charles Fierz
  * @version 10.05
  * @param *fout Output file
- * @param T Measured temperature (K)
  * @param z_vert Position of sensor measured vertically (m)
- * @param i Sensor number
+ * @param T Measured temperature (K)
+ * @param ii Sensor number
  * @param *Xdata
  * @return Number of items dumped to file
  */
@@ -890,13 +890,11 @@ size_t AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double
 	size_t jj=2;
 	double perp_pos;
 
-	//HACK:
-	/// @note Initial height of snow needed to compute sensor position from ground if FIXED_RATES is set
-	const double INITIAL_HS=0;
-
 	if (ii < fixedPositions.size()) {
 		perp_pos = compPerpPosition(z_vert, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
 	} else {
+		/// @note Initial height of snow needed to compute sensor position from ground if FIXED_RATES is set // HACK
+		const double INITIAL_HS=0;
 		perp_pos = compPerpPosition(z_vert, INITIAL_HS, Xdata.Ground, Xdata.meta.getSlopeAngle());
 		if (perp_pos == Constants::undefined) {
 			fprintf(fout, ",");
@@ -995,18 +993,17 @@ size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 	const size_t ii = numberFixedSensors + (tag-1);
 	const int e = findTaggedElement(tag, Xdata);
 	size_t jj = 2;
-	double perp_pos;
 	if (e >= 0) {
 		const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-		perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
+		const double perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
 		                + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
 		fprintf(fout,",%.2f,%.2f", M_TO_CM(perp_pos) / cos_sl, K_TO_C(Xdata.Edata[e].Te));
 	} else {
 		fprintf(fout,",,%.2f", Constants::undefined);
 	}
 	if (ii < numberMeasTemperatures) {
-		if ((perp_pos = compPerpPosition(Mdata.zv_ts.at(ii), Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle()))
-			    == Constants::undefined) {
+		const double perp_pos = compPerpPosition(Mdata.zv_ts.at(ii), Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
+		if (perp_pos == Constants::undefined) {
 			fprintf(fout,",,%.2f", Constants::undefined);
 		} else {
 			const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));

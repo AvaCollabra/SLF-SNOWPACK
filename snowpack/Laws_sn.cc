@@ -522,7 +522,10 @@ double SnLaws::compWindGradientSnow(const ElementData& Edata, double& v_pump)
 }
 
 /**
- * @brief Heat conduction in soil
+ * @brief Heat conduction in soil.
+ * The formulation is based on curve fitting, the frozen soil data from
+ * Kersten in <i>"Geotechnical Engeneering for Cold Regions"</i> article by Harlan and Nixon,
+ * the water influence deduced from deVries and Afgan in <i>"Heat and Mass Transfer in the Biosphere"</i>.
  * @version 11.03: thermal conductivity made temperature dependent.
  * @param Edata
  * @param dvdz Wind velocity gradient (s-1)
@@ -531,32 +534,17 @@ double SnLaws::compWindGradientSnow(const ElementData& Edata, double& v_pump)
 double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const double& dvdz)
 {
 	double C_eff_soil;
-	const double c_clay = 1.3, c_sand = 0.27;
-	const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
-	const double beta1 = 6., beta2 = 4.978, c_mineral = 2.9;
 
-	/*
-	 * This ugly line does completely ignore the pledge for
-	 * esthetics, which modelers should always adhere to if
-	 * they want to be happy. Michi is unhappy and Ingo claims
-	 * that it is not his fault..... but Martina's and David's
-	 * 0: means no soil.
-	 * 10000: means rock, which is also no soil but Ingo seems not to understand this.
-	*/
+	//0 means no soil, 10000 means rock
 	if ((Edata.rg > 0.) && (Edata.rg < 10000.)) {
-		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
-				* SnLaws::conductivity_water(Edata.Te) + Edata.theta[ICE]
-					* SnLaws::conductivity_ice(Edata.Te);
-
-		/*
-		 * This nice formulation is based on some tedious curve fitting by
-		 * Martina, who became more happy when she saw how nicely it could
-		 * now be implemented. The data for the frozen part stems from Kersten
-		 * in "Geotechnical Engeneering for Cold Regions" article by Harlan
-		 * and Nixon, while the water influence was deduced from deVries and
-		 * Afgan in "Heat and Mass Transfer in the Biosphere".
-		*/
+		const double c_clay = 1.3, c_sand = 0.27;
+		const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
+		const double beta1 = 6., beta2 = 4.978, c_mineral = 2.9;
 		const double weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
+		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
+		                              * SnLaws::conductivity_water(Edata.Te) + Edata.theta[ICE]
+		                              * SnLaws::conductivity_ice(Edata.Te);
+
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
 		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil)
 			C_eff_soil += MAX(0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]));
@@ -672,8 +660,8 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	 * k coefficients. (I believe that this is the series conduction in which
 	 * heat goes through a grain, then across a pore and into another grain.)
 	*/
-	double C3 = Constants::conductivity_ice * kap * Aip;
-	C3 = C3 / (rg * kap + (1. / C1 - rg) * Constants::conductivity_ice);
+	const double C3 = (Constants::conductivity_ice * kap * Aip)
+	                  / (rg * kap + (1. / C1 - rg) * Constants::conductivity_ice);
 
 	/*
 	 * Determine C4 = a funny fraction containing one PI and  a few (one) funny
@@ -688,8 +676,8 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	 * k coefficients. (I believe that this is the series conduction in which
 	 * heat goes through a grain, then across water and into another grain.)
 	*/
-	double C5 = Constants::conductivity_ice * Constants::conductivity_water * Aiw;
-	C5 = C5 / (rg * Constants::conductivity_water  + (1./C1 - rg) * Constants::conductivity_ice);
+	const double C5 = (Constants::conductivity_ice * Constants::conductivity_water * Aiw)
+	                  / (rg * Constants::conductivity_water  + (1./C1 - rg) * Constants::conductivity_ice);
 
 	double C_eff  = SnLaws::montana_c_fudge * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (Edata.melting_tk*Edata.melting_tk));
 
@@ -778,7 +766,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 			 * in Laws_sn.h
 			*/
 			if (SnLaws::soil_evaporation && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
-				eS = Vp2 * 0.5 * ( 1 - cos (MIN (Constants::pi, th_w_ss * Constants::pi
+				eS = Vp2 * 0.5 * ( 1. - cos (MIN (Constants::pi, th_w_ss * Constants::pi
 				         / (Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity() * 1.6))));
 			} else {
 				eS = Vp2;
@@ -844,7 +832,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 	*/
 	if ((Xdata.getNumberOfNodes() == Xdata.SoilNode + 1) && (nElems > 0)
 		    && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
-		      && (SnLaws::soil_evaporation == 1)) {
+		    && (SnLaws::soil_evaporation == 1)) {
 		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure(Mdata.ta);
 		const double eS = Atmosphere::waterSaturationPressure(Xdata.Ndata[nElems].T);
 		if (eS >= eA) {
@@ -897,13 +885,11 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 			return (rho_0*log10(Mdata.vw_avg) + rho_1);
 		else
 			return Constants::undefined;
-		break;
 	}
 	default:
 		prn_msg(__FILE__, __LINE__,"err", Date(),
 		        "No new snow density parameterization for event type %d", i_event);
 		throw IOException("Event type not implemented yet!", AT);
-		break;
 	}
 }
 
@@ -1508,8 +1494,8 @@ double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 }
 
 /**
- * @brief MONTANA snow viscosity (non-dendritic snow, i.e. if dd=0.); From bb_lw_VS_Montana() (Laws.c r7.7) \n
- * Bob Brown's MICRO-STRUCTURE lawClearly the BEST law we have right now
+ * @brief MONTANA snow viscosity (non-dendritic snow, i.e. if dd=0.); From bb_lw_VS_Montana() (Laws.c r7.7).
+ * Bob Brown's MICRO-STRUCTURE law. Clearly the BEST law we have right now
  * but also the most UNSTABLE:  note that the viscosity is not only a function of the grain
  * dimensions, but also a function of the overburden stress.
  * A series of equations that collectively give the viscosity Vis = S/eDot.
@@ -1527,74 +1513,54 @@ double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
  */
 double SnLaws::SnowViscosityMSU(const ElementData& Edata)
 {
-	double N3;                // 3-D coordination number (from Brown's density function)
-	double theta_i, theta_w;  // ice volume fraction and water volume fraction
-	double rb;                // bond radius (m)
-	double rc;                // concave radius of neck
-	double rg;                // grain radius (m)
-	double L;                 // neck length
-	double dd, sp;            // dendricity & sphericity
-	double epdot = 1.76e-7;   // unit strain rate (at stress = 1 MPa) (1/sec)
-	double Q = 67000.;        // J/mol
-	double R = 8.31;          // gas constant J/mol/K
-	double T;                 // temperature (K)
-	double Sig1 = 0.5e6;      // unit stress  Pa  from Sinha's formulation
-	double Tref = 263.0;      // reference temperature in K
-	double S;                 // applied stress (Pa)
-	double rho;               // density kg m-3
-	double Linvis0;           // Linear initial viscosity
-	double SneckYield = 0.4e6;// Yield stress for ice in neck (Pa)
-	double Sneck;             // Neck stress
-	double Vis, Vis0, Vis1;   // viscosity
-	double fudge;             // Bob's fudge factor that controls settling and bond growth
-	double th_i_f = 0.35, f_2 = 0.02; // Empirical constants to control dry snow viscosity fudge
-	double res_wat_cont;
-
-	// Dereference the CONTINUUM Parameters
-	rho = Edata.Rho;   T = Edata.Te;
-	S   = Edata.C;                         // Snow stress
-	theta_i = Edata.theta[ICE];            // Ice volume fraction
-	theta_w = Edata.theta[WATER];          // Water volume fraction
-
-	// Dereference the MICRO-STRUCTURE Parameters
-	N3 = Edata.N3;
-	rg = Edata.rg;
-	rb = Edata.rb;
-	rc = Edata.concaveNeckRadius();
-	L = 2.*rg*rc/(rg + rc);
-	dd = Edata.dd;
-	sp = Edata.sp;
+	const double theta_i = Edata.theta[ICE]; // Ice volume fraction
+	const double theta_w = Edata.theta[WATER]; // Water volume fraction
 
 	// Perry introduced this CUTOFF to avoid numerical instabilities with higher densities; might
 	// not need it any more, since the problem turned out to be in the stress calculation.
-	if ( theta_i + theta_w > 0.99 ) {
+	if ( theta_i + theta_w > 0.99 )
 		return(Constants::big);
-	}
-	if ( theta_w > 0.3 ) {
+	if ( theta_w > 0.3 )
 		return(1e9*SnLaws::smallest_viscosity);  // ONLY WITH JAM IN WaterTransport.c
-	}
 
 	// Introduced this little check when the ice matrix is completely melted away -- in this case
 	// set the viscosity to a high number to give the water in the element time to percolate away
-
-	if ( theta_i <= 0.000001 ) {
+	if ( theta_i <= 0.000001 )
 		return(Constants::big);
-	}
 
 	// If the element length is SMALLER than the grain size then things aint settling ....
-	if ( Edata.L <= 2.*rg/1000. ) {
+	const double rg = Edata.rg; // grain radius (m)
+	if ( Edata.L <= 2.*rg/1000. )
 		return(Constants::big);
-	}
 
-	res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
-	if ( dd <= 0. && Edata.theta[WATER] < res_wat_cont ) {
+	double Vis;   // viscosity
+
+	const double res_wat_cont = ElementData::snowResidualWaterContent(Edata.theta[ICE]);
+	if ( Edata.dd <= 0. && Edata.theta[WATER] < res_wat_cont ) {
+		//Dereference some parameters
+		const double T = Edata.Te; // temperature (K)
+		const double S   = Edata.C; // applied stress (Pa)
+		const double N3 = Edata.N3; // 3-D coordination number (from Brown's density function)
+		const double rb = Edata.rb; // bond radius (m)
+		const double rc = Edata.concaveNeckRadius(); // concave radius of neck
+		const double L = 2.*rg*rc/(rg + rc); // neck length
+
+		//define some constants
+		const double epdot = 1.76e-7;   // unit strain rate (at stress = 1 MPa) (1/sec)
+		const double Q = 67000.;        // J/mol
+		const double R = 8.31;          // gas constant J/mol/K
+		const double Sig1 = 0.5e6;      // unit stress  Pa  from Sinha's formulation
+		const double Tref = 263.0;      // reference temperature in K
+		const double SneckYield = 0.4e6;// Yield stress for ice in neck (Pa)
+		const double th_i_f = 0.35, f_2 = 0.02; // Empirical constants to control dry snow viscosity fudge
+
 		// First check to see if neck stress (Sneck) is >= SneckYield = 0.4 MPa.
-		Sneck = (4.0/(N3*theta_i))*(rg/rb)*(rg/rb)*(-S);   // Work with absolute value of stress
-		// Determine the fudge factor that takes into account bond-ice imperfections and liquid water
-		fudge = 0.1/theta_i + 0.8*(exp((th_i_f - theta_i)/f_2)/(1. + exp((th_i_f - theta_i)/f_2)));
+		const double Sneck = (4.0/(N3*theta_i)) * Optim::pow2(rg/rb) * (-S);   // Work with absolute value of stress
+		// Determine Bob's fudge factor that takes into account bond-ice imperfections and liquid water
+		double fudge = 0.1/theta_i + 0.8*( exp((th_i_f - theta_i)/f_2) / (1. + exp((th_i_f - theta_i)/f_2)) );
 		fudge = 4.0*fudge + SnLaws::montana_v_water_fudge*theta_w;
-		// Determine Linvis0 (Temperature dependent)
-		Linvis0 = pow(Sig1,3.)/(pow(SneckYield,2.)*pow(fudge,3.) * epdot)*exp((-Q/R)*(1./Tref - 1./T));
+		// Determine the linear initial viscosity (Temperature dependent)
+		const double Linvis0 = Optim::pow3(Sig1) / (Optim::pow2(SneckYield)*Optim::pow3(fudge)*epdot) * exp((-Q/R)*(1./Tref - 1./T));
 
 		// Now branch to either non- linear or linear viscosity based on value of Sneck.
 		if ( Sneck > SneckYield ) {  // YIELDING, non-linear
@@ -1602,28 +1568,25 @@ double SnLaws::SnowViscosityMSU(const ElementData& Edata)
 			// Note that the viscosity is a function of the square of the applied stress.
 			// Density does not show up explicitly, but is buried implicitly in the equation
 			// because N3, L, rg and rb all change with time as the material deforms.
-			Vis = (L/(2.*rg + L))*epdot*exp( (Q/R)*(1./Tref - 1./T) );
-			Vis0 = (rg*rg)/(rb*rb);
-			Vis1 =  ( (4.*fudge) / (N3*theta_i*Sig1) ) * Vis0;
-			Vis = Vis*S*S*Vis1*Vis1*Vis1;
-
-			Vis = 1/Vis;
+			const double Vis1 =  ( (4.*fudge) / (N3*theta_i*Sig1) ) * Optim::pow2(rg/rb);
+			Vis = (L/(2.*rg + L)) * epdot * exp( (Q/R)*(1./Tref - 1./T) );
+			Vis = 1. / (Vis * Optim::pow2(S) * Optim::pow3(Vis1));
 		} else { // NOT YIELDING, linear
-		// This viscocity is not a function of stress and is therefore a linear viscosity.  Its value
-		// depends on rb, rg, N3, theta_i and T. The expression  ((N3*theta_i)/(4.))*((rb*rb)/(rg*rg))
-		// determines the neck stress relative to the snow stress. The expression   ((rg + L)/(3.*L))
-		// relates the neck strains to the global volumetric strains. The term MONTANA_V_FUDGE is a
-		// correction factor to account for stress concentrations in the neck.
-			Vis = Linvis0*((2.*rg + L)/(L));
-			Vis = Vis*((N3*theta_i)/4.)*((rb*rb)/(rg*rg));
+			// This viscocity is not a function of stress and is therefore a linear viscosity.  Its value
+			// depends on rb, rg, N3, theta_i and T. The expression  ((N3*theta_i)/(4.))*(rb/rg)^2
+			// determines the neck stress relative to the snow stress. The expression   ((rg + L)/(3.*L))
+			// relates the neck strains to the global volumetric strains. The term MONTANA_V_FUDGE is a
+			// correction factor to account for stress concentrations in the neck.
+			Vis = Linvis0 * ((2.*rg + L)/(L));
+			Vis = Vis * ((N3*theta_i)/4.) * Optim::pow2(rb/rg);
 		}
 	} else { // NEW SNOW VICOSITY -- Use LEHNING rule for now.
 		Vis = SnLaws::NewSnowViscosityLehning(Edata);
 	}
 	// Set lower limit in case S is very small or mass in layer approaches zero
-	if (Vis <= SnLaws::smallest_viscosity) {
+	if (Vis <= SnLaws::smallest_viscosity)
 		Vis = SnLaws::smallest_viscosity;
-	}
+
 	return(Vis);
 }
 

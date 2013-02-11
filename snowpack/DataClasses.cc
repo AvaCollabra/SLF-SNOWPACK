@@ -1733,7 +1733,6 @@ void TaggingData::resize(size_t i_size)
  * -# Tagging of surface element on given date
  * @author Charles Fierz
  * @version 10.04
- * @param TAGdata
  * @param Mdata
  * @param Xdata
  */

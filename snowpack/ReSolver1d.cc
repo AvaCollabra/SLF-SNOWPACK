@@ -22,23 +22,23 @@
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
 	typedef long int integer;
 	typedef double doublereal;
-	
+
 	// Declare the function interfaces with the LAPACK library (taken from clapack.h):
-	#ifdef __cplusplus      
-		extern "C" {    
-	#endif 
-		/* Subroutine */ int dgesvd_(char *jobu, char *jobvt, integer *m, integer *n, 
+	#ifdef __cplusplus
+		extern "C" {
+	#endif
+		/* Subroutine */ int dgesvd_(char *jobu, char *jobvt, integer *m, integer *n,
 		doublereal *a, integer *lda, doublereal *s, doublereal *u, integer *
-		ldu, doublereal *vt, integer *ldvt, doublereal *work, integer *lwork, 
+		ldu, doublereal *vt, integer *ldvt, doublereal *work, integer *lwork,
 		integer *info);
-		
+
 		/* Subroutine */ int dgesdd_(char *jobz, integer *m, integer *n, doublereal *
-		a, integer *lda, doublereal *s, doublereal *u, integer *ldu, 
-		doublereal *vt, integer *ldvt, doublereal *work, integer *lwork, 
+		a, integer *lda, doublereal *s, doublereal *u, integer *ldu,
+		doublereal *vt, integer *ldvt, doublereal *work, integer *lwork,
 		integer *iwork, integer *info);
-		
-		/* Subroutine */ int dgtsv_(integer *n, integer *nrhs, doublereal *dl, 
-		doublereal *d__, doublereal *du, doublereal *b, integer *ldb, integer 
+
+		/* Subroutine */ int dgtsv_(integer *n, integer *nrhs, doublereal *dl,
+		doublereal *d__, doublereal *du, doublereal *b, integer *ldb, integer
 		*info);
 	#ifdef __cplusplus
 		}
@@ -483,7 +483,6 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
  * @brief Solve Richards Equation \n
  * Solve Richards Equation \n
  * @author Nander Wever
- * @param Mdata
  * @param Xdata
  * @param Sdata
  */

@@ -20,7 +20,7 @@
 /**
  * @file Canopy.cc
  * @version 10.02
- * @author David Gustafsson (davidg@kth.se) \n Michael Lehning
+ * @author David Gustafsson (davidg@kth.se), Michael Lehning
  * @bug     -
  * @brief Computes interception of precipitation and radiation, and reduction of windspeed
  * in a canopy layer above thesnow or soil surface.
@@ -328,8 +328,8 @@ double Canopy::cn_RootFraction(const double& zupper, const double& zlower)
 
 	// Constants.h: Canopy::rootdepth, default 0.5
 	if ( zupper < Canopy::rootdepth ) {
-        const double ar = 6.706; // evergreen needleleaf trees
-        const double br = 2.175; // evergreen needleleaf trees
+		const double ar = 6.706; // evergreen needleleaf trees
+		const double br = 2.175; // evergreen needleleaf trees
 		// fraction of roots below root depth (according to exponential distribution)
 		const double tail = 0.5 * (exp(-ar * Canopy::rootdepth)+ exp(-br * Canopy::rootdepth));
 		// multiplicative factor to distribute tail on layers above root depth
@@ -359,22 +359,18 @@ double Canopy::cn_RootFraction(const double& zupper, const double& zlower)
  */
 void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, ElementData* EMS)
 {
-
-	// Constants.h: WP_FRACTION, default 0.01
-	double d_theta;
-	double waterresidual, waterresidual_real;
-	int e, RootLayer = SoilNode;
-
 	// transpiration [mm]
 	if ( transpiration == 0. )
 		return;
 
 	// Mass of water [kg m-2] that is to be extracted from the soil
-	waterresidual = waterresidual_real = transpiration;
+	double waterresidual = transpiration;
+	double waterresidual_real = transpiration;
 
 	// Loop over soil layers above rootdepth
 	double zupper = 0.;
-	for ( e = SoilNode-1; e > 0; e-- ) {
+	int RootLayer = SoilNode;
+	for( int e = SoilNode-1; e > 0; e-- ) {
 		// fraction of roots in layer
 		const double rootfr = cn_RootFraction(zupper, zupper + EMS[e].L);
 		const double water = transpiration;
@@ -383,18 +379,18 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 			RootLayer = e;
 
 			// Change in volumetric water content in layer
-			d_theta = MIN ( MAX (0., ( EMS[e].theta[WATER] -
-					Canopy::wp_fraction * EMS[e].soilFieldCapacity() )),
-						 rootfr*water / ( Constants::density_water * EMS[e].L ) );
+			const double d_theta_l = MIN ( MAX (0., ( EMS[e].theta[WATER] -
+			                         Canopy::wp_fraction * EMS[e].soilFieldCapacity() )),
+			                         rootfr*water / ( Constants::density_water * EMS[e].L ) );
 
 			// residual water to be extracted in layers below
 			waterresidual -= rootfr * water;
-			waterresidual_real -= d_theta * Constants::density_water * EMS[e].L;
+			waterresidual_real -= d_theta_l * Constants::density_water * EMS[e].L;
 
 			// Update volumetric water content in layer
-			EMS[e].theta[WATER] -= d_theta;
+			EMS[e].theta[WATER] -= d_theta_l;
 			assert(EMS[e].theta[WATER] >= -Constants::eps);
-			EMS[e].theta[AIR] += d_theta;
+			EMS[e].theta[AIR] += d_theta_l;
 			assert(EMS[e].theta[AIR] >= -Constants::eps);
 		}
 		// Depth of the upper edge of layer below
@@ -406,9 +402,9 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 		// modify by Moustapha if there is a problem .
 		RootLayer -= 1;
 	}
-	d_theta = MIN ( MAX (0., ( EMS[RootLayer].theta[WATER] -
-			Canopy::wp_fraction * EMS[RootLayer].soilFieldCapacity() ) ),
-			waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
+	const double d_theta = MIN ( MAX (0., ( EMS[RootLayer].theta[WATER] -
+	                       Canopy::wp_fraction * EMS[RootLayer].soilFieldCapacity() ) ),
+	                       waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
 
 	EMS[RootLayer].theta[WATER] -= d_theta;
 	assert(EMS[RootLayer].theta[WATER] >= -Constants::eps);
@@ -461,11 +457,11 @@ double Canopy::cn_f2f4(const int& SoilNode, ElementData* EMS)
 	double thet_act;
 	double rootresidual = 1.;
 	double f2 = 0.0; double f4 = 0.0;
-	int e, RootLayer = SoilNode;
+	int RootLayer = SoilNode;
 
 	// loop over layers:
 	double zupper = 0.;
-	for ( e = SoilNode-1; e > 0; e-- ) {
+	for( int e = SoilNode-1; e > 0; e-- ) {
 		// 1) root fraction in layer
 		const double rootfr = cn_RootFraction(zupper, zupper + EMS[e].L);
 		if( rootfr > 0.0 ){
@@ -565,12 +561,12 @@ double Canopy::cn_IntRate(const double& capacity, const double& storage, const d
 
 	if ( K_TO_C(tair) < thresh_rain ){
 		interception = MIN ( ( 1.0 - direct ) * prec,
-						 Canopy::interception_timecoef * ( capacity - storage )*
-						 ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
+		               Canopy::interception_timecoef * ( capacity - storage )*
+		               ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
 	} else{
 		interception = MIN ( ( 1.0 - direct ) * prec,
-						 Canopy::interception_timecoef * ( capacity - storage)*
-						 ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
+		               Canopy::interception_timecoef * ( capacity - storage)*
+		               ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
 	}
 
 	if ( interception < 0.0)
@@ -820,7 +816,7 @@ double Canopy::cn_DSaturationPressureDT(const double& L, const double& T)
  * @param le1
  */
 void Canopy::cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_old, const double& vpair,
-								double& le0, double& le1)
+                                        double& le0, double& le1)
 {
 	if(tc_old > 273.15) {
 		le1 = ce_canopy * cn_DSaturationPressureDT(Constants::lh_vaporization, tc_old);

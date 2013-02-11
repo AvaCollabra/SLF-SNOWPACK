@@ -225,7 +225,6 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
-	MESSAGE("METEOIO_LIBRARY=${METEOIO_LIBRARY} METEOIO_INCLUDE_DIR=${METEOIO_INCLUDE_DIR} METEOIO_ROOT=${METEOIO_ROOT}")
 	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
 	INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
 	INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
