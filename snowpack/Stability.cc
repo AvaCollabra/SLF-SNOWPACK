@@ -528,7 +528,8 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 	//   negative for Ts <= 180.4 K and Ts >= 274 K
 	//   The maximum of the function is reached at 227.2 K
 	//   HACK use this value for temperatures below 227.2 K (Quick and dirty fix;-)
-	const double Pm = (Ts >= 227.2)? (C1 + C2*(Ts) + C3*(Ts)*(Ts)) * 1.e9 : (C1 + C2*(227.2) + C3*(227.2)*(227.2)) * 1.e9;
+	const double temp = (Ts >= 227.2)? Ts : 227.2;
+	const double Pm = (C1 + C2*temp + C3*Optim::pow2(temp)) * 1.e9;
 
 	// Return the critical stress. TODO check that argument of sqrt is correctly written
 	return (Pm * tan(phi) * sqrt(1. - (Pm/(Pm + sigBrittle))));

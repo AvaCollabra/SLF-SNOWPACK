@@ -504,13 +504,7 @@ double ElementData::snowElasticity()
 	if (Rho > 1000.)
 		return Constants::big;
 
-	double g;
-
-	if (Rho >= 70.) {
-		g = ((Rho / 1000.0) * 8.235) - 0.47;
-	} else {
-		g = ((70. / 1000.0) * 8.235 ) - 0.47;
-	}
+	const double g = (Rho >= 70.)? ((Rho/1000.0)*8.235)-0.47 : ((70./1000.0)*8.235 )-0.47;
 	const double h = pow(10.0, g);
 	return (h * 100000.0);
 }
@@ -522,7 +516,7 @@ double ElementData::snowElasticity()
  */
 double ElementData::neckStressEnhancement()
 {
-	const double stressEnhance = (4. / (N3 * theta[ICE])) * (rg * rg) / (rb * rb);
+	const double stressEnhance = (4. / (N3 * theta[ICE])) * Optim::pow2(rg/rb);
 	return stressEnhance;
 }
 

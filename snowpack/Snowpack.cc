@@ -1472,10 +1472,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 								EMS[e].sp = new_snow_sp_wind;
 							} else if (vw_dendricity && ((hn_density_model == "BELLAIRE")
 								           || (hn_density_model == "ZWART"))) {
-								double vw;
-								vw = MAX(0.05, Mdata.vw);
+								const double vw = MAX(0.05, Mdata.vw);
 								// dd = f(vw)
-								EMS[e].dd = (1 - pow(vw/10., 1.57));
+								EMS[e].dd = (1. - pow(vw/10., 1.57));
 								EMS[e].dd = MAX(0.2, EMS[e].dd);
 							}
 							if (Snowpack::hydrometeor) { // empirical

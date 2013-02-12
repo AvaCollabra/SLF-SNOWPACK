@@ -137,11 +137,9 @@ double WaterTransport::BisFunc(double X, double P[])
  */
 double WaterTransport::Bisection(double minval, double maxval, double P[])
 {
-	double X1,X2,Y1,Y2;
 	double XCen,YCen;
-
-	X1 = minval; X2 = maxval;
-	Y1 = BisFunc(X1, P); Y2 = BisFunc(X2, P);
+	double X1 = minval, X2 = maxval;
+	double Y1 = BisFunc(X1, P), Y2 = BisFunc(X2, P);
 	if (fabs(Y1) < Constants::eps) {
 		return (X1);
 	}
@@ -219,7 +217,7 @@ void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCn
 			if (LTh > 1.) {
 				*Rk = SatuK;
 			} else {
-				*Rk = SatuK * pow(LTh,0.5)*pow(1.-pow(1.-pow(LTh,(1./PM)),PM),2.);
+				*Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 			}
 		}
 	} else { //Fz 2010-05-02
@@ -241,7 +239,7 @@ void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCn
 			*Rk = SatuK;
 		} else {
 			*Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			*Rk = SatuK * pow(LTh,0.5)*pow(1.-pow(1.-pow(LTh,(1./PM)),PM),2.);
+			*Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 		}
 	}
 }

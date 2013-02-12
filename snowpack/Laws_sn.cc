@@ -1137,7 +1137,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		if (false && (Edata.dd > Constants::eps)) {
 			sigMetamo = 3.7e2 * Metamorphism::ddRate(Edata);
 			if (false && Edata.dd < 0.9 ) {
-				sigMetamo *= pow(Edata.dd, 1./2.);
+				sigMetamo *= sqrt(Edata.dd);
 			}
 		}
 		return sigReac;
@@ -1156,8 +1156,8 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 			//sigMetamo = 29.0 * mm_ddRate(Edata) / MM_TO_M(Edata.rg); // 2010-10-23
 			sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata); // 2010-10-23
 			if (0 && Edata.dd < 0.9) {
-				//sigMetamo /= Edata.dd; // pow(Edata.dd, 1./2.);
-				sigMetamo *= pow(Edata.dd, 1./2.);
+				//sigMetamo /= Edata.dd; // sqrt(Edata.dd);
+				sigMetamo *= sqrt(Edata.dd);
 			}
 		}
 		return (sigReac + sigMetamo);
@@ -1250,7 +1250,7 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 // 		                   * (1. - Edata.theta[ICE]*Edata.theta[ICE])); // ori r897
 // 		                   * (0.67 - 0.29*Edata.theta[ICE]));
 // 		                   * (1.37 - Edata.theta[ICE]));
-// 		                   * (0.8 - 0.6*pow(Edata.theta[ICE], 0.5)));
+// 		                   * (0.8 - 0.6*sqrt(Edata.theta[ICE])));
 // 		                   * MAX(0.2, MIN(0.8, 1.16 - 1.2*Edata.theta[ICE])));
 // 		                   * (MAX(0., 0.8 - Edata.theta[ICE]*Edata.theta[ICE])));
 		break;
