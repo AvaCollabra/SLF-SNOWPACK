@@ -452,7 +452,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(&Mdata, &sector); //HACK: remove pointers
+	meteo.compMeteo(Mdata, sector);
 
 	// Update precipitation memory
 	if (slope.sector == slope.station) {

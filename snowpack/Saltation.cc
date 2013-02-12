@@ -415,8 +415,6 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 
 		for (int j = 0; j < k; j++) {
 			const double tau_j = tau_th + ((double)(j) + 0.5) * taustep;
-			const double Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
-
 			const double tauS = tau_j;
 
 			if(tauS > tau_th) {
@@ -458,6 +456,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
 					}
 				} // else large rebound threshold
+				const double Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
 				cs_mean += cs * Ptau_j;
 				flux_mean += flux * Ptau_j;
 			} // if there is s.th. to do

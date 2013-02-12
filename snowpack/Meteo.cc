@@ -111,7 +111,7 @@ void Meteo::projectPrecipitations(const double& slope_angle, double& precips, do
  * @param adjust_VW_height if set to false, assumes a constant measurement height for wind values (default: true, ie.
  * take into account the snow height decreasing the sensor height above the surface)
  */
-void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height)
+void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& adjust_VW_height)
 {
 	const int max_iter = 100;
 
@@ -156,7 +156,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& 
 
 		// Stability corrections
 		if (neutral < 0) { // Switch for Richardson
-			const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / vw / vw;
+			const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / Optim::pow2(vw);
 			if (Ri < 0.2) { // neutral and unstable
 				stab_ratio = Ri;
 			} else {
@@ -165,9 +165,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& 
 			if (Ri < 0.) { // unstable
 				stab_ratio = Ri;
 				const double dummy = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = log((0.5 * (1 + dummy*dummy)) * (0.5 * (1 + dummy)) * (0.5 * (1 + dummy)))
+				psi_m = log((0.5 * (1. + dummy*dummy)) * (0.5 * (1. + dummy)) * (0.5 * (1. + dummy)))
 				            - 2. * atan(dummy) + 0.5 * Constants::pi;
-				psi_s = 2. * log(0.5 * (1 + dummy*dummy));
+				psi_s = 2. * log(0.5 * (1. + dummy*dummy));
 			} else if (Ri < 0.1999) { // stable
 				stab_ratio = Ri / (1. - 5. * Ri);
 				psi_m = psi_s = -5. * stab_ratio;
@@ -275,14 +275,14 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * @param *Mdata
  * @param *Xdata
  */
-void Meteo::compMeteo(CurrentMeteo *Mdata, SnowStation *Xdata)
+void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
 {
 	if (useCanopyModel)
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
 
-	if (!(useCanopyModel) || Xdata->Cdata.zdispl < 0.) {
-		if(alpine3d) MicroMet(*Xdata, *Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
-		else MicroMet(*Xdata, *Mdata, true);
+	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {
+		if(alpine3d) MicroMet(Xdata, Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
+		else MicroMet(Xdata, Mdata, true);
 	}
 }
 
