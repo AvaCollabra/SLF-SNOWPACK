@@ -78,11 +78,11 @@ Saltation::Saltation(const mio::Config& cfg) : doorschot(false)
 double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0,
                         const double& u_start, const double& slope_angle)
 {
-	double u, B, hs;
-
-	hs = z0 / 100 + 0.6 * Optim::pow2(u_start) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
 	//  hs = DSQR(0.6*u_start)/(2.*Constants::g * cos(DEG_TO_RAD(slope_angle)));
-	B = (tauS - tauA) / log(hs / z0);
+	const double hs = z0 / 100. + 0.6 * Optim::pow2(u_start) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
+	const double B = (tauS - tauA) / log(hs / z0);
+
+	double u;
 	if (B > 0.0) {
 		u = (pow(tauA + B * log(z / z0), 1.5) - pow(tauA, 1.5))
 			/ (1.5 * B * Saltation::karman * sqrt(Constants::density_air));
@@ -106,26 +106,19 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
 double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0,
                          const double& u_start, const double& slope_angle)
 {
-	double u, hs, r, ustar, ustarz, dudz, z_act;
-	double dz = 0.00002;
-
-	u = 0; z_act = z0;
-
 	//  hs = z0 + DSQR(0.6*u_start)/(2.*Constants::g * cos(DEG_TO_RAD(slope_angle)));
-	hs = Optim::pow2(0.6 * u_start) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
+	const double hs = Optim::pow2(0.6 * u_start) / (2. * Constants::g * cos(DEG_TO_RAD(slope_angle)));
+	const double r = tauA / tauS;
+	const double ustar = sqrt(tauS / Constants::density_air);
 
-	r = tauA / tauS;
-	ustar = sqrt(tauS / Constants::density_air);
-	//  fprintf(stdout, "\n z_act=%lf, r=%lf, ustar=%l",z_act,r,ustar);
-
+	double u = 0., z_act = z0;
 	while (z_act < z) {
+		const double dz = 0.00002;
 		z_act += dz;
-		//    fprintf(stdout, "\n z_act=%lf",z_act);
-		ustarz = ustar * (1. - (1. - sqrt(r)) *  exp(-z_act / hs));
-		dudz = ustarz / Saltation::karman / z_act;
+		const double ustarz = ustar * (1. - (1. - sqrt(r)) *  exp(-z_act / hs));
+		const double dudz = ustarz / Saltation::karman / z_act;
 		u += dudz * dz;
 	}
-	//    fprintf(stdout, "\n z_act=%lf, ustarz=%lf, dudz=%lf, u=%lf",z_act,ustarz,dudz,u); }
 
 	return(u);
 }
@@ -156,7 +149,6 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
 	// Initialize velocities of particle and position
 	double xdot = u0 * cos(angle_e_rad);
 	double zdot = u0 * sin(angle_e_rad);
-	double x = xdot * DT;
 	double z = z0 + zdot * DT;
 
 	ubar = xdot;
@@ -181,7 +173,6 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
 		// Velocities & positions
 		xdot += xdotdot * DT;
 		zdot += zdotdot * DT;
-		x += xdot * DT;
 		z += zdot * DT;
 
 		ubar += xdot;
@@ -231,7 +222,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	const double u0 = Saltation::ratio_ve_ustar * sqrt((tauS - tau_th) / Constants::density_air);
 
 	// Iterate until stationary trajectory
-	double angle_i_rad=0., t_i=0.; //so the compiler doesn't complain about initialized vars
+	double angle_i_rad=0., t_i=0.;
 	double u_i = u0;
 	while (u_i == u0) {
 		if (!sa_Traject(u0, angle_e_rad, slope_angle, dg, tauA, tauS, z0, ubar, u_i, angle_i_rad, t_i, z_max)) {
@@ -399,51 +390,47 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const double& slope_angle, const double& dg,
                                   double& massflux, double& c_salt)
 {
-	int    k = 5;
-	double tauS = i_tauS;
-	double eps = 1e-5, ustar, ustar_thresh;
-	double tauA, tauA_left, tauA_right, tauA_middle, tau_r, tau_e = 0.;
-	double taumean, taumax, taustep, Cp, tau_j, Ptau_j, ubar = 0., z_lower = 0.;
-	double flux_mean = 0., cs_mean = 0., flux, cs;  // What we finally want
-
 	if (!doorschot) {
 		// Sorensen
-		ustar = sqrt(tauS / Constants::density_air);
-		ustar_thresh = sqrt(tau_th / Constants::density_air);
+		const double tauS = i_tauS;
+		const double ustar = sqrt(tauS / Constants::density_air);
+		const double ustar_thresh = sqrt(tau_th / Constants::density_air);
 		if (ustar > ustar_thresh) {
-			massflux = 0.0014 * Constants::density_air * ustar * (ustar - ustar_thresh) * (ustar + 7.6*ustar_thresh + 205);
-			c_salt = massflux / ustar*0.001;
-			// Arbitrary Scaling to match Doorschot concentration
+			massflux = 0.0014 * Constants::density_air * ustar * (ustar - ustar_thresh) * (ustar + 7.6*ustar_thresh + 205.);
+			c_salt = massflux / ustar*0.001; // Arbitrary Scaling to match Doorschot concentration
 		} else {
 			massflux = 0.;
 			c_salt = 0.;
 		}
 	} else {
+		int    k = 5;
 		// Judith
 		// Initialize Shear Stress Distribution
-		taumean = tauS;
-		taumax = 15.* tauS;
-		taustep = (taumax - tau_th) / k;
-		Cp = 1. / taumean;
-
+		const double taumean = i_tauS;
+		const double taumax = 15.* i_tauS;
+		const double taustep = (taumax - tau_th) / k;
+		const double Cp = 1. / taumean;
+		double tauA_middle=0.;
+		double flux_mean = 0., cs_mean = 0.;
 
 		for (int j = 0; j < k; j++) {
-			tau_j = tau_th + ((double)(j) + 0.5) * taustep;
-			Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
+			const double tau_j = tau_th + ((double)(j) + 0.5) * taustep;
+			const double Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
 
-			tauS = tau_j;
+			const double tauS = tau_j;
 
 			if(tauS > tau_th) {
-
+				double ubar = 0., z_lower = 0.;
+				double flux, cs; // What we finally want
 				// First test for large rebound thresholds
 				if (sa_TestSaltation(Saltation::z0_salt, tauS, tauS, slope_angle, dg, tau_th, z_lower, ubar) == Saltation::weak) {
-					tauA = sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
+					sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
 				} else {
 					// Use an iterative method to determine the rebound threshold at the ground
-					tauA_right = tauS;
-					tauA_left = 0.0;
+					const double eps = 1e-5;
+					double tauA_right = tauS, tauA_left = 0.;
 					do {
-						tauA_middle = (tauA_left + tauA_right) / 2.;
+						tauA_middle = .5 * (tauA_left + tauA_right);
 						// fprintf(stdout, "tauA=%lf \n",tauA_middle);
 						if (sa_TestSaltation(Saltation::z0_salt, tauS, tauA_middle, slope_angle,
 									      dg, tau_th, z_lower, ubar) == Saltation::strong) {
@@ -452,7 +439,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 							tauA_left = tauA_middle;
 						}
 					} while (tauA_right - tauA_left > eps);
-					tau_r = tauA_middle;
+					const double tau_r = tauA_middle;
 
 					/*
 					* Distinguish the different possibilities after Judith and compute
@@ -460,20 +447,19 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 					* for the hypothetical case of aerodynamic entrainment only given a
 					* certain overall shear stress, tauS
 					*/
-					tau_e = sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
+					const double tau_e = sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
 					if (tau_e < tau_th) {
-						tauA = tau_r;
+						const double tauA = tau_r;
 						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
 					} else if (tau_e < tau_r) {
-						tauA = tau_e;
+						//const double tauA = tau_e;
 					} else {
-						tauA = tau_r; // Flux computation is wrong, must be redone
+						const double tauA = tau_r; // Flux computation is wrong, must be redone
 						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
 					}
 				} // else large rebound threshold
 				cs_mean += cs * Ptau_j;
 				flux_mean += flux * Ptau_j;
-
 			} // if there is s.th. to do
 
 		} // for all shear stress classes
@@ -482,8 +468,6 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		massflux = flux_mean;
 		c_salt = cs_mean;
 	}
-
-	//  printf("Saltation Conc. %lf", c_salt);
 
 	return true;
 }

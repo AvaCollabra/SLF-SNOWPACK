@@ -944,9 +944,9 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 	} else if (i_hn_model == "ZWART") {
 		VW = MAX(2., VW);
 		RH = 0.8; // ori: MIN(1., RH/100.); see asin(sqrt()) below
-        const double beta01=3.28, beta1=0.03, beta02=-0.36, beta2=-0.75, beta3=0.3;
+		const double beta01=3.28, beta1=0.03, beta02=-0.36, beta2=-0.75, beta3=0.3;
 		double arg = beta01 + beta1*TA + beta2*asin(sqrt(RH)) + beta3*log10(VW);
-        if(TA>=-14.) arg += beta02; // += beta2*TA;
+		if(TA>=-14.) arg += beta02; // += beta2*TA;
 		rho_hn = pow(10., arg);
 
 	} else if (i_hn_model == "PAHAUT") {
@@ -958,6 +958,7 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		        i_hn_model.c_str());
 		exit(EXIT_FAILURE);
 	}
+
 	return(MIN(max_hn_density, MAX(min_hn_density, rho_hn)));
 }
 

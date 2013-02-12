@@ -1117,7 +1117,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	// not considering basal melt-freeze crusts
 	double L_base = L_base_0;
 	double L_sum = 0.;
-	double mean_hard=0., mean_red_hard=0.,mean_gsz = 0.; // Means
+	double mean_hard=0.,mean_gsz = 0.; // Means
 	const double thresh_hard = 19.472*pow(4., 2.3607); // Hardness threshold (N)
 	int mf_base = (hard[0] > thresh_hard); //HACK: this is actually a boolean
 	size_t e = 0; //element index
@@ -1127,17 +1127,15 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 			mf_base = 0;
 			L_base -= L_sum;
 			L_sum = 0.;
-			mean_hard = mean_red_hard = mean_gsz = 0.;
+			mean_hard = mean_gsz = 0.;
 		}
 		L_sum += L_el[e];
 		mean_hard += L_el[e]*hard[e];
-		mean_red_hard += L_el[e]*red_hard[e];
 		mean_gsz += L_el[e]*(2.*EMS[e+Xdata.SoilNode].rg);
 		e++;
 	}
 	// Averages
 	mean_hard /= L_sum;
-	mean_red_hard /= L_sum;
 	mean_gsz /= L_sum;
 
 	// Weak or strong base?

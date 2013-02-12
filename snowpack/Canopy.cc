@@ -552,10 +552,8 @@ double Canopy::cn_IntUnload(const double& capacity, const double& storage)
  * @param prec
  * @param *interception
  * @param direct
- * @param tair
  */
-double Canopy::cn_IntRate(const double& capacity, const double& storage, const double& prec,
-                          const double& direct, const double& tair)
+double Canopy::cn_IntRate(const double& capacity, const double& storage, const double& prec, const double& direct)
 {
 	const double interception = MIN ( ( 1.0 - direct ) * prec,
                                 Canopy::interception_timecoef * ( capacity - storage)*
@@ -1372,7 +1370,7 @@ void Canopy::runCanopyModel(CurrentMeteo *Mdata, SnowStation *Xdata, double roug
 
 	// 1.3 compute the interception [mm timestep-1] and update storage [mm]
 	const double precipitation = Mdata->hnw;
-	const double interception = cn_IntRate(intcapacity, Xdata->Cdata.storage, precipitation, Xdata->Cdata.direct_throughfall, Mdata->ta);
+	const double interception = cn_IntRate(intcapacity, Xdata->Cdata.storage, precipitation, Xdata->Cdata.direct_throughfall);
 
 	Xdata->Cdata.storage += interception;
 

@@ -582,8 +582,8 @@ typedef struct  {
 #define pSIZE_FIRST_COL(pROW)  (pMatSizeColBlock  + pROW->iColBlock)
 
 #define FIND_COL_BLOCK(pFIRST_BLK, COL, ppBLK, FOUND)                                          \
-{  SD_COL_BLOCK_DATA *pB_ ;                                                           \
-   int                Col0_, Col1_;                                                   \
+{  SD_COL_BLOCK_DATA *pB_ ;                                                                    \
+   int                Col0_, Col1_;                                                            \
    FOUND      = 0;                                                                             \
    pB_        = (pFIRST_BLK);                                                                  \
    Col0_      = COL+1;                                                                         \
@@ -607,15 +607,18 @@ typedef struct  {
 */
 
 #define FACT_SYM_MAT(MAT,N_ROW,N_COL)                                                          \
-{  int   n_k, n_i, m_n_1;  FLOAT Pivot, *Mat_k, *Mat_i;                                        \
-   if ( N_ROW>1 )                                                                              \
-   for ( Mat_k=MAT, n_k=N_COL, m_n_1=N_COL-N_ROW+1; n_k>=m_n_1; n_k-- )                        \
-   {  Pivot = 1./(*Mat_k);                                                                     \
+{  FLOAT *Mat_k, *Mat_i;                                                                       \
+   if ( N_ROW>1 ) {                                                                            \
+   const int m_n_1=N_COL-N_ROW+1;                                                              \
+   Mat_k=MAT;                                                                                  \
+   for ( int n_k=N_COL; n_k>=m_n_1; n_k-- )                                                    \
+   {  FLOAT Pivot = 1./(*Mat_k);                                                               \
       Mat_i = Mat_k++;                                                                         \
-      for ( n_i=n_k; n_i>m_n_1; Mat_k++ )                                                      \
+      for ( int n_i=n_k; n_i>m_n_1; Mat_k++ )                                                  \
       {  Mat_i += n_i--;  VD_AXPY(n_i, -(*Mat_k)*Pivot, Mat_k, Mat_i);  }                      \
       Mat_k += m_n_1 - 1;                                                                      \
    }                                                                                           \
+  }                                                                                            \
 }
 
 #define FACT_SYM_MAT_UNUSED(MAT,N)                                                             \
@@ -773,13 +776,13 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 */
 
 #define SEARCH_COL(COL, ROW, pMAT, pROW, FOUND, OFFSET)                                        \
-{  int  i_, delta_, *col_, *size_;                                                   \
+{  int *col_, *size_;                                                   \
    col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);                                                 \
    size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);                                                 \
-   delta_   = ROW - pROW->Row0;                                                                \
+   const int delta_   = ROW - pROW->Row0;                                                                \
    OFFSET   = pROW->iFloat + DIAGONAL(pROW->nCol, delta_);                                     \
    {  ++col_;                                                                                  \
-      for(i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++)                 \
+      for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++)                 \
       {  if ( COL < col_[0] )  break;  }                                                       \
        --col_;                                                                                 \
       if ( COL >= col_[0]+size_[0] ) {  FOUND = 0; }                                           \

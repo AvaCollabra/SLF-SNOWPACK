@@ -47,7 +47,7 @@ class Canopy {
 		double cn_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
 		double cn_IntUnload(const double& capacity, const double& storage);
 		double cn_IntRate(const double& capacity, const double& storage, const double& prec,
-		                  const double& direct, const double& tair);
+		                  const double& direct);
 
 		double cn_CanopyAlbedo(const double& tair, const double& wetfrac);
 		double cn_TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double SkyViewFraction,

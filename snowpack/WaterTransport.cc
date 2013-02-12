@@ -745,8 +745,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	//NIED (H. Hirashima) //Fz HACK Below follow some NIED specific declarations; please describe
 	std::vector<double> Such(nE, 0.);		//Suction pressure head
 	std::vector<double> HydK(nE, 0.);		//Hydraulic Conductivity
-	double WCMin,SEff,SEff1;			//Minimum water content, effective saturation.
-	double ThR,ThS,SatK,ThR1,ThS1,SatK1;  		//Residual water content, saturated water content and saturated hydraulic conductivity for both layers respectively.
+	double ThR,ThS,SatK,ThR1,ThS1;  		//Residual water content, saturated water content and saturated hydraulic conductivity for both layers respectively.
 	double FluxQ;					//Flux between layers
 	double Rh0,Rh1,Rk0,Rk1;
 	double q0, qlim, qlim0, qlim1;
@@ -926,15 +925,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					if ((iwatertransportmodel_snow == NIED && eUpper>=Xdata.SoilNode) || (iwatertransportmodel_soil == NIED && eUpper<Xdata.SoilNode)) {	//For watertransport model NIED we redefine dThetaW_upper
 						// The WaterTransport model "NIED" was developed by Hiroyuki Hirashima, Snow and Ice Research Center, NIED under support of the NIED project 'A research project for developing a snow disaster forecasting system and snow-hazard maps'.
 						// For details, see: Hirashima et al. (2010) Numerical modeling of liquid water movement through layered snow based on new measurements of the water retention curve. Cold Regions Science and Technology, 64(2), 94-103.
-						WCMin = 0.001;
 						ThR = 0.024;
 						ThR1 = 0.024;
 						ThS = (1. - EMS[eUpper].theta[ICE])*(Constants::density_ice/Constants::density_water);
 						ThS1 = (1. - EMS[eLower].theta[ICE])*(Constants::density_ice/Constants::density_water);
-						SEff = (EMS[eUpper].theta[WATER] - ThR) / (ThS - ThR);
-						SEff1 = (EMS[eLower].theta[WATER] - ThR1) / (ThS1 - ThR1);
 						SatK = 0.077 * (EMS[eUpper].rg / 1000.)*(EMS[eUpper].rg / 1000.) * exp(-7.8 * EMS[eUpper].theta[ICE] * 0.917) * 1000. * 9.8 / 0.001792;
-						SatK1 = 0.077 * (EMS[eLower].rg / 1000.)*(EMS[eLower].rg / 1000.) * exp(-7.8 * EMS[eLower].theta[ICE] * 0.917) * 1000. * 9.8 / 0.001792;
 
 						KHCalcNaga(EMS[eUpper].rg * 2.0, EMS[eUpper].theta[ICE] * Constants::density_ice, ThR, EMS[eUpper].theta[WATER], SatK, &Rh0, &Rk0);
 						KHCalcNaga(EMS[eLower].rg * 2.0, EMS[eLower].theta[ICE] * Constants::density_ice, ThR, EMS[eLower].theta[WATER], SatK, &Rh1, &Rk1);
