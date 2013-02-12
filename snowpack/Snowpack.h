@@ -125,6 +125,11 @@ class Snowpack {
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);
 
+		void setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &EMS);
+
+		void fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
+		                        const bool& is_surface_hoar, const unsigned int& number_of_solutes, ElementData &elem);
+
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
 		                  SurfaceFluxes& Sdata);
 
