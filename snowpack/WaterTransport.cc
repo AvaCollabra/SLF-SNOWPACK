@@ -546,7 +546,6 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	size_t eUpper = nE; // Index of the upper element, the properties of which will be transferred to the lower adjacent one
 	while (eUpper-- > Xdata.SoilNode) {
 		bool enforce_merge = true;	// To enforce merging in special cases
-		bool merged = true;		// true: element is finally merged, false: element is finally removed.
 		if ((EMS[eUpper].L < minimum_l_element) || (EMS[eUpper].mk%100 == 3)) {
 			if ((EMS[eUpper].mk >= 100) && (EMS[eUpper].L >= 0.5 * minimum_l_element)) {
 				enforce_merge = false;
@@ -567,6 +566,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
 		           && (EMS[eUpper].mk % 100 != 9)) {  	// no PLASTIC or WATER_LAYER please
 			bool UpperJoin=false;			// Default is joining with elements below
+			bool merged = true;		// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
 				// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
 				if( (iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {

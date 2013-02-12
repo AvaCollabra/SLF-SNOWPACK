@@ -399,7 +399,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const double& slope_angle, const double& dg,
                                   double& massflux, double& c_salt)
 {
-	int    j, k = 5;
+	int    k = 5;
 	double tauS = i_tauS;
 	double eps = 1e-5, ustar, ustar_thresh;
 	double tauA, tauA_left, tauA_right, tauA_middle, tau_r, tau_e = 0.;
@@ -427,7 +427,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		Cp = 1. / taumean;
 
 
-		for (j = 0; j < k; j++) {
+		for (int j = 0; j < k; j++) {
 			tau_j = tau_th + ((double)(j) + 0.5) * taustep;
 			Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));
 

@@ -1483,7 +1483,7 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 		        "Vector of positions resized to MAX_NUMBER_MEAS_TEMPERATURES (%u). Check FIXED_POSITIONS in SnowpackAdvanced section!",
 		        maxNumberMeasTemperatures);
 	}
-	if (fixedPositions.size() == 0)
+	if (fixedPositions.size() == 0) //HACK: suspiscious
 		fixedPositions.clear();
 
 	size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
@@ -1637,7 +1637,6 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& Sdata)
 	os << "Mass change: hoar=" << Sdata.hoar << " drift=" << Sdata.drift << " snow depth correction=" << Sdata.dhs_corr << endl;
 	os << "Snow: mRho_hn=" << Sdata.mRho_hn << " cRho_hn=" << Sdata.cRho_hn << endl;
 
-	stringstream ss;
 	os << Sdata.mass.size() << " mass fluxes: ";
 	for (unsigned int ii=1; ii<Sdata.mass.size(); ii++) {
 		os << Sdata.mass[ii] << " ";

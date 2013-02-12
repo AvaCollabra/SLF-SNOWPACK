@@ -92,7 +92,6 @@ vector<string> vecStationIDs;
 struct MainControl
 {
 	double Duration;     ///< Duration of run (s)
-	double TimeN;        ///< Time of present computation (s)
 	size_t nStep;        ///< Time step number
 	size_t nAvg;         ///< Number of calculation time steps to average fluxes etc.
 	size_t HzStep;       ///< Hazard step number (should be half of nStep in operational mode)
@@ -100,8 +99,6 @@ struct MainControl
 	bool   HzDump;       ///< Calculation of hazard information will be performed
 	bool   PrDump;       ///< Flag for profile dump
 	bool   XdataDump;    ///< Backup of Xdata will be performed
-	bool   TaglayDump;   ///< Flag for tagged layer series dump
-	bool   PrTabDump;    ///< Flag for tabular profile dump
 	bool   resFirstDump; ///< Flag to dump initial state of snowpack
 };
 

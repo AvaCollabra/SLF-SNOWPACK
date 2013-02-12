@@ -538,7 +538,6 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 	//0 means no soil, 10000 means rock
 	if ((Edata.rg > 0.) && (Edata.rg < 10000.)) {
 		const double c_clay = 1.3, c_sand = 0.27;
-		const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
 		const double beta1 = 6., beta2 = 4.978, c_mineral = 2.9;
 		const double weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
 		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
@@ -546,9 +545,10 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		                              * SnLaws::conductivity_ice(Edata.Te);
 
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
-		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil)
-			C_eff_soil += MAX(0.27,(alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]));
-		else
+		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil) {
+            const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
+			C_eff_soil += MAX( 0.27, (alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]) );
+		} else
 			C_eff_soil += 0.27;
 		C_eff_soil = MIN(C_eff_soil_max, C_eff_soil);
 	} else {
@@ -880,10 +880,10 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 
 	switch (i_event) {
 	case event_wind: {
-		const double rho_0=361., rho_1=33.;
-		if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim))
+		if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
+            const double rho_0=361., rho_1=33.;
 			return (rho_0*log10(Mdata.vw_avg) + rho_1);
-		else
+		} else
 			return Constants::undefined;
 	}
 	default:
@@ -942,14 +942,11 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		rho_hn = exp(arg);
 
 	} else if (i_hn_model == "ZWART") {
-		double arg;
-		const double beta01=3.28, beta1=0.03, beta02=-0.36, beta2=-0.75, beta3=0.3;
 		VW = MAX(2., VW);
 		RH = 0.8; // ori: MIN(1., RH/100.); see asin(sqrt()) below
-		if (TA < -14.)
-			arg = beta01 + beta1*TA + beta2*asin(sqrt(RH)) + beta3*log10(VW);
-		else
-			arg = beta01 + beta1*TA + beta02 + beta2*asin(sqrt(RH)) + beta3*log10(VW); // += beta2*TA;
+        const double beta01=3.28, beta1=0.03, beta02=-0.36, beta2=-0.75, beta3=0.3;
+		double arg = beta01 + beta1*TA + beta2*asin(sqrt(RH)) + beta3*log10(VW);
+        if(TA>=-14.) arg += beta02; // += beta2*TA;
 		rho_hn = pow(10., arg);
 
 	} else if (i_hn_model == "PAHAUT") {

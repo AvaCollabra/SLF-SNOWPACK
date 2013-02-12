@@ -557,18 +557,9 @@ double Canopy::cn_IntUnload(const double& capacity, const double& storage)
 double Canopy::cn_IntRate(const double& capacity, const double& storage, const double& prec,
                           const double& direct, const double& tair)
 {
-	double interception;
-
-	if ( K_TO_C(tair) < thresh_rain ){
-		interception = MIN ( ( 1.0 - direct ) * prec,
-		               Canopy::interception_timecoef * ( capacity - storage )*
-		               ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
-	} else{
-		interception = MIN ( ( 1.0 - direct ) * prec,
-		               Canopy::interception_timecoef * ( capacity - storage)*
-		               ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
-	}
-
+	const double interception = MIN ( ( 1.0 - direct ) * prec,
+                                Canopy::interception_timecoef * ( capacity - storage)*
+                                ( 1.0 - exp( -(1.0 - direct) * prec / capacity ) ) );
 	if ( interception < 0.0)
 		return 0.;
 

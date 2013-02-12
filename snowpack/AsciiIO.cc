@@ -1595,7 +1595,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			throw InvalidFormatException(ss.str(), AT);
 		}
         char dummy[MAX_STRING_LENGTH]="\000";
-		sscanf(dummy_l, "%s", dummy);
+		sscanf(dummy_l, "%255s", dummy);
 		if ((strcmp(dummy, first_string) != 0)) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Header in %s should read %s, not %s", fnam, first_string, dummy);
 			return false;
