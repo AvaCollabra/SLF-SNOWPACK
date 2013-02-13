@@ -651,7 +651,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double track_accuracy_h=0.;			//This variable tracks the accuracy of convergence for all h-convergence based layers.
 	double track_accuracy_theta=0.;			//This variable tracks the accuracy of convergence for all theta-convergence based layers.
 	double max_delta_h=0.;				//Tracks max_delta_h, to determine if our time step is too large. Note: this is different from checking the convergence criterion. This is just to check the time step. If a too large time step is used, big values of delta_h may arise, which cause pressure head to hit the singularities for dry and wet soil, and causes problems with the power functions in the Von Genuchten-Mualem model.
-	double max_delta_h_ratio=0.;			//Tracks abs(delta_h/h) to determine of changes in pressure head are too big. Then, the time step is too large.
 	int track_trigger_layer_accuracy=-1;		//This variable tracks the layer were the accuracy is smallest (this means: most difficulty in converging).
 	bool boolConvergence=false;			//true: convergence is reached, false: convergence not reached
 	double mass1=0, mass2=0, massbalanceerror=0.;	//Mass balance check variables.
@@ -1673,7 +1672,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			trigger_layer_accuracy=-1;		//-1 is a flag. when it is negative, we know that no layer was NOT converged yet.
 			int trigger_layer_blowup=-1;		//-1 is a flag. when it is negative, we know that no layer was NOT converged yet.
 			max_delta_h=0.;
-			max_delta_h_ratio=0.;
 			boolConvergence=true;			//We initialize it as true, and set it to false when necessary.
 			mass2=0.;
 
@@ -2258,7 +2256,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
 		double ql=(refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
 
-		double hoar=0.;
 		double dL=0.;
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE-1;
@@ -2295,10 +2292,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 			ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
-			// If present at surface, surface hoar is sublimated away
-			if (e == nE-1) {
-				hoar = dM;
-			}
 			e--;
 		}
 		//Remaining energy should go back again into refusedtopflux
