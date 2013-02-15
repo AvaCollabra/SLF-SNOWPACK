@@ -1119,12 +1119,12 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	double L_sum = 0.;
 	double mean_hard=0.,mean_gsz = 0.; // Means
 	const double thresh_hard = 19.472*pow(4., 2.3607); // Hardness threshold (N)
-	int mf_base = (hard[0] > thresh_hard); //HACK: this is actually a boolean
+	bool mf_base = (hard[0] > thresh_hard);
 	size_t e = 0; //element index
 
 	while ( L_sum <= L_base ) {
 		if ( mf_base && (hard[e] < thresh_hard) ) {
-			mf_base = 0;
+			mf_base = false;
 			L_base -= L_sum;
 			L_sum = 0.;
 			mean_hard = mean_gsz = 0.;

@@ -239,7 +239,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 
 	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ) {
-		const double hsalt = z0 + Saltation::hs_frac * 0.5 * Optim::pow2(u0 * cos(angle_e_rad)) / 2. / Constants::g; //HACK: are we not /2 twice?
+		const double hsalt = z0 + Saltation::hs_frac * Optim::pow2(u0 * cos(angle_e_rad)) / (4. * Constants::g);
 		const double udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e_rad), slope_angle);
 		const double ulog = sqrt(tauS / Constants::density_air) / Saltation::karman * log(hsalt / z0);
 		cs = MIN (0.02, Constants::density_air * Optim::pow2((ulog - udisturb)/ubar) );
@@ -324,7 +324,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 
 	// Now compute the concentration
 	if ( (u0 > 0.0) && (ubar > 0.0) ){
-		const double hsalt = z0 + Saltation::hs_frac * 0.5 * Optim::pow2(u0 * cos(angle_e_rad)) / 2. / Constants::g; //HACK: are we not /2 twice?
+		const double hsalt = z0 + Saltation::hs_frac * Optim::pow2(u0 * cos(angle_e_rad)) / (4. * Constants::g);
 		const double udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e_rad), slope_angle);
 		const double ulog = sqrt(tauS / Constants::density_air) / Saltation::karman * log(hsalt / z0);
 		cs = MIN (0.02, Constants::density_air * Optim::pow2((ulog - udisturb)/ubar) );

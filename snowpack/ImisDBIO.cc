@@ -34,9 +34,9 @@ const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE sta
 
 const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43)";
 
-string ImisDBIO::oracleDB = "";
-string ImisDBIO::oracleUser = "";
-string ImisDBIO::oraclePassword = "";
+string ImisDBIO::oracleDB;
+string ImisDBIO::oracleUser;
+string ImisDBIO::oraclePassword;
 
 const std::string ImisDBIO::profile_filename = "loaddata/pmodpro.dat";
 
@@ -164,7 +164,7 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 		//This means specify a different import date format for the database and remove the offset here
 		const double profile_date = Pdata[nL-1].profileDate.getJulian() - 2415021. + 0.5; //HACK
 		const double layer_date = Pdata[nL-1].layerDate.getJulian() - 2415021. + 0.5; //HACK
-		double gsz_SH = NDS[nE].hoar / hoar_density_surf;
+		const double gsz_SH = NDS[nE].hoar / hoar_density_surf;
 		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
 
 		Pfile << fixed << setprecision(6) << profile_date << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
@@ -184,7 +184,7 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 		return false; //nothing to do
 	}
 
-	if ((oracleDB == "") || (oraclePassword == "") || (oracleUser == "")){
+	if ((oracleDB.empty()) || (oraclePassword.empty()) || (oracleUser.empty())){
 		//throw IOException("You must set the output database, username and password", AT);
 		if (num >= (int)Hdata.size()){
 			prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No data written to %s!", oracleDB.c_str());
@@ -193,16 +193,14 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 		return false; //nothing to do
 	}
 
-	string stationName="", stationNumber="";
+	string stationName, stationNumber;
 	parseStationName(stationID, stationName, stationNumber);
 
 	Environment *env = NULL;
 
 	try {
 		env = Environment::createEnvironment();// static OCCI function
-		Connection *conn = NULL;
-
-		conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
+		Connection *conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
 
 		deleteHdata(stationName, stationNumber, Hdata[0].date, Hdata[num-1].date, env, conn);
 		insertHdata(stationName, stationNumber, Hdata, Hdata_ind, num, env, conn);
@@ -256,19 +254,19 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 	if (datestart[3] == 24){
-		mio::Date tmpDate = dateS + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+		const mio::Date tmpDate = dateS + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
 	}
 	if (dateend[3] == 24){
-		mio::Date tmpDate = dateEnd + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+		const mio::Date tmpDate = dateEnd + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	}
 
 	Statement *stmt  = conn->createStatement(sqlDeleteHdata);
 
 	// construct the oracle specific Date object: year, month, day, hour, minutes
-	occi::Date begindate(env, datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	occi::Date enddate(env, dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
+	const occi::Date begindate(env, datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
+	const occi::Date enddate(env, dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	stmt->setString(1, stationName);   // set 1st variable's value (station name)
 	stmt->setString(2, stationNumber); // set 2nd variable's value (station number)
 	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
@@ -385,10 +383,10 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	double sn_version;
 	IOUtils::convertString(sn_version, Hdata[0].sn_version);
 
-	mio::Date dateSn( Hdata[0].sn_jul_computation_date, time_zone );
+	const mio::Date dateSn( Hdata[0].sn_jul_computation_date, time_zone );
 	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){
-		mio::Date tmpDate = dateSn + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+		const mio::Date tmpDate = dateSn + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
@@ -402,15 +400,15 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 
 		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
 		if (hzdate[3] == 24){
-			mio::Date tmpDate = dateH + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+			const mio::Date tmpDate = dateH + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 			tmpDate.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
 		}
 
 		Statement *stmt  = conn->createStatement(sqlInsertHdata);
 
 		// construct the oracle specific Date object: year, month, day, hour, minutes
-		occi::Date hazarddate(env, hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
-		occi::Date computationdate(env, sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
+		const occi::Date hazarddate(env, hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
+		const occi::Date computationdate(env, sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 
 		int statNum = 0;
 		IOUtils::convertString(statNum, stationNumber);

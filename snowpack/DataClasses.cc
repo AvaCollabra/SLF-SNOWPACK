@@ -1483,10 +1483,10 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 		        "Vector of positions resized to MAX_NUMBER_MEAS_TEMPERATURES (%u). Check FIXED_POSITIONS in SnowpackAdvanced section!",
 		        maxNumberMeasTemperatures);
 	}
-	if (fixedPositions.size() == 0) //HACK: suspiscious
+	if (fixedPositions.empty()) //HACK: suspiscious
 		fixedPositions.clear();
 
-	size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
+	const size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
 	ts.resize(number_ts, mio::IOUtils::nodata);
 	zv_ts.resize(number_ts, mio::IOUtils::nodata);
 }
@@ -1663,7 +1663,7 @@ LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
 const bool Tag::metamo_expl = false;
 
-Tag::Tag() : label(""), date(), elem(-1), previous_depth(IOUtils::nodata),
+Tag::Tag() : label(), date(), elem(-1), previous_depth(IOUtils::nodata),
 		   etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
 {}
 

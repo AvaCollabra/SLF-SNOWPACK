@@ -60,9 +60,9 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 
 	// Input section
 	cfg.getValue("METEOPATH", "Input", inpath, Config::nothrow);
-	string snowpath("");
+	string snowpath;
 	cfg.getValue("SNOWPATH", "Input", snowpath, Config::nothrow);
-	if (snowpath != "") {
+	if (!snowpath.empty()) {
 		i_snopath = snowpath;
 	} else {
 		i_snopath = inpath;
@@ -86,7 +86,7 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("OUT_T", "Output", out_t);
 	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, Config::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, Config::nothrow);
-	if (snowpath != "") {
+	if (!snowpath.empty()) {
 		o_snopath = snowpath;
 	} else {
 		o_snopath = outpath;
@@ -151,8 +151,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		snofilename += ".snoold";
 	}
 
-	FILE *fin=NULL;
-	fin = fopen(snofilename.c_str(), "r");
+	FILE *fin = fopen(snofilename.c_str(), "r");
 	if (fin == NULL) {
 		prn_msg(__FILE__, __LINE__, "msg+", Date(), "Cannot open profile INPUT file: %s", snofilename.c_str());
 		throw IOException("Cannot generate Xdata from file "+snofilename, AT);
@@ -444,9 +443,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-	std::ofstream fout;
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snoold";
-
 	if (forbackup){
 		stringstream ss;
 		ss << (int)(date.getJulian() + 0.5);
@@ -454,6 +451,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	}
 
 	const vector<ElementData>& EMS = Xdata.Edata;
+	std::ofstream fout;
 	fout.open(snofilename.c_str());
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", date,"Cannot open profile OUTPUT file: %s", snofilename.c_str());
@@ -571,7 +569,6 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
 void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
-	FILE *PFile=NULL;
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
@@ -591,10 +588,11 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	}
 
-	if (!(PFile = fopen(filename.c_str(), "a"))) {
+	FILE *PFile = fopen(filename.c_str(), "a");
+	if (!PFile) {
 		prn_msg(__FILE__, __LINE__, "err", i_date,
 			   "Cannot open profile series file: %s", filename.c_str());
-		throw IOException("Cannot dum profile " + filename + "for Java Visualisation", AT);
+		throw IOException("Cannot dump profile " + filename + "for Java Visualisation", AT);
 	}
 
 	fprintf(PFile,"\n0500,%s", i_date.toString(Date::DIN).c_str());
@@ -1026,7 +1024,7 @@ size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
  */
 bool AsciiIO::parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp)
 {
-	string tmpline = "";
+	string tmpline;
 	vector<string> vecTmp;
 	Date current_date;
 
@@ -1081,7 +1079,7 @@ bool AsciiIO::parseMetFile(const char& eoln, const mio::Date& start_date, std::i
  */
 bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp)
 {
-	string tmpline = "";
+	string tmpline;
 	vector<string> vecTmp;
 	Date current_date;
 
@@ -1139,7 +1137,7 @@ bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::i
 bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate, const std::string& ftype)
 {
 	//Check if file has already been checked
-	set<string>::const_iterator it = setAppendableFiles.find(filename);
+	const set<string>::const_iterator it = setAppendableFiles.find(filename);
 	if (it != setAppendableFiles.end()) //file was already checked
 		return true;
 
@@ -1220,8 +1218,6 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
                               const CurrentMeteo& Mdata, const ProcessDat& Hdata,
                               const double wind_trans24)
 {
-	FILE *TFile=NULL;
-
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const int nN = Xdata.getNumberOfNodes();
@@ -1243,7 +1239,8 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	}
 
-	if (!(TFile = fopen(filename.c_str(), "a"))) {
+	FILE *TFile = fopen(filename.c_str(), "a");
+	if (!TFile) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Cannot open time series file: %s", filename.c_str());
 		throw FileAccessException(filename, AT);
 	}
@@ -1581,11 +1578,8 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata,
                           const char *ext, ...)
 {
-	FILE *fin=NULL;
-	va_list argptr; // get an arg ptr
-	SnowStation *va_Xdata;
-
-	if ((fin = fopen(fnam, "r"))) {
+	FILE *fin = fopen(fnam, "r");
+	if (fin) {
 		// Check header of existing file
 		char dummy_l[MAX_LINE_LENGTH]="\000";
 		if( fgets(dummy_l, MAX_LINE_LENGTH, fin) == NULL) {
@@ -1594,7 +1588,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			ss << "Can not read header of file " << fnam;
 			throw InvalidFormatException(ss.str(), AT);
 		}
-        char dummy[MAX_STRING_LENGTH]="\000";
+		char dummy[MAX_STRING_LENGTH]="\000";
 		sscanf(dummy_l, "%255s", dummy);
 		if ((strcmp(dummy, first_string) != 0)) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Header in %s should read %s, not %s", fnam, first_string, dummy);
@@ -1605,18 +1599,18 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 		// Check header only!
 		return false;
 	} else {
-	    FILE *fout=NULL;
-		if (!(fout = fopen(fnam, "w")))
+		FILE *fout = fopen(fnam, "w");
+		if (!fout)
 			return false;
 		// Initialize argptr to point to the first argument after the ext string
+		va_list argptr; // get an arg ptr
 		va_start(argptr, ext);
 
 		if ((strcmp(ext, "err") == 0)) {
 			fprintf(fout, "[SNOWPACK_ERROR_LOG]");
 			fprintf(fout, "\n          RUNTIME :  STN LOC LINE MSG [JULIAN]");
 		} else if ((strcmp(ext, "met") == 0)) {
-		    size_t ii;
-			va_Xdata = va_arg(argptr, SnowStation *);
+			const SnowStation *va_Xdata = va_arg(argptr, SnowStation *);
 			const string stationname = va_Xdata->meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",  stationname.c_str());
@@ -1626,7 +1620,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\nSlopeAngle= %.2f", va_Xdata->meta.getSlopeAngle());
 			fprintf(fout, "\nSlopeAzi= %.2f",   va_Xdata->meta.getAzimuth());
 			fprintf(fout, "\nDepthTemp= %1d",  (va_Xdata->SoilNode > 0));
-			for (ii = 0; ii < fixedPositions.size(); ii++)
+			for (size_t ii = 0; ii < fixedPositions.size(); ii++)
 				fprintf(fout, ",%.3f", fixedPositions[ii]);
 			fprintf(fout, "\n\n[HEADER]");
 			if (out_haz) { // HACK To avoid troubles in A3D
@@ -1650,9 +1644,9 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 					fprintf(fout,",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-");
 				}
 			} else if (out_t) {
-				size_t i_prn;
 				size_t jj = 0;
-				for (ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+				for (size_t ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+					size_t i_prn;
 					if (ii < fixedPositions.size()) {
 						i_prn = ii + 1;
 						fprintf(fout, ",Temperature %u (modelled)", i_prn);
@@ -1674,17 +1668,13 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 					jj += 2;
 				}
 				if (va_Xdata->tag_low) {
-					size_t tag = va_Xdata->tag_low, j_lim;
-					while ((tag + ii) <= totNumberSensors) {
-						if ((tag + ii) <= numberMeasTemperatures) {
-							j_lim = 41;
-						} else {
-							j_lim = 43;
-						}
+					size_t tag = va_Xdata->tag_low;
+					while ((tag + numberFixedSensors) <= totNumberSensors) {
+						const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
 						if (jj < j_lim) {
 							fprintf(fout, ",H(tag%02u),T(tag%02u)", tag, tag);
 							jj += 2;
-							if (ii < numberMeasTemperatures) {
+							if (numberFixedSensors < numberMeasTemperatures) {
 								fprintf(fout, ",H(meas%02u),T(meas%02u)", tag, tag);
 								jj += 2;
 							}
@@ -1725,7 +1715,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 				}
 			} else if (out_t) {
 				size_t jj = 0;
-				for (ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+				for (size_t ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
 					if (ii >= fixedPositions.size()) {
 						fprintf(fout, ",cm");
 						jj++;
@@ -1738,16 +1728,13 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 					}
 				}
 				if (va_Xdata->tag_low) {
-					size_t tag = va_Xdata->tag_low, j_lim;
-					while ((tag + ii) <= totNumberSensors) {
-						if ((tag + ii) <= numberMeasTemperatures)
-							j_lim = 41;
-						else
-							j_lim = 43;
+					size_t tag = va_Xdata->tag_low;
+					while ((tag + numberFixedSensors) <= totNumberSensors) {
+						const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
 						if (jj < j_lim) {
 							fprintf(fout, ",cm,degC");
 							jj += 2;
-							if (ii < numberMeasTemperatures) {
+							if (numberFixedSensors < numberMeasTemperatures) {
 								fprintf(fout, ",cm,degC");
 								jj += 2;
 							}
@@ -1779,7 +1766,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 
 			fprintf(fout, "\n\n[DATA]");
 		} else if ((strcmp(ext, "pro") == 0)) {
-			va_Xdata = va_arg(argptr, SnowStation *);
+			const SnowStation *va_Xdata = va_arg(argptr, SnowStation *);
 			const string stationname = va_Xdata->meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",   stationname.c_str());
@@ -1932,12 +1919,12 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 
 		tagging_config.getValue("LABEL_" + ss.str(), TAGdata.tags[tag-1].label);
 
-		string date_string = "";
+		string date_string;
 		tagging_config.getValue("DATE_" + ss.str(), date_string);
 		IOUtils::convertString(TAGdata.tags[tag-1].date, date_string, time_zone);
 
 		if ( (tag >= TAGdata.repos_low) && (tag <= TAGdata.repos_top) ) {
-			int depth = fixedPositions.size() + tag - 1;
+			const int depth = fixedPositions.size() + tag - 1;
 			if ((int)Mdata.zv_ts.size() > depth) {
 				TAGdata.tags[tag-1].previous_depth = Mdata.zv_ts[depth];
 			} else { //HACK: can I do this? does this make sense?

@@ -140,7 +140,7 @@ void SnowpackConfig::setDefaults()
 		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", "0.02");
 	} else {
 		stringstream ss;
-		double tmp = 2.0 * minimum_l_element;
+		const double tmp = 2.0 * minimum_l_element;
 		ss << tmp;
 		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 	}
@@ -154,38 +154,38 @@ void SnowpackConfig::setDefaults()
 	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, Config::nothrow);
 
 
-	if ((variant == "") || (variant == "DEFAULT")) {
+	if ((variant.empty()) || (variant == "DEFAULT")) {
 
 		// Use default settings and ...
 
 	} else if (variant == "JAPAN") {
 
-		if (metamorphism_model == "") addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
-		if (strength_model == "") addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
-		if (watertransportmodel_snow == "") addKey("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", "NIED");
-		if (watertransportmodel_soil == "") addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
+		if (metamorphism_model.empty()) addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
+		if (strength_model.empty()) addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
+		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
+		if (watertransportmodel_snow.empty()) addKey("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", "NIED");
+		if (watertransportmodel_soil.empty()) addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
 
 	} else if (variant == "ANTARCTICA") {
 
-		if (hn_density == "") addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
+		if (hn_density.empty()) addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
 
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
 		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced",
 		                                     hoar_density_buried, Config::nothrow);
-		if (hoar_density_buried == "") addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
+		if (hoar_density_buried.empty()) addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
 
 		string force_rh_water; getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water, Config::nothrow);
-		if (force_rh_water == "") addKey("FORCE_RH_WATER", "SnowpackAdvanced", "false");
+		if (force_rh_water.empty()) addKey("FORCE_RH_WATER", "SnowpackAdvanced", "false");
 
 		string thresh_rh; getValue("THRESH_RH", "SnowpackAdvanced", thresh_rh, Config::nothrow);
-		if (thresh_rh == "") addKey("THRESH_RH", "SnowpackAdvanced", "0.7");
+		if (thresh_rh.empty()) addKey("THRESH_RH", "SnowpackAdvanced", "0.7");
 
 		if ( !enforce_measured_snow_heights) {
 			stringstream ss;
-			double tmp = 1.1 * minimum_l_element;
+			const double tmp = 1.1 * minimum_l_element;
 			ss << tmp;
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
@@ -202,18 +202,18 @@ void SnowpackConfig::setDefaults()
 
 	} else if (variant == "CALIBRATION") {
 
-		if (hn_density_model == "") addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
-		if (viscosity_model == "") addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
+		if (hn_density_model.empty()) addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
+		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
 		string fixed_positions; getValue("FIXED_POSITIONS", "SnowpackAdvanced", fixed_positions, Config::nothrow);
-		if (fixed_positions == "") addKey("FIXED_POSITIONS", "SnowpackAdvanced", "5");
+		if (fixed_positions.empty()) addKey("FIXED_POSITIONS", "SnowpackAdvanced", "5");
 		string number_fixed_rates; getValue("NUMBER_FIXED_RATES", "SnowpackAdvanced", number_fixed_rates, Config::nothrow);
-		if (number_fixed_rates == "") addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		if (number_fixed_rates.empty()) addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
 		string max_number_meas_temperatures;
 		getValue("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", max_number_meas_temperatures, Config::nothrow);
-		if (max_number_meas_temperatures == "") addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
+		if (max_number_meas_temperatures.empty()) addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, Config::nothrow);
-		if (min_depth_subsurf == "") addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
+		if (min_depth_subsurf.empty()) addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
 
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
@@ -226,19 +226,19 @@ void SnowpackConfig::setDefaults()
 	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); ++it){
 		//[SnowpackAdvanced] section
 		string value; getValue(it->first, "SnowpackAdvanced", value, Config::nothrow);
-		if (value == "") addKey(it->first, "SnowpackAdvanced", it->second);
+		if (value.empty()) addKey(it->first, "SnowpackAdvanced", it->second);
 	}
 
 	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); ++it){
 		//[Input] section
 		string value; getValue(it->first, "Input", value, Config::nothrow);
-		if (value == "") addKey(it->first, "Input", it->second);
+		if (value.empty()) addKey(it->first, "Input", it->second);
 	}
 
 	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); ++it){
 		//[Output] section
 		string value; getValue(it->first, "Output", value, Config::nothrow);
-		if (value == "") addKey(it->first, "Output", it->second);
+		if (value.empty()) addKey(it->first, "Output", it->second);
 	}
 
 	/**
@@ -252,7 +252,7 @@ void SnowpackConfig::setDefaults()
 	 *   Mass fluxes are cumulated over whole run period.
 	 * - WARNING: In operational mode and if NUMBER_SLOPES > 1, the above two values are always unset!
 	 */
-	unsigned int nSlopes = get("NUMBER_SLOPES", "Snowpack");
+	const unsigned int nSlopes = get("NUMBER_SLOPES", "Snowpack");
 	if (nSlopes > 1) {
 		addKey("AVGSUM_TIME_SERIES", "Output", "false");
 		addKey("CUMSUM_MASS", "Output", "false");
@@ -263,13 +263,13 @@ void SnowpackConfig::setDefaults()
 	 * WARNING: In operational mode, this has to result in a 30 min interval!
 	 * It is a matter of consitency. If you change this, a big mess will result!!!
 	 */
-	double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Snowpack");
+	const double calculation_step_length = get("CALCULATION_STEP_LENGTH", "Snowpack");
 
 	string hazard_steps_between;
 	getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between, Config::nothrow);
-	if (hazard_steps_between == "") {
+	if (hazard_steps_between.empty()) {
 		stringstream ss;
-		int tmp = (int)(30./calculation_step_length + 0.5);
+		const int tmp = (int)(30./calculation_step_length + 0.5);
 		ss << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}

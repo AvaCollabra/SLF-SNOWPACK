@@ -146,11 +146,9 @@ bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLay
 			}
 		}
 		else {
-			if (!((((Pdata[l_lower].marker > 9) &&  (Pdata[l_lower].marker < 13)) ||
-				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23)) ) &&
-				( ((Pdata[l_lower].marker > 9) &&  (Pdata[l_lower].marker < 13)) ||
-				((Pdata[l_lower].marker > 19) &&  (Pdata[l_lower].marker < 23))))) {  //HACK: suspiscious
-
+			if (!( (Pdata[l_lower].marker > 9 &&  Pdata[l_lower].marker < 13) ||
+				(Pdata[l_lower].marker > 19 &&  Pdata[l_lower].marker < 23) )) {
+				//no need to test on l_upper since marker(lower) must be = marker(upper)
 				if (Pdata[l_lower].marker != Pdata[l_upper].marker)
 					return false;
 			}
