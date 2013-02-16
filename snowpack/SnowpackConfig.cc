@@ -80,7 +80,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 
 	//[Input] section
-	inputConfig["METEOPATH"] = "./DATA/input";
+	inputConfig["METEOPATH"] = "./input";
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
 	inputConfig["SNOW"] = "SMET";
 	inputConfig["SOLUTE_NAMES"] = "NITRATE";
@@ -91,7 +91,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["CUMSUM_MASS"] = "false";
 	outputConfig["EXPERIMENT"] = "NO_EXP";
 	outputConfig["FIRST_BACKUP"] = "400.";
-	outputConfig["METEOPATH"] = "./DATA";
+	outputConfig["METEOPATH"] = "./output";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
 	outputConfig["OUT_HEAT"] = "true";
