@@ -543,7 +543,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
 
 	//Initializations
-	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ};
+	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, ALPINE3D};
 
 	//
 	// BEGIN OF SETTIGS
@@ -978,6 +978,24 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			case WFJ:
 				//Case WFJ:
 				SetSoil(GRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				break;
+			case ALPINE3D:
+				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
+				if(EMS[SnowpackElement[i]].rg < 0.5) {
+					SetSoil(ORGANIC, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 1.) {
+					SetSoil(CLAY, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 3.) {
+					SetSoil(LOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 5.) {
+					SetSoil(SILTLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 8.) {
+					SetSoil(SANDYLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 10.) {
+					SetSoil(FINESAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else {
+					SetSoil(GRAVELSAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				}
 				break;
 			}
 			//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
