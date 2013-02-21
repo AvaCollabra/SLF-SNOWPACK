@@ -34,17 +34,17 @@ SmetIO::SmetIO(const mio::Config& cfg)
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
-	cfg.getValue("METEOPATH", "Output", outpath, Config::nothrow);
-	cfg.getValue("SNOWPATH", "Output", snowpath, Config::nothrow);
+	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
+	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
 		o_snopath = snowpath;
 	} else {
 		o_snopath = outpath;
 	}
 
-	cfg.getValue("METEOPATH", "Input", inpath, Config::nothrow);
+	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
 	snowpath = string();
-	cfg.getValue("SNOWPATH", "Input", snowpath, Config::nothrow);
+	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
 		i_snopath = snowpath;
 	} else {

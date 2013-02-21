@@ -115,7 +115,7 @@ Slope::Slope(const mio::Config& i_cfg)
 	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
 	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
 
-	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::Config::nothrow);
+	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
 	sector_width = 360./MAX(1, nSlopes-1);
 	south = getSectorDir(180.);
 }
@@ -130,8 +130,7 @@ int Slope::getSectorDir(const double& dir_or_expo) const
 	double dir = dir_or_expo;
 	if (dir > 360.) dir -= 360.;
 	else if (dir < 0.) dir += 360.;
-	size_t sectorDir = int (floor((dir + 0.5*sector_width)/sector_width));
-	sectorDir++;
+	const size_t sectorDir = int(floor((dir + 0.5*sector_width)/sector_width)) + 1;
 	if (sectorDir >= nSlopes) return 1;
 	else return sectorDir;
 }
@@ -557,7 +556,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	stringstream ss;
 	ss.str("");
 	ss << "SNOWFILE" << i_stn+1;
-	cfg.getValue(ss.str(), "Input", snowfile, mio::Config::nothrow);
+	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
 
 	for (size_t sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
 		try {
@@ -674,7 +673,7 @@ void real_main (int argc, char *argv[])
 
 	string outpath(""), experiment("");
 	string variant("");
-	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::Config::nothrow);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::IOUtils::nothrow);
 
 	// Add keys to perform running mean in Antarctic variant
 	if (variant == "ANTARCTICA") {
@@ -691,8 +690,8 @@ void real_main (int argc, char *argv[])
 	if ((tst_sw_mode % 10) == 2) {
 		// Make sure there is not only one of ISWR and RSWR available
 		bool iswr_inp=true, rswr_inp = true;
-		cfg.getValue("ISWR_INP","Input",iswr_inp,Config::nothrow);
-		cfg.getValue("RSWR_INP","Input",rswr_inp,Config::nothrow);
+		cfg.getValue("ISWR_INP","Input",iswr_inp,IOUtils::nothrow);
+		cfg.getValue("RSWR_INP","Input",rswr_inp,IOUtils::nothrow);
 		if (!(iswr_inp && rswr_inp)) {
 			cerr << "[E] SW_MODE = 2: Please set both ISWR_INP and RSWR_INP to true in [Input]-section of io.ini!\n";
 			exit(1);
@@ -726,7 +725,7 @@ void real_main (int argc, char *argv[])
 			detect_grass = true;
 		}
 	} else {
-		cfg.getValue("EXPERIMENT", "Output", experiment, mio::Config::nothrow);
+		cfg.getValue("EXPERIMENT", "Output", experiment, mio::IOUtils::nothrow);
 		cfg.getValue("METEOPATH", "Output", outpath);
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Experiment : %s", experiment.c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Output dir : %s", outpath.c_str());
@@ -751,17 +750,17 @@ void real_main (int argc, char *argv[])
 	const double sn_dt = M_TO_S(calculation_step_length); //Calculation time step in seconds
 
 	int nSolutes = Constants::iundefined;
-	cfg.getValue("NUMBER_OF_SOLUTES", "Input", nSolutes, mio::Config::nothrow);
+	cfg.getValue("NUMBER_OF_SOLUTES", "Input", nSolutes, mio::IOUtils::nothrow);
 	if (nSolutes > 0) SnowStation::number_of_solutes = unsigned(nSolutes);
 
 	//Interval between profile backups (*.sno\<JulianDate\>) (d)
 	double backup_days_between = 400.;
-	cfg.getValue("BACKUP_DAYS_BETWEEN", "Output", backup_days_between, mio::Config::nothrow);
+	cfg.getValue("BACKUP_DAYS_BETWEEN", "Output", backup_days_between, mio::IOUtils::nothrow);
 	//First additional profile backup (*.sno\<JulianDate\>) since start of simulation (d)
 	double first_backup = 0.;
-	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::Config::nothrow);
+	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
 
-	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::Config::nothrow);
+	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::IOUtils::nothrow);
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
 	const double profstart = cfg.get("PROF_START", "Output");
 	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
@@ -770,9 +769,9 @@ void real_main (int argc, char *argv[])
 	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
 	const size_t hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Output");
 
-	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::Config::nothrow);
-	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::Config::nothrow);
-	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::Config::nothrow);
+	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
+	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
+	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
 
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //This means that the user provides the station IDs on the command line

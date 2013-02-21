@@ -59,9 +59,9 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	sw_mode %= 10;
 
 	// Input section
-	cfg.getValue("METEOPATH", "Input", inpath, Config::nothrow);
+	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
 	string snowpath;
-	cfg.getValue("SNOWPATH", "Input", snowpath, Config::nothrow);
+	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
 		i_snopath = snowpath;
 	} else {
@@ -70,10 +70,10 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("TIME_ZONE", "Input", time_zone);
 
 	// Output section
-	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, Config::nothrow);
+	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, IOUtils::nothrow);
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
-	cfg.getValue("METEOPATH", "Output", outpath, Config::nothrow);
+	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
 	cfg.getValue("OUT_CANOPY", "Output", out_canopy);
 	cfg.getValue("OUT_HAZ", "Output", out_haz);
 	cfg.getValue("OUT_HEAT", "Output", out_heat);
@@ -84,8 +84,8 @@ AsciiIO::AsciiIO(const mio::Config& cfg)
 	cfg.getValue("OUT_STAB", "Output", out_stab);
 	cfg.getValue("OUT_SW", "Output", out_sw);
 	cfg.getValue("OUT_T", "Output", out_t);
-	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, Config::nothrow);
-	cfg.getValue("SNOWPATH", "Output", snowpath, Config::nothrow);
+	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, IOUtils::nothrow);
+	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
 		o_snopath = snowpath;
 	} else {

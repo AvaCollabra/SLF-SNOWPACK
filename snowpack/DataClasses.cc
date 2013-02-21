@@ -868,7 +868,9 @@ double SnowStation::getModelledTemperature(const double& z) const
 		const int n_up = findUpperNode(z, Ndata, getNumberOfNodes()); // Upper node number
 		const double z_low = (Ndata[n_up-1].z + Ndata[n_up-1].u); // Lower node around position z of sensor
 		const double z_up = (Ndata[n_up].z + Ndata[n_up].u); // Upper node around position z of sensor
-		return (K_TO_C(Ndata[n_up-1].T + (z - z_low)*(Ndata[n_up].T-Ndata[n_up-1].T)/(z_up-z_low)));
+		const double T_low = Ndata[n_up-1].T;
+		const double T_up = Ndata[n_up].T;
+		return (K_TO_C( T_low + (z - z_low)*(T_up-T_low)/(z_up-z_low) ));
 	}
 }
 
@@ -936,13 +938,12 @@ bool SnowStation::hasSoilLayers() const
  */
 void SnowStation::combineElements(const unsigned int& i_number_top_elements)
 {
-	size_t eLower, eUpper;  // Lower (eLower) and upper (eUpper) element index
-	size_t nRemove=0;       // Number of elements to be removed
-
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
 	}
-	for (eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
+
+	size_t nRemove=0;       // Number of elements to be removed
+	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
 		if (combineCondition(Edata[eLower], Edata[eUpper])) {
 			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
 			nRemove++;
@@ -1427,10 +1428,10 @@ CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
 	  numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
-	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", mio::Config::nothrow);
-	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", mio::Config::nothrow);
-	minDepthSubsurf = i_cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", mio::Config::nothrow);
-	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", mio::Config::nothrow);
+	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", IOUtils::nothrow);
+	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", IOUtils::nothrow);
+	minDepthSubsurf = i_cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", IOUtils::nothrow);
+	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", IOUtils::nothrow);
 }
 
 void CurrentMeteo::reset(const mio::Config& i_cfg)
@@ -1463,7 +1464,7 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 			fixedPositions.insert(fixedPositions.begin(), md(ss.str()));
 		}
 	}
-	if (numberMeasTemperatures == mio::IOUtils::unodata) {
+	if (numberMeasTemperatures == IOUtils::unodata) {
 		numberMeasTemperatures = getNumberMeasTemperatures(md);
 	}
 	if (numberMeasTemperatures > maxNumberMeasTemperatures) {
@@ -1483,8 +1484,6 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 		        "Vector of positions resized to MAX_NUMBER_MEAS_TEMPERATURES (%u). Check FIXED_POSITIONS in SnowpackAdvanced section!",
 		        maxNumberMeasTemperatures);
 	}
-	if (fixedPositions.empty()) //HACK: suspiscious
-		fixedPositions.clear();
 
 	const size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
 	ts.resize(number_ts, mio::IOUtils::nodata);
@@ -1663,8 +1662,9 @@ LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
 const bool Tag::metamo_expl = false;
 
-Tag::Tag() : label(), date(), elem(-1), previous_depth(IOUtils::nodata),
-		   etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
+Tag::Tag()
+     : label(), date(), elem(-1), previous_depth(IOUtils::nodata),
+       etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
 {}
 
 /**
@@ -1705,9 +1705,10 @@ void Tag::reposition_tag(const bool&, const double& z, SnowStation& Xdata)
 	compute_properties(Xdata.Edata.at(n_up-1));
 }
 
-TaggingData::TaggingData(const double& i_calculation_step_length) : useSoilLayers(false), surface_write(false),
-													   calculation_step_length(i_calculation_step_length),
-													   tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0)
+TaggingData::TaggingData(const double& i_calculation_step_length)
+            : useSoilLayers(false), surface_write(false),
+              calculation_step_length(i_calculation_step_length),
+              tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0)
 {}
 
 void TaggingData::resize(size_t i_size)
@@ -1731,8 +1732,6 @@ void TaggingData::resize(size_t i_size)
  */
 void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 {
-	int e;
-
 	const bool TAG_EVENT = false;
 
 	if ( (tags.back().date == Date()) && TAG_EVENT ) {
@@ -1740,7 +1739,8 @@ void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 	}
 
 	for(size_t tag = 1; tag <= number_tags; tag++) { //HACK: check indices
-		if ((e = Xdata.find_tag(tag)) >= 0){
+		const int e = Xdata.find_tag(tag);
+		if (e >= 0) {
 			tags[tag-1].elem = e;
 			tags[tag-1].compute_properties(Xdata.Edata[e]);
 
@@ -1754,7 +1754,7 @@ void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 		}
 
 		if ((tag >= repos_low) && (tag <= repos_top)) {
-			int depth = Mdata.getNumberFixedPositions() + tag - 1;
+			const int depth = Mdata.getNumberFixedPositions() + tag - 1;
 
 			if ((Mdata.zv_ts[depth] > tags[tag-1].previous_depth)) {
 				tags[tag-1].reposition_tag(useSoilLayers, Mdata.zv_ts[depth], Xdata);

@@ -34,7 +34,7 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) :
 {
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
 	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
-	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", Config::nothrow);
+	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", IOUtils::nothrow);
 	if (vecProfileOutput.empty()) {
 		outputprofile_as_ascii = true;
 		outputprofile_as_imis  = false;
@@ -53,12 +53,12 @@ SnowpackIO::SnowpackIO(const mio::Config& i_cfg) :
 	}
 
 	//Format of initial snow profile:
-	const string in_snow = cfg.get("SNOW", "Input", Config::nothrow);
+	const string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
 	if (in_snow == "SMET"){ //TODO: document Input::SNOW = SMET or SNOOLD
 		input_snow_as_smet = true;
 	}
 	//Format of transitional and final snow profile(s):
-	const string out_snow = cfg.get("SNOW", "Output", Config::nothrow);
+	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
 	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	}
