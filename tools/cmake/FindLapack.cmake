@@ -68,6 +68,9 @@ ELSE(WIN32)
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
+			"/usr/lib/atlas"
+			"/usr/lib64"
+			"/usr/lib64/atlas"
 			"/opt/lib"
 			${SRC_DIR}/lib
 		DOC "Location of the liblapack, like /usr/lib/liblapack.a"
@@ -79,6 +82,9 @@ ELSE(WIN32)
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
+			"/usr/lib/atlas"
+			"/usr/lib64"
+			"/usr/lib64/atlas"
 			"/opt/lib"
 			${SRC_DIR}/lib
 		DOC "Location of the libblas, like /usr/lib/libblas.a"
