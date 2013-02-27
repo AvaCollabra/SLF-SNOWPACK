@@ -301,7 +301,7 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 	if (useOptimezedSVD) {
 		dgesdd_(&jobu, (integer*) &m, (integer*) &n, a, (integer*) &lda, s, u, (integer*) &m, vt, (integer*) &n, work, (integer*) &lwork, (integer*) iwork, (integer*) &info);
 		if (info>0) {		//if info>0, there is a convergence problem, probably because the matrix is ill-conditioned. We can try dgesvd before giving up.
-			printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Falling back on DGESVD.\n", info);
+			printf ("ERROR in ReSolver1d.cc: DGESDD failed [info = %d]. Falling back on DGESVD.\n", info);
 			dgesvd_(&jobu, &jobvt, (integer*) &m, (integer*) &n, a, (integer*) &lda, s, u, (integer*) &m, vt, (integer*) &n, work, (integer*) &lwork, (integer*) &info);
 			//Now, workspace size is returned in work.
 			lwork = int(work[0]);
@@ -316,7 +316,7 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 		dgesvd_(&jobu, &jobvt, (integer*) &m, (integer*) &n, a, (integer*) &lda, s, u, (integer*) &m, vt, (integer*) &n, work, (integer*) &lwork, (integer*) &info);
 	}
 	if (info!=0) {
-		printf ("ERROR in ReSolver1d.cc: DGESVD failed [info = %d]\n", info);
+		printf ("ERROR in ReSolver1d.cc: DGESVD failed [info = %d]. No solution found with currently used time step.\n", info);
 		return -1;
 	}
 
@@ -1430,7 +1430,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				  	aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 					TopFluxRate=surfacefluxrate;			// Initial guess for Neumann BC
 					if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
-						const double head_compare=0.;
+						const double head_compare=h_e[uppernode];
 						const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
 						if(flux_compare < TopFluxRate) {
 							TopFluxRate=MAX(0., flux_compare);
@@ -2348,7 +2348,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[i].freezing_tk=T_melt[i];
 				//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
 				//in CompTemperatures, the element temperature will not be adjusted to freezing temperature just because there is water in it!
-				EMS[i].Te=MAX(EMS[i].Te, T_0);
+				EMS[i].Te=MAX(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
 				EMS[i].melting_tk=EMS[i].Te;
 				EMS[i].freezing_tk=EMS[i].Te;
 			}
