@@ -113,7 +113,7 @@ double ReSolver1d::fromTHETAtoH(double theta, double theta_r, double theta_s, do
 	if(theta<=theta_r) {
 		returnvalue=h_d;
 	} else {
-		if(theta > theta_s) {
+		if(theta >= theta_s) {
 			returnvalue=h_e;
 		} else {
 			returnvalue=-1.*(1./alpha)*pow( (pow(Sc*((theta-theta_r)/(theta_s-theta_r)), (-1./m)) - 1.), (1./n));
@@ -771,12 +771,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
 		if((sum>1.+Constants::eps || sum<1.-Constants::eps) && (boolFirstFunctionCall!=true)) {
 			printf("WARNING: very strange, sum of element contents != 1. (but %f) at layer %d. Values scaled.\n", sum, i);
-			EMS[i].theta[AIR]/=sum;
-			wateroverflow[i]+=(EMS[i].theta[ICE]-(EMS[i].theta[ICE]/sum))*(Constants::density_ice/Constants::density_water);	//We just throw away the ice, without considering melting it.
-			EMS[i].theta[ICE]/=sum;
-			EMS[i].theta[SOIL]/=sum;
-			wateroverflow[i]+=EMS[i].theta[WATER]-(EMS[i].theta[WATER]/sum);
-			EMS[i].theta[WATER]/=sum;
+			//Note: we do not scale theta[SOIL].
+			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
+			EMS[i].theta[AIR]/=correction_factor;
+			wateroverflow[i]+=(EMS[i].theta[ICE]-(EMS[i].theta[ICE]/correction_factor))*(Constants::density_ice/Constants::density_water);	//We just throw away the ice, without considering melting it.
+			EMS[i].theta[ICE]/=correction_factor;
+			wateroverflow[i]+=EMS[i].theta[WATER]-(EMS[i].theta[WATER]/correction_factor);
+			EMS[i].theta[WATER]/=correction_factor;
 		} else {
 			if(boolFirstFunctionCall==true) {
 				EMS[i].theta[AIR]=1.-EMS[i].theta[SOIL]-EMS[i].theta[ICE]-EMS[i].theta[WATER];
@@ -1301,6 +1302,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			for (i = uppernode; i >= lowernode; i--) {
 				//Determine K at interface nodes
+				// 1) Determine k_np1_m_ip12
 				if (i!=uppernode && activelayer[i+1]==true) {
 					//For the rest of the domain, we might have heterogeneous soils, so we have to approximate the hydraulic conductivity at the interface nodes.
 
@@ -1346,6 +1348,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							}
 							break;
 						}
+						
+						case UPSTREAM:
+						{
+							if( ((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) - cos_sl > 0.) {
+								k_np1_m_ip12[i]=K[i-1];
+							} else {
+								k_np1_m_ip12[i]=K[i];
+							}
+							break;
+						}
 					}
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
@@ -1356,51 +1368,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}
 				}
 
+				// 2) Determine k_np1_m_im12
 				if (i!=lowernode && activelayer[i-1]==true) {
-
-					switch (K_AVERAGETYPE) {
-						case ARITHMETICMEAN:
-						{
-							k_np1_m_im12[i]=.5*(K[i]+K[i-1]);
-							break;
-						}
-
-						case GEOMETRICMEAN:
-						{
-							k_np1_m_im12[i]=sqrt(K[i]*K[i-1]);
-							break;
-						}
-
-						case HARMONICMEAN:
-						{
-							if(K[i]>0. && K[i-1]>0.) {
-								k_np1_m_im12[i]=2./(1./K[i]+1./K[i-1]);
-							} else {
-								k_np1_m_im12[i]=0.;
-							}
-							break;
-						}
-
-						case WEIGHTEDAVERAGE:
-						{
-							if(K[i]+K[i-1]>0.) {
-								k_np1_m_im12[i]=2.*((K[i]*K[i-1])/(K[i]+K[i-1]));		//See Eq. 12 in Romano (1998).
-							} else {
-								k_np1_m_im12[i]=0.;
-							}
-							break;
-						}
-
-						case MINIMUMVALUE:
-						{
-							if(K[i]>K[i-1]) {
-								k_np1_m_im12[i]=K[i-1];
-							} else {
-								k_np1_m_im12[i]=K[i];
-							}
-							break;
-						}
-					}
+					// The following statement needs to be true, else you won't have mass balance in the solver!
+					k_np1_m_im12[i]=k_np1_m_ip12[i-1];
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
 					if(i==lowernode) {
@@ -1409,7 +1380,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						k_np1_m_im12[i]=0.;
 					}
 				}
-
 				if(WriteOutNumerics_Level3==true) printf("HYDRCONDUCT: node %d -- K=%e k_np1_m_im12=%e k_np1_m_ip12=%e   impedance: %f\n", i, K[i], k_np1_m_im12[i], k_np1_m_ip12[i], impedance[i]);
 			}
 
@@ -2016,6 +1986,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 #ifndef CLAPACK
 					printf("  SNOWPACK was not compiled with BLAS and CLAPACK libraries. Try installing libraries BLAS and CLAPACK and use solver TGSV.\n");
 #endif
+					//Print latest state:
+					if(WriteOutNumerics_Level0==true) {
+						for (i = uppernode; i >= lowernode; i--) {
+							printf("ITER: %d i: %d active? %s; h_n: %.15f (h_np1: %.15f) theta: %.15f (%f-%f) ice: %f/%f (vg_params: %f %f %f)\n", niter, i, (activelayer[i])?"true":"false", h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], EMS[SnowpackElement[i]].theta[ICE], theta_i_n[i], alpha[i], m[i], n[i]);
+						}
+						printf("BOUNDARYTOPFLUX: [ BC: %d ] %.15f %.15f\n", TopBC, TopFluxRate, surfacefluxrate);
+					}
 					throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 				} else {
 					if(seq_safemode>3) {
@@ -2041,11 +2018,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 						h_n[i]=MAX(h_d, MIN(0., h_n[i]));
 						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
+						//Deal with dry layers
 						if(theta_n[i]<theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
 							SafeMode_MBE+=(theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
 							theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
 							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
 						}
+						//Deal with wet layers 
+						if(theta_n[i]>theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
+							SafeMode_MBE+=(theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
+							theta_n[i]=theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.);
+							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+						}
+
 						//TODO: this maybe is not so correct...
 						theta_i_np1_m[i]=theta_i_n[i];		//Set back ice, note: in this case we have to account for the energy involved in changing the ice content back to the original value.
 
