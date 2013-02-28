@@ -1300,7 +1300,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(WriteOutNumerics_Level3==true) printf("HYDPROPS: i=%d Se=%E C=%E K=%E.\n", i, Se[i], C[i], K[i]);
 			}
 
-			for (i = uppernode; i >= lowernode; i--) {
+			for (i = lowernode; i <= uppernode; i++) {
 				//Determine K at interface nodes
 				// 1) Determine k_np1_m_ip12
 				if (i!=uppernode && activelayer[i+1]==true) {
@@ -1351,10 +1351,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						
 						case UPSTREAM:
 						{
-							if( ((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) - cos_sl > 0.) {
-								k_np1_m_ip12[i]=K[i-1];
-							} else {
+							if( ((h_np1_m[i+1]-h_np1_m[i])/dz_down[i+1]) - cos_sl > 0.) {
 								k_np1_m_ip12[i]=K[i];
+							} else {
+								k_np1_m_ip12[i]=K[i+1];
 							}
 							break;
 						}
