@@ -2295,6 +2295,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
 			ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
+			//Update volumetric contents
+			EMS[e].theta[AIR]=1.-EMS[e].theta[ICE]-EMS[e].theta[WATER]-EMS[e].theta[SOIL];
+
 			e--;
 		}
 		//Remaining energy should go back again into refusedtopflux
