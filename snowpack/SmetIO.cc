@@ -444,7 +444,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		vec_data.push_back(EMS[e].rb);
 		vec_data.push_back(EMS[e].dd);
 		vec_data.push_back(EMS[e].sp);
-		vec_data.push_back(EMS[e].mk);
+		vec_data.push_back(static_cast<double>(EMS[e].mk));
 
 		vec_data.push_back(Xdata.Ndata[e+1].hoar);
 		vec_data.push_back(1.);
@@ -504,9 +504,9 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("SlopeAzi", ss.str());
 
 	// Number of Soil Layer Data; in case of no soil used to store the erosion level
-	smet_writer.set_header_value("nSoilLayerData", Xdata.SoilNode);
+	smet_writer.set_header_value("nSoilLayerData", static_cast<double>(Xdata.SoilNode));
 	// Number of Snow Layer Data
-	smet_writer.set_header_value("nSnowLayerData", (Xdata.getNumberOfElements() - Xdata.SoilNode));
+	smet_writer.set_header_value("nSnowLayerData", static_cast<double>(Xdata.getNumberOfElements() - Xdata.SoilNode));
 
 	// Ground Characteristics (introduced June 2006)
 	ss.str(); ss << fixed << setprecision(2) << Xdata.SoilAlb;
@@ -525,7 +525,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	// Additional parameters
 	ss.str(); ss << fixed << setprecision(2) << SSdata.WindScalingFactor;
 	smet_writer.set_header_value("WindScalingFactor", ss.str());
-	smet_writer.set_header_value("ErosionLevel", Xdata.ErosionLevel);
+	smet_writer.set_header_value("ErosionLevel", static_cast<double>(Xdata.ErosionLevel));
 	ss.str(); ss << fixed << setprecision(6) << SSdata.TimeCountDeltaHS;
 	smet_writer.set_header_value("TimeCountDeltaHS", ss.str());
 }

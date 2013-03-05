@@ -1411,7 +1411,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 
-			size_t nAddE = (int)(hn / (height_new_elem*cos_sl));
+			size_t nAddE = (size_t)(hn / (height_new_elem*cos_sl));
 
 			if (nAddE < 1) {
 				// Always add snow on virtual slope (as there is no storage variable available) and some other cases
@@ -1497,7 +1497,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 			// Fill the nodal data
 			if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode)) // New snow on bare ground w/o soil
-				NDS[nOldN-1].T = (t_surf + Mdata.ta)/2.;
+				NDS[nOldN-1].T = 0.5*(t_surf + Mdata.ta);
 			const double Ln = (hn / nAddE);               // New snow element length
 			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
 			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes

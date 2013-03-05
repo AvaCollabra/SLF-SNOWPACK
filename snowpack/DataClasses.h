@@ -763,7 +763,7 @@ class TaggingData {
 		double calculation_step_length;
 		size_t tag_low, tag_top, repos_low, repos_top;
 		std::vector<Tag> tags;
-		
+
 	private:
 		size_t number_tags;
 };

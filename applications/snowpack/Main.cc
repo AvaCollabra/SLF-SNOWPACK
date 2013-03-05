@@ -61,13 +61,13 @@ class Slope {
 		Slope(const mio::Config& i_cfg);
 
 		double prevailing_wind_dir;
-		size_t nSlopes;
-		size_t station;      ///< main station, flat field or slope
-		size_t sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
-		size_t first;        ///< first sector in computing sequence
-		size_t south;
-		size_t luv;
-		size_t lee;
+		unsigned int nSlopes;
+		unsigned int station;      ///< main station, flat field or slope
+		unsigned int sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		unsigned int first;        ///< first sector in computing sequence
+		unsigned int south;
+		unsigned int luv;
+		unsigned int lee;
 		bool snow_redistribution, virtual_slopes;
 
 		int getSectorDir(const double& dir_or_expo) const;
@@ -116,7 +116,7 @@ Slope::Slope(const mio::Config& i_cfg)
 	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
 
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
-	sector_width = 360./MAX(1, nSlopes-1);
+	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
 	south = getSectorDir(180.);
 }
 
@@ -130,7 +130,7 @@ int Slope::getSectorDir(const double& dir_or_expo) const
 	double dir = dir_or_expo;
 	if (dir > 360.) dir -= 360.;
 	else if (dir < 0.) dir += 360.;
-	const size_t sectorDir = int(floor((dir + 0.5*sector_width)/sector_width)) + 1;
+	const unsigned int sectorDir = (unsigned int)((floor((dir + 0.5*sector_width)/sector_width)) + 1);
 	if (sectorDir >= nSlopes) return 1;
 	else return sectorDir;
 }

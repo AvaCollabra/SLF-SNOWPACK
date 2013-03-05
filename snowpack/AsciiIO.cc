@@ -1420,7 +1420,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * static_cast<double>(nCalcSteps))
 		                             - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);
@@ -1448,7 +1448,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
 		fprintf(fout,",%f,%f", M_TO_CM(dhs_corr), mass_corr);
 	else
 		// for example, measured turbulent fluxes (W m-2); see also 1-2
-		fprintf(fout,",,%f", (Sdata.meltFreezeEnergy * nCalcSteps) / 1000.);
+		fprintf(fout,",,%f", (Sdata.meltFreezeEnergy * static_cast<double>(nCalcSteps)) / 1000.);
 }
 
 /**
@@ -1474,7 +1474,7 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * static_cast<double>(nCalcSteps))
 		                             - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);
@@ -1525,7 +1525,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
 		if (Xdata.getNumberOfElements() > Xdata.SoilNode)
-			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * nCalcSteps)
+			fprintf(fout,",%.3f", ((Sdata.dIntEnergy * static_cast<double>(nCalcSteps))
 			                         - (Sdata.qg0 * D_TO_S(ts_days_between))) / 1000.);
 		else
 			fprintf(fout, ",%f", Constants::undefined);

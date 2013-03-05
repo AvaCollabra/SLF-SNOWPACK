@@ -40,9 +40,9 @@ class Canopy {
  	private:
 		double cn_f1(const double& ris);
 		double cn_RootFraction(const double& zupper, const double& zlower);
-		void cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, ElementData* EMS);
+		void cn_SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS);
 		double cn_f4(const double& tempC);
-		double cn_f2f4(const int& SoilNode, ElementData* EMS);
+		double cn_f2f4(const size_t& SoilNode, ElementData* EMS);
 		double cn_f3(const double& vpd);
 		double cn_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
 		double cn_IntUnload(const double& capacity, const double& storage);

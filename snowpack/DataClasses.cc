@@ -1062,10 +1062,10 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		if (ll == 0) {
 			dT = 0.;
 		} else {
-			dT = (SSdata.Ldata[ll].tl - SSdata.Ldata[ll-1].tl) / (SSdata.Ldata[ll].ne);
+			dT = (SSdata.Ldata[ll].tl - SSdata.Ldata[ll-1].tl) / static_cast<double>(SSdata.Ldata[ll].ne);
 		}
 		for (le = 0; le < SSdata.Ldata[ll].ne; le++, n++ ) {
-			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / SSdata.Ldata[ll].ne;
+			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / static_cast<double>(SSdata.Ldata[ll].ne);
 			Ndata[n].T = Ndata[n-1].T + dT;
 			Ndata[n].u = 0.;
 			Ndata[n].f = 0.;
@@ -1347,6 +1347,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
  */
 bool SnowStation::isGlacier(const bool& hydro) const
 {
+//mk % 10 == 7
 	if(hydro) {
 		//if more than 2m of pure ice in the whole profile -> hydrologically, glacier melt
 		const double ice_depth_glacier = 2.;

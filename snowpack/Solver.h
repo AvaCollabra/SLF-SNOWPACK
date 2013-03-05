@@ -478,11 +478,11 @@ typedef  SD_MATRIX_DATA MYTYPE;
 {  SD_FREE_COL_BLOCK_0(pCOL_BLOCK, pMAT); pMAT->nColBlock--;  }
 
 #define SD_ALLOC_COL_BLOCK(N_COL_BLOCK, pMAT)                                                  \
-{  SD_COL_BLOCK_DATA *pColBlock_;  int i_;                                                     \
+{  SD_COL_BLOCK_DATA *pColBlock_;                                                              \
    SD_ALLOC_CHUNK((pMAT)->PoolColBlock, sizeof(SD_COL_BLOCK_DATA)*N_COL_BLOCK);                \
    pColBlock_ = ( SD_COL_BLOCK_DATA * )                                                        \
                 (pMAT)->PoolColBlock.pChunks[ (pMAT)->PoolColBlock.nChunks-1 ];                \
-   for(i_=N_COL_BLOCK; 0<i_--; pColBlock_++) SD_FREE_COL_BLOCK_0(pColBlock_, pMAT);                                     \
+   for(int i_=N_COL_BLOCK; 0<i_--; pColBlock_++) SD_FREE_COL_BLOCK_0(pColBlock_, pMAT);        \
 }
 
 #define SD_N_ALLOC_COL_BLOCK  500
@@ -582,12 +582,11 @@ typedef struct  {
 #define pSIZE_FIRST_COL(pROW)  (pMatSizeColBlock  + pROW->iColBlock)
 
 #define FIND_COL_BLOCK(pFIRST_BLK, COL, ppBLK, FOUND)                                          \
-{  SD_COL_BLOCK_DATA *pB_ ;                                                                    \
-   int                Col0_, Col1_;                                                            \
+{                                                                                              \
    FOUND      = 0;                                                                             \
-   pB_        = (pFIRST_BLK);                                                                  \
-   Col0_      = COL+1;                                                                         \
-   Col1_      = COL-1;                                                                         \
+   SD_COL_BLOCK_DATA *pB_ = (pFIRST_BLK);                                                      \
+   int Col0_  = COL+1;                                                                         \
+   int Col1_  = COL-1;                                                                         \
    while ( pB_ )                                                                               \
    {  if      ( Col1_ >  pB_->Col1  ) { ppBLK = &pB_->Next; pB_ = pB_->Next; }                 \
       else if ( Col0_ >= pB_->Col0  )                                                          \
@@ -607,13 +606,13 @@ typedef struct  {
 */
 
 #define FACT_SYM_MAT(MAT,N_ROW,N_COL)                                                          \
-{  FLOAT *Mat_k, *Mat_i;                                                                       \
+{                                                                                              \
    if ( N_ROW>1 ) {                                                                            \
    const int m_n_1=N_COL-N_ROW+1;                                                              \
-   Mat_k=MAT;                                                                                  \
+   FLOAT *Mat_k=MAT;                                                                           \
    for ( int n_k=N_COL; n_k>=m_n_1; n_k-- )                                                    \
    {  FLOAT Pivot = 1./(*Mat_k);                                                               \
-      Mat_i = Mat_k++;                                                                         \
+      FLOAT *Mat_i = Mat_k++;                                                                  \
       for ( int n_i=n_k; n_i>m_n_1; Mat_k++ )                                                  \
       {  Mat_i += n_i--;  VD_AXPY(n_i, -(*Mat_k)*Pivot, Mat_k, Mat_i);  }                      \
       Mat_k += m_n_1 - 1;                                                                      \
@@ -622,10 +621,10 @@ typedef struct  {
 }
 
 #define FACT_SYM_MAT_UNUSED(MAT,N)                                                             \
-{  int   n_k, n_i;  FLOAT Pivot, *Mat_k, *Mat_i;                                               \
+{  int   n_k, n_i;  FLOAT Pivot, *Mat_k;                                                       \
    for ( Mat_k=MAT, n_k=M; n_k>0; n_k-- )                                                      \
    {  Pivot = 1./(*Mat_k);                                                                     \
-      Mat_i = Mat_k++;                                                                         \
+      FLOAT *Mat_i = Mat_k++;                                                                  \
       for ( n_i=n_k; n_i>1; Mat_k++ )                                                          \
       {  Mat_i += n_i--; VD_AXPY(n_i, -(*Mat_k)*Pivot, Mat_k, Mat_i);  }                       \
    }                                                                                           \

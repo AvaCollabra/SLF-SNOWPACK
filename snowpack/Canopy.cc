@@ -357,7 +357,7 @@ double Canopy::cn_RootFraction(const double& zupper, const double& zlower)
  * @param *EMS
  * @param transpiration
  */
-void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration, ElementData* EMS)
+void Canopy::cn_SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS)
 {
 	// transpiration [mm]
 	if ( transpiration == 0. )
@@ -369,8 +369,8 @@ void Canopy::cn_SoilWaterUptake(const int& SoilNode, const double& transpiration
 
 	// Loop over soil layers above rootdepth
 	double zupper = 0.;
-	int RootLayer = SoilNode;
-	for( int e = SoilNode-1; e > 0; e-- ) {
+	size_t RootLayer = SoilNode;
+	for( size_t e = SoilNode-1; e --> 0; ) {
 		// fraction of roots in layer
 		const double rootfr = cn_RootFraction(zupper, zupper + EMS[e].L);
 		const double water = transpiration;
@@ -451,17 +451,17 @@ double Canopy::cn_f4(const double& tempC)
  * @param *EMS
  * @return double
  */
-double Canopy::cn_f2f4(const int& SoilNode, ElementData* EMS)
+double Canopy::cn_f2f4(const size_t& SoilNode, ElementData* EMS)
 {
 	double f2_wpwp; double f2_wcap;
 	double thet_act;
 	double rootresidual = 1.;
 	double f2 = 0.0; double f4 = 0.0;
-	int RootLayer = SoilNode;
+	size_t RootLayer = SoilNode;
 
 	// loop over layers:
 	double zupper = 0.;
-	for( int e = SoilNode-1; e > 0; e-- ) {
+	for( size_t e = SoilNode-1; e --> 0; ) {
 		// 1) root fraction in layer
 		const double rootfr = cn_RootFraction(zupper, zupper + EMS[e].L);
 		if( rootfr > 0.0 ){

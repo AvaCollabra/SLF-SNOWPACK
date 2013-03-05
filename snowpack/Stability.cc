@@ -939,7 +939,7 @@ double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, co
 		SIdata.n_lemon++;
 	}
 	// Skier Stability Index (SSI)
-	SIdata.ssi = (Stability::nmax_lemon - SIdata.n_lemon) + Sk;
+	SIdata.ssi = static_cast<double>(Stability::nmax_lemon - SIdata.n_lemon) + Sk;
 	// Limit stability index to range {0.05, Stability::max_stability}
 	SIdata.ssi = MAX(0.05, MIN (SIdata.ssi, Stability::max_stability));
 
