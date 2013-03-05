@@ -558,7 +558,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	ss << "SNOWFILE" << i_stn+1;
 	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
 
-	for (size_t sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
+	for (unsigned int sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
 		try {
 			if (sector == slope.station) {
 				if (snowfile == "") {
@@ -911,7 +911,7 @@ void real_main (int argc, char *argv[])
 				hs_a3hl6 = Constants::undefined;
 
 			// START LOOP OVER ASPECTS
-			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
+			for (unsigned int slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);

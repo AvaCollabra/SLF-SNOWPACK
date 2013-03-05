@@ -478,7 +478,7 @@ void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const
  */
 double SnLaws::compWindPumpingDisplacement(const SnowStation& Xdata)
 {
-	int e = Xdata.getNumberOfElements();
+	size_t e = Xdata.getNumberOfElements();
 	double d_pump=0.;      // Displacement depth (m)
 	double hw = 0.0;       // Cumulated water equivalent (kg m-2)
 

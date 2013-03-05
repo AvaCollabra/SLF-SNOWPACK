@@ -72,7 +72,7 @@ void Aggregate::shift(const size_t& nL_ini, std::vector<SnowProfileLayer>& Pdata
 */
 bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfileLayer>& Pdata)
 {
-	const unsigned int l_lower = l_upper-1;
+	const size_t l_lower = l_upper-1;
 
 	if ((Pdata[l_upper].theta_w < limit_dry) || (Pdata[l_lower].theta_w < limit_dry)) {
 		if (fabs(Pdata[l_upper].theta_w - Pdata[l_lower].theta_w) > limit_dry)
@@ -240,5 +240,5 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
                                                Pdata[ll].grain_size, Pdata[ll].marker, Pdata[ll].theta_w/100.,
                                                ElementData::snowResidualWaterContent(Pdata[ll].theta_i/100.));
 	}
-	return (nL);
+	return nL;
 }

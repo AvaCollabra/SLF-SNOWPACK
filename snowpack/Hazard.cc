@@ -240,7 +240,7 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	if (Xdata.getNumberOfElements() > 0) {
-		unsigned int e = Xdata.getNumberOfElements()-1;
+		size_t e = Xdata.getNumberOfElements()-1;
 		double crust_dep = 0.;
 		while ((e > Xdata.SoilNode) && (crust_dep <= 0.03)) {
 			if ((Xdata.Edata[e].type == 772) || (Xdata.Edata[e].type == 880)) {
@@ -277,7 +277,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                         const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, ZwischenData& Zdata,
                         const SnowStation& Xdata)
 {
-	const unsigned int nE = Xdata.getNumberOfElements();
+	const size_t nE = Xdata.getNumberOfElements();
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 	const double hs = Xdata.cH / cos_sl;
 

@@ -964,15 +964,15 @@ double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const
  * @version 10.04
  * @param tag to look for
  * @param Xdata
- * @return Index of tagged element, -1 if not found
+ * @return Index of tagged element, (size_t)-1 if not found
  */
-int AsciiIO::findTaggedElement(const size_t& tag, const SnowStation& Xdata)
+size_t AsciiIO::findTaggedElement(const size_t& tag, const SnowStation& Xdata)
 {
 	for (size_t e=0; e<Xdata.getNumberOfElements(); e++) {
 		if (Xdata.Edata[e].mk/100 == tag)
 			return e;
 	}
-	return -1;
+	return static_cast<size_t>(-1);
 }
 
 /**
@@ -988,10 +988,8 @@ int AsciiIO::findTaggedElement(const size_t& tag, const SnowStation& Xdata)
 size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
                                           const CurrentMeteo& Mdata, const SnowStation& Xdata)
 {
-	const size_t ii = numberFixedSensors + (tag-1);
-	const int e = findTaggedElement(tag, Xdata);
-	size_t jj = 2;
-	if (e >= 0) {
+	const size_t e = findTaggedElement(tag, Xdata);
+	if (e != static_cast<size_t>(-1)) {
 		const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 		const double perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
 		                + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
@@ -999,6 +997,8 @@ size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 	} else {
 		fprintf(fout,",,%.2f", Constants::undefined);
 	}
+	size_t jj = 2;
+	const size_t ii = numberFixedSensors + (tag-1);
 	if (ii < numberMeasTemperatures) {
 		const double perp_pos = compPerpPosition(Mdata.zv_ts.at(ii), Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
 		if (perp_pos == Constants::undefined) {
@@ -1220,7 +1220,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 {
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
 	const vector<NodeData>& NDS = Xdata.Ndata;
-	const int nN = Xdata.getNumberOfNodes();
+	const size_t nN = Xdata.getNumberOfNodes();
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
 
 	//Check whether file exists, if so check whether data can be appended or file needs to be deleted
@@ -1924,8 +1924,8 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 		IOUtils::convertString(TAGdata.tags[tag-1].date, date_string, time_zone);
 
 		if ( (tag >= TAGdata.repos_low) && (tag <= TAGdata.repos_top) ) {
-			const int depth = fixedPositions.size() + tag - 1;
-			if ((int)Mdata.zv_ts.size() > depth) {
+			const size_t depth = fixedPositions.size() + tag - 1;
+			if (Mdata.zv_ts.size() > depth) {
 				TAGdata.tags[tag-1].previous_depth = Mdata.zv_ts[depth];
 			} else { //HACK: can I do this? does this make sense?
 				TAGdata.tags[tag-1].previous_depth = IOUtils::nodata;

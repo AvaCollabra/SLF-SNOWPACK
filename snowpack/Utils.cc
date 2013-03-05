@@ -373,7 +373,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 	double mass_change = hnw - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
-	for (unsigned int e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
+	for (size_t e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
 		tot_mass += Xdata.Edata[e].M;
 		tot_swe  += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
 		dmassE = Xdata.Edata[e].M - (Xdata.Edata[e].L * Xdata.Edata[e].Rho);

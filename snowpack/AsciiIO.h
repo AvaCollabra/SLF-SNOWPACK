@@ -67,7 +67,7 @@ class AsciiIO : public SnowpackIOInterface {
 		                        const double& ground, const double& slope_angle);
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 
-		int findTaggedElement(const size_t& tag, const SnowStation& Xdata);
+		size_t findTaggedElement(const size_t& tag, const SnowStation& Xdata);
 		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 

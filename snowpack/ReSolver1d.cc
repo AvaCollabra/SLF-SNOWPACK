@@ -527,7 +527,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //      - Evaporation from soil in dry limit. This cause numerical troubles, but it is also not realistic to force a certain amount of evaporation from a near-dry soil (the water
 //	  is just not there!). Set LIMITEDFLUXEVAPORATION or LIMITEDFLUX as top boundary condition to be safe.
 //      - Infiltration in soil in wet limit. This can cause numerical trouble, but it is also not realistic. You cannot put more water in the domain then there is room for.
-//	  So for example: never use 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe. 
+//	  So for example: never use 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe.
 //
 // SOME DEEPER LYING PROBLEMS:
 // -  In case of floating point exceptions with DEBUG_ARITHM set to OFF:
@@ -1343,7 +1343,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							}
 							break;
 						}
-						
+
 						case UPSTREAM:
 						{
 							if( ((h_np1_m[i+1]-h_np1_m[i])/dz_down[i+1]) - cos_sl > 0.) {
@@ -2020,7 +2020,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
 							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
 						}
-						//Deal with wet layers 
+						//Deal with wet layers
 						if(theta_n[i]>theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
 							SafeMode_MBE+=(theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
 							theta_n[i]=theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.);
