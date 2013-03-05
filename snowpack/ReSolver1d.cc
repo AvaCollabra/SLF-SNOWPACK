@@ -513,23 +513,29 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 // - Yamaguchi, S., Katsushima, T., Sato, A. and Kumakura, T. (2011) Water retention curve of snow with different grain sizes. Cold Regions Science and Technology (64:2) 87-93.
 //   Describes van Genuchten parameters (alpha and n) for snow, based on measurements.
 // - Hirashima, H., Yamaguchi, S., Sato, A., and Lehning, M. (2010) Numerical modeling of liquid water movement through layered snow based on new measurements of the water retention curve. Cold Regions Science and Technology (64:2), 94-103.
-//   Describes van Genuchten parameters for snow.
+//   Describes van Genuchten parameters for snow, based on Yamaguchi (2011).
 // - Rathfelder, K and Abriola, L. (1994) Mass conservative numerical solutions of the head-based Richards equation. Water Resources Research (30:9) 2579-2586.
 //   Describes an implementation of variable grid spacing for solving Richards Equation in 1D.
-// - Romano, N., Brunone, B. and Santini, A. (1998) Numerical analysis of one-dimensional unsaturated flow in layered soils. Advances in Water Resources (21:4) 351-324.
-//   Extensively discusses the determination of the hydraulic conductivity at the interface nodes. Eq. 12 in this paper is implemented here as the WEIGHTEDAVERAGE.
 
 
-// Problem solver guide:
-// -  Known issues:
+// PROBLEM SOLVER GUIDE:
+// KNOWN ISSUES:
 //      - In case of floating point exceptions: ReSolver1d has some problems when (in CMake) DEBUG_ARITHM is set to ON. You can safely set it to OFF, as the code detects for
-//        illegal operations itself and takes appropriate measures, like choosing an other solver or reducing the time step.
-//      - Evaporation from soil in dry limit. This cause numerical troubles, but it is also not realistic to force a certain amount of evaporation from a near-dry soil (the water is just not there!). Set LIMITEDFLUXEVAPORATION or LIMITEDFLUX as top boundary condition to be safe.
-//      - Infiltration in soil in wet limit. This can cause numerical trouble, but it is also not realistic. You cannot put more water in the domain then there is room for. So never use only 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe.
+//        illegal operations itself and takes appropriate measures, like choosing another solver or reducing the time step.
+//	- In case of non-convergence of the solver: Numerical problems were found when the SNOWPACK time step is larger than 15 minutes. For example caused by the settling routine,
+//	  which is based on 15 minute time steps. So before digging further in the problem, make sure you run SNOWPACK with 15 minute time steps.
+//      - Evaporation from soil in dry limit. This cause numerical troubles, but it is also not realistic to force a certain amount of evaporation from a near-dry soil (the water
+//	  is just not there!). Set LIMITEDFLUXEVAPORATION or LIMITEDFLUX as top boundary condition to be safe.
+//      - Infiltration in soil in wet limit. This can cause numerical trouble, but it is also not realistic. You cannot put more water in the domain then there is room for.
+//	  So for example: never use 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe. 
+//
+// SOME DEEPER LYING PROBLEMS:
 // -  In case of floating point exceptions with DEBUG_ARITHM set to OFF:
 //      - either pressure head is blowing up to extremely high values, before rewinds can be done. This can happen if you change MAX_ALLOWED_DELTA_H, but also make sure that the time step is still larger than the minimum allowed time step.
 //        If no rewinds can be done anymore, because the time step is already too small, the solver is just trying until it is killed.
 // -  In case of other exceptions, see the error message on screen. Messages from the solver: if info-value is positive, the number indicates quite often the element that is having illegal value, like nan, or inf. This can be a result from very small time steps (check dt), or else it is a bug.
+// -  Problems can be caused when the state of the snowcover changes rapidly between calls to ReSolver1d. For example, it was found that when SNOWPACK was run with 60 minute
+//    time steps, the settling was so fast that elements collapsed, producing saturated snow layers. Then ReSolver1d was not able to solve the equation anymore with reasonable time steps.
 // -  A lot of problems arise from non convergence in the solver and very small time steps. A common reason for this is filling of the model domain. Clear examples:
 //    - 10cm soil with saturated lower boundary condition. The soil will saturate quickly. No melt water can infilitrate the soil anymore, but starts ponding. In reality, such cases would lead to a water layer, or overland flow.
 //    - Strong infiltration rates (like high precipitation rates)
@@ -541,7 +547,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //	  - Is there a massbalance problem? Then probably the fluxes at the top and/or bottom are not correctly calculated, or there is a real bug.
 //	    Massbalance errors also arise when k_ip12(i-1) != k_im12(i)! The nodal values should always be the same for both the upper and lower node!
 //	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
-
 	//Initializations
 	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, ALPINE3D};
 
@@ -581,7 +586,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 
 	//Set how the hydraulic conductivity at the interface nodes should be calculated.
-	const K_AverageTypes K_AVERAGETYPE=ARITHMETICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), WEIGHTEDAVERAGE, HARMONICMEAN, GEOMETRICMEAN
+	const K_AverageTypes K_AVERAGETYPE=ARITHMETICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
 
 
 
@@ -764,13 +769,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	for (i = 0; i<toplayer; i++) {		//Cycle through all SNOWPACK layers
 		//Do the basic check if there is not too much ice.
 		if(EMS[i].theta[ICE]>1.) {
-			printf("WARNING: very strange, theta[ICE]>1 at layer %d (%f)\n", i, EMS[i].theta[ICE]);
+			printf("WARNING: very strange, theta[ICE]>1 at layer %d/%d (%f)\n", i, nE, EMS[i].theta[ICE]);
 			EMS[i].theta[ICE]=1.;
 		}
 		//Do the basic check of the sum of element contents.
 		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
 		if((sum>1.+Constants::eps || sum<1.-Constants::eps) && (boolFirstFunctionCall!=true)) {
-			printf("WARNING: very strange, sum of element contents != 1. (but %f) at layer %d. Values scaled.\n", sum, i);
+			printf("WARNING: very strange, sum of element contents != 1. (but %f) at layer %d/%d. Values scaled.\n", sum, i, nE);
 			//Note: we do not scale theta[SOIL].
 			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
 			EMS[i].theta[AIR]/=correction_factor;
@@ -880,15 +885,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//Make ice layers inactive:
 			if(theta_s[i]<Constants::eps2) {
-				if(WriteOutNumerics_Level3==true) printf("WARNING: layer %i   theta_s= %f   EMS[i].theta[ICE]=%f\n", i, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
-				printf("WARNING: layer %i is ice layer! (theta_s[i]=%f; EMS[i].theta[ICE]=%f)\n", i, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
+				if(WriteOutNumerics_Level3==true) printf("WARNING: layer %i/%i   theta_s= %f   EMS[i].theta[ICE]=%f\n", i, nE, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
+				printf("WARNING: layer %i/%i is ice layer! (theta_s[i]=%f; EMS[i].theta[ICE]=%f)\n", i, nE, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
 				activelayer[i]=false;
 			} else {
 				activelayer[i]=true;
 			}
 			//Make sure theta_r << theta_s
 			if(theta_s[i]<theta_r[i]+0.01) {
-				if(WriteOutNumerics_Level1==true) printf("WARNING: layer %i   theta_s= %f   theta_r=%f\n", i, theta_s[i], theta_r[i]);
+				if(WriteOutNumerics_Level1==true) printf("WARNING: layer %i/%i   theta_s= %f   theta_r=%f\n", i, nE, theta_s[i], theta_r[i]);
 				theta_r[i]=theta_s[i]/4.;
 			}
 			//Set air entry pressure
@@ -1323,16 +1328,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						{
 							if(K[i]>0. && K[i+1]>0.) {
 								k_np1_m_ip12[i]=2./(1./K[i]+1./K[i+1]);
-							} else {
-								k_np1_m_ip12[i]=0.;
-							}
-							break;
-						}
-
-						case WEIGHTEDAVERAGE:
-						{
-							if(K[i]+K[i+1]>0.) {
-								k_np1_m_ip12[i]=2.*((K[i]*K[i+1])/(K[i]+K[i+1]));		//See Eq. 12 in Romano (1998).
 							} else {
 								k_np1_m_ip12[i]=0.;
 							}
@@ -1977,22 +1972,23 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 			if(niter>500 || (niter>MAX_ITER && solver_result==-1)) {
+				//Print latest state for debugging:
+				if(WriteOutNumerics_Level0==true) {
+					for (i = uppernode; i >= lowernode; i--) {
+						printf("ITER: %d i: %d active? %s; h_n: %.15f (h_np1: %.15f) theta: %.15f (%f-%f) ice: %f/%f (vg_params: %f %f %f)\n", niter, i, (activelayer[i])?"true":"false", h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], EMS[SnowpackElement[i]].theta[ICE], theta_i_n[i], alpha[i], m[i], n[i]);
+					}
+					printf("BOUNDARYTOPFLUX: [ BC: %d ] %.15f %.15f\n", TopBC, TopFluxRate, surfacefluxrate);
+				}
 				if(SafeMode==false) {
 					if(niter>500) {
 						printf("ERROR in Richards-Equation solver: reached maximum limit for iterations (500), with a time step: %G\n", dt);
 					} else {
 						printf("ERROR in Richards-Equation solver: cannot decrease time step anymore (dt = %Gs) and solver did not converge.\n", dt);
 					}
+					printf("  This numerical problem can arise when the SNOWPACK timestep is larger than 15 minutes.\n");
 #ifndef CLAPACK
 					printf("  SNOWPACK was not compiled with BLAS and CLAPACK libraries. Try installing libraries BLAS and CLAPACK and use solver TGSV.\n");
 #endif
-					//Print latest state:
-					if(WriteOutNumerics_Level0==true) {
-						for (i = uppernode; i >= lowernode; i--) {
-							printf("ITER: %d i: %d active? %s; h_n: %.15f (h_np1: %.15f) theta: %.15f (%f-%f) ice: %f/%f (vg_params: %f %f %f)\n", niter, i, (activelayer[i])?"true":"false", h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], EMS[SnowpackElement[i]].theta[ICE], theta_i_n[i], alpha[i], m[i], n[i]);
-						}
-						printf("BOUNDARYTOPFLUX: [ BC: %d ] %.15f %.15f\n", TopBC, TopFluxRate, surfacefluxrate);
-					}
 					throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 				} else {
 					if(seq_safemode>3) {

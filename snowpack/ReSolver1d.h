@@ -61,7 +61,7 @@ class ReSolver1d {
 		//Soil types
 		enum SoilTypes{SNOW, ORGANIC, LOAM, SILTLOAM, SANDYLOAM, FINESAND, GRAVELSAND, CLAY};
 		//K_Average types
-		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, INTEGRAL, WEIGHTEDAVERAGE, MINIMUMVALUE, UPSTREAM}; // Note: INTEGRAL is not really correctly implemented, because k_ip12(i-1) != k_im12(i). So the hydraulic conductivity at the boundary nodes is different for the upper cell than the lower cell. I think this will introduce mass-imbalance.
+		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, MINIMUMVALUE, UPSTREAM}; // Note: INTEGRAL is not really correctly implemented, because k_ip12(i-1) != k_im12(i). So the hydraulic conductivity at the boundary nodes is different for the upper cell than the lower cell. I think this will introduce mass-imbalance.
 		//Van genuchten model types
 		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI, YAMAGUCHI_ADAPTED, DAANEN};
 		//Solvers
