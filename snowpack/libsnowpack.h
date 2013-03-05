@@ -26,7 +26,6 @@
 #ifndef __LIBSNOWPACK_H__
 #define __LIBSNOWPACK_H__
 
-
 #include <snowpack/Aggregate.h>
 #include <snowpack/AsciiIO.h>
 #include <snowpack/Canopy.h>
@@ -38,7 +37,9 @@
 #include <snowpack/Metamorphism.h>
 #include <snowpack/Meteo.h>
 #include <snowpack/PhaseChange.h>
+#include <snowpack/ReSolver1d.h>
 #include <snowpack/Saltation.h>
+//#include <snowpack/SmetIO.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/SnowpackConfig.h>
 #include <snowpack/Snowpack.h>

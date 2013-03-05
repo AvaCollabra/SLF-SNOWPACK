@@ -321,15 +321,13 @@ void CanopyData::initializeSurfaceExchangeData()
 // Class ElementData
 ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
-                             theta(N_COMPONENTS), conc(N_COMPONENTS, SnowStation::number_of_solutes), k(N_SN_FIELDS), c(N_SN_FIELDS), soil(N_SOIL_FIELDS),
+                             theta((size_t)N_COMPONENTS), conc((unsigned int)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), rg_opt(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), dhf(0.)
-{
-}
+                             s_strength(0.), hard(0.), S_dr(0.), dhf(0.) {}
 
 /**
  * @brief Check volumetric content
@@ -884,7 +882,7 @@ void SnowStation::resize(const unsigned int& number_of_elements)
 {
 
 	try {
-		Edata.resize(number_of_elements, ElementData());
+		Edata.resize(number_of_elements);
 		Ndata.resize(number_of_elements + 1);
 	}catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
