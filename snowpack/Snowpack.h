@@ -98,14 +98,14 @@ class Snowpack {
 			DIRICHLET_BC
 		};
 
-		bool compSnowForces(ElementData *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
+		bool compSnowForces(ElementData &Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
 		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ],
 		                    double Fe[ N_OF_INCIDENCES ]);
 
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
-		bool sn_ElementKtMatrix(ElementData *Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
+		bool sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
 		                        const double VaporEnhance);
 

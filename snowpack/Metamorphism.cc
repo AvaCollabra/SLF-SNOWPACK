@@ -212,19 +212,7 @@ double Metamorphism::csPoreArea(const ElementData& Edata)
  */
 double Metamorphism::getCoordinationNumberN3(const double& Rho)
 {
-	const double N_0 = 1.4153;
-	const double N_1 = 7.5580e-5;
-	const double N_2 = 5.1495e-5;
-	const double N_3 = 1.7345e-7;
-	const double N_4 = 1.8082e-10;
-	const double R_2 = Rho*Rho;
-	const double R_3 = R_2*Rho;
-	const double R_4 = R_3*Rho;
-
-	// For Rho between 100 kg/m3 and 670 kg/m3, use the following.
-	const double N3 = N_0 - N_1*Rho + N_2*R_2 - N_3*R_3 + N_4*R_4;
-
-	// Outside these limits use the following.
+	// Outside Rho between 100 kg/m3 and 670 kg/m3, use the following:
 	if ( Rho >= 670. ) {
 		return 10.5;             // upper limit on N3 near close-packing value for spheres.
 	}
@@ -232,6 +220,17 @@ double Metamorphism::getCoordinationNumberN3(const double& Rho)
 		return 1.75*(Rho/100.);  // Decreases N3 to zero as density goes to zero.
 	}
 
+	const double N_0 = 1.4153;
+	const double N_1 = 7.5580e-5;
+	const double N_2 = 5.1495e-5;
+	const double N_3 = 1.7345e-7;
+	const double N_4 = 1.8082e-10;
+	const double R_2 = Rho*Rho;
+	const double R_3 = R_2*Rho;
+	const double R_4 = R_2*R_2;
+
+	// For Rho between 100 kg/m3 and 670 kg/m3, use the following.
+	const double N3 = N_0 - N_1*Rho + N_2*R_2 - N_3*R_3 + N_4*R_4;
 	return(N3);
 }
 
@@ -269,12 +268,13 @@ Metamorphism::Metamorphism(const SnowpackConfig& cfg)
 
 	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model);
 
-	map<string, MetaModelFn>::const_iterator it1 = mapMetamorphismModel.find(metamorphism_model);
-	if (it1 == mapMetamorphismModel.end()) throw InvalidArgumentException("Unknown metamorphism model: "
-															+metamorphism_model, AT);
+	const map<string, MetaModelFn>::const_iterator it1 = mapMetamorphismModel.find(metamorphism_model);
+	if (it1 == mapMetamorphismModel.end())
+		throw InvalidArgumentException("Unknown metamorphism model: "+metamorphism_model, AT);
 
-	map<string, MetaSpRateFn>::const_iterator it2 = mapSpRate.find(metamorphism_model);
-	if (it2 == mapSpRate.end()) throw InvalidArgumentException("Unknown metamorphism model: "+metamorphism_model, AT);
+	const map<string, MetaSpRateFn>::const_iterator it2 = mapSpRate.find(metamorphism_model);
+	if (it2 == mapSpRate.end())
+		throw InvalidArgumentException("Unknown metamorphism model: "+metamorphism_model, AT);
 }
 
 /**
@@ -408,14 +408,12 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 
 	// Compute the lattice constant a at time t but a <= hElem;  Units : mm
 	const double a0 = LatticeConstant0( th_i );
-	double a;
+	double a = a0;
 	if ( gsz > 2.*new_snow_grain_rad ) {
 		// Use an empirical estimation of the lattice constant
 		const double reg0 = 0.15, reg1 = -0.00048; // Empirical regression coefficients
 		const double a1 = reg0 + reg1*(th_i * Constants::density_ice);
 		a  = a0 + a1*(gsz - 2.*new_snow_grain_rad);
-	} else {
-		a = a0;
 	}
 	a  = MIN (a, hElem);
 

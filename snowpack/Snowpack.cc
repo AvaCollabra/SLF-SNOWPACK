@@ -51,7 +51,8 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
  ************************************************************/
 
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
-          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
+            watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             sw_mode(0), meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dt_air_snow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
@@ -237,7 +238,7 @@ void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really neede
  * meaning, the self-weight of the snowpack.
  * NOTE: For now we are assuming that the density remains CONSTANT over the time step. At the
  * end of the time step the density is updated. This improves both STABILITY and ACCURACY
- * @param *Edata
+ * @param Edata
  * @param dt time step (s)
  * @param cos_sl Cosine of slope angle
  * @param Zn Height of element nodes (m)
@@ -248,26 +249,21 @@ void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really neede
  * @param Fe Element right hand side vector
  * @return false on error, true if no error occurred
  */
-bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ], double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ])
+bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ], double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ])
 {
-	double L, L0; // Length, initial length
-	double dVol;  // Change in volume
-	double D;     // Modulus of elasticity
-	double E;     // Strain
-	double S;     // Stress
-	double Sc;    // Psuedo Creep Stress
-	double ddE;   // Change in axial strian, volumetric strain
-
 	// First compute the new length and from the new length the total strain
-	dVol = Edata->L;
-	L0 = Edata->L0; L = Edata->L = Zn[1] + Un[1] - Zn[0] - Un[0];
-	dVol /= L;
+	const double L = Zn[1] + Un[1] - Zn[0] - Un[0]; //Length
+	const double L0 = Edata.L0; //Initial length
+	const double dVol = Edata.L / L; //Volume change
+	Edata.L = L;
+
 	if (L <= 0.) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Element length < 0.0!\n L0=%lf L=%lf Zn[0]=%lf Zn[1]=%lf Un[0]=%lf Un[1]=%lf,", L0, L, Zn[0], Zn[1], Un[0], Un[1]);
 		return false;
 	}
 	// Compute the Natural Strain // Green Lagrange Strain
-	E = Edata->E = log(L / L0);
+	const double E = log(L / L0); // Strain
+	Edata.E = E;
 	if (!(E >= -100. && E <= 1.e-5)) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "In strain E (Memory?)");
 		return false;
@@ -279,36 +275,38 @@ bool Snowpack::compSnowForces(ElementData *Edata,  double dt, double cos_sl, dou
 	 * in volume change. Otherwise cannot update the volumetric components (which
 	 * might be changed elsewhere) correctly. Update density.
 	*/
-	ddE = (E - Edata->dE);
-	Edata->dE = E;
+	double ddE = (E - Edata.dE); // Change in axial strain, volumetric strain
+	Edata.dE = E;
 	if (ddE <= -1.5) {
 		ddE = -1.5;
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Time step is too Large!!!");
 	}
+
 	// Compute the volumetric components
-	Edata->theta[ICE] = MIN (0.999999, Edata->theta[ICE] * dVol);
-	Edata->theta[WATER] = MIN (0.999999, Edata->theta[WATER] * dVol);
-	Edata->theta[AIR] = 1.0 - Edata->theta[ICE] - Edata->theta[WATER] - Edata->theta[SOIL];
-	Edata->checkVolContent();
-	if (!(Edata->theta[AIR] <= 1.0 && Edata->theta[AIR] >= -0.05)) {
-		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata->theta[AIR], ddE);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ELEMENT SIZE: L0=%e L=%e", Edata->L0, Edata->L);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "DENSITY: rho=%e", Edata->Rho);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaICE: ti=%e", Edata->theta[ICE]);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaWATER: ti=%e", Edata->theta[WATER]);
+	Edata.theta[ICE] = MIN (0.999999, Edata.theta[ICE] * dVol);
+	Edata.theta[WATER] = MIN (0.999999, Edata.theta[WATER] * dVol);
+	Edata.theta[AIR] = 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[SOIL];
+	Edata.checkVolContent();
+	if (!(Edata.theta[AIR] <= 1.0 && Edata.theta[AIR] >= -0.05)) {
+		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata.theta[AIR], ddE);
+		prn_msg(__FILE__, __LINE__, "msg", Date(), "ELEMENT SIZE: L0=%e L=%e", Edata.L0, Edata.L);
+		prn_msg(__FILE__, __LINE__, "msg", Date(), "DENSITY: rho=%e", Edata.Rho);
+		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaICE: ti=%e", Edata.theta[ICE]);
+		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaWATER: ti=%e", Edata.theta[WATER]);
 		return false;
 	}
 	// Compute the self weight of the element (with the present mass)
-	Fe[0] = Fe[1] = -(Edata->M * Constants::g * cos_sl) / 2.;
+	Fe[0] = Fe[1] = -(Edata.M * Constants::g * cos_sl) / 2.;
 	// Compute the elastic strain and stress
-	Edata->Ee = Edata->E - Edata->Ev;
-	D = Edata->snowElasticity();
-	S = Edata->S = D * Edata->Ee;
+	Edata.Ee = Edata.E - Edata.Ev;
+	const double D = Edata.snowElasticity(); // Modulus of elasticity
+	const double S = D * Edata.Ee; // Stress
+	Edata.S = S;
 	// Compute the internal forces
 	Fi[0] = -S;
 	Fi[1] = S;
 	// Compute the pseudo increment in creep stress
-	Sc = D * Edata->EvDot * dt;
+	const double Sc = D * Edata.EvDot * dt; // Pseudo Creep Stress
 	// Compute the creep forces
 	Fc[0] = -Sc;
 	Fc[1] = Sc;
@@ -349,10 +347,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nE = Xdata.getNumberOfElements();
-	size_t e = nE; // Element counter
 	double SigC = 0.; // Cauchy stress
 	const double SigC_fac = Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
-	while (e-- > 0) {
+	for(size_t e = nE; e --> 0; ) {
 		const double oldStress = EMS[e].C;
 		const double age = MAX(0., Mdata.date.getJulian() - EMS[e].depositionDate.getJulian());
 		if (e < nE-1)
@@ -370,7 +367,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		}
 	}
 
-	for (e = Xdata.SoilNode; e < nE; e++) {
+	for (size_t e = Xdata.SoilNode; e < nE; e++) {
 		double eta = SnLaws::smallest_viscosity; // snow viscosity
 		if (EMS[e].Rho > 910. ||  EMS[e].theta[SOIL] > 0. || EMS[e].theta[ICE] < Constants::eps) {
 			EMS[e].k[SETTLEMENT] = eta = 1.0e99;
@@ -470,7 +467,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
  * - {Fe} = {Q} - [Ke]*{T0} : {Fe} is the element right-hand side vector containing the element heat flux. \n
  *                            {Q} arises from shortwave radiation -- the other heat fluxes are treated separately
  *                            when determining the meteo parameters.
- * @param *Edata
+ * @param Edata
  * @param dt Calculation time step length (s)
  * @param dvdz Wind pumping velocity gradient (s-1)
  * @param T0 Initial nodal temperatures (K)
@@ -479,57 +476,48 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
  * @param VaporEnhance Vapor transport enhancement factor
  * @return false on error, true if no error occurred
  */
-bool Snowpack::sn_ElementKtMatrix(ElementData *Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], const double VaporEnhance)
+bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], const double VaporEnhance)
 {
-	// Gather the data which is required to compute the element stiffness and force vector
-	Fe[0] = Fe[1] = 0.0;
-	if (Edata->L < 0.0) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "Negative length L=%e", Edata->L);
+	if (Edata.L < 0.0) {
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Negative length L=%e", Edata.L);
 		return false;
 	}
+
+	//reset Fe_0 and Fe_1
+	Fe[0] = Fe[1] = 0.0;
 
 	// Find the conductivity of the element TODO: check thresholds
 	double Keff;    // the effective thermal conductivity
-	if (Edata->theta[SOIL] > 0.0) {
-		Keff = SnLaws::compSoilThermalConductivity(*Edata, dvdz);
-	} else if (Edata->theta[ICE] > 0.55 || Edata->theta[ICE] < min_ice_content) {
-		Keff = Edata->theta[AIR] * Constants::conductivity_air + Edata->theta[ICE] * Constants::conductivity_ice +
-		           Edata->theta[WATER] * Constants::conductivity_water + Edata->theta[SOIL] * Edata->soil[SOIL_K];
+	if (Edata.theta[SOIL] > 0.0) {
+		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz);
+	} else if (Edata.theta[ICE] > 0.55 || Edata.theta[ICE] < min_ice_content) {
+		Keff = Edata.theta[AIR] * Constants::conductivity_air + Edata.theta[ICE] * Constants::conductivity_ice +
+		           Edata.theta[WATER] * Constants::conductivity_water + Edata.theta[SOIL] * Edata.soil[SOIL_K];
 	} else {
-		Keff = SnLaws::compSnowThermalConductivity(*Edata, dvdz, !alpine3d); //do not show the warning for Alpine3D
+		Keff = SnLaws::compSnowThermalConductivity(Edata, dvdz, !alpine3d); //do not show the warning for Alpine3D
 	}
 	// mimics effect of vapour transport if liquid water present in snowpack
 	Keff *= VaporEnhance;
-	Edata->k[TEMPERATURE] = Keff;
-	const double k = Keff/Edata->L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
+	Edata.k[TEMPERATURE] = Keff;
+	const double k = Keff/Edata.L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
 	// Evaluate the stiffness matrix
-	Se[0][0] = Se[1][1] = k; Se[0][1] = Se[1][0] = -k;
+	Se[0][0] = Se[1][1] = k;
+	Se[0][1] = Se[1][0] = -k;
 	// Heat the element via short-wave radiation
-	if (Edata->sw_abs < 0.0) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %e", Edata->sw_abs);
+	if (Edata.sw_abs < 0.0) {
+		prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %e", Edata.sw_abs);
 		return false;
 	}
-	Fe[1] += Edata->sw_abs;
-
-	/*
-	 * Phase change energy:
-	 * double Qpc = Edata->Qmf * Edata->L / 4.0; // original: 2.0 Changed by ML: 15.02.2002 as a compromise between Fz and Pb
-	 * Heat / Cool element via phasechanges (Edata->Qmf is computed in phase change module)
-	 * Why should we do that ????
-	 * Phase Change already USED this energy in the previous time step!!!
-	 * ==> thus commented out 06.10.2001 Fz
-	*/
-	Fe[0] += 0.; // Qpc;
-	Fe[1] += 0.; // Qpc;
+	Fe[1] += Edata.sw_abs;
 
 	// Add the implicit time integration term to the right hand side
 	Fe[0] -= (Se[0][0] * T0[0] + Se[0][1] * T0[1]);
 	Fe[1] -= (Se[1][0] * T0[0] + Se[1][1] * T0[1]);
 
 	// Now add the heat capacitity matrix
-	Edata->heatCapacity();
-	const double c = Edata->c[TEMPERATURE] * Edata->L * Edata->Rho / (6. * dt); //heat capacity
+	Edata.heatCapacity();
+	const double c = Edata.c[TEMPERATURE] * Edata.L * Edata.Rho / (6. * dt); //heat capacity
 	Se[0][0] += 2. * c;
 	Se[1][1] += 2. * c;
 	Se[0][1] += c;
@@ -622,7 +610,8 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 
 	// Now branch between phase change cases (semi-explicit treatment) and
 	// dry snowpack dynamics/ice-free soil dynamics (implicit treatment)
-	const double theta_r=((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+	const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+
 	if ((Xdata.Edata[nE-1].theta[WATER] > theta_r + Constants::eps		// Water and ice ...
 	   && Xdata.Edata[nE-1].theta[ICE] > Constants::eps)			// ... coexisting
 	     && (T_iter != T_snow)) {
@@ -701,8 +690,6 @@ void Snowpack::neumannBoundaryConditionsSoil(const double& flux, const double& T
  */
 void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata)
 {
-	size_t n, e;        // nodal and element counters
-
 	int Ie[N_OF_INCIDENCES];                     // Element incidences
 	double T0[N_OF_INCIDENCES];                  // Element nodal temperatures at t0
 	double TN[N_OF_INCIDENCES];                  // Iterated element nodal temperatures
@@ -819,7 +806,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		return;
 	}
 
-	if (Kt != 0)
+	if (Kt != NULL)
 		ds_Solve(ReleaseMatrixData, (MYTYPE*)Kt, 0);
 	ds_Initialize(nN, 0, (MYTYPE**)&Kt);
 	/*
@@ -829,7 +816,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	 * equations specified by the incidence set are all connected to each other.
 	 * Initialize element data.
 	*/
-	for (e = 0; e < nE; e++) {
+	for (size_t e = 0; e < nE; e++) {
 		int Nodes[2] = {(int)e, (int)e+1};
 		ds_DefineConnectivity( (MYTYPE*)Kt, 2, Nodes , 1, 0 );
 	}
@@ -887,7 +874,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		}
 	}
 	// Copy Temperature at time0 into First Iteration
-	for (n = 0; n < nN; n++) {
+	for (size_t n = 0; n < nN; n++) {
 		U[n] = NDS[n].T;
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
@@ -924,14 +911,13 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		iteration++;
 		// Reset the matrix data and zero out all the increment vectors
 		ds_Solve(ResetMatrixData, (MYTYPE*)Kt, 0);
-		for (n = 0; n < nN; n++) {
+		for (size_t n = 0; n < nN; n++) {
 			ddU[n] = dU[n];
 			dU[n] = 0.0;
 		}
 
 		// Assemble matrix
-		e = nE;
-		while (e-- > 0) {
+		for(size_t e = nE; e -->0; ) {
 			EL_INCID( e, Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Update the wind pumping velocity gradient
@@ -939,9 +925,9 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			// Update the water vapor transport enhancement factor
 			const double VaporEnhance = MAX (1., SnLaws::compEnhanceWaterVaporTransportSnow(Xdata, e));
 			// Now fill the matrix
-			if (!sn_ElementKtMatrix(&EMS[e], sn_dt, dvdz, T0, Se, Fe, VaporEnhance)) {
+			if (!sn_ElementKtMatrix(EMS[e], sn_dt, dvdz, T0, Se, Fe, VaporEnhance)) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Error in sn_ElementKtMatrix @ element %d:", e);
-				for (n = 0; n < nN; n++)
+				for (size_t n = 0; n < nN; n++)
 					fprintf(stdout, "U[%u]=%e K\n", (unsigned int)n, U[n]);
 				free(U); free(dU); free(ddU);
 				throw IOException("Runtime error in sn_SnowTemperature", AT);
@@ -995,10 +981,10 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		*/
 		ds_Solve( ComputeSolution, (MYTYPE*)Kt, dU );
 		// Update the solution vectors and check for convergence
-		for (n = 0; n < nN; n++)
+		for (size_t n = 0; n < nN; n++)
 			ddU[n] = dU[n] - ddU[n];
 		double MaxTDiff = fabs(ddU[0]);  // maximum temperature difference for convergence
-		for (n = 1; n < nN; n++) {
+		for (size_t n = 1; n < nN; n++) {
 			const double TDiff = fabs(ddU[n]); // temperature difference for convergence check
 			if (TDiff > MaxTDiff)
 				MaxTDiff = TDiff;
@@ -1023,7 +1009,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			prn_msg(__FILE__, __LINE__, "msg", Date(),
 			        "%d iterations > MaxItnTemp=%d; ControlTemp=%.4lf; nN=%d",
 			        iteration, MaxItnTemp, ControlTemp, nN);
-			for (n = 0; n < nN; n++) {
+			for (size_t n = 0; n < nN; n++) {
 				if (n > 0)
 					prn_msg(__FILE__, __LINE__, "msg-", Date(),
 					        "U[%03d]:%6.1lf K, ddU:%8.4lf K;  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
@@ -1039,13 +1025,13 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			free(U); free(dU); free(ddU);
 			throw IOException("Runtime error in sn_SnowTemperature", AT);
 		}
-		for (n = 0; n < nN; n++)
+		for (size_t n = 0; n < nN; n++)
 			U[n] += ddU[ n ];
 	} while ( NotConverged ); // end Convergence Loop
 
 	size_t crazy = 0;
 	bool prn_date = true;
-	for (n = 0; n < nN; n++) {
+	for (size_t n = 0; n < nN; n++) {
 		if ((U[n] > t_crazy_min) && (U[n] < t_crazy_max)) {
 			NDS[n].T = U[n];
 		} else { // Correct for - hopefully transient - crazy temperatures!
@@ -1101,7 +1087,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
 	}
 
-	for (e = 0; e < nE; e++) {
+	for (size_t e = 0; e < nE; e++) {
 		EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
 		EMS[e].heatCapacity();
 		EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
