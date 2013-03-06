@@ -123,7 +123,7 @@ class SnLaws {
 		static const bool jordy_new_snow, wind_pump, wind_pump_soil;
 
 	private:
-		static const mio::Config& cfg;
+		static const SnowpackConfig& cfg;
 		static bool setStaticData(const std::string& variant);
 
 		static double newSnowDensityPara(const std::string& i_hn_model,

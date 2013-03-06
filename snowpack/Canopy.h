@@ -30,7 +30,7 @@
 class Canopy {
 
  	public:
-		Canopy(const mio::Config& i_cfg);
+		Canopy(const SnowpackConfig& i_cfg);
 
 		static void cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		void runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,

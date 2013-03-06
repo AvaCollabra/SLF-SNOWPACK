@@ -40,7 +40,7 @@ string ImisDBIO::oraclePassword;
 
 const std::string ImisDBIO::profile_filename = "loaddata/pmodpro.dat";
 
-ImisDBIO::ImisDBIO(const mio::Config& cfg)
+ImisDBIO::ImisDBIO(const SnowpackConfig& cfg)
 {
 	cfg.getValue("DBNAME", "Output", oracleDB, IOUtils::nothrow);
 	cfg.getValue("DBUSER", "Output", oracleUser, IOUtils::nothrow);

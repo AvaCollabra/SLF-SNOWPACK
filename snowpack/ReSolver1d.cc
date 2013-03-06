@@ -51,7 +51,7 @@ using namespace std;
 using namespace mio;
 
 
-ReSolver1d::ReSolver1d(const mio::Config& cfg)
+ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
              watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),

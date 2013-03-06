@@ -48,7 +48,7 @@ typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 class Metamorphism {
 
 	public:
-		Metamorphism(const mio::Config& i_cfg);
+		Metamorphism(const SnowpackConfig& i_cfg);
 
 		void runMetamorphismModel(const CurrentMeteo& Mdata, SnowStation& Xdata) throw();
 

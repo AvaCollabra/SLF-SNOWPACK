@@ -278,7 +278,7 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
 /************************************************************
  * non-static section                                       *
  ************************************************************/
-Canopy::Canopy(const mio::Config& cfg)
+Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_model(), variant(),
           thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false)
 {

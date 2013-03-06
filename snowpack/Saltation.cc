@@ -59,7 +59,7 @@ const double Saltation::salt_height = 0.07;
  * non-static section                                       *
  ************************************************************/
 
-Saltation::Saltation(const mio::Config& cfg) : doorschot(false)
+Saltation::Saltation(const SnowpackConfig& cfg) : doorschot(false)
 {
 	//Use Doorschots Saltation model instead of Sorenson (much slower)
 	cfg.getValue("DOORSCHOT", "SnowpackAdvanced", doorschot);

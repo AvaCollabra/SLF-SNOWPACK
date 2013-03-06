@@ -38,7 +38,7 @@
 
 class Hazard {
 	public:
-		Hazard(const mio::Config& i_cfg, const double duration);
+		Hazard(const SnowpackConfig& i_cfg, const double duration);
 
 		void initializeHazard(std::vector<double>& vecDrift, double slope_angle,
 		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
@@ -67,7 +67,7 @@ class Hazard {
 		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                const SnowStation& Xdata);
 
-		const mio::Config& cfg;
+		const SnowpackConfig& cfg;
 		double sn_dt;
 		double i_time_zone;
 		double hoar_density_surf, hoar_min_size_surf;

@@ -43,7 +43,7 @@ const double PhaseChange::theta_s = 1.0;
  * non-static section                                       *
  ************************************************************/
 
-PhaseChange::PhaseChange(const mio::Config& cfg)
+PhaseChange::PhaseChange(const SnowpackConfig& cfg)
              : iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
 	       watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
 	       sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)

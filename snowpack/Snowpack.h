@@ -77,7 +77,7 @@
 class Snowpack {
 
 	public:
-		Snowpack(const mio::Config& i_cfg);
+		Snowpack(const SnowpackConfig& i_cfg);
 
 		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
@@ -134,7 +134,7 @@ class Snowpack {
 		                  SurfaceFluxes& Sdata);
 
 	private:
-		const mio::Config& cfg;
+		const SnowpackConfig& cfg;
 		BoundaryCondition surfaceCode;
 		std::string hn_density, hn_density_model, viscosity_model, variant, watertransportmodel_snow, watertransportmodel_soil;
 		int sw_mode;

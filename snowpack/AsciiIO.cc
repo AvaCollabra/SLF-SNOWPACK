@@ -38,7 +38,7 @@ const bool AsciiIO::t_gnd = false;
 /************************************************************
  * non-static section                                       *
  ************************************************************/
-AsciiIO::AsciiIO(const mio::Config& cfg)
+AsciiIO::AsciiIO(const SnowpackConfig& cfg)
          : setAppendableFiles(), hn_density(), hn_density_model(), variant(), experiment(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),

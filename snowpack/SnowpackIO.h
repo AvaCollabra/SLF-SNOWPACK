@@ -34,7 +34,7 @@
 class SnowpackIO : public SnowpackIOInterface {
 
 	public:
-		SnowpackIO(const mio::Config& i_cfg);
+		SnowpackIO(const SnowpackConfig& i_cfg);
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -58,7 +58,7 @@ class SnowpackIO : public SnowpackIOInterface {
 #endif
 		AsciiIO asciiio;
 		SmetIO smetio;
-		const mio::Config& cfg;
+		const SnowpackConfig& cfg;
 		bool outputprofile_as_ascii, outputprofile_as_imis;
 		bool output_snow_as_smet, input_snow_as_smet;
 };

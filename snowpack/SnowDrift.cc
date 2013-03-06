@@ -39,7 +39,7 @@ const bool SnowDrift::msg_erosion = false;
  * non-static section                                       *
  ************************************************************/
 
-SnowDrift::SnowDrift(const mio::Config& cfg) : saltation(cfg),
+SnowDrift::SnowDrift(const SnowpackConfig& cfg) : saltation(cfg),
                      enforce_measured_snow_heights(false), snow_redistribution(false), alpine3d(false),
                      sn_dt(0.), nSlopes(0)
 {

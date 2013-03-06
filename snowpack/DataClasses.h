@@ -26,6 +26,8 @@
 #ifndef __DATACLASSES_H__
 #define __DATACLASSES_H__
 
+#include <snowpack/SnowpackConfig.h>
+
 #include <snowpack/Constants.h>
 #include <meteoio/MeteoIO.h>
 #include <vector>
@@ -75,8 +77,8 @@ class ZwischenData {
  */
 class CurrentMeteo {
 	public:
-		CurrentMeteo(const mio::Config& i_cfg);
-		void reset(const mio::Config& i_cfg);
+		CurrentMeteo(const SnowpackConfig& i_cfg);
+		void reset(const SnowpackConfig& i_cfg);
 		void setMeasTempParameters(const mio::MeteoData& md);
 		size_t getNumberMeasTemperatures() const;
 		size_t getNumberFixedRates() const;
@@ -121,7 +123,6 @@ class CurrentMeteo {
 		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)
 		std::vector<double> conc;  ///< Solute concentrations in precipitation
 		double rho_hn;             ///< Measured new snow density (kg m-3)
-		int n;                     ///< record number of basic meteo input data
 
 	private:
 		size_t getNumberMeasTemperatures(const mio::MeteoData& md);

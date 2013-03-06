@@ -27,7 +27,7 @@
 using namespace std;
 using namespace mio;
 
-WaterTransport::WaterTransport(const mio::Config& cfg)
+WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                : RichardsEquationSolver1d(cfg), variant(),
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                  thresh_rain(IOUtils::nodata), sn_dt(IOUtils::nodata),

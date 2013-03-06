@@ -23,7 +23,7 @@
 using namespace std;
 using namespace mio;
 
-SmetIO::SmetIO(const mio::Config& cfg)
+SmetIO::SmetIO(const SnowpackConfig& cfg)
         : outpath(), o_snopath(), snowpath(), experiment(), inpath(), i_snopath(),
           in_dflt_TZ(), sw_mode(0), useSoilLayers(false), perp_to_slope(false)
 {

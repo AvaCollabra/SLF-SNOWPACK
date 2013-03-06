@@ -80,7 +80,7 @@ bool Stability::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-Stability::Stability(const mio::Config& cfg, const bool& i_classify_profile)
+Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
            : strength_model(), hardness_model(), hoar_density_buried(IOUtils::nodata), plastic(false),
              classify_profile(i_classify_profile)
 {

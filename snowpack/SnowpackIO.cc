@@ -24,9 +24,9 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) : imisdbio(i_cfg),
+SnowpackIO::SnowpackIO(const SnowpackConfig& i_cfg) : imisdbio(i_cfg),
 #else
-SnowpackIO::SnowpackIO(const mio::Config& i_cfg) :
+SnowpackIO::SnowpackIO(const SnowpackConfig& i_cfg) :
 #endif
               asciiio(i_cfg), smetio(i_cfg),
               cfg(i_cfg), outputprofile_as_ascii(false), outputprofile_as_imis(false),

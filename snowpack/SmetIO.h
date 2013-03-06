@@ -32,7 +32,7 @@
 class SmetIO : public SnowpackIOInterface {
 
 	public:
-		SmetIO(const mio::Config& i_cfg);
+		SmetIO(const SnowpackConfig& i_cfg);
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 

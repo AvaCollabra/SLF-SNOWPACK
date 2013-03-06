@@ -38,7 +38,7 @@ class Saltation;
 class SnowDrift {
 
 	public:
-		SnowDrift(const mio::Config& i_cfg);
+		SnowDrift(const SnowpackConfig& i_cfg);
 
 		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
 

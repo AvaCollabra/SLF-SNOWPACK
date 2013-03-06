@@ -41,7 +41,7 @@
 class WaterTransport {
 
 	public:
-		WaterTransport(const mio::Config& cfg);
+		WaterTransport(const SnowpackConfig& cfg);
 
 		void compTransportMass(const CurrentMeteo& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 

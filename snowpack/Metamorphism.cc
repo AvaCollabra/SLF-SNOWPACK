@@ -258,7 +258,7 @@ double Metamorphism::ddRate(const ElementData& Edata)
  * non-static section                                       *
  ************************************************************/
 
-Metamorphism::Metamorphism(const mio::Config& cfg)
+Metamorphism::Metamorphism(const SnowpackConfig& cfg)
               : metamorphism_model(), sn_dt(0.), new_snow_grain_rad(0.)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH

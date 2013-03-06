@@ -1018,9 +1018,6 @@ void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
  */
 void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector)
 {
-	size_t ll, le, e, n;      //  Counters for layers, layer elements, elements, and nodes
-	int real_soil_no_sandwich = 1;  // Switch to count real soil layers
-
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
@@ -1036,33 +1033,35 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 
 	SoilNode = 0;
 	Ground = 0.0;
-	Ndata[0].z = 0.;
+	Ndata.front().z = 0.;
 	if (SSdata.nLayers > 0) {
-		Ndata[0].T = SSdata.Ldata[0].tl;
+		Ndata.front().T = SSdata.Ldata.front().tl;
 	} else {
-		Ndata[0].T = Constants::melting_tk;
+		Ndata.front().T = Constants::melting_tk;
 	}
-	Ndata[0].u = 0.;
-	Ndata[0].f = 0.;
-	Ndata[0].udot = 0.;
-	Ndata[0].hoar = 0.;
-	Ndata[0].S_n=6.;   // Interface static natural stability index
-	Ndata[0].S_s=6.;   // Interface stability index Sk38 (skier)
-	for (ll = 0, n = 1; ll < SSdata.nLayers; ll++) {
+	Ndata.front().u = 0.;
+	Ndata.front().f = 0.;
+	Ndata.front().udot = 0.;
+	Ndata.front().hoar = 0.;
+	Ndata.front().S_n=6.;   // Interface static natural stability index
+	Ndata.front().S_s=6.;   // Interface stability index Sk38 (skier)
+
+	bool real_soil_no_sandwich = true;  // Switch to count real soil layers
+	for (size_t ll = 0, n = 1; ll < SSdata.nLayers; ll++) {
 		double dT;
 		// Update ground heigth and SoilNode number
 		if (SSdata.Ldata[ll].phiSoil > 0.0 && real_soil_no_sandwich) {
 			Ground += SSdata.Ldata[ll].hl;
 			SoilNode += SSdata.Ldata[ll].ne;
 		} else {
-			real_soil_no_sandwich = 0;
+			real_soil_no_sandwich = false;
 		}
 		if (ll == 0) {
 			dT = 0.;
 		} else {
 			dT = (SSdata.Ldata[ll].tl - SSdata.Ldata[ll-1].tl) / static_cast<double>(SSdata.Ldata[ll].ne);
 		}
-		for (le = 0; le < SSdata.Ldata[ll].ne; le++, n++ ) {
+		for (size_t le = 0; le < SSdata.Ldata[ll].ne; le++, n++ ) {
 			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / static_cast<double>(SSdata.Ldata[ll].ne);
 			Ndata[n].T = Ndata[n-1].T + dT;
 			Ndata[n].u = 0.;
@@ -1079,8 +1078,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	}
 
 	// INITIALIZE THE ELEMENT DATA
-	for (ll = 0, e = 0; ll<SSdata.nLayers; ll++) {
-		for (le = 0; le < SSdata.Ldata[ll].ne; le++, e++) {
+	for (size_t ll = 0, e = 0; ll<SSdata.nLayers; ll++) {
+		for (size_t le = 0; le < SSdata.Ldata[ll].ne; le++, e++) {
 			// Element's JulianQ Date
 			Edata[e].depositionDate = Date::rnd(SSdata.Ldata[ll].layerDate, 1.);
 			// Temperature data
@@ -1144,10 +1143,12 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		ErosionLevel = MAX(SoilNode, nElems-1);
 	}
 	// Find the real Cauchy stresses
-	e = nElems; double SigC = 0.0;
-	while (e-- > 0) {
-		if (e < nElems-1) SigC -= (Edata[e+1].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
-		SigC -= (Edata[e].M / 2.) * Constants::g * cos(DEG_TO_RAD(meta.getSlopeAngle()));
+	double SigC = 0.0;
+	const double cos_alpha = cos( DEG_TO_RAD(meta.getSlopeAngle()) );
+	for(size_t e = nElems; e -->0; ) {
+		if (e < nElems-1)
+			SigC -= (.5*Edata[e+1].M) * Constants::g * cos_alpha;
+		SigC -= (.5*Edata[e].M) * Constants::g * cos_alpha;
 
 		Edata[e].C = SigC;
 	}
@@ -1157,52 +1158,52 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 
 	// INITIALIZE CANOPY DATA
 	if (useCanopyModel) {
-		Cdata.height=SSdata.Canopy_Height;
-		Cdata.storage=0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
-		Cdata.temp=273.15;	          // temperature (K)
-		Cdata.canopyalb=Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
-		Cdata.wetfraction=0.0;
-		Cdata.lai=SSdata.Canopy_LAI;
+		Cdata.height = SSdata.Canopy_Height;
+		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
+		Cdata.temp = 273.15;	          // temperature (K)
+		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+		Cdata.wetfraction = 0.0;
+		Cdata.lai = SSdata.Canopy_LAI;
 
-		Cdata.sigf=1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // radiation transmissivity (-)
-		Cdata.ec=1.0;               //longwave emissivity
+		Cdata.sigf = 1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // radiation transmissivity (-)
+		Cdata.ec = 1.0;               //longwave emissivity
 
-		Cdata.z0m=Cdata.height*0.1;
-		Cdata.z0h=Cdata.z0m*0.1;
-		Cdata.zdispl=Cdata.height*0.66;
-		Cdata.direct_throughfall=SSdata.Canopy_Direct_Throughfall;
+		Cdata.z0m = Cdata.height*0.1;
+		Cdata.z0h = Cdata.z0m*0.1;
+		Cdata.zdispl = Cdata.height*0.66;
+		Cdata.direct_throughfall = SSdata.Canopy_Direct_Throughfall;
 		if (!(SSdata.Canopy_Direct_Throughfall >= 0. && SSdata.Canopy_Direct_Throughfall <= 1.)) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Given Canopy Throughfall (*.sno file) = %lf but Canopy is set",
 			        SSdata.Canopy_Direct_Throughfall);
 			throw IOException("Snowpack Initialization failed", AT);
 		}
-		Cdata.ra=0.0;
-		Cdata.rc=0.0;
-		Cdata.rs=0.0;
-		Cdata.rstransp=0.0;
+		Cdata.ra = 0.0;
+		Cdata.rc = 0.0;
+		Cdata.rs = 0.0;
+		Cdata.rstransp = 0.0;
 	} else {
-		Cdata.height=0.0;
-		Cdata.storage=0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
-		Cdata.temp=273.15;	          // temperature (K)
-		Cdata.canopyalb=Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
-		Cdata.wetfraction=0.0;
-		Cdata.intcapacity=0.0;
-		Cdata.lai=0.0;
-		Cdata.sigf=1.0;              // radiation transmissivity (-)
-		Cdata.ec=1.0;                //longwave emissivity
+		Cdata.height = 0.0;
+		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
+		Cdata.temp = 273.15;	          // temperature (K)
+		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+		Cdata.wetfraction = 0.0;
+		Cdata.intcapacity = 0.0;
+		Cdata.lai = 0.0;
+		Cdata.sigf = 1.0;              // radiation transmissivity (-)
+		Cdata.ec = 1.0;                //longwave emissivity
 
-		Cdata.z0m=0.0;
-		Cdata.z0h=0.0;
-		Cdata.zdispl=0.0;
-		Cdata.direct_throughfall=1.0;
-		Cdata.ra=0.0;
-		Cdata.rc=0.0;
-		Cdata.rs=0.0;
-		Cdata.rstransp=0.0;
+		Cdata.z0m = 0.0;
+		Cdata.z0h = 0.0;
+		Cdata.zdispl = 0.0;
+		Cdata.direct_throughfall = 1.0;
+		Cdata.ra = 0.0;
+		Cdata.rc = 0.0;
+		Cdata.rs = 0.0;
+		Cdata.rstransp = 0.0;
 	}
 
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
-	ReSolver_dt=-1.;
+	ReSolver_dt = -1.;
 }
 
 /**
@@ -1405,7 +1406,10 @@ std::ostream& operator<<(std::ostream &os, const SnowStation& Xdata)
 	os << "Stability:\tS_d(" << Xdata.z_S_d << ")=" << Xdata.S_d << " S_n(" << Xdata.z_S_n << ")=" << Xdata.S_n << " S_s(" << Xdata.z_S_s << ")=" << Xdata.S_s;
 	os << " S_1=" << Xdata.S_class1 << " S_2=" << Xdata.S_class2 << " S_4(" << Xdata.z_S_4 << ")=" << Xdata.S_4 << " S_5(" << Xdata.z_S_5 << ")=" << Xdata.S_5 << "\n";
 
-	os << "Kt= " << hex << Xdata.Kt << dec << "\n";
+	if(Xdata.Kt==NULL)
+		os << "Kt= NULL\n";
+	else
+		os << "Kt= " << hex << Xdata.Kt << dec << "\n";
 	/*for (unsigned int ii=1; ii<Xdata.Ndata.size(); ii++) {
 		os << Xdata.Ndata[ii];
 	}
@@ -1418,14 +1422,14 @@ std::ostream& operator<<(std::ostream &os, const SnowStation& Xdata)
 	return os;
 }
 
-CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
+CurrentMeteo::CurrentMeteo(const SnowpackConfig& i_cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
           hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.),
-          ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.), n(0),
+          ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
-	  numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
+          numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
 	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", IOUtils::nothrow);
 	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", IOUtils::nothrow);
@@ -1433,7 +1437,7 @@ CurrentMeteo::CurrentMeteo(const mio::Config& i_cfg)
 	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", IOUtils::nothrow);
 }
 
-void CurrentMeteo::reset(const mio::Config& i_cfg)
+void CurrentMeteo::reset(const SnowpackConfig& i_cfg)
 {
 	*this = CurrentMeteo(i_cfg);
 }
@@ -1500,7 +1504,7 @@ size_t CurrentMeteo::getNumberMeasTemperatures() const
 size_t CurrentMeteo::getNumberMeasTemperatures(const mio::MeteoData& md)
 {
 	size_t nrMeasTemperatures = 0;
-	size_t numberParams = md.getNrOfParameters();
+	const size_t numberParams = md.getNrOfParameters();
 	for (size_t ii=0; ii<numberParams; ii++) {
 		stringstream ss;
 		ss << "TS" << nrMeasTemperatures+1;
@@ -1566,7 +1570,7 @@ std::ostream& operator<<(std::ostream &os, const CurrentMeteo& Mdata)
 {
 	const double to_deg = 180. / mio::Cst::PI;
 	os << "<CurrentMeteo>" << endl;
-	os << Mdata.date.toString(Date::ISO) << " " << Mdata.n << " fields\n";
+	os << Mdata.date.toString(Date::ISO) << "\n";
 
 	os << setw(8) << "TA=" << Mdata.ta << " TSS=" << Mdata.tss << " TSG=" << Mdata.ts0 << "\n";
 	os << setw(8) << "RH=" << Mdata.rh << " rh_avg=" << Mdata.rh_avg << "\n";
@@ -1632,7 +1636,7 @@ std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& Sdata)
 	os << "Albedo: mAlbedo=" << Sdata.mAlbedo << " pAlbedo=" << Sdata.pAlbedo << endl;
 	os << "Energy: qs=" << Sdata.qs << " ql=" << Sdata.ql << " qw=" << Sdata.qw << " qr=" << Sdata.qr << " qg=" << Sdata.qg << " gq0=" << Sdata.qg0 << endl;
 	os << "Energy: dIntEnergy=" << Sdata.dIntEnergy << endl;
-	os << "Mass change: hoar=" << Sdata.hoar << " drift=" << Sdata.drift << " snow depth correction=" << Sdata.dhs_corr << endl;
+	os << "Mass change: hoar=" << Sdata.hoar << " drift=" << Sdata.drift << " snow_depth_correction=" << Sdata.dhs_corr << endl;
 	os << "Snow: mRho_hn=" << Sdata.mRho_hn << " cRho_hn=" << Sdata.cRho_hn << endl;
 
 	os << Sdata.mass.size() << " mass fluxes: ";

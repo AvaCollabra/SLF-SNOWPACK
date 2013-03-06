@@ -48,7 +48,7 @@ const double Hazard::maximum_drift = 5.0;
  * non-static section                                       *
  ************************************************************/
 
-Hazard::Hazard(const mio::Config& i_cfg, const double duration)
+Hazard::Hazard(const SnowpackConfig& i_cfg, const double duration)
         : cfg(i_cfg), sn_dt(IOUtils::nodata), i_time_zone(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata),
           hazard_steps_between(0), nHz(0), research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
 {

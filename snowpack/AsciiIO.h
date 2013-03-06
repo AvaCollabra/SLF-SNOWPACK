@@ -30,7 +30,7 @@
 class AsciiIO : public SnowpackIOInterface {
 
 	public:
-		AsciiIO(const mio::Config& i_cfg);
+		AsciiIO(const SnowpackConfig& i_cfg);
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 

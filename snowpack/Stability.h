@@ -88,7 +88,7 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
  */
 class Stability {
 	public:
-		Stability (const mio::Config& i_cfg, const bool& i_classify_profile=false);
+		Stability (const SnowpackConfig& i_cfg, const bool& i_classify_profile=false);
 
 		void checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata);
 

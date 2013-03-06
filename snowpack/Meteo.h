@@ -41,7 +41,7 @@ class Meteo {
 
 	public:
 
-		Meteo(const mio::Config& i_cfg);
+		Meteo(const SnowpackConfig& i_cfg);
 
 		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
 		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double hs_a3hl6);
