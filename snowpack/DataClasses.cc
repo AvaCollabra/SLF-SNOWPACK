@@ -1346,13 +1346,12 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
  */
 bool SnowStation::isGlacier(const bool& hydro) const
 {
-//mk % 10 == 7
 	if(hydro) {
 		//if more than 2m of pure ice in the whole profile -> hydrologically, glacier melt
 		const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
 		for(unsigned int layer_index=0; layer_index<nElems; layer_index++) {
-			if( Edata[layer_index].type==880) sum_ice_depth += Edata[layer_index].L;
+			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7)) sum_ice_depth += Edata[layer_index].L;
 		}
 
 		if(sum_ice_depth>=ice_depth_glacier)
@@ -1360,16 +1359,15 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		else
 			return false;
 	} else {
-
 		bool is_pure_ice=true;
 		const unsigned int check_depth=5;
 		const int top_index = nElems-1;
-		const int top_inedex_toCheck = top_index-check_depth;
+		const int top_index_toCheck = top_index - check_depth;
 		const int soil_index = SoilNode-1;
-		const int end_index = (top_inedex_toCheck>soil_index)?top_inedex_toCheck:soil_index;
+		const int end_index = (top_index_toCheck>soil_index)? top_index_toCheck : soil_index;
 
 		for(int layer_index=top_index; layer_index>end_index; layer_index--) {
-			if(Edata[layer_index].type!=880) {
+			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7)) {
 				is_pure_ice=false;
 				break;
 			}
