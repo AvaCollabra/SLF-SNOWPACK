@@ -1379,21 +1379,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(WriteOutNumerics_Level3==true) printf("HYDRCONDUCT: node %d -- K=%e k_np1_m_im12=%e k_np1_m_ip12=%e   impedance: %f\n", i, K[i], k_np1_m_im12[i], k_np1_m_ip12[i], impedance[i]);
 			}
 
-			//Determine which boundary conditions should be applied:
-			//Now we have determined the boundary conditions to apply, we set the boundary conditions:
-			if (niter==1) {							//These checks only makes sense before starting the iterations. It cannot be done outside of the loop, because we need k_np1_m_ip12.
-				if(TopBC==DIRICHLET) {
-					aTopBC=DIRICHLET;				//Set Dirichlet BC
-					TopFluxRate=0.;					//Dirichlet BC, so no flux
-					theta_np1_m[uppernode]=theta_n[uppernode];
-				} else if (TopBC==NEUMANN) {
-					//Note: TopFluxRate is defined as gradient over pressure head. For influx, pressure head is increasing with increasing height, so TopFluxRate is positive.
-					//Units: surfacefluxrate=[m^3/m^2/s]
-					aTopBC=NEUMANN;					//Set Neumann BC
-					TopFluxRate=surfacefluxrate;			//Flux for Neumann BC
-				} else if (TopBC==LIMITEDFLUXEVAPORATION || TopBC==LIMITEDFLUXINFILTRATION || TopBC==LIMITEDFLUX) {
-				  	//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
-				  	aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
+			//Determine which and how boundary conditions should be applied:
+			if (TopBC==DIRICHLET) {
+				aTopBC=DIRICHLET;				//Set Dirichlet BC
+				TopFluxRate=0.;					//Dirichlet BC, so no flux
+				theta_np1_m[uppernode]=theta_n[uppernode];
+			} else if (TopBC==NEUMANN) {
+				//Note: TopFluxRate is defined as gradient over pressure head. For influx, pressure head is increasing with increasing height, so TopFluxRate is positive.
+				//Units: surfacefluxrate=[m^3/m^2/s]
+				aTopBC=NEUMANN;					//Set Neumann BC
+				TopFluxRate=surfacefluxrate;			//Flux for Neumann BC
+			} else if (TopBC==LIMITEDFLUXEVAPORATION || TopBC==LIMITEDFLUXINFILTRATION || TopBC==LIMITEDFLUX) {
+				if (niter == 1) {
+					//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
+					aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 					TopFluxRate=surfacefluxrate;			// Initial guess for Neumann BC
 					if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
 						const double head_compare=h_e[uppernode];
@@ -1409,66 +1408,66 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							TopFluxRate=MIN(0., flux_compare);
 						}
 					}
-				} else if (TopBC==FREEDRAINAGE) {
-					printf("ERROR in ReSolver1d.cc: FREEDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
-					throw;
-				} else if (TopBC==SEEPAGEBOUNDARY) {
-					printf("ERROR in ReSolver1d.cc: SEEPAGEBOUNDARY cannot be applied as top boundary condition (doesn't make sense)!\n");
-					throw;
-				} else if (TopBC==GRAVITATIONALDRAINAGE) {
-					printf("ERROR in ReSolver1d.cc: GRAVITATIONALDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
-					throw;
 				}
+			} else if (TopBC==FREEDRAINAGE) {
+				printf("ERROR in ReSolver1d.cc: FREEDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				throw;
+			} else if (TopBC==SEEPAGEBOUNDARY) {
+				printf("ERROR in ReSolver1d.cc: SEEPAGEBOUNDARY cannot be applied as top boundary condition (doesn't make sense)!\n");
+				throw;
+			} else if (TopBC==GRAVITATIONALDRAINAGE) {
+				printf("ERROR in ReSolver1d.cc: GRAVITATIONALDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				throw;
+			}
 
 
-				if(BottomBC==DIRICHLET) {
-					aBottomBC=DIRICHLET;		//Set Dirichlet BC.
-					BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
-					theta_np1_m[lowernode]=theta_n[lowernode];
-				} else if (BottomBC==NEUMANN) {
-					aBottomBC=NEUMANN;		//Set Neumann BC.
-					//Note: BottomFluxRate is defined as gradient over pressure head. For outflux (drainage), pressure head is increasing with increasing height, so BottomFluxRate is positive.
-					BottomFluxRate=0.0000005;	//Flux for Neumann BC.
-				} else if (BottomBC==FREEDRAINAGE) {
-					//First calculate flux between lowest and lowest+1 element.
-					const double tmpgrad=((h_n[lowernode+1]-h_n[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
-					if((tmpgrad+cos_sl) < 0.) {
-						//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
-						//Then set zero flux:
-						aBottomBC=NEUMANN;
-						BottomFluxRate=0.;
-					} else {
-						aBottomBC=NEUMANN;
-						//Now, prescribe flux at lower boundary equivalent to tmpgrad
-						BottomFluxRate=(tmpgrad+cos_sl)*k_np1_m_im12[lowernode];
-					}
-				} else if (BottomBC==SEEPAGEBOUNDARY) {
-					//Neumann with flux=0 in case of unsaturated
-					//Dirichlet with h_bottom=0 in case of saturated
-					if(h_n[lowernode+1]<0.) {
-						aBottomBC=NEUMANN;
-						BottomFluxRate=0.;
-					} else {
-						aBottomBC=DIRICHLET;
-						hbottom=0.;
-						BottomFluxRate=0.;
-					}
-				} else if (BottomBC==GRAVITATIONALDRAINAGE) {
-					// See: Xubin Zeng and Mark Decker (2008). Improving the Numerical Solution of Soil Moisture–Based Richards Equation for Land Models with a Deep or Shallow Water Table
-					// http://dx.doi.org/10.1175/2008JHM1011.1
+			if (BottomBC==DIRICHLET) {
+				aBottomBC=DIRICHLET;		//Set Dirichlet BC.
+				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
+				theta_np1_m[lowernode]=theta_n[lowernode];
+			} else if (BottomBC==NEUMANN) {
+				aBottomBC=NEUMANN;		//Set Neumann BC.
+				//Note: BottomFluxRate is defined as gradient over pressure head. For outflux (drainage), pressure head is increasing with increasing height, so BottomFluxRate is positive.
+				BottomFluxRate=0.0000005;	//Flux for Neumann BC.
+			} else if (BottomBC==FREEDRAINAGE) {
+				//First calculate flux between lowest and lowest+1 element.
+				const double tmpgrad=((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
+				if((tmpgrad+cos_sl) < 0.) {
+					//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
+					//Then set zero flux:
 					aBottomBC=NEUMANN;
-					BottomFluxRate=k_np1_m_im12[lowernode];
-				} else if (BottomBC==LIMITEDFLUX) {
-					//Probably also not necessary.
-					printf("ERROR in ReSolver1d.cc: No implementation for LIMITEDFLUX lower boundary condition. Either choose a saturated DIRICHLET (lower boundary in water table), or choose FREEDRAINAGE (lower boundary not in water table).\n");
-					throw;
-				} else if (BottomBC==LIMITEDFLUXEVAPORATION) {
-					printf("ERROR in ReSolver1d.cc: LIMITEDFLUXEVAPORATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
-					throw;
-				} else if (BottomBC==LIMITEDFLUXINFILTRATION) {
-					printf("ERROR in ReSolver1d.cc: LIMITEDFLUXINFILTRATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
-					throw;
+					BottomFluxRate=0.;
+				} else {
+					aBottomBC=NEUMANN;
+					//Now, prescribe flux at lower boundary equivalent to tmpgrad
+					BottomFluxRate=(tmpgrad+cos_sl)*k_np1_m_im12[lowernode];
 				}
+			} else if (BottomBC==SEEPAGEBOUNDARY) {
+				//Neumann with flux=0 in case of unsaturated
+				//Dirichlet with h_bottom=0 in case of saturated
+				if(h_n[lowernode+1]<0.) {
+					aBottomBC=NEUMANN;
+					BottomFluxRate=0.;
+				} else {
+					aBottomBC=DIRICHLET;
+					hbottom=0.;
+					BottomFluxRate=0.;
+				}
+			} else if (BottomBC==GRAVITATIONALDRAINAGE) {
+				// See: Xubin Zeng and Mark Decker (2008). Improving the Numerical Solution of Soil Moisture–Based Richards Equation for Land Models with a Deep or Shallow Water Table
+				// http://dx.doi.org/10.1175/2008JHM1011.1
+				aBottomBC=NEUMANN;
+				BottomFluxRate=k_np1_m_im12[lowernode];
+			} else if (BottomBC==LIMITEDFLUX) {
+				//Probably also not necessary.
+				printf("ERROR in ReSolver1d.cc: No implementation for LIMITEDFLUX lower boundary condition. Either choose a saturated DIRICHLET (lower boundary in water table), or choose GRAVITATIONAL or FREEDRAINAGE (lower boundary not in water table).\n");
+				throw;
+			} else if (BottomBC==LIMITEDFLUXEVAPORATION) {
+				printf("ERROR in ReSolver1d.cc: LIMITEDFLUXEVAPORATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
+				throw;
+			} else if (BottomBC==LIMITEDFLUXINFILTRATION) {
+				printf("ERROR in ReSolver1d.cc: LIMITEDFLUXINFILTRATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
+				throw;
 			}
 
 
