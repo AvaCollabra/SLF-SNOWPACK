@@ -1390,23 +1390,21 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				aTopBC=NEUMANN;					//Set Neumann BC
 				TopFluxRate=surfacefluxrate;			//Flux for Neumann BC
 			} else if (TopBC==LIMITEDFLUXEVAPORATION || TopBC==LIMITEDFLUXINFILTRATION || TopBC==LIMITEDFLUX) {
-				if (niter == 1) {
-					//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
-					aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
-					TopFluxRate=surfacefluxrate;			// Initial guess for Neumann BC
-					if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
-						const double head_compare=h_e[uppernode];
-						const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
-						if(flux_compare < TopFluxRate) {
-							TopFluxRate=MAX(0., flux_compare);
-						}
+				//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
+				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
+				TopFluxRate=surfacefluxrate;			// Initial guess for Neumann BC
+				if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
+					const double head_compare=h_e[uppernode];
+					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
+					if(flux_compare < TopFluxRate) {
+						TopFluxRate=MAX(0., flux_compare);
 					}
-					if(TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) {
-						const double head_compare=h_d_uppernode;
-						const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
-						if(flux_compare > TopFluxRate) {
-							TopFluxRate=MIN(0., flux_compare);
-						}
+				}
+				if(TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) {
+					const double head_compare=h_d_uppernode;
+					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
+					if(flux_compare > TopFluxRate) {
+						TopFluxRate=MIN(0., flux_compare);
 					}
 				}
 			} else if (TopBC==FREEDRAINAGE) {
