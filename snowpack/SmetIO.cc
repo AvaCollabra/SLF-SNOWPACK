@@ -491,16 +491,16 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
 
 	// Last checked Snow Depth used for data Control of next run
-	ss.str(); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
+	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
 
 	// Latitude, Longitude, Altitude NOTE:redundant?, Slope Angle, Slope Azimut
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
-	ss.str(); ss << fixed << setprecision(2) << Xdata.meta.getSlopeAngle();
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getSlopeAngle();
 	smet_writer.set_header_value("SlopeAngle", ss.str());
-	ss.str(); ss << fixed << setprecision(2) << Xdata.meta.getAzimuth();
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getAzimuth();
 	smet_writer.set_header_value("SlopeAzi", ss.str());
 
 	// Number of Soil Layer Data; in case of no soil used to store the erosion level
@@ -509,24 +509,24 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("nSnowLayerData", static_cast<double>(Xdata.getNumberOfElements() - Xdata.SoilNode));
 
 	// Ground Characteristics (introduced June 2006)
-	ss.str(); ss << fixed << setprecision(2) << Xdata.SoilAlb;
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.SoilAlb;
 	smet_writer.set_header_value("SoilAlbedo", ss.str());
-	ss.str(); ss << fixed << setprecision(3) << Xdata.BareSoil_z0;
+	ss.str(""); ss << fixed << setprecision(3) << Xdata.BareSoil_z0;
 	smet_writer.set_header_value("BareSoil_z0", ss.str());
 
 	// Canopy Characteristics
-	ss.str(); ss << fixed << setprecision(2) << Xdata.Cdata.height;
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.height;
 	smet_writer.set_header_value("CanopyHeight", ss.str());
-	ss.str(); ss << fixed << setprecision(6) << Xdata.Cdata.lai;
+	ss.str(""); ss << fixed << setprecision(6) << Xdata.Cdata.lai;
 	smet_writer.set_header_value("CanopyLeafAreaIndex", ss.str());
-	ss.str(); ss << fixed << setprecision(2) << Xdata.Cdata.direct_throughfall;
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.direct_throughfall;
 	smet_writer.set_header_value("CanopyDirectThroughfall", ss.str());
 
 	// Additional parameters
-	ss.str(); ss << fixed << setprecision(2) << SSdata.WindScalingFactor;
+	ss.str(""); ss << fixed << setprecision(2) << SSdata.WindScalingFactor;
 	smet_writer.set_header_value("WindScalingFactor", ss.str());
 	smet_writer.set_header_value("ErosionLevel", static_cast<double>(Xdata.ErosionLevel));
-	ss.str(); ss << fixed << setprecision(6) << SSdata.TimeCountDeltaHS;
+	ss.str(""); ss << fixed << setprecision(6) << SSdata.TimeCountDeltaHS;
 	smet_writer.set_header_value("TimeCountDeltaHS", ss.str());
 }
 

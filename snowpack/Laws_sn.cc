@@ -270,7 +270,7 @@ bool SnLaws::setStaticData(const std::string& variant)
  */
 double SnLaws::conductivity_ice(const double& Temperature)
 {
-	const double ki = 0.4685 + 488.19/Temperature;
+	const double ki = 0.4685 + 488.19 / Temperature;
 	return ki;
 }
 
@@ -320,12 +320,12 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 			const double l = -9.2e-6, m = 6.7e-5, n = -7.2e-5, o = 2.0e-4;
 
 			const double sqrt_age = (age<0.001)? Constants::eps : sqrt(age);
-			const double lwi = Constants::stefan_boltzmann*Mdata.ea*Ta*Ta*Ta*Ta;
+			const double lwi = Constants::stefan_boltzmann*Mdata.ea*Optim::pow4(Ta);
 			const double Alb1 = exp(a + b*sqrt_age + c*Tss + d*Mdata.vw + e*Mdata.rswr + f*Mdata.rh
-			         + g*sqrt_age*Ta*Ta + h*sqrt_age*Tss + i*sqrt_age*lwi
-			           + j*Ta*Ta*Tss + k*Ta*Ta*lwi + l*Tss*Mdata.rswr
+			         + g*sqrt_age*Optim::pow2(Ta) + h*sqrt_age*Tss + i*sqrt_age*lwi
+			           + j*Optim::pow2(Ta)*Tss + k*Optim::pow2(Ta)*lwi + l*Tss*Mdata.rswr
 			             + m*Tss*lwi + n*Tss*Mdata.rh + o*Mdata.vw*Mdata.rh);
-			Alb = weight * Edata.dd * Snowpack::new_snow_albedo + (1 - weight * Edata.dd) * Alb1;
+			Alb = weight * Edata.dd * Snowpack::new_snow_albedo + (1. - weight * Edata.dd) * Alb1;
 			break;
 		}
 		case alb_lehning_1: {
@@ -387,7 +387,7 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 			           + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
 			               + Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
 
-			if (Alb1 > 0) {
+			if (Alb1 > 0.) {
 				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 			} else {
 				Alb = Constants::min_albedo;
@@ -415,10 +415,11 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
  */
 void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream)
 {
-	size_t e, bottom_element;
 
 	ElementData *EMS = &Xdata.Edata[0];
 	const size_t nE = Xdata.getNumberOfElements();
+
+	size_t bottom_element;
 	if (Xdata.SoilNode > 0)
 		bottom_element = Xdata.SoilNode - 1;
 	else {
@@ -427,21 +428,18 @@ void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const
 		else
 			bottom_element = Xdata.SoilNode;
 	}
-	for (e = bottom_element; e < nE; e++)
+	for (size_t e = bottom_element; e < nE; e++)
 		EMS[e].sw_abs = 0.;
 
 	// Compute absorbed radiation
 	if (multistream) {
-		double dI;
 		for (size_t ii = 0; ii < swa_nBands; ii++) {
 			double I0_band = I0 * swa_pc[ii] / 100.;
-			for (e = nE-1; e > bottom_element; e--) {
+			for (size_t e = nE-1; e > bottom_element; e--) {
 				const double Ks = swa_fb[ii] * 0.84 * sqrt( 1000. * swa_k[ii] / (2. * EMS[e].rg) ) * EMS[e].Rho
 				       / Constants::density_ice;
-				if (EMS[e].mk%10 != 9)
-					dI = I0_band * (1. - exp(-(Ks * (EMS[e].L))));  // Radiation absorbed by element e in band i
-				else
-					dI = 0.; // Water is transparent
+				// Radiation absorbed by element e in band i, transparent (=0) for water
+				const double dI = (EMS[e].mk%10 != 9)? I0_band * (1. - exp(-Ks * EMS[e].L)) : 0.;
 				EMS[e].sw_abs += dI;
 				I0_band -= dI;
 			}
@@ -449,19 +447,17 @@ void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const
 				EMS[bottom_element].sw_abs += I0_band;
 		}
 	} else { // ad hoc "1-Band" model
-		double I0_band = I0, dI;
-		for (e = nE-1; e > bottom_element; e--) {
-			if (EMS[e].mk%10 != 9)
-				dI = I0 * (1. - exp(-(EMS[e].extinction() * (EMS[e].L))));  // Radiation absorbed by element e
-			else
-				dI = 0.; // Water is transparent
+		double I0_band = I0;
+		for (size_t e = nE-1; e > bottom_element; e--) {
+			// Radiation absorbed by element e, transparent (=0) for water
+			const double dI = (EMS[e].mk%10 != 9)? I0 * (1. - exp(-EMS[e].extinction() * EMS[e].L)) : 0.;
 			EMS[e].sw_abs += dI;
 			I0_band -= dI;
 		}
 		EMS[bottom_element].sw_abs += I0_band;
 	}
 
-	for (e = bottom_element; e < nE; e++) {
+	for (size_t e = bottom_element; e < nE; e++) {
 		if (EMS[e].sw_abs < 0.) {
 			prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %lf absorbed by element %d (nE=%d)",
 				   EMS[e].sw_abs, e, nE);
@@ -546,11 +542,11 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
 		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil) {
-            const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
+			const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
 			C_eff_soil += MAX( 0.27, (alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]) );
 		} else
 			C_eff_soil += 0.27;
-		C_eff_soil = MIN(C_eff_soil_max, C_eff_soil);
+			C_eff_soil = MIN(C_eff_soil_max, C_eff_soil);
 	} else {
 		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te)
                        + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);
@@ -633,14 +629,14 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	// The conductivity including latent heat transfer (W K-1 m-1)
 	const double kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P
 		 * Atmosphere::waterSaturationPressure(Te))
-		 / (Constants::gas_constant*Constants::gas_constant * Te*Te*Te * (P - Atmosphere::waterSaturationPressure(Te))));
+		 / (Constants::gas_constant*Constants::gas_constant * Optim::pow3(Te) * (P - Atmosphere::waterSaturationPressure(Te))));
 
 	/*
 	* Determine C1 = nca/ncl (nca:=number of grains per unit area; ncl:=number
 	* of grains per unit length) = ncl since nca=ncl^2
 	* Now we can also determine the series cross sectional areas
 	*/
-	double C1 =  (3.0 * Edata.Rho / Constants::density_ice) / ( 4.0 * Constants::pi * rg*rg*rg);
+	double C1 =  (3.0 * Edata.Rho / Constants::density_ice) / ( 4.0 * Constants::pi * Optim::pow3(rg));
 	C1 =  pow(C1, 0.3333333);
 
 	/*
@@ -648,7 +644,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	* (I believe that this is the solid ice conduction from one grain through a
 	* bond/neck into another ice grain.)
 	*/
-	const double C2 = Constants::pi * Constants::pi * rb * Constants::conductivity_ice * Edata.N3 / 32.0;
+	const double C2 = Optim::pow2(Constants::pi) * rb * Constants::conductivity_ice * Edata.N3 / 32.0;
 
 	// Compute cross-sectional areas of conduction paths (m2)
 	const double Ap = Metamorphism::csPoreArea(Edata); // (mm2)
@@ -679,7 +675,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	const double C5 = (Constants::conductivity_ice * Constants::conductivity_water * Aiw)
 	                  / (rg * Constants::conductivity_water  + (1./C1 - rg) * Constants::conductivity_ice);
 
-	double C_eff  = SnLaws::montana_c_fudge * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Te*Te / (Edata.melting_tk*Edata.melting_tk));
+	double C_eff  = SnLaws::montana_c_fudge * C1 * (C2 + C3 + C4 + C5) * (2.0 - Edata.dd) * (1.0 + pow(Edata.theta[ICE], 1.7)) * (0.5 + Optim::pow2(Te/Edata.melting_tk) );
 
 	if (!((C_eff < 5.*Constants::conductivity_ice) && (C_eff > 0.2*Constants::conductivity_air)) && show_warnings) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Conductivity out of range (0.2*Constants::conductivity_air=%.3lf, 5.*Constants::conductivity_ice=%.3lf):", 0.2 * Constants::conductivity_air, 5. * Constants::conductivity_ice);
@@ -842,7 +838,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 			c = 1. / c;
 		}
 	}
-	return (c * 0.622 * Constants::lh_sublimation / Constants::gas_constant_air / Mdata.ta);
+	return c * 0.622 * Constants::lh_sublimation / ( Constants::gas_constant_air * Mdata.ta);
 }
 
 /**
@@ -1360,7 +1356,7 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 
 	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
-	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
+	const double visc_factor = 1./eps1Dot * Optim::pow3(sig1/visc_fudge);
 	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
 	const double Te = MIN(Edata.Te, Edata.melting_tk);
 	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
@@ -1372,7 +1368,7 @@ double SnLaws::snowViscosityDEFAULT(ElementData& Edata)
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
 	else // YIELDING, NON-LINEAR
-		eta /= visc_micro*visc_micro*visc_micro * sig*sig;
+		eta /= Optim::pow3(visc_micro) * Optim::pow2(sig);
 	return eta; // Viscosity (Pa s)
 }
 
@@ -1420,7 +1416,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	const double visc_fudge = SnLaws::snowViscosityFudgeCALIBRATION(Edata, date); // Snow viscosity fudge factor
 	const double eps1Dot = 1.76e-7;    // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;         // Unit stress from Sinha's formulation (Pa)
-	const double visc_factor = (sig1*sig1*sig1 / (eps1Dot * visc_fudge*visc_fudge*visc_fudge));
+	const double visc_factor = 1./eps1Dot * Optim::pow3(sig1/visc_fudge);
 	const double visc_macro = Edata.neck2VolumetricStrain(); // Macro-structure (layer) related factor
 	const double Te = MIN(Edata.Te, Edata.melting_tk);
 	double eta = (1. / visc_macro) * SnLaws::snowViscosityTemperatureTerm(Te) * visc_factor;
@@ -1432,7 +1428,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 	if ((visc_micro * sig) <= 100. * sigNeckYield) // NOT YIELDING, LINEAR
 		eta /= visc_micro * sigNeckYield*sigNeckYield;
 	else // YIELDING, NON-LINEAR
-		eta /= visc_micro*visc_micro*visc_micro * sig*sig;
+		eta /= Optim::pow3(visc_micro) * Optim::pow2(sig);
 	//ANT Quickfix for Antarctica only
 	if (SnLaws::setfix && ((date.getJulian() - Edata.depositionDate.getJulian()) > 60.))
 		eta /= 0.06;

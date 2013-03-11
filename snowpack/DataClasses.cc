@@ -1172,9 +1172,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Cdata.z0h = Cdata.z0m*0.1;
 		Cdata.zdispl = Cdata.height*0.66;
 		Cdata.direct_throughfall = SSdata.Canopy_Direct_Throughfall;
-		if (!(SSdata.Canopy_Direct_Throughfall >= 0. && SSdata.Canopy_Direct_Throughfall <= 1.)) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Given Canopy Throughfall (*.sno file) = %lf but Canopy is set",
-			        SSdata.Canopy_Direct_Throughfall);
+		if (SSdata.Canopy_Direct_Throughfall < 0. || SSdata.Canopy_Direct_Throughfall > 1.) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Invalid Canopy Throughfall (%lf) given in sno file! It should be between 0 and 1.", SSdata.Canopy_Direct_Throughfall);
 			throw IOException("Snowpack Initialization failed", AT);
 		}
 		Cdata.ra = 0.0;
