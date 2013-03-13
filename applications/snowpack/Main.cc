@@ -320,7 +320,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
                    const double prevailing_wind_dir, const double wind_scaling_factor)
 {
-	Mdata.date   = Date::rnd(md.date, 1.);
+	Mdata.date   = Date::rnd(md.date, 1);
 	Mdata.ta     = md(MeteoData::TA);
 	Mdata.rh     = md(MeteoData::RH);
 	if (md.param_exists("RH_AVG"))
@@ -575,7 +575,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 				        vecStationIDs[i_stn].c_str());
 				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
 				vector<mio::MeteoData> vectmpmd;
-				current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1.);
+				current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1);
 				io.getMeteoData(current_date, vectmpmd);
 				if (vectmpmd.empty())
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
@@ -666,7 +666,7 @@ void real_main (int argc, char *argv[])
 	if (end_date_str == "NOW") { //interpret user provided end date
 		dateEnd.setFromSys();
 		dateEnd.setTimeZone(i_time_zone);
-		dateEnd.rnd(1800., mio::Date::DOWN);
+		dateEnd.rnd(1800, mio::Date::DOWN);
 	} else {
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
