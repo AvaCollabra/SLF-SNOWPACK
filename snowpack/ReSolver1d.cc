@@ -1855,10 +1855,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				// Note: boundaries are not considered for determination of the accuracy in case of Dirichlet (of course!).
 
 				//Absolute accuracy in h: This seems to produce the best (in sense of most stable) behaviour.
-				//Note: because we want to be able to very accurately determine the flux over the snow-soil boundary and model boundaries, we ALWAYS have to assess the accuracy in head in this region!
-				//If we don't do this, then in case of dry soil layers, the estimated pressure head can be quite inaccurate, leading to a completely wrong estimation of this flux!
-				//if(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver) {
-				if(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver) {
+				//Note: because we want to be able to very accurately determine the flux over the snow-soil boundary (for MS_SNOW_RUNOFF) and model boundaries (for MS_SOIL_RUNOFF),
+				//we ALWAYS have to assess the accuracy in head in this region! If we don't do this, then in case of dry soil layers, the estimated pressure head can be quite
+				//inaccurate, leading to a completely wrong estimation of these fluxes!
+				if(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
 						if(fabs(delta_h[memstate%nmemstates][i])>track_accuracy_h) {
@@ -1876,7 +1876,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Absolute accuracy in theta. This doesn't behave stable, especially during saturated soil conditions, when the accuracy is set too low.
 				//See Huang (1996), which proposes this, and also discusses the need for a higher accuracy:
 				//if(not(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver)) {
-				if(not(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver)) {
+				if(not(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1)) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
 						if(fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water))>track_accuracy_theta) {
