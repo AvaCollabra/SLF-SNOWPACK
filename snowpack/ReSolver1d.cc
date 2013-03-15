@@ -1798,7 +1798,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 									//Now check if convergence is achieved
 									if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) < epsilon) {
 										delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));	//Make delta in water equal to ice, so we keep mass-balance.
-										//ck=-1.*(delta_w_ck*(Constants::density_water/Constants::density_ice));		//Make delta in water equal to ice, so we keep mass-balance.
+										BS_converged=true;
+									} else if(fabs(delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) < epsilon) {
+										ck=ak;
+										delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));	//Make delta in water equal to ice, so we keep mass-balance.
+										delta_Te_ck=delta_Te_ak;
+										BS_converged=true;
+									} else if(fabs(delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) < epsilon) {
+										ck=bk;
+										delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));	//Make delta in water equal to ice, so we keep mass-balance.
+										delta_Te_ck=delta_Te_bk;
 										BS_converged=true;
 									} else {
 										//And determine whether to update the left or right point
@@ -1820,6 +1829,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								theta_i_np1_mp1[i]=theta_i_np1_m[i]+delta_i;
 								theta_np1_mp1[i]+=delta_w;
 								EMS[SnowpackElement[i]].Te+=delta_Te;
+								NDS[SnowpackElement[i]].T+=delta_Te;
+								NDS[SnowpackElement[i]+1].T+=delta_Te;								
 							} else {
 								theta_i_np1_mp1[i]=0.;
 								theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 0.);
@@ -1965,7 +1976,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					theta_np1_m[i]=theta_n[i];
 					theta_i_np1_m[i]=theta_i_n[i];		//Set back ice, note: in this case we have to account for the energy involved in changing the ice content back to the original value.
 
-					EMS[SnowpackElement[i]].Te+=(theta_i_n[i]-theta_i_np1_mp1[i])*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+					const double deltaT=(theta_i_n[i]-theta_i_np1_mp1[i])*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+					EMS[SnowpackElement[i]].Te+=deltaT;
+					NDS[SnowpackElement[i]].T+=deltaT;
+					NDS[SnowpackElement[i]+1].T+=deltaT;
 				}
 			}
 
@@ -2028,7 +2042,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						//TODO: this maybe is not so correct...
 						theta_i_np1_m[i]=theta_i_n[i];		//Set back ice, note: in this case we have to account for the energy involved in changing the ice content back to the original value.
 
-						EMS[SnowpackElement[i]].Te+=(theta_i_n[i]-theta_i_np1_mp1[i])*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+						const double deltaT=(theta_i_n[i]-theta_i_np1_mp1[i])*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+						EMS[SnowpackElement[i]].Te+=deltaT;
+						NDS[SnowpackElement[i]].T+=deltaT;
+						NDS[SnowpackElement[i]+1].T+=deltaT;
 
 						//The real rescue is to throw away the sink/source terms:
 						SafeMode_MBE+=s[i]*(sn_dt-TimeAdvance)*Constants::density_water*dz[i];
@@ -2325,6 +2342,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//const double hw0=fromTHETAtoH(EMS[i].theta[WATER]+EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d);
 				EMS[i].melting_tk=EMS[i].Te ;//T_0+((Constants::g*T_0)/delF)*hw0;
 				EMS[i].freezing_tk=EMS[i].melting_tk;
+				if(EMS[i].theta[ICE]>0.) {	// If ice is present nodal temperature cannot exceed melting_tk
+					NDS[i].T = MIN(NDS[i].T, T_0);
+					NDS[i+1].T = MIN(NDS[i+1].T, T_0);
+				}
 			} else {
 				EMS[i].melting_tk=T_melt[i];
 				EMS[i].freezing_tk=T_melt[i];
@@ -2333,17 +2354,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[i].Te=MAX(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
 				EMS[i].melting_tk=EMS[i].Te;
 				EMS[i].freezing_tk=EMS[i].Te;
-			}
-
-			// Adjust the nodal temperatures. This actually is all quite problematic, because the nodal temperature is influenced by 2 elements...
-			// So for now, we set the nodal temperature as the avarage of the element temperatures.
-			if(i==0) {
-				NDS[i].T=EMS[i].Te;
-			} else {
-				NDS[i].T=0.5*(EMS[i-1].Te + EMS[i].Te);
-			}
-			if (i==toplayer-1) {
-				NDS[i+1].T=EMS[i].Te;
 			}
 		}
 		if(WriteOutNumerics_Level2==true) printf("EMS[%d].melting_tk = %f, EMS[%d].freezing_tk = %f (ice: %f)\n", i, EMS[i].melting_tk, i, EMS[i].freezing_tk, EMS[i].theta[ICE]);
