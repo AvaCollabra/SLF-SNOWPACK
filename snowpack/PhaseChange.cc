@@ -455,15 +455,6 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 						NDS[e].T = MIN(NDS[e].T, EMS[e].melting_tk);
 						NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].melting_tk);
 					}
-				} else {
-					if(e==0) {
-						NDS[e].T=EMS[e].Te;
-					} else {
-						NDS[e].T=0.5*(EMS[e-1].Te + EMS[e].Te);
-					}
-					if (e==nE-1) {
-						NDS[e+1].T=EMS[e].Te;
-					}
 				}
 			}
 		}
@@ -488,15 +479,6 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 					if(EMS[e].theta[ICE]>0.) {	// If ice is present, nodal temperature cannot exceed melting_tk
   						NDS[e].T = MIN(NDS[e].T, EMS[e].melting_tk);
 						NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].melting_tk);
-					}
-				} else {
-					if(e==0) {
-						NDS[e].T=EMS[e].Te;
-					} else {
-						NDS[e].T=0.5*(EMS[e-1].Te + EMS[e].Te);
-					}
-					if (e==nE-1) {
-						NDS[e+1].T=EMS[e].Te;
 					}
 				}
 			}
