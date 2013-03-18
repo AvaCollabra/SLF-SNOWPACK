@@ -800,7 +800,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			} else {
 				EMS[i].theta[AIR]+=EMS[i].theta[ICE];
 			}
-			EMS[i].Te+=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+			const double deltaT=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+			EMS[i].Te+=deltaT;
+			NDS[i].T+=deltaT;
+			NDS[i+1].T+=deltaT;
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
@@ -2202,8 +2205,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//In case we had to melt ice to get theta_r, we have to adjust the temperature:
 			EMS[i].Te -= dT[i];
-			//NDS[i].T -= dT[i];
-			//NDS[i+1].T -= dT[i];
+			NDS[i].T -= dT[i];
+			NDS[i+1].T -= dT[i];
 
 			//And adjust all the properties accordingly
 			EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
