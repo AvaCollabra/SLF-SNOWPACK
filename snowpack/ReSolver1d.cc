@@ -2273,8 +2273,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && toplayer>nsoillayers_snowpack) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
-		//If evaporation was not sufficient (because snow was too dry), reduce the amount of *evaporation* by the refusedtopflux. Later on, we will add the sublimation to MS_SUBLIMATION.
-		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= refusedtopflux*Constants::density_water;
 		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
 		double ql=(refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
 
@@ -2311,7 +2309,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 			}
 			EMS[e].M += dM;
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
+			// Instead of evaporating, we sublimate the ice matrix:
+			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= dM*(Constants::lh_sublimation/Constants::lh_vaporization);	//Correct evaporation for sublimated mass
+			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;							//Add mass to sublimation
 			ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
 			//Update volumetric contents
@@ -2319,8 +2319,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			e--;
 		}
-		//Remaining energy should go back again into refusedtopflux
-		refusedtopflux=(ql*sn_dt)/(Constants::density_water*Constants::lh_vaporization);
+		//Remaining energy should go back again into refusedtopflux and also should not be counted as evaporation
+		Sdata.mass[SurfaceFluxes::MS_EVAPORATION]-=ql*sn_dt/Constants::lh_vaporization;
+		refusedtopflux=MIN(0., (ql*sn_dt)/(Constants::density_water*Constants::lh_vaporization));
 	}
 
 	//If we could not handle all incoming water at top boundary AND we have snow AND we solve RE for snow:
