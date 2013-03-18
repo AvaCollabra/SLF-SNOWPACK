@@ -1392,7 +1392,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			} else if (TopBC==LIMITEDFLUXEVAPORATION || TopBC==LIMITEDFLUXINFILTRATION || TopBC==LIMITEDFLUX) {
 				//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
-				TopFluxRate=surfacefluxrate;			// Initial guess for Neumann BC
+				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
+				// Now reduce flux when necessary:
 				if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
 					const double head_compare=h_e[uppernode];
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
@@ -2093,7 +2094,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			actualtopfluxcheck+=((delta_theta_dt[uppernode]*dt)*dz[uppernode])+(((h_n[uppernode]-h_n[uppernode-1])/dz_down[uppernode])+cos_sl)*k_np1_m_im12[uppernode]*dt;
 			actualtopflux+=TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
-			actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+			if(aBottomBC==DIRICHLET) {
+				actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+			} else {
+				actualbottomflux+=BottomFluxRate*dt;
+			}
 
 			massbalanceerror_sum+=massbalanceerror;
 			if(WriteOutNumerics_Level1==true) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
