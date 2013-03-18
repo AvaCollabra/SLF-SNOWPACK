@@ -1309,13 +1309,13 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	if ((merge==false && topElement==true) && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*((Constants::density_water/Constants::density_ice)-1.)) {
 		// Note: we can only do this for the uppermost snow element, as otherwise it is not possible to adapt the element length.
 		// If there is not enough space, adjust element length:
-		EdataLower.theta[AIR]=EdataLower.theta[WATER]*((Constants::density_water/Constants::density_ice)-1.);
-		const double tmpsum=EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER];
-		LNew*=tmpsum;
+		EdataLower.theta[AIR] = EdataLower.theta[WATER]*((Constants::density_water/Constants::density_ice)-1.);
+		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER];
+		LNew *= tmpsum;
 		EdataLower.L0 = EdataLower.L = LNew;
-		EdataLower.theta[AIR]/=tmpsum;
-		EdataLower.theta[ICE]/=tmpsum;
-		EdataLower.theta[WATER]/=tmpsum;
+		EdataLower.theta[AIR] /= tmpsum;
+		EdataLower.theta[ICE] /= tmpsum;
+		EdataLower.theta[WATER] /= tmpsum;
 	}
 	EdataLower.snowResidualWaterContent();
 	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
@@ -1350,7 +1350,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
 		for(unsigned int layer_index=0; layer_index<nElems; layer_index++) {
-			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7)) sum_ice_depth += Edata[layer_index].L;
+			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8)) sum_ice_depth += Edata[layer_index].L;
 		}
 
 		if(sum_ice_depth>=ice_depth_glacier)
@@ -1366,7 +1366,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		const int end_index = (top_index_toCheck>soil_index)? top_index_toCheck : soil_index;
 
 		for(int layer_index=top_index; layer_index>end_index; layer_index--) {
-			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7)) {
+			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7) && (Edata[layer_index].mk % 10 != 8)) {
 				is_pure_ice=false;
 				break;
 			}
