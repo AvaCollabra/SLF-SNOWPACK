@@ -1397,14 +1397,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
 				// Now reduce flux when necessary:
-				if(TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) {
+				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.)) {
+					// Influx condition
 					const double head_compare=h_e[uppernode];
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
 					if(flux_compare < TopFluxRate) {
 						TopFluxRate=MAX(0., flux_compare);
 					}
 				}
-				if(TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) {
+				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.)) {
+					// Outflux condition
 					const double head_compare=h_d_uppernode;
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
 					if(flux_compare > TopFluxRate) {
