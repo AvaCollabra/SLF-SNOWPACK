@@ -142,6 +142,14 @@
  *
  * These concepts are visible through the source code, as well as through some keys in the configuration file. Therefore, please keep them in mind when preparing your
  * simulations!
+ *
+ * @subsection model_ebalance Energy Balance
+ * The figure below shows the various fluxes that are part of the energy balance of the SNOWPACK model. These are available in the output files as well as
+ * through the sngui interface.
+ *
+ * \image html energy_balance.png "Energy Balance components of the SNOWPACK model"
+ * \image latex energy_balance.eps "Energy Balance components of the SNOWPACK model" width=0.9\textwidth
+ *
  */
 
 /**
