@@ -104,19 +104,6 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg)
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 }
-/*
-AsciiIO::~AsciiIO() throw()
-{
-	cleanup();
-}
-
-void AsciiIO::cleanup() throw()
-{
-	if (fout.is_open()) {//close fin if open
-		fout.close();
-	}
-}
-*/
 
 /**
  * @brief This routine checks if the specified snow cover data exists

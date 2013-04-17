@@ -70,7 +70,6 @@
  */
 #define   GD_INIT(VALUE)
 #define NORM_R double
-#define FLOAT  double
 
 #define  GD_MEM_ERR( POINTER, MSG0, MSG )                                                      \
 {                                                                                              \
@@ -114,78 +113,78 @@
  */
 
 #define VD_PRODUCT( N, X, Y, Z )                                                               \
-{  FLOAT  *x_, *y_, *z_;                                                              \
+{  double  *x_, *y_, *z_;                                                              \
    int  k_;                                                                           \
    for( x_=X, y_=Y, z_=Z, k_=N; 0<k_--; ) (*z_++) = (*x_++) * (*y_++);                         \
 }
 
 #define VD_ADD_PRODUCT( N, X, Y, Z )                                                           \
-{  FLOAT  *x_, *y_, *z_;                                                              \
+{  double  *x_, *y_, *z_;                                                              \
    int  k_;                                                                           \
    for( x_=X, y_=Y, z_=Z, k_=N; 0<k_--; ) (*z_++) += (*x_++) * (*y_++);                        \
 }
 
 #define VD_DOT(N, X, Y, RESULT )                                                               \
-{  FLOAT  *x_, *y_, r_;                                                               \
+{  double  *x_, *y_, r_;                                                               \
    int  k_;                                                                           \
    for( x_=X, y_=Y,  r_=0.0, k_=N; 0<k_--; ) r_ += (*x_++)*(*y_++);                            \
    RESULT = r_;                                                                                \
 }
 
 #define VD_DOT3(N, X, Y, Z, RESULT )                                                           \
-{  FLOAT  *x_, *y_,*z_,  r_;                                                          \
+{  double  *x_, *y_,*z_,  r_;                                                          \
    int  k_;                                                                           \
    for( x_=X, y_=Y, z_=Z,  r_=0.0, k_=N; 0<k_--; ) r_ += (*x_++)*(*y_++)*(*z_++);              \
    RESULT = r_;                                                                                \
 }
 
 #define VD_SUM( N, X, RESULT )                                                                 \
-{  FLOAT  s_, *x_;                                                                    \
+{  double  s_, *x_;                                                                    \
    int  k_;                                                                           \
    for( s_=0.0, x_=X, k_=N; 0<k_--; ) s_ += (*x_++);                                           \
    RESULT = s_;                                                                                \
 }
 
 #define VD_SCALE( N, A, X )                                                                    \
-{  FLOAT a_, *x_;                                                                     \
+{  double a_, *x_;                                                                     \
    int  k_;                                                                           \
    for( a_=A, x_=X, k_=N; 0<k_--; )  (*x_++) *= a_;                                            \
 }
 
 #define VD_COPY( N, A, X )                                                                     \
-{  FLOAT  a_, *x_;                                                                    \
+{  double  a_, *x_;                                                                    \
    int  k_;                                                                           \
    for( a_=A, x_=X, k_=N; 0<k_--; )  (*x_++) = a_;                                             \
 }
 
 #define VD_SCALE_SET( N, A, X, Y )                                                             \
-{  FLOAT  a_, *x_, *y_;                                                               \
+{  double  a_, *x_, *y_;                                                               \
    int  k_;                                                                           \
    for( a_=A, x_=X, y_=Y, k_=N; 0<k_--; )  (*y_++) = a_ * (*x_++);                             \
 }
 
 #define VD_AXPY(N, A, X, Y )      /* Y[] = A*X[] + Y[] */                                      \
-{  FLOAT  a_, *x_, *y_;                                                               \
+{  double  a_, *x_, *y_;                                                               \
    int  k_;                                                                           \
    for (x_=X, y_=Y, a_=A, k_=N; 0<k_--; ) *y_++ += (a_)*(*x_++) ;                              \
 }
 
 #define VD_AXPY_JUMP(N_B, N, JUMP, A, X, Y ) /* Y[] = A*X[] + Y[] BLOCK-WISE IN Y */           \
-{  FLOAT  a_, *x_, *y_;                                                               \
+{  double  a_, *x_, *y_;                                                               \
    int  n_, k_;                                                                       \
    for (x_=X, y_=Y+JUMP[0], a_=A, n_=0; n_<N_B; y_+= JUMP[++n_])                               \
    for (k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                           \
 }
 
 #define VD_AXPY_POS(N_B, N, POS, A, X, Y ) /* Y[] = A*X[] + Y[] BLOCK-WISE IN Y */             \
-{  FLOAT  a_, *x_, *y_;                                                               \
+{  double  a_, *x_, *y_;                                                               \
    int  n_, k_;                                                                       \
    for (x_=X, y_=Y+POS[0], a_=A, n_=0; n_<N_B; y_= Y+POS[++n_])                                \
    for (k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                           \
 }
 
 #define VD_DOT_POS(N_B, N, POS, X, Y, RESULT) /* RESULT = X[]*Y[]  BLOCK-WISE IN Y */          \
-{  FLOAT  r_, *x_, *y_;                                                               \
+{  double  r_, *x_, *y_;                                                               \
    int  n_, k_;                                                                       \
    for (x_=X, y_=Y+POS[0], r_=0.0, n_=0; n_<N_B; y_= Y+POS[++n_])                              \
    for (k_=N[n_]; 0<k_--;  ) r_ += (*x_++)*(*y_++) ;                                           \
@@ -194,7 +193,7 @@
 
 #define VD_DOT_SPARSE( N, X, INDX, Y, RESULT)                                                  \
 {  int    k_, *indx_;                                                                 \
-   FLOAT  r_, *x_, *y_;                                                               \
+   double  r_, *x_, *y_;                                                               \
    x_ = X;  y_ = Y;  indx_ = INDX;                                                             \
    for ( r_=0.0, k_=N; 0<k_--; )  r_ += (*x_++) * y_[ (*indx_++) ];                            \
    RESULT = r_;                                                                                \
@@ -202,7 +201,7 @@
 
 #define VD_AXPY_SPARSE( N, A, X, INDX, Y)    /* Y[] = A*X[] + Y[] */                           \
 {  int    k_, *indx_;                                                                 \
-   FLOAT  a_, *x_, *y_;                                                               \
+   double  a_, *x_, *y_;                                                               \
    a_ = A;  x_ = X;  y_ = Y;  indx_ = INDX;                                                    \
    for ( k_=N; 0<k_--; )   y_[ (*indx_++) ] += a_ * (*x_++) ;                                  \
 }
@@ -267,7 +266,7 @@ typedef struct
 * ATTENTION: The size of the permutation vector is only Dim/(Multiplicity Factor).
 */
 
-#define  FLOAT double
+#define  double double
 #define  SD_MARKED    (1<<30) /* An flag bit used for permutation. Use:(1<<15) on PC */
 
 typedef struct
@@ -293,7 +292,7 @@ typedef struct
 	int                 SizeBlockJump;
 	int                *pBlockJump;
 	int                 SizeUpper;
-	FLOAT              *pUpper;
+	double              *pUpper;
 
 }  SD_BLOCK_MATRIX_DATA;
 
@@ -609,10 +608,10 @@ typedef struct  {
 {                                                                                              \
    if ( N_ROW>1 ) {                                                                            \
    const int m_n_1=N_COL-N_ROW+1;                                                              \
-   FLOAT *Mat_k=MAT;                                                                           \
+   double *Mat_k=MAT;                                                                           \
    for ( int n_k=N_COL; n_k>=m_n_1; n_k-- )                                                    \
-   {  FLOAT Pivot = 1./(*Mat_k);                                                               \
-      FLOAT *Mat_i = Mat_k++;                                                                  \
+   {  double Pivot = 1./(*Mat_k);                                                               \
+      double *Mat_i = Mat_k++;                                                                  \
       for ( int n_i=n_k; n_i>m_n_1; Mat_k++ )                                                  \
       {  Mat_i += n_i--;  VD_AXPY(n_i, -(*Mat_k)*Pivot, Mat_k, Mat_i);  }                      \
       Mat_k += m_n_1 - 1;                                                                      \
@@ -621,10 +620,10 @@ typedef struct  {
 }
 
 #define FACT_SYM_MAT_UNUSED(MAT,N)                                                             \
-{  int   n_k, n_i;  FLOAT Pivot, *Mat_k;                                                       \
+{  int   n_k, n_i;  double Pivot, *Mat_k;                                                       \
    for ( Mat_k=MAT, n_k=M; n_k>0; n_k-- )                                                      \
    {  Pivot = 1./(*Mat_k);                                                                     \
-      FLOAT *Mat_i = Mat_k++;                                                                  \
+      double *Mat_i = Mat_k++;                                                                  \
       for ( n_i=n_k; n_i>1; Mat_k++ )                                                          \
       {  Mat_i += n_i--; VD_AXPY(n_i, -(*Mat_k)*Pivot, Mat_k, Mat_i);  }                       \
    }                                                                                           \
@@ -654,7 +653,7 @@ typedef struct  {
 */
 #if 1
 #define FACT_SYM_MAT_BLOCK(N_PIVOT,TOT_ROW,N_ROW,N_COL,MAT0,DIM0,MAT1,DIM1,N_BLOCK,N,JUMP)     \
-{  int n_k, i_, k__, dim_i;  FLOAT Pivot, *Mat_k0, *Mat_k, *Mat_i;                              \
+{  int n_k, i_, k__, dim_i;  double Pivot, *Mat_k0, *Mat_k, *Mat_i;                              \
    for ( Mat_k0=MAT0, k__=0, n_k=N_PIVOT; n_k>0; n_k--, k__++ )                                  \
    {  Pivot = 1./(*Mat_k0);                                                                    \
       Mat_k = Mat_k0 + TOT_ROW - k__;                                                           \
@@ -671,11 +670,11 @@ typedef struct  {
 }
 
 #else
-void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, FLOAT *MAT0, int DIM0,
-                         FLOAT *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
+void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
+                         double *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
 {
 	int n_k, i_, k__, dim_i;
-	FLOAT Pivot, *Mat_k0, *Mat_k, *Mat_i;
+	double Pivot, *Mat_k0, *Mat_k, *Mat_i;
 	for ( Mat_k0 = MAT0, k__ = 0, n_k = N_PIVOT; n_k > 0; n_k--, k__++ ) {
 		Pivot = 1. / (*Mat_k0);
 		Mat_k = Mat_k0 + TOT_ROW - k__;
@@ -939,7 +938,7 @@ typedef enum SD_MATRIX_WHAT
  */
 int ds_Solve(SD_MATRIX_WHAT Code, MYTYPE *pMat, double *pX);
 
-FLOAT BlockMatrixElement
+double BlockMatrixElement
   (  /* SD_BLOCK_MATRIX_DATA * pMat ,
      int Row ,
      int Col */
@@ -960,38 +959,38 @@ int ds_AssembleMatrix
      int nEq ,
      int Eq [ ] ,
      int Dim ,
-     FLOAT * ElMat */
+     double * ElMat */
   );
 int ds_AssembleRowCoeff
   (  SD_MATRIX_DATA * pMat0 ,
      int Row ,
      int nCol ,
      int * pCol ,
-     FLOAT Diagonal ,
-     FLOAT * Coeff
+     double Diagonal ,
+     double * Coeff
   );
 int Permute
   (  int N ,
      int * Perm ,
-     FLOAT * Vector
+     double * Vector
   );
 int PermuteWithMult
   (  int N ,
      int Mult ,
      int * Perm ,
-     FLOAT * Vector
+     double * Vector
   );
 int InvertMatrix
   (  SD_BLOCK_MATRIX_DATA * pMat
   );
 int MatrixVector
   (  SD_BLOCK_MATRIX_DATA * pMat ,
-     FLOAT * X ,
-     FLOAT * Y
+     double * X ,
+     double * Y
   );
 int InverseMatrixVector
   (  SD_BLOCK_MATRIX_DATA * pMat ,
-     FLOAT * X
+     double * X
   );
 
 //For SymFact:

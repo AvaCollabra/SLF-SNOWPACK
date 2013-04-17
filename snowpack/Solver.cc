@@ -43,7 +43,7 @@ int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat)
 }  /* ds_Initialize */
 
 
-int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, FLOAT *X)
+int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 {
 	// SymbolicFactorize
 
@@ -106,7 +106,7 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, FLOAT *X)
 			USER_ERROR("Bad Matrix Format to reset matrix");
 		}
 
-       		memset( pMat->Mat.Block.pUpper, 0, pMat->Mat.Block.SizeUpper * sizeof(FLOAT) );
+       		memset( pMat->Mat.Block.pUpper, 0, pMat->Mat.Block.SizeUpper * sizeof(double) );
 	}
 
    	// ReleaseMatrixData
@@ -125,7 +125,7 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, FLOAT *X)
 }  /* ds_Solve */
 
 
-int ds_InitializeBoeing(int MatDim, int *pxConCon, FLOAT *pData, MYTYPE **ppMat)
+int ds_InitializeBoeing(int MatDim, int *pxConCon, double *pData, MYTYPE **ppMat)
 {
 	int  Row, Col;
 
@@ -215,10 +215,10 @@ int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pS
  * @param nEq int
  * @param Eq int
  * @param Dim int
- * @param *ElMat FLOAT
+ * @param *ElMat double
  * @return int
  */
-int ds_AssembleMatrix(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int Dim, FLOAT *ElMat)
+int ds_AssembleMatrix(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int Dim, double *ElMat)
 {
 	SD_BLOCK_MATRIX_DATA *pMat=NULL;
 	SD_ROW_BLOCK_DATA *pRow=NULL;
@@ -260,11 +260,11 @@ int ds_AssembleMatrix(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int Dim, FLOAT *
  * @param Row int
  * @param nCol int
  * @param *pCol int
- * @param Diagonal FLOAT
- * @param *Coeff FLOAT
+ * @param Diagonal double
+ * @param *Coeff double
  * @return int
 */
-int ds_AssembleRowCoeff(SD_MATRIX_DATA * pMat0, int Row, int nCol, int * pCol, FLOAT Diagonal, FLOAT * Coeff)
+int ds_AssembleRowCoeff(SD_MATRIX_DATA * pMat0, int Row, int nCol, int * pCol, double Diagonal, double * Coeff)
 {
 	SD_BLOCK_MATRIX_DATA *pMat=NULL;
 	SD_ROW_BLOCK_DATA *pRow=NULL;
@@ -314,13 +314,13 @@ int ds_AssembleRowCoeff(SD_MATRIX_DATA * pMat0, int Row, int nCol, int * pCol, F
  * permutation vector which is stored at the place of the permutation vector.
  * @param N int
  * @param *Perm int
- * @param *Vector FLOAT
+ * @param *Vector double
  * @return int
  */
-int Permute(int N, int * Perm, FLOAT * Vector)
+int Permute(int N, int * Perm, double * Vector)
 {
 	int   i, To, From, ToNext;
-	FLOAT ValueTo, Value;
+	double ValueTo, Value;
 
 	for (i = 0; i < N;  Perm[i++] &= (~SD_MARKED) ) {
 		if ( Perm[i] & SD_MARKED ) {
@@ -353,13 +353,13 @@ int Permute(int N, int * Perm, FLOAT * Vector)
  * @param N int
  * @param Mult int
  * @param *Perm int
- * @param *Vector FLOAT
+ * @param *Vector double
  * @return int
  */
-int PermuteWithMult(int N, int Mult, int *Perm, FLOAT *Vector)
+int PermuteWithMult(int N, int Mult, int *Perm, double *Vector)
 {
 	int   m, i, To, From, ToNext;
-	FLOAT    ValueTo[MAX_MULT], Value[MAX_MULT];
+	double    ValueTo[MAX_MULT], Value[MAX_MULT];
 
 	if ( Mult > MAX_MULT ) {
 		printf ( "+++++ Multiplicy factor %d to large\n", Mult );
@@ -405,7 +405,7 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 {
 	SD_ROW_BLOCK_DATA *pPivotRow, *pSearchRow, *pLastSearchRow;
 	int nPivotRow,*pBlockJump, *pMatFirstColBlock, *pMatSizeColBlock;
-	FLOAT *Upper;
+	double *Upper;
 
 	pMatFirstColBlock = pMat->pFirstColBlock;
 	pMatSizeColBlock = pMat->pSizeColBlock  ;
@@ -423,7 +423,7 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 	*/
 	for ( pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
 		int iColBlock, nColBlock, nCol, Row_i0, Row_i1, RowDelta, DimCol, DimCol0, TotRow, DimPivot, DimRow;
-		FLOAT *PivotUpper, *RowUpper;
+		double *PivotUpper, *RowUpper;
 		pBLOCK pColBlock;
 
 		// Initilize some data for this new pivot block
@@ -495,24 +495,24 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
  * @brief Multiply the matrix with a vector. This function can be called at any time, but it makes
  * only sense before the matrix has been LU factorized.
  * @param *pMat SD_BLOCK_MATRIX_DATA
- * @param *X FLOAT
- * @param *Y FLOAT
+ * @param *X double
+ * @param *Y double
  * @return int
  */
-int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, FLOAT *X, FLOAT *Y )
+int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X, double *Y )
 {
 	SD_ROW_BLOCK_DATA *pPivotRow;
-	FLOAT              *Upper;
+	double              *Upper;
 	int                nPivotRow, *pMatFirstColBlock, *pMatSizeColBlock, nRow;
 
 	pMatFirstColBlock = pMat->pFirstColBlock;
 	pMatSizeColBlock  = pMat->pSizeColBlock;
 	Upper             = pMat->pUpper;
-	memset(Y, 0, sizeof(FLOAT) * (pMat->Dim) ) ;
+	memset(Y, 0, sizeof(double) * (pMat->Dim) ) ;
 
 	for( nRow = 0, pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
 		int         DimPivot,  nCol, dim;
-		FLOAT      *PivotUpper, VectorDot;
+		double      *PivotUpper, VectorDot;
 		pBLOCK      pColBlock;
 
 		DimPivot    = pPivotRow->Row1 - pPivotRow->Row0 + 1;
@@ -544,13 +544,13 @@ int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, FLOAT *X, FLOAT *Y )
  * matrix. Of course this operation is the same as multipying the inverse matrix with a vector
  * and inf fact the implementation does not much differs from a matrix vector multiplication.
  * @param *pMat SD_BLOCK_MATRIX_DATA
- * @param *X FLOAT
+ * @param *X double
  * @return int
  */
-int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, FLOAT *X )
+int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
 {
 	SD_ROW_BLOCK_DATA *pPivotRow;
-	FLOAT *Upper;
+	double *Upper;
 	int nPivotRow, *pMatFirstColBlock, *pMatSizeColBlock, nRow;
 
 	pMatFirstColBlock = pMat->pFirstColBlock;
@@ -560,7 +560,7 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, FLOAT *X )
 	// Forward substitution, solve the lower triangular system, where in the diagonal we have all ones.
 	for( nRow = 0, pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
 		int         DimPivot, nCol, dim;
-		FLOAT      *PivotUpper, Alpha;
+		double      *PivotUpper, Alpha;
 		pBLOCK      pColBlock;
 
 		DimPivot    = pPivotRow->Row1 - pPivotRow->Row0 + 1;
@@ -587,7 +587,7 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, FLOAT *X )
 	for (nRow = pMat->Dim - 1, nPivotRow = pMat->nRowBlock,
 		pPivotRow = pMat->pRowBlock + nPivotRow - 1; (nPivotRow--)>0; pPivotRow--) {
 		int         DimPivot, nCol, dim;
-		FLOAT      *PivotUpper, VectorDot;
+		double      *PivotUpper, VectorDot;
 		pBLOCK      pColBlock;
 
 		DimPivot    = pPivotRow->Row1 - pPivotRow->Row0 + 1;
@@ -1643,8 +1643,8 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 
 	// Alloc memory to store numerical matrix data
 	pMat->SizeUpper = nTotCol;
-	GD_MALLOC( pMat->pUpper, FLOAT, pMat->SizeUpper, "Matrix Data" );
-	memset( pMat->pUpper, 0, sizeof(FLOAT)*pMat->SizeUpper);
+	GD_MALLOC( pMat->pUpper, double, pMat->SizeUpper, "Matrix Data" );
+	memset( pMat->pUpper, 0, sizeof(double)*pMat->SizeUpper);
 
 	pMat->SizeBlockJump = MaxColBlock;
 	GD_MALLOC( pMat->pBlockJump, int, pMat->SizeBlockJump, "Jump Data" );
