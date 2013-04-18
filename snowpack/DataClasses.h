@@ -88,7 +88,7 @@ class CurrentMeteo {
 		void copySnowTemperatures(const mio::MeteoData& md, const int current_slope);
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
 
-		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& mdata);
+		const std::string toString() const;
 
 		mio::Date date;  ///< Date of current meteo data
 		double ta;       ///< Air temperature (K)
@@ -207,7 +207,7 @@ class SN_SNOWSOIL_DATA {
 			Ldata.clear();
 		}
 
-		friend std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data);
+		const std::string toString() const;
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
@@ -256,7 +256,7 @@ class ElementData {
 		static int snowType(const double dendricity, const double sphericity, const double grain_dia, const int marker,
                         const double theta_w, const double res_wat_cont);
 
-		friend std::ostream& operator<<(std::ostream& os, const ElementData& data);
+		const std::string toString() const;
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element length (m)
@@ -307,7 +307,7 @@ class NodeData {
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
 
-		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
+		const std::string toString() const;
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -351,7 +351,7 @@ class CanopyData {
 		void reset(const bool& cumsum_mass);
 		void initializeSurfaceExchangeData();
 
-		friend std::ostream& operator<<(std::ostream& os, const CanopyData& mdata);
+		const std::string toString() const;
 
 		// Aa
 		double storage;  ///< intercepted water (mm or kg m-2)
@@ -410,7 +410,7 @@ class SnowStation {
 		SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
 		SnowStation(const SnowStation& c);
 
-		friend std::ostream& operator<<(std::ostream& os, const SnowStation& mdata);
+		const std::string toString() const;
 		~SnowStation();
 		SnowStation& operator=(const SnowStation&); ///<Assignement operator
 
@@ -529,7 +529,7 @@ class SurfaceFluxes {
 		N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 
-		friend std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& mdata);
+		const std::string toString() const;
 
 		SurfaceFluxes();
 
