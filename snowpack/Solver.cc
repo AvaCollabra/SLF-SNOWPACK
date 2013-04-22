@@ -211,11 +211,11 @@ int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pS
  * not been previously defined.
  * NOTE: If the matrix has been specified as symmetric we always use only the upper part of
  * the element matrix.
- * @param *pMat0 SD_MATRIX_DATA
- * @param nEq int
- * @param Eq int
- * @param Dim int
- * @param *ElMat double
+ * @param [in] pMat0 SD_MATRIX_DATA
+ * @param [in] nEq int
+ * @param [in] Eq int
+ * @param [in] Dim int
+ * @param [in] ElMat double
  * @return int
  */
 int ds_AssembleMatrix(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int Dim, double *ElMat)
@@ -256,12 +256,12 @@ int ds_AssembleMatrix(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int Dim, double 
 /**
  * @brief This function assemble in a given row the value of the column coefficients. ATTENTION: Is
  * supposed that the array Col use the FORTRAN notation.
- * @param *pMat0 SD_MATRIX_DATA
+ * @param pMat0 SD_MATRIX_DATA
  * @param Row int
  * @param nCol int
- * @param *pCol int
+ * @param pCol int
  * @param Diagonal double
- * @param *Coeff double
+ * @param Coeff double
  * @return int
 */
 int ds_AssembleRowCoeff(SD_MATRIX_DATA * pMat0, int Row, int nCol, int * pCol, double Diagonal, double * Coeff)
@@ -313,8 +313,8 @@ int ds_AssembleRowCoeff(SD_MATRIX_DATA * pMat0, int Row, int nCol, int * pCol, d
  * ATTENTION: This function not only permute the given vector, but also compute the inverse
  * permutation vector which is stored at the place of the permutation vector.
  * @param N int
- * @param *Perm int
- * @param *Vector double
+ * @param Perm int
+ * @param Vector double
  * @return int
  */
 int Permute(int N, int * Perm, double * Vector)
@@ -352,8 +352,8 @@ int Permute(int N, int * Perm, double * Vector)
  * faster when Mult == 1. NOTE: We are limited to a maximal multiplicity factor.
  * @param N int
  * @param Mult int
- * @param *Perm int
- * @param *Vector double
+ * @param Perm int
+ * @param Vector double
  * @return int
  */
 int PermuteWithMult(int N, int Mult, int *Perm, double *Vector)
@@ -398,7 +398,7 @@ int PermuteWithMult(int N, int Mult, int *Perm, double *Vector)
  * fill-in during the factorizatio process. The LU factorization of the matrix substitute the
  * original matrix data. The LU factorization of a matrix is very similar to the inverse of
  * the matrix and from this fact we have derived the name for this function.
- * @param *pMat SD_BLOCK_MATRIX_DATA
+ * @param pMat SD_BLOCK_MATRIX_DATA
  * @return int
 */
 int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
@@ -494,9 +494,9 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 /**
  * @brief Multiply the matrix with a vector. This function can be called at any time, but it makes
  * only sense before the matrix has been LU factorized.
- * @param *pMat SD_BLOCK_MATRIX_DATA
- * @param *X double
- * @param *Y double
+ * @param pMat SD_BLOCK_MATRIX_DATA
+ * @param X double
+ * @param Y double
  * @return int
  */
 int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X, double *Y )
@@ -543,8 +543,8 @@ int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X, double *Y )
  * @brief This function perform the backward and forward substitution for a LU factorized block
  * matrix. Of course this operation is the same as multipying the inverse matrix with a vector
  * and inf fact the implementation does not much differs from a matrix vector multiplication.
- * @param *pMat SD_BLOCK_MATRIX_DATA
- * @param *X double
+ * @param pMat SD_BLOCK_MATRIX_DATA
+ * @param X double
  * @return int
  */
 int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
@@ -643,7 +643,7 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
  * @param (head,forward,backward) -- int degree doubly linked structure.
  * @param qsize -- int size of supernode.
  * @param list,marker vector for degree update.
- * @param *tag -- int tag value.
+ * @param tag -- int tag value.
 */
 static void MmdUpdate( int ehead,  int neqns,  int *xadj,  int *adjncy,  int delta,  int *mdeg,
   			int *head, int *forward,  int *backward, int *qsize, int *list,  int *marker,  int maxint,  int *tag)
@@ -1150,7 +1150,7 @@ static void  MmdNumbering(int neqns, int *perm, int *invp, int *qsize, int *nsiz
  *  @param nsize -- number of supernodes.
  *  @param perm -- the minimum degree ordering.
  *  @param invp -- the inverse of perm.
- *  @param *ncsub -- an upper bound on the number of nonzero subscripts for the compressed storage scheme.
+ *  @param ncsub -- an upper bound on the number of nonzero subscripts for the compressed storage scheme.
 *  Working parameters --
  *  @param head -- vector for head of degree lists.
  *  @param invp -- used temporarily for degree forward link.
@@ -1269,8 +1269,8 @@ n1000:
 * to the matrix dimension. ATTENTION: Here we use a FORTRAN notation, all values in the
 * arrays pRowStart and pColumn are incremented by one.
  * @param pMat SD_CON_MATRIX_DATA
- * @param *pRowStart0 int
- * @param *pColumn0 int
+ * @param pRowStart0 int
+ * @param pColumn0 int
  * @return int
 */
 int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn0)
@@ -1299,17 +1299,17 @@ int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn
 
 /**
 * @brief This function compute the permutation array and thus run the mmd algorithm.
- * @param *pMat SD_CON_MATRIX_DATA
+ * @param pMat SD_CON_MATRIX_DATA
  * @return int
 */
 int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
 {
-	 int *head;     /* array 0..maxN */
+	int *head;     /* array 0..maxN */
 	int *list;     /* array 0..maxN */
 	int *marker;   /* array 0..maxN */
 	int *xadj;     /* array 0..maxN */
 	int *adjncy;   /* array 0..maxCol */
-	int maxint = 32000;   /* use a better value */
+	const int maxint = 32000;   /* use a better value */
 	int ncsub;
 	int delta;
 	int nEq;
@@ -1355,8 +1355,8 @@ int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
 * course the matrix is still sparse because at this time the fill-in is still unknown but it
 * is however possible that blocks with size larger than one will appear.
 * NOTE: All data allocated in pMat0 is released.
- * @param *pMat0 SD_CON_MATRIX_DATA
- * @param *pMat SD_TMP_CON_MATRIX_DATA
+ * @param pMat0 SD_CON_MATRIX_DATA
+ * @param pMat SD_TMP_CON_MATRIX_DATA
  * @return int
 */
 int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
@@ -1510,7 +1510,7 @@ void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TM
 
 /**
 * @brief This function compute the fill-in by factorizing symbolically the matrix.
- * @param *pMat SD_TMP_CON_MATRIX_DATA
+ * @param pMat SD_TMP_CON_MATRIX_DATA
  * @return int
 */
 int  ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat)
@@ -1577,8 +1577,8 @@ int  ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat)
 /**
 * @brief Here, we define the matrix as used by the numerical factorization algorithm. If the
 * multiplicity factor is not 1 at this time we define the true row and column blocks.
- * @param *pTmpMat SD_TMP_CON_MATRIX_DATA
- * @param *pMat SD_BLOCK_MATRIX_DATA
+ * @param pTmpMat SD_TMP_CON_MATRIX_DATA
+ * @param pMat SD_BLOCK_MATRIX_DATA
  * @param Mult int
  * @return int
 */
@@ -1663,7 +1663,7 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 /**
 * @brief Allocate the matrix row data in order to store the connectivity matrix data.
  * @param Dim int
- * @param *pMat SD_CON_MATRIX_DATA
+ * @param pMat SD_CON_MATRIX_DATA
  * @return int
 */
 int AllocateConData( int Dim, SD_CON_MATRIX_DATA *pMat )
@@ -1693,7 +1693,7 @@ int ReleaseConMatrix( SD_CON_MATRIX_DATA *pMat )
 
 /**
 * @brief Release all the data allocated for the numerical factorization algorithm.
- * @param *pMat SD_BLOCK_MATRIX_DATA
+ * @param pMat SD_BLOCK_MATRIX_DATA
  * @return int
 */
 int ReleaseBlockMatrix( SD_BLOCK_MATRIX_DATA *pMat )
@@ -1713,7 +1713,7 @@ int ReleaseBlockMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 * @brief This function assemble the element connnectivity for one or more elements in order to build
 * a sparse matrix format. Of course we only store the upper part of the connectivity matrix
 * because we only consider structure symmetric matrices.
- * @param *pMat0 SD_MATRIX_DATA
+ * @param pMat0 SD_MATRIX_DATA
  * @param nEq int
  * @param Eq (int [])
  * @param nEl int

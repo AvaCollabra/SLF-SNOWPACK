@@ -810,10 +810,10 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
  * component, thus the memory requirement increase quadratically with the defined multiplicity
  * factor. The function return a pointer to an opaque data type as matrix identifier.
  *
- * @param MatDim : (int) dimension of the matrix [A]. The true number of equations
+ * @param MatDim dimension of the matrix [A]. The true number of equations
  * and unknowns is given by: MatDim * Multiplicity
- * @param Multiplicity : (int) Multiplicity factor with value >= 1
- * @param **ppMat : (MYTYPE) A pointer to an opaque data type storing data related to the matrix [A]
+ * @param Multiplicity Multiplicity factor with value >= 1
+ * @param ppMat A pointer to an opaque data type storing data related to the matrix [A]
  */
 int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat);
 
@@ -839,14 +839,14 @@ int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat);
  * NOTE: Except the definition of the multiplicity in ds_Initialize(), all steps performed to
  * define the structure of matrix [A] are stricktly independent from the multiplicity
  *
- * @param *pMat0 (MYTYPE): INPUT: Pointer to the matrix [A] opaque data returned by ds_Initialize()
- * @param nEq (int) INPUT: No. of equations for one element forming a crique
- * @param Eq[] (int) INPUT: Element list of equations for more elements with equal no. of eqs.
- * @param nEl (int) INPUT: No. of elements  ( 0 <= i "<" nEq ;  0 <= e "<" nEl )
- * @param Dim (int) INPUT: first dimension of the 2D-array Eq[][Dim]
+ * @param [in] pMat0 Pointer to the matrix [A] opaque data returned by ds_Initialize()
+ * @param [in] nEq No. of equations for one element forming a crique
+ * @param [in] Eq Element list of equations for more elements with equal no. of eqs.
+ * @param [in] nEl No. of elements  ( 0 <= i "<" nEq ;  0 <= e "<" nEl )
+ * @param [in] Dim first dimension of the 2D-array Eq[][Dim]
  */
 
-int ds_DefineConnectivity( MYTYPE *pMat0, int nEq, int Eq[], int nEl, int Dim );
+int ds_DefineConnectivity(MYTYPE *pMat0, int nEq, int Eq[], int nEl, int Dim );
 
 /**
 * @brief This function assemble the element square matrix [ElMat] for one element with nEq*M x nEq*M
@@ -869,14 +869,14 @@ int ds_DefineConnectivity( MYTYPE *pMat0, int nEq, int Eq[], int nEl, int Dim );
 * After all element matrices have been assembled the matrix [A] = [L][U] can be factorised in
 * to the lower [L] and upper [U] tringular matrices by calling ds_Solve(NumericFactorize,
 * ).
- * @param *pMat (MYTYPE) INPUT: pointer to the matrix [A] opaque data returned by ds_Initialize()
- * @param nEq (int) INPUT: no. of equations for one element forming a crique
- * @param Eq[] (int) INPUT: Element list of equations for one element.
- * @param Dim (int) INPUT: first dimension of the 2D-array ElMat[][Dim]
- * @param *ElMat (double) INPUT: element square matrix to be assembled in the matrix [A]
+ * @param [in] pMat0 pointer to the matrix [A] opaque data returned by ds_Initialize()
+ * @param [in] nEq no. of equations for one element forming a crique
+ * @param [in] Eq Element list of equations for one element.
+ * @param [in] Dim first dimension of the 2D-array ElMat[][Dim]
+ * @param [in] ElMat element square matrix to be assembled in the matrix [A]
 */
 
-int ds_AssembleMatrix(MYTYPE *pMat, int nEq, int Eq[], int Dim, double *ElMat);
+int ds_AssembleMatrix(MYTYPE *pMat0, int nEq, int Eq[], int Dim, double *ElMat);
 
 /**
 * The next function represents the computational kernel of this direct solver. Its
@@ -932,9 +932,9 @@ typedef enum SD_MATRIX_WHAT
 } SD_MATRIX_WHAT;
 
 /**
- * @param Code (SD_MATRIX_WHAT) INPUT: functionlaity code defined above
- * @param *pMat (MYTYPE) INPUT: pointer to the matrix [A] opaque data
- * @param *pX (double) INOUT: right hand side vector {B} to be overwritten by the solution vector {X}:  B[i] := X[i]
+ * @param [in] Code functionlaity code defined above
+ * @param [in] pMat pointer to the matrix [A] opaque data
+ * @param [in] pX right hand side vector {B} to be overwritten by the solution vector {X}:  B[i] := X[i]
  */
 int ds_Solve(SD_MATRIX_WHAT Code, MYTYPE *pMat, double *pX);
 
