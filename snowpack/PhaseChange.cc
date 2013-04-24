@@ -448,7 +448,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 					NDS[e+1].hoar = 0.;
 				}
 				// Make sure all nodal temperatures are consistent with the temperature change of the element
-				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode && iwatertransportmodel_snow!=RICHARDSEQUATION) ) {
+				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
 					NDS[e].T += (EMS[e].Te - i_Te);
 					NDS[e+1].T += (EMS[e].Te - i_Te);
 					if(EMS[e].theta[ICE]>0.) {	// If ice is present, nodal temperature cannot exceed melting_tk
@@ -473,7 +473,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 					throw IOException("Run-time error in compPhaseChange()", AT);
 				}
 				// Make sure all nodal temperatures are consistent with the temperature change of the element
-				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode && iwatertransportmodel_snow!=RICHARDSEQUATION) ) {
+				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
 					NDS[e].T += (EMS[e].Te - i_Te);
 					NDS[e+1].T += (EMS[e].Te - i_Te);
 					if(EMS[e].theta[ICE]>0.) {	// If ice is present, nodal temperature cannot exceed melting_tk
