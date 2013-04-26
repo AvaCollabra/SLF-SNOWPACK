@@ -133,16 +133,20 @@ void SnowpackConfig::setDefaults()
 	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, IOUtils::nothrow);
 
 	getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
-
-	addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0025"); //Minimum element length (m)
+	
+	string s_minimum_l_element; getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", s_minimum_l_element, IOUtils::nothrow);
+	string s_height_new_elem; getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", s_height_new_elem, IOUtils::nothrow);
+	if (s_minimum_l_element.empty()) addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0025"); //Minimum element length (m)
 	double minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 	if (enforce_measured_snow_heights) {
-		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", "0.02");
+		if(s_height_new_elem.empty()) addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", "0.02");
 	} else {
-		stringstream ss;
-		const double tmp = 2.0 * minimum_l_element;
-		ss << tmp;
-		addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
+		if(s_height_new_elem.empty()) {
+			stringstream ss;
+			const double tmp = 2.0 * minimum_l_element;
+			ss << tmp;
+			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
+		}
 	}
 
 	string hn_density;  getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
