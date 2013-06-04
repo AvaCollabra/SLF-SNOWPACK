@@ -25,7 +25,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
-#include <cstring>
+#include <cstring> //for memset
 
 /*
 * GENERAL INFO
@@ -170,10 +170,10 @@
 }
 
 #define VD_AXPY_JUMP(N_B, N, JUMP, A, X, Y ) /* Y[] = A*X[] + Y[] BLOCK-WISE IN Y */           \
-{  double  a_, *x_, *y_;                                                               \
-   int  n_, k_;                                                                       \
-   for (x_=X, y_=Y+JUMP[0], a_=A, n_=0; n_<N_B; y_+= JUMP[++n_])                               \
-   for (k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                           \
+{  double  a_=A, *x_=X, *y_=Y+JUMP[0];                                                         \
+   int  n_;                                                                                    \
+   for (n_=0; n_<N_B; y_+= JUMP[++n_])                                                         \
+   for (int k_=N[n_]; 0<k_--;  ) *y_++ += (a_)*(*x_++) ;                                       \
 }
 
 #define VD_AXPY_POS(N_B, N, POS, A, X, Y ) /* Y[] = A*X[] + Y[] BLOCK-WISE IN Y */             \
@@ -653,19 +653,19 @@ typedef struct  {
 */
 #if 1
 #define FACT_SYM_MAT_BLOCK(N_PIVOT,TOT_ROW,N_ROW,N_COL,MAT0,DIM0,MAT1,DIM1,N_BLOCK,N,JUMP)     \
-{  int n_k, i_, k__, dim_i;  double Pivot, *Mat_k0, *Mat_k, *Mat_i;                              \
-   for ( Mat_k0=MAT0, k__=0, n_k=N_PIVOT; n_k>0; n_k--, k__++ )                                  \
-   {  Pivot = 1./(*Mat_k0);                                                                    \
-      Mat_k = Mat_k0 + TOT_ROW - k__;                                                           \
-      Mat_i = MAT1;                                                                            \
-      dim_i = DIM1;                                                                            \
+{  double *Mat_k0=MAT0;                                                                        \
+   for (int k__=0, n_k=N_PIVOT; n_k>0; n_k--, k__++ )                                          \
+   {  const double Pivot = 1./(*Mat_k0);                                                       \
+      double *Mat_k = Mat_k0 + TOT_ROW - k__;                                                  \
+      double *Mat_i = MAT1;                                                                    \
+      int dim_i = DIM1;                                                                        \
       N[0]  = N_COL;                                                                           \
-      for ( i_=N_ROW; i_>0; Mat_k++, i_-- )                                                    \
+      for (int i_=N_ROW; i_>0; Mat_k++, i_-- )                                                 \
       {  VD_AXPY_JUMP(N_BLOCK, N, JUMP, -(*Mat_k)*Pivot, Mat_k, Mat_i );                       \
          N[0]-- ;                                                                              \
          Mat_i += (dim_i)--;                                                                   \
       }                                                                                        \
-      Mat_k0  += DIM0 - k__;                                                                    \
+      Mat_k0  += DIM0 - k__;                                                                   \
    }                                                                                           \
 }
 

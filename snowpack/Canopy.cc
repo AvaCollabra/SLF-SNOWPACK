@@ -590,11 +590,11 @@ double Canopy::cn_TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double
 			  double CanopyClosureDirect, double RadFracDirect, double sigfdirect)
 {
 	// Total surface albedo (diffuse fraction)
-	const double albedo_diff = ( 1.0 - RadFracDirect ) * ( (sigf * CanAlb + SurfAlb * (1.0 - sigf) * (1.0 - sigf) /
+	const double albedo_diff = ( 1.0 - RadFracDirect ) * ( (sigf * CanAlb + SurfAlb * Optim::pow2(1.0 - sigf) /
 			(1.0 - sigf * CanAlb * SurfAlb) ) * (1. - SkyViewFraction) + SurfAlb * SkyViewFraction);
 	// Total surface albedo (direct fraction)
-	const double albedo_dir = RadFracDirect * ( (sigfdirect * CanAlb + SurfAlb * (1.0 - sigfdirect) *
-			(1.0 - sigfdirect) / (1.0 - sigfdirect * CanAlb * SurfAlb) ) * CanopyClosureDirect + SurfAlb *
+	const double albedo_dir = RadFracDirect * ( (sigfdirect * CanAlb + SurfAlb * Optim::pow2(1.0 - sigfdirect) /
+			(1.0 - sigfdirect * CanAlb * SurfAlb) ) * CanopyClosureDirect + SurfAlb *
 			(1.0 - CanopyClosureDirect) );
 	return albedo_diff+albedo_dir;
 }

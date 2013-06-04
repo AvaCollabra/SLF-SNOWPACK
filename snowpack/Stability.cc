@@ -611,7 +611,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 
 	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
 	size_t e = Xdata.getNumberOfElements();
-	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3))) {
+	while ((e-- > Xdata.SoilNode) && ((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
 		dz_Pk  += Xdata.Edata[e].L;
 		// Test for strong mf-crusts MFcr.
@@ -637,10 +637,10 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 			}
 		}
 	}
-	rho_Pk /= dz_Pk;
+	rho_Pk /= dz_Pk; //weighted average density of the snow pack
 
 	// NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
-	return (MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust)));
+	return MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust));
 }
 
 /**
