@@ -103,6 +103,67 @@ void Meteo::projectPrecipitations(const double& slope_angle, double& precips, do
 	hs *= cos(DEG_TO_RAD(slope_angle));
 }
 
+void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s)
+{
+	const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / Optim::pow2(vw);
+	double stab_ratio = (Ri<0.2)? Ri : Ri/(1.-5.*Ri); //is it neutral & stable -> Ri
+	double psi_m;
+
+	if (Ri < 0.) { // unstable
+		stab_ratio = Ri;
+		const double dummy = pow((1. - 15. * stab_ratio), 0.25);
+		psi_m = log((0.5 * (1. + dummy*dummy)) * (0.5 * (1. + dummy)) * (0.5 * (1. + dummy)))
+				- 2. * atan(dummy) + 0.5 * Constants::pi;
+		psi_s = 2. * log(0.5 * (1. + dummy*dummy));
+	} else if (Ri < 0.1999) { // stable
+		stab_ratio = Ri / (1. - 5. * Ri);
+		psi_m = psi_s = -5. * stab_ratio;
+	} else {
+		stab_ratio = Ri / (1. - 5. * 0.1999);
+		psi_m = psi_s = -5. * stab_ratio;
+	}
+	ustar = 0.4 * vw / (z_ratio - psi_m);
+}
+
+void Meteo::MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
+{
+	ustar = 0.4 * vw / (z_ratio - psi_m);
+	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
+	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
+
+	if (stab_ratio > 0.) { // stable
+		// Stearns & Weidner, 1993
+		const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
+		psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
+				- 1. * atan(dummy1) - 0.5 * Optim::pow3(dummy1) + 0.8247; // Original 2.*atan(dummy1) - 1.3333
+		// Launiainen and Vihma, 1990
+		//psi_m = -17. * (1. - exp(-0.29 * stab_ratio));
+
+		// Holtslag and DeBruin (1988) prepared from Ed Andreas
+		//psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
+		//                    * exp(-0.35 * stab_ratio) + 10.71);
+
+		// Stearns & Weidner, 1993, for scalars
+		const double dummy2 = Optim::pow2(dummy1);
+		psi_s = log(1. + dummy2) * log(1. + dummy2)
+				- 1. * dummy2 - 0.3 * Optim::pow3(dummy2) + 1.2804; // Ori: 2. * dummy2 - 0.66667 * ...
+	} else {
+		// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
+		//const double dummy0 = pow((1.-15. * stab_ratio),0.25);
+		//psi_m = log(1. - dummy0) * log(1. - dummy0) + log(1. + dummy0*dummy0)
+		//            - 2.*atan(dummy0) - -1. + dummy0 - 0.5086;
+
+		// Paulson - the original
+		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
+		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
+				- 2. * atan(dummy1) + 0.5 * Constants::pi;
+
+		// Stearns & Weidner, 1993, for scalars
+		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
+		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
+	}
+}
+
 /**
  * @brief Atmospheric stability correction for wind values.
  * This makes an iteration to find z0 and ustar at the same time
@@ -133,91 +194,39 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	// Iterate to find atmospheric stability, possibly adjusting z0 to drifting snow and ventilation
 	// initial guess (neutral)
 	const double eps1 = 1.e-3, eps2 = 1.e-5, a2 = 0.16;
-	double z0 = roughness_length;
-	double ustar_old, z0_old;
-	double psi_m = 0., psi_s = 0., ustar = 0.4 * vw / log((zref - d_pump) / z0);
-	double stab_ratio = 0.;
-	int iter = 1;
+	double z0_old, z0 = roughness_length;
+	double ustar_old, ustar = 0.4 * vw / log((zref - d_pump) / z0);
+	double psi_m = 0., psi_s = 0.;
+	int iter = 0;
 	do {
 		iter++;
-		if (iter > max_iter) {
-			Mdata.z0 = roughness_length;
-			Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
-			Mdata.psi_s = 0.;
-			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
-			          "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
-			            Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-			return;
-		}
 		ustar_old = ustar;
 		z0_old = z0;
-		z0 = 0.9 * z0_old + 0.1 * (a2 * ustar*ustar / 2. / Constants::g); //update z0
+		z0 = 0.9 * z0_old + 0.1 * (a2 * Optim::pow2(ustar) / 2. / Constants::g); //update z0
 		const double z_ratio = log((zref - d_pump) / z0);
 
 		// Stability corrections
 		if (neutral < 0) { // Switch for Richardson
-			const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / Optim::pow2(vw);
-			if (Ri < 0.2) { // neutral and unstable
-				stab_ratio = Ri;
-			} else {
-				stab_ratio = Ri/(1.-5.*Ri);
-			}
-			if (Ri < 0.) { // unstable
-				stab_ratio = Ri;
-				const double dummy = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = log((0.5 * (1. + dummy*dummy)) * (0.5 * (1. + dummy)) * (0.5 * (1. + dummy)))
-				            - 2. * atan(dummy) + 0.5 * Constants::pi;
-				psi_s = 2. * log(0.5 * (1. + dummy*dummy));
-			} else if (Ri < 0.1999) { // stable
-				stab_ratio = Ri / (1. - 5. * Ri);
-				psi_m = psi_s = -5. * stab_ratio;
-			} else {
-				stab_ratio = Ri / (1. - 5. * 0.1999);
-				psi_m = psi_s = -5. * stab_ratio;
-			}
-			ustar = 0.4 * vw / (z_ratio - psi_m);
-
+			//compute ustar & psi_s
+			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s);
 		} else if (neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) { // MO Iteration
-			ustar = 0.4 * vw / (z_ratio - psi_m);
-			const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
-			stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * ustar*ustar);
-
-			if (stab_ratio > 0.) { // stable
-				// Stearns & Weidner, 1993
-				const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
-				psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + dummy1*dummy1)
-				            - 1. * atan(dummy1) - 0.5 * dummy1*dummy1*dummy1 + 0.8247; // Original 2.*atan(dummy1) - 1.3333
-				// Launiainen and Vihma, 1990
-				//psi_m = -17. * (1. - exp(-0.29 * stab_ratio));
-
-				// Holtslag and DeBruin (1988) prepared from Ed Andreas
-				//psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
-				//                    * exp(-0.35 * stab_ratio) + 10.71);
-
-				// Stearns & Weidner, 1993, for scalars
-				const double dummy2 = sqrt(1. + 5. * stab_ratio);
-				psi_s = log(1. + dummy2) * log(1. + dummy2)
-				            - 1. * dummy2 - 0.3 * dummy2*dummy2*dummy2 + 1.2804; // Ori: 2. * dummy2 - 0.66667 * ...
-			} else {
-				// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
-				//const double dummy0 = pow((1.-15. * stab_ratio),0.25);
-				//psi_m = log(1. - dummy0) * log(1. - dummy0) + log(1. + dummy0*dummy0)
-				//            - 2.*atan(dummy0) - -1. + dummy0 - 0.5086;
-
-				// Paulson - the original
-				const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
-				psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + dummy1*dummy1))
-				            - 2. * atan(dummy1) + 0.5 * Constants::pi;
-
-				// Stearns & Weidner, 1993, for scalars
-				const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
-				psi_s = pow(log(1. + dummy2 + dummy2*dummy2), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
-			}
+			//compute ustar, psi_s & psi_m
+			MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		} else { // NEUTRAL
 			psi_m = 0.;
 			psi_s = 0.;
 		}
-	} while ( (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
+	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
+
+	if(iter==max_iter) {
+		Mdata.z0 = roughness_length;
+		Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
+		Mdata.psi_s = 0.;
+		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
+		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+		return;
+	}
 
 	// Save the values in the global Mdata data structure to use it later
 	Mdata.ustar = ustar;

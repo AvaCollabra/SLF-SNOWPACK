@@ -115,12 +115,12 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
  * @param X Variable
  * @param P Variable
  */
-double WaterTransport::BisFunc(double X, double P[])
+double WaterTransport::BisFunc(const double X, const double P[])
 {
 	double Rh0,Rh1,Rk0,Rk1;
 
-	KHCalcNaga (P[1], P[2], P[3], P[4] - X / (P[11]+Constants::eps) , 1., &Rh0, &Rk0);
-	KHCalcNaga (P[6], P[7], P[8], P[9] + X / (P[12]+Constants::eps) , 1., &Rh1, &Rk1);
+	KHCalcNaga (P[1], P[2], P[3], P[4] - X / (P[11]+Constants::eps) , 1., Rh0, Rk0);
+	KHCalcNaga (P[6], P[7], P[8], P[9] + X / (P[12]+Constants::eps) , 1., Rh1, Rk1);
 	return (Rh1 - Rh0 + (P[11]+P[12])/2.);
 }
 
@@ -135,7 +135,7 @@ double WaterTransport::BisFunc(double X, double P[])
  * @param maxval Variable
  * @param P Variable
  */
-double WaterTransport::Bisection(double minval, double maxval, double P[])
+double WaterTransport::Bisection(const double minval, const double maxval, double P[])
 {
 	double XCen,YCen;
 	double X1 = minval, X2 = maxval;
@@ -180,7 +180,7 @@ double WaterTransport::Bisection(double minval, double maxval, double P[])
  * @param Rh Pressure head
  * @param Rk Hydraulic conductivity
  */
-void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCnt, double SatuK, double *Rh, double *Rk)
+void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, const double WatCnt, const double SatuK, double &Rh, double &Rk)
 {
 	const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
 
@@ -203,21 +203,21 @@ void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCn
 			SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
 			const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
 			const double hSlo = (hL - hN) / (ThR * 0.002);
-			*Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
 		} else {
 			if (LTh > 1.) {
-				*Rh = 0.;
+				Rh = 0.;
 			} else {
-				*Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
+				Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
 			}
 		}
 		if (LTh < 0.) {
-			*Rk = 0.;
+			Rk = 0.;
 		} else {
 			if (LTh > 1.) {
-				*Rk = SatuK;
+				Rk = SatuK;
 			} else {
-				*Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
+				Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 			}
 		}
 	} else { //Fz 2010-05-02
@@ -229,24 +229,20 @@ void WaterTransport::KHCalcNaga(double RG, double Dens, double ThR, double WatCn
 			SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
 			const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
 			const double hSlo = (hL - hN) / (ThR * 0.002);
-			*Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
 		}
 		if (LTh < 0.) {
-			*Rk = 0.;
-			*Rh = 0.; //What else?
+			Rk = 0.;
+			Rh = 0.; //What else?
 		} else if (LTh > 1.) {
-			*Rh = 0.;
-			*Rk = SatuK;
+			Rh = 0.;
+			Rk = SatuK;
 		} else {
-			*Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			*Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
+			Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
+			Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 		}
 	}
 }
-
-
-
-
 
 /**
  * @brief This part of the code is EXTREMELY IMPORTANT -- especially for predicting SURFACE HOAR and BURIED DEPTH HOAR layers \n
@@ -928,8 +924,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						ThR = 0.024;
 						SatK = 0.077 * (EMS[eUpper].rg / 1000.)*(EMS[eUpper].rg / 1000.) * exp(-7.8 * EMS[eUpper].theta[ICE] * 0.917) * 1000. * 9.8 / 0.001792;
 
-						KHCalcNaga(EMS[eUpper].rg * 2.0, EMS[eUpper].theta[ICE] * Constants::density_ice, ThR, EMS[eUpper].theta[WATER], SatK, &Rh0, &Rk0);
-						KHCalcNaga(EMS[eLower].rg * 2.0, EMS[eLower].theta[ICE] * Constants::density_ice, ThR, EMS[eLower].theta[WATER], SatK, &Rh1, &Rk1);
+						KHCalcNaga(EMS[eUpper].rg * 2.0, EMS[eUpper].theta[ICE] * Constants::density_ice, ThR, EMS[eUpper].theta[WATER], SatK, Rh0, Rk0);
+						KHCalcNaga(EMS[eLower].rg * 2.0, EMS[eLower].theta[ICE] * Constants::density_ice, ThR, EMS[eLower].theta[WATER], SatK, Rh1, Rk1);
 
 						Such[eUpper] = Rh0;
 						HydK[eUpper] = Rk0;

@@ -47,9 +47,9 @@ class WaterTransport {
 
 	private:
 		//The following 3 functions are used in WaterTransport model "NIED"
-		double BisFunc(double X, double P[]);
-		double Bisection(double minval, double maxval, double P[]);
-		void KHCalcNaga(double RG, double Dens, double ThR, double WatCnt, double SatuK, double *Rh, double *Rk);
+		double BisFunc(const double X, const double P[]);
+		double Bisection(const double minval, const double maxval, double P[]);
+		void KHCalcNaga(const double RG, const double Dens, double ThR, const double WatCnt, const double SatuK, double &Rh, double &Rk);
 
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
