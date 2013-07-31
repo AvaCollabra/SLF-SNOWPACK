@@ -1472,7 +1472,7 @@ double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 		const double cloudiness = (md(MeteoData::ILWR)>0. && md(MeteoData::ILWR)<=1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 		const double ilwr_p = Atmosphere::ILWR_parametrized(md.meta.position.getLat(), md.meta.position.getLon(), md.meta.position.getAltitude(),
 	                                        md.date.getJulian(), md.date.getTimeZone(),
-	                                        md(MeteoData::RH), md(MeteoData::TA), IOUtils::nodata, cloudiness); //we don't even try Crawford, the benefits are way too small
+	                                        md(MeteoData::RH), md(MeteoData::TA), md(MeteoData::ISWR), cloudiness);
 		if(ilwr_p!=IOUtils::nodata && md(MeteoData::TA)!=IOUtils::nodata)
 			ea = Atmosphere::blkBody_Emissivity(ilwr_p, md(MeteoData::TA));
 	}
