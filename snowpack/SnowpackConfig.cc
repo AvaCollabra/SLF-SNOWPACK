@@ -57,6 +57,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["MAX_NUMBER_MEAS_TEMPERATURES"] = "5";
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
+	advancedConfig["MINIMUM_L_ELEMENT"] = "0.0025";
 	advancedConfig["MULTISTREAM"] = "true";
 	advancedConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
@@ -114,8 +115,6 @@ bool SnowpackConfig::initStaticData()
  * non-static section                                       *
  ************************************************************/
 
-SnowpackConfig::~SnowpackConfig() {}
-
 SnowpackConfig::SnowpackConfig(const mio::Config& i_cfg) : Config(i_cfg),
                                enforce_measured_snow_heights(false)
 {
@@ -133,17 +132,18 @@ void SnowpackConfig::setDefaults()
 	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, IOUtils::nothrow);
 
 	getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
-	
+
 	string s_minimum_l_element; getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", s_minimum_l_element, IOUtils::nothrow);
 	string s_height_new_elem; getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", s_height_new_elem, IOUtils::nothrow);
-	if (s_minimum_l_element.empty()) addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0025"); //Minimum element length (m)
+	if (s_minimum_l_element.empty()) addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", advancedConfig["MINIMUM_L_ELEMENT"]);
 	double minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
+
 	if (enforce_measured_snow_heights) {
-		if(s_height_new_elem.empty()) addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", "0.02");
+		if(s_height_new_elem.empty()) addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", advancedConfig["HEIGHT_NEW_ELEM"]);
 	} else {
 		if(s_height_new_elem.empty()) {
 			stringstream ss;
-			const double tmp = 2.0 * minimum_l_element;
+			const double tmp = 2. * minimum_l_element;
 			ss << tmp;
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
@@ -157,13 +157,9 @@ void SnowpackConfig::setDefaults()
 	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, IOUtils::nothrow);
 	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, IOUtils::nothrow);
 
-
 	if ((variant.empty()) || (variant == "DEFAULT")) {
-
-		// Use default settings and ...
-
+		// Use default settings
 	} else if (variant == "JAPAN") {
-
 		if (metamorphism_model.empty()) addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model.empty()) addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
@@ -171,7 +167,6 @@ void SnowpackConfig::setDefaults()
 		if (watertransportmodel_soil.empty()) addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
 
 	} else if (variant == "ANTARCTICA") {
-
 		if (hn_density.empty()) addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
 
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
@@ -205,7 +200,6 @@ void SnowpackConfig::setDefaults()
 		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
 
 	} else if (variant == "CALIBRATION") {
-
 		if (hn_density_model.empty()) addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
 		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
@@ -227,19 +221,19 @@ void SnowpackConfig::setDefaults()
 	 * That is, loop through advancedConfig (then inputConfig & outputConfig) and check whether user has set
 	 * the parameter in the corresponding section, if not add default value
 	 */
-	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); ++it){
+	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); ++it) {
 		//[SnowpackAdvanced] section
 		string value; getValue(it->first, "SnowpackAdvanced", value, IOUtils::nothrow);
 		if (value.empty()) addKey(it->first, "SnowpackAdvanced", it->second);
 	}
 
-	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); ++it){
+	for(map<string,string>::const_iterator it = inputConfig.begin(); it != inputConfig.end(); ++it) {
 		//[Input] section
 		string value; getValue(it->first, "Input", value, IOUtils::nothrow);
 		if (value.empty()) addKey(it->first, "Input", it->second);
 	}
 
-	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); ++it){
+	for(map<string,string>::const_iterator it = outputConfig.begin(); it != outputConfig.end(); ++it) {
 		//[Output] section
 		string value; getValue(it->first, "Output", value, IOUtils::nothrow);
 		if (value.empty()) addKey(it->first, "Output", it->second);
