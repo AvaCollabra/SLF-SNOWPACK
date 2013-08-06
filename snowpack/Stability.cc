@@ -901,9 +901,10 @@ double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
 double Stability::setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar)
 {
 	if ( depth_lay > Constants::eps ) {
+		const double Alpha_max = STpar.alpha_max_rad;
 		// Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
-		double delta_sig = (2.*0.5*cos(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad)*sin(STpar.alpha_max_rad + DEG_TO_RAD(STpar.psi_ref)));
-		delta_sig /= Constants::pi*STpar.cos_psi_ref*depth_lay;
+		double delta_sig = 2.*0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + DEG_TO_RAD(STpar.psi_ref));
+		delta_sig /= Constants::pi *  depth_lay * STpar.cos_psi_ref;
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
 	} else {
