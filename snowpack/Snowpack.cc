@@ -348,7 +348,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nE = Xdata.getNumberOfElements();
 	double SigC = 0.; // Cauchy stress
-	const double SigC_fac = Constants::g * cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double SigC_fac = Constants::g * cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 	for(size_t e = nE; e --> 0; ) {
 		const double oldStress = EMS[e].C;
 		const double age = MAX(0., Mdata.date.getJulian() - EMS[e].depositionDate.getJulian());
@@ -1257,7 +1257,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); //slope cosinus
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); //slope cosinus
 
 	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model, Mdata, Xdata, t_surf, variant); //new snow density
 

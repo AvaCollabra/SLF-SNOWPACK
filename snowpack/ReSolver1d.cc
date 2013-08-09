@@ -630,7 +630,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Initializing and defining Richards solver space domain
 	const unsigned int nN=Xdata.getNumberOfNodes();	//Number of nodes
 	const unsigned int nE=nN-1;			//Number of layers
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); //Slope cosinus, giving cos_sl=1 for flat field.
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); //Slope cosinus, giving cos_sl=1 for flat field.
 	vector<ElementData>& EMS = Xdata.Edata;		//Create reference to SNOWPACK elements.
 	vector<NodeData>& NDS = Xdata.Ndata;		//Create reference to SNOWPACK nodes.
 	std::vector<double> dz(nE, 0.);			//Layer height (in meters)
@@ -1403,7 +1403,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					const double head_compare=h_e[uppernode];
 					// We limit the flux such that when h_np1_m[uppernode]==saturated, the flux would become 0:
 					const double flux_compare=k_np1_m_ip12[uppernode]*((((head_compare-(dz_up[uppernode]*cos_sl))-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
-					
+
 					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
 					if(alpine3d==true) {
 						bool isPonding=false;
@@ -1412,7 +1412,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						}
 						if(isPonding==true) TopFluxRate=0.;
 					}
-					
+
 					if(flux_compare < TopFluxRate) {
 						TopFluxRate=MAX(0., flux_compare);
 					}
@@ -1848,7 +1848,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								theta_np1_mp1[i]+=delta_w;
 								EMS[SnowpackElement[i]].Te+=delta_Te;
 								NDS[SnowpackElement[i]].T+=delta_Te;
-								NDS[SnowpackElement[i]+1].T+=delta_Te;								
+								NDS[SnowpackElement[i]+1].T+=delta_Te;
 							} else {
 								theta_i_np1_mp1[i]=0.;
 								theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 0.);

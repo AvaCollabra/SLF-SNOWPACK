@@ -392,7 +392,6 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 {
 	SnowStation &flatfield = vecXdata[slope.station]; //alias: the flatfield station
 	SnowStation &sector = vecXdata[slope.sector]; //alias: the current slope
-	const bool ebalance_switch = false; //Are solar radiation and precip inputs coming from Alpine3D?
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	if (Mdata.tss == mio::IOUtils::nodata) {
@@ -441,7 +440,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //it must be after calling compRadiation!
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
-	if (!(ebalance_switch || perp_to_slope)) {
+	if (!perp_to_slope) {
 		Meteo::radiationOnSlope(sector, sun, Mdata, surfFluxes);
 		if ( ((sw_mode == 1) || (sw_mode == 2))
 		     && (sector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
@@ -466,7 +465,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		// Compute new snow water equivalent and density
 		if (flatfield.hn > 0.) {
 			// Assign new snow depth and density from station field (usually flat)
-			hn_slope = flatfield.hn * cos(DEG_TO_RAD(sector.meta.getSlopeAngle()));
+			hn_slope = flatfield.hn * cos(sector.meta.getSlopeAngle()*mio::Cst::to_rad);
 			rho_hn_slope = flatfield.rho_hn;
 		}
 
@@ -671,8 +670,7 @@ void real_main (int argc, char *argv[])
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
 
-	string outpath(""), experiment("");
-	string variant("");
+	string outpath(""), experiment(""), variant("");
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::IOUtils::nothrow);
 
 	// Add keys to perform running mean in Antarctic variant
@@ -687,7 +685,7 @@ void real_main (int argc, char *argv[])
 	}
 
 	const int tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
-	if ((tst_sw_mode % 10) == 2) {
+	if ((tst_sw_mode % 10) == 2) { //HACK: this is only for INP!
 		// Make sure there is not only one of ISWR and RSWR available
 		bool iswr_inp=true, rswr_inp = true;
 		cfg.getValue("ISWR_INP","Input",iswr_inp,IOUtils::nothrow);
@@ -948,7 +946,7 @@ void real_main (int argc, char *argv[])
 								i_hz = mn_ctrl.HzStep - 1;
 							Hazard::getDriftIndex(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
 							                      sn_Zdata.drift24, cumsum_drift,
-							                      cos(DEG_TO_RAD(vecXdata[slope.sector].meta.getSlopeAngle())));
+							                      cos(vecXdata[slope.sector].meta.getSlopeAngle()*mio::Cst::to_rad));
 							cumsum_drift = 0.;
 						}
 					}
@@ -1083,7 +1081,7 @@ void real_main (int argc, char *argv[])
 						// Add eroded snow from luv to precipitations on lee slope
 						if ((slope.nSlopes > 1) && (slope.sector == slope.lee) && (cumsum_erosion[slope.luv] > Constants::eps)) {
 							surfFluxes.mass[SurfaceFluxes::MS_HNW] += cumsum_erosion[slope.luv]
-							        / cos(DEG_TO_RAD(vecXdata[slope.luv].meta.getSlopeAngle()));
+							        / cos(vecXdata[slope.luv].meta.getSlopeAngle()*mio::Cst::to_rad);
 						}
 					}
 

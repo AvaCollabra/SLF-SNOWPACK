@@ -162,8 +162,8 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 	} else {
 		const double flux = H_TO_S( MAX(0.,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
 		double ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
-		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(DEG_TO_RAD(slope_angle)));
-		ero_depo /= cos(DEG_TO_RAD(slope_angle));
+		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle*mio::Cst::to_rad));
+		ero_depo /= cos(slope_angle*mio::Cst::to_rad);
 		return ero_depo;
 	}
 }
@@ -237,7 +237,7 @@ double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar,
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
 {
 	double crust_height=0.;
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 
 	if (Xdata.getNumberOfElements() > 0) {
 		size_t e = Xdata.getNumberOfElements()-1;
@@ -278,7 +278,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                         const SnowStation& Xdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 	const double hs = Xdata.cH / cos_sl;
 
 	const ElementData *EMS;  // Pointer to element data

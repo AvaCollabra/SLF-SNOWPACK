@@ -1146,7 +1146,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	}
 	// Find the real Cauchy stresses
 	double SigC = 0.0;
-	const double cos_alpha = cos( DEG_TO_RAD(meta.getSlopeAngle()) );
+	const double cos_alpha = cos( meta.getSlopeAngle()*mio::Cst::to_rad );
 	for(size_t e = nElems; e -->0; ) {
 		if (e < nElems-1)
 			SigC -= (.5*Edata[e+1].M) * Constants::g * cos_alpha;

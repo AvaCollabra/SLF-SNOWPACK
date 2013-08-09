@@ -99,8 +99,9 @@ int Meteo::getStability() const
  */
 void Meteo::projectPrecipitations(const double& slope_angle, double& precips, double& hs)
 {
-	precips *= cos(DEG_TO_RAD(slope_angle));
-	hs *= cos(DEG_TO_RAD(slope_angle));
+	const double cos_sl = cos(slope_angle*mio::Cst::to_rad);
+	precips *= cos_sl;
+	hs *= cos_sl;
 }
 
 void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s)
@@ -324,7 +325,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 	if (sw_mode == 1) {
 		Mdata.rswr = (dir_h + diff)*station.Albedo;
 	} else {
-		Mdata.iswr = dir_h + diff;
+		Mdata.iswr = dir_h + diff; //usually = iswr_ref except for corner cases
 	}
 
 	if (sw_mode_change) {

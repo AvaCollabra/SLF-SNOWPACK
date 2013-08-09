@@ -519,7 +519,7 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 
 	// Find the rate dependent friction angle phi
 	const double epsa = fabs(epsNeckDot); // Absolute value of plastic strain rate
-	const double phi = P1*pow(epsa, 0.23)*Constants::pi/180.; // Function of strain rate dependent failure surface
+	const double phi = P1*pow(epsa, 0.23)*mio::Cst::to_rad; // Function of strain rate dependent failure surface
 
 	// Hydrostatic melting pressure
 	// NOTE this function returns negative values for
@@ -559,7 +559,7 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 	// First find the absolute neck stress
 	const double sigNeck = Edata.neckStressEnhancement() * (sig); // Neck stress (Pa)
 	// Now find the strain rate in the neck
-	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * (sigNeck/sig1)*(sigNeck/sig1)*(sigNeck/sig1); // Total strain rate in the neck (s-1) NOTE is it used here only?
+	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * mio::Optim::pow3(sigNeck/sig1); // Total strain rate in the neck (s-1) NOTE is it used here only?
 	// Return the stability index
 	return (MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 }
@@ -578,11 +578,11 @@ void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
 
 	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
-	STpar.cos_psi_ref = cos(DEG_TO_RAD(i_psi_ref));
-	STpar.sin_psi_ref = sin(DEG_TO_RAD(i_psi_ref));
+	STpar.cos_psi_ref = cos(i_psi_ref*mio::Cst::to_rad);
+	STpar.sin_psi_ref = sin(i_psi_ref*mio::Cst::to_rad);
 	STpar.sig_n = Constants::undefined;
 	STpar.sig_s = Constants::undefined;
-	STpar.alpha_max_rad = DEG_TO_RAD(54.3); // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
+	STpar.alpha_max_rad = 54.3*mio::Cst::to_rad; // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 
 	for(size_t n=Xdata.SoilNode; n<nN; n++) {
 		SIdata[n].ssi      = Stability::max_stability;
@@ -609,7 +609,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 	bool crust = false;                       // Checks for crust
 	int e_crust = Constants::iundefined;
 
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); // Cosine of slope angle
 	size_t e = Xdata.getNumberOfElements();
 	while ((e-- > Xdata.SoilNode) && ((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
@@ -903,7 +903,7 @@ double Stability::setSkierStabilityIndex(const double& depth_lay, const Stabilit
 	if ( depth_lay > Constants::eps ) {
 		const double Alpha_max = STpar.alpha_max_rad;
 		// Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
-		double delta_sig = 2.*0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + DEG_TO_RAD(STpar.psi_ref));
+		double delta_sig = 2.*0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref*mio::Cst::to_rad);
 		delta_sig /= Constants::pi *  depth_lay * STpar.cos_psi_ref;
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
@@ -960,7 +960,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 
 	// Initialize
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 
 	// Classify only for Snowpacks thicker than Stability::minimum_slab (vertically)
 	if ( (NDS[nE].z+NDS[nE].u)/cos_sl < Stability::minimum_slab ) {
@@ -1077,7 +1077,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	                                                      // (N) and (N m-1), respectively
 
 	// cos of slope angle to convert height and thickness to vertical values
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 	// Vertical snow depth
 	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl;
 
@@ -1277,7 +1277,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
  */
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())); // Cosine of slope angle
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); // Cosine of slope angle
 
 	// Dereference the element pointer containing micro-structure data
 	const size_t nN = Xdata.getNumberOfNodes();

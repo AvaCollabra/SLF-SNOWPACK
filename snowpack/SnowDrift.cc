@@ -224,7 +224,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		 * in case of no (or small) real erosion for all cases except Alpine3D or virtual slopes
 		 */
 	} else if (((nSlopes == 1) || (!snow_redistribution && (Xdata.meta.getSlopeAngle() < Constants::min_slope_angle))) && (Xdata.ErosionLevel > Xdata.SoilNode)) {
-		virtual_flux = compMassFlux(EMS[Xdata.ErosionLevel], ustar_max, DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+		virtual_flux = compMassFlux(EMS[Xdata.ErosionLevel], ustar_max, Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 		// Convert to eroded snow mass
 		if ((massErode = virtual_flux*sn_dt / Hazard::typical_slope_length) > 0.) {
 			nErode = -1;

@@ -583,7 +583,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 	}
 
 	fprintf(PFile,"\n0500,%s", i_date.toString(Date::DIN).c_str());
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 
 	const size_t nz = (useSoilLayers)? nN : nE;
 
@@ -884,7 +884,7 @@ size_t AsciiIO::writeTemperatures(FILE *fout, const double& z_vert, const double
 		if (perp_pos == Constants::undefined) {
 			fprintf(fout, ",");
 		} else {
-			fprintf(fout, ",%.2f", M_TO_CM(perp_pos)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+			fprintf(fout, ",%.2f", M_TO_CM(perp_pos)/cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad));
 		}
 		jj++;
 	}
@@ -916,11 +916,11 @@ double AsciiIO::compPerpPosition(const double& z_vert, const double& hs_ref, con
 	if (z_vert == mio::IOUtils::nodata) {
 		pos = Constants::undefined;
 	} else if (!useSoilLayers && (z_vert < 0.)) {
-		pos = hs_ref + z_vert * cos(DEG_TO_RAD(slope_angle));
+		pos = hs_ref + z_vert * cos(slope_angle*mio::Cst::to_rad);
 		if (pos < 0.)
 			pos = Constants::undefined;
 	} else {
-		pos = ground + z_vert * cos(DEG_TO_RAD(slope_angle));
+		pos = ground + z_vert * cos(slope_angle*mio::Cst::to_rad);
 		if (pos < -ground)
 			pos = Constants::undefined;
 	}
@@ -977,7 +977,7 @@ size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 {
 	const size_t e = findTaggedElement(tag, Xdata);
 	if (e != static_cast<size_t>(-1)) {
-		const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+		const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 		const double perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
 		                + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
 		fprintf(fout,",%.2f,%.2f", M_TO_CM(perp_pos) / cos_sl, K_TO_C(Xdata.Edata[e].Te));
@@ -991,7 +991,7 @@ size_t AsciiIO::writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 		if (perp_pos == Constants::undefined) {
 			fprintf(fout,",,%.2f", Constants::undefined);
 		} else {
-			const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+			const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 			fprintf(fout,",%.2f", M_TO_CM(perp_pos)/cos_sl);
 			const double temp = checkMeasuredTemperature(Mdata.ts.at(ii), perp_pos, Xdata.mH);
 			fprintf(fout,",%.2f", temp);
@@ -1208,7 +1208,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const size_t nN = Xdata.getNumberOfNodes();
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 
 	//Check whether file exists, if so check whether data can be appended or file needs to be deleted
 	if (IOUtils::fileExists(filename)) {
@@ -1397,7 +1397,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
  */
 void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
 {
-	const double cos_sl = cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle()));
+	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
 	// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 	if (useSoilLayers)
 		fprintf(fout,",%f", Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / cos_sl);
@@ -1456,7 +1456,7 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
                                         const size_t nCalcSteps, FILE *fout)
 {
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
-		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+		fprintf(fout, ",%.2f", M_TO_CM(Mdata.hs)/cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad));
 	// 94-95:
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)
@@ -1507,7 +1507,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
 {
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
-		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs)/cos(DEG_TO_RAD(Xdata.meta.getSlopeAngle())));
+		fprintf(fout,",%.2f", M_TO_CM(Mdata.hs)/cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad));
 	// 94-95:
 	if (out_heat) {
 		// 94: change of internal energy (kJ m-2)

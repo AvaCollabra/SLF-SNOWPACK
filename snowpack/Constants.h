@@ -152,9 +152,6 @@ namespace Constants {
 #define S_TO_D( t ) ( (t) / 86400. ) // second to day
 #define S_TO_H( t ) ( (t) / 3600. )  // second to hour
 #define S_TO_M( t ) ( (t) / 60. )    // second to minute
-/// @brief For angles
-#define DEG_TO_RAD(deg) ( deg * Constants::pi / 180. )  // degree to radian
-#define RAD_TO_DEG(rad) ( rad * 180. / Constants::pi )  // radian to degree
 //@}
 //@}
 
