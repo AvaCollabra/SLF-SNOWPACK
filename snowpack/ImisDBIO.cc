@@ -177,15 +177,13 @@ void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stati
 	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
 	stmt->setDate(4, enddate);         // set 5th variable's value (enddate)
 
-	unsigned int rows_deleted=0;
 	try {
-		rows_deleted = stmt->executeUpdate();
+		stmt->executeUpdate();
 	}  catch (const exception& e) {
 		cerr << "[E] SDB for station " << stationName << stationNumber << " from " << dateS.toString(mio::Date::ISO) << " to " << dateE.toString(mio::Date::ISO);
 		cerr << "\tError deleting previous profile data\n";
 		throw; //rethrow the exception
 	}
-	//prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d profiles in %s for station %s%d!", rows_deleted, oracleDB.c_str(), stationName.c_str(), stationNumber);
 }
 
 void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
@@ -194,7 +192,6 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
 	if(Pdata.empty())
 		return;
 
-	size_t rows_inserted = 0;
 	vector<int> Pdate = vector<int>(5);
 	mio::Date ProfileDate(Pdata[0].profileDate);
 	ProfileDate.setTimeZone(time_zone);
@@ -253,7 +250,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
 		stmt->setNumber(18, version);
 
 		try {
-			rows_inserted += stmt->executeUpdate(); // execute the statement stmt
+			stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
 			cerr << "[E] SDB profile for station " << stat_abk << stao_nr << " at " << Pdata[0].profileDate.toString(mio::Date::ISO);
 			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << Pdata[0].sn_version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
@@ -271,8 +268,6 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
 			}
 		}
 	}
-
-	//prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
 }
 
 void ImisDBIO::dumpASCIIProfile(const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata)

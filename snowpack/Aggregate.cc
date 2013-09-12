@@ -164,16 +164,15 @@ bool Aggregate::mergeThinLayer(const size_t& l_lower, std::vector<SnowProfileLay
  */
 size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 {
-	size_t nL_ini = Pdata.size();
-	size_t nL = nL_ini;
+	size_t nL = Pdata.size();
 
 	// Initialize number of layers and aggregate only if more than 5 layers
 	if (nL > 5) {
 		// First Run - aggregate similar layers
 		// keep track of the coordinates and length of elements
-		double L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height);
+		double L0_lower = (Pdata[nL-2].height -  Pdata[nL-3].height);
 
-		for (size_t l_upper=nL_ini-2; l_upper > 0; l_upper--) {
+		for (size_t l_upper=nL-2; l_upper > 0; l_upper--) {
 			const double L0_upper = L0_lower;
 			const size_t l_lower = l_upper-1;
 			if (l_lower > 0) {
@@ -184,24 +183,19 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 			// if two layers are similar combine them; keep SH though
 			if ((Pdata[l_lower].marker != 3) && (Pdata[l_upper].marker != 3)) {
 				if (joinSimilarLayers(l_upper, Pdata)) {
-					nL--;
 					Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
-					Pdata[l_upper].height = Constants::undefined;
-Pdata.erase(Pdata.begin()+l_upper);
+					Pdata.erase(Pdata.begin()+l_upper);
 					L0_lower += L0_upper;
 				}
 			}
 		}
 
-nL = Pdata.size();
-//		shift(nL_ini, Pdata);
-		nL_ini = nL;
-
+		nL = Pdata.size();
 		// Second Run - aggregate remaining very thin layers
-		if (nL_ini > 2) {
+		if (nL > 2) {
 			bool flag = false;
-			L0_lower = (Pdata[nL_ini-2].height -  Pdata[nL_ini-3].height); //reset L0_lower
-			for(size_t l_upper = nL_ini-2; l_upper > 0; l_upper--) {
+			L0_lower = (Pdata[nL-2].height -  Pdata[nL-3].height); //reset L0_lower
+			for(size_t l_upper = nL-2; l_upper > 0; l_upper--) {
 				const size_t l_lower = l_upper-1;
 				const double L0_upper = L0_lower;
 				if (l_lower > 0) {
@@ -211,15 +205,13 @@ nL = Pdata.size();
 				}
 				if ((Pdata[l_lower].marker != 3) && (Pdata[l_upper].marker != 3)) {
 					// trick to try to join with upper or lower level -> use flag to mark thin layer
-					if (flag || (L0_lower < (sqrt(Pdata[nL_ini-1].height-Pdata[l_lower].height)/4.))
+					if (flag || (L0_lower < (sqrt(Pdata[nL-1].height-Pdata[l_lower].height)/4.))
 						         || (L0_lower < min_l_element)) {
 						// if two layers are similar or one layer is very very small combine them
 						if (mergeThinLayer(l_upper, Pdata)
 							    || (L0_lower < min_l_element) || (L0_upper < min_l_element)) {
-							nL--;
 							Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
-							Pdata[l_upper].height = Constants::undefined;
-Pdata.erase(Pdata.begin()+l_upper);
+							Pdata.erase(Pdata.begin()+l_upper);
 							L0_lower += L0_upper;
 							flag = false;
 						} else {
@@ -233,11 +225,10 @@ Pdata.erase(Pdata.begin()+l_upper);
 					flag = false;
 				}
 			}  // for all elements
-			shift(nL_ini, Pdata);
 		} // if nL_ini > 2
 	} // if more than 5 layers
 
-nL = Pdata.size();
+	nL = Pdata.size();
 	// Update snow type
 	for(size_t ll=0; ll<nL; ll++) {
 		Pdata[ll].type = ElementData::snowType(Pdata[ll].dendricity, Pdata[ll].sphericity,
