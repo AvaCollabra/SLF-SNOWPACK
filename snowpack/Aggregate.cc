@@ -187,12 +187,14 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 					nL--;
 					Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
 					Pdata[l_upper].height = Constants::undefined;
+Pdata.erase(Pdata.begin()+l_upper);
 					L0_lower += L0_upper;
 				}
 			}
 		}
 
-		shift(nL_ini, Pdata);
+nL = Pdata.size();
+//		shift(nL_ini, Pdata);
 		nL_ini = nL;
 
 		// Second Run - aggregate remaining very thin layers
@@ -217,6 +219,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 							nL--;
 							Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
 							Pdata[l_upper].height = Constants::undefined;
+Pdata.erase(Pdata.begin()+l_upper);
 							L0_lower += L0_upper;
 							flag = false;
 						} else {
@@ -234,6 +237,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 		} // if nL_ini > 2
 	} // if more than 5 layers
 
+nL = Pdata.size();
 	// Update snow type
 	for(size_t ll=0; ll<nL; ll++) {
 		Pdata[ll].type = ElementData::snowType(Pdata[ll].dendricity, Pdata[ll].sphericity,

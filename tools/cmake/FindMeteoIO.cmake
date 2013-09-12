@@ -15,7 +15,8 @@ IF(WIN32)
 		${METEOIO_ROOT2}/lib
 		${METEOIO_ROOT3}/lib
 		${METEOIO_ROOT4}/lib
-		${SRC_DIR}/meteoio/lib)
+		${SRC_DIR}/meteoio/lib
+		${SRC_DIR}/../../meteoio/lib)
 	IF(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.lib
@@ -37,14 +38,15 @@ ELSE(WIN32)
 		FIND_LIBRARY(METEOIO_LIBRARY
 		NAMES meteoio${POPC_EXT}
 		PATHS
-			"/Applications/MeteoIO/lib"
 			ENV LD_LIBRARY_PATH
 			ENV DYLD_FALLBACK_LIBRARY_PATH
 			"~/usr/lib"
+			"/Applications/MeteoIO/lib"
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
 			${SRC_DIR}/meteoio/lib
+			${SRC_DIR}/../../meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.dylib"
 		)
 	ELSE(APPLE)
@@ -57,6 +59,7 @@ ELSE(WIN32)
 			"/usr/lib"
 			"/opt/lib"
 			${SRC_DIR}/meteoio/lib
+			${SRC_DIR}/../../meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
 		)
 	ENDIF(APPLE)

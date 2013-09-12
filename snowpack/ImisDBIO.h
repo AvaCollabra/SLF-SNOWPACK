@@ -49,15 +49,24 @@ class ImisDBIO : public SnowpackIOInterface{
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
-		void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
+		static void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
+		static size_t generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata, std::vector<SnowProfileLayer> &Pdata);
+		static void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind);
+		static void print_Profile_query(const SnowProfileLayer& Pdata);
 
+		void deleteProfile(const std::string& stationName, const size_t& stationNumber,
+		                 const mio::Date& dateStart, const mio::Date& dateEnd,
+		                 oracle::occi::Environment*& env, oracle::occi::Statement*& stmt);
 		void deleteHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const mio::Date& dateStart, const mio::Date& dateEnd,
-		                 oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
-		void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind);
+		                 oracle::occi::Environment*& env, oracle::occi::Statement*& stmt);
+		void insertProfile(const std::vector<SnowProfileLayer> &Pdata,
+		                   oracle::occi::Environment*& env, oracle::occi::Statement*& stmt);
 		void insertHdata(const std::string& stationName, const std::string& stationNumber,
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
-		                 const int& num, oracle::occi::Environment*& env, oracle::occi::Connection*& conn);
+		                 const size_t& num, oracle::occi::Environment*& env, oracle::occi::Statement*& stmt);
+
+		static void dumpASCIIProfile(const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata);
 
 		//double time_zone; ///< input data time zone
 		static const double time_zone; //All IMIS data is in gmt+1
@@ -66,7 +75,9 @@ class ImisDBIO : public SnowpackIOInterface{
 		static double hoar_density_surf, hoar_min_size_surf;
 
 		static const std::string sqlDeleteHdata; //Delete statement for Hdata from snowpack.ams_pmod
+		static const std::string sqlDeleteProfile; //Delete statement for profile from snowpack.ams_pmod_profile
 		static const std::string sqlInsertHdata; //Insert statement for Hdata to snowpack.ams_pmod
+		static const std::string sqlInsertProfile; //Insert statement for profile to snowpack.ams_pmod_profile
 		static const std::string profile_filename;
 };
 
