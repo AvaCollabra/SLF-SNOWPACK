@@ -1183,7 +1183,11 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Cdata.rs = 0.0;
 		Cdata.rstransp = 0.0;
 	} else {
-		Cdata.height = 0.0;
+		if (SSdata.Canopy_Height > 0.0) { // HACK: quickfix for operational stop-and-go mode w/ growing grass algorithm; needs to be checked!
+			Cdata.height = SSdata.Canopy_Height;
+		} else {
+			Cdata.height = 0.0;
+		}
 		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp = 273.15;	          // temperature (K)
 		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
@@ -1694,6 +1698,7 @@ void Tag::compute_properties(const ElementData& Edata)
  * @author Charles Fierz
  * @version 10.03
  * @bug Don't  be surprised ...
+ * @param useSoilLayers
  * @param z Position of corresponding sensor perpendicular to slope (m)
  * @param Xdata
  */
