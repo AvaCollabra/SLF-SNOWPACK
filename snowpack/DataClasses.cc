@@ -1036,11 +1036,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	SoilNode = 0;
 	Ground = 0.0;
 	Ndata.front().z = 0.;
-	if (SSdata.nLayers > 0) {
-		Ndata.front().T = SSdata.Ldata.front().tl;
-	} else {
-		Ndata.front().T = Constants::melting_tk;
-	}
+	Ndata.front().T = (SSdata.nLayers > 0)? SSdata.Ldata.front().tl : Constants::melting_tk;
 	Ndata.front().u = 0.;
 	Ndata.front().f = 0.;
 	Ndata.front().udot = 0.;
@@ -1050,7 +1046,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 
 	bool real_soil_no_sandwich = true;  // Switch to count real soil layers
 	for (size_t ll = 0, n = 1; ll < SSdata.nLayers; ll++) {
-		double dT;
 		// Update ground heigth and SoilNode number
 		if (SSdata.Ldata[ll].phiSoil > 0.0 && real_soil_no_sandwich) {
 			Ground += SSdata.Ldata[ll].hl;
@@ -1058,11 +1053,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		} else {
 			real_soil_no_sandwich = false;
 		}
-		if (ll == 0) {
-			dT = 0.;
-		} else {
-			dT = (SSdata.Ldata[ll].tl - SSdata.Ldata[ll-1].tl) / static_cast<double>(SSdata.Ldata[ll].ne);
-		}
+
+		const double dT = (ll>0)? (SSdata.Ldata[ll].tl - SSdata.Ldata[ll-1].tl) / static_cast<double>(SSdata.Ldata[ll].ne) : 0.;
+
 		for (size_t le = 0; le < SSdata.Ldata[ll].ne; le++, n++ ) {
 			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / static_cast<double>(SSdata.Ldata[ll].ne);
 			Ndata[n].T = Ndata[n-1].T + dT;
@@ -1139,11 +1132,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive
 		} // end of element layer for
 	} // end of layer for
-	if (SSdata.ErosionLevel > 0) {
-		ErosionLevel = SSdata.ErosionLevel;
-	} else {
-		ErosionLevel = MAX(SoilNode, nElems-1);
-	}
+
+	ErosionLevel = (SSdata.ErosionLevel > 0)? SSdata.ErosionLevel : MAX(SoilNode, nElems-1);
+
 	// Find the real Cauchy stresses
 	double SigC = 0.0;
 	const double cos_alpha = cos( meta.getSlopeAngle()*mio::Cst::to_rad );
@@ -1159,8 +1150,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
 
 	// INITIALIZE CANOPY DATA
+	Cdata.height = (SSdata.Canopy_Height > 0.0)? SSdata.Canopy_Height : 0.;
 	if (useCanopyModel) {
-		Cdata.height = SSdata.Canopy_Height;
 		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp = 273.15;	          // temperature (K)
 		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
@@ -1183,11 +1174,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Cdata.rs = 0.0;
 		Cdata.rstransp = 0.0;
 	} else {
-		if (SSdata.Canopy_Height > 0.0) { // HACK: quickfix for operational stop-and-go mode w/ growing grass algorithm; needs to be checked!
-			Cdata.height = SSdata.Canopy_Height;
-		} else {
-			Cdata.height = 0.0;
-		}
 		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp = 273.15;	          // temperature (K)
 		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
@@ -1356,13 +1342,11 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
 		for(unsigned int layer_index=0; layer_index<nElems; layer_index++) {
-			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8)) sum_ice_depth += Edata[layer_index].L;
+			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8))
+				sum_ice_depth += Edata[layer_index].L;
 		}
 
-		if(sum_ice_depth>=ice_depth_glacier)
-			return true;
-		else
-			return false;
+		return (sum_ice_depth>=ice_depth_glacier);
 	} else {
 		bool is_pure_ice=true;
 		const unsigned int check_depth=5;

@@ -42,19 +42,54 @@ string ImisDBIO::oracleDB;
 string ImisDBIO::oracleUser;
 string ImisDBIO::oraclePassword;
 
-const std::string ImisDBIO::profile_filename = "loaddata/pmodpro.dat";
-
 ImisDBIO::ImisDBIO(const SnowpackConfig& cfg)
+         : env(NULL), conn(NULL), stmt(NULL)
 {
-	cfg.getValue("DBNAME", "Output", oracleDB, IOUtils::nothrow);
-	cfg.getValue("DBUSER", "Output", oracleUser, IOUtils::nothrow);
-	cfg.getValue("DBPASS", "Output", oraclePassword, IOUtils::nothrow);
+	cfg.getValue("DBNAME", "Output", oracleDB);
+	cfg.getValue("DBUSER", "Output", oracleUser);
+	cfg.getValue("DBPASS", "Output", oraclePassword);
 
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 
 	//Minimum size to show surface hoar on surface (mm)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
+
+	openDB();
+}
+
+ImisDBIO::ImisDBIO(const ImisDBIO& in)
+         : env(in.env), conn(in.conn), stmt(in.stmt) {}
+
+ImisDBIO& ImisDBIO::operator=(const ImisDBIO& in) {
+	closeDB();
+	env = in.env;
+	conn = in.conn;
+	stmt = in.stmt;
+
+	return *this;
+}
+
+ImisDBIO::~ImisDBIO()
+{ //in case of a throw, this will be called automatically if the exception is later caught
+//(remember that now Snowpack wraps its main in a try/catch block)
+	closeDB();
+}
+
+void ImisDBIO::closeDB() {
+	if(stmt!=NULL && conn!=NULL)
+		conn->terminateStatement(stmt);
+	if(conn!=NULL && env!=NULL)
+		env->terminateConnection(conn);
+	if(env!=NULL)
+		Environment::terminateEnvironment(env); // static OCCI function
+}
+
+void ImisDBIO::openDB() {
+	//initialize Oracle connection. We will still check that stmt!=NULL later on
+	env = Environment::createEnvironment();// static OCCI function
+	conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
+	stmt = conn->createStatement();
 }
 
 /**
@@ -89,7 +124,7 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 }
 
 //fill a profile structure with the proper data extracted from the Hdata. The number of layers (after aggregation) is returned
-size_t ImisDBIO::generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata, std::vector<SnowProfileLayer> &Pdata)
+void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata, std::vector<SnowProfileLayer> &Pdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<NodeData>& NDS = Xdata.Ndata;
@@ -136,14 +171,12 @@ size_t ImisDBIO::generateProfile(const mio::Date& dateOfProfile, SnowStation& Xd
 		Pdata[ll].hard = EMS[e].hard;
 	}
 
-	const size_t nL = Aggregate::aggregate(Pdata);
-	return nL;
+	Aggregate::aggregate(Pdata);
 }
 
 //delete the profile records that we will resubmit
 void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stationNumber,
-              const mio::Date& dateStart, const mio::Date& dateEnd,
-              oracle::occi::Environment*& env, oracle::occi::Statement*& stmt)
+                             const mio::Date& dateStart, const mio::Date& dateEnd)
 {
 	vector< vector<string> > vecResult;
 	vector<int> datestart = vector<int>(5);
@@ -186,8 +219,7 @@ void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stati
 	}
 }
 
-void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
-                             oracle::occi::Environment*& env, oracle::occi::Statement*& stmt)
+void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 {
 	if(Pdata.empty())
 		return;
@@ -213,14 +245,12 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
 	stmt->setSQL(sqlInsertProfile);
 	stmt->setAutoCommit(false);
 
-	double height = 0.;
 	const size_t nL = Pdata.size();
 	for(size_t ii=0; ii<nL; ++ii) {
 		stmt->setDate(1, profDate);
 		stmt->setString(2, stat_abk);
 		stmt->setUInt(3, stao_nr);
-		height = Pdata[ii].height;
-		stmt->setNumber(4, height);
+		stmt->setNumber(4, Pdata[ii].height);
 
 		//layer date
 		vector<int> Ldate   = vector<int>(5);
@@ -270,40 +300,29 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata,
 	}
 }
 
-void ImisDBIO::dumpASCIIProfile(const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata)
+void ImisDBIO::dumpASCIIProfile(const std::string& profile_filename, const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata)
 {
-	const size_t nE = Xdata.getNumberOfElements();
-	const vector<NodeData>& NDS = Xdata.Ndata;
-	const size_t nL = Pdata.size();
-
 	//open profile file and write to it
 	std::ofstream Pfile(profile_filename.c_str(), std::ios::out | std::fstream::app);
-	if(!Pfile) {
+	if(!Pfile)
 		throw FileAccessException("[E] Can not open file "+profile_filename, AT);
-	}
 
+	const size_t nL = Pdata.size();
 	for(size_t ll=0; ll<nL; ll++) {
-		//HACK: these legacy offset should be removed.
-		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[ll].profileDate.getJulian() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[ll].layerDate.getJulian() - 2415021. + 0.5; //HACK
-
-		Pfile << fixed << setprecision(6) << profile_date << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
-		Pfile << setprecision(6) << layer_date << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
+		Pfile << fixed << setprecision(6) << Pdata[ll].profileDate.getJulian() << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
+		Pfile << setprecision(6) << Pdata[ll].layerDate.getJulian() << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
 		Pfile << setprecision(1) << Pdata[ll].theta_w << "," << Pdata[ll].theta_i << "," << setprecision(3) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
 		Pfile << setprecision(2) << Pdata[ll].coordin_num << "," << Pdata[ll].grain_size << "," << setprecision(3) << Pdata[ll].bond_size << "," << Pdata[ll].type << "\n";
 	}
 
+	const size_t nE = Xdata.getNumberOfElements();
+	const vector<NodeData>& NDS = Xdata.Ndata;
 	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
-		//HACK: these legacy offset should be removed.
-		//This means specify a different import date format for the database and remove the offset here
-		const double profile_date = Pdata[nL-1].profileDate.getJulian() - 2415021. + 0.5; //HACK
-		const double layer_date = Pdata[nL-1].layerDate.getJulian() - 2415021. + 0.5; //HACK
 		const double gsz_SH = NDS[nE].hoar / hoar_density_surf;
 		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
 
-		Pfile << fixed << setprecision(6) << profile_date << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
-		Pfile << setprecision(6) << layer_date << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
+		Pfile << fixed << setprecision(6) << Pdata[nL-1].profileDate.getJulian() << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
+		Pfile << setprecision(6) << Pdata[nL-1].layerDate.getJulian() << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
 		Pfile << hoar_density_surf/Constants::density_ice << ",0.00,0.00,2.0," << setprecision(2) << M_TO_MM(gsz_SH) << "," << setprecision(3) << 0.6667*M_TO_MM(gsz_SH) << ",660\n";
 	}
 
@@ -311,14 +330,10 @@ void ImisDBIO::dumpASCIIProfile(const SnowStation& Xdata, const std::vector<Snow
 }
 
 /**
- * @brief Dump snow profile to ASCII file for subsequent upload to SDBO
+ * @brief Write simplified profile to database
  */
 void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata)
 {
-	if ((oracleDB.empty()) || (oraclePassword.empty()) || (oracleUser.empty())){
-		throw IOException("You must set the output database, username and password for writing profiles!", AT);
-	}
-
 	const size_t nE = Xdata.getNumberOfElements();
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
@@ -326,23 +341,12 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, 
 	vector<SnowProfileLayer> Pdata(nE);
 	generateProfile(dateOfProfile, Xdata, Hdata, Pdata);
 
-	Environment *env = NULL;
-
 	try {
-		env = Environment::createEnvironment();// static OCCI function
-		Connection *conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
-		Statement *stmt = conn->createStatement();
-
-		deleteProfile(Pdata[0].stationname, Pdata[0].loc_for_snow, dateOfProfile, dateOfProfile, env, stmt);
+		deleteProfile(Pdata[0].stationname, Pdata[0].loc_for_snow, dateOfProfile, dateOfProfile);
 		//dumpASCIIProfile(Xdata, Pdata);
-		insertProfile(Pdata, env, stmt);
-
-		conn->terminateStatement(stmt);
-		env->terminateConnection(conn);
-		Environment::terminateEnvironment(env); // static OCCI function
+		insertProfile(Pdata);
 
 	} catch (const exception& e){
-		Environment::terminateEnvironment(env); // static OCCI function
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing profile data for %s%d to %s,",
 		        Pdata[0].stationname.c_str(), Pdata[0].loc_for_snow, oracleDB.c_str());
@@ -362,34 +366,14 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 		return false; //nothing to do
 	}
 
-	if ((oracleDB.empty()) || (oraclePassword.empty()) || (oracleUser.empty())){
-		//throw IOException("You must set the output database, username and password", AT);
-		if (num >= (int)Hdata.size()){
-			prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No data written to %s!", oracleDB.c_str());
-			prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "You must set all of output database, username and password first");
-		}
-		return false; //nothing to do
-	}
-
 	string stationName, stationNumber;
 	parseStationName(stationID, stationName, stationNumber);
 
-	Environment *env = NULL;
-
 	try {
-		env = Environment::createEnvironment();// static OCCI function
-		Connection *conn = env->createConnection(oracleUser, oraclePassword, oracleDB);
-		Statement *stmt = conn->createStatement();
-
-		deleteHdata(stationName, stationNumber, Hdata[0].date, Hdata[num-1].date, env, stmt);
-		insertHdata(stationName, stationNumber, Hdata, Hdata_ind, num, env, stmt);
-
-		conn->terminateStatement(stmt);
-		env->terminateConnection(conn);
-		Environment::terminateEnvironment(env); // static OCCI function
+		deleteHdata(stationName, stationNumber, Hdata[0].date, Hdata[num-1].date);
+		insertHdata(stationName, stationNumber, Hdata, Hdata_ind, num);
 
 	} catch (const exception& e){
-		Environment::terminateEnvironment(env); // static OCCI function
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing hazard data for %s to %s,",
 		        stationID.c_str(), oracleDB.c_str());
@@ -418,8 +402,7 @@ void ImisDBIO::parseStationName(const std::string& stationName, std::string& stN
 }
 
 void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& stationNumber,
-                           const mio::Date& dateStart, const mio::Date& dateEnd,
-                           oracle::occi::Environment*& env, oracle::occi::Statement*& stmt)
+                           const mio::Date& dateStart, const mio::Date& dateEnd)
 {
 	vector< vector<string> > vecResult;
 	vector<int> datestart = vector<int>(5);
@@ -443,6 +426,7 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	}
 
 	stmt->setSQL(sqlDeleteHdata);
+	stmt->setAutoCommit(true);
 
 	// construct the oracle specific Date object: year, month, day, hour, minutes
 	const occi::Date begindate(env, datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
@@ -570,7 +554,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
                            const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
-                           const size_t& num, oracle::occi::Environment*& env, oracle::occi::Statement*& stmt)
+                           const size_t& num)
 {
 	vector<int> sndate = vector<int>(5);
 	unsigned int rows_inserted = 0;

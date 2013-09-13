@@ -51,7 +51,6 @@ class SnowpackIO : public SnowpackIOInterface {
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num);
-
 	private:
 #ifdef IMISDBIO
 		ImisDBIO imisdbio;
