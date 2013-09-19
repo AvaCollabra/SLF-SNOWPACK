@@ -58,7 +58,7 @@ using namespace mio;
 class Slope {
 
 	public:
-		Slope(const mio::Config& i_cfg);
+		Slope(const mio::Config& cfg);
 
 		double prevailing_wind_dir;
 		unsigned int nSlopes;
@@ -74,7 +74,6 @@ class Slope {
 		void setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
-		const mio::Config& cfg;
 		double sector_width;
 };
 
@@ -106,10 +105,10 @@ struct MainControl
  * non-static section                                       *
  ************************************************************/
 
-Slope::Slope(const mio::Config& i_cfg)
+Slope::Slope(const mio::Config& cfg)
        : prevailing_wind_dir(0.), nSlopes(0), station(0), sector(0),
          first(1), south(0), luv(0), lee(0), snow_redistribution(false), virtual_slopes(false),
-         cfg(i_cfg), sector_width(0)
+         sector_width(0)
 {
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
 	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
@@ -249,12 +248,8 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 	}
 }
 
-void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rh)
+void editMeteoData(mio::MeteoData& md, const string& variant)
 {
-	// To be able to run a little bit further in operational mode (a bad HACK ;-)
-	if ((mode == "OPERATIONAL") && (md(MeteoData::RH) == mio::IOUtils::nodata))
-		md(MeteoData::RH) = thresh_rh + Constants::eps;
-
 	// Since we cannot deal with precipitation nodata, we set it to zero (HACK)
 	if (md(MeteoData::HNW) == mio::IOUtils::nodata)
 		md(MeteoData::HNW) = 0.0;
@@ -879,8 +874,7 @@ void real_main (int argc, char *argv[])
 				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss2.str());
 			}
 			meteoRead_timer.stop();
-			const double thresh_rh = cfg.get("THRESH_RH", "SnowpackAdvanced");
-			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rh);
+			editMeteoData(vecMyMeteo[i_stn], variant);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());

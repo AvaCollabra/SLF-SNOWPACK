@@ -557,6 +557,9 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	const double& Tair = Mdata.ta;
 	const double& Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
 
+	assert(Tair>=t_crazy_min && Tair<=t_crazy_max);
+	assert(Tss>=t_crazy_min && Tss<=t_crazy_max);
+
 	Bdata.qs = MIN (350., MAX (-350., alpha * (Tair - Tss)));
 
 	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);

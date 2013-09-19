@@ -24,12 +24,12 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const SnowpackConfig& i_cfg) : imisdbio(i_cfg),
+SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(cfg),
 #else
-SnowpackIO::SnowpackIO(const SnowpackConfig& i_cfg) :
+SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 #endif
-              asciiio(i_cfg), smetio(i_cfg),
-              cfg(i_cfg), outputprofile_as_ascii(false), outputprofile_as_imis(false),
+              asciiio(cfg), smetio(cfg),
+              outputprofile_as_ascii(false), outputprofile_as_imis(false),
               output_snow_as_smet(false), input_snow_as_smet(false)
 {
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
