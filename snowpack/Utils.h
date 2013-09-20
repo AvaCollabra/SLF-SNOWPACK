@@ -75,7 +75,7 @@ void typeToCode(int *F1, int *F2, int *F3, int type);
 
 bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in);
 
-int findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const int& nN);
+size_t findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const size_t& nN);
 
 double forcedErosion(const double hs, SnowStation& Xdata);
 

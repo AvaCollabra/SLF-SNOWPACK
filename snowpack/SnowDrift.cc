@@ -136,7 +136,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	int nErode = 0;                           // number of eroded elements and erosion level
 	double real_flux = 0., virtual_flux = 0.; // mass flux, either real or virtual
 
-	unsigned int nE = Xdata.getNumberOfElements();
+	size_t nE = Xdata.getNumberOfElements();
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 

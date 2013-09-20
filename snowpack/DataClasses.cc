@@ -35,7 +35,7 @@ using namespace std;
 
 /// Number of top elements left untouched by the join functions
 const size_t SnowStation::number_top_elements = 5;
-size_t SnowStation::number_of_solutes = 0;
+unsigned short SnowStation::number_of_solutes = 0;
 
 /// Snow elements with a LWC above this threshold are considered at least to be moist
 const double SnowStation::thresh_moist_snow = 0.003;
@@ -322,7 +322,7 @@ void CanopyData::initializeSurfaceExchangeData()
 // Class ElementData
 ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
-                             theta((size_t)N_COMPONENTS), conc((unsigned int)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
+                             theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), rg_opt(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
@@ -571,8 +571,8 @@ void ElementData::snowType()
 	type = snowType(dd, sp, 2.*rg, mk%100, theta[WATER], res_wat_cont);
 }
 
-int ElementData::snowType(const double dendricity, const double sphericity,
-                          const double grain_size, const int marker, const double theta_w, const double res_wat_cont)
+unsigned short int ElementData::snowType(const double dendricity, const double sphericity,
+                          const double grain_size, const size_t marker, const double theta_w, const double res_wat_cont)
 {
 	int a=-1,b=-1,c=0;
 
@@ -698,18 +698,18 @@ int ElementData::snowType(const double dendricity, const double sphericity,
 		c = 2;
 	}
 	switch (marker) {
-	case 3: // SH   Surface Hoar
-		a = 6; b = 6; c = 0;
-		break;
-	case 4: // PPgp Graupel
-		a = 0; b = 0; c = 0;
-		break;
-	case 7: case 8: // Glacier ice & IFil, that is, ice layers within the snowpack
-		a = 8; b = 8; c = 0;
-		break;
+		case 3: // SH   Surface Hoar
+			a = 6; b = 6; c = 0;
+			break;
+		case 4: // PPgp Graupel
+			a = 0; b = 0; c = 0;
+			break;
+		case 7: case 8: // Glacier ice & IFil, that is, ice layers within the snowpack
+			a = 8; b = 8; c = 0;
+			break;
 	}
 
-	return (a*100 + b*10 + c);
+	return static_cast<unsigned short int>(a*100 + b*10 + c);
 }
 
 const std::string ElementData::toString() const
@@ -865,7 +865,7 @@ double SnowStation::getModelledTemperature(const double& z) const
 	if ((z == Constants::undefined) || !((getNumberOfNodes() > 1) && (z < cH))) {
 		return Constants::undefined;
 	} else {
-		const int n_up = findUpperNode(z, Ndata, getNumberOfNodes()); // Upper node number
+		const size_t n_up = findUpperNode(z, Ndata, getNumberOfNodes()); // Upper node number
 		const double z_low = (Ndata[n_up-1].z + Ndata[n_up-1].u); // Lower node around position z of sensor
 		const double z_up = (Ndata[n_up].z + Ndata[n_up].u); // Upper node around position z of sensor
 		const double T_low = Ndata[n_up-1].T;
@@ -880,7 +880,7 @@ double SnowStation::getModelledTemperature(const double& z) const
  * In case of augmenting the element number, the new elements are initialized to 0 (memset)
  * @param number_of_elements The new number of elements
  */
-void SnowStation::resize(const unsigned int& number_of_elements)
+void SnowStation::resize(const size_t& number_of_elements)
 {
 
 	try {
@@ -890,8 +890,8 @@ void SnowStation::resize(const unsigned int& number_of_elements)
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
 
-	nElems = (int)Edata.size();
-	nNodes = (int)Ndata.size();
+	nElems = Edata.size();
+	nNodes = Ndata.size();
 }
 
 size_t SnowStation::getNumberOfElements() const
@@ -936,7 +936,7 @@ bool SnowStation::hasSoilLayers() const
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
  */
-void SnowStation::combineElements(const unsigned int& i_number_top_elements)
+void SnowStation::combineElements(const size_t& i_number_top_elements)
 {
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
@@ -967,7 +967,7 @@ void SnowStation::combineElements(const unsigned int& i_number_top_elements)
  *     -# keep upper node of lowest element
  * @param rnE Reduced number of elements
  */
-void SnowStation::reduceNumberOfElements(const unsigned int& rnE)
+void SnowStation::reduceNumberOfElements(const size_t& rnE)
 {
 	size_t eNew = SoilNode; // New element index
 	double dL=0.;
@@ -1313,15 +1313,15 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
 
 	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
-		for (unsigned int kk = 0; kk < N_COMPONENTS; kk++) {
-			EdataLower.conc[kk][ii] = (L_upper*EdataUpper.conc(kk,ii) + L_lower*EdataLower.conc[kk][ii]) / LNew;
+		for (size_t kk = 0; kk < N_COMPONENTS; kk++) {
+			EdataLower.conc(kk,ii) = (L_upper*EdataUpper.conc(kk,ii) + L_lower*EdataLower.conc(kk,ii)) / LNew;
 		}
 	}
 	EdataLower.dth_w = (L_upper*EdataUpper.dth_w + L_lower*EdataLower.dth_w) / LNew;
 	EdataLower.Qmf = (EdataUpper.Qmf*L_upper + EdataLower.Qmf*L_lower)/LNew;	//Note: Qmf has units W/m^3, so it needs to be scaled with element lengths.
 	EdataLower.sw_abs += EdataUpper.sw_abs;
 	if ((EdataUpper.mk >= 100) && (EdataLower.mk < 100)) {
-		EdataLower.mk += (EdataUpper.mk/100)*100;
+		EdataLower.mk += static_cast<short unsigned int>( (EdataUpper.mk/100)*100 );
 	}
 }
 
@@ -1341,7 +1341,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		//if more than 2m of pure ice in the whole profile -> hydrologically, glacier melt
 		const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
-		for(unsigned int layer_index=0; layer_index<nElems; layer_index++) {
+		for(size_t layer_index=0; layer_index<nElems; layer_index++) {
 			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8))
 				sum_ice_depth += Edata[layer_index].L;
 		}
@@ -1355,13 +1355,14 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		const int soil_index = SoilNode-1;
 		const int end_index = (top_index_toCheck>soil_index)? top_index_toCheck : soil_index;
 
+		if(nElems==0 || top_index==soil_index) return false; //there are only soil layers or none
+
 		for(int layer_index=top_index; layer_index>end_index; layer_index--) {
 			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7) && (Edata[layer_index].mk % 10 != 8)) {
 				is_pure_ice=false;
 				break;
 			}
 		}
-		if(top_index==soil_index) is_pure_ice=false; //there are only soil layers or none
 
 		return is_pure_ice;
 	}
@@ -1693,7 +1694,7 @@ void Tag::reposition_tag(const bool&, const double& z, SnowStation& Xdata)
 	//INITIAL_HS = Xdata.cH; //HACK: why set this value here?
 	Xdata.Edata[elem].mk %= 100;
 
-	const int n_up = findUpperNode(z, Xdata.Ndata, Xdata.getNumberOfNodes()); // Upper node number
+	const size_t n_up = findUpperNode(z, Xdata.Ndata, Xdata.getNumberOfNodes()); // Upper node number
 
 	elem = n_up - 1;
 	compute_properties(Xdata.Edata.at(n_up-1));
@@ -1733,8 +1734,8 @@ void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 	}
 
 	for(size_t tag = 1; tag <= number_tags; tag++) { //HACK: check indices
-		const int e = Xdata.find_tag(tag);
-		if (e >= 0) {
+		const size_t e = Xdata.find_tag(tag);
+		if (e != IOUtils::npos) {
 			tags[tag-1].elem = e;
 			tags[tag-1].compute_properties(Xdata.Edata[e]);
 
@@ -1748,7 +1749,7 @@ void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
 		}
 
 		if ((tag >= repos_low) && (tag <= repos_top)) {
-			const int depth = Mdata.getNumberFixedPositions() + tag - 1;
+			const size_t depth = Mdata.getNumberFixedPositions() + tag - 1;
 
 			if ((Mdata.zv_ts[depth] > tags[tag-1].previous_depth)) {
 				tags[tag-1].reposition_tag(useSoilLayers, Mdata.zv_ts[depth], Xdata);

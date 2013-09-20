@@ -19,7 +19,7 @@ static bool gd_MemErr;
 /*
  * INTERFACE FUNCITONS TO ACCESS THE SOLVER
  */
-int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat)
+int ds_Initialize(size_t MatDim, int Multiplicity, MYTYPE **ppMat)
 {
 	MYTYPE  *pMat = NULL;
 
@@ -159,7 +159,8 @@ int ds_InitializeBoeing(int MatDim, int *pxConCon, double *pData, MYTYPE **ppMat
 int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pSize)
 {
 	SD_CON_MATRIX_DATA   *pMat;
-	int Row, Col, *pRowStart, *pColumn;
+	size_t Row, Col;
+	int *pRowStart, *pColumn;
 	SD_ROW_DATA *pRow;
 
 	pMat   = &pMat0->Mat.Con;
@@ -172,7 +173,7 @@ int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pS
 
 	for (Row = 0, pRow = pMat->pRow, pRowStart = *ppxConCon, pColumn = *ppxConCon + *pMatDim + 1,
 		*pRowStart = *pMatDim + 1; Row<pMat->nRow; Row++, pRow++, pRowStart++){
-		int nCol;
+		size_t nCol;
 		SD_COL_DATA *pCol;
 		nCol = 0;
 		pCol = pRow->Col;
@@ -1363,7 +1364,7 @@ int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 {
 	SD_TMP_ROW_BLOCK_DATA *pRowBlock;
 	SD_ROW_DATA           *pRow;
-	int          PermRow, *pPerm, *pPermInv, *pSupernode;
+	int                   *pPerm, *pPermInv, *pSupernode;
 
 	if ( sizeof(SD_ROW_BLOCK_DATA)     != sizeof(SD_TMP_ROW_BLOCK_DATA ) ||
 		sizeof(SD_TMP_ROW_BLOCK_DATA) >  sizeof(SD_ROW_BLOCK_DATA)         ) {
@@ -1387,9 +1388,8 @@ int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 	* Set the temporary adjacency block data. For each row block process each single column
 	* coefficients and the diagonal one.
 	*/
-	for (PermRow = 0; PermRow < pMat->nRow; PermRow++) {
-		int Supernode, Row, PermCol, Found;
-		SD_COL_DATA       *pCol;
+	for (size_t PermRow = 0; PermRow < pMat->nRow; PermRow++) {
+		int Supernode, Row, Found;
 		SD_COL_BLOCK_DATA **ppColBlock, *pColBlock, *pFreeColBlock, *pStartColBlock;
 
 		Row                  = pPermInv  [PermRow];
@@ -1417,8 +1417,8 @@ int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 		* pointer of the list of clumn block because if a block is not found this will never be
 		* the first one.
 		*/
-		for ( pCol = pRow[Row].Col; pCol; pCol = pCol->Next ) {
-			PermCol = pPerm[ SD_COL(pCol) ];
+		for ( SD_COL_DATA *pCol = pRow[Row].Col; pCol; pCol = pCol->Next ) {
+			const size_t PermCol = pPerm[ SD_COL(pCol) ];
 			if ( PermRow > PermCol ) {
 				continue;
 			}
@@ -1666,7 +1666,7 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
  * @param pMat SD_CON_MATRIX_DATA
  * @return int
 */
-int AllocateConData( int Dim, SD_CON_MATRIX_DATA *pMat )
+int AllocateConData( size_t Dim, SD_CON_MATRIX_DATA *pMat )
 {
 	pMat->nRow = Dim;
 	GD_MALLOC( pMat->pRow, SD_ROW_DATA, pMat->nRow, "Row Allocation");
@@ -1722,7 +1722,8 @@ int ReleaseBlockMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 */
 int ds_DefineConnectivity(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int nEl, int Dim )
 {
-	int e, i, j, Row_i;
+	int e, i, j;
+	size_t Row_i;
 	SD_ROW_DATA        *pRow_i;
 	SD_CON_MATRIX_DATA *pMat;
 
@@ -1734,7 +1735,7 @@ int ds_DefineConnectivity(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int nEl, int
 			pRow_i = &SD_ROW(Row_i, pMat);
 
 			for (j = 0; j < nEq; j++) {
-				int Col_j, Found;
+				size_t Col_j, Found;
 				SD_COL_DATA **ppC, *pCol;
 				Col_j  = Eq[j];
 				if ( Row_i == Col_j ) {

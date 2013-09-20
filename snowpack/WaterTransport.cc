@@ -746,7 +746,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double Rh0,Rh1,Rk0,Rk1;
 	double q0, qlim, qlim0, qlim1;
 	double P[15]={0.};
-	int WatCalc=1;					//Number of iterations in WaterTransport model "NIED".
+	unsigned int WatCalc=1;					//Number of iterations in WaterTransport model "NIED".
 
 	// First, consider no soil with no snow on the ground
 	if (!useSoilLayers && nN == 1) {
@@ -837,9 +837,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	}
 
 	// Determine the number of iterations for the water transport
-	size_t niterations;
+	unsigned int niterations;
 	if(iwatertransportmodel_snow==NIED || iwatertransportmodel_soil==NIED) {
-		niterations=int(double(sn_dt/double(60.)));	// Hirashima (2010) proposes maximum time step of 60s.
+		niterations=static_cast<unsigned int>(double(sn_dt/double(60.)));	// Hirashima (2010) proposes maximum time step of 60s.
 	} else {
 		niterations=1;
 	}
@@ -848,7 +848,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double excess_water=0.;
 	double Wres;          // Residual water content depending on snow or soil element
 
-	for(size_t niter=1; niter<=niterations; niter++) {
+	for(unsigned int niter=1; niter<=niterations; niter++) {
 		// Preferential flow system: excess water that cannot be retained in lower element is stored in
 		//   excess_water and moved down the domain; NOTE units: [m^3/m^2]
 		excess_water=0.;

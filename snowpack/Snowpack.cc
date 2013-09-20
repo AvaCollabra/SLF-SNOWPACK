@@ -1177,7 +1177,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 }
 
 void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
-                                  const bool& is_surface_hoar, const unsigned int& number_of_solutes, ElementData &elem)
+                                  const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem)
 {
 	//basic parameters
 	elem.depositionDate = Mdata.date;
@@ -1193,7 +1193,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	elem.theta[ICE]   = elem.Rho/Constants::density_ice;
 	elem.theta[WATER] = 0.0;
 	elem.theta[AIR]   = 1. - elem.theta[ICE];
-	for (unsigned int ii = 0; ii < number_of_solutes; ii++) {
+	for (unsigned short ii = 0; ii < number_of_solutes; ii++) {
 		elem.conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
 		elem.conc[WATER][ii] = Mdata.conc[ii];
 		elem.conc[AIR][ii]   = 0.0;
@@ -1487,7 +1487,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			// Fill the nodal data
 			if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode)) // New snow on bare ground w/o soil
 				NDS[nOldN-1].T = 0.5*(t_surf + Mdata.ta);
-			const double Ln = (hn / nAddE);               // New snow element length
+			const double Ln = (hn / (double)nAddE);               // New snow element length
 			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
 			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
 				NDS[n].T = t_surf;                  // Temperature of the new node

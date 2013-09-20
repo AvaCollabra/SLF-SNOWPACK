@@ -273,7 +273,7 @@ typedef struct
 {
 	int                Row0;
 	int                Row1;
-	int                nCol;
+	size_t             nCol;
 	int                nColBlock;
 	int                iColBlock;
 	int                iFloat;
@@ -282,7 +282,7 @@ typedef struct
 
 typedef struct
 {
-	int                 Dim;
+	size_t              Dim;
 	int                *pPerm;
 	int                 nRowBlock;
 	SD_ROW_BLOCK_DATA  *pRowBlock;
@@ -328,7 +328,7 @@ typedef struct
 
 typedef struct SD_COL_DATA
 {
-	int                  Col;
+	size_t               Col;
 
 	#ifdef SPARSE_BINARY_TREE
 	struct SD_COL_DATA  *Right, *Left;
@@ -346,7 +346,7 @@ typedef struct SD_ROW_DATA
 
 typedef struct
 {
-	int                    nRow;
+	size_t                 nRow;
 	int                   *pPerm;
 	int                   *pPermInv;
 	int                    nSupernode;
@@ -356,7 +356,7 @@ typedef struct
 	SD_CHUNK_DATA          PoolCol;
 	SD_COL_DATA           *FreeCol;
 	int                    nFreeCol;
-	int                    nCol;
+	size_t                 nCol;
 
 }  SD_CON_MATRIX_DATA;
 
@@ -377,7 +377,7 @@ typedef struct
 
 typedef struct SD_COL_BLOCK_DATA
 {
-	int Col0, Col1;
+	size_t Col0, Col1;
 	struct SD_COL_BLOCK_DATA  *Next;
 
 } SD_COL_BLOCK_DATA;
@@ -400,7 +400,7 @@ typedef union
 
 typedef struct
 {
-	int                    nRow;
+	size_t                 nRow;
 	int                   *pPerm;
 
 	int                    nRowBlock;
@@ -584,8 +584,8 @@ typedef struct  {
 {                                                                                              \
    FOUND      = 0;                                                                             \
    SD_COL_BLOCK_DATA *pB_ = (pFIRST_BLK);                                                      \
-   int Col0_  = COL+1;                                                                         \
-   int Col1_  = COL-1;                                                                         \
+   size_t Col0_  = COL+1;                                                                      \
+   size_t Col1_  = COL-1;                                                                      \
    while ( pB_ )                                                                               \
    {  if      ( Col1_ >  pB_->Col1  ) { ppBLK = &pB_->Next; pB_ = pB_->Next; }                 \
       else if ( Col0_ >= pB_->Col0  )                                                          \
@@ -815,7 +815,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
  * @param Multiplicity Multiplicity factor with value >= 1
  * @param ppMat A pointer to an opaque data type storing data related to the matrix [A]
  */
-int ds_Initialize(int MatDim, int Multiplicity, MYTYPE **ppMat);
+int ds_Initialize(size_t MatDim, int Multiplicity, MYTYPE **ppMat);
 
 /**
  * @brief This function is needed for defining the system (matrix) connectivity i.e. the non-zero
@@ -1060,7 +1060,7 @@ int ComputeBlockMatrix
      int Mult */
   );
 int AllocateConData
-  (  int Dim ,
+  (  size_t Dim ,
      SD_CON_MATRIX_DATA * pMat
   );
 int ReleaseConMatrix

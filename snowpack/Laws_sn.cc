@@ -571,12 +571,13 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
  * @param i_e Element index to start from
  * @return Enhancement factor
  */
-double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const int& i_e)
+double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const size_t& i_e)
 {
-	int e = i_e;
+	const size_t max_depth = (i_e>7)? i_e-7 : 0;
+	size_t e = i_e;
 	double vapor_enhance = 1.;
 
-	while ((e >= MAX(signed(Xdata.SoilNode), i_e-7)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
+	while ((e >= MAX(Xdata.SoilNode, max_depth)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
 		//TODO: check limit on theta_water and second condition (to be checked on e only??)
 		if ((Xdata.Edata[e].theta[WATER] > SnowStation::thresh_moist_snow) && (Xdata.Edata[i_e].theta[ICE] < 0.7))
 			vapor_enhance = SnLaws::montana_vapor_fudge;
@@ -584,7 +585,7 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
 	}
 
 	if (vapor_enhance > 1.0)
-		vapor_enhance *= ((8. - (i_e - e)) / 7.);
+		vapor_enhance *= ((8. - static_cast<double>(i_e - e)) / 7.);
 
 	return (vapor_enhance);
 }

@@ -195,7 +195,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		SSdata.Ldata[ll].rb = vec_data[current_index++];
 		SSdata.Ldata[ll].dd = vec_data[current_index++];
 		SSdata.Ldata[ll].sp = vec_data[current_index++];
-		SSdata.Ldata[ll].mk = static_cast<unsigned int>(vec_data[current_index++]+.5); //int
+		SSdata.Ldata[ll].mk = static_cast<unsigned short int>(vec_data[current_index++]+.5); //int
 		SSdata.Ldata[ll].hr = vec_data[current_index++];
 		SSdata.Ldata[ll].ne = static_cast<unsigned int>(vec_data[current_index++]+.5); //int
 
@@ -218,7 +218,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 
 	SSdata.nN = 1;
 	SSdata.Height = 0.;
-	for (unsigned int ll = 0; ll < SSdata.nLayers; ll++) {
+	for (size_t ll = 0; ll < SSdata.nLayers; ll++) {
 		SSdata.nN    += SSdata.Ldata[ll].ne;
 		SSdata.Height += SSdata.Ldata[ll].hl;
 	}

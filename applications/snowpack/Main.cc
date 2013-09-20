@@ -744,7 +744,7 @@ void real_main (int argc, char *argv[])
 
 	int nSolutes = Constants::iundefined;
 	cfg.getValue("NUMBER_OF_SOLUTES", "Input", nSolutes, mio::IOUtils::nothrow);
-	if (nSolutes > 0) SnowStation::number_of_solutes = unsigned(nSolutes);
+	if (nSolutes > 0) SnowStation::number_of_solutes = static_cast<short unsigned int>(nSolutes);
 
 	//Interval between profile backups (*.sno\<JulianDate\>) (d)
 	double backup_days_between = 400.;

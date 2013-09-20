@@ -186,7 +186,7 @@ class LayerData {
 		double sp;                  ///< Micro-structure : Sphericity
 		double dd;                  ///< Micro-structure : Dendricity
 		double rb;                  ///< Micro-structure : Bond Radius in mm
-		size_t mk;                  ///< Micro-structure : Marker
+		unsigned short int mk;      ///< Micro-structure : Marker
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
@@ -253,7 +253,7 @@ class ElementData {
 		double neck2VolumetricStrain();
 
 		void snowType();
-		static int snowType(const double dendricity, const double sphericity, const double grain_dia, const int marker,
+		static unsigned short int snowType(const double dendricity, const double sphericity, const double grain_dia, const size_t marker,
                         const double theta_w, const double res_wat_cont);
 
 		const std::string toString() const;
@@ -283,7 +283,7 @@ class ElementData {
 		double rb;                 ///< grain bond radius (mm)
 		double N3;                 ///< grain Coordination number (1)
 		size_t mk;                 ///< grain marker (history dependent)
-		size_t type;               ///< grain class
+		unsigned short int type;   ///< grain class
 		double metamo;             ///< keep track of metamorphism
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double res_wat_cont;       ///< Residual water content
@@ -415,10 +415,10 @@ class SnowStation {
 		SnowStation& operator=(const SnowStation&); ///<Assignement operator
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
-		void resize(const unsigned int& number_of_elements);
+		void resize(const size_t& number_of_elements);
 
-		void reduceNumberOfElements(const unsigned int& rnE);
-		void combineElements(const unsigned int& number_top_elements);
+		void reduceNumberOfElements(const size_t& rnE);
+		void combineElements(const size_t& number_top_elements);
 		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
 
@@ -472,7 +472,7 @@ class SnowStation {
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;
 		static const double thresh_moist_snow, thresh_moist_soil;
 		static const size_t number_top_elements;
-		static size_t number_of_solutes;  ///< The model treats that number of solutes
+		static unsigned short number_of_solutes;  ///< The model treats that number of solutes
 
 		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
 
@@ -607,7 +607,7 @@ class SnowProfileLayer {
 		double bond_size;    ///< 0 to 100       (mm)
 		double coordin_num;  ///< 0 to 10        (-)
 		size_t marker;       ///< 0 to 100       (-)
-		size_t type;         ///< 0 to 100       (-)
+		short unsigned int type; ///< 0 to 100       (-)
 		double hard;         ///< 0. to 5.       (-)
 };
 
@@ -744,7 +744,7 @@ class Tag {
 		//double JulianDate;             ///< Julian date at which to start tagging
 
 		// Repositioning
-		int elem;                      ///< Index of tagged element
+		size_t elem;                      ///< Index of tagged element
 		double previous_depth;         ///< Last position of corresponding fixed rate sensor perpendicular to slope (m)
 		// Viscosity
 		double etaNS;                  ///< New snow viscosity according to M. Lehning

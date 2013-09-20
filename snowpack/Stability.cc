@@ -975,7 +975,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 		minH = MIN (minH, EMS[e].hard);
 		mH += EMS[e].hard;
 	}
-	mH /= nE; //mean hardness of profile
+	mH /= (double)nE; //mean hardness of profile
 	const double thH = MIN (0.5*mH, 1.); //threshold for critical transitions
 
 	// Now make the classification for all critical transitions and keep track ....
@@ -1004,7 +1004,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 				for (size_t ii = e_weak; ii < nE; ii++) {
 					mH_u += EMS[e].hard;
 				}
-				mH_u /= (nE - e_weak);
+				mH_u /= (double)(nE - e_weak);
 				if ( mH > 2. ) {
 					if ( delta_H < 0. ) {
 						// Proposal Fz; (see original in version 7.4

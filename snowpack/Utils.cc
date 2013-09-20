@@ -222,9 +222,9 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
  * @param nN Number of nodes
  * @return Upper node number
  */
-int findUpperNode(const double& z, const vector<NodeData>& Ndata, const int& nN)
+size_t findUpperNode(const double& z, const vector<NodeData>& Ndata, const size_t& nN)
 {
-	int n_up = nN-2;
+	size_t n_up = nN-2;
 	double z_low = Ndata[n_up].z + Ndata[n_up].u;
 	while ( z < z_low &&  n_up > 0 ) {
 		n_up--;
