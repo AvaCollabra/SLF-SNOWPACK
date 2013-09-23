@@ -323,7 +323,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading SoilRho etc: read %d of 3 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
-		if ((nFields = fscanf(fin, "%lf %lf %lf %lf %u %lf %u", &SSdata.Ldata[ll].rg, &SSdata.Ldata[ll].rb,
+		if ((nFields = fscanf(fin, "%lf %lf %lf %lf %hu %lf %u", &SSdata.Ldata[ll].rg, &SSdata.Ldata[ll].rb,
 		                      &SSdata.Ldata[ll].dd, &SSdata.Ldata[ll].sp, &SSdata.Ldata[ll].mk,
 		                      &SSdata.Ldata[ll].hr, &SSdata.Ldata[ll].ne)) != 7) {
             fclose(fin);

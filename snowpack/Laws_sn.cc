@@ -405,32 +405,36 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 }
 
 /**
- * @brief Michi's Advective Heat Flux Implementation \n
+ * @brief Michi's Advective Heat Flux Implementation
  * @version 0.1
- * @param Xdata
- * @param I0 net shortwave radiation (W m-2)
- * @param multistream
+ * @param Xdata The advective heat flux will be added to Xdata.sw_abs
+ * @param advective_heat heat flux (positive or negative) to add (W/m^2)
+ * @param depth_begin depth where to begin injecting the heat flux (in m from the surface)
+ * @param depth_end depth where to stop injecting the heat flux (in m from the surface)
  */
-void SnLaws::compAdvectiveHeat(SnowStation& Xdata, 
-                               const double& advective_heat, const double& heat_begin, const double& heat_end)
+void SnLaws::compAdvectiveHeat(SnowStation& Xdata,
+                               const double& advective_heat, const double& depth_begin, const double& depth_end)
 {
 
 	ElementData *EMS = &Xdata.Edata[0];
 	NodeData   *NDS = &Xdata.Ndata[0];
 
-	size_t top_element=0;
-	if (Xdata.SoilNode > 0)
-		top_element = Xdata.SoilNode - 1;
+	const size_t top_element = (Xdata.SoilNode > 0)? Xdata.SoilNode - 1 : 0;
+	const double z1 = NDS[top_element].z - depth_end;
+	const double z2 = NDS[top_element].z - depth_begin;
+	const double z_end = (z1<z2)? z1 : z2; //min value
+	const double z_begin = (z1>z2)? z1 : z2; //max value
 
-    // Add advective heating to shortwave 
+	// Add advective energy flux to shortwave energy flux
 	for (size_t e = 0; e < top_element; e++) {
-	    if (NDS[e].z > NDS[top_element].z-heat_end && NDS[e+1].z < NDS[top_element].z-heat_begin)
-		    {EMS[e].sw_abs += advective_heat*EMS[e].L; /*printf("Advective Heat: %f", advective_heat*EMS[e].L);*/}
-		    } 
+		if ( (NDS[e+1].z < z_begin) && (NDS[e].z > z_end) ) {
+		    EMS[e].sw_abs += advective_heat*EMS[e].L;
+		}
+	}
 }
 
 /**
- * @brief Helens Solution to Radiation Transfer \n
+ * @brief Helens Solution to Radiation Transfer
  * NOTE on fudge_bohren (fb): Larger values increase extinction --> Energy stays on top;
  * originally not band dependent, set to 10.0 for Neumann and to 5.0 for Dirichlet BC
  * @version 12.04
