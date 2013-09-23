@@ -405,6 +405,31 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
 }
 
 /**
+ * @brief Michi's Advective Heat Flux Implementation \n
+ * @version 0.1
+ * @param Xdata
+ * @param I0 net shortwave radiation (W m-2)
+ * @param multistream
+ */
+void SnLaws::compAdvectiveHeat(SnowStation& Xdata, 
+                               const double& advective_heat, const double& heat_begin, const double& heat_end)
+{
+
+	ElementData *EMS = &Xdata.Edata[0];
+	NodeData   *NDS = &Xdata.Ndata[0];
+
+	size_t top_element=0;
+	if (Xdata.SoilNode > 0)
+		top_element = Xdata.SoilNode - 1;
+
+    // Add advective heating to shortwave 
+	for (size_t e = 0; e < top_element; e++) {
+	    if (NDS[e].z > NDS[top_element].z-heat_end && NDS[e+1].z < NDS[top_element].z-heat_begin)
+		    {EMS[e].sw_abs += advective_heat*EMS[e].L; /*printf("Advective Heat: %f", advective_heat*EMS[e].L);*/}
+		    } 
+}
+
+/**
  * @brief Helens Solution to Radiation Transfer \n
  * NOTE on fudge_bohren (fb): Larger values increase extinction --> Energy stays on top;
  * originally not band dependent, set to 10.0 for Neumann and to 5.0 for Dirichlet BC

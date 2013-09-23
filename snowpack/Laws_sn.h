@@ -94,6 +94,8 @@ class SnLaws {
 		static double parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
 		                                      const double& Tss, const CurrentMeteo& Mdata);
 		static void compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream);
+		static void compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat, 
+		                                                  const double& heat_begin, const double& heat_end);
 
 		static double compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,
@@ -148,6 +150,8 @@ class SnLaws {
 		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil;
 		static const double montana_c_fudge, montana_vapor_fudge, montana_v_water_fudge;
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
+		static const double advective_heat;
+		static const double heat_begin_depth, heat_end_depth;
 };
 
 #endif

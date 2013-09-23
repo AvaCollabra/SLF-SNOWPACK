@@ -61,7 +61,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), multistream(false), combine_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false)
+            enhanced_wind_slab(false), alpine3d(false), advective_heat(0.), heat_begin(0.), heat_end(0.)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -217,8 +217,14 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	//Watertransport models
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
+	
+	/** @brief Allow for the effect of a known advective heat flux
+    */
+    cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat);
+    cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin);
+    cfg.getValue("HEAT_END", "SnowpackAdvanced", heat_end);
 }
-
+	
 /**
  * @brief Return rain/snow temperature threshold that Snowpack uses
  * @return rain/snow threshold temperature (K)
@@ -789,6 +795,15 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// Simple treatment of radiation absorption in snow: Beer-Lambert extinction (single or multiband).
 	try {
 		SnLaws::compShortWaveAbsorption(Xdata, I0, multistream);
+	} catch(const exception&){
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
+		throw;
+	}
+
+	// TREAT AN ASSUMED ADVECTIVE HEAT SOURCE
+	// Simple treatment of constant heating rate between two depths.
+	try {
+		SnLaws::compAdvectiveHeat(Xdata, advective_heat, heat_begin, heat_end);
 	} catch(const exception&){
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
 		throw;
