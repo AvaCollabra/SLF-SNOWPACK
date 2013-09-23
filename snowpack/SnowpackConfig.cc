@@ -79,6 +79,9 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
+	advancedConfig["ADVECTIVE_HEAT"] = "0.0";
+	advancedConfig["HEAT_BEGIN"] = "0.0";
+	advancedConfig["HEAT_END"] = "0.0";
 
 	//[Input] section
 	inputConfig["METEOPATH"] = "./input";
