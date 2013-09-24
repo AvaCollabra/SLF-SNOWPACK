@@ -1202,7 +1202,7 @@ int main(int argc, char *argv[]) {
 	try {
 		real_main(argc, argv);
 	} catch (const std::exception &e) {
-		std::cerr << e.what();
+		std::cerr << e.what() << endl;
 		exit(1);
 	}
 
