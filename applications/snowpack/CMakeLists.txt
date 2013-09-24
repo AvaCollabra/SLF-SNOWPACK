@@ -25,6 +25,11 @@ INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
 LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
 LIST(APPEND SN_LINKS ${METEOIO_LIBRARIES})
 
+IF(APPLE)
+	#this is necessary for GUI exceptions
+	LIST(APPEND SN_LINKS "-framework CoreServices")
+ENDIF(APPLE)
+
 #special features # currently set in the main CMakeLists.txt
 #SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
 

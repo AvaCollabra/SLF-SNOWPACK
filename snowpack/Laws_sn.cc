@@ -408,7 +408,7 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
  * @brief Michi's Advective Heat Flux Implementation
  * @version 0.1
  * @param Xdata The advective heat flux will be added to Xdata.sw_abs
- * @param advective_heat heat flux (positive or negative) to add (W/m^2)
+ * @param advective_heat heat flux (positive or negative) to add (W/m^3)
  * @param depth_begin depth where to begin injecting the heat flux (in m from the surface)
  * @param depth_end depth where to stop injecting the heat flux (in m from the surface)
  */
@@ -603,14 +603,16 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const size_t& i_e)
 {
 	const size_t max_depth = (i_e>7)? i_e-7 : 0;
-	size_t e = i_e;
 	double vapor_enhance = 1.;
 
-	while ((e >= MAX(Xdata.SoilNode, max_depth)) && (vapor_enhance < SnLaws::montana_vapor_fudge) ) {
+	const size_t e_stop = MAX(Xdata.SoilNode, max_depth);
+	size_t e;
+	for(e = i_e; e --> e_stop; ) { //decrements from i_e down to e_stop (included) even if e_stop==0
 		//TODO: check limit on theta_water and second condition (to be checked on e only??)
-		if ((Xdata.Edata[e].theta[WATER] > SnowStation::thresh_moist_snow) && (Xdata.Edata[i_e].theta[ICE] < 0.7))
+		if ((Xdata.Edata[e].theta[WATER] > SnowStation::thresh_moist_snow) && (Xdata.Edata[i_e].theta[ICE] < 0.7)) {
 			vapor_enhance = SnLaws::montana_vapor_fudge;
-		e--;
+			break;
+		}
 	}
 
 	if (vapor_enhance > 1.0)
@@ -620,7 +622,7 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
 }
 
 /**
- * @brief Heat conduction in snow \n
+ * @brief Heat conduction in snow
  * Actual version: k = C1*[C2 + C3 + C4 + C5] \n
  * Adams/Sato model. The following piece of code was programmed by Perry on a warm
  * June afternoon in Birmensdorf.  H.U. Gubler was viciously attacking Ammann, saying nasty
@@ -630,10 +632,11 @@ double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, cons
  * Mallorca -- to watch sexy TOPLESS bikini-slip clad GERMAN secretaries on the BEACH.
  * As usual, if this code does not work it is his FAULT ....  (Hey, Bob, when are we going to
  * meet ED ADAMS?  And remember PLEDGE 7 of Metamorphism.c.  The theory behind this piece of
- * code can be found in Bob's ROUGH DRAFT on MICROSTRUCTURE. \n
+ * code can be found in Bob's ROUGH DRAFT on MICROSTRUCTURE.
+ *
  * Much much later, Michael re-programmed this code and introduced the effect of liquid water.
  * He extended the Adams/Sato model and hoped that he would not loose contact with Keegan, even
- * he was not going to fulfill the explicit wishes of his Grandma. \n
+ * he was not going to fulfill the explicit wishes of his Grandma.
  * The model was now being used from Finland to the US. We will also conquer the southern hemis-
  * sphere.
  * @version 8.10 (??)
