@@ -24,11 +24,11 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(cfg),
+SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(NULL),
 #else
 SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 #endif
-              asciiio(cfg), smetio(cfg),
+              asciiio(NULL), smetio(NULL),
               outputprofile_as_ascii(false), outputprofile_as_imis(false),
               output_snow_as_smet(false), input_snow_as_smet(false)
 {
@@ -41,7 +41,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 	} else if (vecProfileOutput.size() > 2) {
 		throw InvalidArgumentException("The key PROFILE in section OUTPUT can have two values at most", AT);
 	} else {
-		for (unsigned int ii=0; ii<vecProfileOutput.size(); ii++){
+		for (size_t ii=0; ii<vecProfileOutput.size(); ii++){
 			if (vecProfileOutput[ii] == "ASCII"){
 				outputprofile_as_ascii = true;
 			} else if (vecProfileOutput[ii] == "IMIS") {
@@ -62,14 +62,39 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	}
+
+	//set the "plugins" pointers
+	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg);
+	if(outputprofile_as_ascii) asciiio = new AsciiIO(cfg);
+#ifdef IMISDBIO
+	if(outputprofile_as_imis) imisdbio = new ImisDBIO(cfg);
+#endif
+}
+
+SnowpackIO::SnowpackIO(const SnowpackIO& source) :
+#ifdef IMISDBIO
+          imisdbio(source.imisdbio),
+#endif
+          asciiio(source.asciiio), smetio(source.smetio),
+          outputprofile_as_ascii(source.outputprofile_as_ascii), outputprofile_as_imis(source.outputprofile_as_imis),
+          output_snow_as_smet(source.output_snow_as_smet), input_snow_as_smet(source.input_snow_as_smet)
+{}
+
+SnowpackIO::~SnowpackIO()
+{
+	if(smetio != NULL) delete smetio;
+	if(asciiio != NULL) delete asciiio;
+#ifdef IMISDBIO
+	if(imisdbio != NULL) delete imisdbio;
+#endif
 }
 
 bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const
 {
 	if (input_snow_as_smet){
-		return smetio.snowCoverExists(i_snowfile, stationID);
+		return smetio->snowCoverExists(i_snowfile, stationID);
 	} else {
-		return asciiio.snowCoverExists(i_snowfile, stationID);
+		return asciiio->snowCoverExists(i_snowfile, stationID);
 	}
 }
 
@@ -77,9 +102,9 @@ void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string&
                                SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
 	if (input_snow_as_smet){
-		smetio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+		smetio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
 	} else {
-		asciiio.readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+		asciiio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
 	}
 }
 
@@ -87,39 +112,35 @@ void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                                 const ZwischenData& Zdata, const bool& forbackup)
 {
 	if (output_snow_as_smet){
-		smetio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+		smetio->writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
 	} else {
-		asciiio.writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+		asciiio->writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
 	}
 }
 
 void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                  const ProcessDat& Hdata, const double wind_trans24)
 {
-	asciiio.writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
+	asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 
 void SnowpackIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
 {
 	if (outputprofile_as_ascii)
-		asciiio.writeProfile(date, Xdata, Hdata);
+		asciiio->writeProfile(date, Xdata, Hdata);
 
-	if (outputprofile_as_imis){
 #ifdef IMISDBIO
-		imisdbio.writeProfile(date, Xdata, Hdata);
-#endif
+	if (outputprofile_as_imis){
+		imisdbio->writeProfile(date, Xdata, Hdata);
 	}
+#endif
 }
 
 #ifdef IMISDBIO
 bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
-	if (imisdbio.writeHazardData(stationID, Hdata, Hdata_ind, num)){
-		return true;
-	} else {
-		return false;
-	}
+	return (imisdbio->writeHazardData(stationID, Hdata, Hdata_ind, num));
 }
 #else
 bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
@@ -128,3 +149,19 @@ bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::ve
 	return false;
 }
 #endif
+
+SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
+{
+	if(this != &source) {
+#ifdef IMISDBIO
+		imisdbio = source.imisdbio;
+#endif
+		asciiio = source.asciiio;
+		smetio = source.smetio;
+		outputprofile_as_ascii = source.outputprofile_as_ascii;
+		outputprofile_as_imis = source.outputprofile_as_imis;
+		output_snow_as_smet = source.output_snow_as_smet;
+		input_snow_as_smet = source.input_snow_as_smet;
+	}
+	return *this;
+}

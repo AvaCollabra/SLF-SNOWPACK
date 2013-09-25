@@ -35,6 +35,8 @@ class SnowpackIO : public SnowpackIOInterface {
 
 	public:
 		SnowpackIO(const SnowpackConfig& cfg);
+		SnowpackIO(const SnowpackIO& source);
+		~SnowpackIO();
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -51,12 +53,15 @@ class SnowpackIO : public SnowpackIOInterface {
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num);
+
+		SnowpackIO& operator=(const SnowpackIO& source);
+
 	private:
 #ifdef IMISDBIO
-		ImisDBIO imisdbio;
+		ImisDBIO *imisdbio;
 #endif
-		AsciiIO asciiio;
-		SmetIO smetio;
+		AsciiIO *asciiio;
+		SmetIO *smetio;
 		bool outputprofile_as_ascii, outputprofile_as_imis;
 		bool output_snow_as_smet, input_snow_as_smet;
 };
