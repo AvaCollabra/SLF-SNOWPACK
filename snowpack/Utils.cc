@@ -234,11 +234,14 @@ size_t findUpperNode(const double& z, const vector<NodeData>& Ndata, const size_
 }
 
 /**
- * @brief Returns sensor position perpendicular to slope (m) \n
- * Negative vertical height indicates depth from either snow or ground surface \n
+ * @brief Returns sensor position perpendicular to slope (m).
+ * Negative vertical height indicates depth from either snow or ground surface (depending on useSoilLayers).
+ * For example, a sensor at -0.1 when useSoilLayers=false means a snow temperature at 10cm below the surface;
+ * a sensor at -0.2 when useSoilLayers=true means a soil temperature 20cm deep in the ground.
  * NOTE: Depth from snow surface cannot be used with SNP_SOIL set
  * @author Charles Fierz
  * @version 10.02
+ * @param useSoilLayers Are soil layers defined?
  * @param z_vert Vertical position of the sensor (m)
  * @param hs_ref Height of snow to refer to (m)
  * @param Ground Ground level (m)
