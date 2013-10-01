@@ -101,17 +101,14 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle,
                               std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
 {
-	Hdata.resize((unsigned)nHz);
-	Hdata_ind.resize((unsigned)nHz);
-
-	memset(&Hdata[0], 0, sizeof(ProcessDat)*nHz);
-	memset(&Hdata_ind[0], 0, sizeof(ProcessInd)*nHz);
+	Hdata.resize((unsigned)nHz, ProcessDat());
+	Hdata_ind.resize((unsigned)nHz, ProcessInd());
 
 	Hdata[0].nHz = (signed)nHz;
 	Hdata[nHz-1].nHz = (signed)nHz;
 
 	versionUserRuntime(i_time_zone, Hdata[0].sn_version, Hdata[0].sn_computation_date,
-                     &Hdata[0].sn_jul_computation_date, Hdata[0].sn_compilation_date, Hdata[0].sn_user);
+	                   &Hdata[0].sn_jul_computation_date, Hdata[0].sn_compilation_date, Hdata[0].sn_user);
 
 	Hdata[0].wind_trans = driftIndex(old_drift, 0., Hazard::wind_slab_density, 6, slope_angle, -1);
 	Hdata[0].wind_trans24 = driftIndex(old_drift, 0., Hazard::wind_slab_density, 24, slope_angle, -1);
@@ -133,8 +130,8 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
  * @param slope_angle (deg)
  * @param shift shift components of vecDrift
  */
-double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const double rho, const int nHours,
-                          double slope_angle, const int shift)
+double Hazard::driftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho, const unsigned int& nHours,
+                          const double& slope_angle, const int& shift)
 {
 	switch (shift) {
 		case 1: // Shift drift data
@@ -147,9 +144,9 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 			break;
 	}
 
-	int nValues=0;
+	unsigned int nValues=0;
 	double sumindex = 0.;
-	for (int i = 0; i < 2*nHours; i++ ) {
+	for (unsigned int i = 0; i < 2*nHours; i++ ) {
 		if (vecDrift[i] == Constants::undefined){
 			continue;
 		} else {
@@ -157,7 +154,7 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 			nValues++;
 		}
 	}
-	if (nValues <= int(floor(Constants::min_percent_values * 2. * nHours))) {
+	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2. * nHours))) {
 		return Constants::undefined;
 	} else {
 		const double flux = H_TO_S( MAX(0.,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
@@ -169,7 +166,7 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, double drift, const dou
 }
 
 void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           std::vector<double>& old_drift, double& drift, double slope_angle)
+                           std::vector<double>& old_drift, const double& drift, const double slope_angle)
 {
 	Hdata_ind.wind_trans = 0;
 	Hdata_ind.wind_trans24 = 0;
@@ -188,14 +185,16 @@ void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
  * @param RH  Relative air humidity (over water) in (percents or 1? TODO)
  */
 double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
-{
+{ //HACK: use Atmosphere::RhtoDewPoint instead
 	const double b=9.5, c=265.5;
 
 	TA = K_TO_C(TA);
 	TSS = K_TO_C(TSS);
+	const double log10RH = log10(RH);
+	const double Tdew = c * (log10RH + b*TA/(c+TA)) / (b - log10RH - b*TA/(c+TA));
 
-	return(TSS - (c*(log10(RH) + b*TA/(c+TA))/
-			(b - log10(RH) - b*TA/(c+TA))));
+	const double deficit = TSS - Tdew;
+	return deficit;
 }
 
 /**
@@ -208,7 +207,7 @@ double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
  * @param nHours (1)
  * @param shift shift components of oldHoar
  */
-double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar, const int nHours, const int shift)
+double Hazard::compHoarIndex(std::vector<double> &oldHoar, const double& newHoar, const unsigned int& nHours, const int& shift)
 {
 	// Shift hoar data
 	if (shift)
@@ -218,9 +217,9 @@ double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar,
 	oldHoar[0] = newHoar;
 
 	// Determine hoar_ind
-	int nValues = 0;
+	unsigned int nValues = 0;
 	double hoar_ind = 0.;
-	for (int i = 0; i < 2*nHours; i++ ) {
+	for (unsigned int i = 0; i < 2*nHours; i++ ) {
 		if (oldHoar[i] == Constants::undefined){
 			continue;
 		} else {
@@ -228,7 +227,7 @@ double Hazard::compHoarIndex(std::vector<double>& oldHoar, const double newHoar,
 			nValues++;
 		}
 	}
-	if (nValues <= int(floor(Constants::min_percent_values * 2 * nHours)))
+	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2 * nHours)))
 		return Constants::undefined;
 	else
 		return(hoar_ind);
@@ -274,7 +273,7 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
  * @param Xdata
  */
 void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                        const CurrentMeteo& Mdata,SurfaceFluxes& Sdata, ZwischenData& Zdata,
+                        const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
                         const SnowStation& Xdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
@@ -357,7 +356,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.hnw72 =  hnw[5] / cos_sl;
 
 	// Compute 72h sum of 24h new snow depths for a total of 3 days
-	for (int l = 143; l > 0; l--)
+	for (unsigned int l = 143; l-- >0;)
 		Zdata.hn24[l] = Zdata.hn24[l-1];
 	Zdata.hn24[0] = hn[4];
 	Hdata.hn72_24 =  M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
@@ -484,8 +483,8 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 }
 
 void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           CurrentMeteo& Mdata, SurfaceFluxes& Sdata,
-                           ZwischenData& Zdata, SnowStation& Xdata_station, SnowStation& Xdata_south,
+                           const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata,
+                           ZwischenData& Zdata, const SnowStation& Xdata_station, const SnowStation& Xdata_south,
                            const unsigned int& nSlopes, const bool& virtual_slope)
 {
 	compHazard(Hdata, Hdata_ind, Mdata, Sdata, Zdata, Xdata_station);

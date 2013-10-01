@@ -43,15 +43,15 @@ class Hazard {
 		void initializeHazard(std::vector<double>& vecDrift, double slope_angle,
 		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
 
-		static double driftIndex(std::vector<double>& old_drift, double drift, const double rho, const int nHours,
-		                         double slope_angle, const int shift);
+		static double driftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho, const unsigned int& nHours,
+		                         const double& slope_angle, const int& shift);
 
 		static void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                          std::vector<double>& old_drift, double& drift, double slope_angle);
+		                          std::vector<double>& old_drift, const double& drift, const double slope_angle);
 
 		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                   CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
-		                   SnowStation& Xdata_station, SnowStation& Xdata_south,
+		                   const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
+		                   const SnowStation& Xdata_station, const SnowStation& Xdata_south,
 		                   const unsigned int& nSlopes, const bool& virtual_slope);
 
 		static const double typical_slope_length, wind_slab_density;
@@ -59,12 +59,12 @@ class Hazard {
 	private:
 		double compDewPointDeficit(double TA, double TSS, double RH);
 
-		double compHoarIndex(std::vector<double>& oldHoar, const double newHoar, const int nHours, const int shift);
+		double compHoarIndex(std::vector<double> &oldHoar, const double& newHoar, const unsigned int& nHours, const int& shift);
 
 		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
 		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                const CurrentMeteo& Mdata, SurfaceFluxes& Sdata, ZwischenData& Zdata,
+		                const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
 		                const SnowStation& Xdata);
 
 		double sn_dt;

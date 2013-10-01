@@ -237,24 +237,24 @@ class ElementData {
 	public:
 		ElementData();
 
-		bool checkVolContent();
+		bool checkVolContent() const;
 		void heatCapacity();
-		double coldContent();
-		double extinction();
+		double coldContent() const;
+		double extinction() const;
 		void opticalEquivalentRadius();
 		void snowResidualWaterContent();
 		static double snowResidualWaterContent(const double& theta_i);
-		double soilFieldCapacity();
+		double soilFieldCapacity() const;
 
-		double snowElasticity();
-		double neckStressEnhancement();
+		double snowElasticity() const;
+		double neckStressEnhancement() const;
 		double concaveNeckRadius() const;
-		double neckLength();
-		double neck2VolumetricStrain();
+		double neckLength() const;
+		double neck2VolumetricStrain() const;
 
 		void snowType();
-		static unsigned short int snowType(const double dendricity, const double sphericity, const double grain_dia, const size_t marker,
-                        const double theta_w, const double res_wat_cont);
+		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const size_t& marker,
+                        const double& theta_w, const double& res_wat_cont);
 
 		const std::string toString() const;
 
@@ -534,8 +534,8 @@ class SurfaceFluxes {
 		SurfaceFluxes();
 
 		void reset(const bool& cumsum_mass);
-		void compSnowSoilHeatFlux(SnowStation& Xdata);
-		void collectSurfaceFluxes(BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
+		void compSnowSoilHeatFlux(const SnowStation& Xdata);
+		void collectSurfaceFluxes(const BoundCond& Bdata, const SnowStation& Xdata, const CurrentMeteo& Mdata);
 
 		/**
 		 * @brief Energy fluxes:
@@ -684,6 +684,16 @@ struct ProcessDat {
 };
 
 struct ProcessInd {
+	ProcessInd() : stat_abbrev(0), loc_for_snow(0), loc_for_wind(0),
+	               ch(0), swe(0), tot_lwc(0), runoff(0), dewpt_def(0),
+	               hoar_size(0), hoar_ind6(0), hoar_ind24(0),
+	               wind_trans(0), wind_trans24(0),
+	               hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0), hnw3(0), hnw6(0), hnw12(0), hnw24(0), hnw72(0),
+	               stab_class1(0), stab_class2(0), stab_index1(0), stab_index2(0), stab_index3(0), stab_index4(0), stab_index5(0),
+	               stab_height1(0), stab_height2(0), stab_height3(0), stab_height4(0), stab_height5(0),
+	               crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0)
+	{}
+
 	short stat_abbrev;
 	short loc_for_snow;
 	short loc_for_wind;

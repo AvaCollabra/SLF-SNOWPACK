@@ -69,9 +69,7 @@ SnowProfileLayer::SnowProfileLayer()
                     profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
                     layerDate(), height(0.), rho(0.), T(0.), gradT(0.), strain_rate(0.),
                     theta_i(0.), theta_w(0.), grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
-                    bond_size(0.), coordin_num(0.), marker(0), type(0), hard(0.)
-{
-}
+                    bond_size(0.), coordin_num(0.), marker(0), type(0), hard(0.) {}
 
 /**
  * @brief Determines the averaged quantities of the current layer with another layer
@@ -106,9 +104,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
     sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
-    drift(0.), mass(N_MASS_CHANGES), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined)
-{
-}
+    drift(0.), mass(N_MASS_CHANGES), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined) {}
 
 void SurfaceFluxes::reset(const bool& cumsum_mass)
 {
@@ -142,10 +138,10 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 * @brief Compute ground heat flux at soil/snow boundary
 * @param Xdata
 */
-void SurfaceFluxes::compSnowSoilHeatFlux(SnowStation& Xdata) {
+void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
 	if (Xdata.SoilNode > 0) { // with soil
-		ElementData& E_snow = Xdata.Edata[Xdata.SoilNode];
-		ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
+		const ElementData& E_snow = Xdata.Edata[Xdata.SoilNode];
+		const ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
 
 		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
 			qg0 += -E_soil.k[TEMPERATURE]
@@ -171,8 +167,8 @@ void SurfaceFluxes::compSnowSoilHeatFlux(SnowStation& Xdata) {
  * @param Xdata
  * @param Mdata
  */
-void SurfaceFluxes::collectSurfaceFluxes(BoundCond& Bdata,
-                                         SnowStation& Xdata, const CurrentMeteo& Mdata)
+void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
+                                         const SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
 	// 1) Short wave fluxes and Albedo.
 	//     Depending on settings (sw_mode) and conditions,
@@ -335,7 +331,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
  * @version 11.01
  * @return sum of volumetric contents (1)
  */
-bool ElementData::checkVolContent()
+bool ElementData::checkVolContent() const
 {
 	bool ret = true;
 	/*if(fabs(L*Rho - M) > 0.001) {
@@ -374,7 +370,7 @@ bool ElementData::checkVolContent()
 /**
  * @brief Computes heat capacity of an element based on volumetric contents
  * @version 11.01
- * @return Effective heat capacity (J kg-1 K-1)
+ * set the effective heat capacity (J kg-1 K-1)
  */
 void ElementData::heatCapacity()
 {
@@ -393,7 +389,7 @@ void ElementData::heatCapacity()
  * @version 10.08
  * @return Cold content (J m-2)
  */
-double ElementData::coldContent()
+double ElementData::coldContent() const
 {
 	return (Rho * c[TEMPERATURE] * (Te - Constants::melting_tk) * L);
 }
@@ -422,7 +418,7 @@ void ElementData::opticalEquivalentRadius()
  * @version 9Y.mm
  * @return Density dependent extinction coefficient (m-1)
  */
-double ElementData::extinction()
+double ElementData::extinction() const
 {
 	return(Rho/10. + 30.);
 	//return(Edata->Rho/10. + 30.);
@@ -469,7 +465,7 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
  * @version 9Y.mm
  * @return Soil field capacity (?)
  */
-double ElementData::soilFieldCapacity()
+double ElementData::soilFieldCapacity() const
 {
 	double fc;
 	if (!(rg > 0.)) {
@@ -498,7 +494,7 @@ double ElementData::soilFieldCapacity()
  * @version 9Y.mm
  * @return Module of elasticity (Pa)
  */
-double ElementData::snowElasticity()
+double ElementData::snowElasticity() const
 {
 	if (Rho > 1000.)
 		return Constants::big;
@@ -513,7 +509,7 @@ double ElementData::snowElasticity()
  * @version 11.01
  * @return Enhancement factor for neck stress (1))
  */
-double ElementData::neckStressEnhancement()
+double ElementData::neckStressEnhancement() const
 {
 	const double stressEnhance = (4. / (N3 * theta[ICE])) * Optim::pow2(rg/rb);
 	return stressEnhance;
@@ -531,9 +527,9 @@ double ElementData::concaveNeckRadius() const
 {
 	if ( (rg - rb) < Constants::eps ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Infinite radius of curvature, rg(%lf) = rb(%lf); return Constants::big!", rg, rb);
-		return (Constants::big);
+		return Constants::big;
 	} else {
-		return (rb*rb / (2. * (rg - rb)));
+		return Optim::pow2(rb) / (2. * (rg - rb));
 	}
 }
 
@@ -542,7 +538,7 @@ double ElementData::concaveNeckRadius() const
  * @version 11.01
  * @return Neck length (mm)
  */
-double ElementData::neckLength()
+double ElementData::neckLength() const
 {
 	const double rc = concaveNeckRadius();
 	return ((2. * rg * rc) / (rg + rc));
@@ -553,7 +549,7 @@ double ElementData::neckLength()
  * @version 11.01
  * @return Macro factor (1)
  */
-double ElementData::neck2VolumetricStrain()
+double ElementData::neck2VolumetricStrain() const
 {
 	const double Ln = neckLength();
 	return (Ln / (2. * rg + Ln));
@@ -571,8 +567,8 @@ void ElementData::snowType()
 	type = snowType(dd, sp, 2.*rg, mk%100, theta[WATER], res_wat_cont);
 }
 
-unsigned short int ElementData::snowType(const double dendricity, const double sphericity,
-                          const double grain_size, const size_t marker, const double theta_w, const double res_wat_cont)
+unsigned short int ElementData::snowType(const double& dendricity, const double& sphericity,
+                          const double& grain_size, const size_t& marker, const double& theta_w, const double& res_wat_cont)
 {
 	int a=-1,b=-1,c=0;
 
@@ -752,9 +748,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.), S_s(0.), z_S_s(0.), S_4(0.),
 	z_S_4(0.), S_5(0.), z_S_5(0.), Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
 	ReSolver_dt(-1), nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),
-	SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false)
-{
-}
+	SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false) {}
 
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), Cdata(c.Cdata), sector(c.sector), pAlbedo(c.pAlbedo), Albedo(c.Albedo), SoilAlb(c.SoilAlb),
@@ -764,9 +758,7 @@ SnowStation::SnowStation(const SnowStation& c) :
         z_S_s(c.z_S_s), S_4(c.S_4),
 	z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5), Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), dIntEnergy(c.dIntEnergy), meltFreezeEnergy(c.meltFreezeEnergy),
 	ReSolver_dt(-1), nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers),
-	SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward)
-{
-}
+	SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward) {}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
 	if(this != &source) {
@@ -870,14 +862,14 @@ double SnowStation::getModelledTemperature(const double& z) const
 		const double z_up = (Ndata[n_up].z + Ndata[n_up].u); // Upper node around position z of sensor
 		const double T_low = Ndata[n_up-1].T;
 		const double T_up = Ndata[n_up].T;
-		return (K_TO_C( T_low + (z - z_low)*(T_up-T_low)/(z_up-z_low) ));
+		const double T = T_low + (T_up-T_low)*(z-z_low)/(z_up-z_low);
+		return K_TO_C( T );
 	}
 }
 
 /**
  * @brief Reallocate element and node data \n
  * Xdata->Edata, Xdata->Ndata and Xdata->nElems, Xdata->nNodes are reallocated or reset, respectively.
- * In case of augmenting the element number, the new elements are initialized to 0 (memset)
  * @param number_of_elements The new number of elements
  */
 void SnowStation::resize(const size_t& number_of_elements)

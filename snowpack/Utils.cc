@@ -143,8 +143,8 @@ bool booleanTime(const double& JulianDate, double days_between,
 		return false;
 	}
 	const double jul_frc = (JulianDate - start) / days_between - floor((JulianDate - start) / days_between);
-	const int ret = ( (jul_frc > (days_between - 0.5 * step) / days_between) || (jul_frc < 0.5 * step / days_between) );
-	return (ret != 0);
+	const bool ret = (jul_frc > (days_between - 0.5 * step) / days_between) || (jul_frc < 0.5 * step / days_between);
+	return ret;
 }
 
 /**
@@ -170,7 +170,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	if (experiment != "NO_EXP") {
 		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", stationID.c_str(), experiment.c_str());
 	}
-	for (unsigned int ii=0; ii<vecExtension.size(); ii++){
+	for (size_t ii=0; ii<vecExtension.size(); ii++){
 		const string& ext = vecExtension[ii];
 		n_files = 0;
 
@@ -559,7 +559,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 double logisticFunction(const double input, const double threshold, const double width)
 {
 	const double x = (input - threshold) / width;
-	return exp(x)/(1. + exp(x));
+	const double exp_x = exp(x);
+	return exp_x / (1. + exp_x);
 }
 
 /**
