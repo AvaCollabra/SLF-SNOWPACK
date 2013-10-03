@@ -61,7 +61,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), multistream(false), combine_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), advective_heat(0.), heat_begin(0.), heat_end(0.)
+            enhanced_wind_slab(false), alpine3d(false), advective_heat(false), heat_begin(0.), heat_end(0.)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -788,7 +788,11 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 
 	// TREAT AN ASSUMED ADVECTIVE HEAT SOURCE
 	// Simple treatment of constant heating rate between two depths.
-	if(advective_heat!=0.) SnLaws::compAdvectiveHeat(Xdata, advective_heat, heat_begin, heat_end);
+	if(advective_heat) {
+		if(Mdata.adv_heat==IOUtils::nodata) //HACK integrate within the checks done in Main?
+			throw NoAvailableDataException("[E] advective heat missing at "+Mdata.date.toString(Date::ISO), AT);
+		SnLaws::compAdvectiveHeat(Xdata, Mdata.adv_heat, heat_begin, heat_end);
+	}
 
 	// Take care of uppermost soil element
 	if ((nE > Xdata.SoilNode+1) && (EMS[Xdata.SoilNode].sw_abs > EMS[Xdata.SoilNode+1].sw_abs)) {
@@ -927,7 +931,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			if (!sn_ElementKtMatrix(EMS[e], sn_dt, dvdz, T0, Se, Fe, VaporEnhance)) {
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Error in sn_ElementKtMatrix @ element %d:", e);
 				for (size_t n = 0; n < nN; n++)
-					fprintf(stdout, "U[%u]=%e K\n", (unsigned int)n, U[n]);
+					fprintf(stdout, "U[%u]=%g K\n", (unsigned int)n, U[n]);
 				free(U); free(dU); free(ddU);
 				throw IOException("Runtime error in sn_SnowTemperature", AT);
 			}

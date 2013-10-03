@@ -355,6 +355,10 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	// Add measured new snow density if available
 	if (md.param_exists("RHO_HN"))
 		Mdata.rho_hn = md("RHO_HN");
+
+	// Add advective heat (for permafrost) if available
+	if(md.param_exists("ADV_HEAT"))
+		Mdata.adv_heat = md("ADV_HEAT");
 }
 
 /**

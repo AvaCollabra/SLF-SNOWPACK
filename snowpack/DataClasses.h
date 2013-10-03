@@ -118,6 +118,7 @@ class CurrentMeteo {
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
+		double adv_heat; ///< Advective heat to inject in the soil (if ADVECTIVE_HEAT and related parameters set to true)
 
 		std::vector<double> ts;    ///< Measured snow or/and soil temperatures (K)
 		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)

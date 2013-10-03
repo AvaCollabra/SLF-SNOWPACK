@@ -157,7 +157,8 @@ class Snowpack {
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
-		double advective_heat, heat_begin, heat_end;
+		bool advective_heat;
+		double heat_begin, heat_end;
 }; //end class Snowpack
 
 #endif
