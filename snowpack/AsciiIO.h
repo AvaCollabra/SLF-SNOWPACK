@@ -30,7 +30,7 @@
 class AsciiIO : public SnowpackIOInterface {
 
 	public:
-		AsciiIO(const SnowpackConfig& i_cfg);
+		AsciiIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -43,7 +43,7 @@ class AsciiIO : public SnowpackIOInterface {
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 
-		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
+		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
@@ -55,10 +55,10 @@ class AsciiIO : public SnowpackIOInterface {
 
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
-		bool checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata, const char *ext, ...);
+		bool checkHeader(const char *fnam, const char *first_string, const char *ext, ...);
 
-		void writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout);
-		void writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout);
+		void writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout);
+		void writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout);
 
 		size_t writeTemperatures(FILE *fout, const double& z_vert, const double& T,
 		                         const size_t& ii, const SnowStation& Xdata);
@@ -91,6 +91,7 @@ class AsciiIO : public SnowpackIOInterface {
 		std::set<std::string> setAppendableFiles;
 		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
+		const RunInfo info;
 
 		//Monitored temperature sensors
 		std::vector<double> fixedPositions;

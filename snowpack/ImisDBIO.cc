@@ -42,8 +42,8 @@ string ImisDBIO::oracleDB;
 string ImisDBIO::oracleUser;
 string ImisDBIO::oraclePassword;
 
-ImisDBIO::ImisDBIO(const SnowpackConfig& cfg)
-         : env(NULL), conn(NULL), stmt(NULL)
+ImisDBIO::ImisDBIO(const SnowpackConfig& cfg, const RunInfo& run_info)
+         : info(run_info), env(NULL), conn(NULL), stmt(NULL)
 {
 	cfg.getValue("DBNAME", "Output", oracleDB);
 	cfg.getValue("DBUSER", "Output", oracleUser);
@@ -59,7 +59,7 @@ ImisDBIO::ImisDBIO(const SnowpackConfig& cfg)
 }
 
 ImisDBIO::ImisDBIO(const ImisDBIO& in)
-         : env(in.env), conn(in.conn), stmt(in.stmt) {}
+         : info(in.info), env(in.env), conn(in.conn), stmt(in.stmt) {}
 
 ImisDBIO& ImisDBIO::operator=(const ImisDBIO& in) {
 	closeDB();
@@ -124,7 +124,7 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 }
 
 //fill a profile structure with the proper data extracted from the Hdata. The number of layers (after aggregation) is returned
-void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata, std::vector<SnowProfileLayer> &Pdata)
+void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, std::vector<SnowProfileLayer> &Pdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<NodeData>& NDS = Xdata.Ndata;
@@ -140,11 +140,6 @@ void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdat
 	}
 
 	for(size_t e=0, ll=0; e<nE; e++, ll++) {
-		// Write version and computation date
-		Pdata[ll].sn_version = Hdata.sn_version;
-		Pdata[ll].sn_computation_date = Hdata.sn_computation_date;
-		Pdata[ll].sn_jul_computation_date=Hdata.sn_jul_computation_date;
-
 		// Write profile meta data
 		Pdata[ll].profileDate = dateOfProfile;
 		Pdata[ll].stationname = mystation;
@@ -236,7 +231,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	const occi::Date profDate(env, Pdate[0], Pdate[1], Pdate[2], Pdate[3], Pdate[4]);
 	const string stat_abk = Pdata[0].stationname;
 	const size_t stao_nr = Pdata[0].loc_for_snow;
-	const double version = atof(Pdata[0].sn_version.c_str());
+	const double version = atof(info.version.c_str());
 
 	//check that the station can really be an IMIS station
 	if(stat_abk.size()>4 || stat_abk.find_first_of("0123456789")!=string::npos)
@@ -283,7 +278,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 			stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
 			cerr << "[E] SDB profile for station " << stat_abk << stao_nr << " at " << Pdata[0].profileDate.toString(mio::Date::ISO);
-			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << Pdata[0].sn_version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
+			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
 			print_Profile_query(Pdata[ii]);
 			throw; //rethrow the exception
 		}
@@ -293,7 +288,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 				(stmt->getConnection())->commit();
 			} catch (const exception& e) {
 				cerr << "[E] SDB profile for station " << stat_abk << stao_nr << " at " << Pdata[0].profileDate.toString(mio::Date::ISO);
-				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << Pdata[0].sn_version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
+				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
 				throw; //rethrow the exception
 			}
 		}
@@ -332,14 +327,14 @@ void ImisDBIO::dumpASCIIProfile(const std::string& profile_filename, const SnowS
 /**
  * @brief Write simplified profile to database
  */
-void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata)
+void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
 	}
 	vector<SnowProfileLayer> Pdata(nE);
-	generateProfile(dateOfProfile, Xdata, Hdata, Pdata);
+	generateProfile(dateOfProfile, Xdata, Pdata);
 
 	try {
 		deleteProfile(Pdata[0].stationname, Pdata[0].loc_for_snow, dateOfProfile, dateOfProfile);
@@ -440,7 +435,7 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
 }
 
-void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata)
+void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 {
 	const size_t posB=sqlInsertProfile.find("height");
 	const size_t posE=sqlInsertProfile.find_first_of(')');
@@ -451,12 +446,12 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata)
 	cerr << Pdata.strain_rate << "," << static_cast<int>( mio::Optim::round(Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
 	cerr << Pdata.grain_size << "," << Pdata.bond_size << "," << Pdata.type << ",";
-	cerr << Pdata.sn_version;
+	cerr << info.version;
 
 	cerr << "\n";
 }
 
-void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind)
+void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const
 {
 	const size_t posB=sqlInsertHdata.find("dewpt_def");
 	const size_t posE=sqlInsertHdata.find_first_of(')');
@@ -558,15 +553,13 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 {
 	vector<int> sndate = vector<int>(5);
 	unsigned int rows_inserted = 0;
-	double sn_version;
-	IOUtils::convertString(sn_version, Hdata[0].sn_version);
+	const double version = atof(info.version.c_str());
 	int statNum = 0;
 	IOUtils::convertString(statNum, stationNumber);
 
-	const mio::Date dateSn( Hdata[0].sn_jul_computation_date, time_zone );
-	dateSn.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
+	info.computation_date.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	if (sndate[3] == 24){
-		const mio::Date tmpDate = dateSn + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+		const mio::Date tmpDate = info.computation_date + 3.0/(60*60*24); //add three seconds to omit 24 for 00
 		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
 	}
 
@@ -675,7 +668,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		if (Hdata_ind[i].t_top2 != -1)  stmt->setNumber(param++, Hdata[i].t_top2);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		stmt->setNumber(param++, sn_version);
+		stmt->setNumber(param++, version);
 		stmt->setDate(param++, computationdate);
 
 		if (Hdata_ind[i].swe != -1)      stmt->setNumber(param++, Hdata[i].swe);
@@ -689,7 +682,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 			rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
 			cerr << "[E] SDB for station " << stationName << statNum << " at " << dateH.toString(mio::Date::ISO);
-			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << sn_version << "\tcalculation_date: " << dateSn.toString(mio::Date::ISO);
+			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << info.computation_date.toString(mio::Date::ISO);
 			print_Hdata_query(Hdata[i], Hdata_ind[i]);
 			throw; //rethrow the exception
 		}
@@ -699,7 +692,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 				(stmt->getConnection())->commit();
 			} catch (const exception& e) {
 				cerr << "[E] Commit to SDB failed for station " << stationName << statNum << " after " << dateH.toString(mio::Date::ISO);
-				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << sn_version << "\tcalculation_date: " << dateSn.toString(mio::Date::ISO);
+				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << info.computation_date.toString(mio::Date::ISO);
 				throw; //rethrow the exception
 			}
 		}

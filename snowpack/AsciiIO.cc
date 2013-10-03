@@ -38,9 +38,10 @@ const bool AsciiIO::t_gnd = false;
 /************************************************************
  * non-static section                                       *
  ************************************************************/
-AsciiIO::AsciiIO(const SnowpackConfig& cfg)
+AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), hn_density(), hn_density_model(), variant(), experiment(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
+           info(run_info),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
@@ -551,9 +552,8 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
  * @version 12.04
  * @param i_date the current date
  * @param Xdata
- * @param Hdata
  */
-void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const ProcessDat& Hdata)
+void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
@@ -570,7 +570,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
 	}
 
-	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, "pro", &Xdata)) {
+	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", "pro")) {
 		prn_msg(__FILE__, __LINE__, "err", i_date,"Checking header in file %s", filename.c_str());
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	}
@@ -719,7 +719,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, SnowStation& Xdata, const Pr
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -773,7 +773,7 @@ void AsciiIO::writeFreeProfileDEFAULT(SnowStation& Xdata, FILE *fout)
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfileCALIBRATION(SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -1221,7 +1221,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	setNumberSensors(Mdata);
 
 	// Check file for header
-	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", Hdata, "met", &Xdata)) {
+	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", "met", &Xdata)) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	}
@@ -1562,8 +1562,7 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
  * @param *ext File extension
  * @return status
  */
-bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const ProcessDat& Hdata,
-                          const char *ext, ...)
+bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char *ext, ...)
 {
 	FILE *fin = fopen(fnam, "r");
 	if (fin) {
@@ -1611,8 +1610,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 				fprintf(fout, ",%.3f", fixedPositions[ii]);
 			fprintf(fout, "\n\n[HEADER]");
 			if (out_haz) { // HACK To avoid troubles in A3D
-				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", Hdata.sn_computation_date,
-				        variant.c_str(), Hdata.sn_version, Hdata.sn_user);
+				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"", info.computation_date.toString(Date::ISO).c_str(),
+				        variant.c_str(), info.version.c_str(), info.user.c_str());
 				if (research_mode)
 					fprintf(fout, " (research mode)");
 				else
@@ -1766,7 +1765,7 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const Proc
 			fprintf(fout, "\n\n[HEADER]");
 			if (out_haz) { // HACK To avoid troubles in A3D
 				fprintf(fout, "\n#%s, Snowpack %s version %s run by \"%s\"",
-					   Hdata.sn_computation_date, variant.c_str(), Hdata.sn_version, Hdata.sn_user);
+				        info.computation_date.toString(Date::ISO).c_str(), variant.c_str(), info.version.c_str(), info.user.c_str());
 				if (research_mode)
 					fprintf(fout, " (research mode)");
 				else

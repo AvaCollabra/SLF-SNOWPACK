@@ -68,7 +68,6 @@ class Hazard {
 		                const SnowStation& Xdata);
 
 		double sn_dt;
-		double i_time_zone;
 		double hoar_density_surf, hoar_min_size_surf;
 		static const double minimum_drift, maximum_drift;
 		int hazard_steps_between;

@@ -30,7 +30,7 @@
 class ImisDBIO : public SnowpackIOInterface{
 
 	public:
-		ImisDBIO(const SnowpackConfig& i_cfg);
+		ImisDBIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
 		ImisDBIO(const ImisDBIO& in);
 		~ImisDBIO();
 
@@ -45,7 +45,7 @@ class ImisDBIO : public SnowpackIOInterface{
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 
-		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
+		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
@@ -53,9 +53,9 @@ class ImisDBIO : public SnowpackIOInterface{
 		ImisDBIO& operator=(const ImisDBIO& in);
 	private:
 		static void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
-		static void generateProfile(const mio::Date& dateOfProfile, SnowStation& Xdata, const ProcessDat& Hdata, std::vector<SnowProfileLayer> &Pdata);
-		static void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind);
-		static void print_Profile_query(const SnowProfileLayer& Pdata);
+		static void generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, std::vector<SnowProfileLayer> &Pdata);
+		void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const;
+		void print_Profile_query(const SnowProfileLayer& Pdata) const;
 
 		void openDB();
 		void closeDB();
@@ -69,6 +69,9 @@ class ImisDBIO : public SnowpackIOInterface{
 		                 const size_t& num);
 
 		static void dumpASCIIProfile(const std::string& profile_filename, const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata);
+
+	private:
+		const RunInfo info;
 
 		//Oracle OCCI variable so we don't reopen a new connection at each call
 		oracle::occi::Environment *env;

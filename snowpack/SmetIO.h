@@ -32,7 +32,7 @@
 class SmetIO : public SnowpackIOInterface {
 
 	public:
-		SmetIO(const SnowpackConfig& i_cfg);
+		SmetIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -45,7 +45,7 @@ class SmetIO : public SnowpackIOInterface {
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24);
 
-		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata);
+		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
@@ -70,6 +70,7 @@ class SmetIO : public SnowpackIOInterface {
 
 	private:
 		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath;
+		const RunInfo info;
 		double in_dflt_TZ;
 		int sw_mode;
 		bool useSoilLayers, perp_to_slope;

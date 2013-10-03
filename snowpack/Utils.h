@@ -65,9 +65,6 @@ bool booleanTime(const double& JulianDate, double days_between,
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
                           const std::string& stationID, const unsigned int& nSlopes);
 
-void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
-                        char *compile_date, char *user);
-
 void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel,
                            SurfaceFluxes& Sdata, SnowStation& Xdata);
 

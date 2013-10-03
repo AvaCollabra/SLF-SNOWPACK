@@ -50,10 +50,28 @@ const double SnowStation::comb_thresh_dd = 0.2;     ///< Dendricity (1)
 const double SnowStation::comb_thresh_sp = 0.05;    ///< Sphericity (1)
 const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 
-ZwischenData::ZwischenData()
-              : hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0)
+RunInfo::RunInfo()
+            : version(SN_VERSION), computation_date(getRunDate(0.)),
+              compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
+
+RunInfo::RunInfo(const double& time_zone)
+            : version(SN_VERSION), computation_date(getRunDate(time_zone)),
+              compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
+
+mio::Date RunInfo::getRunDate(const double& time_zone)
 {
-	//reset();
+	Date localdate;
+	localdate.setFromSys();
+	localdate.setTimeZone(time_zone);
+
+	return localdate;
+}
+
+std::string RunInfo::getCompilationDate()
+{
+	std::stringstream ss;
+	ss << __DATE__ << ", " << __TIME__;
+	return ss.str();
 }
 
 void ZwischenData::reset()
@@ -65,8 +83,7 @@ void ZwischenData::reset()
 }
 
 SnowProfileLayer::SnowProfileLayer()
-                  : sn_version(), sn_computation_date(), sn_jul_computation_date(0.), sn_user(),
-                    profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
+                  : profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
                     layerDate(), height(0.), rho(0.), T(0.), gradT(0.), strain_rate(0.),
                     theta_i(0.), theta_w(0.), grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
                     bond_size(0.), coordin_num(0.), marker(0), type(0), hard(0.) {}

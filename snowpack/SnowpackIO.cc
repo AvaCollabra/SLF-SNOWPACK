@@ -63,11 +63,15 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 		output_snow_as_smet = true;
 	}
 
+	double time_zone;
+	cfg.get("TIME_ZONE", "Input", IOUtils::dothrow);
+	RunInfo run_info(time_zone);
+
 	//set the "plugins" pointers
-	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg);
-	if(outputprofile_as_ascii) asciiio = new AsciiIO(cfg);
+	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
+	if(outputprofile_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef IMISDBIO
-	if(outputprofile_as_imis) imisdbio = new ImisDBIO(cfg);
+	if(outputprofile_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
 #endif
 }
 
@@ -124,14 +128,14 @@ void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& 
 	asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 
-void SnowpackIO::writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata)
+void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 {
 	if (outputprofile_as_ascii)
-		asciiio->writeProfile(date, Xdata, Hdata);
+		asciiio->writeProfile(date, Xdata);
 
 #ifdef IMISDBIO
 	if (outputprofile_as_imis){
-		imisdbio->writeProfile(date, Xdata, Hdata);
+		imisdbio->writeProfile(date, Xdata);
 	}
 #endif
 }

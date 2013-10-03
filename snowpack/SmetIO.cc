@@ -23,8 +23,9 @@
 using namespace std;
 using namespace mio;
 
-SmetIO::SmetIO(const SnowpackConfig& cfg)
+SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snopath(), snowpath(), experiment(), inpath(), i_snopath(),
+          info(run_info),
           in_dflt_TZ(), sw_mode(0), useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
@@ -579,7 +580,7 @@ void SmetIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& 
 	throw IOException("Nothing implemented here!", AT);
 }
 
-void SmetIO::writeProfile(const mio::Date& /*date*/, SnowStation& /*Xdata*/, const ProcessDat& /*Hdata*/)
+void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }

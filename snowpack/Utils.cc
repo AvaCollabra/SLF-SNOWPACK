@@ -259,35 +259,6 @@ double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, co
 }
 
 /**
- * @brief Fill the snowpack version number, date of computation, user, ...
- * @author Mathias Bavay
- * @version 8.mm
- * @param time_zone
- * @param *version
- * @param *computation_date iso-format
- * @param *jul_computation_date Julian Date
- * @param *compilation_date Julian Date
- * @param *user
- */
-void versionUserRuntime(const double& time_zone, char *version, char *computation_date, double *jul_computation_date,
-                        char *compilation_date, char *user)
-{
-	Date localdate;
-	localdate.setFromSys();
-	localdate.setTimeZone(time_zone);
-
-	// version as well as computation and compilation time
-	strncpy(version, SN_VERSION, MAX_STRING_LENGTH-1);
-	snprintf(computation_date, MAX_STRING_LENGTH-1, "%s", localdate.toString(Date::ISO).c_str());
-	snprintf(compilation_date, MAX_STRING_LENGTH-1, "%s, %s", __DATE__, __TIME__);
-
-	*jul_computation_date = localdate.getJulian();
-	//logname=getlogin(); //other options possible, see man
-	const std::string logname = IOUtils::getLogName();
-	snprintf(user, MAX_STRING_LENGTH, "%s", logname.c_str());
-}
-
-/**
  * @brief Averages energy fluxes
  * @version 11.03
  * @param n_steps Number of calculation time steps since last output

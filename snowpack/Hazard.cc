@@ -49,7 +49,7 @@ const double Hazard::maximum_drift = 5.0;
  ************************************************************/
 
 Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
-        : sn_dt(IOUtils::nodata), i_time_zone(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata),
+        : sn_dt(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata),
           hazard_steps_between(0), nHz(0), research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
 {
 	/**
@@ -74,8 +74,6 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 	//Minimum size to show surface hoar on surface (mm)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
-
-	cfg.getValue("TIME_ZONE", "Input", i_time_zone);
 
 	/*
 	* Hazard data interval in units of CALCULATION_STEP_LENGTH \n
@@ -106,9 +104,6 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
 
 	Hdata[0].nHz = (signed)nHz;
 	Hdata[nHz-1].nHz = (signed)nHz;
-
-	versionUserRuntime(i_time_zone, Hdata[0].sn_version, Hdata[0].sn_computation_date,
-	                   &Hdata[0].sn_jul_computation_date, Hdata[0].sn_compilation_date, Hdata[0].sn_user);
 
 	Hdata[0].wind_trans = driftIndex(old_drift, 0., Hazard::wind_slab_density, 6, slope_angle, -1);
 	Hdata[0].wind_trans24 = driftIndex(old_drift, 0., Hazard::wind_slab_density, 24, slope_angle, -1);

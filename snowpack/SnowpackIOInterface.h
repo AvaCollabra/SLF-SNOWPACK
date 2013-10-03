@@ -40,7 +40,7 @@ class SnowpackIOInterface {
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24) = 0;
 
-		virtual void writeProfile(const mio::Date& date, SnowStation& Xdata, const ProcessDat& Hdata) = 0;
+		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata) = 0;
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num) = 0;

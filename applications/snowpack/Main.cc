@@ -1128,7 +1128,7 @@ void real_main (int argc, char *argv[])
 				// SNOW PROFILES ...
 				// ... for visualization (*.pro)
 				if (profwrite && mn_ctrl.PrDump)
-					snowpackio.writeProfile(current_date, vecXdata[slope.sector], qr_Hdata.at(0));
+					snowpackio.writeProfile(current_date, vecXdata[slope.sector]);
 
 				// ... backup Xdata (*.sno<JulianDate>)
 				if (mn_ctrl.XdataDump) {

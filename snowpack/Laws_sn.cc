@@ -420,7 +420,7 @@ void SnLaws::compAdvectiveHeat(SnowStation& Xdata,
 	NodeData   *NDS = &Xdata.Ndata[0];
 
 	const size_t top_element = (Xdata.SoilNode > 0)? Xdata.SoilNode - 1 : 0;
-	const double z1 = NDS[top_element].z - depth_end;
+	const double z1 = NDS[top_element].z - depth_end; //HACK depth from the surface is WRONG since this moves with the snow... specify from the bottom?
 	const double z2 = NDS[top_element].z - depth_begin;
 	const double z_end = (z1<z2)? z1 : z2; //min value
 	const double z_begin = (z1>z2)? z1 : z2; //max value
