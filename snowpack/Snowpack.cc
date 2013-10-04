@@ -206,9 +206,9 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 
 	// Allow for the effect of a known advective heat flux
-	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat);
-	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin);
-	cfg.getValue("HEAT_END", "SnowpackAdvanced", heat_end);
+	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat, IOUtils::nothrow);
+	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin, IOUtils::nothrow);
+	cfg.getValue("HEAT_END", "SnowpackAdvanced", heat_end, IOUtils::nothrow);
 }
 
 /**

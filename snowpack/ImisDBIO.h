@@ -69,6 +69,8 @@ class ImisDBIO : public SnowpackIOInterface{
 		                 const size_t& num);
 
 		static void dumpASCIIProfile(const std::string& profile_filename, const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata);
+		oracle::occi::Date OracleDate(mio::Date in_date) const;
+		static std::string getKey(const SnowpackConfig& i_cfg, const std::string& key, const std::string& section);
 
 	private:
 		const RunInfo info;
@@ -78,10 +80,10 @@ class ImisDBIO : public SnowpackIOInterface{
 		oracle::occi::Connection *conn;
 		oracle::occi::Statement *stmt;
 
+		const std::string oracleDB, oracleUser, oraclePassword;
+
 		//double time_zone; ///< input data time zone
 		static const double time_zone; //All IMIS data is in gmt+1
-
-		static std::string oracleDB, oracleUser, oraclePassword;
 		static double hoar_density_surf, hoar_min_size_surf;
 
 		static const std::string sqlDeleteHdata; //Delete statement for Hdata from snowpack.ams_pmod

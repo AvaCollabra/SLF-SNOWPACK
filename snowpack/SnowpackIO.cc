@@ -30,7 +30,8 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 #endif
               asciiio(NULL), smetio(NULL),
               outputprofile_as_ascii(false), outputprofile_as_imis(false),
-              output_snow_as_smet(false), input_snow_as_smet(false)
+              output_snow_as_smet(false), input_snow_as_smet(false),
+              output_ts_as_ascii(false), output_haz_as_imis(false)
 {
 	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
 	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
@@ -62,6 +63,9 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	}
+	//Format of meteo time series:
+	const bool out_ts = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
+	output_ts_as_ascii = out_ts;
 
 	double time_zone;
 	cfg.get("TIME_ZONE", "Input", IOUtils::dothrow);
@@ -69,9 +73,10 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 
 	//set the "plugins" pointers
 	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
-	if(outputprofile_as_ascii) asciiio = new AsciiIO(cfg, run_info);
+	if(outputprofile_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef IMISDBIO
-	if(outputprofile_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
+	output_haz_as_imis = outputprofile_as_imis;
+	if(outputprofile_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
 #endif
 }
 
@@ -81,7 +86,8 @@ SnowpackIO::SnowpackIO(const SnowpackIO& source) :
 #endif
           asciiio(source.asciiio), smetio(source.smetio),
           outputprofile_as_ascii(source.outputprofile_as_ascii), outputprofile_as_imis(source.outputprofile_as_imis),
-          output_snow_as_smet(source.output_snow_as_smet), input_snow_as_smet(source.input_snow_as_smet)
+          output_snow_as_smet(source.output_snow_as_smet), input_snow_as_smet(source.input_snow_as_smet),
+          output_ts_as_ascii(source.output_ts_as_ascii), output_haz_as_imis(source.output_haz_as_imis)
 {}
 
 SnowpackIO::~SnowpackIO()
@@ -125,7 +131,8 @@ void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                  const ProcessDat& Hdata, const double wind_trans24)
 {
-	asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
+	if(output_ts_as_ascii)
+		asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 
 void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
@@ -134,9 +141,8 @@ void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 		asciiio->writeProfile(date, Xdata);
 
 #ifdef IMISDBIO
-	if (outputprofile_as_imis){
+	if (outputprofile_as_imis)
 		imisdbio->writeProfile(date, Xdata);
-	}
 #endif
 }
 
@@ -144,7 +150,9 @@ void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const int& num)
 {
-	return (imisdbio->writeHazardData(stationID, Hdata, Hdata_ind, num));
+	if(output_haz_as_imis)
+		return imisdbio->writeHazardData(stationID, Hdata, Hdata_ind, num);
+	return false;
 }
 #else
 bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
@@ -166,6 +174,8 @@ SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
 		outputprofile_as_imis = source.outputprofile_as_imis;
 		output_snow_as_smet = source.output_snow_as_smet;
 		input_snow_as_smet = source.input_snow_as_smet;
+		output_ts_as_ascii = source.output_ts_as_ascii;
+		output_haz_as_imis = source.output_haz_as_imis;
 	}
 	return *this;
 }

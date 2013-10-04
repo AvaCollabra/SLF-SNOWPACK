@@ -27,28 +27,22 @@ using namespace oracle::occi;
 
 const double ImisDBIO::time_zone = 1.; //All IMIS data is in gmt+1
 
-double ImisDBIO::hoar_density_surf = 0.0;
-double ImisDBIO::hoar_min_size_surf = 0.0;
-
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
 
 const string ImisDBIO::sqlDeleteProfile = "DELETE FROM snowpack.ams_pmod_profile WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
 
 const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43)";
 
-const string ImisDBIO::sqlInsertProfile = "INSERT INTO snowpack.ams_pmod_profile(datum,stat_abk,stao_nr,height,layer_date,rho,tem,tem_grad,strain_rate,theta_w,theta_i,dendricity,sphericity,coordin_num,grain_dia,bond_dia,grain_class,snowpack_version) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18)";
+const string ImisDBIO::sqlInsertProfile = "INSERT INTO snowpack.ams_pmod_profile(datum,stat_abk,stao_nr,height,layer_date,rho,tem,tem_grad,strain_rate,theta_w,theta_i,dendricity,sphericity,coordin_num,grain_dia,bond_dia,grain_class,snowpack_version,calc_date) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19)";
 
-string ImisDBIO::oracleDB;
-string ImisDBIO::oracleUser;
-string ImisDBIO::oraclePassword;
+double ImisDBIO::hoar_density_surf = 0.0;
+double ImisDBIO::hoar_min_size_surf = 0.0;
 
 ImisDBIO::ImisDBIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-         : info(run_info), env(NULL), conn(NULL), stmt(NULL)
+         : info(run_info), env(NULL), conn(NULL), stmt(NULL),
+           oracleDB(getKey(cfg, "DBNAME", "Output")), oracleUser(getKey(cfg, "DBUSER", "Output")),
+           oraclePassword(getKey(cfg, "DBPASS", "Output"))
 {
-	cfg.getValue("DBNAME", "Output", oracleDB);
-	cfg.getValue("DBUSER", "Output", oracleUser);
-	cfg.getValue("DBPASS", "Output", oraclePassword);
-
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf);
 
@@ -58,8 +52,16 @@ ImisDBIO::ImisDBIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	openDB();
 }
 
+std::string ImisDBIO::getKey(const SnowpackConfig& i_cfg, const std::string& key, const std::string& section)
+{
+	string tmp;
+	i_cfg.getValue(key, section, tmp);
+	return tmp;
+}
+
 ImisDBIO::ImisDBIO(const ImisDBIO& in)
-         : info(in.info), env(in.env), conn(in.conn), stmt(in.stmt) {}
+         : info(in.info), env(in.env), conn(in.conn), stmt(in.stmt),
+           oracleDB(in.oracleDB), oracleUser(in.oracleUser), oraclePassword(in.oraclePassword) {}
 
 ImisDBIO& ImisDBIO::operator=(const ImisDBIO& in) {
 	closeDB();
@@ -123,7 +125,7 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 	throw IOException("Nothing implemented here!", AT);
 }
 
-//fill a profile structure with the proper data extracted from the Hdata. The number of layers (after aggregation) is returned
+//fill a profile structure with the proper data extracted from the Xdata.
 void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, std::vector<SnowProfileLayer> &Pdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
@@ -173,42 +175,18 @@ void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, const SnowStation
 void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stationNumber,
                              const mio::Date& dateStart, const mio::Date& dateEnd)
 {
-	vector< vector<string> > vecResult;
-	vector<int> datestart = vector<int>(5);
-	vector<int> dateend   = vector<int>(5);
-
-	//IMIS is in TIME_ZONE=+1, so moving back to this time_zone
-	mio::Date dateS(dateStart), dateE(dateEnd);
-	dateS.setTimeZone(time_zone);
-	dateE.setTimeZone(time_zone);
-	dateS.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	dateE.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
-
-	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
-	if (datestart[3] == 24){
-		const mio::Date tmpDate = dateS + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	}
-	if (dateend[3] == 24){
-		const mio::Date tmpDate = dateEnd + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
-	}
-
 	stmt->setSQL(sqlDeleteProfile);
 	stmt->setAutoCommit(true);
 
-	// construct the oracle specific Date object: year, month, day, hour, minutes
-	const occi::Date begindate(env, datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	const occi::Date enddate(env, dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	stmt->setString(1, stationName);   // set 1st variable's value (station name)
 	stmt->setUInt(2, stationNumber); // set 2nd variable's value (station number)
-	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
-	stmt->setDate(4, enddate);         // set 5th variable's value (enddate)
+	stmt->setDate(3, OracleDate(dateStart));       // set 4rd variable's value (begin date)
+	stmt->setDate(4, OracleDate(dateEnd));         // set 5th variable's value (enddate)
 
 	try {
 		stmt->executeUpdate();
 	}  catch (const exception& e) {
-		cerr << "[E] SDB for station " << stationName << stationNumber << " from " << dateS.toString(mio::Date::ISO) << " to " << dateE.toString(mio::Date::ISO);
+		cerr << "[E] SDB for station " << stationName << stationNumber << " from " << dateStart.toString(mio::Date::ISO) << " to " << dateEnd.toString(mio::Date::ISO);
 		cerr << "\tError deleting previous profile data\n";
 		throw; //rethrow the exception
 	}
@@ -219,19 +197,11 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	if(Pdata.empty())
 		return;
 
-	vector<int> Pdate = vector<int>(5);
-	mio::Date ProfileDate(Pdata[0].profileDate);
-	ProfileDate.setTimeZone(time_zone);
-	ProfileDate.getDate(Pdate[0], Pdate[1], Pdate[2], Pdate[3], Pdate[4]);
-	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
-	if(Pdate[3] == 24) {
-		const mio::Date tmpDate = ProfileDate + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(Pdate[0], Pdate[1], Pdate[2], Pdate[3], Pdate[4]);
-	}
-	const occi::Date profDate(env, Pdate[0], Pdate[1], Pdate[2], Pdate[3], Pdate[4]);
+	const occi::Date profDate = OracleDate( Pdata[0].profileDate );
+	const occi::Date calcDate = OracleDate(info.computation_date);
 	const string stat_abk = Pdata[0].stationname;
 	const size_t stao_nr = Pdata[0].loc_for_snow;
-	const double version = atof(info.version.c_str());
+	const double version = atof( info.version.c_str() );
 
 	//check that the station can really be an IMIS station
 	if(stat_abk.size()>4 || stat_abk.find_first_of("0123456789")!=string::npos)
@@ -247,19 +217,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 		stmt->setUInt(3, stao_nr);
 		stmt->setNumber(4, Pdata[ii].height);
 
-		//layer date
-		vector<int> Ldate   = vector<int>(5);
-		mio::Date LayerDate(Pdata[ii].layerDate);
-		LayerDate.setTimeZone(time_zone);
-		LayerDate.getDate(Ldate[0], Ldate[1], Ldate[2], Ldate[3], Ldate[4]);
-		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
-		if(Ldate[3] == 24) {
-			const mio::Date tmpDate = LayerDate + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-			tmpDate.getDate(Ldate[0], Ldate[1], Ldate[2], Ldate[3], Ldate[4]);
-		}
-		const occi::Date layDate(env, Ldate[0], Ldate[1], Ldate[2], Ldate[3], Ldate[4]);
-		stmt->setDate(5, layDate);
-
+		stmt->setDate(5, OracleDate(Pdata[ii].layerDate));
 		stmt->setNumber(6, Pdata[ii].rho);
 		stmt->setNumber(7, Pdata[ii].T);
 		stmt->setNumber(8, Pdata[ii].gradT);
@@ -273,6 +231,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 		stmt->setNumber(16, Pdata[ii].bond_size);
 		stmt->setUInt(17, Pdata[ii].type);
 		stmt->setNumber(18, version);
+		stmt->setDate(19, calcDate);
 
 		try {
 			stmt->executeUpdate(); // execute the statement stmt
@@ -400,36 +359,14 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
                            const mio::Date& dateStart, const mio::Date& dateEnd)
 {
 	vector< vector<string> > vecResult;
-	vector<int> datestart = vector<int>(5);
-	vector<int> dateend   = vector<int>(5);
-
-	//IMIS is in TIME_ZONE=+1, so moving back to this time_zone
-	mio::Date dateS(dateStart), dateE(dateEnd);
-	dateS.setTimeZone(time_zone);
-	dateE.setTimeZone(time_zone);
-	dateS.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	dateE.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
-
-	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
-	if (datestart[3] == 24){
-		const mio::Date tmpDate = dateS + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	}
-	if (dateend[3] == 24){
-		const mio::Date tmpDate = dateEnd + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
-	}
 
 	stmt->setSQL(sqlDeleteHdata);
 	stmt->setAutoCommit(true);
 
-	// construct the oracle specific Date object: year, month, day, hour, minutes
-	const occi::Date begindate(env, datestart[0], datestart[1], datestart[2], datestart[3], datestart[4]);
-	const occi::Date enddate(env, dateend[0], dateend[1], dateend[2], dateend[3], dateend[4]);
 	stmt->setString(1, stationName);   // set 1st variable's value (station name)
 	stmt->setString(2, stationNumber); // set 2nd variable's value (station number)
-	stmt->setDate(3, begindate);       // set 4rd variable's value (begin date)
-	stmt->setDate(4, enddate);         // set 5th variable's value (enddate)
+	stmt->setDate(3, OracleDate(dateStart));       // set 4rd variable's value (begin date)
+	stmt->setDate(4, OracleDate(dateEnd));         // set 5th variable's value (enddate)
 
 	const unsigned int rows_deleted = stmt->executeUpdate();
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Deleted %d rows in %s!", rows_deleted, oracleDB.c_str());
@@ -551,17 +488,11 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
                            const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
                            const size_t& num)
 {
-	vector<int> sndate = vector<int>(5);
 	unsigned int rows_inserted = 0;
-	const double version = atof(info.version.c_str());
+	const double version = atof( info.version.c_str() );
 	int statNum = 0;
 	IOUtils::convertString(statNum, stationNumber);
-
-	info.computation_date.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
-	if (sndate[3] == 24){
-		const mio::Date tmpDate = info.computation_date + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-		tmpDate.getDate(sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
-	}
+	const occi::Date computationdate = OracleDate( info.computation_date );
 
 	stmt->setSQL(sqlInsertHdata);
 	stmt->setAutoCommit(false);
@@ -569,24 +500,9 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	for (size_t i = 0; i<num; ++i){ //loop over the available timesteps
 		if (Hdata[i].date == mio::Date()) break; //catch the case that not all Hdata has been set properly
 
-		vector<int> hzdate(5);
-		mio::Date dateH(Hdata[i].date);
-		dateH.setTimeZone(time_zone);
-		dateH.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
-
-		//Oracle can't deal with an integer for the hour of 24, hence the following workaround
-		if (hzdate[3] == 24){
-			const mio::Date tmpDate = dateH + 3.0/(60*60*24); //add three seconds to omit 24 for 00
-			tmpDate.getDate(hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
-		}
-
-		// construct the oracle specific Date object: year, month, day, hour, minutes
-		const occi::Date hazarddate(env, hzdate[0], hzdate[1], hzdate[2], hzdate[3], hzdate[4]);
-		const occi::Date computationdate(env, sndate[0], sndate[1], sndate[2], sndate[3], sndate[4]);
-
 		unsigned int param = 1;
 
-		stmt->setDate(param++, hazarddate);
+		stmt->setDate(param++, OracleDate(Hdata[i].date));
 		stmt->setString(param++, stationName);
 		stmt->setNumber(param++, statNum);
 
@@ -681,7 +597,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		try {
 			rows_inserted += stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
-			cerr << "[E] SDB for station " << stationName << statNum << " at " << dateH.toString(mio::Date::ISO);
+			cerr << "[E] SDB for station " << stationName << statNum << " at " << Hdata[i].date.toString(mio::Date::ISO);
 			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << info.computation_date.toString(mio::Date::ISO);
 			print_Hdata_query(Hdata[i], Hdata_ind[i]);
 			throw; //rethrow the exception
@@ -691,11 +607,27 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 			try {
 				(stmt->getConnection())->commit();
 			} catch (const exception& e) {
-				cerr << "[E] Commit to SDB failed for station " << stationName << statNum << " after " << dateH.toString(mio::Date::ISO);
+				cerr << "[E] Commit to SDB failed for station " << stationName << statNum << " after " << Hdata[i].date.toString(mio::Date::ISO);
 				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << info.computation_date.toString(mio::Date::ISO);
 				throw; //rethrow the exception
 			}
 		}
 	}
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Inserted %d rows into %s!", rows_inserted, oracleDB.c_str());
+}
+
+oracle::occi::Date ImisDBIO::OracleDate(mio::Date in_date) const
+{
+	vector<int> date   = vector<int>(5);
+	in_date.setTimeZone(time_zone);
+	in_date.getDate(date[0], date[1], date[2], date[3], date[4]);
+
+	//Oracle can't deal with an integer for the hour of 24, hence the following workaround
+	if(date[3] == 24) {
+		const mio::Date tmpDate = in_date + 3.0/(60*60*24); //add three seconds to omit 24 for 00
+		tmpDate.getDate(date[0], date[1], date[2], date[3], date[4]);
+	}
+
+	const occi::Date occi_date(env, date[0], date[1], date[2], date[3], date[4]);
+	return occi_date;
 }
