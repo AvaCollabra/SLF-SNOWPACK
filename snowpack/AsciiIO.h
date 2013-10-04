@@ -55,7 +55,7 @@ class AsciiIO : public SnowpackIOInterface {
 
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
-		bool checkHeader(const char *fnam, const char *first_string, const char *ext, ...);
+		bool checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const;
 
 		void writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout);
 		void writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout);

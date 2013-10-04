@@ -570,7 +570,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
 	}
 
-	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", "pro")) {
+	if (!checkHeader(Xdata, filename, "pro", "[STATION_PARAMETERS]")) {
 		prn_msg(__FILE__, __LINE__, "err", i_date,"Checking header in file %s", filename.c_str());
 		throw IOException("Cannot dump profile " + filename + " for Java Visualisation", AT);
 	}
@@ -1221,7 +1221,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	setNumberSensors(Mdata);
 
 	// Check file for header
-	if (!checkHeader(filename.c_str(), "[STATION_PARAMETERS]", "met", &Xdata)) {
+	if (!checkHeader(Xdata, filename, "met", "[STATION_PARAMETERS]")) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
 		throw InvalidFormatException("Writing Time Series data failed", AT);
 	}
@@ -1562,50 +1562,46 @@ void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const Surface
  * @param *ext File extension
  * @return status
  */
-bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char *ext, ...)
+bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const
 {
-	FILE *fin = fopen(fnam, "r");
+	FILE *fin = fopen(filename.c_str(), "r");
 	if (fin) {
 		// Check header of existing file
 		char dummy_l[MAX_LINE_LENGTH]="\000";
 		if( fgets(dummy_l, MAX_LINE_LENGTH, fin) == NULL) {
 			fclose(fin);
 			std::stringstream ss;
-			ss << "Can not read header of file " << fnam;
+			ss << "Can not read header of file " << filename;
 			throw InvalidFormatException(ss.str(), AT);
 		}
 		char dummy[MAX_STRING_LENGTH]="\000";
 		sscanf(dummy_l, "%255s", dummy);
-		if ((strcmp(dummy, first_string) != 0)) {
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Header in %s should read %s, not %s", fnam, first_string, dummy);
+		if (signature!=dummy) {
+			prn_msg(__FILE__, __LINE__, "err", Date(), "Header in %s should read %s, not %s", filename.c_str(), signature.c_str(), dummy);
 			return false;
 		}
 		fclose(fin);
-	} else if ((strcmp(ext, "none") == 0)) {
+	} else if (ext=="none") {
 		// Check header only!
 		return false;
 	} else {
-		FILE *fout = fopen(fnam, "w");
+		FILE *fout = fopen(filename.c_str(), "w");
 		if (!fout)
 			return false;
-		// Initialize argptr to point to the first argument after the ext string
-		va_list argptr; // get an arg ptr
-		va_start(argptr, ext);
 
-		if ((strcmp(ext, "err") == 0)) {
+		if (ext=="err") {
 			fprintf(fout, "[SNOWPACK_ERROR_LOG]");
 			fprintf(fout, "\n          RUNTIME :  STN LOC LINE MSG [JULIAN]");
-		} else if ((strcmp(ext, "met") == 0)) {
-			const SnowStation *va_Xdata = va_arg(argptr, SnowStation *);
-			const string stationname = va_Xdata->meta.getStationName();
+		} else if (ext=="met") {
+			const string stationname = Xdata.meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",  stationname.c_str());
-			fprintf(fout, "\nLatitude= %.2f",   va_Xdata->meta.position.getLat());
-			fprintf(fout, "\nLongitude= %.2f",  va_Xdata->meta.position.getLon());
-			fprintf(fout, "\nAltitude= %.0f",   va_Xdata->meta.position.getAltitude());
-			fprintf(fout, "\nSlopeAngle= %.2f", va_Xdata->meta.getSlopeAngle());
-			fprintf(fout, "\nSlopeAzi= %.2f",   va_Xdata->meta.getAzimuth());
-			fprintf(fout, "\nDepthTemp= %1d",  (va_Xdata->SoilNode > 0));
+			fprintf(fout, "\nLatitude= %.2f",   Xdata.meta.position.getLat());
+			fprintf(fout, "\nLongitude= %.2f",  Xdata.meta.position.getLon());
+			fprintf(fout, "\nAltitude= %.0f",   Xdata.meta.position.getAltitude());
+			fprintf(fout, "\nSlopeAngle= %.2f", Xdata.meta.getSlopeAngle());
+			fprintf(fout, "\nSlopeAzi= %.2f",   Xdata.meta.getAzimuth());
+			fprintf(fout, "\nDepthTemp= %1d",  (Xdata.SoilNode > 0));
 			for (size_t ii = 0; ii < fixedPositions.size(); ii++)
 				fprintf(fout, ",%.3f", fixedPositions[ii]);
 			fprintf(fout, "\n\n[HEADER]");
@@ -1653,8 +1649,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char
 					}
 					jj += 2;
 				}
-				if (va_Xdata->tag_low) {
-					size_t tag = va_Xdata->tag_low;
+				if (Xdata.tag_low) {
+					size_t tag = Xdata.tag_low;
 					while ((tag + numberFixedSensors) <= totNumberSensors) {
 						const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
 						if (jj < j_lim) {
@@ -1713,8 +1709,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char
 						jj++;
 					}
 				}
-				if (va_Xdata->tag_low) {
-					size_t tag = va_Xdata->tag_low;
+				if (Xdata.tag_low) {
+					size_t tag = Xdata.tag_low;
 					while ((tag + numberFixedSensors) <= totNumberSensors) {
 						const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
 						if (jj < j_lim) {
@@ -1751,16 +1747,15 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char
 			}
 
 			fprintf(fout, "\n\n[DATA]");
-		} else if ((strcmp(ext, "pro") == 0)) {
-			const SnowStation *va_Xdata = va_arg(argptr, SnowStation *);
-			const string stationname = va_Xdata->meta.getStationName();
+		} else if (ext=="pro") {
+			const string stationname = Xdata.meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",   stationname.c_str());
-			fprintf(fout, "\nLatitude= %.2f",   va_Xdata->meta.position.getLat());
-			fprintf(fout, "\nLongitude= %.2f",  va_Xdata->meta.position.getLon());
-			fprintf(fout, "\nAltitude= %.0f",   va_Xdata->meta.position.getAltitude());
-			fprintf(fout, "\nSlopeAngle= %.2f", va_Xdata->meta.getSlopeAngle());
-			fprintf(fout, "\nSlopeAzi= %.2f",   va_Xdata->meta.getAzimuth());
+			fprintf(fout, "\nLatitude= %.2f",   Xdata.meta.position.getLat());
+			fprintf(fout, "\nLongitude= %.2f",  Xdata.meta.position.getLon());
+			fprintf(fout, "\nAltitude= %.0f",   Xdata.meta.position.getAltitude());
+			fprintf(fout, "\nSlopeAngle= %.2f", Xdata.meta.getSlopeAngle());
+			fprintf(fout, "\nSlopeAzi= %.2f",   Xdata.meta.getAzimuth());
 
 			fprintf(fout, "\n\n[HEADER]");
 			if (out_haz) { // HACK To avoid troubles in A3D
@@ -1815,9 +1810,8 @@ bool AsciiIO::checkHeader(const char *fnam, const char *first_string, const char
 			}
 			fprintf(fout, "\n\n[DATA]");
 		} else {
-			prn_msg(__FILE__, __LINE__, "wrn", Date(), "No header defined for files *.%s", ext);
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "No header defined for files *.%s", ext.c_str());
 		}
-		va_end(argptr);
 		fclose(fout);
 	}
 
