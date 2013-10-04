@@ -351,7 +351,7 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.hnw72 =  hnw[5] / cos_sl;
 
 	// Compute 72h sum of 24h new snow depths for a total of 3 days
-	for (unsigned int l = 143; l-- >0;)
+	for (unsigned int l = 143; l>0; l--)
 		Zdata.hn24[l] = Zdata.hn24[l-1];
 	Zdata.hn24[0] = hn[4];
 	Hdata.hn72_24 =  M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
