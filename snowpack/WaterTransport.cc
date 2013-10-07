@@ -918,7 +918,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					const double W_lower = EMS[eLower].theta[WATER];
 					double dThetaW_upper = MAX(0, W_upper - Wres);
 
-					if ((iwatertransportmodel_snow == NIED && eUpper>=Xdata.SoilNode) || (iwatertransportmodel_soil == NIED && eUpper<Xdata.SoilNode)) {	//For watertransport model NIED we redefine dThetaW_upper
+					if ((iwatertransportmodel_snow == NIED && eUpper>Xdata.SoilNode) || (iwatertransportmodel_soil == NIED && eUpper<=Xdata.SoilNode)) {	//For watertransport model NIED we redefine dThetaW_upper
 						// The WaterTransport model "NIED" was developed by Hiroyuki Hirashima, Snow and Ice Research Center, NIED under support of the NIED project 'A research project for developing a snow disaster forecasting system and snow-hazard maps'.
 						// For details, see: Hirashima et al. (2010) Numerical modeling of liquid water movement through layered snow based on new measurements of the water retention curve. Cold Regions Science and Technology, 64(2), 94-103.
 						ThR = 0.024;
