@@ -853,10 +853,10 @@ void real_main (int argc, char *argv[])
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
-		prn_msg(__FILE__, __LINE__, "msg", vecSSdata[slope.station].profileDate, "Start simulation for %s on %s",
-				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO_TZ).c_str());
+		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
+			vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
-		        dateEnd.toString(mio::Date::ISO).c_str());
+		        dateEnd.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
 		        calculation_step_length);
 
@@ -1168,10 +1168,10 @@ void real_main (int argc, char *argv[])
 				}
 				snowpackio.writeSnowCover(current_date, vecXdata[sector], vecSSdata[sector], sn_Zdata);
 				if (sector == slope.station) {
-					prn_msg(__FILE__, __LINE__, "msg", current_date,
-					        "Writing data to sno file(s) for %s (station %s)",
+					prn_msg(__FILE__, __LINE__, "msg", mio::Date(),
+					        "Writing data to sno file(s) for %s (station %s) on %s",
 					        vecSSdata[slope.station].meta.getStationName().c_str(),
-					        vecStationIDs[i_stn].c_str());
+					        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				}
 			}
 			// Dump results to SDB
