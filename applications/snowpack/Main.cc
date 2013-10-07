@@ -111,7 +111,9 @@ Slope::Slope(const mio::Config& cfg)
          sector_width(0)
 {
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
-	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
+	if(nSlopes>1)
+		cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
+
 	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
 
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
@@ -299,14 +301,14 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_ea) {
 		mio::Date now;
 		now.setFromSys();
-		cerr << "[E] [" << md.date.toString(mio::Date::ISO) << "] ";
+		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
 		cerr << StationName << " missing { ";
 		if(miss_ta) cerr << "TA ";
 		if(miss_rh) cerr << "RH ";
 		if(miss_rad) cerr << "radiation ";
 		if(miss_precip) cerr << "precipitations ";
 		if(miss_ea) cerr << "ea ";
-		cerr << "} ( current time is [" << now.toString(mio::Date::ISO) << "] )\n";
+		cerr << "} at " << md.date.toString(mio::Date::ISO) << " )\n";
 		return false;
 	}
 	return true;
@@ -851,8 +853,8 @@ void real_main (int argc, char *argv[])
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
-		prn_msg(__FILE__, __LINE__, "msg", vecSSdata[slope.station].profileDate, "Start simulation for %s on julian date %f, UTC%+2.0f",
-				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.getJulian(), vecSSdata[slope.station].profileDate.getTimeZone());
+		prn_msg(__FILE__, __LINE__, "msg", vecSSdata[slope.station].profileDate, "Start simulation for %s on %s",
+				vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",

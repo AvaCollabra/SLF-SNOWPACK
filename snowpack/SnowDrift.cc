@@ -56,16 +56,6 @@ SnowDrift::SnowDrift(const SnowpackConfig& cfg) : saltation(cfg),
 	 */
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
-	/**
-	 * @brief Defines whether real snow erosion and redistribution should happen under
-	 * blowing snow conditions. Set in operational mode.
-	 */
-	cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
-
-	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
-	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
-	sn_dt = M_TO_S(calculation_step_length);
-
 	/*
 	 * Number of aspects incl. the real flat field: at least 1, either 5 or 9 for SNOW_REDISTRIBUTION
 	 * - 1 real simulation on flat field (or one slope, see PERP_TO_SLOPE)
@@ -73,6 +63,16 @@ SnowDrift::SnowDrift(const SnowpackConfig& cfg) : saltation(cfg),
 	 * - 9 real simulation on flat field plus 8 virtual slopes
 	 */
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
+
+	// Defines whether real snow erosion and redistribution should happen under
+	// blowing snow conditions. Set in operational mode.
+	if(nSlopes>1)
+		cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
+
+	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
+	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+	sn_dt = M_TO_S(calculation_step_length);
+
 }
 
 /**
