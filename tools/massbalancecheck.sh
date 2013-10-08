@@ -123,7 +123,7 @@ if [ -z "${colevap}" ]; then
 	error=1
 fi
 if [ -z "${colwinddrift}" ]; then
-	echo "massbalancecheck.sh: ERROR: evaporation not found in one of the columns." > /dev/stderr
+	echo "massbalancecheck.sh: ERROR: erosion not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ "${error}" -eq 1 ]; then
@@ -151,7 +151,7 @@ sed '1,/\[DATA\]/d' ${met_file} | \
 #  -- Select all the massbalance terms, make them correct sign and correct units. Also makes sure some terms are only considered when they are a part of the SNOW mass balance (like evaporation, which may also originate from soil).
 #     Note we store the previous SWE, to know whether evaporation and/or sublimation was actually from soil or from snow. For the first time step it doesn't matter what we do here, as we will cut out this first line later.
 #         (We cannot cut out this first line here, as the previous time step SWE is also needed for the mass balance calculations).
-awk -F, '{n++; if(n==1){prevSWE=1}; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', $'${colSWE}', $'${colLWC}', ($'${colSWE}'>0.0)?($'${colrainrate}'*(24/'${nsamplesperday}')):0, ($'${colSWE}'>0.0)?($'${colsnowrate}'*(24/'${nsamplesperday}')):0, -1.*$'${colrunoff_surf}', (prevSWE>0.0||$'${colSWE}'>0.0)?($'${colsubl}'):0, (prevSWE>0.0||$'${colSWE}'>0.0)?($'${colevap}'):0, ($'${colwinddrift}'>0)?-1.0*($'${colwinddrift}'):0; prevSWE=$'${colSWE}'}' | \
+awk -F, '{n++; if(n==1){prevSWE=1}; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', $'${colSWE}', $'${colLWC}', ($'${colSWE}'>0.0 || $'${colsnowrate}'>0.0)?($'${colrainrate}'*(24/'${nsamplesperday}')):0, $'${colsnowrate}'*(24/'${nsamplesperday}'), -1.*$'${colrunoff_surf}', (prevSWE>0.0 || $'${colSWE}'>0.0 || $'${colsnowrate}'>0.0)?($'${colsubl}'):0, (prevSWE>0.0 || $'${colSWE}'>0.0 || $'${colsnowrate}'>0.0)?($'${colevap}'):0, ($'${colwinddrift}'>0)?-1.0*($'${colwinddrift}')*(24/'${nsamplesperday}'):0; prevSWE=$'${colSWE}'}' | \
 #  -- Reformat time
 sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%02d", $3, $2, $1, $4, $5; for(i=6; i<=NF; i++) {printf " %s", $i}; printf "\n"}' | \
 # Now select period
