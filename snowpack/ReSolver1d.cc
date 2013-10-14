@@ -1772,24 +1772,24 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 									bk=0.;
 								}
 								// Deal with special cases:
-								// 1) Very small temperature difference or very small possible change in ice content
+								// 1) So much energy available that all ice will melt (note: this case will not be properly solved by Bisection-Secant method.)
+								if((T_melt[i]-(EMS[SnowpackElement[i]].Te)) * ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion )) < -1.*theta_i_np1_m[i] && BS_converged==false) {
+									ck=-1.*theta_i_np1_m[i];
+									delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));
+									delta_Te_ck=(ck) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
+									if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d], case 2: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te+delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
+									BS_converged=true;
+								}
+								// 2) Very small temperature difference or very small possible change in ice content
 								if(fabs(ak-bk)<epsilon && BS_converged==false) {
 									// In this case it is possible that we should melt some ice in order to prevent theta[WATER] to get negative (drainage case):
 									ck=0.;
 									if(theta_np1_mp1[i]<0.) {
 										delta_w_ck=-1.*theta_np1_mp1[i];					//Make sure water gets 0.
 										ck=theta_np1_mp1[i]*(Constants::density_water/Constants::density_ice);	//Necessary change in theta[ICE]
-										delta_Te_ck=(ck) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
+										delta_Te_ck=(ck) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
 									}
 									if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d], case 1: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te+delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
-									BS_converged=true;
-								}
-								// 2) So much energy available that all ice will melt (note: this case will not be properly solved by Bisection-Secant method.
-								if((T_melt[i]-(EMS[SnowpackElement[i]].Te)) * ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion )) < -1.*theta_i_np1_m[i] && BS_converged==false) {
-									ck=-1.*theta_i_np1_m[i];
-									delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));
-									delta_Te_ck=(ck) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d], case 2: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te+delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
 									BS_converged=true;
 								}
 								while (BS_converged==false && BS_iter < BS_MAX_ITER) {
