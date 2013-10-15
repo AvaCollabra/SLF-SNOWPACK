@@ -37,7 +37,7 @@ bool SnowpackConfig::initStaticData()
 	//[SnowpackAdvanced] section
 	advancedConfig["ALPINE3D"] = "false";
 	advancedConfig["DOORSCHOT"] = "false";
-	advancedConfig["DETECT_GRASS"] = "true";
+	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["FIXED_ALBEDO"] = "-999.";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
@@ -107,7 +107,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
-	outputConfig["HARDNESS_IN_NEWTON"] = "true";
+	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["CLASSIFY_PROFILE"] = "false";
 	outputConfig["SNOW"] = "SMET";
 
