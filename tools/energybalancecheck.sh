@@ -179,5 +179,5 @@ awk '{n++; if(n>1) \
 	#Write to stdout
 	print $0, energybalance, energy_in, energy_out}; \
 #Write out statistics to stderr:
-END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of energy balance error: %.6f\nSum of absolute mass balance error (kg_m-2): %.6f\nMaximum positive energy balance error: %.6f at %08d, %04d\nMinimum negative energy balance error: %.6f at %08d, %04d\n", energybalancesum, energybalancesum2, maxenergybalance, maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
+END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of energy balance error (W_m-2): %.6f\nSum of absolute energy balance error (W_m-2): %.6f\nMaximum positive energy balance error (W_m-2): %.6f at %08d, %04d\nMinimum negative energy balance error (W_m-2): %.6f at %08d, %04d\n", energybalancesum, energybalancesum2, maxenergybalance, maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
 
