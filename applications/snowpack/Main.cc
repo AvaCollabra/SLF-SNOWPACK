@@ -308,7 +308,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		if(miss_rad) cerr << "radiation ";
 		if(miss_precip) cerr << "precipitations ";
 		if(miss_ea) cerr << "ea ";
-		cerr << "} at " << md.date.toString(mio::Date::ISO) << " )\n";
+		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
 	return true;
@@ -1181,9 +1181,9 @@ void real_main (int argc, char *argv[])
 				sdbDump_timer.start();
 				if (snowpackio.writeHazardData(vecStationIDs[i_stn], qr_Hdata, qr_Hdata_ind, mn_ctrl.HzStep)) {
 					sdbDump_timer.stop();
-					prn_msg(__FILE__, __LINE__, "msg-", current_date,
-					        "Finished writing Hdata to SDB for station %s (%lf s)",
-					        vecStationIDs[i_stn].c_str(), sdbDump_timer.getElapsed());
+					prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+					        "Finished writing Hdata to SDB for station %s on %s (%lf s)",
+					        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str(), sdbDump_timer.getElapsed());
 				}
 			}
 		}

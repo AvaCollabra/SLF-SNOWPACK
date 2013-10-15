@@ -67,11 +67,8 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 	const bool out_ts = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
 	output_ts_as_ascii = out_ts;
 
-	double time_zone;
-	cfg.get("TIME_ZONE", "Input", IOUtils::dothrow);
-	RunInfo run_info(time_zone);
-
 	//set the "plugins" pointers
+	RunInfo run_info;
 	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
 	if(outputprofile_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef IMISDBIO

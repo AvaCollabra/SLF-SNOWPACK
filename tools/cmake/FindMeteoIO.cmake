@@ -11,23 +11,23 @@ IF(WIN32)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT4 "C:/Progra~1/MeteoI*" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
+		${SRC_DIR}/meteoio/lib
+		${SRC_DIR}/../../meteoio/lib
 		${METEOIO_ROOT1}/lib
 		${METEOIO_ROOT2}/lib
 		${METEOIO_ROOT3}/lib
-		${METEOIO_ROOT4}/lib
-		${SRC_DIR}/meteoio/lib
-		${SRC_DIR}/../../meteoio/lib)
+		${METEOIO_ROOT4}/lib)
 	IF(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.lib
 			PATHS ${SEARCH_PATH}
-			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.lib"
+			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.4.0/lib/libmeteoio.lib"
 			)
 	ELSE(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
 			NAMES libmeteoio.dll.a
 			PATHS ${SEARCH_PATH}
-			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.0.0/lib/libmeteoio.dll.a"
+			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.4.0/lib/libmeteoio.dll.a"
 			)
 	ENDIF(MSVC)
 ELSE(WIN32)
@@ -40,13 +40,13 @@ ELSE(WIN32)
 		PATHS
 			ENV LD_LIBRARY_PATH
 			ENV DYLD_FALLBACK_LIBRARY_PATH
+			${SRC_DIR}/meteoio/lib
+			${SRC_DIR}/../../meteoio/lib
 			"~/usr/lib"
 			"/Applications/MeteoIO/lib"
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
-			${SRC_DIR}/meteoio/lib
-			${SRC_DIR}/../../meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.dylib"
 		)
 	ELSE(APPLE)
@@ -54,12 +54,12 @@ ELSE(WIN32)
 		NAMES meteoio${POPC_EXT}
 		PATHS
 			ENV LD_LIBRARY_PATH
+			${SRC_DIR}/meteoio/lib
+			${SRC_DIR}/../../meteoio/lib
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
-			${SRC_DIR}/meteoio/lib
-			${SRC_DIR}/../../meteoio/lib
 		DOC "Location of the libmeteoio, like /usr/lib/libmeteoio.so"
 		)
 	ENDIF(APPLE)

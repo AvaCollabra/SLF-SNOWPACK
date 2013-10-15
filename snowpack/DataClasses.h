@@ -41,7 +41,6 @@ enum {
 	NUMBER_OF_PHASES
 };
 
-
 /// @brief Optical Properties of snow
 struct SNOW_OPTIC {
 	double ggg;     ///< Asymmetry Parameter
@@ -609,8 +608,7 @@ class SnowProfileLayer {
 /// @brief class to collect the information about the current simulation (version, date)
 class RunInfo {
 	public:
-		RunInfo(); //this default constructor should not be used!
-		RunInfo(const double& time_zone);
+		RunInfo();
 
 		const std::string version;   ///< SNOWPACK version
 		const mio::Date computation_date; ///< Date of computation
@@ -618,7 +616,7 @@ class RunInfo {
 		const std::string user; ///< logname of the user running the simulation
 
 	private:
-		static mio::Date getRunDate(const double& time_zone);
+		static mio::Date getRunDate();
 		static std::string getCompilationDate();
 };
 

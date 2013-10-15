@@ -51,19 +51,13 @@ const double SnowStation::comb_thresh_sp = 0.05;    ///< Sphericity (1)
 const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 
 RunInfo::RunInfo()
-            : version(SN_VERSION), computation_date(getRunDate(0.)),
+            : version(SN_VERSION), computation_date(getRunDate()),
               compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
 
-RunInfo::RunInfo(const double& time_zone)
-            : version(SN_VERSION), computation_date(getRunDate(time_zone)),
-              compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
-
-mio::Date RunInfo::getRunDate(const double& time_zone)
+mio::Date RunInfo::getRunDate()
 {
 	Date localdate;
 	localdate.setFromSys();
-	localdate.setTimeZone(time_zone);
-
 	return localdate;
 }
 

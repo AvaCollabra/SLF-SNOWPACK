@@ -57,7 +57,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dt_air_snow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), fixed_albedo(0.), t_surf(0.),
+            minimum_l_element(0.), fixed_albedo(Constants::undefined), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), multistream(false), combine_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
