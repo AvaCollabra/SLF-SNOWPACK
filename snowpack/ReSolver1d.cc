@@ -2375,6 +2375,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
 				//in CompTemperatures, the element temperature will not be adjusted to freezing temperature just because there is water in it!
 				EMS[i].Te=MAX(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
+				NDS[i].T=MAX(NDS[i].T, T_0);
+				NDS[i+1].T=MAX(NDS[i+1].T, T_0);
 				EMS[i].melting_tk=EMS[i].Te;
 				EMS[i].freezing_tk=EMS[i].Te;
 			}
