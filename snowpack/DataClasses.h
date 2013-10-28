@@ -579,6 +579,7 @@ class SnowProfileLayer {
 		SnowProfileLayer();
 
 		void average(const double& w1, const double& w2, const SnowProfileLayer& Pdata);
+		static std::vector<SnowProfileLayer> generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata);
 
 		// Profile meta data
 		mio::Date profileDate; ///< Date of profile

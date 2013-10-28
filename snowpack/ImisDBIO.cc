@@ -125,52 +125,6 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 	throw IOException("Nothing implemented here!", AT);
 }
 
-//fill a profile structure with the proper data extracted from the Xdata.
-void ImisDBIO::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, std::vector<SnowProfileLayer> &Pdata)
-{
-	const size_t nE = Xdata.getNumberOfElements();
-	const vector<NodeData>& NDS = Xdata.Ndata;
-	const vector<ElementData>& EMS = Xdata.Edata;
-
-	// Generate the profile data from the element data (1 layer = 1 element)
-	size_t snowloc = 0;
-	string mystation = Xdata.meta.getStationID();
-	if (isdigit(mystation[mystation.length()-1])) {
-		snowloc = mystation[mystation.length()-1] - '0';
-		if (mystation.length() > 2)
-			mystation = mystation.substr(0, mystation.length()-1);
-	}
-
-	for(size_t e=0, ll=0; e<nE; e++, ll++) {
-		// Write profile meta data
-		Pdata[ll].profileDate = dateOfProfile;
-		Pdata[ll].stationname = mystation;
-		Pdata[ll].loc_for_snow = snowloc;
-		Pdata[ll].loc_for_wind = 1;
-
-		// Write profile layer data
-		Pdata[ll].layerDate = EMS[e].depositionDate;
-		Pdata[ll].height = M_TO_CM(NDS[e+1].z + NDS[e+1].u);
-		Pdata[ll].rho = EMS[e].Rho;
-		Pdata[ll].T = K_TO_C(NDS[e+1].T);
-		Pdata[ll].gradT = EMS[e].gradT;
-		Pdata[ll].strain_rate = fabs(EMS[e].EDot);
-		Pdata[ll].theta_i = EMS[e].theta[ICE] * 100.;
-		Pdata[ll].theta_w = EMS[e].theta[WATER] * 100.;
-		Pdata[ll].grain_size = 2. * EMS[e].rg;
-		Pdata[ll].dendricity = EMS[e].dd;
-		Pdata[ll].sphericity = EMS[e].sp;
-		Pdata[ll].ogs = 2. * EMS[e].rg_opt;
-		Pdata[ll].bond_size = 2. * EMS[e].rb;
-		Pdata[ll].coordin_num = EMS[e].N3;
-		Pdata[ll].marker = EMS[e].mk%100;
-		Pdata[ll].type = EMS[e].type;
-		Pdata[ll].hard = EMS[e].hard;
-	}
-
-	Aggregate::aggregate(Pdata);
-}
-
 //delete the profile records that we will resubmit
 void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stationNumber,
                              const mio::Date& dateStart, const mio::Date& dateEnd)
@@ -254,35 +208,6 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	}
 }
 
-void ImisDBIO::dumpASCIIProfile(const std::string& profile_filename, const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata)
-{
-	//open profile file and write to it
-	std::ofstream Pfile(profile_filename.c_str(), std::ios::out | std::fstream::app);
-	if(!Pfile)
-		throw FileAccessException("[E] Can not open file "+profile_filename, AT);
-
-	const size_t nL = Pdata.size();
-	for(size_t ll=0; ll<nL; ll++) {
-		Pfile << fixed << setprecision(6) << Pdata[ll].profileDate.getJulian() << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
-		Pfile << setprecision(6) << Pdata[ll].layerDate.getJulian() << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
-		Pfile << setprecision(1) << Pdata[ll].theta_w << "," << Pdata[ll].theta_i << "," << setprecision(3) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
-		Pfile << setprecision(2) << Pdata[ll].coordin_num << "," << Pdata[ll].grain_size << "," << setprecision(3) << Pdata[ll].bond_size << "," << Pdata[ll].type << "\n";
-	}
-
-	const size_t nE = Xdata.getNumberOfElements();
-	const vector<NodeData>& NDS = Xdata.Ndata;
-	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
-		const double gsz_SH = NDS[nE].hoar / hoar_density_surf;
-		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
-
-		Pfile << fixed << setprecision(6) << Pdata[nL-1].profileDate.getJulian() << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
-		Pfile << setprecision(6) << Pdata[nL-1].layerDate.getJulian() << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
-		Pfile << hoar_density_surf/Constants::density_ice << ",0.00,0.00,2.0," << setprecision(2) << M_TO_MM(gsz_SH) << "," << setprecision(3) << 0.6667*M_TO_MM(gsz_SH) << ",660\n";
-	}
-
-	Pfile.close();
-}
-
 /**
  * @brief Write simplified profile to database
  */
@@ -292,8 +217,8 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& X
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
 	}
-	vector<SnowProfileLayer> Pdata(nE);
-	generateProfile(dateOfProfile, Xdata, Pdata);
+	vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata);
+	Aggregate::aggregate(Pdata);
 
 	try {
 		deleteProfile(Pdata[0].stationname, Pdata[0].loc_for_snow, dateOfProfile, dateOfProfile);

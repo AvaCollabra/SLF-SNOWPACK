@@ -82,6 +82,53 @@ SnowProfileLayer::SnowProfileLayer()
                     theta_i(0.), theta_w(0.), grain_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
                     bond_size(0.), coordin_num(0.), marker(0), type(0), hard(0.) {}
 
+std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata)
+{
+	const size_t nE = Xdata.getNumberOfElements();
+	const vector<NodeData>& NDS = Xdata.Ndata;
+	const vector<ElementData>& EMS = Xdata.Edata;
+
+	std::vector<SnowProfileLayer> Pdata(nE);
+
+	// Generate the profile data from the element data (1 layer = 1 element)
+	size_t snowloc = 0;
+	string mystation = Xdata.meta.getStationID();
+	if (isdigit(mystation[mystation.length()-1])) {
+		snowloc = mystation[mystation.length()-1] - '0';
+		if (mystation.length() > 2)
+			mystation = mystation.substr(0, mystation.length()-1);
+	}
+
+	for(size_t ll=0; ll<nE; ll++) {
+		// Write profile meta data
+		Pdata[ll].profileDate = dateOfProfile;
+		Pdata[ll].stationname = mystation;
+		Pdata[ll].loc_for_snow = snowloc;
+		Pdata[ll].loc_for_wind = 1;
+
+		// Write profile layer data
+		Pdata[ll].layerDate = EMS[ll].depositionDate;
+		Pdata[ll].height = M_TO_CM( NDS[ll+1].z + NDS[ll+1].u );
+		Pdata[ll].rho = EMS[ll].Rho;
+		Pdata[ll].T = K_TO_C( NDS[ll+1].T );
+		Pdata[ll].gradT = EMS[ll].gradT;
+		Pdata[ll].strain_rate = fabs(EMS[ll].EDot);
+		Pdata[ll].theta_i = EMS[ll].theta[ICE] * 100.;
+		Pdata[ll].theta_w = EMS[ll].theta[WATER] * 100.;
+		Pdata[ll].grain_size = 2. * EMS[ll].rg;
+		Pdata[ll].dendricity = EMS[ll].dd;
+		Pdata[ll].sphericity = EMS[ll].sp;
+		Pdata[ll].ogs = 2. * EMS[ll].rg_opt;
+		Pdata[ll].bond_size = 2. * EMS[ll].rb;
+		Pdata[ll].coordin_num = EMS[ll].N3;
+		Pdata[ll].marker = EMS[ll].mk%100;
+		Pdata[ll].type = EMS[ll].type;
+		Pdata[ll].hard = EMS[ll].hard;
+	}
+
+	return Pdata;
+}
+
 /**
  * @brief Determines the averaged quantities of the current layer with another layer
  * @param Lp1 Thickness (weight) of layer Pdata

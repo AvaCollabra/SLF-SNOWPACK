@@ -555,6 +555,40 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 {
+	writeProProfile(i_date, Xdata);
+}
+
+void AsciiIO::writePrfProfile(const mio::Date& /*i_date*/, const SnowStation& /*Xdata*/)
+{
+	//open profile file and write to it
+	/*std::ofstream Pfile(profile_filename.c_str(), std::ios::out | std::fstream::app);
+	if(!Pfile)
+		throw FileAccessException("[E] Can not open file "+profile_filename, AT);
+
+	const size_t nL = Pdata.size();
+	for(size_t ll=0; ll<nL; ll++) {
+		Pfile << fixed << setprecision(6) << Pdata[ll].profileDate.getJulian() << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
+		Pfile << setprecision(6) << Pdata[ll].layerDate.getJulian() << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
+		Pfile << setprecision(1) << Pdata[ll].theta_w << "," << Pdata[ll].theta_i << "," << setprecision(3) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
+		Pfile << setprecision(2) << Pdata[ll].coordin_num << "," << Pdata[ll].grain_size << "," << setprecision(3) << Pdata[ll].bond_size << "," << Pdata[ll].type << "\n";
+	}
+
+	const size_t nE = Xdata.getNumberOfElements();
+	const vector<NodeData>& NDS = Xdata.Ndata;
+	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
+		const double gsz_SH = NDS[nE].hoar / hoar_density_surf;
+		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
+
+		Pfile << fixed << setprecision(6) << Pdata[nL-1].profileDate.getJulian() << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
+		Pfile << setprecision(6) << Pdata[nL-1].layerDate.getJulian() << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
+		Pfile << hoar_density_surf/Constants::density_ice << ",0.00,0.00,2.0," << setprecision(2) << M_TO_MM(gsz_SH) << "," << setprecision(3) << 0.6667*M_TO_MM(gsz_SH) << ",660\n";
+	}
+
+	Pfile.close();*/
+}
+
+void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
+{
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
 	const size_t nN = Xdata.getNumberOfNodes();

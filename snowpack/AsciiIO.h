@@ -71,6 +71,9 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
+		void writeProProfile(const mio::Date& date, const SnowStation& Xdata);
+		void writePrfProfile(const mio::Date& date, const SnowStation& Xdata);
+
 		void setNumberSensors(const CurrentMeteo& Mdata);
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                     const CurrentMeteo& Mdata, const double crust,

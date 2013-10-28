@@ -53,7 +53,6 @@ class ImisDBIO : public SnowpackIOInterface{
 		ImisDBIO& operator=(const ImisDBIO& in);
 	private:
 		static void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
-		static void generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, std::vector<SnowProfileLayer> &Pdata);
 		void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const;
 		void print_Profile_query(const SnowProfileLayer& Pdata) const;
 
@@ -68,7 +67,6 @@ class ImisDBIO : public SnowpackIOInterface{
 		                 const std::vector<ProcessDat>& Hdata, const std::vector<ProcessInd>& Hdata_ind,
 		                 const size_t& num);
 
-		static void dumpASCIIProfile(const std::string& profile_filename, const SnowStation& Xdata, const std::vector<SnowProfileLayer> &Pdata);
 		oracle::occi::Date OracleDate(mio::Date in_date) const;
 		static std::string getKey(const SnowpackConfig& i_cfg, const std::string& key, const std::string& section);
 
