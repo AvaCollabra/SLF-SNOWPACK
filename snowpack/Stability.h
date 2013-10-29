@@ -59,7 +59,7 @@ class StabilityData {
 		double sig_n;          ///< Normal load on upper element node, perpendicular to slope
 		double sig_s;          ///< Shear stress on upper element node, parallel to slope
 		double alpha_max_rad;  ///< Angle from snow surface to peak shear stress, 54.3 at 38 deg
-		double psi_ref;        ///< Slope angle of reference slope, usually 38 deg
+		double psi_ref;        ///< Reference slope angle in radian, corresponds usually to 38 deg
 		double cos_psi_ref;    ///< Cosine of psi_ref
 		double sin_psi_ref;    ///< Sine of psi_ref
 };

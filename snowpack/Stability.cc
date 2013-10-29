@@ -578,8 +578,9 @@ void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
 
 	STpar.Sig_c2 = Constants::undefined;
 	STpar.strength_upper = 1001.;
-	STpar.cos_psi_ref = cos(i_psi_ref*mio::Cst::to_rad);
-	STpar.sin_psi_ref = sin(i_psi_ref*mio::Cst::to_rad);
+	STpar.psi_ref = i_psi_ref*mio::Cst::to_rad;
+	STpar.cos_psi_ref = cos(STpar.psi_ref);
+	STpar.sin_psi_ref = sin(STpar.psi_ref);
 	STpar.sig_n = Constants::undefined;
 	STpar.sig_s = Constants::undefined;
 	STpar.alpha_max_rad = 54.3*mio::Cst::to_rad; // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
@@ -599,7 +600,8 @@ void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
 }
 
 /**
- * @brief Returns the skier's penetration depth (Adapted from Canadian parameterization)
+ * @brief Returns the skier's penetration depth Pk
+ * Adapted from Jamieson & Johnston, Ann. Glaciol., 26, 296-302 (1998)
  * @param *Xdata
  */
 double Stability::compPenetrationDepth(const SnowStation& Xdata)
@@ -637,7 +639,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 			}
 		}
 	}
-	rho_Pk /= dz_Pk; //weighted average density of the snow pack
+	rho_Pk /= dz_Pk; //weighted average density of the snow slab penetrated by the skier
 
 	// NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
 	return MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust));
@@ -678,14 +680,14 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 	// 1. Conway
 	const double Sig_cC = 19.5*rho_ri*rho_ri;
 
-	// 2. Grain Type dependent mostly from Jamieson,
-	//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
+	// 2. Grain Type dependent mostly from Jamieson & Johnston,
+	//    Ann. Glaciol., 26, 296-302 (1998) and Ann. Glaciol., 32, 59-69 (2001)
 	double phi = 0.; // Normal load correction
 	double Sig_c2 = -1.0; // Critical shear stress (kPa)
 	double Sig_c3 = -1.0; // Critical shear stress (kPa)
 
 	switch( F1 ) {
-		case 0: // Graupel, from O. Abe, Ann. Glaciol. 38 (2004), size-effect corrected
+		case 0: // Graupel, from O. Abe, Ann. Glaciol., 38, (2004), size-effect corrected
 			Sig_c2 = 0.65*(82.*pow(rho_ri, 2.8));
 			phi = 0.08*Sig_c2 + 0.224;
 			break;
@@ -705,21 +707,21 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 			switch(Stability::sh_mod) {
 				case 0: // original T. Chalmers
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
+							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
+							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
 					Sig_c2 = 0.429 + 0.0138*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.12*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.596*(cH -
+							1.12*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
 							0.0202*K_TO_C(Edata.Te);
@@ -738,7 +740,8 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 		default: // FC, DH, FCmx
 			Sig_c2 = 18.5*exp(2.11*log(rho_ri));
 			Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
-			// phi = 0.08*Sig_c2 + 0.224; // Correction not used by B. Jamieson, see IGS03
+			// phi = 0.08*Sig_c2 + 0.224;
+			// Above correction not used by Jamieson & Johnston (1998), but considered by Lehning et al., Ann. Glaciol., 38, 331-338 (2004)
 			break;
 	}
 
@@ -815,21 +818,21 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 			switch(Stability::sh_mod) {
 				case 0: // original T. Chalmers
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
+							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.18*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.625*(cH -
+							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
 							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
 					Sig_c2 = 0.429 + 0.0138*(date.getJulian() - Edata.depositionDate.getJulian()) +
-							1.12*STpar.sig_n/(STpar.cos_psi_ref*STpar.cos_psi_ref) - 0.596*(cH -
+							1.12*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
 							0.0202*K_TO_C(Edata.Te);
@@ -849,7 +852,8 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 			Sig_c2 = 18.5*exp(2.11*log(rho_ri));
 			//Sig_c2 = 0.0391*exp(0.0141*Edata.theta[ICE]*Constants::density_ice); //NIED (H. Hirashima)
 			Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
-			// phi = 0.08*Sig_c2 + 0.224; // Correction not used by B. Jamieson, see IGS03
+			// phi = 0.08*Sig_c2 + 0.224;
+			// Above correction not used by Jamieson & Johnston (1998), but considered by Lehning et al., Ann. Glaciol., 38, 331-338 (2004)
 			break;
 	}
 
@@ -893,8 +897,7 @@ double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
 /**
  * @brief Returns the skier stability index Sk reduced to psi_ref (usually 38 deg => Sk_38)
  * The classic skier stability index Sk(psi_ref), using P. Foehn's formula
- * (IAHS No162, 1987, p201) for the skier induced shear stress,
- * corrected for skier penetration depth Pk.
+ * (IAHS No162, 1987, p201) for the skier (load of 85 kg on 1.7 m long skis) induced shear stress.
  * @param depth_lay Depth of layer to investigate (m)
  * @param STpar
  */
@@ -902,9 +905,12 @@ double Stability::setSkierStabilityIndex(const double& depth_lay, const Stabilit
 {
 	if ( depth_lay > Constants::eps ) {
 		const double Alpha_max = STpar.alpha_max_rad;
-		// Skier contribution to shear stress (kPa) at psi_ref (usually 38 deg)
-		double delta_sig = 2.*0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref*mio::Cst::to_rad);
-		delta_sig /= Constants::pi *  depth_lay * STpar.cos_psi_ref;
+		// Skier contribution to shear stress at psi_ref (in rad, corresponds usually to 38 deg)
+		// about 0.1523 kPa / depth_lay at psi_ref = 38 deg and Alpha_max = 54.3 deg
+		// double delta_sig = 2. * 0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
+		double delta_sig = 2. * (85.*Constants::g/1.7) * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
+		delta_sig /= Constants::pi *  depth_lay * STpar.cos_psi_ref; // in Pa
+		delta_sig /= 1000.; // convert to kPa
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
 	} else {
@@ -1293,7 +1299,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		return;
 	}
 
-	const double Pk = compPenetrationDepth(Xdata); // Penetration depth
+	const double Pk = compPenetrationDepth(Xdata); // Skier penetration depth
 	size_t e = nE; // Counter
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
@@ -1305,7 +1311,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
 		NDS[e+1].S_n = setNaturalStabilityIndex(STpar);
-		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk;
+		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk; // corrected for skier penetration depth Pk.
 		NDS[e+1].S_s = setSkierStabilityIndex(depth_lay, STpar);
 		if (e < nE-1)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
