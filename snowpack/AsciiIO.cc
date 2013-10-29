@@ -622,14 +622,15 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	const size_t nz = (useSoilLayers)? nN : nE;
 
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
-	fprintf(PFile,"\n0501,%u", nz);
-	if (nz < 1) {
-		// no soil and no snow
+	if (nz < 1) { // no soil and no snow
+		fprintf(PFile,"\n0501,1,0");
 		fclose(PFile);
 		return;
+	} else {
+		fprintf(PFile,"\n0501,%u", nz);
 	}
-	for (size_t e = nN-nz; e < nN; e++)
-		fprintf(PFile,",%.2f",M_TO_CM((NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z)/cos_sl));
+	for (size_t n = nN-nz; n < nN; n++)
+		fprintf(PFile,",%.2f",M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z)/cos_sl));
 
 	//  502: element density (kg m-3)
 	fprintf(PFile,"\n0502,%u", nE);
@@ -1221,10 +1222,12 @@ void AsciiIO::setNumberSensors(const CurrentMeteo& Mdata)
  * If AVGSUM_TIME_SERIES is set, mean fluxes and cumulated masses since last dump are written, \n
  * else current energy fluxes, cumulated masses over last computation_step_length (recommended setting in operational mode).
  * If CUMSUM_MASS is set, current value of cumulated masses since begin of run are dumped. \n
- * Precipitations (rain& snow, rain) are always dumped as rates (kg m-2 h-1). \n
  * NOTE:
  * 	-# neither AVGSUM_TIME_SERIES nor CUMSUM_MASS can be set if NUMBER_SLOPES > 1.
- * 	-# When running SNOW_REDISTRIBUTION on virtual slopes, eroded mass will be dumped
+ * Precipitations are dumped as rates (kg m-2 h-1) if PRECIP_RATES is set, otherwise as sum over the output time step. \n
+ * NOTE:
+ * 	-# The units of the corresponding SN_GUI plot will always appear as rate!
+ * When running SNOW_REDISTRIBUTION on virtual slopes, eroded mass will be dumped
  *     to the windward *.met file and added to the solid precipitations of the lee *.met file!
  * \li DO NOT change the order of parameters below! Additional parameters may be dumped at pos.
  *     93[94] to 100 in writeFreeSeriesXXX()
@@ -1821,7 +1824,7 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			fprintf(fout, "\n0522,nElems,absorbed shortwave radiation (W m-2)");
 			fprintf(fout, "\n0523,nElems,viscous deformation rate (1.e-6 s-1)");
 			fprintf(fout, "\n0530,nElems,position (cm) and minimum stability indices:");
-			fprintf(fout, "\n          profile type, stability class, z_Sdef, Sdef, z_Sn38, Sn38, z_Sk38, Sk38");
+			fprintf(fout, "\n            profile type, stability class, z_Sdef, Sdef, z_Sn38, Sn38, z_Sk38, Sk38");
 			fprintf(fout, "\n0531,nElems,deformation rate stability index Sdef");
 			fprintf(fout, "\n0532,nElems,natural stability index Sn38");
 			fprintf(fout, "\n0533,nElems,stability index Sk38");

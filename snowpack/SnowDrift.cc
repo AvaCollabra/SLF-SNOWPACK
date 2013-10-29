@@ -57,10 +57,11 @@ SnowDrift::SnowDrift(const SnowpackConfig& cfg) : saltation(cfg),
 	cfg.getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
 	/*
-	 * Number of aspects incl. the real flat field: at least 1, either 5 or 9 for SNOW_REDISTRIBUTION
-	 * - 1 real simulation on flat field (or one slope, see PERP_TO_SLOPE)
-	 * - 5 real simulation on flat field plus 4 virtual slopes
-	 * - 9 real simulation on flat field plus 8 virtual slopes
+	 * Number of aspects incl. the real flat field: at least 1, either 3, 5 or 9 for SNOW_REDISTRIBUTION
+	 * - 1: real simulation on flat field (or one slope, see PERP_TO_SLOPE)
+	 * - 3: real simulation on flat field plus 2 virtual slopes
+	 * - 5: real simulation on flat field plus 4 virtual slopes
+	 * - 9: real simulation on flat field plus 8 virtual slopes
 	 */
 	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
 

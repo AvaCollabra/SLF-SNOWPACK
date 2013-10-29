@@ -35,7 +35,7 @@ class SnowpackIOInterface {
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata) = 0;
 
 		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
-                                const ZwischenData& Zdata, const bool& forbackup=false) = 0;
+                                    const ZwischenData& Zdata, const bool& forbackup=false) = 0;
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
 		                             const ProcessDat& Hdata, const double wind_trans24) = 0;
@@ -43,7 +43,7 @@ class SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata) = 0;
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                 const std::vector<ProcessInd>& Hdata_ind, const int& num) = 0;
+                                     const std::vector<ProcessInd>& Hdata_ind, const int& num) = 0;
 };
 
 #endif //End of SnowpackIOInterface.h

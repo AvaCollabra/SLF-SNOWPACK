@@ -552,7 +552,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, ALPINE3D};
 
 	//
-	// BEGIN OF SETTIGS
+	// BEGIN OF SETTINGS
 	//
 	const RunCases runcase = IMISDEFAULT;					//Defines what the soil looks like
 	const BoundaryConditions TopBC = LIMITEDFLUXEVAPORATION;		//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).

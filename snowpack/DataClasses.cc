@@ -1461,7 +1461,7 @@ const std::string SnowStation::toString() const
 	return os.str();
 }
 
-CurrentMeteo::CurrentMeteo(const SnowpackConfig& i_cfg)
+CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
@@ -1470,10 +1470,10 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& i_cfg)
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
-	maxNumberMeasTemperatures = i_cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", IOUtils::nothrow);
-	fixedPositions = i_cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", IOUtils::nothrow);
-	minDepthSubsurf = i_cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", IOUtils::nothrow);
-	numberFixedRates = i_cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", IOUtils::nothrow);
+	maxNumberMeasTemperatures = cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", IOUtils::nothrow);
+	fixedPositions = cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", IOUtils::nothrow);
+	minDepthSubsurf = cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", IOUtils::nothrow);
+	numberFixedRates = cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", IOUtils::nothrow);
 }
 
 void CurrentMeteo::reset(const SnowpackConfig& i_cfg)
