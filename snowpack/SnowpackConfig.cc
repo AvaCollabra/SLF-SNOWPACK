@@ -70,7 +70,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SW_MODE_CHANGE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";
 	advancedConfig["THRESH_RH"] = "0.5";
-	advancedConfig["THRESH_DT_AIR_SNOW"] = "3.0";
+	advancedConfig["THRESH_DTEMP_AIR_SNOW"] = "3.0";
 	advancedConfig["T_CRAZY_MAX"] = "340.";
 	advancedConfig["T_CRAZY_MIN"] = "210.";
 	advancedConfig["VARIANT"] = "DEFAULT";

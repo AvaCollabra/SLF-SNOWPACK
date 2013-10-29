@@ -54,7 +54,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             sw_mode(0), meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
-            height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dt_air_snow(0.),
+            height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
             minimum_l_element(0.), fixed_albedo(Constants::undefined), t_surf(0.),
@@ -141,9 +141,9 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * 	- 2007-12-01: set THRESH_RH to 0.70 to be consistent with data range of ZWART new snow density model
 	 * 	- 2008-01-21: set back THRESH_RH to 0.50 (IMIS sensor problem in operational mode)
 	 * 	- Antarctica: 0.70
-	 * - thresh dtAirSnow: 3.0 */
+	 * - thresh dtempAirSnow: 3.0 */
 	cfg.getValue("THRESH_RH", "SnowpackAdvanced", thresh_rh);
-	cfg.getValue("THRESH_DT_AIR_SNOW", "SnowpackAdvanced", thresh_dt_air_snow);
+	cfg.getValue("THRESH_DTEMP_AIR_SNOW", "SnowpackAdvanced", thresh_dtempAirSnow);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -182,7 +182,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		vw_dendricity = true;
 		rh_lowlim = 1.0;
 		bond_factor_rh = 1.0;
-		enhanced_wind_slab = false;
+		enhanced_wind_slab = false; //true; //
 	}
 
 	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
@@ -616,7 +616,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		// Sensible heat transfer: linear dependence on snow surface temperature
 		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
 		Se[1][1] += alpha;
-		Fe[1] +=alpha * T_air;
+		Fe[1] += alpha * T_air;
 		// Latent heat transfer: NON-linear dependence on snow surface temperature
 		//NOTE: should it not be linearized then?
 		Fe[1] += Bdata.ql;
@@ -1302,9 +1302,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	// -> check relative humidity as well as difference between air and snow surface temperatures,
 	//    that is, no new snow during cloud free conditions!
 	const double melting_tk = (nOldE>0)? Xdata.Edata[nOldE-1].melting_tk : Constants::melting_tk;
-	const double dtAirSnow = (change_bc && !meas_tss)? Mdata.ta - melting_tk : Mdata.ta - t_surf; //we use t_surf only if meas_tss & change_bc
+	const double dtempAirSnow = (change_bc && !meas_tss)? Mdata.ta - melting_tk : Mdata.ta - t_surf; //we use t_surf only if meas_tss & change_bc
 
-	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dtAirSnow < thresh_dt_air_snow))
+	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dtempAirSnow < thresh_dtempAirSnow))
                                || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 
 	// In addition, let's check whether the ground is already snowed in or cold enough to build up a snowpack
