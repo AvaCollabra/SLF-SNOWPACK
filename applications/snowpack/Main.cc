@@ -396,7 +396,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	if (Mdata.tss == mio::IOUtils::nodata) {
-		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use clear sky
+		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use parameterized
 		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
@@ -802,8 +802,8 @@ void real_main (int argc, char *argv[])
 		meteoRead_timer.reset();
 
 		Slope slope(cfg);
-		if (slope.snow_redistribution && !((slope.nSlopes != 1) || (slope.nSlopes != 5) || (slope.nSlopes != 9)))
-			throw mio::IOException("Please set NUMBER_SLOPES to 1, 5 or 9", AT);
+		if (slope.snow_redistribution && !((slope.nSlopes != 1) || (slope.nSlopes != 3) || (slope.nSlopes != 5) || (slope.nSlopes != 9)))
+			throw mio::IOException("Please set NUMBER_SLOPES to 1, 3, 5 or 9", AT);
 
 		double lw_in = Constants::undefined;    // Storage for LWin from flat field energy balance
 
