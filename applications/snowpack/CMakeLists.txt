@@ -1,5 +1,4 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
-
 IF(COMMAND cmake_policy)
 	CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)
@@ -75,9 +74,9 @@ INSTALL(TARGETS ${BINARY}
 ## Bundle MeteoIO
 ###########################################################
 IF(WIN32)
-	IF(CPACK_BUNDLE_ALL) #we consider that if !bundle, the user knows how to handle is library path
+	IF(CPACK_BUNDLE_ALL AND NOT BUILD_STATIC_LIBS) #we consider that if !bundle, the user knows how to handle is library path
 		FILE(GLOB METEOIO_DLL "${METEOIO_ROOT}/lib/libmeteo*.dll")
 		FILE(GLOB SNOWPACK_DLL "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
 		INSTALL(FILES ${METEOIO_DLL} ${SNOWPACK_DLL} DESTINATION bin COMPONENT exe)
-	ENDIF(CPACK_BUNDLE_ALL)
+	ENDIF(CPACK_BUNDLE_ALL AND NOT BUILD_STATIC_LIBS)
 ENDIF(WIN32)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.4)
+cmake_minimum_required(VERSION 2.8)
 SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
@@ -23,15 +23,15 @@ IF(SNOWPACK_STANDALONE)
 	}" HAVE_FEENABLE)
 
 	IF(HAVE_FEENABLE)
-		SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application when doing an arithmetic exception")
+		SET(DEBUG_ARITHM ON CACHE BOOL "Force-crash the application if doing an arithmetic exception")
 	ENDIF(HAVE_FEENABLE)
 	ADD_SUBDIRECTORY(applications/snowpack)
 ENDIF(SNOWPACK_STANDALONE)
 
 ###########################################################
 #plugins and applications
-SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
+SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 
 #build for use with POPC in parallel objects
@@ -47,7 +47,14 @@ IF(POPC)
 ENDIF(POPC)
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
-OPTION( BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON )
+SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
+IF(WIN32)
+	#otherwise the lib files are not generated
+	SET(BUILD_STATIC_LIBS ON)
+ELSE(WIN32)
+	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
+ENDIF(WIN32)
+
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 
@@ -158,12 +165,14 @@ FILE(GLOB hfiles "snowpack/*.h")
 
 IF(WIN32) #handle the special case of WIN32 needing import libraries
 	FILE(GLOB_RECURSE importlibs "lib/libsnow*.lib*")
+	FILE(GLOB dlls "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
+	INSTALL(FILES ${importlibs} ${dlls} DESTINATION lib COMPONENT libraries)
 ENDIF(WIN32)
-FILE(GLOB_RECURSE solibs "lib/libsnow*.${DLL_EXT}")
-FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
+#FILE(GLOB_RECURSE solibs "lib/libsnow*.${DLL_EXT}")
+#FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
 
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
-INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
+#INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
 ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
@@ -225,9 +234,11 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
-	FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
-	INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
-	INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
+	IF(BUILD_SHARED_LIBS) #consider that if STATIC, we don't need the libs
+		FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
+		INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
+		INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
+	ENDIF(BUILD_SHARED_LIBS)
 	IF(INSTALL_DOC)
 		IF(WIN32)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/doc")
@@ -270,10 +281,6 @@ SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${
 #installation by components for formats that support it
 #SET(CPACK_COMPONENTS_ALL_GROUPS_IN_ONE_PACKAGE 1)
 SET(CPACK_COMPONENTS_ALL libraries headers documentation examples exe)
-SET(CPACK_COMPONENT_EXE_DISPLAY_NAME "Snowpack application")
-SET(CPACK_COMPONENT_EXE_DESCRIPTION "The SNOWPACK standalone model")
-SET(CPACK_COMPONENT_EXE_GROUP Runtime)
-SET(CPACK_COMPONENT_EXE_DEPENDS libraries)
 SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack library")
 SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK library itself")
 SET(CPACK_COMPONENT_LIBRARIES_GROUP Runtime)
@@ -281,6 +288,14 @@ SET(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "Header files")
 SET(CPACK_COMPONENT_HEADERS_DESCRIPTION "Necessary C++ header files for developing applications using SNOWPACK")
 SET(CPACK_COMPONENT_HEADERS_GROUP Development)
 SET(CPACK_COMPONENT_HEADERS_DEPENDS libraries)
+SET(CPACK_COMPONENT_DEVELOPMENT_GROUP "Development")
+SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an application based on SNOWPACK")
+SET(CPACK_COMPONENT_EXE_DISPLAY_NAME "Snowpack application")
+SET(CPACK_COMPONENT_EXE_DESCRIPTION "The SNOWPACK standalone model")
+SET(CPACK_COMPONENT_EXE_GROUP Runtime)
+SET(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
+SET(CPACK_COMPONENT_GROUP_RUNTIME_DESCRIPTION "What you need to run an application based on SNOWPACK")
+SET(CPACK_COMPONENT_EXE_DEPENDS libraries)
 IF(INSTALL_DOC)
 	SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
 	SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documentation of the SNOWPACK usage and API both for the end user and the developer using SNOWPACK in his/her application")
@@ -292,12 +307,6 @@ IF(INSTALL_DOC)
 	SET(CPACK_COMPONENT_DOCS_GROUP "Documentation")
 	SET(CPACK_COMPONENT_GROUP_DOCS_DESCRIPTION "How to use Snowpack as a standalone model or as a library called by your own model")
 ENDIF(INSTALL_DOC)
-
-SET(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
-SET(CPACK_COMPONENT_GROUP_RUNTIME_DESCRIPTION "What you need to run an application based on SNOWPACK")
-SET(CPACK_COMPONENT_DEVELOPMENT_GROUP "Development")
-SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an application based on SNOWPACK")
-
 
 IF(UNIX)
 	IF(APPLE)

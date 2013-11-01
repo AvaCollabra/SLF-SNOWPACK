@@ -1,15 +1,4 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
-
-SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
-SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
-OPTION( BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON )
-IF(WIN32)
-	#otherwise the lib files are not generated
-	SET(BUILD_STATIC_LIBS ON)
-ELSE(WIN32)
-	OPTION( BUILD_STATIC_LIBS "Set to ON to build static libraries" OFF )
-ENDIF(WIN32)
-
 IF(COMMAND cmake_policy)
 	CMAKE_POLICY(SET CMP0003 NEW)
 ENDIF(COMMAND cmake_policy)

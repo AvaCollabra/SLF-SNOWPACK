@@ -1,5 +1,4 @@
-/*
-* GENERAL INFO
+/* GENERAL INFO
 * AUTHOR: GUIDO SARTORIS ETH ZUERICH
 */
 
@@ -42,6 +41,47 @@ int ds_Initialize(size_t MatDim, int Multiplicity, MYTYPE **ppMat)
 
 }  /* ds_Initialize */
 
+/*
+* This function compute the triangular factorization for a block of rows of dimension N_PIVOT
+* onto another block of rows of dimension N_ROW for a block symmetric matrix stored packed
+* row-wise in a one dimensional array. Schenatically we have:
+*
+*    N_PIVOT            N_ROW                       N[1]            N[2]
+*     <--->           <-------->                 <-------->         <-->
+*     X X X  -  -  -  *  *  *  *  *  *  *        *  *  *  *         *  *
+*     X X X  -  -  -  *  *  *  *  *  *  *        *  *  *  *         *  *
+*     X X X  -  -  -  *  *  *  *  *  *  *        *  *  *  *         *  *
+*     <--------------><----------------->
+*        TOT_ROW            N_COL         JUMP[1]           JUMP[2]
+*                                        <------>          <------->
+*                     *  *  *  *  *  *  *  -  -  *  *  *  *  -   -  *  *
+*                        *  *  *  *  *  *  -  -  *  *  *  *  -   -  *  *
+*                           *  *  *  *  *  -  -  *  *  *  *  -   -  *  *
+*                              *  *  *  *  -  -  *  *  *  *  -   -  *  *
+*
+* The first values of both row block are specified by MAT0 and MAT1, N[0] and JUMP[0] are
+* unused. ATTENTION: This function change the value of N[0] which is first set to N_COL and then
+* is changed continously.
+*/
+void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
+                         double *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
+{
+	int n_k, i_, k__;
+	double *Mat_k0, *Mat_k, *Mat_i;
+	for ( Mat_k0 = MAT0, k__ = 0, n_k = N_PIVOT; n_k > 0; n_k--, k__++ ) {
+		const double Pivot = 1. / (*Mat_k0);
+		Mat_k = Mat_k0 + TOT_ROW - k__;
+		Mat_i = MAT1;
+		int dim_i = DIM1;
+		N[0]  = N_COL;
+		for ( i_ = N_ROW; i_ > 0; Mat_k++, i_-- ) {
+			VD_AXPY_JUMP(N_BLOCK, N, JUMP, -(*Mat_k)*Pivot, Mat_k, Mat_i );
+			N[0]-- ;
+			Mat_i += (dim_i)--;
+		}
+		Mat_k0  += DIM0 - k__;
+	}
+}
 
 int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 {

@@ -128,6 +128,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - 1: 0.02 */
 	cfg.getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", height_new_elem);
 	cfg.getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", minimum_l_element);
+	if(minimum_l_element<=0.) throw IOException("MINIMUM_L_ELEMENT must be >0! Please fix your ini file.", AT);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 
