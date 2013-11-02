@@ -618,11 +618,11 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
 
 	fprintf(PFile,"\n0500,%s", i_date.toString(Date::DIN).c_str());
 	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
-
-	const size_t nz = (useSoilLayers)? nN : nE;
+	const bool no_snow = (nE == Xdata.SoilNode);
 
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
-	if (nz < 1) { // no soil and no snow
+	const size_t nz = (useSoilLayers)? nN : nE;
+	if (no_snow) {
 		fprintf(PFile,"\n0501,1,0");
 		fclose(PFile);
 		return;
@@ -644,28 +644,47 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	fprintf(PFile,"\n0506,%u", nE);
 	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.1f",100.*EMS[e].theta[WATER]);
-	// *508: dendricity (1)
-	fprintf(PFile,"\n0508,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",EMS[e].dd);
-	// *509: sphericity (1)
-	fprintf(PFile,"\n0509,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",EMS[e].sp);
-	// *510: coordination number (1)
-	fprintf(PFile,"\n0510,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.1f",EMS[e].N3);
-
-	// *511: bond size (mm)
-	fprintf(PFile,"\n0511,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",2.*EMS[e].rb);
-	//  512: grain size (mm)
-	fprintf(PFile,"\n0512,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",2.*EMS[e].rg);
-	//  513: grain type (Swiss code F1F2F3)
+	// *508: snow dendricity (1)
+	if (no_snow) {
+		fprintf(PFile,"\n0508,1,0");
+	} else {
+		fprintf(PFile,"\n0508,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",EMS[e].dd);
+	}
+	// *509: snow sphericity (1)
+	if (no_snow) {
+		fprintf(PFile,"\n0509,1,0");
+	} else {
+		fprintf(PFile,"\n0509,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",EMS[e].sp);
+	}
+	// *510: snow coordination number (1)
+	if (no_snow) {
+		fprintf(PFile,"\n0510,1,0");
+	} else {
+		fprintf(PFile,"\n0510,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.1f",EMS[e].N3);
+	}
+	// *511: snow bond size (mm)
+	if (no_snow) {
+		fprintf(PFile,"\n0511,1,0");
+	} else {
+		fprintf(PFile,"\n0511,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",2.*EMS[e].rb);
+	}
+	// 512: snow grain size (mm)
+	if (no_snow) {
+		fprintf(PFile,"\n0512,1,0");
+	} else {
+		fprintf(PFile,"\n0512,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",2.*EMS[e].rg);
+	}
+	// 513: snow grain type (Swiss code F1F2F3), dumps either 1,0 or 1,660 if no snow on the ground!
 	fprintf(PFile,"\n0513,%u", nE+1-Xdata.SoilNode);
 	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fprintf(PFile,",%03u",EMS[e].type);
@@ -702,42 +721,70 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	fprintf(PFile,"\n0521,%u", nE);
 	for (size_t e = 0; e < nE; e++)
 		fprintf(PFile,",%.3e",EMS[e].k[TEMPERATURE]);
-	// *522: absorbed shortwave radiation (W m-2)
-	fprintf(PFile,"\n0522,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.1f",EMS[e].sw_abs);
-	// *523: viscous deformation rate (1.e-6 s-1)
-	fprintf(PFile,"\n0523,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.1f",1.e6*EMS[e].EvDot);
+	// *522: snow absorbed shortwave radiation (W m-2)
+	if (no_snow) {
+		fprintf(PFile,"\n0522,1,0");
+	} else {
+		fprintf(PFile,"\n0522,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.1f",EMS[e].sw_abs);
+	}
+	// *523: snow viscous deformation rate (1.e-6 s-1)
+	if (no_snow) {
+		fprintf(PFile,"\n0523,1,0");
+	} else {
+		fprintf(PFile,"\n0523,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.1f",1.e6*EMS[e].EvDot);
+	}
 	//  530: position (cm) and minimum stability indices
 	fprintf(PFile,"\n0530,%d", 8);
 	fprintf(PFile,",%d,%d,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f", Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d, M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s);
 	//  531: deformation rate stability index Sdef
-	fprintf(PFile,"\n0531,%u" ,nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",EMS[e].S_dr);
+	if (no_snow) {
+		fprintf(PFile,"\n0531,1,0");
+	} else {
+		fprintf(PFile,"\n0531,%u" ,nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",EMS[e].S_dr);
+	}
 	// *532: natural stability index Sn38
-	fprintf(PFile,"\n0532,%u" ,nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode;  e < nE; e++)
-		fprintf(PFile,",%.2f",NDS[e+1].S_n);
+	if (no_snow) {
+		fprintf(PFile,"\n0532,1,0");
+	} else {
+		fprintf(PFile,"\n0532,%u" ,nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode;  e < nE; e++)
+			fprintf(PFile,",%.2f",NDS[e+1].S_n);
+	}
 	//  533: stability index Sk38
-	fprintf(PFile,"\n0533,%u" ,nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",NDS[e+1].S_s);
+	if (no_snow) {
+		fprintf(PFile,"\n0533,1,0");
+	} else {
+		fprintf(PFile,"\n0533,%u" ,nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",NDS[e+1].S_s);
+	}
 	//  534: hand hardness ...
-	fprintf(PFile,"\n0534,%u" ,nE-Xdata.SoilNode);
-	if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
-		for (size_t e = Xdata.SoilNode; e < nE; e++)
-			fprintf(PFile,",%.1f",-1.*(19.3*pow(EMS[e].hard, 2.4)));
-	} else { // ... or in index steps (1)
-		for (size_t e = Xdata.SoilNode; e < nE; e++)
-			fprintf(PFile,",%.1f", -EMS[e].hard);
+	if (no_snow) {
+		fprintf(PFile,"\n0534,1,0");
+	} else {
+		fprintf(PFile,"\n0534,%u" ,nE-Xdata.SoilNode);
+		if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
+			for (size_t e = Xdata.SoilNode; e < nE; e++)
+				fprintf(PFile,",%.1f",-1.*(19.3*pow(EMS[e].hard, 2.4)));
+		} else { // ... or in index steps (1)
+			for (size_t e = Xdata.SoilNode; e < nE; e++)
+				fprintf(PFile,",%.1f", -EMS[e].hard);
+		}
 	}
 	// *535: optical equivalent grain size OGS (mm)
-	fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
+	if (no_snow) {
+		fprintf(PFile,"\n0535,1,0");
+	} else {
+		fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
+	}
 
 	if (variant == "CALIBRATION")
 		writeFreeProfileCALIBRATION(Xdata, PFile);
@@ -770,7 +817,7 @@ void AsciiIO::writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout)
 				}
 			}
 		}
-	} else {
+	} else if (nE > Xdata.SoilNode) { // snow on the ground
 		// 600-profile specials
 		// *601: snow shear strength (kPa)
 		fprintf(fout,"\n0601,%u" ,nE-Xdata.SoilNode);
@@ -796,7 +843,11 @@ void AsciiIO::writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout)
 			if (EMS[e].dd < 0.005)
 				fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
 			else
-				fprintf(fout,",%.1f",0.0);
+				fprintf(fout,",%.1f",0.);
+		}
+	} else {
+		for (size_t jj = 1; jj < 6; jj++) {
+			fprintf(fout,"\n060%u,1,0" , jj);
 		}
 	}
 }
@@ -813,81 +864,94 @@ void AsciiIO::writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout)
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const vector<NodeData>& NDS = Xdata.Ndata;
-	// 600-profile specials
-	// *601: snow shear strength (kPa)
-	fprintf(fout,"\n0601,%u",nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(fout,",%.2f",EMS[e].s_strength);
-	// *602: grain size difference (mm)
-	fprintf(fout,"\n0602,%u",nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE-1; e++)
-		fprintf(fout,",%.2f",2.*fabs(EMS[e].rg - EMS[e+1].rg));
-	fprintf(fout,",0.");
-	// *603: hardness difference (1)
-	fprintf(fout,"\n0603,%u",nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE-1; e++)
-		fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
-	fprintf(fout,",0.");
-	//  *604: ssi index
-	fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++)
-		fprintf(fout,",%.2f",NDS[e+1].ssi);
-	// *605: inverse texture index ITI (Mg m-4)
-	fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
-	for (size_t e = Xdata.SoilNode; e < nE; e++) {
-		if (EMS[e].dd < 0.005)
-			fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
-		else
-			fprintf(fout,",%.1f",0.0);
-	}
+	if (nE > Xdata.SoilNode) { // snow on the ground
+		// 600-profile specials
+		// *601: snow shear strength (kPa)
+		fprintf(fout,"\n0601,%u",nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(fout,",%.2f",EMS[e].s_strength);
+		// *602: grain size difference (mm)
+		fprintf(fout,"\n0602,%u",nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE-1; e++)
+			fprintf(fout,",%.2f",2.*fabs(EMS[e].rg - EMS[e+1].rg));
+		fprintf(fout,",0.");
+		// *603: hardness difference (1)
+		fprintf(fout,"\n0603,%u",nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE-1; e++)
+			fprintf(fout,",%.2f",fabs(EMS[e].hard - EMS[e+1].hard));
+		fprintf(fout,",0.");
+		//  *604: ssi index
+		fprintf(fout,"\n0604,%u" ,nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++)
+			fprintf(fout,",%.2f",NDS[e+1].ssi);
+		// *605: inverse texture index ITI (Mg m-4)
+		fprintf(fout,"\n0605,%u" ,nE-Xdata.SoilNode);
+		for (size_t e = Xdata.SoilNode; e < nE; e++) {
+			if (EMS[e].dd < 0.005)
+				fprintf(fout,",%.1f",-1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg)));
+			else
+				fprintf(fout,",%.1f",0.0);
+		}
 
-	// 700-profile specials for settling comparison
-	// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
-	fprintf(fout,"\n0701,%u",nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].f));
-	// *702: SNOWPACK: reaction to overload (% h-1) //ratio -Sig0 to load EMS[e].C (1)
-	fprintf(fout,"\n0702,%u",nE-Xdata.SoilNode);
-	for(size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EDot));
-	// *703: SNOWPACK: settling rate due to load (% h-1)
-	fprintf(fout,"\n0703,%u",nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].udot));
-	// *704: SNOWPACK: total settling rate (% h-1)
-	fprintf(fout,"\n0704,%u",nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EvDot));
-	// *705: SNOWPACK: bond to grain ratio (1)
-	fprintf(fout,"\n0705,%u",nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout,",%.4f", EMS[e].rb / EMS[e].rg);
-	// *706: SNOWPACK: addLoad to load (%)
-	fprintf(fout,"\n0706,%u",nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++)
-		fprintf(fout,",%.4f", 100.*EMS[e].S);
-	// SNTHERM.89
-	// *891: SNTHERM: settling rate due to load (% h-1)
-	fprintf(fout,"\n0891,%u" ,nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++) {
-		const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
-		fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].C/eta_sntherm));
-	}
-	// *892: SNTHERM: settling rate due to metamorphism (% h-1)
-	fprintf(fout,"\n0892,%u" ,nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++) {
-		double evdot = -2.778e-6*exp(-0.04*(273.15 - EMS[e].Te));
-		if (EMS[e].Rho > 150.)
-			evdot *= exp(-0.046*(EMS[e].Rho-150.));
-		if( EMS[e].theta[WATER] > 0.01 )
-			evdot *= 2.;
-		fprintf(fout, ",%.2f", -100.*H_TO_S(evdot));
-	}
-	// *893: SNTHERM: viscosity (GPa s)
-	fprintf(fout,"\n0893,%u" ,nE-Xdata.SoilNode);
-	for (size_t e=Xdata.SoilNode; e<nE; e++) {
-		const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
-		fprintf(fout,",%.2f", 1.e-9*eta_sntherm);
+		// 700-profile specials for settling comparison
+		// *701: SNOWPACK: settling rate due to metamorphism (sig0) (% h-1)
+		fprintf(fout,"\n0701,%u",nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].f));
+		// *702: SNOWPACK: reaction to overload (% h-1) //ratio -Sig0 to load EMS[e].C (1)
+		fprintf(fout,"\n0702,%u",nE-Xdata.SoilNode);
+		for(size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EDot));
+		// *703: SNOWPACK: settling rate due to load (% h-1)
+		fprintf(fout,"\n0703,%u",nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout, ",%.2f", -100.*H_TO_S(NDS[e].udot));
+		// *704: SNOWPACK: total settling rate (% h-1)
+		fprintf(fout,"\n0704,%u",nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].EvDot));
+		// *705: SNOWPACK: bond to grain ratio (1)
+		fprintf(fout,"\n0705,%u",nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout,",%.4f", EMS[e].rb / EMS[e].rg);
+		// *706: SNOWPACK: addLoad to load (%)
+		fprintf(fout,"\n0706,%u",nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++)
+			fprintf(fout,",%.4f", 100.*EMS[e].S);
+
+		// SNTHERM.89
+		// *891: SNTHERM: settling rate due to load (% h-1)
+		fprintf(fout,"\n0891,%u" ,nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++) {
+			const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
+			fprintf(fout,",%.2f", -100.*H_TO_S(EMS[e].C/eta_sntherm));
+		}
+		// *892: SNTHERM: settling rate due to metamorphism (% h-1)
+		fprintf(fout,"\n0892,%u" ,nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++) {
+			double evdot = -2.778e-6*exp(-0.04*(273.15 - EMS[e].Te));
+			if (EMS[e].Rho > 150.)
+				evdot *= exp(-0.046*(EMS[e].Rho-150.));
+			if( EMS[e].theta[WATER] > 0.01 )
+				evdot *= 2.;
+			fprintf(fout, ",%.2f", -100.*H_TO_S(evdot));
+		}
+		// *893: SNTHERM: viscosity (GPa s)
+		fprintf(fout,"\n0893,%u" ,nE-Xdata.SoilNode);
+		for (size_t e=Xdata.SoilNode; e<nE; e++) {
+			const double eta_sntherm = (3.6e6*exp(0.08*(273.15-EMS[e].Te))*exp(0.021*EMS[e].Rho));
+			fprintf(fout,",%.2f", 1.e-9*eta_sntherm);
+		}
+	} else {
+		for (size_t jj = 1; jj < 6; jj++) {
+			fprintf(fout,"\n060%u,1,0" , jj);
+		}
+		for (size_t jj = 1; jj < 7; jj++) {
+			fprintf(fout,"\n070%u,1,0" , jj);
+		}
+		for (size_t jj = 1; jj < 4; jj++) {
+			fprintf(fout,"\n089%u,1,0" , jj);
+		}
 	}
 }
 
