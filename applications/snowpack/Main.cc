@@ -466,7 +466,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		// Compute new snow water equivalent and density
 		if (flatfield.hn > 0.) {
 			// Assign new snow depth and density from station field (usually flat)
-			hn_slope = flatfield.hn * cos(sector.meta.getSlopeAngle()*mio::Cst::to_rad);
+			hn_slope = flatfield.hn * sector.cos_sl;
 			rho_hn_slope = flatfield.rho_hn;
 		}
 
@@ -946,7 +946,7 @@ void real_main (int argc, char *argv[])
 								i_hz = mn_ctrl.HzStep - 1;
 							Hazard::getDriftIndex(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
 							                      sn_Zdata.drift24, cumsum_drift,
-							                      cos(vecXdata[slope.sector].meta.getSlopeAngle()*mio::Cst::to_rad));
+							                      vecXdata[slope.sector].cos_sl);
 							cumsum_drift = 0.;
 						}
 					}
@@ -1081,7 +1081,7 @@ void real_main (int argc, char *argv[])
 						// Add eroded snow from luv to precipitations on lee slope
 						if ((slope.nSlopes > 1) && (slope.sector == slope.lee) && (cumsum_erosion[slope.luv] > Constants::eps)) {
 							surfFluxes.mass[SurfaceFluxes::MS_HNW] += cumsum_erosion[slope.luv]
-							        / cos(vecXdata[slope.luv].meta.getSlopeAngle()*mio::Cst::to_rad);
+							        / vecXdata[slope.luv].cos_sl;
 						}
 					}
 

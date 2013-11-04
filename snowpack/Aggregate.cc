@@ -48,7 +48,7 @@ void Aggregate::shift(const size_t& nL_ini, std::vector<SnowProfileLayer>& Pdata
 				Pdata[l_new].rho = Pdata[ll].rho;
 				Pdata[l_new].T = Pdata[ll].T;
 				Pdata[l_new].gradT = Pdata[ll].gradT;
-				Pdata[l_new].strain_rate = Pdata[ll].strain_rate;
+				Pdata[l_new].v_strain_rate = Pdata[ll].v_strain_rate;
 				Pdata[l_new].theta_i = Pdata[ll].theta_i;
 				Pdata[l_new].theta_w = Pdata[ll].theta_w;
 				Pdata[l_new].grain_size = Pdata[ll].grain_size;

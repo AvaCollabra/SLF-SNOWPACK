@@ -64,7 +64,7 @@ class AsciiIO : public SnowpackIOInterface {
 		                         const size_t& ii, const SnowStation& Xdata);
 
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
-		                        const double& ground, const double& slope_angle);
+		                        const double& ground, const double& cos_sl);
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 
 		size_t findTaggedElement(const size_t& tag, const SnowStation& Xdata);
@@ -76,17 +76,17 @@ class AsciiIO : public SnowpackIOInterface {
 
 		void setNumberSensors(const CurrentMeteo& Mdata);
 		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                    const CurrentMeteo& Mdata, const double crust,
-                                    const double dhs_corr, const double mass_corr,
-                                    const size_t nCalcSteps, FILE *fout);
+                                       const CurrentMeteo& Mdata, const double crust,
+                                       const double dhs_corr, const double mass_corr,
+                                       const size_t nCalcSteps, FILE *fout);
 		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                    const CurrentMeteo& Mdata, const double crust,
-                                    const double dhs_corr, const double mass_corr,
-                                    const size_t nCalcSteps, FILE *fout);
+                                          const CurrentMeteo& Mdata, const double crust,
+                                          const double dhs_corr, const double mass_corr,
+                                          const size_t nCalcSteps, FILE *fout);
 		void writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
-                                    const CurrentMeteo& Mdata, const double crust,
-                                    const double dhs_corr, const double mass_corr,
-                                    const size_t nCalcSteps, FILE *fout);
+                                           const CurrentMeteo& Mdata, const double crust,
+                                           const double dhs_corr, const double mass_corr,
+                                           const size_t nCalcSteps, FILE *fout);
 
 		void readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata);
 
@@ -101,7 +101,7 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t numberMeasTemperatures, maxNumberMeasTemperatures;
 		size_t numberTags, numberFixedSensors, totNumberSensors;
 
-		double time_zone; ///< input data time zone
+		double time_zone; // input data time zone
 		double calculation_step_length, hazard_steps_between, ts_days_between;
 		double min_depth_subsurf, hoar_density_surf, hoar_min_size_surf;
 		int sw_mode;

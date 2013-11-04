@@ -766,7 +766,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				// Temperature of the uppermost node
 				NDS[nN-1].T = Mdata.ta;
 				// The new nodal position of upper node of top water-film layer (m)
-				const double z_water = MIN(Store, MAX(0.001, 0.01 * cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad)));
+				const double z_water = MIN(Store, MAX(0.001, 0.01 * Xdata.cos_sl));
 				NDS[nN-1].z = NDS[nN-2].z + NDS[nN-2].u + z_water;
 				Store -= z_water;
 				// Fill the element data
@@ -791,7 +791,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			                       || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95)))) {
 				// Put rain water in existing wet layer
 				// The new nodal position of upper node of top water-film layer (m)
-				const double z_water = MIN(Store, MAX(0.0, (0.01 * cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad) - EMS[nE-1].L)));
+				const double z_water = MIN(Store, MAX(0.0, (0.01 * Xdata.cos_sl - EMS[nE-1].L)));
 				NDS[nN-1].z += z_water;
 				Store -= z_water;
 				EMS[nE-1].L0 = EMS[nE-1].L = (NDS[nN-1].z + NDS[nN-1].u) - (NDS[nN-2].z + NDS[nN-2].u);

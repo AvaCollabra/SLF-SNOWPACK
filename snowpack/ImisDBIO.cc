@@ -175,9 +175,9 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 		stmt->setNumber(6, Pdata[ii].rho);
 		stmt->setNumber(7, Pdata[ii].T);
 		stmt->setNumber(8, Pdata[ii].gradT);
-		stmt->setNumber(9, Pdata[ii].strain_rate);
-		stmt->setInt(10, static_cast<int>( mio::Optim::round(Pdata[ii].theta_w)) );
-		stmt->setInt(11, static_cast<int>( mio::Optim::round(Pdata[ii].theta_i)) );
+		stmt->setNumber(9, Pdata[ii].v_strain_rate);
+		stmt->setInt(10, static_cast<int>( mio::Optim::round(100.*Pdata[ii].theta_w)) );
+		stmt->setInt(11, static_cast<int>( mio::Optim::round(100.*Pdata[ii].theta_i)) );
 		stmt->setNumber(12, Pdata[ii].dendricity);
 		stmt->setNumber(13, Pdata[ii].sphericity);
 		stmt->setNumber(14, Pdata[ii].coordin_num);
@@ -209,7 +209,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 }
 
 /**
- * @brief Write simplified profile to database
+ * @brief Dump aggregated profile to database
  */
 void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata)
 {
@@ -305,7 +305,7 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 
 	cerr << Pdata.height << "," << Pdata.layerDate.toString(mio::Date::ISO) << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
-	cerr << Pdata.strain_rate << "," << static_cast<int>( mio::Optim::round(Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(Pdata.theta_i)) << ",";
+	cerr << Pdata.v_strain_rate << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
 	cerr << Pdata.grain_size << "," << Pdata.bond_size << "," << Pdata.type << ",";
 	cerr << info.version;

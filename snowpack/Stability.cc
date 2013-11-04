@@ -611,7 +611,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 	bool crust = false;                       // Checks for crust
 	int e_crust = Constants::iundefined;
 
-	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); // Cosine of slope angle
+	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
 	size_t e = Xdata.getNumberOfElements();
 	while ((e-- > Xdata.SoilNode) && ((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
@@ -966,7 +966,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 
 	// Initialize
-	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
+	const double cos_sl = Xdata.cos_sl;
 
 	// Classify only for Snowpacks thicker than Stability::minimum_slab (vertically)
 	if ( (NDS[nE].z+NDS[nE].u)/cos_sl < Stability::minimum_slab ) {
@@ -1083,7 +1083,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	                                                      // (N) and (N m-1), respectively
 
 	// cos of slope angle to convert height and thickness to vertical values
-	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
+	const double cos_sl = Xdata.cos_sl;
 	// Vertical snow depth
 	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl;
 
@@ -1283,7 +1283,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
  */
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
-	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); // Cosine of slope angle
+	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
 
 	// Dereference the element pointer containing micro-structure data
 	const size_t nN = Xdata.getNumberOfNodes();

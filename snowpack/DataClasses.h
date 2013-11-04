@@ -171,14 +171,14 @@ class LayerData {
 		double hl;                  ///< The height of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
 		double tl;                  ///< Temperature at the top of the layer in K or degC
+		double phiSoil;             ///< Volumetric soil content in %
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
 		double phiVoids;            ///< Volumetric void content in %
-		double phiSoil;             ///< Volumetric soil content in %
+		std::vector<double> cSoil;  ///< Solute concentrations in Soil
 		std::vector<double> cIce;   ///< Solute concentrations in Ice
 		std::vector<double> cWater; ///< Solute concentrations in Water
 		std::vector<double> cVoids; ///< Solute concentrations in Air
-		std::vector<double> cSoil;  ///< Solute concentrations in Soil
 		double SoilRho;             ///< Density of soil in kg m-3
 		double SoilK;               ///< Conductivity of soil
 		double SoilC;               ///< Heat Capacity of soil
@@ -289,7 +289,7 @@ class ElementData {
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
 		double dE, E, Ee, Ev;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-		double EDot, EvDot;        ///< Total Strain Rate (s-1) (Simply, E/sn_dt)
+		double EDot, EvDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, E/sn_dt)
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress
 		double C;                  ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output
 		double CDot;               ///< Stress rate (Pa s-1), that is the overload change rate
@@ -433,17 +433,18 @@ class SnowStation {
 		size_t find_tag(const size_t& tag) const;
 
 		mio::StationData meta;      ///< Station meta data
+		double cos_sl;              ///< Cosinus of slope angle, initialized once!
+		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
-		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
 		double pAlbedo;             ///< Parameterized snow albedo
 		double Albedo;              ///< Snow albedo used by the model
 		double SoilAlb;             ///< Soil albedo
 		double BareSoil_z0;         ///< Bare soil roughness in m
 		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
+		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
 		double mH;                  ///< The ENFORCED snowpack height, including soil depth if SNP_SOIL == 1
-		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
@@ -467,6 +468,10 @@ class SnowStation {
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double dIntEnergy;          ///< Internal energy change (J m-2)
 		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change (J m-2)
+		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
+		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
+		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
+		bool windward;              ///< True for windward (luv) slope
 
 		static const double comb_thresh_l, comb_thresh_ice, comb_thresh_water;
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;
@@ -474,17 +479,10 @@ class SnowStation {
 		static const size_t number_top_elements;
 		static unsigned short number_of_solutes;  ///< The model treats that number of solutes
 
-		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
-
 	private:
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
-
-	public: //for alignement reasons, we keep chars and bools at the end
-		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
-		bool windward;              ///< True for windward (luv) slope
 };
 
 /**
@@ -592,17 +590,18 @@ class SnowProfileLayer {
 		double rho;          ///< 0 to 1000      (kg m-3)
 		double T;            ///< -50 to 50, snow temperature at top of layer (degC)
 		double gradT   ;     ///< -1000 to 1000, temperature gradient across layer (K m-1)
-		double strain_rate;  ///< 0 to 1e-5      (s-1)
-		double theta_i;      ///< 0 to 100       (% by volume)
-		double theta_w;      ///< 0 to 100       (% by volume)
+		double v_strain_rate;  ///< 0 to 1e-5, viscous  (s-1)
+		double theta_i;        ///< 0 to 1       (volume fraction of ice)
+		double theta_w;        ///< 0 to 1       (volume fraction of water)
+		double theta_a;        ///< 0 to 1       (volume fraction of air)
 		double grain_size;   ///< 0 to 100       (mm)
+		double bond_size;      ///< 0 to 100       (mm)
 		double dendricity;   ///< 0 to 1         (-)
 		double sphericity;   ///< 0 to 1         (-)
 		double ogs;          ///< 0 to 100       (mm)
-		double bond_size;    ///< 0 to 100       (mm)
 		double coordin_num;  ///< 0 to 10        (-)
-		size_t marker;       ///< 0 to 100       (-)
-		short unsigned int type; ///< 0 to 100       (-)
+		size_t marker;         ///< 0 to 999       (-)
+		short unsigned int type; ///< 0 to 999     (-)
 		double hard;         ///< 0. to 5.       (-)
 };
 

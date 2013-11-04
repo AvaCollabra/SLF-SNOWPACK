@@ -630,7 +630,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Initializing and defining Richards solver space domain
 	const size_t nN=Xdata.getNumberOfNodes();	//Number of nodes
 	const size_t nE=nN-1;				//Number of layers
-	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad); //Slope cosinus, giving cos_sl=1 for flat field.
+	const double cos_sl = Xdata.cos_sl; //Slope cosinus, giving cos_sl=1 for flat field.
 	vector<ElementData>& EMS = Xdata.Edata;		//Create reference to SNOWPACK elements.
 	vector<NodeData>& NDS = Xdata.Ndata;		//Create reference to SNOWPACK nodes.
 	std::vector<double> dz(nE, 0.);			//Layer height (in meters)
