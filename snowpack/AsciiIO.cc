@@ -1719,8 +1719,8 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			if (maxNumberMeasTemperatures == 5) {
 				fprintf(fout, ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
 				if (useCanopyModel && out_canopy) {
-					fprintf(fout, ",Interception storage,Canopy surface  temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation canopy,Sensible heat flux into the canopy,Latent heat flux into the canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the canopy,Latent heat flux to the canopy,Longwave radiation up above canopy,Longwave radiation down above canopy");
-					fprintf(fout, ",Net longwave radiation above canopy,Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation above canopy,Total land surface albedo,Total net radiation,Surface (radiative) temperature,Precipitation Above Canopy,Total Evapotranspiration");
+					fprintf(fout, ",Interception storage,Canopy surface temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation to canopy,Sensible heat flux to canopy,Latent heat flux to canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the surface (ground+canopy),Latent heat flux to the surface (ground+canopy),Longwave radiation up above canopy,Longwave radiation down above canopy");
+					fprintf(fout, ",Net longwave radiation to the surface (ground + canopy),Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation to the surface (ground + canopy),Total land surface albedo,Total net radiation to the surface (ground + canopy),Surface radiative temperature (ground + canopy),Precipitation Above Canopy,Evapotranspiration of the total surface (ground + canopy)");
 				} else {
 					fprintf(fout,",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-");
 				}
@@ -1790,7 +1790,7 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			if (maxNumberMeasTemperatures == 5) {
 				fprintf(fout, ",kg m-2,cm,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1");
 				if (out_canopy && useCanopyModel) {
-					fprintf(fout, ",kg m-2,degC,-,-,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,kg m-2 per timestep,kg m-2 per timestep,kg m-2,kg m-2,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,degC,kg m-2,kg m-2 per timestep");
+					fprintf(fout, ",kg m-2,degC,-,-,kg m-2,W m-2,W m-2,W m-2,W m-2,W m-2,kg m-2 per timestep,kg m-2 per timestep,kg m-2  per timestep,kg m-2 per timestep,kg m-2 per timestep,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,degC,kg m-2 per timestep,kg m-2 per timestep");
 				} else {
 					fprintf(fout,",,,,,,,,,,,,,,,,,,,,,,,,,,,,");
 				}

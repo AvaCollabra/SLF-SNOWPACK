@@ -61,11 +61,11 @@ class Canopy {
 		                              double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
 		                              const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
 		                              const double& sigfdirect, double& r1p);
-		void cn_LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1);
+		void cn_LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1, double scalingfactor);
 
 		double cn_DSaturationPressureDT(const double& L, const double& T);
 		void cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_old, const double& vpair,
-		                                double& le0, double& le1);
+		                                double& le0, double& le1, double scalingfactor);
 
 		void cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
 							   const double& le1, const double& vpair, const double& ce_canopy,
@@ -74,13 +74,13 @@ class Canopy {
 							   double& HCANOPY, double& LECANOPY);
 
 		void cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interception,
-									 double ce_transpiration, double *LECANOPY,
+									 double ce_transpiration, double& LECANOPY,
 									 double ta,double vpair,double I, double DT,
-									 double *CanopyEvaporation,
-									 double *INTEVAP, double *TRANSPIRATION,
-									 double *RNCANOPY, double *HCANOPY,double *TCANOPY,
-									 double *r0, double *r1, double h0, double h1, //double le0,double le1,
-									 double *LECANOPYCORR, double r1p, double CanopyClosure, double wetfraction);
+									 double& CanopyEvaporation,
+									 double& INTEVAP, double& TRANSPIRATION,
+									 double& RNCANOPY, double& HCANOPY,double& TCANOPY,
+									 double& r0, double& r1, double h0, double h1, //double le0,double le1,
+									 double& LECANOPYCORR, double r1p, double CanopyClosure, double wetfraction);
 
 		double cn_psim(const double& xi);
 		double cn_psih(const double& xi);
