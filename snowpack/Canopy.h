@@ -68,19 +68,19 @@ class Canopy {
 		                                double& le0, double& le1, double scalingfactor);
 
 		void cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
-							   const double& le1, const double& vpair, const double& ce_canopy,
-							   const double& ce_condensation, const double& r1p, const double& CanopyClosure,
+							   const double& le1, const double& ce_canopy,
+							   const double& ce_condensation,
 							   double& r0, double& r1, double& TCANOPY, double& RNCANOPY,
 							   double& HCANOPY, double& LECANOPY);
 
 		void cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interception,
 									 double ce_transpiration, double& LECANOPY,
-									 double ta,double vpair,double I, double DT,
+									 double ta,double I, double DT,
 									 double& CanopyEvaporation,
 									 double& INTEVAP, double& TRANSPIRATION,
 									 double& RNCANOPY, double& HCANOPY,double& TCANOPY,
 									 double& r0, double& r1, double h0, double h1, //double le0,double le1,
-									 double& LECANOPYCORR, double r1p, double CanopyClosure, double wetfraction);
+									 double& LECANOPYCORR, double wetfraction);
 
 		double cn_psim(const double& xi);
 		double cn_psih(const double& xi);

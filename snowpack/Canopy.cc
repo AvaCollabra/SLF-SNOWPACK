@@ -831,28 +831,20 @@ void Canopy::cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& t
  * @param h1
  * @param le0
  * @param le1
- * @param vpair
  * @param TCANOPY
  * @param RNCANOPY
  * @param HCANOPY
  * @param LECANOPY
  * @param ce_canopy
  * @param ce_condensation
- * @param r1p
- * @param CanopyClosure
  */
 void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
-							 const double& le1, const double& vpair, const double& ce_canopy,
-							 const double& ce_condensation, const double& r1p, const double& CanopyClosure,
+							 const double& le1, const double& ce_canopy,
+							 const double& ce_condensation,
 							 double& r0, double& r1, double& TCANOPY, double& RNCANOPY,
 							 double& HCANOPY, double& LECANOPY)
 
 {
-	const double TC_OLD = TCANOPY;
-
-	const double TC_OLD_POW3 = Optim::pow3(TC_OLD);
-	const double TC_OLD_POW4 = TC_OLD_POW3 * TC_OLD;
-
 	/*
  	 * Introduced filter to reduce sensitivity of canopy energy balance solution:
 	 * Maximum allowed change of canopy temperature per hour
@@ -891,7 +883,6 @@ void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const do
  * @param ce_transpiration
  * @param *LECANOPY
  * @param ta
- * @param vpair
  * @param I
  * @param DT
  * @param *CanopyEvaporation
@@ -905,18 +896,16 @@ void Canopy::cn_CanopyEnergyBalance(const double& h0, const double& h1, const do
  * @param h0
  * @param h1
  * @param *LECANOPYCORR
- * @param r1p
- * @param CanopyClosure
  * @param wetfraction
  */
 void Canopy::cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interception,
 				      double ce_transpiration, double& LECANOPY,
-				      double ta,double vpair,double I, double DT,
+				      double ta,double I, double DT,
 				      double& CanopyEvaporation,
 				      double& INTEVAP, double& TRANSPIRATION,
 				      double& RNCANOPY, double& HCANOPY,double& TCANOPY,
 				      double& r0, double& r1, double h0, double h1, //double le0,double le1,
-				      double& LECANOPYCORR, double r1p, double CanopyClosure,
+				      double& LECANOPYCORR,
                                       double wetfraction)
 {
 	if ( ta > Constants::freezing_tk ) {
@@ -940,8 +929,6 @@ void Canopy::cn_CanopyEvaporationComponents(double ce_canopy, //double ce_interc
 			} else {
 				LECANOPYCORR = CanopyEvaporation * Constants::lh_sublimation / (DT * 3600.0);
 			}
-			const double TC_OLD = TCANOPY;
-
 			// re-compute TCANOPY from (R0 + R1 * TCANOPY) = (H0 + H1 * TCANOPY) + LECANOPYCORR
 			TCANOPY  = (LECANOPYCORR + h0 - r0) / (r1 - h1);
 			// Re-compute RNCANOPY, HCANOPY, and LECANOPY with new temperature
@@ -1469,32 +1456,29 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		                         canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
 
 		// compute properties h0 and h1 in eq (3)
-		// Rq: for sparse canopies turbulent fluxes should be scaled in the 
+		// NOTE: for sparse canopies turbulent fluxes should be scaled in the 
 		// canopy EB calculation; for the moment scalingfactor is 1
 		cn_LineariseSensibleHeatFlux(ch_canopy, Mdata.ta, h0, h1, 1.);
 
 		// compute properties le0 and le1 in eq (4)
 		cn_LineariseLatentHeatFlux(ce_canopy, Xdata.Cdata.temp, Mdata.rh*Atmosphere::waterSaturationPressure(Mdata.ta), le0, le1, 1.);
 		/* final canopy energy balance */
-		cn_CanopyEnergyBalance(h0, h1, le0, le1, Mdata.rh * Atmosphere::waterSaturationPressure(Mdata.ta),
-		                       ce_canopy, ce_condensation, r1p, 1. - Xdata.Cdata.direct_throughfall,
+		cn_CanopyEnergyBalance(h0, h1, le0, le1, ce_canopy, ce_condensation,
 		                       r0, r1, Xdata.Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 
 		/*
 		 * Partition latent heat flux on interception and transpiration
 		 * and correct energy balance for overestimated interception evaporation
 		*/
-		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, LECANOPY, Mdata.ta,
-		                               Mdata.rh * Atmosphere::waterSaturationPressure(Mdata.ta), Xdata.Cdata.storage,
+		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, LECANOPY, Mdata.ta, Xdata.Cdata.storage,
 		                               M_TO_H(calculation_step_length), CanopyEvaporation, INTEVAP, TRANSPIRATION,
-		                               RNCANOPY, HCANOPY, Xdata.Cdata.temp, r0, r1, h0, h1, LECANOPYCORR,
-		                               r1p, 1. - Xdata.Cdata.direct_throughfall ,wetfrac);
+		                               RNCANOPY, HCANOPY, Xdata.Cdata.temp, r0, r1, h0, h1, LECANOPYCORR, wetfrac);
 		const double newstorage = Xdata.Cdata.storage - INTEVAP; 
 
 		// wet surface fraction
 		wetfrac = cn_CanopyWetFraction(intcapacity, newstorage);
-//Changes of temperature induce changes in stability correction.
-//     re-computation of turbulent exchange coefficient is needed in case of big changes in TC.
+		// Changes of temperature induce changes in stability correction.
+		// re-computation of turbulent exchange coefficient is needed in case of big changes in TC.
 		if (fabs(Xdata.Cdata.temp - TC_OLD) > Canopy::canopytemp_maxchange_perhour * M_TO_H(calculation_step_length)-10.E-2 ){
 		cn_CanopyTurbulentExchange(Mdata, zref, z0m_ground, wetfrac, Xdata, ch_canopy, ce_canopy,
                       ce_transpiration, ce_interception, ce_condensation);
