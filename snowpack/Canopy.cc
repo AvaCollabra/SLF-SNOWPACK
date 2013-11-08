@@ -25,8 +25,10 @@
  * @brief Computes interception of precipitation and radiation, and reduction of windspeed
  * in a canopy layer above thesnow or soil surface.
 
- * - 2013-10-23 bis (I. Gouttevin, M. Bavay): suggestions of simplification of the canopy energy Balance (EB) calculation, based on
-		(i) suppression of temp_maxchange_per_hour
+ * - 2013-10-23 bis (I. Gouttevin, M. Bavay): simplification of the canopy energy Balance (EB) calculation, based on
+		(i) suppression of the limitation of TC change by temp_maxchange_per_hour;
+		    if temp_maxchange_per_hour is exceeded, turbulent coefficients
+		    are re-calculated
 		(ii) increased EB iterations (from 3 to 7)
 		(iii) no radiation and latent fluxes updates within each EB iteration (pb of EB closure with the output variables if convergence is not reached)
 		(iv) printing out the real (instead of the potential) canopy evaporation.
@@ -206,6 +208,8 @@ const double Canopy::displ_to_canopyheight_ratio = 0.6667;
  * - 8.0 calibration with Alptal data
  */
 const double Canopy::raincrease_snow = 8.0;
+/// @brief Maximum allowed canopy temperature change (K hr-1)
+const double Canopy::canopytemp_maxchange_perhour = 7.0;
 /// @brief (~=1, but Not allowed to be exactly 1)
 const double Canopy::roughheat_to_roughmom_ratio = 0.9999;
 /// @brief minimum heat exchange (Wm-2K-1) at zero wind
@@ -1479,9 +1483,9 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		wetfrac = cn_CanopyWetFraction(intcapacity, newstorage);
 		// Changes of temperature induce changes in stability correction.
 		// re-computation of turbulent exchange coefficient is needed in case of big changes in TC.
-		if (fabs(Xdata.Cdata.temp - TC_OLD) > Canopy::canopytemp_maxchange_perhour * M_TO_H(calculation_step_length)-10.E-2 ){
+		if (fabs(Xdata.Cdata.temp - TC_OLD) > Canopy::canopytemp_maxchange_perhour * M_TO_H(calculation_step_length)){
 		cn_CanopyTurbulentExchange(Mdata, zref, z0m_ground, wetfrac, Xdata, ch_canopy, ce_canopy,
-                      ce_transpiration, ce_interception, ce_condensation);
+                    ce_transpiration, ce_interception, ce_condensation);
 		}
 		Xdata.Cdata.temp = (Xdata.Cdata.temp+TC_OLD)*0.5;
 		wetfrac = (Xdata.Cdata.wetfraction+wetfrac)*0.5;
