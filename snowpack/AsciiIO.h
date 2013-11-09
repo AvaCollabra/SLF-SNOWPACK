@@ -49,6 +49,12 @@ class AsciiIO : public SnowpackIOInterface {
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 	private:
+		typedef enum {
+			PRO,  ///< Profile visualization file
+			FULL, ///< Full tabular ascii profile, 1 element == 1 layer
+			AGGR  ///< Aggregated tabular ascii profile, N elements == 1 layer
+		} PRF_TYPE;
+
 		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& ftype);
 		bool parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 		bool parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
@@ -57,8 +63,11 @@ class AsciiIO : public SnowpackIOInterface {
 
 		bool checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const;
 
-		void writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout);
-		void writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout);
+		void writeProfileVisu(const mio::Date& date, const SnowStation& Xdata);
+		void writeProfileVisuAddDefault(const SnowStation& Xdata, FILE *fout);
+		void writeProfileVisuAddCalibration(const SnowStation& Xdata, FILE *fout);
+
+		void writeProfileTable(const mio::Date& date, const SnowStation& Xdata, const std::string& fmt);
 
 		size_t writeTemperatures(FILE *fout, const double& z_vert, const double& T,
 		                         const size_t& ii, const SnowStation& Xdata);
@@ -71,30 +80,28 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
-		void writeProProfile(const mio::Date& date, const SnowStation& Xdata);
-		void writePrfProfile(const mio::Date& date, const SnowStation& Xdata);
-
 		void setNumberSensors(const CurrentMeteo& Mdata);
-		void writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+		void writeTimeSeriesAddDefault(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                        const CurrentMeteo& Mdata, const double crust,
                                        const double dhs_corr, const double mass_corr,
                                        const size_t nCalcSteps, FILE *fout);
-		void writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+		void writeTimeSeriesAddAntarctica(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                           const CurrentMeteo& Mdata, const double crust,
                                           const double dhs_corr, const double mass_corr,
                                           const size_t nCalcSteps, FILE *fout);
-		void writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+		void writeTimeSeriesAddCalibration(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                            const CurrentMeteo& Mdata, const double crust,
                                            const double dhs_corr, const double mass_corr,
                                            const size_t nCalcSteps, FILE *fout);
 
 		void readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata);
 
-	private:
 		std::set<std::string> setAppendableFiles;
 		std::string hn_density, hn_density_model, variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 		const RunInfo info;
+
+		std::vector<std::string> vecProfileFmt;
 
 		//Monitored temperature sensors
 		std::vector<double> fixedPositions;

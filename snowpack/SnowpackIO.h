@@ -62,10 +62,9 @@ class SnowpackIO : public SnowpackIOInterface {
 #endif
 		AsciiIO *asciiio;
 		SmetIO *smetio;
-		bool outputprofile_as_ascii, outputprofile_as_imis;
-		bool output_snow_as_smet, input_snow_as_smet;
-		bool output_ts_as_ascii;
-		bool output_haz_as_imis;
+		bool input_snow_as_smet, output_snow_as_smet;
+		bool output_prf_as_ascii, output_ts_as_ascii;
+		bool output_prf_as_imis, output_haz_as_imis;
 };
 
 #endif //End of SnowpackIO.h

@@ -168,13 +168,13 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 	size_t current_index = 0;
 	for (size_t ll=0; ll<SSdata.nLayers; ll++) {
 		//firstly deal with date
-		IOUtils::convertString(SSdata.Ldata[ll].layerDate, vec_timestamp[ll],  in_dflt_TZ);
-		SSdata.Ldata[ll].layerDate.rnd(1.);
+		IOUtils::convertString(SSdata.Ldata[ll].depositionDate, vec_timestamp[ll],  in_dflt_TZ);
+		SSdata.Ldata[ll].depositionDate.rnd(1.);
 
-		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
+		if (SSdata.Ldata[ll].depositionDate > SSdata.profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 				   "Layer %d from bottom is younger (%lf) than ProfileDate (%lf) !!!",
-				   ll+1, SSdata.Ldata[ll].layerDate.getJulian(), SSdata.profileDate.getJulian());
+				   ll+1, SSdata.Ldata[ll].depositionDate.getJulian(), SSdata.profileDate.getJulian());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
 

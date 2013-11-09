@@ -78,18 +78,87 @@ void ZwischenData::reset()
 
 SnowProfileLayer::SnowProfileLayer()
                   : profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
-                    layerDate(), height(0.), rho(0.), T(0.), gradT(0.), v_strain_rate(0.),
+                    depositionDate(), height(0.), rho(0.), T(0.), gradT(0.), v_strain_rate(0.),
                     theta_i(0.), theta_w(0.), theta_a(0.),
                     grain_size(0.), bond_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
                     coordin_num(0.), marker(0), type(0), hard(0.) {}
 
-std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata)
+/**
+ * @brief Generates a snow profile layer from element and upper node data
+ * @param dateOfProfile
+ * @param Edata
+ * @param Ndata
+ */
+void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& Ndata)
+{
+	depositionDate = Edata.depositionDate;
+	height = M_TO_CM(Ndata.z + Ndata.u);
+	T = K_TO_C(Ndata.T);
+	gradT = Edata.gradT;
+	rho = Edata.Rho;
+	theta_i = Edata.theta[ICE];
+	theta_w = Edata.theta[WATER];
+	theta_a = Edata.theta[AIR];
+	grain_size = 2. * Edata.rg;
+	bond_size = 2. * Edata.rb;
+	dendricity = Edata.dd;
+	sphericity = Edata.sp;
+	ogs = 2. * Edata.rg_opt; // in mm
+	coordin_num = Edata.N3;
+	marker = Edata.mk%100;
+	type = Edata.type;
+	v_strain_rate = fabs(Edata.EvDot);
+	hard = Edata.hard;
+}
+
+/**
+ * @brief Generates a surface hoar layer from top element and node data
+ * @param dateOfProfile
+ * @param Edata
+ * @param Ndata
+ */
+void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& Ndata,
+                                     const mio::Date& dateOfProfile, const double hoar_density_surf)
+{
+	const double hoar_size = Ndata.hoar/hoar_density_surf; // (m)
+
+	depositionDate = (Edata.depositionDate + dateOfProfile); //0.5*
+	height = M_TO_CM(Ndata.z + Ndata.u) + M_TO_CM(hoar_size);
+	rho = hoar_density_surf;
+	T = K_TO_C(Ndata.T + (2./3.)*hoar_size*Edata.gradT);
+	gradT = Edata.gradT;
+	v_strain_rate = 0.;
+	theta_i = hoar_density_surf/Constants::density_ice;
+	theta_w = 0.;
+	theta_a = 1. - theta_i;
+	grain_size = M_TO_MM(hoar_size);
+	bond_size = grain_size/3.;
+	dendricity = 0.;
+	sphericity = 0.;
+	ogs = MIN(4.e-1, grain_size); // in mm, see opticalEquivalentRadius();
+	coordin_num = 2.;
+	marker = 3;
+	type = 660;
+	hard = 1;
+}
+
+/**
+* @brief Generates a snow profile from snow station data (1 element = 1 layer)
+ * @param dateOfProfile
+ * @param Xdata
+ * @param hoar_density_surf
+ * @param hoar_min_size_surf
+ */
+std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, const double hoar_density_surf, const double hoar_min_size_surf)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const vector<ElementData>& EMS = Xdata.Edata;
+	const double cos_sl = Xdata.cos_sl;
+	const bool surf_hoar = (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf)*hoar_density_surf);
 
-	std::vector<SnowProfileLayer> Pdata(nE);
+	const unsigned int nL = surf_hoar? nE+1 : nE;
+	std::vector<SnowProfileLayer> Pdata(nL);
 
 	// Generate the profile data from the element data (1 layer = 1 element)
 	size_t snowloc = 0;
@@ -100,31 +169,20 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
 
-	for(size_t ll=0; ll<nE; ll++) {
+	for(size_t ll=0, e=Xdata.SoilNode; ll<nL; ll++, e++) { // We dump only snow layers
 		// Write profile meta data
 		Pdata[ll].profileDate = dateOfProfile;
 		Pdata[ll].stationname = mystation;
 		Pdata[ll].loc_for_snow = snowloc;
 		Pdata[ll].loc_for_wind = 1;
 
-		// Write profile layer data
-		Pdata[ll].layerDate = EMS[ll].depositionDate;
-		Pdata[ll].height = M_TO_CM( NDS[ll+1].z + NDS[ll+1].u );
-		Pdata[ll].rho = EMS[ll].Rho;
-		Pdata[ll].T = K_TO_C( NDS[ll+1].T );
-		Pdata[ll].gradT = EMS[ll].gradT;
-		Pdata[ll].v_strain_rate = fabs(EMS[ll].EDot);
-		Pdata[ll].theta_i = EMS[ll].theta[ICE] * 100.;
-		Pdata[ll].theta_w = EMS[ll].theta[WATER] * 100.;
-		Pdata[ll].grain_size = 2. * EMS[ll].rg;
-		Pdata[ll].dendricity = EMS[ll].dd;
-		Pdata[ll].sphericity = EMS[ll].sp;
-		Pdata[ll].ogs = 2. * EMS[ll].rg_opt;
-		Pdata[ll].bond_size = 2. * EMS[ll].rb;
-		Pdata[ll].coordin_num = EMS[ll].N3;
-		Pdata[ll].marker = EMS[ll].mk%100;
-		Pdata[ll].type = EMS[ll].type;
-		Pdata[ll].hard = EMS[ll].hard;
+		// Write snow layer data
+		if (ll < nE) {
+			Pdata[ll].generateLayer(EMS[e], NDS[e+1]);
+		} else { // add a SH layer
+			Pdata[ll].generateLayer(EMS[nE-1], NDS[nE], dateOfProfile, hoar_density_surf);
+		}
+		Pdata[ll].height = (Pdata[ll].height - Xdata.Ground)/cos_sl;
 	}
 
 	return Pdata;
@@ -142,7 +200,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 
 	height += Lp1;
 	if (Lp1 > Lp0) {
-		layerDate = profile_layer.layerDate;
+		depositionDate = profile_layer.depositionDate;
 	}
 	rho         = (Lp1*profile_layer.rho + Lp0*rho) / layerThickness;
 	T           = profile_layer.T;
@@ -227,7 +285,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
  * @param Mdata
  */
 void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
-                                         const SnowStation& Xdata, const CurrentMeteo& Mdata)
+                                         SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
 	// 1) Short wave fluxes and Albedo.
 	//     Depending on settings (sw_mode) and conditions,
@@ -264,12 +322,10 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 
 	// 6) Collect total masses of snowpack
 	mass[MS_TOTALMASS] = mass[MS_SWE] = mass[MS_WATER] = 0.;
-	for (size_t e = Xdata.SoilNode; e < Xdata.getNumberOfElements(); e++) {
-		mass[MS_TOTALMASS] += Xdata.Edata[e].M;
-		mass[MS_SWE] += Xdata.Edata[e].L * Xdata.Edata[e].Rho;
-		mass[MS_WATER] += Xdata.Edata[e].L * (Xdata.Edata[e].theta[WATER]
-		                      * Constants::density_water);
-	}
+	Xdata.compSnowpackMasses();
+	mass[MS_TOTALMASS] = Xdata.mass_sum;
+	mass[MS_SWE] = Xdata.swe;
+	mass[MS_WATER] = Xdata.lwc_sum;
 }
 
 void CanopyData::reset(const bool& cumsum_mass)
@@ -803,7 +859,7 @@ const std::string NodeData::toString() const
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
 	meta(), cos_sl(1.), sector(0), Cdata(), pAlbedo(0.), Albedo(0.),
 	SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), Ground(0.),
-	cH(0.), mH(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
+	cH(0.), mH(0.), mass_sum(0.), swe(0.), lwc_sum(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
@@ -813,7 +869,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
 	SoilAlb(c.SoilAlb),BareSoil_z0(c.BareSoil_z0), SoilNode(c.SoilNode), Ground(c.Ground),
-	cH(c.cH), mH(c.mH), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
+	cH(c.cH), mH(c.mH), mass_sum(c.mass_sum), swe(c.swe), lwc_sum(c.lwc_sum), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), dIntEnergy(c.dIntEnergy), meltFreezeEnergy(c.meltFreezeEnergy),
@@ -834,6 +890,9 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		Ground = source.Ground;
 		cH = source.cH;
 		mH = source.mH;
+		mass_sum = source.mass_sum;
+		swe = source.swe;
+		lwc_sum = source.lwc_sum;
 		hn = source.hn;
 		rho_hn = source.rho_hn;
 		ErosionLevel = source.ErosionLevel;
@@ -880,6 +939,21 @@ SnowStation::~SnowStation()
 			ReleaseBlockMatrix(&pMat->Mat.Block);
 		}
 		//free(pMat);
+	}
+}
+
+/**
+* @brief Computes the actual total masses of the snowpack (kg m-2)
+*/
+void SnowStation::compSnowpackMasses()
+{
+	mass_sum = swe = lwc_sum = 0.;
+	if (nElems > SoilNode) {
+		for (size_t e = SoilNode; e < nElems; e++) {
+			mass_sum += Edata[e].M;
+			swe += Edata[e].L * Edata[e].Rho;
+			lwc_sum += Edata[e].L * (Edata[e].theta[WATER] * Constants::density_water);
+		}
 	}
 }
 
@@ -1130,7 +1204,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 	for (size_t ll = 0, e = 0; ll<SSdata.nLayers; ll++) {
 		for (size_t le = 0; le < SSdata.Ldata[ll].ne; le++, e++) {
 			// Element's JulianQ Date
-			Edata[e].depositionDate = Date::rnd(SSdata.Ldata[ll].layerDate, 1.);
+			Edata[e].depositionDate = Date::rnd(SSdata.Ldata[ll].depositionDate, 1.);
 			// Temperature data
 			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
@@ -1199,8 +1273,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 		Edata[e].C = SigC;
 	}
 
-	// Cold content
+	// Cold content and snowpack masses
 	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
+	compSnowpackMasses();
 
 	// INITIALIZE CANOPY DATA
 	Cdata.height = (SSdata.Canopy_Height > 0.0)? SSdata.Canopy_Height : 0.;
@@ -1441,7 +1516,7 @@ const std::string SnowStation::toString() const
 	os << "\n";
 
 	os << "Soil:\tSoilNode=" << SoilNode  << " depth=" << Ground << " BareSoil_z0=" << BareSoil_z0 << " SoilAlb=" << SoilAlb << "\n";
-	os << "Snow:\tMeasured HS=" << mH << " Calculated HS=" << cH << " New snow=" << hn << " of density=" << rho_hn << "\n";
+	os << "Snow:\tMeasured HS=" << mH << " Calculated HS=" << cH << " SWE=" << swe << " LWCtot" << lwc_sum << " New snow=" << hn << " of density=" << rho_hn << "\n";
 	os << "Snow Albedo:\tAlbedo=" << Albedo << " parametrized Albedo=" << pAlbedo << "\n";
 	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy << " SubSurfaceMelt=" << SubSurfaceMelt << " SubSurfaceFrze=" << SubSurfaceFrze << "\n";
 	os << "Snowdrift:\tsector=" << sector << " windward=" << windward << " ErosionLevel=" << ErosionLevel << " ErosionMass=" << ErosionMass << "\n";
@@ -1698,7 +1773,7 @@ const std::string SurfaceFluxes::toString() const
 	return os.str();
 }
 
-LayerData::LayerData() : layerDate(), hl(0.), ne(0), tl(0.),
+LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
                      phiSoil(0.), phiIce(0.), phiWater(0.), phiVoids(0.),
                      cSoil(SnowStation::number_of_solutes), cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes),
                      SoilRho(0.), SoilK(0.), SoilC(0.),

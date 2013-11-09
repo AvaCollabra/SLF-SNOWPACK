@@ -29,51 +29,55 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(NULL),
 SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 #endif
               asciiio(NULL), smetio(NULL),
-              outputprofile_as_ascii(false), outputprofile_as_imis(false),
-              output_snow_as_smet(false), input_snow_as_smet(false),
-              output_ts_as_ascii(false), output_haz_as_imis(false)
+              input_snow_as_smet(false), output_snow_as_smet(false),
+              output_prf_as_ascii(false), output_ts_as_ascii(false),
+              output_prf_as_imis(false), output_haz_as_imis(false)
+              
 {
-	//The profiles may be dumped either in ASCII format or in another ASCII format for upload to the DB
-	//The user can switch the desired mode on by specifying "ASCII" or "IMIS" or both in the io.ini
-	vector<string> vecProfileOutput = cfg.get("PROFILE", "Output", IOUtils::nothrow);
-	if (vecProfileOutput.empty()) {
-		outputprofile_as_ascii = true;
-		outputprofile_as_imis  = false;
-	} else if (vecProfileOutput.size() > 2) {
-		throw InvalidArgumentException("The key PROFILE in section OUTPUT can have two values at most", AT);
-	} else {
-		for (size_t ii=0; ii<vecProfileOutput.size(); ii++){
-			if (vecProfileOutput[ii] == "ASCII"){
-				outputprofile_as_ascii = true;
-			} else if (vecProfileOutput[ii] == "IMIS") {
-				outputprofile_as_imis  = true;
-			} else {
-				throw InvalidArgumentException("Key PROFILE / section OUTPUT: only values ASCII or IMIS expected", AT);
-			}
-		}
-	}
-
 	//Format of initial snow profile:
 	const string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
-	if (in_snow == "SMET"){ //TODO: document Input::SNOW = SMET or SNOOLD
+	if (in_snow == "SMET") { //TODO: document Input::SNOW = SMET or SNOOLD
 		input_snow_as_smet = true;
 	}
 	//Format of transitional and final snow profile(s):
 	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
-	if (out_snow == "SMET"){ //TODO: document ouput::SNOW = SMET or SNOOLD
+	if (out_snow == "SMET") { //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	}
+	/* Profiles may also be dumped in up to 4 formats specified by the key PROF_FMT in section [Output]:
+	 * VISU     : ASCII-format for visulization with SN_GUI
+	 * FULL_PRF : full profiles in tabular ASCII-format
+	 * AGGR_PRF : aggregated profiles in tabular ASCII-format
+	 * IMIS     : aggregated profiles for upload to the SLF database sdbo
+	 */
+	std::vector<string> vecProfileFmt = cfg.get("PROF_FMT", "Output", IOUtils::nothrow);
+	if (vecProfileFmt.size() > 4) {
+		throw InvalidArgumentException("The key PROF_FMT in section [Output] can have four values at most", AT);
+	} else {
+		for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
+			if (vecProfileFmt[ii] == "VISU") {
+				output_prf_as_ascii = true;
+			} else if (vecProfileFmt[ii] == "FULL_PRF") {
+				output_prf_as_ascii  = true;
+			} else if (vecProfileFmt[ii] == "AGGR_PRF") {
+				output_prf_as_ascii  = true;
+			} else if (vecProfileFmt[ii] == "IMIS") {
+				output_prf_as_imis  = true;
+			} else {
+				throw InvalidArgumentException("Key PROF_FMT in section [Output] takes only VISU, FULL_PRF, AGGR_PRF or IMIS values", AT);
+			}
+		}
+	}
 	//Format of meteo time series:
-	const bool out_ts = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
-	output_ts_as_ascii = out_ts;
+    output_ts_as_ascii = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
 
-	//set the "plugins" pointers
+//set the "plugins" pointers
 	RunInfo run_info;
 	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
-	if(outputprofile_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
+	if(output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef IMISDBIO
-	output_haz_as_imis = outputprofile_as_imis;
-	if(outputprofile_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
+	output_haz_as_imis = output_prf_as_imis;
+	if(output_prf_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
 #endif
 }
 
@@ -82,9 +86,9 @@ SnowpackIO::SnowpackIO(const SnowpackIO& source) :
           imisdbio(source.imisdbio),
 #endif
           asciiio(source.asciiio), smetio(source.smetio),
-          outputprofile_as_ascii(source.outputprofile_as_ascii), outputprofile_as_imis(source.outputprofile_as_imis),
-          output_snow_as_smet(source.output_snow_as_smet), input_snow_as_smet(source.input_snow_as_smet),
-          output_ts_as_ascii(source.output_ts_as_ascii), output_haz_as_imis(source.output_haz_as_imis)
+          input_snow_as_smet(source.input_snow_as_smet), output_snow_as_smet(source.output_snow_as_smet),
+          output_prf_as_ascii(source.output_prf_as_ascii), output_ts_as_ascii(source.output_ts_as_ascii),
+          output_prf_as_imis(source.output_prf_as_imis), output_haz_as_imis(source.output_haz_as_imis)
 {}
 
 SnowpackIO::~SnowpackIO()
@@ -134,11 +138,11 @@ void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& 
 
 void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 {
-	if (outputprofile_as_ascii)
+	if (output_prf_as_ascii)
 		asciiio->writeProfile(date, Xdata);
 
 #ifdef IMISDBIO
-	if (outputprofile_as_imis)
+	if (output_prf_as_imis)
 		imisdbio->writeProfile(date, Xdata);
 #endif
 }
@@ -167,8 +171,8 @@ SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
 #endif
 		asciiio = source.asciiio;
 		smetio = source.smetio;
-		outputprofile_as_ascii = source.outputprofile_as_ascii;
-		outputprofile_as_imis = source.outputprofile_as_imis;
+		output_prf_as_ascii = source.output_prf_as_ascii;
+		output_prf_as_imis = source.output_prf_as_imis;
 		output_snow_as_smet = source.output_snow_as_smet;
 		input_snow_as_smet = source.input_snow_as_smet;
 		output_ts_as_ascii = source.output_ts_as_ascii;

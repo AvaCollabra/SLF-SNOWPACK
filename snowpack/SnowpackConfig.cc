@@ -108,6 +108,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
+	outputConfig["PROF_FMT"] = "VISU";
 	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["CLASSIFY_PROFILE"] = "false";
 	outputConfig["SNOW"] = "SMET";

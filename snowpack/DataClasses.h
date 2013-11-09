@@ -167,7 +167,7 @@ class LayerData {
 	public:
 		LayerData();
 
-		mio::Date layerDate;        ///< Date of deposition
+		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double hl;                  ///< The height of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
 		double tl;                  ///< Temperature at the top of the layer in K or degC
@@ -422,6 +422,7 @@ class SnowStation {
 		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
 
+		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
 		double getModelledTemperature(const double& z) const;
 
@@ -445,6 +446,9 @@ class SnowStation {
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
 		double mH;                  ///< The ENFORCED snowpack height, including soil depth if SNP_SOIL == 1
+		double mass_sum;            ///< Total mass summing mass of elements
+		double swe;                 ///< Total mass summing snow water equivalent of elements
+		double lwc_sum;             ///< Total liquid water in snowpack
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
@@ -533,7 +537,7 @@ class SurfaceFluxes {
 
 		void reset(const bool& cumsum_mass);
 		void compSnowSoilHeatFlux(const SnowStation& Xdata);
-		void collectSurfaceFluxes(const BoundCond& Bdata, const SnowStation& Xdata, const CurrentMeteo& Mdata);
+		void collectSurfaceFluxes(const BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
 
 		/**
 		 * @brief Energy fluxes:
@@ -577,7 +581,7 @@ class SnowProfileLayer {
 		SnowProfileLayer();
 
 		void average(const double& w1, const double& w2, const SnowProfileLayer& Pdata);
-		static std::vector<SnowProfileLayer> generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata);
+		static std::vector<SnowProfileLayer> generateProfile(const mio::Date& dateOfProfile, const SnowStation& Xdata, const double hoar_density_surf, const double hoar_min_size_surf);
 
 		// Profile meta data
 		mio::Date profileDate; ///< Date of profile
@@ -585,24 +589,29 @@ class SnowProfileLayer {
 		size_t  loc_for_snow;
 		size_t  loc_for_wind;
 
-		mio::Date layerDate; ///< Date of deposition
-		double height;       ///< 0 to 1000      (cm)
-		double rho;          ///< 0 to 1000      (kg m-3)
-		double T;            ///< -50 to 50, snow temperature at top of layer (degC)
-		double gradT   ;     ///< -1000 to 1000, temperature gradient across layer (K m-1)
+		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
+		double height;         ///< 0 to 1000      (cm)
+		double rho;            ///< 0 to 1000      (kg m-3)
+		double T;              ///< -50 to 50, snow temperature at top of layer (degC)
+		double gradT;          ///< -1000 to 1000, temperature gradient across layer (K m-1)
 		double v_strain_rate;  ///< 0 to 1e-5, viscous  (s-1)
 		double theta_i;        ///< 0 to 1       (volume fraction of ice)
 		double theta_w;        ///< 0 to 1       (volume fraction of water)
 		double theta_a;        ///< 0 to 1       (volume fraction of air)
-		double grain_size;   ///< 0 to 100       (mm)
+		double grain_size;     ///< 0 to 100       (mm)
 		double bond_size;      ///< 0 to 100       (mm)
-		double dendricity;   ///< 0 to 1         (-)
-		double sphericity;   ///< 0 to 1         (-)
-		double ogs;          ///< 0 to 100       (mm)
-		double coordin_num;  ///< 0 to 10        (-)
+		double dendricity;     ///< 0 to 1         (-)
+		double sphericity;     ///< 0 to 1         (-)
+		double ogs;            ///< 0 to 100       (mm)
+		double coordin_num;    ///< 0 to 10        (-)
 		size_t marker;         ///< 0 to 999       (-)
 		short unsigned int type; ///< 0 to 999     (-)
-		double hard;         ///< 0. to 5.       (-)
+		double hard;           ///< 0. to 5.       (-)
+
+	private:
+		void generateLayer(const ElementData& Edata, const NodeData& Ndata);
+		void generateLayer(const ElementData& Edata, const NodeData& Ndata,
+                           const mio::Date& dateOfProfile, const double hoar_density_surf);
 };
 
 /// @brief class to collect the information about the current simulation (version, date)

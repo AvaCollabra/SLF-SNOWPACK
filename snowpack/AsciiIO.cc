@@ -41,7 +41,7 @@ const bool AsciiIO::t_gnd = false;
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), hn_density(), hn_density_model(), variant(), experiment(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
-           info(run_info),
+           info(run_info), vecProfileFmt(),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
@@ -93,6 +93,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 		o_snopath = outpath;
 	}
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
+	cfg.getValue("PROF_FMT", "Output", vecProfileFmt);
 
 	// SnowpackAdvanced section
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
@@ -300,12 +301,12 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading date: read %d fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
-		SSdata.Ldata[ll].layerDate = Date::rnd(Date(YYYY, MM, DD, HH, MI, time_zone), 1.);
-		if (SSdata.Ldata[ll].layerDate > SSdata.profileDate) {
+		SSdata.Ldata[ll].depositionDate = Date::rnd(Date(YYYY, MM, DD, HH, MI, time_zone), 1.);
+		if (SSdata.Ldata[ll].depositionDate > SSdata.profileDate) {
 		    fclose(fin);
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 			        "Layer %u from bottom is younger (%f) than ProfileDate (%f) !!!",
-			        ll+1, SSdata.Ldata[ll].layerDate.getJulian(), SSdata.profileDate.getJulian());
+			        ll+1, SSdata.Ldata[ll].depositionDate.getJulian(), SSdata.profileDate.getJulian());
 			throw IOException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 		if ((nFields = fscanf(fin, " %lf %lf %lf %lf %lf %lf",
@@ -555,39 +556,22 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
  */
 void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 {
-	writeProProfile(i_date, Xdata);
+	for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
+		if (vecProfileFmt[ii] == "VISU") {
+			writeProfileVisu(i_date, Xdata);
+		} else if (vecProfileFmt[ii] == "FULL_PRF") {
+			writeProfileTable(i_date, Xdata, "FULL_PRF");
+		} else if (vecProfileFmt[ii] == "AGGR_PRF") {
+			writeProfileTable(i_date, Xdata, "AGGR_PRF");
+		} else if (vecProfileFmt[ii] == "IMIS") {
+			;
+		} else {
+			throw InvalidArgumentException("Key PROF_FMT in section [Output] takes only VISU, FULL_PRF, AGGR_PRF or IMIS formats", AT);
+		}
+	}
 }
 
-void AsciiIO::writePrfProfile(const mio::Date& /*i_date*/, const SnowStation& /*Xdata*/)
-{
-	//open profile file and write to it
-	/*std::ofstream Pfile(profile_filename.c_str(), std::ios::out | std::fstream::app);
-	if(!Pfile)
-		throw FileAccessException("[E] Can not open file "+profile_filename, AT);
-
-	const size_t nL = Pdata.size();
-	for(size_t ll=0; ll<nL; ll++) {
-		Pfile << fixed << setprecision(6) << Pdata[ll].profileDate.getJulian() << "," << Pdata[ll].stationname << "," << Pdata[ll].loc_for_snow << "," << setprecision(3) << Pdata[ll].height << ",";
-		Pfile << setprecision(6) << Pdata[ll].layerDate.getJulian() << "," << setprecision(1) << Pdata[ll].rho << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << "," << setprecision(5) << Pdata[ll].strain_rate << ",";
-		Pfile << setprecision(1) << Pdata[ll].theta_w << "," << Pdata[ll].theta_i << "," << setprecision(3) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
-		Pfile << setprecision(2) << Pdata[ll].coordin_num << "," << Pdata[ll].grain_size << "," << setprecision(3) << Pdata[ll].bond_size << "," << Pdata[ll].type << "\n";
-	}
-
-	const size_t nE = Xdata.getNumberOfElements();
-	const vector<NodeData>& NDS = Xdata.Ndata;
-	if (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf) * hoar_density_surf) {
-		const double gsz_SH = NDS[nE].hoar / hoar_density_surf;
-		const double Tss = Pdata[nL-1].T + (Pdata[nL-1].gradT * gsz_SH);
-
-		Pfile << fixed << setprecision(6) << Pdata[nL-1].profileDate.getJulian() << "," << Pdata[nL-1].stationname << "," << Pdata[nL-1].loc_for_snow << "," << setprecision(3) << Pdata[nL-1].height + M_TO_CM(gsz_SH) << ",";
-		Pfile << setprecision(6) << Pdata[nL-1].layerDate.getJulian() << "," << setprecision(1) << hoar_density_surf << "," << setprecision(2) << Tss << "," << setprecision(1) << Pdata[nL-1].gradT << ",0.0000,0.,";
-		Pfile << hoar_density_surf/Constants::density_ice << ",0.00,0.00,2.0," << setprecision(2) << M_TO_MM(gsz_SH) << "," << setprecision(3) << 0.6667*M_TO_MM(gsz_SH) << ",660\n";
-	}
-
-	Pfile.close();*/
-}
-
-void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
+void AsciiIO::writeProfileVisu(const mio::Date& i_date, const SnowStation& Xdata)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
@@ -787,9 +771,9 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 
 	if (variant == "CALIBRATION")
-		writeFreeProfileCALIBRATION(Xdata, PFile);
+		writeProfileVisuAddCalibration(Xdata, PFile);
 	else
-		writeFreeProfileDEFAULT(Xdata, PFile);
+		writeProfileVisuAddDefault(Xdata, PFile);
 
 	fclose(PFile);
 }
@@ -801,7 +785,7 @@ void AsciiIO::writeProProfile(const mio::Date& i_date, const SnowStation& Xdata)
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeProfileVisuAddDefault(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -859,7 +843,7 @@ void AsciiIO::writeFreeProfileDEFAULT(const SnowStation& Xdata, FILE *fout)
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeProfileVisuAddCalibration(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -955,6 +939,57 @@ void AsciiIO::writeFreeProfileCALIBRATION(const SnowStation& Xdata, FILE *fout)
 	}
 }
 
+void AsciiIO::writeProfileTable(const mio::Date& dateOfProfile, const SnowStation& Xdata, const std::string& fmt)
+{
+
+	//open profile filestream
+	const std::string ext = (fmt == "FULL_PRF")? "-full.prf" : "-aggr.prf";
+	const std::string Pfilename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ext;
+	std::ofstream ofs;
+	ofs.open(Pfilename.c_str(), std::ios::out | std::fstream::app);
+	if(!ofs)
+		throw FileAccessException("[E] Can not open file " + Pfilename, AT);
+
+	ofs << "Date,JulianDate,station,aspect,slope,nlay,hs,swe,lwc_sum,ts,tg\n";
+	ofs << "-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
+	ofs << fixed << dateOfProfile.toString(Date::ISO) << "," << setprecision(6) << dateOfProfile.getJulian() << ",";
+	ofs << setprecision(1) << Xdata.meta.getAzimuth() << "," << Xdata.meta.getSlopeAngle() << "," << Xdata.meta.getStationName() << "," ;
+	if (Xdata.getNumberOfElements() == Xdata.SoilNode) {
+		ofs << "0,-999.,-999.,-999.,-999.\n\n";
+		ofs.close();
+	} else {
+		vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf);
+		if (fmt == "AGGR_PRF") {
+			Aggregate::aggregate(Pdata);
+		}
+		const double cos_sl = Xdata.cos_sl;
+		const size_t nL = Pdata.size();
+		ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
+		ofs << Pdata[nL-1].T << "," << K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";;
+		//Minima of stability indices at their respective depths as well as stability classifications
+		ofs << "#,s_height,s_index,s_class1,s_class2\n";
+		ofs << " ,cm,1,1,1\n";
+		ofs << "d," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
+		ofs << Xdata.S_class1 << "," << Xdata.S_class2 << "\n";
+		ofs << "n," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
+		ofs << "s," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
+		ofs << "4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
+		ofs << "5," << setprecision(1) << M_TO_CM(Xdata.z_S_5/cos_sl) << "," << setprecision(2) << Xdata.S_5 << "\n";
+		//Now write all layers starting from the ground
+		ofs << "DepDate,DepJulianDate,Hn,Tn,gradT,rho,th_i,th_w,ogs,gsz,bsz,dd,sp,class,mk,hard\n";
+		ofs << "-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1\n";
+		for(size_t ll=0; ll<nL; ll++) {
+			ofs << Pdata[ll].depositionDate.toString(Date::ISO) << "," << setprecision(6) << Pdata[ll].depositionDate.getJulian() << ",";
+			ofs << setprecision(1) << Pdata[ll].height << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << ",";
+			ofs << setprecision(1) << Pdata[ll].rho << "," << setprecision(3) << Pdata[ll].theta_i << "," << Pdata[ll].theta_w << ",";
+			ofs << setprecision(1) << Pdata[ll].ogs << "," << Pdata[ll].bond_size << "," << Pdata[ll].grain_size << ",";
+			ofs << setprecision(2) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
+			ofs << Pdata[ll].type << "," << Pdata[ll].marker << "," << setprecision(1) << Pdata[ll].hard << "\n";
+		}
+		ofs << "\n";
+	}
+	ofs.close();
+}
 
 /**
  * @brief Dumps modelled (and measured) temperature at a given vertical position z_vert (m) \n
@@ -1473,11 +1508,11 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		mass_corr = Hdata.mass_corr;
 	}
 	if (variant == "CALIBRATION") {
-		writeFreeSeriesCALIBRATION(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
+		writeTimeSeriesAddCalibration(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
 	} else if (variant == "ANTARCTICA") {
-		writeFreeSeriesANTARCTICA(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
+		writeTimeSeriesAddAntarctica(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
 	} else {
-		writeFreeSeriesDEFAULT(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
+		writeTimeSeriesAddDefault(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
 	}
 
 	fclose (TFile);
@@ -1495,7 +1530,10 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
  * @param nCalcSteps between outputs
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double crust, const double dhs_corr, const double mass_corr, const size_t nCalcSteps, FILE *fout)
+void AsciiIO::writeTimeSeriesAddDefault(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+                                        const CurrentMeteo& Mdata, const double crust,
+                                        const double dhs_corr, const double mass_corr,
+                                        const size_t nCalcSteps, FILE *fout)
 {
 	// 93: Soil Runoff (kg m-2); see also 34-39 & 51-52
 	if (useSoilLayers)
@@ -1549,7 +1587,7 @@ void AsciiIO::writeFreeSeriesDEFAULT(const SnowStation& Xdata, const SurfaceFlux
  * @param nCalcSteps between outputs
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+void AsciiIO::writeTimeSeriesAddAntarctica(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                            const CurrentMeteo& Mdata, const double /*crust*/,
                                            const double /*dhs_corr*/, const double /*mass_corr*/,
                                            const size_t nCalcSteps, FILE *fout)
@@ -1602,7 +1640,10 @@ void AsciiIO::writeFreeSeriesANTARCTICA(const SnowStation& Xdata, const SurfaceF
  * @param nCalcSteps
  * @param *fout Output file
  */
-void AsciiIO::writeFreeSeriesCALIBRATION(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const double /*crust*/, const double /*dhs_corr*/, const double /*mass_corr*/, const size_t nCalcSteps, FILE *fout)
+void AsciiIO::writeTimeSeriesAddCalibration(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
+                                            const CurrentMeteo& Mdata, const double /*crust*/,
+                                            const double /*dhs_corr*/, const double /*mass_corr*/,
+                                            const size_t nCalcSteps, FILE *fout)
 {
 	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93

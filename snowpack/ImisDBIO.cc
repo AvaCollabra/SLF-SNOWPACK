@@ -171,7 +171,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 		stmt->setUInt(3, stao_nr);
 		stmt->setNumber(4, Pdata[ii].height);
 
-		stmt->setDate(5, OracleDate(Pdata[ii].layerDate));
+		stmt->setDate(5, OracleDate(Pdata[ii].depositionDate));
 		stmt->setNumber(6, Pdata[ii].rho);
 		stmt->setNumber(7, Pdata[ii].T);
 		stmt->setNumber(8, Pdata[ii].gradT);
@@ -191,7 +191,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 			stmt->executeUpdate(); // execute the statement stmt
 		} catch (const exception& e) {
 			cerr << "[E] SDB profile for station " << stat_abk << stao_nr << " at " << Pdata[0].profileDate.toString(mio::Date::ISO);
-			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
+			cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].depositionDate.toString(mio::Date::ISO);
 			print_Profile_query(Pdata[ii]);
 			throw; //rethrow the exception
 		}
@@ -201,7 +201,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 				(stmt->getConnection())->commit();
 			} catch (const exception& e) {
 				cerr << "[E] SDB profile for station " << stat_abk << stao_nr << " at " << Pdata[0].profileDate.toString(mio::Date::ISO);
-				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].layerDate.toString(mio::Date::ISO);
+				cerr << "\tsnowpack_version: " << fixed << setw(12) << setprecision(3) << info.version << "\tcalculation_date: " << Pdata[ii].depositionDate.toString(mio::Date::ISO);
 				throw; //rethrow the exception
 			}
 		}
@@ -217,7 +217,7 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& X
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
 	}
-	vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata);
+	vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf);
 	Aggregate::aggregate(Pdata);
 
 	try {
@@ -303,7 +303,7 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 	const size_t posE=sqlInsertProfile.find_first_of(')');
 	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";
 
-	cerr << Pdata.height << "," << Pdata.layerDate.toString(mio::Date::ISO) << ",";
+	cerr << Pdata.height << "," << Pdata.depositionDate.toString(mio::Date::ISO) << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
 	cerr << Pdata.v_strain_rate << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
