@@ -59,13 +59,6 @@ class SnLaws {
 			visc_837=977,   ///< as of revision 837 (deprecated)
 			visc_stk=999    ///< calibration 2009 by Walter Steinkogler (MSc thesis)
 		};
-		/// Defines which snow albedo parameterization to use
-		enum AlbedoModel {
-			alb_lehning_0,
-			alb_lehning_1,
-			alb_lehning_2,
-			alb_nied       ///< Japanese version of alb_lehning_2
-		};
 		//@}
 
 		static double conductivity_ice(const double& Temperature);
@@ -91,7 +84,7 @@ class SnLaws {
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
+		static double parameterizedSnowAlbedo(const double& i_fixed_albedo, std::string& i_currentAlbedoModel, const ElementData& Edata,
 		                                      const double& Tss, const CurrentMeteo& Mdata);
 		static void compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream);
 		static void compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat,
@@ -138,7 +131,6 @@ class SnLaws {
 		static double sn_dt; //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		static const bool __init;
 		static std::string current_variant;
-		static AlbedoModel currentAlbedoModel;
 		static bool ageAlbedo;
 		static ViscosityVersion visc;
 		static TempDependence t_term;

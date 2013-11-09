@@ -38,7 +38,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["ALPINE3D"] = "false";
 	advancedConfig["DOORSCHOT"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
-	advancedConfig["FIXED_ALBEDO"] = "-999.";
+	advancedConfig["ALBEDO_FIXED"] = "-999.";
+	advancedConfig["ALBEDO_MODEL"] = "LEHNING_2";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_MODEL"] = "MONTI";
@@ -152,7 +153,8 @@ void SnowpackConfig::setDefaults()
 		}
 	}
 
-	string hn_density;  getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
+	string albedo_model; getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model, IOUtils::nothrow);
+	string hn_density; getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
 	string hn_density_model; getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model, IOUtils::nothrow);
 	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
 	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, IOUtils::nothrow);
@@ -163,6 +165,7 @@ void SnowpackConfig::setDefaults()
 	if ((variant.empty()) || (variant == "DEFAULT")) {
 		// Use default settings
 	} else if (variant == "JAPAN") {
+		if (albedo_model.empty()) addKey("ALBEDO_MODEL", "SnowpackAdvanced", "NIED");
 		if (metamorphism_model.empty()) addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model.empty()) addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");

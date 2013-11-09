@@ -136,8 +136,9 @@ class Snowpack {
 	private:
 		const SnowpackConfig& cfg;
 		BoundaryCondition surfaceCode;
-		std::string hn_density, hn_density_model, viscosity_model, variant, watertransportmodel_snow, watertransportmodel_soil;
-		int sw_mode;
+		std::string hn_density, hn_density_model, viscosity_model, variant, albedo_model, watertransportmodel_snow, watertransportmodel_soil;
+		unsigned int sw_mode;
+		double albedo_fixed;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dtempAirSnow;
@@ -145,7 +146,6 @@ class Snowpack {
 		double new_snow_grain_rad, new_snow_bond_rad;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
-		double fixed_albedo;
 		double t_surf;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;

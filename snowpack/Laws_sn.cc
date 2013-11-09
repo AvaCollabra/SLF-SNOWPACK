@@ -167,7 +167,6 @@ bool   SnLaws::setfix = false;
  * - albedoCage         : Empirical constant related to age of snow, set to zero in Antarctic variant
  */
 //@{
-SnLaws::AlbedoModel SnLaws::currentAlbedoModel = SnLaws::alb_lehning_2;
 bool SnLaws::ageAlbedo = true;
 //@}
 
@@ -237,11 +236,6 @@ bool SnLaws::setStaticData(const std::string& variant)
 		setfix = false;
 	}
 
-	if (current_variant == "JAPAN")
-		currentAlbedoModel = alb_nied;
-	else
-		currentAlbedoModel = alb_lehning_2;
-
 	if (current_variant == "ANTARCTICA")
 		SnLaws::ageAlbedo = false;
 	else
@@ -290,117 +284,126 @@ double SnLaws::conductivity_water(const double& Temperature)
 /**
  * @name SNOW ALBEDO (defined as an absolute value--and not as a rate of change)
  * @brief Various parameterizations for snow albedo
- * @version 11.05
- * currentAlbedoModel:
- * 	- alb_lehning_[012] : Statistical models of surface snow albedo based on measurements
+ * @param i_albedo_fixed value
+ * @param i_currentAlbedoModel:
+ * 	- LEHNING_[012] : Statistical models of surface snow albedo based on measurements
  *      from the Weissfluhjoch study plot (SWin and SWout, K&Z CM21)
- * 	- alb_nied : The Japanese version of alb_lehning_2
- * @param i_fixed_albedo value
+ * 	- SCHMUCKI_ALLX30 : Edgar Schmucki's statistical model (2013-11) based on SWin and SWout measurements
+ *      from the Weissfluhjoch study plot (K&Z CM21), Davos (K&Z CM21, SwissMetNet??), and Napf summit (Emmental)'
+ * 	- NIED : The Japanese version of LEHNING_2
  * @param Edata
  * @param Tss Snow surface temperature (K)
  * @param Mdata
  */
-double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const ElementData& Edata,
+double SnLaws::parameterizedSnowAlbedo(const double& i_albedo_fixed, std::string& i_currentAlbedoModel, const ElementData& Edata,
                                        const double& Tss, const CurrentMeteo& Mdata)
 {
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
 	double age = Mdata.date.getJulian() - Edata.depositionDate.getJulian();
 
-	if (i_fixed_albedo != Constants::undefined) {
-		Alb = i_fixed_albedo;
+	if (i_albedo_fixed != Constants::undefined) {
+		Alb = i_albedo_fixed;
 	} else if ((SnLaws::ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
 		Alb = Constants::glacier_albedo;
-	} else {
-		switch (currentAlbedoModel) {
-		case alb_lehning_0: {
-			const double weight=0.1;
-			const double a = -0.2, b = 1.3, c = -0.012, d = -0.011, e = 0.0024, f = 0.018;
-			const double g = -7.8e-6, h = -3.1e-3, i = 3.5e-4, j = 1.6e-7, k = -2.4e-7;
-			const double l = -9.2e-6, m = 6.7e-5, n = -7.2e-5, o = 2.0e-4;
+	} else if (i_currentAlbedoModel == "LEHNING_0"){
+		const double weight=0.1;
+		const double a = -0.2, b = 1.3, c = -0.012, d = -0.011, e = 0.0024, f = 0.018;
+		const double g = -7.8e-6, h = -3.1e-3, i = 3.5e-4, j = 1.6e-7, k = -2.4e-7;
+		const double l = -9.2e-6, m = 6.7e-5, n = -7.2e-5, o = 2.0e-4;
 
-			const double sqrt_age = (age<0.001)? Constants::eps : sqrt(age);
-			const double lwi = Constants::stefan_boltzmann*Mdata.ea*Optim::pow4(Ta);
-			const double Alb1 = exp(a + b*sqrt_age + c*Tss + d*Mdata.vw + e*Mdata.rswr + f*Mdata.rh
-			         + g*sqrt_age*Optim::pow2(Ta) + h*sqrt_age*Tss + i*sqrt_age*lwi
-			           + j*Optim::pow2(Ta)*Tss + k*Optim::pow2(Ta)*lwi + l*Tss*Mdata.rswr
-			             + m*Tss*lwi + n*Tss*Mdata.rh + o*Mdata.vw*Mdata.rh);
-			Alb = weight * Edata.dd * Snowpack::new_snow_albedo + (1. - weight * Edata.dd) * Alb1;
-			break;
-		}
-		case alb_lehning_1: {
-			double mf = 0.;
-			const double av = 0.77;
-			const double Cta = -0.0052, Cv = 0.0056, Clwc = -3.0, Crho = -0.0003, Cmf = -0.032;
-			const double Crb = 0.06, Cdd = 0.017, Csp = 0.021, Ctss = 0.0084, Cswout = -6.8e-5;
-			const double Cta_tss = -1.1e-5;
+		const double sqrt_age = (age<0.001)? Constants::eps : sqrt(age);
+		const double lwi = Constants::stefan_boltzmann*Mdata.ea*Optim::pow4(Ta);
+		const double Alb1 = exp(a + b*sqrt_age + c*Tss + d*Mdata.vw + e*Mdata.rswr + f*Mdata.rh
+		+ g*sqrt_age*Optim::pow2(Ta) + h*sqrt_age*Tss + i*sqrt_age*lwi
+		+ j*Optim::pow2(Ta)*Tss + k*Optim::pow2(Ta)*lwi + l*Tss*Mdata.rswr
+		+ m*Tss*lwi + n*Tss*Mdata.rh + o*Mdata.vw*Mdata.rh);
+		Alb = weight * Edata.dd * Snowpack::new_snow_albedo + (1. - weight * Edata.dd) * Alb1;
+	}
+	else if (i_currentAlbedoModel == "LEHNING_1") {
+		double mf = 0.;
+		const double av = 0.77;
+		const double Cta = -0.0052, Cv = 0.0056, Clwc = -3.0, Crho = -0.0003, Cmf = -0.032;
+		const double Crb = 0.06, Cdd = 0.017, Csp = 0.021, Ctss = 0.0084, Cswout = -6.8e-5;
+		const double Cta_tss = -1.1e-5;
 
-			if (Edata.mk%100 > 19) {
-				mf = 1.;
-				// av *= exp(-age/1700.);
-			}
-			const double Alb1 = Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
-			                        + Cmf*mf + Crb*Edata.rb +  Cta*Ta + Ctss*Tss
-			                          + Cv*Mdata.vw+ Cswout*Mdata.rswr + Cta_tss*Ta*Tss;
-			Alb = av + log(1.0 + Alb1);
-			break;
+		if (Edata.mk%100 > 19) {
+			mf = 1.;
+			// av *= exp(-age/1700.);
 		}
-		case alb_lehning_2: {
-			//TODO: this perfoms very badly (if not completly wrong) for (very?) wet snowpack
-			//for example, February 2007 in Davos with very warm weather resulting in (measured?) albedos of 0.3 ...
-			double av = 0.8042; // Value of original regression
-			if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
-				age = 0.;
-				av = 0.7542; // estimated from comparison with measurements at Dome C
-			} else {
-				age = MIN(30., age);
-			}
-			const double inter = 1.442;
-			const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
-			const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
-			const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
-			const double Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
-			           + Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
-			               + Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
-			                   + Crh*Mdata.rh;
-			if (Alb1 > 0.) {
-				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
-			} else {
-				Alb = Constants::min_albedo;
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
-			}
-			if (age > 30.) {
-				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
-						"albedo=%f : age=%f rho=%f th_w=%f ta=%f rswr=%f rb=%f sp=%f type=%d",
-						Alb, age, Edata.Rho, Edata.theta[WATER], Ta, Mdata.rswr, Edata.rb, Edata.sp, Edata.type);
-			}
-			break;
+		const double Alb1 = Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
+		+ Cmf*mf + Crb*Edata.rb +  Cta*Ta + Ctss*Tss
+		+ Cv*Mdata.vw+ Cswout*Mdata.rswr + Cta_tss*Ta*Tss;
+		Alb = av + log(1.0 + Alb1);
+	}
+	else if (i_currentAlbedoModel == "LEHNING_2") {
+		//TODO: this perfoms very badly (if not completly wrong) for (very?) wet snowpack
+		//for example, February 2007 in Davos with very warm weather resulting in (measured?) albedos of 0.3 ...
+		double av = 0.8042; // Value of original regression
+		if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
+			age = 0.;
+			av = 0.7542; // estimated from comparison with measurements at Dome C
+		} else {
+			age = MIN(30., age);
 		}
-		case alb_nied: { // by H. Hirashima (NIED, Nagaoka, Japan)
-			const double av = 0.75;
-			const double inter = 1.005;
-			const double Cage = -0.00016*10.0, Cta = -0.000249*2.0, Cv = 0.00578, Clwc = -2.15;
-			const double Crho = -0.000047, Crh = 0.129, Crb = -0.306, Crg = 0.107;
-			const double Cdd = 0.076, Csp = 0.00964, Ctss = -0.000166, Cswout = -1.8e-5;
-
-			const double Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
-			           + Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
-			               + Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
-
-			if (Alb1 > 0.) {
-				Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
-			} else {
-				Alb = Constants::min_albedo;
-				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
-			}
-			break;
-		}
-		default:
-			prn_msg(__FILE__, __LINE__, "err", Date(), "Albedo model %d not implemented yet!", currentAlbedoModel);
-			throw IOException("The required snow albedo model is not implemented yet!", AT);
-			break;
+		const double inter = 1.442;
+		const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
+		const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
+		const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
+		const double Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
+		+ Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
+		+ Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
+		+ Crh*Mdata.rh;
+		if (Alb1 > 0.) {
+			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+		} else {
+			Alb = Constants::min_albedo;
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 		}
 	}
+	else if (i_currentAlbedoModel == "SCHMUCKI_ALLX30") {
+		double av = 0.74824; // mean albedo of WFJ, DAV and Napf
+		if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
+			age = 0.;
+			//av = 0.7542; // estimated from comparison with measurements at Dome C
+		} else {
+			age = MIN(30., age);
+		}
+		const double inter = 1.1559356320;
+		const double Cms = -0.0826886072, Cage = -0.0002813654, Crg = -0.1321285606, Crho = -0.0004206185;
+
+		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
+		const double Alb1 = inter + Cms*moist_snow + Cage*age + Crg*Edata.rg + Crho*Edata.Rho; //NOTE try Optical equivalent Grain Size?
+
+		if (Alb1 > 0.) {
+			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+		} else {
+			Alb = Constants::min_albedo;
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+		}
+	}
+	else if (i_currentAlbedoModel == "NIED") { // by H. Hirashima (NIED, Nagaoka, Japan)
+		const double av = 0.75;
+		const double inter = 1.005;
+		const double Cage = -0.00016*10.0, Cta = -0.000249*2.0, Cv = 0.00578, Clwc = -2.15;
+		const double Crho = -0.000047, Crh = 0.129, Crb = -0.306, Crg = 0.107;
+		const double Cdd = 0.076, Csp = 0.00964, Ctss = -0.000166, Cswout = -1.8e-5;
+
+		const double Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
+		+ Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
+		+ Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
+
+		if (Alb1 > 0.) {
+			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+		} else {
+			Alb = Constants::min_albedo;
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+		}
+	} else {
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Albedo model %s not implemented yet!", i_currentAlbedoModel.c_str());
+		throw IOException("The required snow albedo model is not implemented yet!", AT);
+	}
+
 	return(Alb);
 }
 
@@ -408,14 +411,12 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_fixed_albedo, const Eleme
  * @brief Helens Solution to Radiation Transfer
  * NOTE on fudge_bohren (fb): Larger values increase extinction --> Energy stays on top;
  * originally not band dependent, set to 10.0 for Neumann and to 5.0 for Dirichlet BC
- * @version 12.04
  * @param Xdata
  * @param I0 net shortwave radiation (W m-2)
  * @param multistream
  */
 void SnLaws::compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream)
 {
-
 	ElementData *EMS = &Xdata.Edata[0];
 	const size_t nE = Xdata.getNumberOfElements();
 

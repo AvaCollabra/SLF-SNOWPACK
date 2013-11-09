@@ -52,12 +52,13 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
 
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
-            watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-            sw_mode(0), meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
+            albedo_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+            sw_mode(0), albedo_fixed(Constants::undefined),
+            meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), fixed_albedo(Constants::undefined), t_surf(0.),
+            minimum_l_element(0.), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), multistream(false), combine_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
@@ -66,7 +67,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
-	cfg.getValue("FIXED_ALBEDO", "SnowpackAdvanced", fixed_albedo);
+	cfg.getValue("ALBEDO_FIXED", "SnowpackAdvanced", albedo_fixed);
+	cfg.getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model);
 
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
@@ -716,7 +718,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				eAlbedo--;
 		default: // Snow, glacier ice, PLASTIC, or soil
 			if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
-				Albedo = SnLaws::parameterizedSnowAlbedo(fixed_albedo, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+				Albedo = SnLaws::parameterizedSnowAlbedo(albedo_fixed, albedo_model, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
 			} else { // PLASTIC, or soil
 				Albedo = Xdata.SoilAlb;
 			}
