@@ -495,8 +495,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		}
 
 		// Check whether to use incoming longwave as estimated from station field
-		const bool incoming_longwave = cfg.get("INCOMING_LONGWAVE", "Snowpack");
-		if (!incoming_longwave) {
+		const bool meas_incoming_longwave = cfg.get("MEAS_INCOMING_LONGWAVE", "SnowpackAdvanced");
+		if (!meas_incoming_longwave) {
 			double ea = 0.;
 			if ((lw_in > 50.) && (lw_in < 300.)) {
 				ea = Atmosphere::blkBody_Emissivity(lw_in, Mdata.ta);

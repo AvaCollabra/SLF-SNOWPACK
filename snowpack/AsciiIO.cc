@@ -1328,8 +1328,7 @@ void AsciiIO::setNumberSensors(const CurrentMeteo& Mdata)
  * When running SNOW_REDISTRIBUTION on virtual slopes, eroded mass will be dumped
  *     to the windward *.met file and added to the solid precipitations of the lee *.met file!
  * \li DO NOT change the order of parameters below! Additional parameters may be dumped at pos.
- *     93[94] to 100 in writeFreeSeriesXXX()
- * @version 11.03
+ *     93[94] to 100 in writeTimeSeriesAddXXX()
  * @param Xdata
  * @param Sdata
  * @param Mdata
