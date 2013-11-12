@@ -90,6 +90,7 @@ bool SnowpackConfig::initStaticData()
 	inputConfig["NUMBER_OF_SOLUTES"] = "0";
 	inputConfig["SNOW"] = "SMET";
 	inputConfig["SOLUTE_NAMES"] = "NITRATE";
+	inputConfig["ISWR_IS_NET"] = "false";
 
 	//[Output] section
 	outputConfig["AVGSUM_TIME_SERIES"] = "true";

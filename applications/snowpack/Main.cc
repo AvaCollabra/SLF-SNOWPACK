@@ -370,17 +370,31 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
  * @param vecXdata
  * @param slope
  */
-void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata)
+void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& iswr_is_net)
 {
-	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.))
-		{Mdata.mAlbedo = Mdata.rswr / Mdata.iswr;}
+	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.) && !iswr_is_net)
+		Mdata.mAlbedo = Mdata.rswr / Mdata.iswr;
 	else
-		{Mdata.mAlbedo = Constants::undefined;}
+		Mdata.mAlbedo = Constants::undefined;
 
+	const double cAlbedo = Xdata.Albedo;
+	
+	if(iswr_is_net) {
+		const double netSW = Mdata.iswr;
+		if(netSW==0.) { //this should only happen at night
+			Mdata.iswr = 0.;
+			Mdata.rswr = 0.;
+			return;
+		}
+		Mdata.iswr = netSW / (1. - cAlbedo);
+		Mdata.rswr = netSW / (1./cAlbedo - 1.);
+		return;
+	}
+	
 	if (Mdata.iswr == mio::IOUtils::nodata)
-		{Mdata.iswr = Mdata.rswr / Xdata.Albedo;}
+		Mdata.iswr = Mdata.rswr / Xdata.Albedo;
 	if (Mdata.rswr == mio::IOUtils::nodata)
-		{Mdata.rswr = Mdata.iswr * Xdata.Albedo;}
+		Mdata.rswr = Mdata.iswr * Xdata.Albedo;
 }
 
 //for a given config (that can be altered) and original meteo data, prepare the snowpack data structures
@@ -395,6 +409,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	SnowStation &sector = vecXdata[slope.sector]; //alias: the current slope
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
+	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
 	if (Mdata.tss == mio::IOUtils::nodata) {
 		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use parameterized
 		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
@@ -428,7 +443,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 
 		// Set iswr/rswr and measured albedo
-		setShortWave(Mdata, flatfield);
+		setShortWave(Mdata, flatfield, iswr_is_net);
 		Meteo::compRadiation(flatfield, sun, cfg, Mdata);
 	} else { // Virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "false");
