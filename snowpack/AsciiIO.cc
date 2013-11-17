@@ -606,7 +606,7 @@ void AsciiIO::writeProfileVisu(const mio::Date& i_date, const SnowStation& Xdata
 
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
 	const size_t nz = (useSoilLayers)? nN : nE;
-	if (no_snow) {
+	if(nE==0) {
 		fprintf(PFile,"\n0501,1,0");
 		fclose(PFile);
 		return;
