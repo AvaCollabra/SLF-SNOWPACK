@@ -404,6 +404,13 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			}
 			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0) / eta;
 			dL = L0 * sn_dt * EMS[e].EvDot;
+			
+			// Make sure settling is not larger than the space that is available (basically settling can at most reduce theta[AIR] to 0).
+			// We also leave some room in case all liquid water freezes and thereby expands.
+			double MaxSettlingFactor=1.;	// An additional maximum settling factor, between 0 and 1. 1: allow maximize possible settling, 0: no settling allowed.
+			if (watertransportmodel_snow=="RICHARDSEQUATION") MaxSettlingFactor=0.95;	//For stability in the numerical solver.
+			dL = MAX(dL, MIN(0., -1.*MaxSettlingFactor*L0*(EMS[e].theta[AIR]-((Constants::density_water/Constants::density_ice)-1.)*EMS[e].theta[WATER])));
+
 			// Limit dL when the element length drops below minimum_l_element. This element will be merged in WaterTransport::mergingElements later on.
 			if ((L0 + dL) < (1.-Constants::eps)*minimum_l_element)
 				dL = MIN(0., (1.-Constants::eps)*minimum_l_element - L0);	// Make sure the element length gets smaller than minimum_l_element.
@@ -432,13 +439,6 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].theta[ICE]   *= L0 / (L0 + dL);
 		EMS[e].L0 = EMS[e].L = (L0 + dL);
 		NDS[e+1].z = NDS[e].z + EMS[e].L;
-		while (EMS[e].theta[ICE] + EMS[e].theta[WATER] + EMS[e].theta[SOIL] > 0.99) {
-			EMS[e].theta[ICE] *= 0.99;
-			EMS[e].theta[WATER] *= 0.99;
-			EMS[e].M = EMS[e].L0 * ((EMS[e].theta[ICE] * Constants::density_ice)
-			                           + (EMS[e].theta[WATER] * Constants::density_water));
-			assert(EMS[e].M>=0.); //mass must be positive
-		}
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER]
 		                *Constants::density_water) + (EMS[e].theta[SOIL]
