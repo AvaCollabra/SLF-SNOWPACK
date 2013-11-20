@@ -549,7 +549,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //	    Massbalance errors also arise when k_ip12(i-1) != k_im12(i)! The nodal values should always be the same for both the upper and lower node!
 //	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
 	//Initializations
-	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, ALPINE3D};
+	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, ALPINE3D};
 
 	//
 	// BEGIN OF SETTINGS
@@ -990,6 +990,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Case WFJ:
 				SetSoil(GRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
+			case CDP:
+				//Case Col de Porte
+				SetSoil(LOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				break
 			case ALPINE3D:
 				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
 				if(EMS[SnowpackElement[i]].rg < 0.5) {
