@@ -993,7 +993,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			case CDP:
 				//Case Col de Porte
 				SetSoil(LOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				break
+				break;
 			case ALPINE3D:
 				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
 				if(EMS[SnowpackElement[i]].rg < 0.5) {
