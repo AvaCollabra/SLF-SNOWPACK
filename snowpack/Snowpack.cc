@@ -78,7 +78,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	/* Defines the management of the bottom boundary conditions with soil layers
 	 * - 0 ==> Dirichlet, i.e fixed Temperature
 	 * - 1 ==> Neumann, fixed geothermal heat flux GEO_HEAT */
-	cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux);
+	cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux, IOUtils::nothrow);
 	if (useSoilLayers && soil_flux) {
 		cfg.getValue("GEO_HEAT", "Snowpack", geo_heat); //Constant geothermal heat flux at (great) depth (W m-2)
 	} else {
