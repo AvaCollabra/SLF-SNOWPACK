@@ -556,6 +556,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//
 	const RunCases runcase = IMISDEFAULT;					//Defines what the soil looks like
 	const BoundaryConditions TopBC = LIMITEDFLUXEVAPORATION;		//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).
+		//In case you select one of the LIMITEDFLUX options, specify whether these are only for soil, for snow or for both:
+		const bool LIMITEDFLUXEVAPORATION_soil=true;
+		const bool LIMITEDFLUXEVAPORATION_snow=true;
+		const bool LIMITEDFLUXINFILTRATION_soil=true;
+		const bool LIMITEDFLUXINFILTRATION_snow=true;
 	const BoundaryConditions BottomBC = DIRICHLET;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
@@ -1402,7 +1407,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
 				// Now reduce flux when necessary:
-				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.)) {
+  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && ((LIMITEDFLUXINFILTRATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || toplayer==nsoillayers_snowpack)) || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
 					// Influx condition
 					const double head_compare=h_e[uppernode];
 					// We limit the flux such that when h_np1_m[uppernode]==saturated, the flux would become 0:
@@ -1421,7 +1426,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						TopFluxRate=MAX(0., flux_compare);
 					}
 				}
-				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.)) {
+  				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || toplayer==nsoillayers_snowpack)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
 					// Outflux condition
 					const double head_compare=h_d_uppernode;
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
