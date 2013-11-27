@@ -409,7 +409,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case ORGANIC: //Organic
 			//CHECKED!
-			*theta_r=0.01;
+			*theta_r=0.20;
 			//theta_s=0.766; 	//See Nemes 2001: However, this is extreme.... So I chose something different, based on what I measured at the sensorscopes.
 			theta_s=0.50;
 			*alpha=1.3;
@@ -419,7 +419,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case LOAM: //Loam: Van genuchten (1980).
 			//CHECKED!
-			*theta_r=0.01;
+			*theta_r=0.20;
 			theta_s=0.35;
 			*alpha=1.15;
 			*n=2.03;
@@ -428,7 +428,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case SILTLOAM: //Silt loam: Van genuchten (1980).
 			//CHECKED!
-			*theta_r=0.01;
+			*theta_r=0.20;
 			theta_s=0.40;
 			*n=2.06;
 			*alpha=0.423;
@@ -437,7 +437,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case SANDYLOAM: //Sandy loam
 			//CHECKED!
-			*theta_r=0.01;
+			*theta_r=0.15;
 			theta_s=0.43;
 			//*n=1.25;	//Original
 			*n=2.25;
@@ -448,7 +448,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case FINESAND: //Fine sand
 			//CHECKED!
-			*theta_r=0.01;
+			*theta_r=0.05;
 			theta_s=0.30;
 			*n=6.;
 			*alpha=5.;
@@ -992,7 +992,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				break;
 			case CDP:
 				//Case Col de Porte
-				SetSoil(LOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(SANDYLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case ALPINE3D:
 				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
