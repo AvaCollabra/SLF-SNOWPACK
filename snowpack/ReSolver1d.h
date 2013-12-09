@@ -60,6 +60,8 @@ class ReSolver1d {
 
 		//Soil types
 		enum SoilTypes{ORGANIC, CLAY, CLAYLOAM, LOAM, LOAMSAND, SAND, SANDCLAY, SANDCLAYLOAM, SANDLOAM, SILT, SILTCLAY, SILTCLAYLOAM, SILTLOAM, WFJGRAVELSAND};
+		//Hydraulic conductivity parameterizations
+		enum K_Parameterizations{SHIMIZU, CALONNE};
 		//K_Average types
 		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, MINIMUMVALUE, UPSTREAM};
 		//Van genuchten model types
