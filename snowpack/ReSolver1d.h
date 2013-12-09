@@ -59,7 +59,7 @@ class ReSolver1d {
 
 
 		//Soil types
-		enum SoilTypes{SNOW, ORGANIC, LOAM, SILTLOAM, SANDYLOAM, FINESAND, GRAVELSAND, CLAY};
+		enum SoilTypes{ORGANIC, LOAM, SILTLOAM, SANDYLOAM, FINESAND, GRAVELSAND, CLAY};
 		//K_Average types
 		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, MINIMUMVALUE, UPSTREAM};
 		//Van genuchten model types
@@ -75,6 +75,7 @@ class ReSolver1d {
 		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
 		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e);
 		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i);
+		double AirEntryPressureHead(double MaximumPoreSize, double Temperature);
 		void SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he);
 
 		// Solvers

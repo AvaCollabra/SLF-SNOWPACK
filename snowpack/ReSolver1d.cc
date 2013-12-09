@@ -196,6 +196,33 @@ double ReSolver1d::fromHtoTHETAforICE(double h, double theta_r, double theta_s, 
 
 
 /**
+ * @brief Calculate air entry pressure head \n
+ * Air entry pressure head in [m] that corresponds to a maximum pore size (using Young-Laplace Equation).\n
+ * This is a required value for specifying water retention curves, see Ippisch et al. (2006).\n
+ * @author Nander Wever
+ * @param MaximumPoreSize Maximum pore size (diameter, not radius!) [m]
+ * @param Temperature Temperature for determining surface tension [K]
+ */
+double ReSolver1d::AirEntryPressureHead(double MaximumPoreSize, double Temperature)
+{
+	double SurfaceTension=0.;	//Surface tension of water in N/m.
+	//Surface tension is dependent on the temperature. Most simulations will be in the temperature range of -20 - +20 degC.
+	//Source: http://en.wikipedia.org/wiki/Surface_tension
+	if(Temperature > 293.) {
+		//Value for 25 degC
+		SurfaceTension=0.07197;
+	} else {
+		//Value for 0 degC
+		SurfaceTension=0.07564;
+	}
+	const double delta_P=-1.*(2.*SurfaceTension)/(0.5*MaximumPoreSize);
+	const double air_entry_head=delta_P/(Constants::density_water*Constants::g);
+	
+	return air_entry_head;
+}
+
+
+/**
  * @brief Solving system of equations using Thomas Algorithm \n
  * The following function solves a tridiagonal system of equations using Thomas Algorithm \n
  * @author http://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm
@@ -387,25 +414,10 @@ int ReSolver1d::pinv(int /*m*/, int /*n*/, int /*lda*/, double */*a*/) {
  */
 void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he)
 {
-	//-1: snow
-	// 0: organic
-	// 1: loam
-	// 2: silt loam
-	// 3: sandy loam
-	// 4: fine sand
-	// 5: coarse sand/gravel
 	double theta_s;
+	double MaximumPoreSize=0.;	//Maximum pore size (diameter) in [m]
 
-	*he=-0.0058;	//Air entry pressure in [m] that corresponds (via Young-Laplace Equation) to a maximum pore size of 5 mm. See Ippisch (2006).
 	switch (type) {
-		case SNOW: //Snow
-			//Not really functional, snow set in calling code, not here
-			*theta_r=0.024;
-			theta_s=0.08;
-			*n=1.2;
-			*alpha=0.0004;
-			*ksat=0.00000003171;
-			break;
 
 		case ORGANIC: //Organic
 			//CHECKED!
@@ -415,6 +427,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*alpha=1.3;
 			*n=1.2039;
 			*ksat=8.000/(365.*24.*60.*60.);
+			MaximumPoreSize=0.005;
 			break;
 
 		case LOAM: //Loam: Van genuchten (1980).
@@ -424,6 +437,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*alpha=1.15;
 			*n=2.03;
 			*ksat=0.316/(24.*60.*60.);
+			MaximumPoreSize=0.005;
 			break;
 
 		case SILTLOAM: //Silt loam: Van genuchten (1980).
@@ -433,6 +447,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*n=2.06;
 			*alpha=0.423;
 			*ksat=0.0496/(24.*60.*60.);
+			MaximumPoreSize=0.005;
 			break;
 
 		case SANDYLOAM: //Sandy loam
@@ -444,6 +459,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			//*alpha=0.423;	//Original
 			*alpha=2.;
 			*ksat=0.000000574;
+			MaximumPoreSize=0.005;
 			break;
 
 		case FINESAND: //Fine sand
@@ -453,6 +469,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*n=6.;
 			*alpha=5.;
 			*ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
+			MaximumPoreSize=0.005;
 			break;
 
 		case GRAVELSAND: //Gravel/sand
@@ -462,6 +479,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*n=4.5;
 			*alpha=3.5;
 			*ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
+			MaximumPoreSize=0.005;
 			break;
 
 		case CLAY: //Clay
@@ -471,8 +489,10 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*n=1.25;		//M. Dall'Amico (2011)
 			*alpha=1.49;		//M. Dall'Amico (2011)
 			*ksat=0.0000012842;	//Equal to 40.5 m/year, for clay, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm (reference: Clapp and Hornberger, 1978).
+			MaximumPoreSize=0.005;
 			break;
 	}
+	*he=AirEntryPressureHead(MaximumPoreSize, 273.);
 	*theta_soil=1.-theta_s;
 	*m=(*n-1.)/(*n);
 
@@ -907,7 +927,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				theta_r[i]=theta_s[i]/4.;
 			}
 			//Set air entry pressure
-			h_e[i]=-0.0058; //Equal to all the other soil types.
+			h_e[i]=AirEntryPressureHead(0.005, 273.);
 
 			double GRAINRADIUSLOWERTHRESHOLD=0.;		//Lower threshold
 			double GRAINRADIUSUPPERTHRESHOLD=0.;		//Upper threshold. 2.02 is value for n>1, which is required.
