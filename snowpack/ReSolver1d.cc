@@ -417,63 +417,128 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 	double theta_s;
 	double MaximumPoreSize=0.;	//Maximum pore size (diameter) in [m]
 
+	//Set van Genuchten parameters
 	switch (type) {
-
-		case ORGANIC: //Organic
-			//CHECKED!
-			*theta_r=0.20;
-			//theta_s=0.766; 	//See Nemes 2001: However, this is extreme.... So I chose something different, based on what I measured at the sensorscopes.
-			theta_s=0.50;
+		case ORGANIC:
+			//Organic: Nemes (2001), Development of Soil Hydraulic Pedotransfer Functions on a European scale: Their Usefulness in the Assessment of Soil Quality.
+			*theta_r=0.01;
+			theta_s=0.766;
 			*alpha=1.3;
 			*n=1.2039;
 			*ksat=8.000/(365.*24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case LOAM: //Loam: Van genuchten (1980).
-			//CHECKED!
-			*theta_r=0.20;
-			theta_s=0.35;
-			*alpha=1.15;
-			*n=2.03;
-			*ksat=0.316/(24.*60.*60.);
+		//ROSETTA Class Average Hydraulic Parameters: http://ars.usda.gov/Services/docs.htm?docid=8955
+		case CLAY:
+			*theta_r=0.098;
+			theta_s=0.459;
+			*n=1.253;
+			*alpha=1.496;
+			*ksat=0.14757/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case CLAYLOAM:
+			*theta_r=0.079;
+			theta_s=0.442;
+			*n=1.416;
+			*alpha=1.581;
+			*ksat=0.0818/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case SILTLOAM: //Silt loam: Van genuchten (1980).
-			//CHECKED!
-			*theta_r=0.20;
-			theta_s=0.40;
-			*n=2.06;
-			*alpha=0.423;
-			*ksat=0.0496/(24.*60.*60.);
+		case LOAM:
+			*theta_r=0.061;
+			theta_s=0.399;
+			*alpha=1.11;
+			*n=1.47;
+			*ksat=0.02947/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case SANDYLOAM: //Sandy loam
-			//CHECKED!
-			*theta_r=0.15;
-			theta_s=0.43;
-			//*n=1.25;	//Original
-			*n=2.25;
-			//*alpha=0.423;	//Original
-			*alpha=2.;
-			*ksat=0.000000574;
+		case LOAMSAND:
+			*theta_r=0.049;
+			theta_s=0.39;
+			*n=1.746;
+			*alpha=3.475;
+			*ksat=1.052/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case FINESAND: //Fine sand
-			//CHECKED!
-			*theta_r=0.05;
-			theta_s=0.30;
-			*n=6.;
-			*alpha=5.;
-			*ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
+		case SAND:
+			*theta_r=0.053;
+			theta_s=375;
+			*n=3.177;
+			*alpha=3.524;
+			*ksat=6.427/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case GRAVELSAND: //Gravel/sand
-			//CHECKED!
+		case SANDCLAY:
+			*theta_r=0.117;
+			theta_s=0.385;
+			*n=1.208;
+			*alpha=3.342;
+			*ksat=0.1135/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SANDCLAYLOAM:
+			*theta_r=0.063;
+			theta_s=0.384;
+			*n=1.330;
+			*alpha=2.109;
+			*ksat=0.1318/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SANDLOAM:
+			*theta_r=0.039;
+			theta_s=0.387;
+			*n=1.4488;
+			*alpha=2.667;
+			*ksat=0.3828/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SILT:
+			*theta_r=0.050;
+			theta_s=0.489;
+			*n=1.6788;
+			*alpha=0.6577;
+			*ksat=0.4375/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SILTCLAY:
+			*theta_r=0.111;
+			theta_s=0.481;
+			*n=1.321;
+			*alpha=1.622;
+			*ksat=0.09616/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SILTCLAYLOAM:
+			*theta_r=0.090;
+			theta_s=0.482;
+			*n=1.5205;
+			*alpha=0.8395;
+			*ksat=0.1112/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+			
+		case SILTLOAM:
+			*theta_r=0.065;
+			theta_s=0.439;
+			*n=1.6634;
+			*alpha=0.5058;
+			*ksat=0.1824/(24.*60.*60.);
+			MaximumPoreSize=0.005;
+			break;
+
+		case WFJGRAVELSAND: //Gravel/sand
 			*theta_r=0.01;
 			theta_s=0.35;
 			*n=4.5;
@@ -481,17 +546,8 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			*ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
 			MaximumPoreSize=0.005;
 			break;
-
-		case CLAY: //Clay
-			//CHECKED!
-			*theta_r=0.1;		//M. Dall'Amico (2011)
-			theta_s=0.46;		//M. Dall'Amico (2011)
-			*n=1.25;		//M. Dall'Amico (2011)
-			*alpha=1.49;		//M. Dall'Amico (2011)
-			*ksat=0.0000012842;	//Equal to 40.5 m/year, for clay, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm (reference: Clapp and Hornberger, 1978).
-			MaximumPoreSize=0.005;
-			break;
 	}
+	
 	*he=AirEntryPressureHead(MaximumPoreSize, 273.);
 	*theta_soil=1.-theta_s;
 	*m=(*n-1.)/(*n);
@@ -992,8 +1048,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			switch ( runcase ) {
 			case UNIFORMSOIL:
 				//Uniform soil
-				SetSoil(GRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(FINESAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				//SetSoil(SAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				//SetSoil(CLAY, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case IMISDEFAULT:
@@ -1002,22 +1058,22 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					//Silt loam
 					//SetSoil(ORGANIC, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 					//SetSoil(SILTLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					SetSoil(SANDYLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SANDLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else { //Gravel/sand
 					if(tmpheight<1.001) {
-						SetSoil(FINESAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+						SetSoil(SAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 					} else {
-						SetSoil(GRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+						SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 					}
 				}
 				break;
 			case WFJ:
 				//Case WFJ:
-				SetSoil(GRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case CDP:
 				//Case Col de Porte
-				SetSoil(SANDYLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(SANDLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case ALPINE3D:
 				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
@@ -1030,11 +1086,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				} else if (EMS[SnowpackElement[i]].rg < 5.) {
 					SetSoil(SILTLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 8.) {
-					SetSoil(SANDYLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SANDLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 10.) {
-					SetSoil(FINESAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else {
-					SetSoil(GRAVELSAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(WFJGRAVELSAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				}
 				break;
 			}
