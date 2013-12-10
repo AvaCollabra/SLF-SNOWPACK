@@ -668,7 +668,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	SOLVERS ActiveSolver=PreferredSolver;		//Set the ActiveSolver to the PreferredSolver. This is because the code tries to prevent "difficult" matrices to be solved by the DGTSV or TDMA algorithm, so we should be able to switch temporarily to another solver.
 
 	//Set parameterization for hydraulic conductivity
-	const K_Parameterizations K_PARAM=SHIMIZU;		// Implemented choices: SHIMIZU, CALONNE
+	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
 	//Set how the hydraulic conductivity at the interface nodes should be calculated.
 	const K_AverageTypes K_AVERAGETYPE=ARITHMETICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
 
@@ -1047,7 +1047,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			case CALONNE:
 				//See: Calonne et al., 3-D image-based numerical computations of snow permeability: links to specific surface area, density, and microstructural anisotropy, TC, 2012.
-				ksat[i]=0.75 * (2.*EMS[SnowpackElement[i]].rg / 1000.)*(2.*EMS[SnowpackElement[i]].rg / 1000.) * exp(-0.013 * EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+				ksat[i]=0.75 * (2.*EMS[SnowpackElement[i]].rg_opt / 1000.)*(2.*EMS[SnowpackElement[i]].rg_opt / 1000.) * exp(-0.013 * EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
 				break;
 
 			}
