@@ -54,7 +54,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
             albedo_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             sw_mode(0), albedo_fixed(Constants::undefined),
-            meteo_step_length(0.), thresh_change_bc(0.), geo_heat(Constants::undefined), height_of_meteo_values(0.),
+            meteo_step_length(0.), thresh_change_bc(-1.3), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
@@ -89,7 +89,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - 0: Neumann boundary conditions throughout
 	 * - 1: Dirichlet if Tss < THRESH_CHANGE_BC, Neumann else */
 	cfg.getValue("CHANGE_BC", "Snowpack", change_bc);
-	cfg.getValue("THRESH_CHANGE_BC", "Snowpack", thresh_change_bc);
+	if(change_bc)
+		cfg.getValue("THRESH_CHANGE_BC", "Snowpack", thresh_change_bc);
 
 	//Should be NODATA for data-sets which do not provide measured surface temperatures
 	cfg.getValue("MEAS_TSS", "Snowpack", meas_tss);
@@ -404,7 +405,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			}
 			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0) / eta;
 			dL = L0 * sn_dt * EMS[e].EvDot;
-			
+
 			// Make sure settling is not larger than the space that is available (basically settling can at most reduce theta[AIR] to 0).
 			// We also leave some room in case all liquid water freezes and thereby expands.
 			double MaxSettlingFactor=1.;	// An additional maximum settling factor, between 0 and 1. 1: allow maximize possible settling, 0: no settling allowed.
