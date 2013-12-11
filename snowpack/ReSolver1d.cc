@@ -967,8 +967,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		if ( SnowpackElement[i] >= nsoillayers_snowpack) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
-			theta_r[i]=0.;
-			theta_s[i]=(1. - EMS[SnowpackElement[i]].theta[ICE])*(Constants::density_ice/Constants::density_water);		//CHECKED: the *0.9 in original code is probably to make sure that there is enough room when all water would freeze at once. Here it is replaced by the exact fraction.
+			//Scaling theta_r between 0 and 0.02:
+			const double TuningFactor=0.75;				//Tuning factor for scaling
+			//Increase theta_r in case of wetting:
+			theta_r[i]=MAX(0., MIN(0.02, MAX(EMS[SnowpackElement[i]].theta_r, TuningFactor*EMS[SnowpackElement[i]].theta[WATER])));
+			//Decrease theta_r in case of refreezing:
+			theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-REQUIRED_ACCURACY_THETA));
+			
+			theta_s[i]=(1. - EMS[SnowpackElement[i]].theta[ICE])*(Constants::density_ice/Constants::density_water);
 
 			//Make ice layers inactive:
 			if(theta_s[i]<Constants::eps2) {
@@ -2277,7 +2283,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Because the Richards solver domain and the snowpack domain does not necessarily match (Richards solver domain can have more layers), we do the following trick:
 	//1) We first empty all the layers in the snowpack domain
 	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers ...
-		EMS[i].theta[WATER]=0.;								//... and set water content to 0.
+		EMS[i].theta[WATER]=0.;								//... and set water content to 0
+		EMS[i].theta_r=0.;								// and set residual water content to 0
 		if(EMS[i].theta[SOIL]>Constants::eps2) {					//We are in soil
 			EMS[i].theta[ICE]=0.;							//... set ice content to 0.
 		}
@@ -2301,6 +2308,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*theta_n[i];
 			}
 		}
+		EMS[SnowpackElement[i]].theta_r+=dz[i]*theta_r[i];
 		//EMS[SnowpackElement[i]].head+=dz[i]*h_n[i];
 	}
 	//3) Now scale them with the SNOWPACK domain layer heights and adjust properties accordingly
@@ -2312,6 +2320,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if(EMS[i].theta[SOIL]>Constants::eps2) {					//We are in soil ...
 				EMS[i].theta[ICE]/=EMS[i].L;						//... scale ice content.
 			}
+			EMS[i].theta_r/=EMS[i].L;							//Scale each layer with SNOWPACK layer height
 			//EMS[i].head/=EMS[i].L;								//Scale each layer with SNOWPACK layer height
 
 			//In case we had to melt ice to get theta_r, we have to adjust the temperature:

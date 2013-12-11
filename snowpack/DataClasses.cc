@@ -439,7 +439,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), dhf(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), theta_r(0.), dhf(0.) {}
 
 /**
  * @brief Check volumetric content
