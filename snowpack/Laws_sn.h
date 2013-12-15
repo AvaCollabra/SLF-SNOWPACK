@@ -90,7 +90,7 @@ class SnLaws {
 		static void compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat,
 		                                                  const double& depth_begin, const double& depth_end);
 
-		static double compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
+		static double compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_parameterization, const double& i_hn_density_fixedValue,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,
 		                                 const std::string& variant);
 

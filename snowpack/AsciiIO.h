@@ -97,7 +97,7 @@ class AsciiIO : public SnowpackIOInterface {
 		void readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata);
 
 		std::set<std::string> setAppendableFiles;
-		std::string hn_density, hn_density_model, variant, experiment;
+		std::string variant, experiment;
 		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
 		const RunInfo info;
 

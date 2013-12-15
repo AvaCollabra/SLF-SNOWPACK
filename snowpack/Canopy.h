@@ -104,8 +104,8 @@ class Canopy {
 		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
 		static const double f3_gd, rootdepth, wp_fraction;
 
-		std::string hn_density, hn_density_model, variant;
-		double thresh_rain, calculation_step_length;
+		std::string hn_density, hn_density_parameterization, variant;
+		double hn_density_fixedValue, thresh_rain, calculation_step_length;
 		bool useSoilLayers;
 };
 

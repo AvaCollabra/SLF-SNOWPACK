@@ -51,10 +51,10 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
  ************************************************************/
 
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
-          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_model(), viscosity_model(), variant(),
+          : cfg(i_cfg), surfaceCode(), hn_density(), hn_density_parameterization(), viscosity_model(), variant(),
             albedo_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-            sw_mode(0), albedo_fixed(Constants::undefined),
-            meteo_step_length(0.), thresh_change_bc(-1.3), geo_heat(Constants::undefined), height_of_meteo_values(0.),
+            sw_mode(0), albedo_fixed(Constants::undefined), hn_density_fixedValue(Constants::undefined),
+            meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
@@ -69,9 +69,10 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 
 	cfg.getValue("ALBEDO_FIXED", "SnowpackAdvanced", albedo_fixed);
 	cfg.getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model);
-
+	
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
-	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
+	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
+	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 
 	// Defines whether soil layers are used
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -89,7 +90,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - 0: Neumann boundary conditions throughout
 	 * - 1: Dirichlet if Tss < THRESH_CHANGE_BC, Neumann else */
 	cfg.getValue("CHANGE_BC", "Snowpack", change_bc);
-	if(change_bc)
+	if (change_bc)
 		cfg.getValue("THRESH_CHANGE_BC", "Snowpack", thresh_change_bc);
 
 	//Should be NODATA for data-sets which do not provide measured surface temperatures
@@ -1129,7 +1130,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 	} else { // no Graupel
 		elem.mk = Snowpack::new_snow_marker;
 		if (SnLaws::jordy_new_snow && (Mdata.vw > 2.9)
-			&& ((hn_density_model == "LEHNING_NEW") || (hn_density_model == "LEHNING_OLD"))) {
+			&& ((hn_density_parameterization == "LEHNING_NEW") || (hn_density_parameterization == "LEHNING_OLD"))) {
 			elem.dd = MAX(0.5, MIN(1.0, Optim::pow2(1.87 - 0.04*Mdata.vw)) );
 			elem.sp = new_snow_sp;
 			const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
@@ -1143,12 +1144,12 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 			elem.sp = new_snow_sp;
 			// Adapt dd and sp for blowing snow
 			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA")
-			|| (!SnLaws::jordy_new_snow && ((hn_density_model == "BELLAIRE")
-			|| (hn_density_model == "LEHNING_NEW"))))) {
+			|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
+			|| (hn_density_parameterization == "LEHNING_NEW"))))) {
 				elem.dd = new_snow_dd_wind;
 				elem.sp = new_snow_sp_wind;
-			} else if (vw_dendricity && ((hn_density_model == "BELLAIRE")
-				|| (hn_density_model == "ZWART"))) {
+			} else if (vw_dendricity && ((hn_density_parameterization == "BELLAIRE")
+				|| (hn_density_parameterization == "ZWART"))) {
 				const double vw = MAX(0.05, Mdata.vw);
 				elem.dd = (1. - pow(vw/10., 1.57));
 				elem.dd = MAX(0.2, elem.dd);
@@ -1266,7 +1267,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
 	const double cos_sl = Xdata.cos_sl; //slope cosinus
 
-	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_model, Mdata, Xdata, t_surf, variant); //new snow density
+	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization, hn_density_fixedValue,
+                                               Mdata, Xdata, t_surf, variant);
 
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
@@ -1274,8 +1276,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	if (!enforce_measured_snow_heights) { // HNW driven
 		if (Mdata.ta < C_TO_K(thresh_rain)) {
 			if ((cumu_hnw > 0.) && (rho_hn != Constants::undefined)) {
-				if ((hn_density_model == "MEASURED")
-				        || ((hn_density_model == "FIXED") && (rho_hn > SnLaws::max_hn_density))) {
+				if ((hn_density == "MEASURED") || ((hn_density == "FIXED") && (rho_hn > SnLaws::max_hn_density))) {
 					// Make sure that a new element is timely added in the above cases
 					// TODO check whether needed in both cases
 					if (((meteo_step_length / sn_dt) * Mdata.hnw) <= cumu_hnw) {
@@ -1284,7 +1285,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 					}
 				} else if ((cumu_hnw / rho_hn) > height_new_elem*cos_sl) {
 					delta_cH = (cumu_hnw / rho_hn);
-					if (hn_density_model == "EVENT") { // TODO check whether needed
+					if (hn_density == "EVENT") { // TODO check whether needed
 						add_element = true;
 					}
 				}

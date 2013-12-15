@@ -290,8 +290,8 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
  * non-static section                                       *
  ************************************************************/
 Canopy::Canopy(const SnowpackConfig& cfg)
-        : hn_density(), hn_density_model(), variant(),
-          thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false)
+        : hn_density(), hn_density_parameterization(), variant(),
+          hn_density_fixedValue(Constants::undefined), thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -302,7 +302,8 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
 
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
-	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
+	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
+	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 }
 
 /**
@@ -1335,8 +1336,8 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	 * 1.1 compute the interception capacity [mm m-2]
 	 * 1.1a Always new snow density as estimate of density in intercepted storage
 	 */
-	const double density_of_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_model,
-	                                                 Mdata, Xdata, Xdata.Cdata.temp, variant);
+	const double density_of_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization, hn_density_fixedValue,
+	                                                              Mdata, Xdata, Xdata.Cdata.temp, variant);
 
 	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain
 	const double intcapacity = cn_IntCapacity(Mdata.ta, density_of_new_snow, Xdata.Cdata.lai);

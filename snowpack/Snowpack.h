@@ -133,12 +133,11 @@ class Snowpack {
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
 		                  SurfaceFluxes& Sdata);
 
-	private:
 		const SnowpackConfig& cfg;
 		BoundaryCondition surfaceCode;
-		std::string hn_density, hn_density_model, viscosity_model, variant, albedo_model, watertransportmodel_snow, watertransportmodel_soil;
+		std::string hn_density, hn_density_parameterization, viscosity_model, variant, albedo_model, watertransportmodel_snow, watertransportmodel_soil;
 		unsigned int sw_mode;
-		double albedo_fixed;
+		double albedo_fixed, hn_density_fixedValue;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dtempAirSnow;

@@ -158,7 +158,8 @@ bool   SnLaws::setfix = false;
 
 /**
  * @name SNOW ALBEDO
- * @par {
+ * @note {
+ * @par
  * These static variables are only defined below, if you want to change them
  * for your purposes you need to do so in the function SnLaws::setStaticData
  * where these parameters are set according to the VARIANT used
@@ -172,7 +173,8 @@ bool SnLaws::ageAlbedo = true;
 
 /**
  * @name Event driven density of new snow
- * @par {
+ * @note {
+ * @par
  * These static variables are only defined below, if you want to change them
  * for your purposes you need to do so in the function SnLaws::setStaticData
  * where these parameters are set according to the VARIANT used
@@ -288,8 +290,6 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @param i_currentAlbedoModel:
  * 	- LEHNING_[012] : Statistical models of surface snow albedo based on measurements
  *      from the Weissfluhjoch study plot (SWin and SWout, K&Z CM21)
- * 	- SCHMUCKI_ALLX30 : Edgar Schmucki's statistical model (2013-11) based on SWin and SWout measurements
- *      from the Weissfluhjoch study plot (K&Z CM21), Davos (K&Z CM21, SwissMetNet??), and Napf summit (Emmental)'
  * 	- NIED : The Japanese version of LEHNING_2
  * @param Edata
  * @param Tss Snow surface temperature (K)
@@ -354,27 +354,6 @@ double SnLaws::parameterizedSnowAlbedo(const double& i_albedo_fixed, std::string
 		+ Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
 		+ Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
 		+ Crh*Mdata.rh;
-		if (Alb1 > 0.) {
-			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
-		} else {
-			Alb = Constants::min_albedo;
-			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
-		}
-	}
-	else if (i_currentAlbedoModel == "SCHMUCKI_ALLX30") {
-		double av = 0.74824; // mean albedo of WFJ, DAV and Napf
-		if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
-			age = 0.;
-			//av = 0.7542; // estimated from comparison with measurements at Dome C
-		} else {
-			age = MIN(30., age);
-		}
-		const double inter = 1.1559356320;
-		const double Cms = -0.0826886072, Cage = -0.0002813654, Crg = -0.1321285606, Crho = -0.0004206185;
-
-		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
-		const double Alb1 = inter + Cms*moist_snow + Cage*age + Crg*Edata.rg + Crho*Edata.Rho; //NOTE try Optical equivalent Grain Size?
-
 		if (Alb1 > 0.) {
 			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 		} else {
@@ -922,7 +901,7 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 }
 
 /**
- * @brief Various parameterizations of new-snow density
+ * @brief Parameterized new-snow density
  * @param TA  Air temperature (K)
  * @param TSS Snow surface temperature (K)
  * @param RH  Relative air humidity (1)
@@ -1006,8 +985,8 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
 }
 
 /**
- * @brief Computes the density of new snow. The options are:
- * - PARAMETERIZED:
+ * @brief Computes the density of new snow. The options for HN_DENSITY are:
+ * - PARAMETERIZED with the following options for HN_DENSITY_PARAMETERIZATION:
  * 	- ZWART: Costijn Zwart's model (elaborated 2006; in use since 4 Dec 2007
  * 	- LEHNING_NEW: Improved model by M. Lehning, incl. ad-hoc wind & temperature effects (used until 06/07)
  * 	- LEHNING_OLD: First model by M. Lehning
@@ -1018,24 +997,24 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * - EVENT: Driven by event type, that is,
  * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
  * - MEASURED: Use measured new snow density read from meteo input
- * - fixed: Fixed new snow density by assigning HN_DENSITY a number > 0.
- * @note Set HN_DENSITY_MODEL to SURFACE_SNOW to use surface snow density as a "fixed" value or,
- *       instead of a parameterized value, as a replacement for missing measured values
+ * 	-Note: Set HN_DENSITY_FIXEDVALUE to 1. to use surface snow density as a "measured" value in case of missing values
+ * - FIXED: Fixed new snow density by assigning HN_DENSITY-FIXEDVALUE a number (default: 100 kg m-3, at least min_hn_density)
  * @param i_hn_density type of density computation
- * @param i_hn_density_model to use
+ * @param i_hn_density_parameterization to use
+ * @param i_hn_density_fixedValue to use
  * @param Mdata Meteorological input
  * @param Xdata Snow cover data
  * @param tss Snow surface temperature (K)
  * @param variant which is currently used
  */
-double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_model,
+double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::string& i_hn_density_parameterization, const double& i_hn_density_fixedValue,
                                   const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss,
                                   const std::string& variant)
 {
 	double rho;
 
 	if (i_hn_density == "PARAMETERIZED") {
-		rho = newSnowDensityPara(i_hn_density_model,
+		rho = newSnowDensityPara(i_hn_density_parameterization,
 		                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
 		                         Xdata.meta.position.getAltitude());
 	} else if (i_hn_density == "EVENT") {
@@ -1043,23 +1022,19 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
-		} else if (Mdata.hnw > 0. ) {
-			if (i_hn_density_model == "SURFACE_SNOW") {
+		} else if (Mdata.hnw > 0.) {
+			if (i_hn_density_fixedValue > 0. && i_hn_density_fixedValue > min_hn_density) // use density of surface snowpack
 				rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
-			} else {
-				rho = newSnowDensityPara(i_hn_density_model,
+			else
+				rho = newSnowDensityPara(i_hn_density_parameterization,
 				                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
 				                         Xdata.meta.position.getAltitude());
-			}
 		} else {
 			rho = Constants::undefined;
 		}
 	} else { // "FIXED"
-		if (i_hn_density_model == "SURFACE_SNOW") {
-			rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
-		} else if (!IOUtils::convertString(rho, i_hn_density, std::dec)) {
-			throw ConversionFailedException("Cannot convert  '"+i_hn_density+"' to double", AT);
-		}
+		rho = (i_hn_density_fixedValue != Constants::undefined) ? i_hn_density_fixedValue : Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
+		rho = MAX(min_hn_density, rho);
 	}
 
 	return rho;

@@ -273,15 +273,16 @@
  * These parameters \b must be available at least at a hourly time step.
  *
  * @section data_recomendations Data recommendations
- * In case you have all four irradiative components under ventilated and heated conditions,  the cleanest approach in terms of energy flux calculations seems to be by using:
+ * In case incoming and reflected short wave radiation as well as incoming long wave radiation are all
+ * measured under ventilated and heated conditions, the best approach in terms of energy flux calculations seems to be by using:
  * @code
- * SW_MODE = 2
- * CHANGE_BC = false   ;ie Neumann throughout
+ * SW_MODE = 2         ; that is, incoming and reflected short wave radiation are both measured)
+ * CHANGE_BC = false   ; that is, Neumann boundary conditions throughout
  * @endcode
  *
- * In case you only have reflected shortwave and snow surface temperature, using Dirichlet boundary condition would be recommended:
+ * In case you only have reflected short wave and snow surface temperature, using Dirichlet boundary condition would be recommended:
  * @code
- * SW_MODE = 1
+ * SW_MODE = 1 (that is, reflected short wave radiation is available)
  * MEAS_TSS = true    ;our surface temperature measurement is good and can be used for validation criteria
  * CHANGE_BC = true
  * @endcode

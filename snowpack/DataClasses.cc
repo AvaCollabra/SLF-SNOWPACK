@@ -143,7 +143,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 }
 
 /**
-* @brief Generates a snow profile from snow station data (1 element = 1 layer)
+ * @brief Generates a snow profile from snow station data (1 element = 1 layer)
  * @param dateOfProfile
  * @param Xdata
  * @param hoar_density_surf
@@ -155,7 +155,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
-	const bool surf_hoar = (NDS[nE].hoar > MM_TO_M(hoar_min_size_surf)*hoar_density_surf);
+	const bool surf_hoar = (NDS[nE].hoar > hoar_density_surf * MM_TO_M(hoar_min_size_surf));
 
 	const unsigned int nL = surf_hoar? nE+1 : nE;
 	std::vector<SnowProfileLayer> Pdata(nL);

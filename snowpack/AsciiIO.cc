@@ -39,7 +39,7 @@ const bool AsciiIO::t_gnd = false;
  * non-static section                                       *
  ************************************************************/
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-         : setAppendableFiles(), hn_density(), hn_density_model(), variant(), experiment(),
+         : setAppendableFiles(), variant(), experiment(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
            info(run_info), vecProfileFmt(),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
@@ -96,8 +96,6 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("PROF_FMT", "Output", vecProfileFmt);
 
 	// SnowpackAdvanced section
-	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
-	cfg.getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model);
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf); // Density of SH at surface node (kg m-3)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf); // Minimum size to show SH on surface (mm)
 	cfg.getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf);
@@ -1663,28 +1661,21 @@ void AsciiIO::writeTimeSeriesAddCalibration(const SnowStation& Xdata, const Surf
 		fprintf(fout,",,");
 	}
 	// 96-100: new snow densities: measured, in use, newLe, bellaire, and crocus (kg m-3)
+	double rho_hn;
+	double signRho=1.;
 	if (Sdata.cRho_hn > 0.) {
-		double rho_hn;
 		fprintf(fout,",%.1f,%.1f", Sdata.mRho_hn, Sdata.cRho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "LEHNING_NEW", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "BELLAIRE", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "PAHAUT", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", rho_hn);
 	} else {
-		double rho_hn;
-		double mRho_hn = Constants::undefined;
-		if (Mdata.rho_hn != mio::IOUtils::nodata)
-			mRho_hn = -Mdata.rho_hn;
+		const double mRho_hn = (Mdata.rho_hn != mio::IOUtils::nodata) ? -Mdata.rho_hn : Constants::undefined;
 		fprintf(fout,",%.1f,%.1f", mRho_hn, Sdata.cRho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "LEHNING_NEW", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", -rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "BELLAIRE", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", -rho_hn);
-		rho_hn = SnLaws::compNewSnowDensity(hn_density, "PAHAUT", Mdata, Xdata, t_surf, variant);
-		fprintf(fout,",%.1f", -rho_hn);
+		signRho = -1.;
 	}
+	rho_hn = SnLaws::compNewSnowDensity("PARAMETERIZED", "LEHNING_NEW", Constants::undefined, Mdata, Xdata, t_surf, variant);
+	fprintf(fout,",%.1f", signRho*rho_hn);
+	rho_hn = SnLaws::compNewSnowDensity("PARAMETERIZED", "BELLAIRE", Constants::undefined, Mdata, Xdata, t_surf, variant);
+	fprintf(fout,",%.1f", signRho*rho_hn);
+	rho_hn = SnLaws::compNewSnowDensity("PARAMETERIZED", "PAHAUT", Constants::undefined, Mdata, Xdata, t_surf, variant);
+	fprintf(fout,",%.1f", signRho*rho_hn);
 }
 
 /**

@@ -45,7 +45,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["HARDNESS_MODEL"] = "MONTI";
 	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
 	advancedConfig["HN_DENSITY"] = "PARAMETERIZED";
-	advancedConfig["HN_DENSITY_MODEL"] = "LEHNING_NEW";
+	advancedConfig["HN_DENSITY_FIXEDVALUE"] = "100.";
+	advancedConfig["HN_DENSITY_PARAMETERIZATION"] = "LEHNING_NEW";
 	advancedConfig["HOAR_DENSITY_BURIED"] = "125.";
 	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
 	advancedConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
@@ -158,7 +159,7 @@ void SnowpackConfig::setDefaults()
 
 	string albedo_model; getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model, IOUtils::nothrow);
 	string hn_density; getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
-	string hn_density_model; getValue("HN_DENSITY_MODEL", "SnowpackAdvanced", hn_density_model, IOUtils::nothrow);
+	string hn_density_parameterization; getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization, IOUtils::nothrow);
 	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
 	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, IOUtils::nothrow);
 	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, IOUtils::nothrow);
@@ -209,7 +210,7 @@ void SnowpackConfig::setDefaults()
 		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
 
 	} else if (variant == "CALIBRATION") {
-		if (hn_density_model.empty()) addKey("HN_DENSITY_MODEL", "SnowpackAdvanced", "ZWART");
+		if (hn_density_parameterization.empty()) addKey("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", "ZWART");
 		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "CALIBRATION");
 
 		string fixed_positions; getValue("FIXED_POSITIONS", "SnowpackAdvanced", fixed_positions, IOUtils::nothrow);
