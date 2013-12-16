@@ -36,7 +36,6 @@
 class SnLaws {
 
 	public:
-
 		//@{
 		/// Types of events for computing new snow density
 		enum EventType {
@@ -58,6 +57,12 @@ class SnLaws {
 			visc_897=555,   ///< calibration fall 2010 by Fierz
 			visc_837=977,   ///< as of revision 837 (deprecated)
 			visc_stk=999    ///< calibration 2009 by Walter Steinkogler (MSc thesis)
+		};
+		/// Defines which version to use for SCHMUCKI's albedo parameterization
+		enum AlbedoVersionSchmucki {
+			albVS_X30=30,    ///< av from WFJ, lwc, age,  rg, rho
+			albVS_X32=32,    ///< av from WFJ, lwc, age, ogs, rho, swin
+			albVS_X33=33     ///< av from WFJ, lwc, age, ogs,      swin
 		};
 		//@}
 
@@ -84,9 +89,9 @@ class SnLaws {
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double parameterizedSnowAlbedo(const double& i_fixed_albedo, std::string& i_currentAlbedoModel, const ElementData& Edata,
-		                                      const double& Tss, const CurrentMeteo& Mdata);
-		static void compShortWaveAbsorption(SnowStation& Xdata, const double& I0, const bool& multistream);
+		static double parameterizedSnowAlbedo(const std::string& i_albedo, const std::string& i_albedo_parameterization, const double& i_hn_albedo_fixedValue,
+		                                      const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata);
+		static void compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, SnowStation& Xdata, const double& I0);
 		static void compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat,
 		                                                  const double& depth_begin, const double& depth_end);
 
@@ -131,11 +136,12 @@ class SnLaws {
 		static double sn_dt; //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		static const bool __init;
 		static std::string current_variant;
-		static bool ageAlbedo;
-		static ViscosityVersion visc;
 		static TempDependence t_term;
+		static ViscosityVersion visc;
 		static double visc_ice_fudge, visc_sp_fudge, visc_water_fudge;
 		static bool setfix;
+		static bool ageAlbedo;
+		static AlbedoVersionSchmucki albVS;
 		static size_t swa_nBands;
 		static std::vector<double> swa_k, swa_pc, swa_fb;
 		static const bool soil_evaporation;

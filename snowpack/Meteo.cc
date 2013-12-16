@@ -299,7 +299,7 @@ void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
 void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata)
 {
 	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10;
-	const bool sw_mode_change = cfg.get("SW_MODE_CHANGE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
+	const bool force_sw_mode = cfg.get("FORCE_SW_MODE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 	const bool enforce_hs = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 	const double iswr_ref = (sw_mode == 1)?  Mdata.rswr/station.Albedo : Mdata.iswr;
 
@@ -328,7 +328,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 		Mdata.iswr = dir_h + diff; //usually = iswr_ref except for corner cases
 	}
 
-	if (sw_mode_change) {
+	if (force_sw_mode) {
 		// Sometimes, there is no snow left on the ground at the station (-> rswr is small)
 		// but there is still some snow left in the simulation, which then is hard to melt
 		// if we find this is such a situation, we set iswr to the potential radiation.

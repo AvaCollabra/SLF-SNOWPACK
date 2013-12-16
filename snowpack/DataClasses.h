@@ -241,7 +241,7 @@ class ElementData {
 		void heatCapacity();
 		double coldContent() const;
 		double extinction() const;
-		void opticalEquivalentRadius();
+		void opticalEquivalentGrainSize();
 		void snowResidualWaterContent();
 		static double snowResidualWaterContent(const double& theta_i);
 		double soilFieldCapacity() const;
@@ -279,7 +279,7 @@ class ElementData {
 		double rg;                 ///< grain radius (mm)
 		double dd;                 ///< snow dendricity: 0 = none, 1 = newsnow
 		double sp;                 ///< sphericity: 1 = round, 0 = angular
-		double rg_opt;             ///< optical equivalent grain radius (mm)
+		double ogs;                ///< optical equivalent grain size (mm)
 		double rb;                 ///< grain bond radius (mm)
 		double N3;                 ///< grain Coordination number (1)
 		size_t mk;                 ///< grain marker (history dependent)
@@ -595,15 +595,15 @@ class SnowProfileLayer {
 		double rho;            ///< 0 to 1000      (kg m-3)
 		double T;              ///< -50 to 50, snow temperature at top of layer (degC)
 		double gradT;          ///< -1000 to 1000, temperature gradient across layer (K m-1)
-		double v_strain_rate;  ///< 0 to 1e-5, viscous  (s-1)
-		double theta_i;        ///< 0 to 1       (volume fraction of ice)
-		double theta_w;        ///< 0 to 1       (volume fraction of water)
-		double theta_a;        ///< 0 to 1       (volume fraction of air)
+		double v_strain_rate;  ///< 0 to 1e-5, viscous strain rate (s-1)
+		double theta_i;        ///< 0 to 1, volume fraction of ice (-)
+		double theta_w;        ///< 0 to 1, volume fraction of water (-)
+		double theta_a;        ///< 0 to 1, volume fraction of air (-)
 		double grain_size;     ///< 0 to 100       (mm)
 		double bond_size;      ///< 0 to 100       (mm)
 		double dendricity;     ///< 0 to 1         (-)
 		double sphericity;     ///< 0 to 1         (-)
-		double ogs;            ///< 0 to 100       (mm)
+		double ogs;            ///< 0 to 100, optical equivalent grain size (mm)
 		double coordin_num;    ///< 0 to 10        (-)
 		size_t marker;         ///< 0 to 999       (-)
 		short unsigned int type; ///< 0 to 999     (-)
@@ -633,11 +633,14 @@ class RunInfo {
 /// Structure of double values for output to SDB
 struct ProcessDat {
 	ProcessDat() : date(), nHz(0), stat_abbrev(), loc_for_snow(0), loc_for_wind(0),
-	               ch(0), swe(0), tot_lwc(0), runoff(0), dewpt_def(0), hoar_size(0), hoar_ind6(0), hoar_ind24(0),
-	               wind_trans(0), wind_trans24(0), hn_half_hour(0), hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0),
-	               hnw_half_hour(0), hnw3(0), hnw6(0), hnw12(0), hnw24(0), hnw72(0), stab_class1(0), stab_class2(0), stab_index1(0),
-	               stab_index2(0), stab_index3(0), stab_index4(0), stab_index5(0), stab_height1(0), stab_height2(0), stab_height3(0),
-	               stab_height4(0), stab_height5(0), crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0), dhs_corr(0), mass_corr(0)
+	               ch(0.), swe(0.), tot_lwc(0.), runoff(0.), dewpt_def(0.), hoar_size(0.), hoar_ind6(0.), hoar_ind24(0.),
+	               wind_trans(0.), wind_trans24(0.),
+	               hn_half_hour(0.), hn3(0.), hn6(0.), hn12(0.), hn24(0.), hn72(0.), hn72_24(0.),
+	               hnw_half_hour(0.), hnw3(0.), hnw6(0.), hnw12(0.), hnw24(0.), hnw72(0.),
+	               stab_class1(0), stab_class2(0),
+	               stab_index1(0.), stab_height1(0.), stab_index2(0.), stab_height2(0.), stab_index3(0.), stab_height3(0.), stab_index4(0.),stab_height4(0.), stab_index5(0.), stab_height5(0.),
+	               crust(0.), en_bal(0.), sw_net(0.), t_top1(0.), t_top2(0.),
+	               dhs_corr(0.), mass_corr(0.)
 	{}
 
 	mio::Date date;        ///< Process date
@@ -672,24 +675,24 @@ struct ProcessDat {
 	int stab_class1;       ///< stability classes 1,3,5
 	int stab_class2;       ///< profile type 0..10
 	double stab_index1;    ///< deformation index Sdef
-	double stab_index2;    ///< natural stability index Sn38
-	double stab_index3;    ///< skier stability index Sk38
-	double stab_index4;    ///< structural stability index SSI
-	double stab_index5;    ///< none
 	double stab_height1;   ///< depth of stab_index1 (cm)
+	double stab_index2;    ///< natural stability index Sn38
 	double stab_height2;   ///< depth of stab_index2 (cm)
+	double stab_index3;    ///< skier stability index Sk38
 	double stab_height3;   ///< depth of stab_index3 (cm)
+	double stab_index4;    ///< structural stability index SSI
 	double stab_height4;   ///< depth of stab_index4 (cm)
+	double stab_index5;    ///< none
 	double stab_height5;   ///< depth of stab_index5 (cm)
 	// Special parameters
 	double crust;          ///< height of melt-freeze crust on southern slope (cm)
 	double en_bal;         ///< internal energy change (kJ m-2)
 	double sw_net;         ///< surface energy input (kJ m-2)
-	double t_top1;         ///< snow temperature at depth 1 (degC)
-	double t_top2;         ///< snow temperature at depth 2 (degC)
+	double t_top1, t_top2; ///< snow temperatures at depth 1 & 2, respectively (degC)
+/*	double lwi_N, lwi_S;   ///< liquid water index for northerly and southerly slopes, respectively.*/
 	// Control parameters
-	double dhs_corr;       ///< snow depth correction in case of squezzing or blow-up (cm)
-	double mass_corr;      ///< mass correction from either forced erosion and squeezing (neg) or blowing up (pos) (cm)
+	double dhs_corr;  ///< snow depth correction in case of squezzing or blow-up (cm)
+	double mass_corr; ///< mass correction from either forced erosion and squeezing (neg) or blowing up (pos) (cm)
 };
 
 struct ProcessInd {
@@ -698,9 +701,9 @@ struct ProcessInd {
 	               hoar_size(0), hoar_ind6(0), hoar_ind24(0),
 	               wind_trans(0), wind_trans24(0),
 	               hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0), hnw3(0), hnw6(0), hnw12(0), hnw24(0), hnw72(0),
-	               stab_class1(0), stab_class2(0), stab_index1(0), stab_index2(0), stab_index3(0), stab_index4(0), stab_index5(0),
-	               stab_height1(0), stab_height2(0), stab_height3(0), stab_height4(0), stab_height5(0),
-	               crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0)
+	               stab_class1(0), stab_class2(0),
+	               stab_index1(0), stab_height1(0), stab_index2(0), stab_height2(0), stab_index3(0), stab_height3(0), stab_index4(0), stab_height4(0), stab_index5(0), stab_height5(0),
+	               crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0), lwi_N(0), lwi_S(0)
 	{}
 
 	short stat_abbrev;
@@ -713,38 +716,22 @@ struct ProcessInd {
 	short runoff;
 	short dewpt_def;
 	short hoar_size;
-	short hoar_ind6;
-	short hoar_ind24;
-	short wind_trans;
-	short wind_trans24;
-	short hn3;
-	short hn6;
-	short hn12;
-	short hn24;
-	short hn72;
+	short hoar_ind6, hoar_ind24;
+	short wind_trans, wind_trans24;
+	short hn3, hn6, hn12, hn24, hn72;
 	short hn72_24;
-	short hnw3;
-	short hnw6;
-	short hnw12;
-	short hnw24;
-	short hnw72;
-	short stab_class1;
-	short stab_class2;
-	short stab_index1;
-	short stab_index2;
-	short stab_index3;
-	short stab_index4;
-	short stab_index5;
-	short stab_height1;
-	short stab_height2;
-	short stab_height3;
-	short stab_height4;
-	short stab_height5;
+	short hnw3, hnw6, hnw12, hnw24, hnw72;
+	short stab_class1, stab_class2;
+	short stab_index1, stab_height1;
+	short stab_index2, stab_height2;
+	short stab_index3, stab_height3;
+	short stab_index4, stab_height4;
+	short stab_index5, stab_height5;
 	short crust;
 	short en_bal;
 	short sw_net;
-	short t_top1;
-	short t_top2;
+	short t_top1, t_top2;
+	short lwi_N, lwi_S;
 };
 
 /// @brief Class for recording reference properties of tagged elements

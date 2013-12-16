@@ -41,7 +41,7 @@ const bool AsciiIO::t_gnd = false;
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), variant(), experiment(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
-           info(run_info), vecProfileFmt(),
+           info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
@@ -93,7 +93,8 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 		o_snopath = outpath;
 	}
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
-	cfg.getValue("PROF_FMT", "Output", vecProfileFmt);
+	cfg.getValue("PROFILE_FORMAT", "Output", vecProfileFmt);
+	cfg.getValue("AGGREGATE_PRF", "Output", aggregate_prf);
 
 	// SnowpackAdvanced section
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf); // Density of SH at surface node (kg m-3)
@@ -555,21 +556,19 @@ std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::strin
 void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 {
 	for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
-		if (vecProfileFmt[ii] == "VISU") {
-			writeProfileVisu(i_date, Xdata);
-		} else if (vecProfileFmt[ii] == "FULL_PRF") {
-			writeProfileTable(i_date, Xdata, "FULL_PRF");
-		} else if (vecProfileFmt[ii] == "AGGR_PRF") {
-			writeProfileTable(i_date, Xdata, "AGGR_PRF");
+		if (vecProfileFmt[ii] == "PRO") {
+			writeProfilePro(i_date, Xdata);
+		} else if (vecProfileFmt[ii] == "PRF") {
+			writeProfilePrf(i_date, Xdata, aggregate_prf);
 		} else if (vecProfileFmt[ii] == "IMIS") {
 			;
 		} else {
-			throw InvalidArgumentException("Key PROF_FMT in section [Output] takes only VISU, FULL_PRF, AGGR_PRF or IMIS formats", AT);
+			throw InvalidArgumentException("Key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS formats", AT);
 		}
 	}
 }
 
-void AsciiIO::writeProfileVisu(const mio::Date& i_date, const SnowStation& Xdata)
+void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
@@ -765,13 +764,13 @@ void AsciiIO::writeProfileVisu(const mio::Date& i_date, const SnowStation& Xdata
 	} else {
 		fprintf(PFile,"\n0535,%u", nE-Xdata.SoilNode);
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
-			fprintf(PFile,",%.2f",2.*EMS[e].rg_opt);
+			fprintf(PFile,",%.2f",EMS[e].ogs);
 	}
 
 	if (variant == "CALIBRATION")
-		writeProfileVisuAddCalibration(Xdata, PFile);
+		writeProfileProAddCalibration(Xdata, PFile);
 	else
-		writeProfileVisuAddDefault(Xdata, PFile);
+		writeProfileProAddDefault(Xdata, PFile);
 
 	fclose(PFile);
 }
@@ -783,7 +782,7 @@ void AsciiIO::writeProfileVisu(const mio::Date& i_date, const SnowStation& Xdata
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeProfileVisuAddDefault(const SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeProfileProAddDefault(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -841,7 +840,7 @@ void AsciiIO::writeProfileVisuAddDefault(const SnowStation& Xdata, FILE *fout)
  * @param Xdata
  * @param *fout Output file
  */
-void AsciiIO::writeProfileVisuAddCalibration(const SnowStation& Xdata, FILE *fout)
+void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, FILE *fout)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -937,11 +936,11 @@ void AsciiIO::writeProfileVisuAddCalibration(const SnowStation& Xdata, FILE *fou
 	}
 }
 
-void AsciiIO::writeProfileTable(const mio::Date& dateOfProfile, const SnowStation& Xdata, const std::string& fmt)
+void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation& Xdata, const bool& aggregate)
 {
 
 	//open profile filestream
-	const std::string ext = (fmt == "FULL_PRF")? "-full.prf" : "-aggr.prf";
+	const std::string ext = (aggregate)? "-aggr.prf" : "-full.prf";
 	const std::string Pfilename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ext;
 	std::ofstream ofs;
 	ofs.open(Pfilename.c_str(), std::ios::out | std::fstream::app);
@@ -951,13 +950,13 @@ void AsciiIO::writeProfileTable(const mio::Date& dateOfProfile, const SnowStatio
 	ofs << "Date,JulianDate,station,aspect,slope,nlay,hs,swe,lwc_sum,ts,tg\n";
 	ofs << "-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
 	ofs << fixed << dateOfProfile.toString(Date::ISO) << "," << setprecision(6) << dateOfProfile.getJulian() << ",";
-	ofs << setprecision(1) << Xdata.meta.getAzimuth() << "," << Xdata.meta.getSlopeAngle() << "," << Xdata.meta.getStationName() << "," ;
+	ofs << Xdata.meta.getStationName() << "," << setprecision(1) << Xdata.meta.getAzimuth() << "," << Xdata.meta.getSlopeAngle() << ",";
 	if (Xdata.getNumberOfElements() == Xdata.SoilNode) {
 		ofs << "0,-999.,-999.,-999.,-999.\n\n";
 		ofs.close();
 	} else {
 		vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf);
-		if (fmt == "AGGR_PRF") {
+		if (aggregate) {
 			Aggregate::aggregate(Pdata);
 		}
 		const double cos_sl = Xdata.cos_sl;
@@ -1661,10 +1660,10 @@ void AsciiIO::writeTimeSeriesAddCalibration(const SnowStation& Xdata, const Surf
 		fprintf(fout,",,");
 	}
 	// 96-100: new snow densities: measured, in use, newLe, bellaire, and crocus (kg m-3)
-	double rho_hn;
-	double signRho=1.;
+	double rho_hn, signRho;
 	if (Sdata.cRho_hn > 0.) {
 		fprintf(fout,",%.1f,%.1f", Sdata.mRho_hn, Sdata.cRho_hn);
+		signRho = 1.;
 	} else {
 		const double mRho_hn = (Mdata.rho_hn != mio::IOUtils::nodata) ? -Mdata.rho_hn : Constants::undefined;
 		fprintf(fout,",%.1f,%.1f", mRho_hn, Sdata.cRho_hn);
@@ -1951,50 +1950,7 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
                               const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
 {
-	/*
-	fout.open(name.c_str());
-	if (fout.fail()) throw FileAccessException(name, AT);
-
-	try {
-		// Print out the hoar hazard data info, contained in Zdata
-		fout << "SurfaceHoarIndex" << endl;
-		for(unsigned int e = 0; e < 48; e++) {
-			if (e != 0) fout << " ";
-			fout << Zdata.hoar24[e];
-		}
-		fout << endl;
-
-		// Print out the drift hazard data info, contained in Zdata
-		fout << "DriftIndex" << endl;
-		for(unsigned int e = 0; e < 48; e++) {
-			if (e != 0) fout << " ";
-			fout << Zdata.drift24[e];
-		}
-		fout << endl;
-
-		// Print out the 3 hour new snowfall hazard data info, contained in Zdata
-		fout << "ThreeHourNewSnow" << endl;
-		for(unsigned int e = 0; e < 144; e++) {
-			if (e != 0) fout << " ";
-			fout << Zdata.hns3[e];
-		}
-		fout << endl;
-
-		// Print out the 24 hour new snowfall hazard data info, contained in Zdata
-		fout << "TwentyFourHourNewSnow" << endl;
-		for(unsigned int e = 0; e < 144; e++) {
-			if (e != 0) fout << " ";
-			fout << Zdata.hns24[e];
-		}
-		fout << endl;
-	} catch (const exception&){
-		cleanup();
-		throw;
-	}
-
-	cleanup();
-	*/
-	return true;
+	throw IOException("Nothing implemented here!", AT);
 }
 
 /**

@@ -693,12 +693,12 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
  * configuration file. We need to read this key and activate the proper implementation, knowing that the proper key <-> implementation matching is done
  * through the map:
  * @code
- * cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
- * map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
- * if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
+ * cfg.getValue("HARDNESS_PARAMETERIZATION", "SnowpackAdvanced", hardness_parameterization);
+ * map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_parameterization);
+ * if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness parameterization: "+hardness_parameterization, AT);
  * @endcode
- * This means that in the section "SnowpackAdvanced" of his ini file, the key "HARDNESS_MODEL" must contain one of the strings given in the mapHandHardness
- * above (ie. either "DEFAULT" or "ASARC" or "MONTI").
+ * This means that in the section "SnowpackAdvanced" of his ini file, the key "HARDNESS_PARAMETERIZATION" must contain one of the strings given in the mapHandHardness
+ * above (ie. either "DEFAULT" or "MONTI" or "ASARC").
  *
  * @section calling_model Model call
  * Finally, the process model has to be called where needed. A helper macro can be defined as
@@ -707,7 +707,7 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
  * @endcode
  * and in the code, each time the hand hardness has to be computed, the call becomes:
  * @code
- * hardness = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
+ * hardness = CALL_MEMBER_FN(*this, mapHandHardness[hardness_parameterization])(EMS[e]);
  * @endcode
  *
  */

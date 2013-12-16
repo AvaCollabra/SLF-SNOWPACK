@@ -87,10 +87,8 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 }
 
 /**
- * @brief Allocates and initializes Hazard data (flat field station only)
- * - Fills the snowpack version number, date of computation, user, ...
+ * @brief Allocates and initializes Hazard data
  * - Computes a zeroth order drift index for the first time step w/o shifting old_drift!
- * @version 10.03
  * @param *old_drift
  * @param slope_angle (degree)
  * @param Hdata
@@ -498,7 +496,3 @@ void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 		compMeltFreezeCrust(Xdata_south, Hdata, Hdata_ind);
 	}
 }
-
-/*
- * End of Hazard.cc
- */

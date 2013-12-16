@@ -81,14 +81,14 @@ bool Stability::initStaticData()
  ************************************************************/
 
 Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
-           : strength_model(), hardness_model(), hoar_density_buried(IOUtils::nodata), plastic(false),
+           : strength_model(), hardness_parameterization(), hoar_density_buried(IOUtils::nodata), plastic(false),
              classify_profile(i_classify_profile)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
-	cfg.getValue("HARDNESS_MODEL", "SnowpackAdvanced", hardness_model);
+	cfg.getValue("HARDNESS_PARAMETERIZATION", "SnowpackAdvanced", hardness_parameterization);
 
-	const map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_model);
-	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness model: "+hardness_model, AT);
+	const map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_parameterization);
+	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness parameterization: "+hardness_parameterization, AT);
 
 	const map<string, StabFnShearStrength>::const_iterator it2 = mapShearStrength.find(strength_model);
 	if (it2 == mapShearStrength.end()) throw InvalidArgumentException("Unknown strength model: "+strength_model, AT);
@@ -222,7 +222,7 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 			const double B = 0.0105;
 			return (A + B*rho);
 		}
-		case 1: { // Precipitation Particles PP; obtained from median value for hand_hardness_1 (110 kg/m3) + standard Dev (33.9397 kg/m3)
+		case 1: { // Precipitation Particles PP; obtained from median value for hand_hardness_1 (110 kg/m3) + standard dev (33.9397 kg/m3)
 		          // if not the median value for hand_hardness_2 is 129.5 kg/m3 but it comes from only 6 observations;
 			if ((rho >= 0.) && (rho < 143.9397))
 				return 1.;
@@ -1302,7 +1302,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	const double Pk = compPenetrationDepth(Xdata); // Skier penetration depth
 	size_t e = nE; // Counter
 	while (e-- > Xdata.SoilNode) {
-		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_model])(EMS[e]);
+		EMS[e].hard = CALL_MEMBER_FN(*this, mapHandHardness[hardness_parameterization])(EMS[e]);
 		EMS[e].S_dr = setDeformationRateIndex(EMS[e]);
 		compReducedStresses(EMS[e].C, cos_sl, STpar);
 

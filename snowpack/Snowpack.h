@@ -135,9 +135,10 @@ class Snowpack {
 
 		const SnowpackConfig& cfg;
 		BoundaryCondition surfaceCode;
-		std::string hn_density, hn_density_parameterization, viscosity_model, variant, albedo_model, watertransportmodel_snow, watertransportmodel_soil;
+		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
+		std::string hn_density, hn_density_parameterization, snow_albedo, albedo_parameterization, sw_absorption_scheme;
 		unsigned int sw_mode;
-		double albedo_fixed, hn_density_fixedValue;
+		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dtempAirSnow;
@@ -148,7 +149,7 @@ class Snowpack {
 		double t_surf;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;
-		bool multistream, combine_elements, change_bc, meas_tss;
+		bool combine_elements, change_bc, meas_tss;
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)

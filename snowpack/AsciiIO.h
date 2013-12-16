@@ -63,11 +63,11 @@ class AsciiIO : public SnowpackIOInterface {
 
 		bool checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const;
 
-		void writeProfileVisu(const mio::Date& date, const SnowStation& Xdata);
-		void writeProfileVisuAddDefault(const SnowStation& Xdata, FILE *fout);
-		void writeProfileVisuAddCalibration(const SnowStation& Xdata, FILE *fout);
+		void writeProfilePro(const mio::Date& date, const SnowStation& Xdata);
+		void writeProfileProAddDefault(const SnowStation& Xdata, FILE *fout);
+		void writeProfileProAddCalibration(const SnowStation& Xdata, FILE *fout);
 
-		void writeProfileTable(const mio::Date& date, const SnowStation& Xdata, const std::string& fmt);
+		void writeProfilePrf(const mio::Date& date, const SnowStation& Xdata, const bool& aggregate);
 
 		size_t writeTemperatures(FILE *fout, const double& z_vert, const double& T,
 		                         const size_t& ii, const SnowStation& Xdata);
@@ -102,6 +102,7 @@ class AsciiIO : public SnowpackIOInterface {
 		const RunInfo info;
 
 		std::vector<std::string> vecProfileFmt;
+		bool aggregate_prf;
 
 		//Monitored temperature sensors
 		std::vector<double> fixedPositions;

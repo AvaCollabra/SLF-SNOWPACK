@@ -103,7 +103,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	bond_size = 2. * Edata.rb;
 	dendricity = Edata.dd;
 	sphericity = Edata.sp;
-	ogs = 2. * Edata.rg_opt; // in mm
+	ogs = Edata.ogs; // in mm
 	coordin_num = Edata.N3;
 	marker = Edata.mk%100;
 	type = Edata.type;
@@ -135,7 +135,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	bond_size = grain_size/3.;
 	dendricity = 0.;
 	sphericity = 0.;
-	ogs = MIN(4.e-1, grain_size); // in mm, see opticalEquivalentRadius();
+	ogs = MIN(4.e-1, grain_size); // in mm, see opticalEquivalentGrainSize();
 	coordin_num = 2.;
 	marker = 3;
 	type = 660;
@@ -155,7 +155,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
-	const bool surf_hoar = (NDS[nE].hoar > hoar_density_surf * MM_TO_M(hoar_min_size_surf));
+	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
 
 	const unsigned int nL = surf_hoar? nE+1 : nE;
 	std::vector<SnowProfileLayer> Pdata(nL);
@@ -435,7 +435,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
-                             rg(0.), dd(0.), sp(0.), rg_opt(0.), rb(0.), N3(0.), mk(0),
+                             rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
@@ -510,21 +510,17 @@ double ElementData::coldContent() const
 }
 
 /**
- * @brief Opical equivalent grain radius\n
+ * @brief Opical equivalent grain size\n
  * CROCUS implementation as described in Vionnet et al., 2012. The detailed snowpack scheme Crocus and
  * its implementation in SURFEX v7.2, Geosci. Model Dev., 5, 773-791, 10.5194/gmd-5-773-2012. (see section 3.6)
- * @version 12.04
  */
-void ElementData::opticalEquivalentRadius()
+void ElementData::opticalEquivalentGrainSize()
 {
 	// NOTE Be careful regarding dimension!!!
-	if (dd > Constants::eps2) {
-		rg_opt = 1.e-1 * (0.5 * (dd + (1. - dd) * (4. - sp))); // (mm)
-		// rg_opt = 1.e-4 * (0.5 * (dd + (1. - dd) * (4. - s))); // (m)
-	} else {
-		rg_opt = 0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-1, rg)); // rg in mm
-		// rg_opt = 0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-4, rg)); // rg in m
-	}
+	if (dd > Constants::eps2)
+		ogs = 2. * (1.e-1 * (0.5 * (dd + (1. - dd) * (4. - sp)))); // (mm)
+	else
+		ogs = 2. * (0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-1, rg))); // rg in mm
 }
 
 /**
@@ -831,7 +827,7 @@ const std::string ElementData::toString() const
 	os << "\tL=" << setprecision(4) << L << " type=" << type << " marker=" << setprecision(2) << mk << " Density=" << Rho << " Mass=" << M << "\n";;
 
 	os << "\tVolumetric contents: soil=" << setprecision(2) << theta[SOIL] << " ice=" << theta[ICE] << " water=" << theta[WATER] << " air=" << theta[AIR] << "\n";
-	os << "\tGrains: rg=" <<  rg << " rg_opt=" << rg_opt << " rb=" <<  rb << " dd=" <<  dd << " sp=" <<  sp << " N3=" << N3 << "\n";
+	os << "\tGrains: gsz=2*rg=" <<  2.*rg << " ogs=" << ogs << " rb=" <<  rb << " dd=" <<  dd << " sp=" <<  sp << " N3=" << N3 << "\n";
 	os << "\tMetamorphism: ps2rb=" << ps2rb << " metamo=" << metamo << " sw_abs=" << sw_abs << "\n";
 	os << "\tMelting: dth_w=" << dth_w << " Qmf=" << Qmf << " res_wat_cont=" << res_wat_cont << "\n";
 	os << "\tSoil: density=" << soil[SOIL_RHO] << " Conductivity=" << soil[SOIL_K] << " Capacity=" << soil[SOIL_C] << "\n";
@@ -1245,7 +1241,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int 
 			Edata[e].dd = SSdata.Ldata[ll].dd;
 			Edata[e].sp = SSdata.Ldata[ll].sp;
 			Edata[e].rg = SSdata.Ldata[ll].rg;
-			Edata[e].opticalEquivalentRadius();
+			Edata[e].opticalEquivalentGrainSize();
 			Edata[e].rb = SSdata.Ldata[ll].rb;
 			Edata[e].N3 = Metamorphism::getCoordinationNumberN3(Edata[e].Rho);
 			Edata[e].mk = SSdata.Ldata[ll].mk;
@@ -1412,7 +1408,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 			EdataLower.rb = ( EdataLower.theta[ICE]*L_lower*EdataLower.rb + EdataUpper.theta[ICE]*L_upper*EdataUpper.rb ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		}
-		EdataLower.opticalEquivalentRadius();
+		EdataLower.opticalEquivalentGrainSize();
 		EdataLower.E = EdataLower.Ev;
 		EdataLower.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
 		                     //                 and viscous strains of the elements and average the stress?
