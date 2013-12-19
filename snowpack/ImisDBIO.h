@@ -51,6 +51,7 @@ class ImisDBIO : public SnowpackIOInterface{
 		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
 
 		ImisDBIO& operator=(const ImisDBIO& in);
+
 	private:
 		static void parseStationName(const std::string& stationName, std::string& stName, std::string& stNumber);
 		void print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const;
@@ -70,7 +71,6 @@ class ImisDBIO : public SnowpackIOInterface{
 		oracle::occi::Date OracleDate(mio::Date in_date) const;
 		static std::string getKey(const SnowpackConfig& i_cfg, const std::string& key, const std::string& section);
 
-	private:
 		const RunInfo info;
 
 		//Oracle OCCI variable so we don't reopen a new connection at each call

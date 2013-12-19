@@ -58,7 +58,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
-            new_snow_grain_rad(0.), new_snow_bond_rad(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
+            new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
             minimum_l_element(0.), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false),
@@ -194,8 +194,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		enhanced_wind_slab = false; //true; //
 	}
 
-	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
-	new_snow_bond_rad = 0.25 * new_snow_grain_rad;
+	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
+	new_snow_bond_size = 0.25 * new_snow_grain_size;
 
 	/* Thresholds for surface hoar formation and burial
 	 * NOTE that the value of the parameter ROUGHNESS_LENGTH in CONSTANTS_User.INI is critical for surface hoar formation,
@@ -1139,7 +1139,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 			elem.sp = new_snow_sp;
 			const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
 			const double delta = -0.117, eta=0.0011, phi=-0.0034;
-			elem.rg = MIN(new_snow_grain_rad, MAX(0.3*new_snow_grain_rad,
+			elem.rg = MIN(0.5*new_snow_grain_size, MAX(0.15*new_snow_grain_size,
 				alpha + beta*TA + gamma*RH + delta*Mdata.vw
 				+ eta*RH*Mdata.vw + phi*TA*Mdata.vw));
 			elem.rb = 0.4*elem.rg;
@@ -1164,8 +1164,8 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 				elem.rg = 0.5*(alpha + beta*TA + gamma*Mdata.vw + delta*TA*Mdata.vw);
 				elem.rb = 0.25*elem.rg;
 			} else {
-				elem.rg = new_snow_grain_rad;
-				elem.rb = new_snow_bond_rad;
+				elem.rg = new_snow_grain_size/2.;
+				elem.rb = new_snow_bond_size/2.;
 				if (((Mdata.vw_avg >= SnLaws::event_wind_lowlim) && (Mdata.rh_avg >= rh_lowlim))) {
 					elem.rb = MIN(bond_factor_rh*elem.rb, Metamorphism::max_grain_bond_ratio*elem.rg);
 				}
@@ -1177,7 +1177,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 		elem.mk = 3;
 		elem.dd = 0.;
 		elem.sp = 0.;
-		elem.rg = MAX(new_snow_grain_rad, 0.5*M_TO_MM(elem.L0)); //Note: L0 > hoar_min_size_buried/hoar_density_buried
+		elem.rg = MAX(new_snow_grain_size/2., 0.5*M_TO_MM(elem.L0)); //Note: L0 > hoar_min_size_buried/hoar_density_buried
 		elem.rb = elem.rg/3.;
 	}
 

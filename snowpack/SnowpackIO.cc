@@ -44,27 +44,24 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 	if (out_snow == "SMET") { //TODO: document ouput::SNOW = SMET or SNOOLD
 		output_snow_as_smet = true;
 	}
-	/* Profiles may also be dumped in up to 4 formats specified by the key PROF_FMT in section [Output]:
-	 * VISU     : ASCII-format for visulization with SN_GUI
-	 * FULL_PRF : full profiles in tabular ASCII-format
-	 * AGGR_PRF : aggregated profiles in tabular ASCII-format
-	 * IMIS     : aggregated profiles for upload to the SLF database sdbo
+	/* Profiles may also be dumped in up to 4 formats specified by the key PROFILE_FORMAT in section [Output]:
+	 * PRO   : ASCII-format for visulization with SN_GUI, includes soil elements
+	 * PRF   : Snow profiles in tabular ASCII-format, aggregated if AGGREGATE_PRF is set
+	 * IMIS  : aggregated profiles for upload to the SLF database sdbo
 	 */
-	std::vector<string> vecProfileFmt = cfg.get("PROF_FMT", "Output", IOUtils::nothrow);
+	std::vector<string> vecProfileFmt = cfg.get("PROFILE_FORMAT", "Output", IOUtils::nothrow);
 	if (vecProfileFmt.size() > 4) {
-		throw InvalidArgumentException("The key PROF_FMT in section [Output] can have four values at most", AT);
+		throw InvalidArgumentException("The key PROFILE_FORMAT in section [Output] can have three values at most", AT);
 	} else {
 		for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
-			if (vecProfileFmt[ii] == "VISU") {
+			if (vecProfileFmt[ii] == "PRO") {
 				output_prf_as_ascii = true;
-			} else if (vecProfileFmt[ii] == "FULL_PRF") {
-				output_prf_as_ascii  = true;
-			} else if (vecProfileFmt[ii] == "AGGR_PRF") {
+			} else if (vecProfileFmt[ii] == "PRF") {
 				output_prf_as_ascii  = true;
 			} else if (vecProfileFmt[ii] == "IMIS") {
 				output_prf_as_imis  = true;
 			} else {
-				throw InvalidArgumentException("Key PROF_FMT in section [Output] takes only VISU, FULL_PRF, AGGR_PRF or IMIS values", AT);
+				throw InvalidArgumentException("Key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS values", AT);
 			}
 		}
 	}

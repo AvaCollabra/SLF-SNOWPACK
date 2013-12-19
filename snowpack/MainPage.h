@@ -593,7 +593,7 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
  * Albedo: mAlbedo=0 cAlbedo=0 SoilAlb=0
  * Snow:   Measured HS=0 Calculated HS=0 New snow=0 of density=0
  * Energy: ColdContent=0 dIntEnergy=0 SubSurfaceMelt=x SubSurfaceFrze=x
- * Snowdrift:      sector=0 windward=0 ErosionLevel=0 ErosionMass=0
+ * Snowdrift:      windward=0 ErosionLevel=0 ErosionMass=0
  * Stability:      S_d(0)=0 S_n(0)=0 S_s(0)=0 S_1=0 S_2=0 S_4(0)=0 S_5(0)=0
  * Kt= 0
  * </SnowStation>

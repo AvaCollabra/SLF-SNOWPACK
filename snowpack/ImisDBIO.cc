@@ -31,7 +31,7 @@ const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE sta
 
 const string ImisDBIO::sqlDeleteProfile = "DELETE FROM snowpack.ams_pmod_profile WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
 
-const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43)";
+const string ImisDBIO::sqlInsertHdata = "INSERT INTO snowpack.ams_pmod(datum,stat_abk,stao_nr,dewpt_def,hoar_ind6,hoar_ind24,wind_trans,hns3,hns6,hns12,hns24,hns72,hns72_24,wc3,wc6,wc12,wc24,wc72,hoar_size,wind_trans24,stab_class1,stab_class2,stab_index1,stab_height1,stab_index2,stab_height2,stab_index3,stab_height3,stab_index4,stab_height4,stab_index5,stab_height5,ch,crust,en_bal,sw_net,t_top1,t_top2,snowpack_version,calc_date,swe,tot_lwc,runoff,lwi_n,lwi_s) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19,:20,:21,:22,:23,:24,:25,:26,:27,:28,:29,:30,:31,:32,:33,:34,:35,:36,:37,:38,:39,:40,:41,:42,:43,:44,:45)";
 
 const string ImisDBIO::sqlInsertProfile = "INSERT INTO snowpack.ams_pmod_profile(datum,stat_abk,stao_nr,height,layer_date,rho,tem,tem_grad,strain_rate,theta_w,theta_i,dendricity,sphericity,coordin_num,grain_dia,bond_dia,grain_class,snowpack_version,calc_date) values (:1,:2,:3,:4,:5,:6,:7,:8,:9,:10,:11,:12,:13,:14,:15,:16,:17,:18,:19)";
 
@@ -303,12 +303,13 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 	const size_t posE=sqlInsertProfile.find_first_of(')');
 	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";
 
-	cerr << Pdata.height << "," << Pdata.depositionDate.toString(mio::Date::ISO) << ",";
+	cerr << setw(12) << setprecision(8) << Pdata.height << "," << Pdata.depositionDate.toString(mio::Date::ISO) << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
-	cerr << Pdata.v_strain_rate << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
+	cerr << Pdata.v_strain_rate << ",";
+	cerr << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
 	cerr << Pdata.grain_size << "," << Pdata.bond_size << "," << Pdata.type << ",";
-	cerr << info.version;
+	cerr << info.computation_date.toString(mio::Date::ISO) << "," << info.version;
 
 	cerr << "\n";
 }
@@ -318,6 +319,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	const size_t posB=sqlInsertHdata.find("dewpt_def");
 	const size_t posE=sqlInsertHdata.find_first_of(')');
 	cerr << "\n[E] SDB inserted    : " << sqlInsertHdata.substr(posB,posE-posB) << "\n[E] SDB with values : ";
+	cerr << setw(12) << setprecision(8);
 	if (Hdata_ind.dewpt_def != -1) cerr << Hdata.dewpt_def << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.hoar_ind6 != -1) cerr << Hdata.hoar_ind6 << ",";
@@ -403,7 +405,11 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	else cerr << "NULL,";
 	if (Hdata_ind.tot_lwc != -1)  cerr << Hdata.tot_lwc << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << "";
+	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << ",";
+	else cerr << "NULL";
+	if (Hdata_ind.lwi_N != -1)   cerr << Hdata.lwi_N << ",";
+	else cerr << "NULL";
+	if (Hdata_ind.lwi_S != -1)   cerr << Hdata.lwi_S << "";
 	else cerr << "NULL";
 
 	cerr << "\n";
@@ -517,6 +523,11 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		if (Hdata_ind[i].tot_lwc != -1)  stmt->setNumber(param++, Hdata[i].tot_lwc);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].runoff != -1)   stmt->setNumber(param++, Hdata[i].runoff);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].lwi_S != -1)  stmt->setNumber(param++, Hdata[i].lwi_S);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].lwi_N != -1)  stmt->setNumber(param++, Hdata[i].lwi_N);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		try {

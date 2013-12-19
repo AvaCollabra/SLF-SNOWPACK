@@ -258,13 +258,13 @@ double Metamorphism::ddRate(const ElementData& Edata)
  ************************************************************/
 
 Metamorphism::Metamorphism(const SnowpackConfig& cfg)
-              : metamorphism_model(), sn_dt(0.), new_snow_grain_rad(0.)
+              : metamorphism_model(), sn_dt(0.), new_snow_grain_size(0.)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
-	cfg.getValue("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", new_snow_grain_rad);
+	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
 
 	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model);
 
@@ -369,7 +369,7 @@ double Metamorphism::TGBondRate(const ElementData& Edata)
 */
 double Metamorphism::LatticeConstant0(const double& th_ice)
 {
-	const double gsz0 = 2.*new_snow_grain_rad;
+	const double gsz0 = new_snow_grain_size;
 
 	return( pow((1.+1.)*Metamorphism::ba_g_fudge*Optim::pow3(gsz0)/th_ice, 1./3.) );
 }
@@ -386,7 +386,7 @@ double Metamorphism::LatticeConstant0(const double& th_ice)
  * lattice constant given as a function of both gsz-gsz0 and density (th_i),
  * assuming the overall snow density and thus theta_ice are not much
  * affected by L2L, which is quite true! (Ml2l ~ 1mg/element/time step.)
- * Note : gsz0 = 2*new_snow_grain_rad
+ * Note : gsz0 = new_snow_grain_size
  * @param *Edata
  * @param Tbot Lower node temperature (K)
  * @param Ttop Upper node temperature (K)
@@ -409,11 +409,11 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 	// Compute the lattice constant a at time t but a <= hElem;  Units : mm
 	const double a0 = LatticeConstant0( th_i );
 	double a = a0;
-	if ( gsz > 2.*new_snow_grain_rad ) {
+	if ( gsz > new_snow_grain_size ) {
 		// Use an empirical estimation of the lattice constant
 		const double reg0 = 0.15, reg1 = -0.00048; // Empirical regression coefficients
 		const double a1 = reg0 + reg1*(th_i * Constants::density_ice);
-		a  = a0 + a1*(gsz - 2.*new_snow_grain_rad);
+		a  = a0 + a1*(gsz - new_snow_grain_size);
 	}
 	a  = MIN (a, hElem);
 
@@ -428,7 +428,7 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 	topFlux *= Atmosphere::waterSaturationPressure(Ttop);
 	const double dFluxL2L = -(topFlux - botFlux); // Flux divergence due to L2L transport
 	// Compute the rate in m s-1
-	const double rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::density_ice * (2. * new_snow_grain_rad) * gsz);
+	const double rgDot = 0.5 * ( (intraFlux + dFluxL2L * (a / hElem) ) * a*a) / (2.0 * Metamorphism::ba_g_fudge * Constants::density_ice * (new_snow_grain_size) * gsz);
 
 	// Conversion to mm d-1
 	return M_TO_MM(D_TO_S(rgDot));
@@ -553,7 +553,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		const double thetam_w = 1.e2 * (Constants::density_water * (EMS[e].theta[WATER]) / (EMS[e].Rho));
 
 		 // Constants used to limit changes in sphericity after faceting
-		double splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
+		double splim1 = 20. * (new_snow_grain_size/2. - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
 			splim1=0.0;
 		}
@@ -771,7 +771,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		const double thetam_w = 1.e2 * (Constants::density_water * EMS[e].theta[WATER] / EMS[e].Rho);
 
 		// Constants used to limit changes in sphericity after faceting
-		double splim1 = 20. * (new_snow_grain_rad - EMS[e].rg);
+		double splim1 = 20. * (new_snow_grain_size/2. - EMS[e].rg);
 		if ( splim1 > 0.0 ) {
 			splim1=0.0;
 		}

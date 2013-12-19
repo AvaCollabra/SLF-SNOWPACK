@@ -50,9 +50,10 @@ class Hazard {
 		                          std::vector<double>& old_drift, const double& drift, const double slope_angle);
 
 		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                   const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
-		                   const SnowStation& Xdata_station, const SnowStation& Xdata_south,
-		                   const unsigned int& nSlopes, const bool& virtual_slope);
+                           const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata,
+                           ZwischenData& Zdata, const SnowStation& Xdata_station,
+                           const SnowStation& Xdata_north, const SnowStation& Xdata_south,
+                           const bool& virtual_slope);
 
 		static const double typical_slope_length, wind_slab_density;
 

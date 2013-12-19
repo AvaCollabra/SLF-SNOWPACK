@@ -425,6 +425,7 @@ class SnowStation {
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
+		double getLiquidWaterIndex() const;
 		double getModelledTemperature(const double& z) const;
 
 		size_t getNumberOfElements() const;
@@ -639,7 +640,7 @@ struct ProcessDat {
 	               hnw_half_hour(0.), hnw3(0.), hnw6(0.), hnw12(0.), hnw24(0.), hnw72(0.),
 	               stab_class1(0), stab_class2(0),
 	               stab_index1(0.), stab_height1(0.), stab_index2(0.), stab_height2(0.), stab_index3(0.), stab_height3(0.), stab_index4(0.),stab_height4(0.), stab_index5(0.), stab_height5(0.),
-	               crust(0.), en_bal(0.), sw_net(0.), t_top1(0.), t_top2(0.),
+	               crust(0.), en_bal(0.), sw_net(0.), t_top1(0.), t_top2(0.), lwi_N(0.), lwi_S(0.),
 	               dhs_corr(0.), mass_corr(0.)
 	{}
 
@@ -689,7 +690,7 @@ struct ProcessDat {
 	double en_bal;         ///< internal energy change (kJ m-2)
 	double sw_net;         ///< surface energy input (kJ m-2)
 	double t_top1, t_top2; ///< snow temperatures at depth 1 & 2, respectively (degC)
-/*	double lwi_N, lwi_S;   ///< liquid water index for northerly and southerly slopes, respectively.*/
+	double lwi_N, lwi_S;   ///< liquid water index for northerly and southerly slopes, respectively.
 	// Control parameters
 	double dhs_corr;  ///< snow depth correction in case of squezzing or blow-up (cm)
 	double mass_corr; ///< mass correction from either forced erosion and squeezing (neg) or blowing up (pos) (cm)

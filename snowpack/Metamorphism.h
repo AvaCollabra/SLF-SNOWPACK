@@ -87,7 +87,7 @@ class Metamorphism {
 		static std::map<std::string, MetaSpRateFn> mapSpRate;
 
 		std::string metamorphism_model;
-		double sn_dt, new_snow_grain_rad;
+		double sn_dt, new_snow_grain_size;
 };
 
 #endif //End of Metamorphism.h

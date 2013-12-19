@@ -122,7 +122,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 {
 	const double hoar_size = Ndata.hoar/hoar_density_surf; // (m)
 
-	depositionDate = (Edata.depositionDate + dateOfProfile); //0.5*
+	depositionDate = dateOfProfile;
 	height = M_TO_CM(Ndata.z + Ndata.u) + M_TO_CM(hoar_size);
 	rho = hoar_density_surf;
 	T = K_TO_C(Ndata.T + (2./3.)*hoar_size*Edata.gradT);
@@ -955,7 +955,6 @@ void SnowStation::compSnowpackMasses()
 
 /**
  * @brief Computes the internal energy change of the snowpack during one computation time step (J m-2)
- * @version 11.01
  */
 void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
 {
@@ -974,6 +973,14 @@ void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
 		ColdContent = 0.;
 		dIntEnergy = 0.;
 	}
+}
+
+/**
+ * @brief Computes the liquid water index defined as the ratio of total liquid water content (in mm w.e.) to calculated snow depth (in mm) divided by 0.03. Unit: (1)
+ */
+double SnowStation::getLiquidWaterIndex() const
+{
+	return (cH > Constants::eps) ? lwc_sum / (M_TO_MM(cH) * 0.03) : Constants::undefined;
 }
 
 /**

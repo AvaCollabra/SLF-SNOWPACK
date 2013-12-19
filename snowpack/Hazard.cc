@@ -477,22 +477,26 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 
 void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                            const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata,
-                           ZwischenData& Zdata, const SnowStation& Xdata_station, const SnowStation& Xdata_south,
-                           const unsigned int& nSlopes, const bool& virtual_slope)
+                           ZwischenData& Zdata, const SnowStation& Xdata_station,
+                           const SnowStation& Xdata_north, const SnowStation& Xdata_south,
+                           const bool& virtual_slope)
 {
 	compHazard(Hdata, Hdata_ind, Mdata, Sdata, Zdata, Xdata_station);
 
-	// Compute snow transport on flat field if needed
-	if (!virtual_slope) {
-		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, Sdata.drift,
-                  Xdata_station.meta.getSlopeAngle());
-	}
-
-	// ... determine vertical thickness of melt-freeze crust, not buried deeper than 3 cm ...
-	if (nSlopes == 1) {
-		compMeltFreezeCrust(Xdata_station, Hdata, Hdata_ind);
-	} else {
-		// ... but even better on southerly virtual slope
+	// Compute vertical thickness of melt-freeze crust, not buried deeper than 3 cm,
+	//   and estimate liquid water index
+	if (virtual_slope) {
 		compMeltFreezeCrust(Xdata_south, Hdata, Hdata_ind);
+		Hdata.lwi_N = Xdata_north.getLiquidWaterIndex();
+		if ((Hdata.lwi_N < -Constants::eps) || (Hdata.lwi_N >= 10.))
+			Hdata_ind.lwi_N = -1;
+		Hdata.lwi_S = Xdata_south.getLiquidWaterIndex();
+		if ((Hdata.lwi_S < -Constants::eps) || (Hdata.lwi_S >= 10.))
+			Hdata_ind.lwi_S = -1;
+	} else {
+		compMeltFreezeCrust(Xdata_station, Hdata, Hdata_ind);
+		// VI 24h (drifting snow index) on flat field if needed
+		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, Sdata.drift,
+		              Xdata_station.meta.getSlopeAngle());
 	}
 }
