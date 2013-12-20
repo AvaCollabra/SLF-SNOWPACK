@@ -666,6 +666,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							// TDMA  : (recommended only when libraries BLAS and LAPACK are not available) This function does matrix inversion giving the knowledge matrix A is a tridiagonal matrix (really fast). Does no (partial) pivoting at all, so big risks of numerical troubles.
 
 	SOLVERS ActiveSolver=PreferredSolver;		//Set the ActiveSolver to the PreferredSolver. This is because the code tries to prevent "difficult" matrices to be solved by the DGTSV or TDMA algorithm, so we should be able to switch temporarily to another solver.
+	const bool AllowSwitchSolver=true;		//If true: solver DGESVD will be tried when DGTSV fails. There is a trade-off here between matrix inversion and smaller time steps. In case of many layers (>100), DGESVD can become very slow, so in case DGTSV does not find a solution, it may be more efficient to
+							//take a smaller time step than to do full matrix inversion.
 
 	//Set parameterization for hydraulic conductivity
 	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
@@ -1746,8 +1748,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					//> 0: if INFO = i, U(i,i) is exactly zero, and the solution
 					//    has not been computed.  The factorization has not been
 					//    completed unless i = N.
-					if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying DGESVD/DGESDD...\n", info);
-					ActiveSolver=DGESVD;
+					if(AllowSwitchSolver==true) {
+						if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying DGESVD/DGESDD...\n", info);
+						ActiveSolver=DGESVD;
+					} else {
+						if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying with smaller time step...\n", info);
+					}
 				}
 #else
 				throw InvalidArgumentException("you cannot use solver DGTSV when libraries BLAS and LAPACK are not installed. Either install these libraries, or choose solver TDMA", AT);
@@ -1823,8 +1829,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}
 
 					//if(not(max_delta_h>MAX_ALLOWED_DELTA_H) || niter>MAX_ITER+1) {	//If it is, there is a big chance the call to fromHtoTHETA will fail because of floating point exceptions (overflows). In this case, we will force a rewind later on, so the solution does not matter anymore.
+														//The second clause means we cannot increase time step anymore, so we should just try the solution.
 					if(solver_result!=-1) {
-													//The second clause means we cannot increase time step anymore, so we should just try the solution.
 						//Apply solution
 						h_np1_mp1[i]=h_np1_m[i]+delta_h[memstate%nmemstates][i];
 
