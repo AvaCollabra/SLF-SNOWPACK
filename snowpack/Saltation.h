@@ -44,16 +44,16 @@ class Saltation {
 		Saltation(const SnowpackConfig& i_cfg);
 
 		bool compSaltation(const double& tauS, const double& tau_th, const double& slope_angle, const double& dg,
-		                        double& massflux, double& c_salt);
+		                   double& massflux, double& c_salt);
 
 		static const double karman;
 		static const double z0_salt;
 
 	private:
 		double sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0,
-								 const double& u_start, const double& slope_angle);
+                     const double& u_start, const double& slope_angle);
 		double sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0,
-									const double& u_start, const double& slope_angle);
+                      const double& u_start, const double& slope_angle);
 
 		bool sa_Traject(const double& u0, const double& angle_e_rad, const double& slope_angle, const double& dg,
 		                const double& tauA, const double& tauS, const double& z0,
@@ -68,9 +68,7 @@ class Saltation {
 		int sa_TestSaltation(const double& z0, const double& tauS, const double& tauA, const double& slope_angle,
 		                     const double& dg, const double& tau_th, double& z_max, double& ubar);
 
-	private:
-		bool doorschot; ///< Use Doorschots Saltation model instead of Sorenson (much slower)
-
+		std::string saltation_model;
 		static const double hs_frac, elas, angle_ej, ratio_ve_ustar, salt_height;
 		static const int strong, weak;
 };

@@ -596,7 +596,7 @@ class SnowProfileLayer {
 		double rho;            ///< 0 to 1000      (kg m-3)
 		double T;              ///< -50 to 50, snow temperature at top of layer (degC)
 		double gradT;          ///< -1000 to 1000, temperature gradient across layer (K m-1)
-		double v_strain_rate;  ///< 0 to 1e-5, viscous strain rate (s-1)
+		double v_strain_rate;  ///< 0 to 1.0e-5, viscous strain rate (s-1)
 		double theta_i;        ///< 0 to 1, volume fraction of ice (-)
 		double theta_w;        ///< 0 to 1, volume fraction of water (-)
 		double theta_a;        ///< 0 to 1, volume fraction of air (-)

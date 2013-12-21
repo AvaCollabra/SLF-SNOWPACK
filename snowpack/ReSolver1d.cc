@@ -658,6 +658,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //Set the defaults based on whether CLAPACK is available
 #ifdef CLAPACK
 	SOLVERS PreferredSolver=DGTSV;			//Choose either DGESVD, DGTSV or TDMA.
+	const bool AllowSwitchSolver=true;		//If true: solver DGESVD will be tried when DGTSV fails. There is a trade-off here between matrix inversion and smaller time steps. In case of many layers (>100), DGESVD can become very slow, so in case DGTSV does not find a solution, it may be more efficient to
+	//take a smaller time step than to do full matrix inversion.
 #else
 	SOLVERS PreferredSolver=TDMA;			//Without CLAPACK, only TDMA is available.
 #endif
@@ -666,8 +668,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							// TDMA  : (recommended only when libraries BLAS and LAPACK are not available) This function does matrix inversion giving the knowledge matrix A is a tridiagonal matrix (really fast). Does no (partial) pivoting at all, so big risks of numerical troubles.
 
 	SOLVERS ActiveSolver=PreferredSolver;		//Set the ActiveSolver to the PreferredSolver. This is because the code tries to prevent "difficult" matrices to be solved by the DGTSV or TDMA algorithm, so we should be able to switch temporarily to another solver.
-	const bool AllowSwitchSolver=true;		//If true: solver DGESVD will be tried when DGTSV fails. There is a trade-off here between matrix inversion and smaller time steps. In case of many layers (>100), DGESVD can become very slow, so in case DGTSV does not find a solution, it may be more efficient to
-							//take a smaller time step than to do full matrix inversion.
 
 	//Set parameterization for hydraulic conductivity
 	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).

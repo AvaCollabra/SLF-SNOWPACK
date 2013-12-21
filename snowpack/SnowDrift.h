@@ -48,7 +48,7 @@ class SnowDrift {
 		double compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle);
 
 		Saltation saltation; // The saltation model used
-		bool enforce_measured_snow_heights, snow_redistribution; // Will be read from cfg object
+		bool enforce_measured_snow_heights, snow_redistribution, snow_erosion; // Will be read from cfg object
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 		double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		int nSlopes;

@@ -36,7 +36,6 @@ bool SnowpackConfig::initStaticData()
 {
 	//[SnowpackAdvanced] section
 	advancedConfig["ALPINE3D"] = "false";
-	advancedConfig["DOORSCHOT"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
@@ -61,13 +60,16 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["METAMORPHISM_MODEL"] = "DEFAULT";
 	advancedConfig["MIN_DEPTH_SUBSURF"] = "0.07";
 	advancedConfig["MINIMUM_L_ELEMENT"] = "0.0025";
-	advancedConfig["NEW_SNOW_GRAIN_RAD"] = "0.15";
+	advancedConfig["NEW_SNOW_GRAIN_SIZE"] = "0.3";
 	advancedConfig["NUMBER_FIXED_RATES"] = "0";
+	advancedConfig["NUMBER_SLOPES"] = "1";
 	advancedConfig["PERP_TO_SLOPE"] = "false";
 	advancedConfig["PLASTIC"] = "false";
 	advancedConfig["PREVAILING_WIND_DIR"] = "0.";
 	advancedConfig["RESEARCH"] = "true";
 	advancedConfig["SNOW_ALBEDO"] = "PARAMETERIZED";
+	advancedConfig["SNOW_REDISTRIBUTION"] = "false";
+	advancedConfig["SALTATION_MODEL"] = "SORENSEN";
 	advancedConfig["STATION_NAME"] = "station"; //TODO: we should suppress this (not needed anymore)
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
@@ -96,10 +98,13 @@ bool SnowpackConfig::initStaticData()
 
 	//[Output] section
 	outputConfig["AVGSUM_TIME_SERIES"] = "true";
+	outputConfig["AGGREGATE_PRF"] = "false";
 	outputConfig["BACKUP_DAYS_BETWEEN"] = "365.";
+	outputConfig["CLASSIFY_PROFILE"] = "false";
 	outputConfig["CUMSUM_MASS"] = "false";
 	outputConfig["EXPERIMENT"] = "NO_EXP";
 	outputConfig["FIRST_BACKUP"] = "400.";
+	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["METEOPATH"] = "./output";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
@@ -112,9 +117,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
-	outputConfig["PROF_FMT"] = "VISU";
-	outputConfig["HARDNESS_IN_NEWTON"] = "false";
-	outputConfig["CLASSIFY_PROFILE"] = "false";
+	outputConfig["PROFILE_FORMAT"] = "PRO";
 	outputConfig["SNOW"] = "SMET";
 
 	return true;
@@ -208,7 +211,7 @@ void SnowpackConfig::setDefaults()
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
-		addKey("NEW_SNOW_GRAIN_RAD", "SnowpackAdvanced", "0.1");
+		addKey("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", "0.2");
 
 	} else if (variant == "CALIBRATION") {
 		if (hn_density_parameterization.empty()) addKey("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", "ZWART");
@@ -261,7 +264,7 @@ void SnowpackConfig::setDefaults()
 	 *   Mass fluxes are cumulated over whole run period.
 	 * - WARNING: In operational mode and if NUMBER_SLOPES > 1, the above two values are always unset!
 	 */
-	const unsigned int nSlopes = get("NUMBER_SLOPES", "Snowpack");
+	const unsigned int nSlopes = get("NUMBER_SLOPES", "SnowpackAdvanced");
 	if (nSlopes > 1) {
 		addKey("AVGSUM_TIME_SERIES", "Output", "false");
 		addKey("CUMSUM_MASS", "Output", "false");

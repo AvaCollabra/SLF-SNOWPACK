@@ -117,11 +117,13 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("DETECT_GRASS", "SnowpackAdvanced", detect_grass);
 
 	/* Defines whether the canopy model is used
-	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h */
+	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
+	 */
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 
 	/* Define the heights of the meteo measurements above ground (m)
-	 * Required for surface energy exchange computation and for drifting and blowing snow. */
+	 * Required for surface energy exchange computation and for drifting and blowing snow.
+	 */
 	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Snowpack", height_of_meteo_values);
 
 	/* Defines whether the measured shortwave radiation is incoming

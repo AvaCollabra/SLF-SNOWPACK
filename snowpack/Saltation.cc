@@ -35,9 +35,9 @@ using namespace std;
 const double Saltation::hs_frac = 1.0;
 
 const double Saltation::karman = 0.4; ///< Von Karman constant
-const double Saltation::elas = 0.5; ///<Coefficient of Elasticity 0.5
+const double Saltation::elas = 0.5;   ///< Coefficient of Elasticity 0.5
 
-const double Saltation::angle_ej = 25.; // (deg)
+const double Saltation::angle_ej = 25.; ///< ejection angle (deg)
 const double Saltation::ratio_ve_ustar = 3.1; ///< Original Value by Judith: 2.9
 
 const int Saltation::strong = 1;
@@ -59,10 +59,9 @@ const double Saltation::salt_height = 0.07;
  * non-static section                                       *
  ************************************************************/
 
-Saltation::Saltation(const SnowpackConfig& cfg) : doorschot(false)
+Saltation::Saltation(const SnowpackConfig& cfg) : saltation_model()
 {
-	//Use Doorschots Saltation model instead of Sorenson (much slower)
-	cfg.getValue("DOORSCHOT", "SnowpackAdvanced", doorschot);
+	cfg.getValue("SALTATION_MODEL", "SnowpackAdvanced", saltation_model);
 }
 
 /**
@@ -203,7 +202,7 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
  * @param z0e
  * @param tauS
  * @param tauA
- * @param slope
+ * @param slope_angle (deg)
  * @param dg
  * @param tau_th
  * @param z_max
@@ -337,7 +336,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 }
 
 /**
- * @brief Computes the saltation flux for one bottom element
+ * @brief Computes the saltation flux
  * @param z0
  * @param tauS
  * @param tauA
@@ -378,10 +377,11 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 }
 
 /**
- * @brief Computes the saltation flux for one bottom element
+ * @brief Computes the saltation flux
+ * @note  Sorensen's model is computationally more efficient than Judith Doorschot's
  * @param i_tauS
  * @param tau_th
- * @param slope_angle
+ * @param slope_angle (deg)
  * @param dg
  * @param massflux
  * @param c_salt
@@ -390,7 +390,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const double& slope_angle, const double& dg,
                                   double& massflux, double& c_salt)
 {
-	if (!doorschot) {
+	if (saltation_model == "SORENSEN") {
 		// Sorensen
 		const double tauS = i_tauS;
 		const double ustar = sqrt(tauS / Constants::density_air);
@@ -404,7 +404,7 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		}
 	} else {
 		int    k = 5;
-		// Judith
+		// Judith Doorschot
 		// Initialize Shear Stress Distribution
 		const double taumean = i_tauS;
 		const double taumax = 15.* i_tauS;

@@ -110,9 +110,9 @@ Slope::Slope(const mio::Config& cfg)
          first(1), south(0), luv(0), lee(0), snow_redistribution(false), virtual_slopes(false),
          sector_width(0)
 {
-	cfg.getValue("NUMBER_SLOPES", "Snowpack", nSlopes);
+	cfg.getValue("NUMBER_SLOPES", "SnowpackAdvanced", nSlopes);
 	if(nSlopes>1)
-		cfg.getValue("SNOW_REDISTRIBUTION", "Snowpack", snow_redistribution);
+		cfg.getValue("SNOW_REDISTRIBUTION", "SnowpackAdvanced", snow_redistribution);
 
 	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
 
