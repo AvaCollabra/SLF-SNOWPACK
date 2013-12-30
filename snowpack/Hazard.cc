@@ -21,7 +21,7 @@
  * @file Hazard.cc
  * @version 10.02
  * This module contains the hazard computation routines
-*/
+ */
 
 #include <snowpack/Hazard.h>
 
@@ -49,8 +49,10 @@ const double Hazard::maximum_drift = 5.0;
  ************************************************************/
 
 Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
-        : sn_dt(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata),
-          hazard_steps_between(0), nHz(0), research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false)
+        : research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false),
+        nHz(0), hazard_steps_between(0), sn_dt(IOUtils::nodata),
+        hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata)
+          
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -87,6 +89,27 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 }
 
 /**
+ * @brief Acts on values of a vector
+ * @version 13.12
+ * @param oldVector vector of previous N values
+ * @param newValue to insert as zeroth value
+ * @param action to be performed on index vector (see enum ActVec)
+ */
+void Hazard::actOnVector(std::vector<double>& oldVector, const double& newValue, const ActVec& action)
+{
+	switch (action) {
+		case pushOverwrite: // If required, shift hoar index values, then ...
+			for(size_t ii=oldVector.size()-1; ii>0; ii--) {
+				oldVector[ii] = oldVector[ii-1];
+			}
+		case overwrite: // ... overwrite oldVector[0]
+			oldVector[0] = newValue;
+		default:
+			break;
+	}
+}
+
+/**
  * @brief Allocates and initializes Hazard data
  * - Computes a zeroth order drift index for the first time step w/o shifting old_drift!
  * @param *old_drift
@@ -103,54 +126,40 @@ void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle
 	Hdata[0].nHz = (signed)nHz;
 	Hdata[nHz-1].nHz = (signed)nHz;
 
-	Hdata[0].wind_trans = driftIndex(old_drift, 0., Hazard::wind_slab_density, 6, slope_angle, -1);
-	Hdata[0].wind_trans24 = driftIndex(old_drift, 0., Hazard::wind_slab_density, 24, slope_angle, -1);
+	Hdata[0].wind_trans = compDriftIndex(old_drift, Constants::undefined, Hazard::wind_slab_density, 6, slope_angle, noAction);
+	Hdata[0].wind_trans24 = compDriftIndex(old_drift, Constants::undefined, Hazard::wind_slab_density, 24, slope_angle, noAction);
 }
 
 /**
  * @brief Computes drift index for past nHours in cm
  * @note At least min_percent_values of vecDrift need to be defined to obtain a valid drift index
- * - shift
- * 	-  1 : shift old_drift, overwrite old_drift[0]
- * 	-  0 : overwrite old_drift[0] only
- * 	- -1 : no action at all
- * @author Charles Fierz, based on the original by Michael Lehning
- * @version 11.01
+ * @version 13.12
  * @param vecDrift vector of previous 48 half-hourly eroded masses (kg m-1)
- * @param drift last eroded mass (kg m-1)
+ * @param newDrift last eroded mass (kg m-1)
  * @param rho snow density (kg m-3)
  * @param nHours (1)
  * @param slope_angle (deg)
- * @param shift shift components of vecDrift
+ * @param action to be performed on index vector (see enum ActVec)
  */
-double Hazard::driftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho, const unsigned int& nHours,
-                          const double& slope_angle, const int& shift)
+double Hazard::compDriftIndex(std::vector<double>& vecDrift, const double& newDrift, const double& rho,
+                              const unsigned int& nHours, const double& slope_angle, const ActVec& action)
 {
-	switch (shift) {
-		case 1: // Shift drift data
-			for(int i=47; i>0; i--) {
-				vecDrift[i] = vecDrift[i-1];
-			}
-		case 0: // Overwrite old_drift[0]
-			vecDrift[0] = drift;
-		default:
-			break;
-	}
+	actOnVector(vecDrift, newDrift, action);
 
 	unsigned int nValues=0;
-	double sumindex = 0.;
-	for (unsigned int i = 0; i < 2*nHours; i++ ) {
-		if (vecDrift[i] == Constants::undefined){
+	double sumVec = 0.;
+	for (size_t ii = 0; ii < 2*nHours; ii++ ) {
+		if (vecDrift[ii] == Constants::undefined) {
 			continue;
 		} else {
-			sumindex += vecDrift[i];
+			sumVec += vecDrift[ii];
 			nValues++;
 		}
 	}
 	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2. * nHours))) {
 		return Constants::undefined;
 	} else {
-		const double flux = H_TO_S( MAX(0.,(sumindex - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
+		const double flux = H_TO_S(MAX(0.,(sumVec - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
 		double ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
 		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle*mio::Cst::to_rad));
 		ero_depo /= cos(slope_angle*mio::Cst::to_rad);
@@ -159,16 +168,47 @@ double Hazard::driftIndex(std::vector<double>& vecDrift, const double& drift, co
 }
 
 void Hazard::getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           std::vector<double>& old_drift, const double& drift, const double slope_angle)
+                           std::vector<double>& vecDrift, const double& newDriftValue, const double slope_angle)
 {
 	Hdata_ind.wind_trans = 0;
 	Hdata_ind.wind_trans24 = 0;
 
-	Hdata.wind_trans   = driftIndex(old_drift, drift, Hazard::wind_slab_density,  6, slope_angle, 1);
-	Hdata.wind_trans24 = driftIndex(old_drift, drift, Hazard::wind_slab_density, 24, slope_angle, 0);
+	Hdata.wind_trans = compDriftIndex(vecDrift, newDriftValue, Hazard::wind_slab_density, 6, slope_angle, pushOverwrite);
+	Hdata.wind_trans24 = compDriftIndex(vecDrift, Constants::undefined, Hazard::wind_slab_density, 24, slope_angle, noAction);
 
 	if (Hdata.wind_trans < 0.) Hdata_ind.wind_trans = -1;
 	if (Hdata.wind_trans24 < 0.) Hdata_ind.wind_trans24 = -1;
+}
+
+/**
+ * @brief Determines hoar (mass) index for past nHours in kg m-2
+ * @note At least min_percent_values of oldHoar need to be defined to obtain a valid hoar index
+ * @version 12.13
+ * @param OldHoar vector of previous 48 half-hourly hoar masses (kg m-2)
+ * @param newHoar last deposited or sublimated mass of ice (hoar; kg m-2)
+ * @param nHours (1)
+ * @param action to be performed on index vector (see enum ActVec)
+ */
+double Hazard::compHoarIndex(std::vector<double> &oldHoar, const double& newHoar,
+                             const unsigned int& nHours, const ActVec& action)
+{
+	actOnVector(oldHoar, newHoar, action);
+
+	// Determine hoar_ind
+	unsigned int nValues = 0;
+	double hoar_ind = 0.;
+	for (size_t ii = 0; ii < 2*nHours; ii++ ) {
+		if (oldHoar[ii] == Constants::undefined){
+			continue;
+		} else {
+			hoar_ind += oldHoar[ii];
+			nValues++;
+		}
+	}
+	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2 * nHours)))
+		return Constants::undefined;
+	else
+		return(hoar_ind);
 }
 
 /**
@@ -188,42 +228,6 @@ double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
 
 	const double deficit = TSS - Tdew;
 	return deficit;
-}
-
-/**
- * @brief Determines hoar (mass) index for past nHours in kg m-2
- * @note At least min_percent_values of oldHoar need to be defined to obtain a valid hoar index
- * @author Charles Fierz, based on the original by Michael Lehning
- * @version 12.01
- * @param OldHoar vector of previous 48 half-hourly eroded masses (kg m-2)
- * @param newHoar last deposited or sublimated mass of ice (hoar; kg m-2)
- * @param nHours (1)
- * @param shift shift components of oldHoar
- */
-double Hazard::compHoarIndex(std::vector<double> &oldHoar, const double& newHoar, const unsigned int& nHours, const int& shift)
-{
-	// Shift hoar data
-	if (shift)
-		for (int i = 47; i > 0; i-- ) {
-			oldHoar[i] = oldHoar[i-1];
-		}
-	oldHoar[0] = newHoar;
-
-	// Determine hoar_ind
-	unsigned int nValues = 0;
-	double hoar_ind = 0.;
-	for (unsigned int i = 0; i < 2*nHours; i++ ) {
-		if (oldHoar[i] == Constants::undefined){
-			continue;
-		} else {
-			hoar_ind += oldHoar[i];
-			nValues++;
-		}
-	}
-	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2 * nHours)))
-		return Constants::undefined;
-	else
-		return(hoar_ind);
 }
 
 void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind)
@@ -254,20 +258,25 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
 }
 
 /**
- * @brief Given the "Zwischen" data containing the depth-hoar index, the wind-drift index and the
- * three and twenty-four newsnowfall rates, this routine computes the Hdata.
+ * @brief Compute the Hdata from main station data
+ * - depths of snowfall hn({0.5, 3., 6., 12., 24., 72.}h) including water equivalents (hnw)
+ * - 3 days sum of 24h depths of snowfall
+ * - surface hoar size and hoar index for 6 and 24 hours
+ * - dewpoint deficit, SWE and total liquid water content, runoff,
+ *     Profile type, Stability classes and indices, energy balance, and snow temperatures
+ * @note If there are no virtual slopes available, drifting snow index
+ *         and thickness of surface crust may be computed from the main station if SNOW_EROSION is set
  * @param Hdata
  * @param Hdata_ind
- * @param d_hs6
- * @param d_hs24
- * @param Mdata
- * @param Sdata
  * @param Zdata
  * @param Xdata
+ * @param Mdata
+ * @param Sdata
+ * @param stationDriftIndex needs to be computed
  */
-void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                        const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
-                        const SnowStation& Xdata)
+void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+                                      ZwischenData& Zdata, const double& newDrift, const bool stationDriftIndex,
+                                      const SnowStation& Xdata, const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
 	const double cos_sl = cos(Xdata.meta.getSlopeAngle()*mio::Cst::to_rad);
@@ -348,39 +357,37 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.hnw24 =  hnw[4] / cos_sl;
 	Hdata.hnw72 =  hnw[5] / cos_sl;
 
-	// Compute 72h sum of 24h new snow depths for a total of 3 days
-	for (unsigned int l = 143; l>0; l--)
-		Zdata.hn24[l] = Zdata.hn24[l-1];
-	Zdata.hn24[0] = hn[4];
+	// Compute 3 days sum of 24h depths of snowfall
+	actOnVector(Zdata.hn24, hn[4], pushOverwrite);
 	Hdata.hn72_24 =  M_TO_CM((Zdata.hn24[0] + Zdata.hn24[48] + Zdata.hn24[96]) / cos_sl);
 
-	// INSTANTANEOUS DEWPOINT DEFICIT between TSS and Td(air)
-	if (research_mode) {
-		Hdata.dewpt_def = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T
-		                      - Atmosphere::RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
-	} else {
-		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
-	}
-
-	if (!((Hdata.dewpt_def > -50.) && (Hdata.dewpt_def < 50.))) {
-		Hdata_ind.dewpt_def = -1;
-	}
-
-	// hoar size, size in mm assuming HOAR_DENSITY_SURF at surface
+	// surface hoar size, size in mm assuming HOAR_DENSITY_SURF at surface
 	Hdata.hoar_size = M_TO_MM(Xdata.Ndata[nE].hoar / hoar_density_surf);
 	// Check for lower size limit
 	if (Hdata.hoar_size <= hoar_min_size_surf)
 		Hdata.hoar_size = 0.;
 	if (!((Hdata.hoar_size >= 0.) && (Hdata.hoar_size < 100.)))
 		Hdata_ind.hoar_size = -1;
-	// HOAR INDEX (24h and 6h), mass in kg m-2
-	Hdata.hoar_ind24 = compHoarIndex(Zdata.hoar24, Sdata.hoar, 24, 1);
-	if (!((Hdata.hoar_ind24 > -10.) && (Hdata.hoar_ind24 < 10.)))
-		Hdata_ind.hoar_ind24 = -1;
-	Hdata.hoar_ind6  = compHoarIndex(Zdata.hoar24, Sdata.hoar, 6, 0);
+	// HOAR INDEX (6h and 24h), mass in kg m-2
+	Hdata.hoar_ind6  = compHoarIndex(Zdata.hoar24, Sdata.hoar, 6, pushOverwrite);
 	if (!((Hdata.hoar_ind6 > -10.) && (Hdata.hoar_ind6 < 10.)))
 		Hdata_ind.hoar_ind6 = -1;
+	Hdata.hoar_ind24 = compHoarIndex(Zdata.hoar24, Sdata.hoar, 24, noAction);
+	if (!((Hdata.hoar_ind24 > -10.) && (Hdata.hoar_ind24 < 10.)))
+		Hdata_ind.hoar_ind24 = -1;
 
+	// Instantaneous dewpoint deficit between TSS and Td(air)
+	if (research_mode) {
+		Hdata.dewpt_def = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T
+		- Atmosphere::RhtoDewPoint(Mdata.rh, Mdata.ta, force_rh_water);
+	} else {
+		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
+	}
+	
+	if (!((Hdata.dewpt_def > -50.) && (Hdata.dewpt_def < 50.))) {
+		Hdata_ind.dewpt_def = -1;
+	}
+	
 	// SWE and total liquid water content
 	Hdata.swe = Sdata.mass[SurfaceFluxes::MS_SWE];
 	Hdata.tot_lwc = Sdata.mass[SurfaceFluxes::MS_WATER];
@@ -473,30 +480,41 @@ void Hazard::compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.t_top2 = Xdata.getModelledTemperature(h_top2);
 	if (!((Hdata.t_top2 > -50.) && (Hdata.t_top2 <= 0.)))
 		Hdata_ind.t_top2 = -1;
+
+	if (stationDriftIndex)
+		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, newDrift, Xdata.cos_sl);
 }
 
-void Hazard::getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata,
-                           ZwischenData& Zdata, const SnowStation& Xdata_station,
-                           const SnowStation& Xdata_north, const SnowStation& Xdata_south,
-                           const bool& virtual_slope)
+/**
+ * @brief Compute Hdata from virtual slope data
+ * - drifting snow index for last 6 and 24 h
+ * - liquid water index for north and south slope
+ * - vertical thickness of melt-freeze crust, not buried deeper than 3 cm
+ * @note these values are only available for virtual slopes
+ * @param Hdata
+ * @param Hdata_ind
+ * @param drift24 vector of 48 previous driting snow values
+ * @param newDrift value
+ * @param Xdata
+ * @param luvDriftIndex needs to be computed
+ * @param north is slope aspect
+ * @param south is slope aspect
+ */
+void Hazard::getHazardDataSlope(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+		                        std::vector<double>& drift24, const double& newDrift, const SnowStation& Xdata,
+		                        const bool luvDriftIndex, const bool north, const bool south)
 {
-	compHazard(Hdata, Hdata_ind, Mdata, Sdata, Zdata, Xdata_station);
-
-	// Compute vertical thickness of melt-freeze crust, not buried deeper than 3 cm,
-	//   and estimate liquid water index
-	if (virtual_slope) {
-		compMeltFreezeCrust(Xdata_south, Hdata, Hdata_ind);
-		Hdata.lwi_N = Xdata_north.getLiquidWaterIndex();
+	if (luvDriftIndex)
+		getDriftIndex(Hdata, Hdata_ind, drift24, newDrift, Xdata.cos_sl);
+	if (north) {
+		Hdata.lwi_N = Xdata.getLiquidWaterIndex();
 		if ((Hdata.lwi_N < -Constants::eps) || (Hdata.lwi_N >= 10.))
 			Hdata_ind.lwi_N = -1;
-		Hdata.lwi_S = Xdata_south.getLiquidWaterIndex();
+	}
+	if (south) {
+		Hdata.lwi_S = Xdata.getLiquidWaterIndex();
 		if ((Hdata.lwi_S < -Constants::eps) || (Hdata.lwi_S >= 10.))
 			Hdata_ind.lwi_S = -1;
-	} else {
-		compMeltFreezeCrust(Xdata_station, Hdata, Hdata_ind);
-		// VI 24h (drifting snow index) on flat field if needed
-		getDriftIndex(Hdata, Hdata_ind, Zdata.drift24, Sdata.drift,
-		              Xdata_station.meta.getSlopeAngle());
+		compMeltFreezeCrust(Xdata, Hdata, Hdata_ind);
 	}
 }

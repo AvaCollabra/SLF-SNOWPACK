@@ -485,7 +485,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	//Any left over energy (ql) should go to soil (surfacefluxrate). Units: ql = [W/m^2]=[J/s/m^2], surfacefluxrate=[m^3/m^2/s]
-	if(fabs(ql)>Constants::eps2) {
+	if(fabs(ql)>Constants::eps2) { // TODO Check that this takes correctly care of energy balance
 		RichardsEquationSolver1d.surfacefluxrate+=(ql/Constants::lh_vaporization)/Constants::density_water;
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
 	}

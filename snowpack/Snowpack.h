@@ -79,7 +79,7 @@ class Snowpack {
 	public:
 		Snowpack(const SnowpackConfig& i_cfg);
 
-		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
+		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		double getThreshRain() const;
@@ -130,7 +130,7 @@ class Snowpack {
 		void fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
 		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
 
-		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
+		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                  SurfaceFluxes& Sdata);
 
 		const SnowpackConfig& cfg;

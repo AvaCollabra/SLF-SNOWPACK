@@ -68,6 +68,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["PREVAILING_WIND_DIR"] = "0.";
 	advancedConfig["RESEARCH"] = "true";
 	advancedConfig["SNOW_ALBEDO"] = "PARAMETERIZED";
+	advancedConfig["SNOW_EROSION"] = "false";
 	advancedConfig["SNOW_REDISTRIBUTION"] = "false";
 	advancedConfig["SALTATION_MODEL"] = "SORENSEN";
 	advancedConfig["STATION_NAME"] = "station"; //TODO: we should suppress this (not needed anymore)

@@ -534,13 +534,14 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	fout.close();
 }
 
+// complete filename_prefix
 std::string AsciiIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
 	const string filename_prefix = path + "/" + fnam;
 
-	if (addexp && (experiment != "NO_EXP")) //in operational mode, nothing is appended
-		return filename_prefix + "_" + experiment; // complete filename_prefix
+	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
+		return filename_prefix + "_" + experiment;
 
 	return filename_prefix;
 }
@@ -1330,7 +1331,7 @@ void AsciiIO::setNumberSensors(const CurrentMeteo& Mdata)
  * @param Sdata
  * @param Mdata
  * @param Hdata
- * @param wind_trans24 eroded snow from flat field (present time step) or virtual windward slope (previous time step)
+ * @param wind_trans24 eroded snow from either flat field (present time step) or windward virtual slope (previous time step)
  */
 void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                               const CurrentMeteo& Mdata, const ProcessDat& Hdata,
@@ -1454,7 +1455,8 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			fprintf(TFile,",%d,%d,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f,%.1f,%.2f",
 			        Xdata.S_class1, Xdata.S_class2, M_TO_CM(Xdata.z_S_d/cos_sl), Xdata.S_d,
 			          M_TO_CM(Xdata.z_S_n/cos_sl), Xdata.S_n, M_TO_CM(Xdata.z_S_s/cos_sl), Xdata.S_s,
-			            M_TO_CM(Xdata.z_S_4/cos_sl), Xdata.S_4, M_TO_CM(Xdata.z_S_5/cos_sl), Xdata.S_5);
+			            M_TO_CM(Xdata.z_S_4/cos_sl), Xdata.S_4, M_TO_CM(Xdata.z_S_5/cos_sl),
+			              Xdata.getLiquidWaterIndex() /*Xdata.S_5*/);
 		} else {
 			fprintf(TFile,",,,,,,,,,,,,");
 		}

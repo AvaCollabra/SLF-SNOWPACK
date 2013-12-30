@@ -591,13 +591,14 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
 	throw IOException("Nothing implemented here!", AT);
 }
 
+// complete filename_prefix
 std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
 	string filename_prefix = path + "/" + fnam;
 
-	if (addexp && (experiment != "NO_EXP")) //in operational mode, nothing is appended
-		filename_prefix += "_" + experiment; // complete filename_prefix
+	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
+		filename_prefix += "_" + experiment;
 
 	return filename_prefix;
 }

@@ -43,37 +43,43 @@ class Hazard {
 		void initializeHazard(std::vector<double>& vecDrift, double slope_angle,
 		                      std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind);
 
-		static double driftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho, const unsigned int& nHours,
-		                         const double& slope_angle, const int& shift);
+		void getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+                                      ZwischenData& Zdata, const double& newDrift, const bool stationDriftIndex,
+                                      const SnowStation& Xdata, const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata);
 
-		static void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                          std::vector<double>& old_drift, const double& drift, const double slope_angle);
-
-		void getHazardData(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-                           const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata,
-                           ZwischenData& Zdata, const SnowStation& Xdata_station,
-                           const SnowStation& Xdata_north, const SnowStation& Xdata_south,
-                           const bool& virtual_slope);
+		void getHazardDataSlope(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+		                        std::vector<double>& drift24, const double& newDrift, const SnowStation& Xdata,
+		                        const bool luvDriftIndex, const bool north, const bool south);
 
 		static const double typical_slope_length, wind_slab_density;
+		static const double minimum_drift, maximum_drift;
 
 	private:
+		enum ActVec {
+			noAction=0,     // neither shift nor overwite index values
+			overwrite,      // overwrite <index>[0] w/o shifting
+			pushOverwrite   // push vector values and overwrite <index>[0]
+		};
+		
+		void actOnVector(std::vector<double>& oldVector, const double& newValue, const ActVec& action);
+
+		double compDriftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho,
+		                      const unsigned int& nHours, const double& slope_angle, const ActVec& action);
+
+		void getDriftIndex(ProcessDat& Hdata, ProcessInd& Hdata_ind,
+		                   std::vector<double>& vecDrift, const double& newDriftValue, const double slope_angle);
+
+		double compHoarIndex(std::vector<double> &oldHoar, const double& newHoar,
+                             const unsigned int& nHours, const ActVec& action);
+
 		double compDewPointDeficit(double TA, double TSS, double RH);
 
-		double compHoarIndex(std::vector<double> &oldHoar, const double& newHoar, const unsigned int& nHours, const int& shift);
+		void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
-		static void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
-
-		void compHazard(ProcessDat& Hdata, ProcessInd& Hdata_ind,
-		                const CurrentMeteo& Mdata, const SurfaceFluxes& Sdata, ZwischenData& Zdata,
-		                const SnowStation& Xdata);
-
+		bool research_mode, enforce_measured_snow_heights, force_rh_water;
+		int nHz, hazard_steps_between;
 		double sn_dt;
 		double hoar_density_surf, hoar_min_size_surf;
-		static const double minimum_drift, maximum_drift;
-		int hazard_steps_between;
-		int nHz;
-		bool research_mode, enforce_measured_snow_heights, force_rh_water;
 };
 
 #endif

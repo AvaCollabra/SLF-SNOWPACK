@@ -1243,7 +1243,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 /**
  * @brief Determines whether new snow elements are added on top of the snowpack
  * - If enforce_measured_snow_heights=0 (research mode), the new snow height corresponding to the cumulated
- *   new snow water equivalent cumu_hnw must be greater than HEIGHT_NEW_ELEM to allow adding elements.
+ *   new snow water equivalent cumu_precip must be greater than HEIGHT_NEW_ELEM to allow adding elements.
  * - In case of virtual slopes, uses new snow depth and density from either flat field or luv slope
  * - The first thing is to compute the height of each element in the snow layer. For now,
  *   instead of trying to find an optimal number of elements, we will define the number of new
@@ -1251,9 +1251,9 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
  *   qr_ReadParameter(). The smaller HEIGHT_NEW_ELEM, the more elements we will use.
  * @param Mdata Meteorological data
  * @param Xdata Snow cover data
- * @param cumu_hnw cumulated amount of precipitation (kg m-2)
+ * @param cumu_precip cumulated amount of precipitation (kg m-2)
  */
-void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
+void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                             SurfaceFluxes& Sdata)
 {
 	bool add_element = false;
@@ -1281,16 +1281,16 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	if (!enforce_measured_snow_heights) { // HNW driven
 		if (Mdata.ta < C_TO_K(thresh_rain)) {
-			if ((cumu_hnw > 0.) && (rho_hn != Constants::undefined)) {
+			if ((cumu_precip > 0.) && (rho_hn != Constants::undefined)) {
 				if ((hn_density == "MEASURED") || ((hn_density == "FIXED") && (rho_hn > SnLaws::max_hn_density))) {
 					// Make sure that a new element is timely added in the above cases
 					// TODO check whether needed in both cases
-					if (((meteo_step_length / sn_dt) * Mdata.hnw) <= cumu_hnw) {
-						delta_cH = (cumu_hnw / rho_hn);
+					if (((meteo_step_length / sn_dt) * Mdata.hnw) <= cumu_precip) {
+						delta_cH = (cumu_precip / rho_hn);
 						add_element = true;
 					}
-				} else if ((cumu_hnw / rho_hn) > height_new_elem*cos_sl) {
-					delta_cH = (cumu_hnw / rho_hn);
+				} else if ((cumu_precip / rho_hn) > height_new_elem*cos_sl) {
+					delta_cH = (cumu_precip / rho_hn);
 					if (hn_density == "EVENT") { // TODO check whether needed
 						add_element = true;
 					}
@@ -1300,7 +1300,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 		} else {
 			// This is now very important to make sure that rain will not accumulate
-			cumu_hnw -= Mdata.hnw;
+			cumu_precip -= Mdata.hnw;
 			return;
 		}
 	} else { // HS driven
@@ -1390,7 +1390,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		if ((delta_cH >= height_new_elem * cos_sl)
 		        || (Xdata.hn > 0.)
 		            || add_element) {
-			cumu_hnw = 0.0; // we use the mass through delta_cH
+			cumu_precip = 0.0; // we use the mass through delta_cH
 			//double hn = 0.; //new snow amount
 
 			if (Xdata.hn > 0. && (Xdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
@@ -1596,11 +1596,11 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
  * element matrices (connectivities) must be rebuilt.  >>>>CREEP MODULE<<<<<
  * @param Mdata
  * @param Xdata
- * @param cumu_hnw Variable to store amount of precipitation (kg m-2)
+ * @param cumu_precip Variable to store amount of precipitation (kg m-2)
  * @param Bdata
  * @param Sdata
  */
-void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_hnw,
+void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                                 BoundCond& Bdata, SurfaceFluxes& Sdata)
 {
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset methode ??)
@@ -1622,8 +1622,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			}
 		}
 
-		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_hnw is set back to 0
-		compSnowFall(Mdata, Xdata, cumu_hnw, Sdata);
+		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
+		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
 
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
@@ -1632,7 +1632,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			double tmp=0.;
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, tmp);
 		} else
-			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_hnw);
+			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_precip);
 
 		// Reinitialize and compute the initial meteo heat fluxes
 		memset((&Bdata), 0, sizeof(BoundCond));

@@ -51,9 +51,7 @@ using namespace mio;
 
 
 /**
- * @class Slope a C Fierz class ;-)
- * @brief . Peut-on l'être plus?
- * @version 11.01
+ * @class Slope a C. Fierz class ;-)
  */
 class Slope {
 
@@ -62,19 +60,34 @@ class Slope {
 
 		double prevailing_wind_dir;
 		unsigned int nSlopes;
-		unsigned int station;      ///< main station, flat field or slope
-		unsigned int sector;       ///< current slope sector of width 360./MAX(1, nSlopes-1)
-		unsigned int first;        ///< first sector in computing sequence
-		unsigned int south;
+		unsigned int mainStation;  ///< main station, flat field or slope
+		unsigned int sector;       ///< main station (0) or current slope sector (1:nSlopes)
+		unsigned int first;        ///< first virtual slope station in computing sequence
 		unsigned int luv;
 		unsigned int lee;
-		bool snow_redistribution, virtual_slopes;
+		bool north, south;
+		bool snow_erosion, mainStationDriftIndex;
+		bool snow_redistribution, luvDriftIndex;
 
 		int getSectorDir(const double& dir_or_expo) const;
-		void setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
+		void setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
-		double sector_width;
+		double sector_width;       ///< width of slope sector: 360./MAX(1, nSlopes-1) deg
+};
+
+/**
+ * @class Cumsum a C. Fierz class ;-)
+ * To cumulate various mass fluxes over either hazard or time series time steps
+ */
+class Cumsum {
+	
+	public:
+		Cumsum(const unsigned int nSlopes);
+
+		double precip;
+		double drift, snow, runoff, rain;
+		vector<double> erosion; // Cumulated eroded mass; dumped to file as rate
 };
 
 /************************************************************
@@ -98,6 +111,7 @@ struct MainControl
 	bool   HzDump;       ///< Calculation of hazard information will be performed
 	bool   PrDump;       ///< Flag for profile dump
 	bool   XdataDump;    ///< Backup of Xdata will be performed
+	bool   sdbDump;      ///< Dump to data base if required in operational mode
 	bool   resFirstDump; ///< Flag to dump initial state of snowpack
 };
 
@@ -106,24 +120,28 @@ struct MainControl
  ************************************************************/
 
 Slope::Slope(const mio::Config& cfg)
-       : prevailing_wind_dir(0.), nSlopes(0), station(0), sector(0),
-         first(1), south(0), luv(0), lee(0), snow_redistribution(false), virtual_slopes(false),
+       : prevailing_wind_dir(0.), nSlopes(0), mainStation(0), sector(0),
+         first(1), luv(0), lee(0),
+         north(false), south(false),
+         snow_erosion(false), mainStationDriftIndex(false),
+         snow_redistribution(false), luvDriftIndex(false),
          sector_width(0)
 {
 	cfg.getValue("NUMBER_SLOPES", "SnowpackAdvanced", nSlopes);
-	if(nSlopes>1)
-		cfg.getValue("SNOW_REDISTRIBUTION", "SnowpackAdvanced", snow_redistribution);
-
-	virtual_slopes = (snow_redistribution && (nSlopes > 1) && (nSlopes % 2 == 1));
-
+	cfg.getValue("SNOW_EROSION", "SnowpackAdvanced", snow_erosion);
+	stringstream ss;
+	ss.str("");
+	ss << nSlopes;
+	cfg.getValue("SNOW_REDISTRIBUTION", "SnowpackAdvanced", snow_redistribution);
+		if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
+			throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
 	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
-	south = getSectorDir(180.);
 }
 
 /**
- * @brief Determine sector of either blowing wind or slope exposition\n
- *        NOTE that sector slope.first always corresponds to the prevailing wind direction
+ * @brief Determine either direction of blowing wind or slope exposition\n
+ *        NOTE that station slope.first always corresponds to the prevailing wind direction
  * @param dir_or_expo direction of wind or exposition
  **/
 int Slope::getSectorDir(const double& dir_or_expo) const
@@ -142,8 +160,10 @@ int Slope::getSectorDir(const double& dir_or_expo) const
  * @param vecXdata
  * @param wind_dir direction of wind
  **/
-void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir)
+void Slope::setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir)
 {
+	mainStationDriftIndex = false;
+	luvDriftIndex = false;
 	switch (slope_sequence) {
 	case 0:
 		for (size_t kk=0; kk<nSlopes; kk++) {
@@ -160,16 +180,26 @@ void Slope::setSlope(const int slope_sequence, vector<SnowStation>& vecXdata, do
 			//requesting slope 0 of 0 expositions
 			luv = lee = 0;
 		}
-		sector = station;
+		sector = mainStation;
+		mainStationDriftIndex = ((nSlopes == 1) && snow_erosion);
 		break;
 	case 1:
 		sector = luv;
+		luvDriftIndex = snow_redistribution;
 		break;
 	default:
 		sector++;
 		if (sector == nSlopes) sector = 1;
 	}
+	north = (vecXdata[sector].meta.getSlopeAngle() > 0. && vecXdata[sector].meta.getAzimuth() == 0.);
+	south = (vecXdata[sector].meta.getSlopeAngle() > 0. && vecXdata[sector].meta.getAzimuth() == 180.);
 }
+
+Cumsum::Cumsum(const unsigned int nSlopes)
+        : precip(0.),
+          drift(0.), snow(0.), runoff(0.), rain(0.),
+          erosion(nSlopes, 0.)
+{}
 
 void Usage(const string& programname)
 {
@@ -269,7 +299,7 @@ void editMeteoData(mio::MeteoData& md, const string& variant)
 	if (!md.param_exists("EA")) md.addParameter("EA");
 		md("EA") = SnLaws::AirEmissivity(md, variant);
 
-	// Snow stations without separate wind station use their own wind for drifting and blowing snow
+	// Snow stations without separate wind station use their own wind for local drifting and blowing snow
 	if (!md.param_exists("VW_DRIFT")) {
 		md.addParameter("VW_DRIFT");
 		md("VW_DRIFT") = md(MeteoData::VW);
@@ -367,7 +397,7 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
  * @brief Make sure that both short wave fluxes get at least a "realistic" value but measured albedo only if both fluxes are measured
  * @note To be done only for flat field or single slope station
  * @param Mdata
- * @param vecXdata
+ * @param Xdata
  * @param slope
  */
 void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& iswr_is_net)
@@ -402,11 +432,11 @@ void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& isw
 void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
                             const Slope& slope, SnowpackConfig& cfg,
                             SunObject &sun,
-                            double& cumu_hnw, const double& lw_in, const double hs_a3hl6,
+                            double& precip, const double& lw_in, const double hs_a3hl6,
                             double& tot_mass_in)
 {
-	SnowStation &flatfield = vecXdata[slope.station]; //alias: the flatfield station
-	SnowStation &sector = vecXdata[slope.sector]; //alias: the current slope
+	SnowStation &currentSector = vecXdata[slope.sector]; //alias: the current station
+	const bool isMainStation = (slope.sector == slope.mainStation);
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
@@ -424,12 +454,12 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output");
 		surfFluxes.reset(cumsum_mass);
 		if (useCanopyModel)
-			sector.Cdata.reset(cumsum_mass);
+			currentSector.Cdata.reset(cumsum_mass);
 
 		const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
 		if (mass_balance) {
 			// Do an initial mass balance check
-			if (!massBalanceCheck(sector, surfFluxes, tot_mass_in))
+			if (!massBalanceCheck(currentSector, surfFluxes, tot_mass_in))
 				prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Mass error during initial check!");
 		}
 	}
@@ -437,14 +467,14 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	surfFluxes.drift = 0.;
 	surfFluxes.mass[SurfaceFluxes::MS_WIND] = 0.;
 
-	if (slope.sector == slope.station) {
+	if (isMainStation) {
 		// Check for growing grass
-		if (!Meteo::compHSrate(Mdata, flatfield, hs_a3hl6))
+		if (!meteo.compHSrate(Mdata, currentSector, hs_a3hl6))
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 
 		// Set iswr/rswr and measured albedo
-		setShortWave(Mdata, flatfield, iswr_is_net);
-		Meteo::compRadiation(flatfield, sun, cfg, Mdata);
+		setShortWave(Mdata, currentSector, iswr_is_net);
+		meteo.compRadiation(currentSector, sun, cfg, Mdata);
 	} else { // Virtual slope
 		cfg.addKey("CHANGE_BC", "Snowpack", "false");
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
@@ -457,34 +487,33 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
 	if (!perp_to_slope) {
-		Meteo::radiationOnSlope(sector, sun, Mdata, surfFluxes);
+		meteo.radiationOnSlope(currentSector, sun, Mdata, surfFluxes);
 		if ( ((sw_mode == 1) || (sw_mode == 2))
-		     && (sector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
+			&& (currentSector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
 			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
-		meteo.projectPrecipitations(sector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
+		meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(Mdata, sector);
+	meteo.compMeteo(Mdata, currentSector);
 
-	// Update precipitation memory
-	if (slope.sector == slope.station) {
-		cumu_hnw += Mdata.hnw;
+	if (isMainStation) {
+		// Update precipitation memory of main station
+		precip += Mdata.hnw;
 		if (Mdata.hs != mio::IOUtils::nodata) {
-			flatfield.mH = Mdata.hs + flatfield.Ground;
+			currentSector.mH = Mdata.hs + currentSector.Ground;
 		}
-	}
-
-	if (slope.sector != slope.station) { // Meteo data for virtual slope simulations
+	} else { // Virtual slope
+		currentSector.mH = Constants::undefined;
+		
+		// A) Compute depth of snowfall (hn*) and new snow density (rho_hn*)
 		double hn_slope = 0., rho_hn_slope = SnLaws::min_hn_density;
-		// Compute new snow water equivalent and density
-		if (flatfield.hn > 0.) {
+		if (vecXdata[slope.mainStation].hn > 0.) {
 			// Assign new snow depth and density from station field (usually flat)
-			hn_slope = flatfield.hn * sector.cos_sl;
-			rho_hn_slope = flatfield.rho_hn;
+			hn_slope = vecXdata[slope.mainStation].hn * currentSector.cos_sl;
+			rho_hn_slope = vecXdata[slope.mainStation].rho_hn;
 		}
-
 		/*
 		 * Snow redistribution on slopes: Add windward eroded snow to lee slope
 		 * These are very important lines: Note that deposition is treated here (lee)
@@ -501,15 +530,14 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			}
 			vecXdata[slope.luv].ErosionMass = 0.;
 		}
-
-		// Check whether snow depth on slope needs to be changed
-		if ((hn_slope > 0.) && (flatfield.cH > 0.01)) {
-			// Increase snow depth
-			sector.hn  = hn_slope;
-			sector.rho_hn = rho_hn_slope;
+		// Update depth of snowfall on slopes.
+		// This may include contributions from drifting snow eroded on the windward (luv) slope.
+		if ((hn_slope > 0.) && (vecXdata[slope.mainStation].cH > 0.01)) {
+			currentSector.hn = hn_slope;
+			currentSector.rho_hn = rho_hn_slope;
 		}
 
-		// Check whether to use incoming longwave as estimated from station field
+		// B) Check whether to use incoming longwave as estimated from station field
 		const bool meas_incoming_longwave = cfg.get("MEAS_INCOMING_LONGWAVE", "SnowpackAdvanced");
 		if (!meas_incoming_longwave) {
 			double ea = 0.;
@@ -525,10 +553,10 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 /**
  * @brief determine which outputs need to be done for the current time step
+ * @param mn_ctrl timestep control structure
  * @param step current time integration step
  * @param sno_step current step in the sno files (current sno profile)
- * @param mn_ctrl timestep control structure
- **/
+ */
 
 void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Date& sno_step,
                       const double& calculation_step_length,
@@ -565,7 +593,10 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
 	mn_ctrl.XdataDump = booleanTime(Dstep, backup_days_between, bool_start, calculation_step_length);
 }
 
-bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& cfg, const size_t& i_stn, Slope& slope, mio::Date &current_date, vector<SN_SNOWSOIL_DATA> &vecSSdata, vector<SnowStation> &vecXdata, ZwischenData &sn_Zdata, CurrentMeteo& Mdata, double &wind_scaling_factor, double &time_count_deltaHS)
+bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& cfg, const size_t& i_stn,
+                   Slope& slope, mio::Date &current_date, vector<SN_SNOWSOIL_DATA> &vecSSdata,
+                   vector<SnowStation> &vecXdata, ZwischenData &sn_Zdata, CurrentMeteo& Mdata,
+                   double &wind_scaling_factor, double &time_count_deltaHS)
 {
 	string snowfile("");
 	stringstream ss;
@@ -573,9 +604,10 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	ss << "SNOWFILE" << i_stn+1;
 	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
 
-	for (unsigned int sector=slope.station; sector<slope.nSlopes; sector++) { //Read SSdata for every sector
+	//Read SSdata for every "slope" referred to as sector where sector 0 corresponds to the main station
+	for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
 		try {
-			if (sector == slope.station) {
+			if (sector == slope.mainStation) {
 				if (snowfile == "") {
 					snowfile = vecStationIDs[i_stn];
 				} else {
@@ -585,38 +617,37 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 						((pos_dot != string::npos) && (pos_slash == string::npos))) //so that the dot is not in a directory name
 						snowfile.erase(pos_dot, snowfile.size()-pos_dot);
 				}
-				snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.station], sn_Zdata);
+				snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.mainStation], sn_Zdata);
 				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Reading snow cover data for station %s",
 				        vecStationIDs[i_stn].c_str());
 				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
 				vector<mio::MeteoData> vectmpmd;
-				current_date = Date::rnd(vecSSdata[slope.station].profileDate, 1);
+				current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
 				io.getMeteoData(current_date, vectmpmd);
 				if (vectmpmd.empty())
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 					                       + current_date.toString(mio::Date::ISO), AT);
 				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
-				vecSSdata[slope.station].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
-				                                vecSSdata[slope.station].meta);
+				vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
+				                                vecSSdata[slope.mainStation].meta);
 			} else {
 				stringstream sec_snowfile;
 				sec_snowfile << snowfile << sector;
 				ss.str("");
-				ss << vecSSdata[slope.station].meta.getStationID() << sector;
+				ss << vecSSdata[slope.mainStation].meta.getStationID() << sector;
 				snowpackio.readSnowCover(sec_snowfile.str(), ss.str(), vecSSdata[sector], sn_Zdata);
-				vecSSdata[sector].meta.position = vecSSdata[slope.station].meta.getPosition();
-				vecSSdata[sector].meta.stationName = vecSSdata[slope.station].meta.getStationName();
+				vecSSdata[sector].meta.position = vecSSdata[slope.mainStation].meta.getPosition();
+				vecSSdata[sector].meta.stationName = vecSSdata[slope.mainStation].meta.getStationName();
 			}
 			vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
-		} catch (const exception& e){
-			if (sector == slope.first){
+		} catch (const exception& e) {
+			if (sector == slope.first) {
 				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
-						"No virtual slopes! Computation for main station %s only!",
-						vecStationIDs[i_stn].c_str());
+				        "No virtual slopes! Computation for main station %s only!", vecStationIDs[i_stn].c_str());
 				slope.nSlopes = 1;
 				if ((mode == "OPERATIONAL")
-					&& (vecSSdata[slope.station].meta.getSlopeAngle() > Constants::min_slope_angle)) {
-					cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "1");
+					&& (vecSSdata[slope.mainStation].meta.getSlopeAngle() > Constants::min_slope_angle)) {
+					cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "true");
 				}
 				break;
 			} else {
@@ -626,9 +657,9 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 		}
 
 		// Operational mode ONLY: Pass ... wind_factor, snow depth discrepancy time counter
-		if ((sector == slope.station) && (mode == "OPERATIONAL")) {
-			wind_scaling_factor = vecSSdata[slope.station].WindScalingFactor;
-			time_count_deltaHS = vecSSdata[slope.station].TimeCountDeltaHS;
+		if ((sector == slope.mainStation) && (mode == "OPERATIONAL")) {
+			wind_scaling_factor = vecSSdata[slope.mainStation].WindScalingFactor;
+			time_count_deltaHS = vecSSdata[slope.mainStation].TimeCountDeltaHS;
 		}
 	}
 	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished Initializing station %s", vecStationIDs[i_stn].c_str());
@@ -636,7 +667,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	//CHECK date inconsistencies between sno files
 	bool dates_consistent(true);
 	for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
-		if (vecSSdata[sector].profileDate != vecSSdata[slope.station].profileDate) {
+		if (vecSSdata[sector].profileDate != vecSSdata[slope.mainStation].profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
 				"Date virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
 			dates_consistent = false;
@@ -646,10 +677,10 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	if (!dates_consistent) return false; //go to next station
 
 	// Do not go ahead if starting time is larger than maxtime!
-	if (vecSSdata[slope.station].profileDate > dateEnd) {
+	if (vecSSdata[slope.mainStation].profileDate > dateEnd) {
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(),
 			"Starting time (%.5lf) larger than end time(%.5lf), station %s!",
-			vecSSdata[slope.station].profileDate.getJulian(), dateEnd.getJulian(),
+			vecSSdata[slope.mainStation].profileDate.getJulian(), dateEnd.getJulian(),
 			vecStationIDs[i_stn].c_str());
 		return false; //goto next station
 	}
@@ -686,7 +717,7 @@ void real_main (int argc, char *argv[])
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
 
-	string outpath(""), experiment(""), variant("");
+	string outpath(""), experiment(""), db_name(""), variant("");
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::IOUtils::nothrow);
 
 	// Add keys to perform running mean in Antarctic variant
@@ -731,6 +762,7 @@ void real_main (int argc, char *argv[])
 	if (mode == "OPERATIONAL") {
 		cfg.addKey("RESEARCH", "SnowpackAdvanced", "false");
 		cfg.addKey("AVGSUM_TIME_SERIES", "Output", "false");
+		cfg.getValue("DBNAME", "Output", db_name, mio::IOUtils::nothrow);
 		if (useCanopyModel) {
 			throw mio::IOException("Please don't set CANOPY to 1 in OPERATIONAL mode", AT);
 		}
@@ -781,7 +813,6 @@ void real_main (int argc, char *argv[])
 	const bool tswrite = cfg.get("TS_WRITE", "Output");
 	const double tsstart = cfg.get("TS_START", "Output");
 	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
-	const size_t hazard_steps_between = cfg.get("HAZARD_STEPS_BETWEEN", "Output");
 
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
@@ -809,7 +840,7 @@ void real_main (int argc, char *argv[])
 		}
 	}
 
-	/* START LOOP OVER ALL STATIONS */
+	// START LOOP OVER ALL STATIONS
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on station %s", vecStationIDs[i_stn].c_str());
@@ -817,8 +848,7 @@ void real_main (int argc, char *argv[])
 		meteoRead_timer.reset();
 
 		Slope slope(cfg);
-		if (slope.snow_redistribution && !((slope.nSlopes != 1) || (slope.nSlopes != 3) || (slope.nSlopes != 5) || (slope.nSlopes != 9)))
-			throw mio::IOException("Please set NUMBER_SLOPES to 1, 3, 5 or 9", AT);
+		Cumsum cumsum(slope.nSlopes);
 
 		double lw_in = Constants::undefined;    // Storage for LWin from flat field energy balance
 
@@ -827,10 +857,6 @@ void real_main (int argc, char *argv[])
 
 		// Control of time window: used for adapting diverging snow depth in operational mode
 		double time_count_deltaHS = 0.;
-
-		// To sum precips and erosion mass if !AVGSUM_TIME_SERIES
-		double cumu_hnw = 0., cumsum_drift = 0., cumsum_snow = 0., cumsum_runoff = 0., cumsum_rain = 0.;
-		vector<double> cumsum_erosion(slope.nSlopes, 0.); // Cumulated eroded mass; dumped to file as rate
 
 		// Snowpack data (input/output)
 		vector<SN_SNOWSOIL_DATA> vecSSdata(slope.nSlopes, SN_SNOWSOIL_DATA(/*number_of_solutes*/));
@@ -844,10 +870,10 @@ void real_main (int argc, char *argv[])
 		// Boundary condition (fluxes)
 		BoundCond sn_Bdata;
 
-		if (mode == "OPERATIONAL") cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "0");
-
 		mio::Date current_date;
 		meteoRead_timer.start();
+		if (mode == "OPERATIONAL")
+			cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "false");
 		const bool read_slope_status = readSlopeMeta(io, snowpackio, cfg, i_stn, slope, current_date, vecSSdata, vecXdata, sn_Zdata, Mdata, wind_scaling_factor, time_count_deltaHS);
 		meteoRead_timer.stop();
 		if(!read_slope_status) continue; //something went wrong, move to the next station
@@ -858,18 +884,21 @@ void real_main (int argc, char *argv[])
 			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes);
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
+		} else {
+			if (!db_name.empty() && (db_name == "sdbo" || db_name == "sdbt"))
+				mn_ctrl.sdbDump = true;
 		}
 
-		SunObject sun(vecSSdata[slope.station].meta.position.getLat(), vecSSdata[slope.station].meta.position.getLon(), vecSSdata[slope.station].meta.position.getAltitude());
+		SunObject sun(vecSSdata[slope.mainStation].meta.position.getLat(), vecSSdata[slope.mainStation].meta.position.getLon(), vecSSdata[slope.mainStation].meta.position.getAltitude());
 		sun.setElevationThresh(0.6);
-		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.station].profileDate.getJulian() + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.mainStation].profileDate.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
-			vecStationIDs[i_stn].c_str(), vecSSdata[slope.station].profileDate.toString(mio::Date::ISO_TZ).c_str());
+			vecStationIDs[i_stn].c_str(), vecSSdata[slope.mainStation].profileDate.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
@@ -904,7 +933,7 @@ void real_main (int argc, char *argv[])
 			}
 
 			//determine which outputs will have to be done
-			getOutputControl(mn_ctrl, current_date, vecSSdata[slope.station].profileDate, calculation_step_length,
+			getOutputControl(mn_ctrl, current_date, vecSSdata[slope.mainStation].profileDate, calculation_step_length,
 			                 tsstart, tsdaysbetween, profstart, profdaysbetween,
 			                 first_backup, backup_days_between);
 			//Radiation data
@@ -924,7 +953,7 @@ void real_main (int argc, char *argv[])
 				hs_a3hl6 = Constants::undefined;
 
 			// START LOOP OVER ASPECTS
-			for (unsigned int slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
+			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
@@ -932,68 +961,70 @@ void real_main (int argc, char *argv[])
 				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
-                                       sun, cumu_hnw, lw_in, hs_a3hl6,
+                                       sun, cumsum.precip, lw_in, hs_a3hl6,
                                        tot_mass_in);
 
 				// Notify user every fifteen days of date being processed
-				const double notify_start = floor(vecSSdata[slope.station].profileDate.getJulian()) + 15.5;
-				if ((mode == "RESEARCH") && (slope.sector == slope.station)
+				const double notify_start = floor(vecSSdata[slope.mainStation].profileDate.getJulian()) + 15.5;
+				if ((mode == "RESEARCH") && (slope.sector == slope.mainStation)
 				        && booleanTime(current_date.getJulian(), 15., notify_start, calculation_step_length)) {
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					            "Station %s (%d slope(s)): advanced to %s (%f) station time",
-					                vecSSdata[slope.station].meta.stationID.c_str(), slope.nSlopes,
+					                vecSSdata[slope.mainStation].meta.stationID.c_str(), slope.nSlopes,
 					                    current_date.toString(mio::Date::DIN).c_str(), current_date.getJulian());
 				}
 
 				// SNOWPACK model (Temperature and Settlement computations)
 				Snowpack snowpack(tmpcfg); //the snowpack model to use
 				Stability stability(tmpcfg, classify_profile);
-				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumu_hnw, sn_Bdata, surfFluxes);
+				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumsum.precip, sn_Bdata, surfFluxes);
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
-
-				// Update blowing snow flux
-				if (slope.virtual_slopes) {
-					if (slope.sector == slope.luv) { // Make sure the transported snow comes from the windward slope
-						cumulate(cumsum_drift, surfFluxes.drift);
-						if (mn_ctrl.HzDump) {
-							size_t i_hz = 0;
-							if (mn_ctrl.HzStep > 0)
-								i_hz = mn_ctrl.HzStep - 1;
-							Hazard::getDriftIndex(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
-							                      sn_Zdata.drift24, cumsum_drift,
-							                      vecXdata[slope.sector].cos_sl);
-							cumsum_drift = 0.;
-						}
-					}
-				} else if (slope.sector == slope.station) { // Consider erosion at the station only
-					cumulate(cumsum_drift, surfFluxes.drift);
-				}
 
 				/***** OUTPUT SECTION *****/
 				surfFluxes.collectSurfaceFluxes(sn_Bdata, vecXdata[slope.sector], Mdata);
-				if (slope.sector == slope.station) { // station field only (usualy flat)
-					size_t i_hz = mn_ctrl.HzStep;
+				if (slope.sector == slope.mainStation) { // main station only (usually flat field)
 					// Calculate consistent lw_in for virtual slopes
-					if ( vecXdata[slope.station].getNumberOfElements() > 0 ) {
+					if ( vecXdata[slope.mainStation].getNumberOfElements() > 0 ) {
 						double k_eff, gradT;
 						k_eff =
-						    vecXdata[slope.station].Edata[vecXdata[slope.station].getNumberOfElements()-1].k[TEMPERATURE];
+						    vecXdata[slope.mainStation].Edata[vecXdata[slope.mainStation].getNumberOfElements()-1].k[TEMPERATURE];
 						gradT =
-						    vecXdata[slope.station].Edata[vecXdata[slope.station].getNumberOfElements()-1].gradT;
+						    vecXdata[slope.mainStation].Edata[vecXdata[slope.mainStation].getNumberOfElements()-1].gradT;
 						lw_in = k_eff*gradT + sn_Bdata.lw_out - sn_Bdata.qs - sn_Bdata.ql - sn_Bdata.qr;
 					} else {
 						lw_in = Constants::undefined;
 					}
 					// Deal with new snow densities
-					if (vecXdata[slope.station].hn > 0.) {
-						surfFluxes.cRho_hn = vecXdata[slope.station].rho_hn;
+					if (vecXdata[slope.mainStation].hn > 0.) {
+						surfFluxes.cRho_hn = vecXdata[slope.mainStation].rho_hn;
 						surfFluxes.mRho_hn = Mdata.rho_hn;
 					}
+					if (slope.snow_erosion) {
+						// Update drifting snow index (VI24),
+						//   from erosion at the main station only if no virtual slopes are available
+						if (slope.mainStationDriftIndex)
+							cumulate(cumsum.drift, surfFluxes.drift);
+						// Update erosion mass from main station
+						// NOTE cumsum.erosion[] will be positive in case of real erosion at any time during the output time step
+						if (vecXdata[slope.mainStation].ErosionMass > Constants::eps) {
+							// Real erosion
+							if (cumsum.erosion[slope.mainStation] > Constants::eps)
+								cumsum.erosion[slope.mainStation] += vecXdata[slope.mainStation].ErosionMass;
+							else
+								cumsum.erosion[slope.mainStation] = vecXdata[slope.mainStation].ErosionMass;
+						} else {
+							// Potential erosion at main station only
+							if (cumsum.erosion[slope.mainStation] < -Constants::eps)
+								cumsum.erosion[slope.mainStation] -= surfFluxes.mass[SurfaceFluxes::MS_WIND];
+							else if (!(cumsum.erosion[slope.mainStation] > Constants::eps))
+								cumsum.erosion[slope.mainStation] = -surfFluxes.mass[SurfaceFluxes::MS_WIND];
+						}
+					}
+					const unsigned int i_hz = mn_ctrl.HzStep;
 					if (mode == "OPERATIONAL") {
-						if (!cumsum_mass) {
-							// Cumulate flat field runoff in operational mode
+						if (!cumsum_mass) { // Cumulate flat field runoff in operational mode
 							qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
-							cumsum_runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
+							cumsum.runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
 						}
 						/*
 						 * Snow depth and mass corrections (deflate-inflate):
@@ -1002,8 +1033,8 @@ void real_main (int argc, char *argv[])
 						 *   of fresh snow mass because Michi spent many painful days calibrating the settling ...
 						 *   and therefore it can't be wrong, dixunt Michi and Charles.
 						 */
-						const double cH = vecXdata[slope.station].cH - vecXdata[slope.station].Ground;
-						const double mH = vecXdata[slope.station].mH - vecXdata[slope.station].Ground;
+						const double cH = vecXdata[slope.mainStation].cH - vecXdata[slope.mainStation].Ground;
+						const double mH = vecXdata[slope.mainStation].mH - vecXdata[slope.mainStation].Ground;
 						// Look for missed erosion or not strong enough settling ...
 						// ... and nastily deep "dips" caused by buggy data ...
 						if (time_count_deltaHS > -Constants::eps2) {
@@ -1023,7 +1054,7 @@ void real_main (int argc, char *argv[])
 						}
 						// If the error persisted for at least one day => apply correction
 						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
-							deflateInflate(Mdata, vecXdata[slope.station],
+							deflateInflate(Mdata, vecXdata[slope.mainStation],
 							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							if (prn_check) {
 								prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
@@ -1034,20 +1065,7 @@ void real_main (int argc, char *argv[])
 							time_count_deltaHS = 0.;
 						}
 					}
-
-					// SAVE HAZARD DATA ...
-					if (mn_ctrl.HzDump) {
-						if (cumsum_drift == Constants::undefined) {
-							surfFluxes.drift = Constants::undefined;
-						} else if ((slope.nSlopes == 1) || !slope.snow_redistribution){
-							// Drift Index from flat field
-							surfFluxes.drift = cumsum_drift / hazard_steps_between;
-							cumsum_drift = 0.;
-						} else if (mn_ctrl.nStep == hazard_steps_between) {
-							// Zeroth drift index to be written into *.met file
-							surfFluxes.drift = cumsum_drift / MAX(1, (hazard_steps_between - 1));
-						}
-
+					if (mn_ctrl.HzDump) { // Save hazard data ...
 						strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
 						if (mode == "OPERATIONAL") {
 							qr_Hdata.at(i_hz).loc_for_snow = (int)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
@@ -1057,32 +1075,36 @@ void real_main (int argc, char *argv[])
 							qr_Hdata.at(i_hz).loc_for_snow = 2;
 							qr_Hdata.at(i_hz).loc_for_wind = 1;
 						}
-
-						hazard.getHazardData(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
-						                     Mdata, surfFluxes, sn_Zdata, vecXdata[slope.station],
-						                     vecXdata[slope.south], slope.nSlopes, slope.virtual_slopes);
+						hazard.getHazardDataMainStation(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
+						                                sn_Zdata, cumsum.drift, slope.mainStationDriftIndex,
+						                                vecXdata[slope.mainStation], Mdata, surfFluxes);
 						mn_ctrl.HzStep++;
+						if (slope.mainStationDriftIndex)
+							cumsum.drift = 0.;
 						surfFluxes.hoar = 0.;
 					}
-
 					// New snow water equivalent (kg m-2), rain was dealt with in Watertransport.cc
-					surfFluxes.mass[SurfaceFluxes::MS_HNW] += vecXdata[slope.station].hn
-					                                              * vecXdata[slope.station].rho_hn;
+					surfFluxes.mass[SurfaceFluxes::MS_HNW] += vecXdata[slope.mainStation].hn
+					                                              * vecXdata[slope.mainStation].rho_hn;
 					if (!avgsum_time_series) { // Sum up precipitations
-						cumsum_rain += surfFluxes.mass[SurfaceFluxes::MS_RAIN];
-						cumsum_snow += surfFluxes.mass[SurfaceFluxes::MS_HNW];
+						cumsum.rain += surfFluxes.mass[SurfaceFluxes::MS_RAIN];
+						cumsum.snow += surfFluxes.mass[SurfaceFluxes::MS_HNW];
 					}
-					// In case of erosion ...
-					if (vecXdata[slope.station].ErosionMass > 0.) { // Real erosion
-						cumsum_erosion[slope.station] = fabs(cumsum_erosion[slope.station])
-						                                    + vecXdata[slope.station].ErosionMass;
-					} else if (cumsum_erosion[slope.station] > 0.) { // Real and virtual erosion
-						cumsum_erosion[slope.station] += surfFluxes.mass[SurfaceFluxes::MS_WIND];
-					} else { // Virtual erosion only
-						cumsum_erosion[slope.station] -= surfFluxes.mass[SurfaceFluxes::MS_WIND];
+				} else if (slope.luvDriftIndex) {
+					const unsigned int i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep-1 : 0;
+					// Update drifting snow index (VI24),
+					//   considering only snow eroded from the windward slope
+					cumulate(cumsum.drift, surfFluxes.drift);
+					if (mn_ctrl.HzDump) {
+						// NOTE qr_Hdata was first saved at the end of the mainStation simulation, at which time the drift index could not be computed!
+						hazard.getHazardDataSlope(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
+						                          sn_Zdata.drift24, cumsum.drift, vecXdata[slope.sector], 
+						                          slope.luvDriftIndex, slope.north, slope.south);
+						cumsum.drift = 0.;
 					}
-				} else { // On slopes take care of cumulative eroded mass on virtual slopes
-					cumsum_erosion[slope.sector] += vecXdata[slope.sector].ErosionMass;
+					
+					// Update erosion mass from windward virtual slope
+					cumsum.erosion[slope.sector] += vecXdata[slope.sector].ErosionMass;
 				}
 
 				// TIME SERIES (*.met)
@@ -1091,40 +1113,33 @@ void real_main (int argc, char *argv[])
 					if (avgsum_time_series) {
 						averageFluxTimeSeries(mn_ctrl.nAvg, useCanopyModel, surfFluxes, vecXdata[slope.sector]);
 					} else {
-						surfFluxes.mass[SurfaceFluxes::MS_RAIN] = cumsum_rain;
-						surfFluxes.mass[SurfaceFluxes::MS_HNW] = cumsum_snow;
+						surfFluxes.mass[SurfaceFluxes::MS_RAIN] = cumsum.rain;
+						surfFluxes.mass[SurfaceFluxes::MS_HNW] = cumsum.snow;
 						// Add eroded snow from luv to precipitations on lee slope
-						if ((slope.nSlopes > 1) && (slope.sector == slope.lee) && (cumsum_erosion[slope.luv] > Constants::eps)) {
-							surfFluxes.mass[SurfaceFluxes::MS_HNW] += cumsum_erosion[slope.luv]
-							        / vecXdata[slope.luv].cos_sl;
-						}
+						if (slope.sector == slope.lee && cumsum.erosion[slope.luv] > Constants::eps)
+							surfFluxes.mass[SurfaceFluxes::MS_HNW] += cumsum.erosion[slope.luv] / vecXdata[slope.luv].cos_sl;
 					}
 
 					if (precip_rates) { // Precip rates in kg m-2 h-1
 						surfFluxes.mass[SurfaceFluxes::MS_RAIN] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 						surfFluxes.mass[SurfaceFluxes::MS_HNW] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 						if ((mode == "OPERATIONAL") && (!cumsum_mass)) {
-							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] = cumsum_runoff;
+							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] = cumsum.runoff;
 							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
-							cumsum_runoff = 0.;
+							cumsum.runoff = 0.;
 						}
 					}
 
 					// Erosion mass rate in kg m-2 h-1
-					surfFluxes.mass[SurfaceFluxes::MS_WIND] = cumsum_erosion[slope.sector];
+					surfFluxes.mass[SurfaceFluxes::MS_WIND] = cumsum.erosion[slope.sector];
 					surfFluxes.mass[SurfaceFluxes::MS_WIND] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
 
 					// Dump
-					double wind_trans24;
-					size_t i_hz = 0;
-					if (mn_ctrl.HzStep > 0)
-						i_hz = mn_ctrl.HzStep - 1;
-					wind_trans24 = qr_Hdata.at(i_hz).wind_trans24;
-					std::stringstream ss;
-					ss << vecStationIDs[i_stn];
-					if (slope.sector != slope.station) {
-						ss << slope.sector;
-					}
+					const unsigned int i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep - 1 : 0;
+					unsigned int i_hz0 = (mn_ctrl.HzStep > 1) ? mn_ctrl.HzStep - 2 : 0;
+					if (slope.mainStationDriftIndex)
+						i_hz0 = i_hz;
+					const double wind_trans24 = (slope.sector == slope.mainStation) ? qr_Hdata.at(i_hz0).wind_trans24 : qr_Hdata.at(i_hz).wind_trans24;
 					snowpackio.writeTimeSeries(vecXdata[slope.sector], surfFluxes, Mdata,
 					                           qr_Hdata.at(i_hz), wind_trans24);
 
@@ -1136,14 +1151,14 @@ void real_main (int argc, char *argv[])
 					surfFluxes.mRho_hn = Constants::undefined;
 					// reset cumulative variables
 					if (slope_sequence == slope.nSlopes-1) {
-						cumsum_erosion.assign(cumsum_erosion.size(), 0.);
-						cumsum_rain = cumsum_snow = 0.;
+						cumsum.erosion.assign(cumsum.erosion.size(), 0.);
+						cumsum.rain = cumsum.snow = 0.;
 						mn_ctrl.nAvg = 0;
 					}
 				}
 
 				// SNOW PROFILES ...
-				// ... for visualization (*.pro)
+				// ... for visualization (*.pro), etc. (*.prf)
 				if (profwrite && mn_ctrl.PrDump)
 					snowpackio.writeProfile(current_date, vecXdata[slope.sector]);
 
@@ -1151,13 +1166,13 @@ void real_main (int argc, char *argv[])
 				if (mn_ctrl.XdataDump) {
 					std::stringstream ss;
 					ss << vecStationIDs[i_stn];
-					if (slope.sector != slope.station) ss << slope.sector;
+					if (slope.sector != slope.mainStation) ss << slope.sector;
 					snowpackio.writeSnowCover(current_date, vecXdata[slope.sector],
 					                          vecSSdata[slope.sector], sn_Zdata, true);
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					        "Backup Xdata dumped for station %s [%.2f days, step %d]", ss.str().c_str(),
 					        (current_date.getJulian()
-					            - (vecSSdata[slope.station].profileDate.getJulian() + 0.5/24)),
+					            - (vecSSdata[slope.mainStation].profileDate.getJulian() + 0.5/24)),
 					        mn_ctrl.nStep);
 				}
 
@@ -1169,28 +1184,29 @@ void real_main (int argc, char *argv[])
 							prn_msg(__FILE__, __LINE__, "msg+", current_date, "Mass error at end of time step!");
 					}
 				}
-			} //end loop on sectors
+			} //end loop on slopes
 			computed_one_timestep = true;
 		} while ((dateEnd.getJulian() - current_date.getJulian()) > calculation_step_length/(2.*1440));
 		//end loop on timesteps
 
+		// If the simulation run for at least one time step,
+		//   dump the PROFILEs (Xdata) for every station referred to as sector where sector 0 corresponds to the main station
 		if (computed_one_timestep) {
-			// Dump the PROFILEs (Xdata) for all available sectors at the end of the Meteo data
-			for (size_t sector=slope.station; sector<slope.nSlopes; sector++) {
-				if ((mode == "OPERATIONAL") && (sector == slope.station)) {
+			for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
+				if ((mode == "OPERATIONAL") && (sector == slope.mainStation)) {
 					// Operational mode ONLY: dump snow depth discrepancy time counter
-					vecSSdata[slope.station].TimeCountDeltaHS = time_count_deltaHS;
+					vecSSdata[slope.mainStation].TimeCountDeltaHS = time_count_deltaHS;
 				}
 				snowpackio.writeSnowCover(current_date, vecXdata[sector], vecSSdata[sector], sn_Zdata);
-				if (sector == slope.station) {
+				if (sector == slope.mainStation) {
 					prn_msg(__FILE__, __LINE__, "msg", mio::Date(),
 					        "Writing data to sno file(s) for %s (station %s) on %s",
-					        vecSSdata[slope.station].meta.getStationName().c_str(),
+					        vecSSdata[slope.mainStation].meta.getStationName().c_str(),
 					        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				}
 			}
-			// Dump results to SDB
-			if (mode == "OPERATIONAL") {
+			// Dump time series to snowpack.ams_pmod@SDBx (hazard data)
+			if (mn_ctrl.sdbDump) {
 				mio::Timer sdbDump_timer;
 				sdbDump_timer.reset();
 				sdbDump_timer.start();

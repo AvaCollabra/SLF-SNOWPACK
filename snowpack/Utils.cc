@@ -116,9 +116,7 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
  * - Start must be a Julian Date with origin 1900-01-01T00:00
  * - In case regular dumps are requested throughout the day, it is best to set start to 0.0.
  *   This is the preferred setting in operational mode with *_START = 0.0
- * - This version is the result of various efforts (Lehning, Kowalski, Fierz, Loewe)
- * @author Michael Lehning, Julia Kowalski, Charles Fierz, Mathias Bavay
- * @version 9.mm
+ * - This version is the result of various efforts (Michael Lehning, Julia Kowalski, Henning Loewe, Charles Fierz, Mathias Bavay)
  * @param JulianDate Julian Date
  * @param days_between number of days between two outputs
  * @param start start date as Julian Date
@@ -136,8 +134,8 @@ bool booleanTime(const double& JulianDate, double days_between,
 
 	// NOTE that days_between must be known to a high degree of accuracy to make the test below work
 	//computing the output interval in units of "step" (ie: number of "step")
-	//days_between = round(days_between/step) * step; //only in C99
-	days_between = floor(days_between / step + 0.5) * step;//how to implement a replacement to round() using only floor()!
+	//days_between = round(days_between/step) * step; //works only in C99
+	days_between = floor(days_between / step + 0.5) * step; //how to implement a replacement to round() using only floor()!
 	if (days_between == 0.) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Days_between is zero. Please consider changing data output intervals!");
 		return false;
@@ -151,7 +149,7 @@ bool booleanTime(const double& JulianDate, double days_between,
  * @brief Delete old output files (*.sno, *.ini) from outdir
  * @version 11.03
  * @param outdir Output dir
- * @param experiment Name of ongoin experiment
+ * @param experiment Name of ongoing experiment
  * @param stationID
  * @param nSlopes Number of slopes treated
  */
@@ -188,9 +186,9 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 				}
 			}
 		} else {
-			for (unsigned int j = 0; j < nSlopes; j++) {
-				if ( j ) {
-					snprintf(fname, MAX_STRING_LENGTH-1, "%s%d.%s", ftrunc, j, ext.c_str());
+			for (size_t jj = 0; jj < nSlopes; jj++) {
+				if (jj > 0) {
+					snprintf(fname, MAX_STRING_LENGTH-1, "%s%d.%s", ftrunc, jj, ext.c_str());
 				} else {
 					snprintf(fname, MAX_STRING_LENGTH-1, "%s.%s", ftrunc, ext.c_str());
 				}
@@ -198,14 +196,14 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 					if (remove(fname) == 0) {
 						n_files++;
 					}
-					if (j == nSlopes-1) {
+					if (jj == nSlopes-1) {
 						if (n_files > 0) {
 							prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %d *.%s file(s)", n_files, ext.c_str());
 						} else {
 							prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
 						}
 					}
-				} else if ((j == 0) && IOUtils::fileExists(fname)) {
+				} else if ((jj == 0) && IOUtils::fileExists(fname)) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Data in *.%s file(s) may be overwritten", ext.c_str());
 				}
 			}
@@ -218,7 +216,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
  * @author Charles Fierz
  * @version 10.02
  * @param z Position perpendicular to slope (m)
- * @param *Ndata
+ * @param Ndata
  * @param nN Number of nodes
  * @return Upper node number
  */

@@ -13,7 +13,7 @@ exitus () {
 	printf "\t%s\n" "${usage}"
 	printf "\t%s\n" "	use  nohup sn_run > fout  to redirect output to named file"
 	printf "\t%s\n" "Parameter(s):"
-	printf "\t\t%s\n" "mode		Choose from research (res) or operational (oper)"
+	printf "\t\t%s\n" "mode		Choose from res (research) or oper (operational)"
 	printf "\t%s\n" "Option(s):"
 	printf "\t\t%s\n" "-h | --help => display help"
 	printf "\t\t%s\n" "--cfg		choose configuration file for examples"
