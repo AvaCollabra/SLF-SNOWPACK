@@ -136,8 +136,8 @@ class Snowpack {
 		const SnowpackConfig& cfg;
 		BoundaryCondition surfaceCode;
 		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
-		std::string hn_density, hn_density_parameterization, snow_albedo, albedo_parameterization, sw_absorption_scheme;
-		unsigned int sw_mode;
+		std::string hn_density, hn_density_parameterization;
+		std::string sw_mode, snow_albedo, albedo_parameterization, sw_absorption_scheme;
 		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;

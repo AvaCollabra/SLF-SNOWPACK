@@ -24,14 +24,13 @@ using namespace std;
 using namespace mio;
 
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-        : outpath(), o_snopath(), snowpath(), experiment(), inpath(), i_snopath(),
+        : outpath(), o_snopath(), snowpath(), experiment(), inpath(), i_snopath(), sw_mode(),
           info(run_info),
-          in_dflt_TZ(), sw_mode(0), useSoilLayers(false), perp_to_slope(false)
+          in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
-	sw_mode %= 10;
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
@@ -250,7 +249,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	SSdata.meta.setSlope(slope_angle, azi);
 
 	// Check consistency with radiation switch
-	if ((sw_mode == 2) && perp_to_slope && (SSdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
+	if ((sw_mode == "BOTH") && perp_to_slope && (SSdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(),
 		        "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
 		throw IOException("Do not generate Xdata from file " + sno_reader.get_filename(), AT);

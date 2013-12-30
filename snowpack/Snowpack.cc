@@ -53,8 +53,8 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(),
             variant(), viscosity_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-            hn_density(), hn_density_parameterization(), snow_albedo(), albedo_parameterization(), sw_absorption_scheme(),
-            sw_mode(0), albedo_fixedValue(Constants::undefined), hn_density_fixedValue(Constants::undefined),
+            hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), sw_absorption_scheme(),
+            albedo_fixedValue(Constants::undefined), hn_density_fixedValue(Constants::undefined),
             meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
@@ -126,13 +126,12 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 */
 	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Snowpack", height_of_meteo_values);
 
-	/* Defines whether the measured shortwave radiation is incoming
-	 * - 0 downward SW radiation is used
-	 * - 1 reflected SW radiation is used
-	 * - 2 both downward and reflected SW radiation is used
-	 * @note { If SW_MODE == 2, the input must hold both fluxes! } */
+	/* Defines what shortwave radiation flux(es) to use
+	 * - "INCOMING" (downwelling) SW radiation is used
+	 * - "REFLECTED" SW radiation is used
+	 * - "BOTH" downward and reflected SW radiation is used
+	 * @note { If SW_MODE == "BOTH", the input must hold both fluxes! } */
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
-	sw_mode %= 10;
 
 	/* Height of new snow element (m) [NOT read from CONSTANTS_User.INI] \n
 	 * Controls the addition of new snow layers. Set in qr_ReadParameters() \n
@@ -757,15 +756,13 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	}
 	Xdata.pAlbedo = Albedo; // Assign albedo, either parameterized or measured, to Xdata
 
-	switch (sw_mode) { // Assign iswr and rswr correct values according to switch value
-	case 0: // use incoming SW flux only
+	// Assign iswr and rswr correct values according to switch value
+	if (sw_mode == "INCOMING") { // use incoming SW flux only
 		Mdata.rswr = Mdata.iswr * Albedo;
-		break;
-	case 1: // use r SW flux only
+	} else if (sw_mode == "REFLECTED") {// use reflected SW flux only
 		Mdata.iswr = Mdata.rswr / Albedo;
-		break;
+	} else if (sw_mode == "BOTH") { // use measured albedo ...
 		// ... while the ground is still snow covered according to HS measurements
-	case 2: // use measured albedo ...
 		if (Mdata.mAlbedo != Constants::undefined) {
 			if ((!((Mdata.mAlbedo < 2.*Xdata.SoilAlb)
 			        && ((Xdata.cH - Xdata.Ground) > 0.05))) && Mdata.mAlbedo <= 0.95)
@@ -775,11 +772,9 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		} else {
 			Mdata.rswr = Mdata.iswr = 0.;
 		}
-		break;
-	default:
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "sw_mode = %d not implemented yet!", sw_mode);
+	} else {
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "sw_mode = %s not implemented yet!", sw_mode.c_str());
 		exit(EXIT_FAILURE);
-		break;
 	}
 	Xdata.Albedo = Albedo; // Assign albedo, either parameterized or measured, to Xdata
 	const double I0 = Mdata.iswr - Mdata.rswr; // Net irradiance perpendicular to slope

@@ -298,10 +298,10 @@ void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
 
 void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata)
 {
-	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10;
+	std::string sw_mode = cfg.get("SW_MODE", "Snowpack");
 	const bool force_sw_mode = cfg.get("FORCE_SW_MODE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 	const bool enforce_hs = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
-	const double iswr_ref = (sw_mode == 1)?  Mdata.rswr/station.Albedo : Mdata.iswr;
+	const double iswr_ref = (sw_mode == "REFLECTED") ?  Mdata.rswr/station.Albedo : Mdata.iswr;
 
 	sun.calculateRadiation(Mdata.ta, Mdata.rh, station.Albedo);
 	double H_toa, H_direct, H_diffuse;
@@ -322,7 +322,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 		}
 	}
 
-	if (sw_mode == 1) {
+	if (sw_mode == "REFLECTED") {
 		Mdata.rswr = (dir_h + diff)*station.Albedo;
 	} else {
 		Mdata.iswr = dir_h + diff; //usually = iswr_ref except for corner cases
@@ -346,7 +346,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 				Mdata.rswr = Mdata.iswr*2.0 * station.SoilAlb;
 			else
 				Mdata.rswr = 0.;
-			cfg.addKey("SW_MODE", "Snowpack", "2");  // as both Mdata.iswr and Mdata.rswr were reset
+			cfg.addKey("SW_MODE", "Snowpack", "BOTH");  // as both Mdata.iswr and Mdata.rswr were reset
 		}
 	}
 

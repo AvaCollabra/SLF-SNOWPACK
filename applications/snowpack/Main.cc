@@ -483,14 +483,14 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "false");
 	}
 
-	const int sw_mode = static_cast<int>(cfg.get("SW_MODE", "Snowpack")) % 10; //it must be after calling compRadiation!
+	std::string sw_mode = cfg.get("SW_MODE", "Snowpack"); //it must be after calling compRadiation!
 
 	// Project irradiance on slope; take care of measured snow depth and/or precipitations too
 	if (!perp_to_slope) {
 		meteo.radiationOnSlope(currentSector, sun, Mdata, surfFluxes);
-		if ( ((sw_mode == 1) || (sw_mode == 2))
+		if ( ((sw_mode == "REFLECTED") || (sw_mode == "BOTH"))
 			&& (currentSector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
-			cfg.addKey("SW_MODE", "Snowpack", "0"); // as Mdata.iswr is the sum of dir_slope and diff
+			cfg.addKey("SW_MODE", "Snowpack", "INCOMING"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
 		meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
 	}
@@ -731,14 +731,14 @@ void real_main (int argc, char *argv[])
 		cfg.addKey("RH_AVG::arg1", "Filters", "soft 101 360000");
 	}
 
-	const int tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
-	if ((tst_sw_mode % 10) == 2) { //HACK: this is only for INP!
+	std::string tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
+	if (tst_sw_mode == "BOTH") { //HACK: this is only for INP!
 		// Make sure there is not only one of ISWR and RSWR available
 		bool iswr_inp=true, rswr_inp = true;
 		cfg.getValue("ISWR_INP","Input",iswr_inp,IOUtils::nothrow);
 		cfg.getValue("RSWR_INP","Input",rswr_inp,IOUtils::nothrow);
 		if (!(iswr_inp && rswr_inp)) {
-			cerr << "[E] SW_MODE = 2: Please set both ISWR_INP and RSWR_INP to true in [Input]-section of io.ini!\n";
+			cerr << "[E] SW_MODE = " << tst_sw_mode << ": Please set both ISWR_INP and RSWR_INP to true in [Input]-section of io.ini!\n";
 			exit(1);
 		}
 	}

@@ -69,10 +69,9 @@ class SmetIO : public SnowpackIOInterface {
 		mio::Date read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata);
 
 	private:
-		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath;
+		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath, sw_mode;
 		const RunInfo info;
 		double in_dflt_TZ;
-		int sw_mode;
 		bool useSoilLayers, perp_to_slope;
 };
 

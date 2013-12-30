@@ -39,13 +39,13 @@ const bool AsciiIO::t_gnd = false;
  * non-static section                                       *
  ************************************************************/
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-         : setAppendableFiles(), variant(), experiment(),
+         : setAppendableFiles(), variant(), experiment(), sw_mode(),
            inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
-           sw_mode(0), avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
+           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
            out_load(false), out_stab(false), out_canopy(false), r_in_n(false)
 {
@@ -57,7 +57,6 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
-	sw_mode %= 10;
 
 	// Input section
 	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
@@ -196,7 +195,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	SSdata.meta.setSlope(slope_angle, azi);
 
 	// Check consistency with radiation switch
-	if ((sw_mode == 2) && perp_to_slope && (SSdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
+	if ((sw_mode == "BOTH") && perp_to_slope && (SSdata.meta.getSlopeAngle() > Constants::min_slope_angle)) {
         fclose(fin);
 		prn_msg(__FILE__, __LINE__, "wrn", Date(),
 		        "You want to use measured albedo in a slope steeper than 3 deg  with PERP_TO_SLOPE set!");
