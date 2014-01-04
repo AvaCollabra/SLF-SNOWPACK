@@ -468,7 +468,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case SAND:
 			*theta_r=0.053;
-			theta_s=375;
+			theta_s=0.375;
 			*n=3.177;
 			*alpha=3.524;
 			*ksat=6.427/(24.*60.*60.);
