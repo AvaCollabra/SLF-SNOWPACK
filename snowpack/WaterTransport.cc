@@ -458,6 +458,10 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					if (e == nE-1) {
 						hoar = dM;
 					}
+					
+					// Update remaining volumetric contents and density
+					EMS[nE-1].theta[AIR] = MAX(0., 1.0 - EMS[nE-1].theta[WATER] - EMS[nE-1].theta[ICE] - EMS[nE-1].theta[SOIL]);
+					EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + (EMS[nE-1].theta[WATER] * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 				}
 			}
 		}
