@@ -685,8 +685,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	//Setting convergence criteria and numerical limits
 	const double REQUIRED_ACCURACY_H=1E-3;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
-	const double REQUIRED_ACCURACY_THETA=1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. Huang et al. (1996) proposes 0.0001 here (=1E-4).
-							//1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
+	const double REQUIRED_ACCURACY_THETA=1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. It is recommended to adjust PhaseChange::RE_theta_r in PhaseChanges.cc in case this value is changed.
+							//Huang et al. (1996) proposes 0.0001 here (=1E-4). 1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
 	const double convergencecriterionthreshold=0.99;//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
 	const double MAX_ALLOWED_DELTA_H=1E32;		//Set an upper threshold for the delta_h[i] that is allowed. The idea is that when delta_h for an iteration is too large, we have a too large time step and a rewind is necessary.
 	const int INCR_ITER=5;				//Number of iterations for the Richard solver after which time step is increased.
@@ -975,7 +975,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//Increase theta_r in case of wetting:
 			theta_r[i]=MAX(0., MIN(0.02, MAX(EMS[SnowpackElement[i]].theta_r, TuningFactor*EMS[SnowpackElement[i]].theta[WATER])));
 			//Decrease theta_r in case of refreezing:
-			theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-REQUIRED_ACCURACY_THETA));
+			theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-(REQUIRED_ACCURACY_THETA/10.)));
 			
 			theta_s[i]=(1. - EMS[SnowpackElement[i]].theta[ICE])*(Constants::density_ice/Constants::density_water);
 
