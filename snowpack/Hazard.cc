@@ -52,7 +52,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
         : research_mode(false), enforce_measured_snow_heights(false), force_rh_water(false),
         nHz(0), hazard_steps_between(0), sn_dt(IOUtils::nodata),
         hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata)
-          
+
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
@@ -269,10 +269,11 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
  * @param Hdata
  * @param Hdata_ind
  * @param Zdata
+ * @param newDrift
+ * @param stationDriftIndex needs to be computed
  * @param Xdata
  * @param Mdata
  * @param Sdata
- * @param stationDriftIndex needs to be computed
  */
 void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
                                       ZwischenData& Zdata, const double& newDrift, const bool stationDriftIndex,
@@ -383,11 +384,11 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	} else {
 		Hdata.dewpt_def = compDewPointDeficit(Mdata.ta, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T, Mdata.rh);
 	}
-	
+
 	if (!((Hdata.dewpt_def > -50.) && (Hdata.dewpt_def < 50.))) {
 		Hdata_ind.dewpt_def = -1;
 	}
-	
+
 	// SWE and total liquid water content
 	Hdata.swe = Sdata.mass[SurfaceFluxes::MS_SWE];
 	Hdata.tot_lwc = Sdata.mass[SurfaceFluxes::MS_WATER];

@@ -24,4 +24,6 @@ Finally, the examples are written to the "output" directory.
 	run_res1exp.sh: simulation in research mode on the flat
 	run_res5exp.sh: simulation in research mode on the flat as well as on 4 virtual slopes (N, E, S, W)
 	run_operMST96.sh: simulation in operational mode on the flat
+	run_soil.sh: simulation with soil
+
 

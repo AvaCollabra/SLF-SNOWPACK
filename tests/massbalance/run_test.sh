@@ -2,7 +2,7 @@
 testvalue_sum=0.001
 testvalue_abssum=1.0
 #Do mass balance check
-bash massbalancecheck.sh ../res1exp/output/MST96_res.met 2>&1 >/dev/null | \
+bash ../../tools/massbalancecheck.sh ../res1exp/output/MST96_res.met 2>&1 >/dev/null | \
 #If word ERROR is detected, make it first word on the line
 sed -r 's/(.*)(ERROR)(.*)/\2 \1\2\3/' | \
 #Now check if the limits are not exceeded. If so, write out ERROR in the end.

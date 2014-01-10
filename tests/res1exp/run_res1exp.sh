@@ -4,7 +4,6 @@ rm -f output/*
 
 PREC="1e-3"
 numdiff -r ${PREC} output_ref/MST96_res.haz output/MST96_res.haz | grep "+++"
-numdiff -r ${PREC} output_ref/MST96_res.ini output/MST96_res.ini | grep "+++"
 numdiff -r ${PREC} output_ref/MST96_res.sno output/MST96_res.sno | grep "+++"
 
 rm -f output_ref/MST96_res.met

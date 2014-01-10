@@ -412,7 +412,7 @@ void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& isw
 		Mdata.mAlbedo = Constants::undefined;
 
 	const double cAlbedo = Xdata.Albedo;
-	
+
 	if(iswr_is_net) {
 		const double netSW = Mdata.iswr;
 		if(netSW==0.) { //this should only happen at night
@@ -424,7 +424,7 @@ void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& isw
 		Mdata.rswr = netSW / (1./cAlbedo - 1.);
 		return;
 	}
-	
+
 	if (Mdata.iswr == mio::IOUtils::nodata)
 		Mdata.iswr = Mdata.rswr / Xdata.Albedo;
 	if (Mdata.rswr == mio::IOUtils::nodata)

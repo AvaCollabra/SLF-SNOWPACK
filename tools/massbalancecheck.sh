@@ -58,7 +58,7 @@ if [ ! -s "${met_file}" ]; then
 fi
 
 # Read header from met file
-header=`cat ${met_file} | grep -m 1 ^ID`
+header=`head -100 ${met_file} | grep -m 1 ^ID`
 if [ -z "${header}" ]; then
 	echo "massbalancecheck.sh: ERROR: no header found." > /dev/stderr
 	exit
