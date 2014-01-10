@@ -250,6 +250,10 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 		case 'm':
 			mode = string(optarg);
 			mio::IOUtils::toUpper(mode);
+			if (!(mode == "RESEARCH" || mode == "OPERATIONAL")) {
+				cerr << endl << "[E] Command line option '-" << char(opt) << "' requires 'research' or 'operational' as operand" << endl;
+				Usage(string(argv[0]));
+			}
 			break;
 		case 'c':
 			cfgfile = string(optarg);
@@ -258,7 +262,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 			mio::IOUtils::readLineToVec(string(optarg), vecStationIDs, ',');
 			break;
 		case ':': //operand missing
-			cerr << endl << "[E] Command line parameter '-" << char(optopt) << "' requires an operand" << endl;
+			cerr << endl << "[E] Command line option '-" << char(opt) << "' requires an operand" << endl;
 			Usage(string(argv[0]));
 			break;
 		case 'h':
@@ -669,7 +673,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
 		if (vecSSdata[sector].profileDate != vecSSdata[slope.mainStation].profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
-				"Date virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
+				"Date of profile on virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
 			dates_consistent = false;
 
 		}

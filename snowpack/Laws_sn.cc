@@ -164,12 +164,9 @@ bool   SnLaws::setfix = false;
  * for your purposes you need to do so in the function SnLaws::setStaticData
  * where these parameters are set according to the VARIANT used
  * }
- * - albVS_*          : albedo version for Schmucki's parameterization
- * 	- X30, X32, X33
  * - ageAlbedo : Empirical constant related to age of snow, set to zero in Antarctic variant
  */
 //@{
-	SnLaws::AlbedoVersionSchmucki SnLaws::albVS = SnLaws::albVS_X30;
 	bool SnLaws::ageAlbedo = true;
 //@}
 
@@ -245,9 +242,6 @@ bool SnLaws::setStaticData(const std::string& variant)
 	else
 		SnLaws::ageAlbedo = true;
 
-	// albedo version for Schmucki's parameterization
-	albVS = albVS_X32; // choose from X30, X32, or X33; it looks like X32 is the best choice (Fz, 2013-12-16)
-
 	// snow extinction coefficients; values in use since r140
 	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23};
 	double fb_init[5] = {29., 15., 5., 9., 35.};
@@ -294,21 +288,26 @@ double SnLaws::conductivity_water(const double& Temperature)
  * - PARAMETERIZED (default is LEHNING_2):
  * 	- LEHNING_[012] : Statistical models of surface snow albedo based on measurements
  *      from the Weissfluhjoch study plot (SWin and SWout, K&Z CM21).
- * 	- SCHMUCKI : Edgar Schmucki's statistical model (Dec 2013) based on SWin and SWout measurements at 4 stations:
- *      Weissfluhjoch study plot (K&Z CM21), Davos (K&Z CM21), PAY (K&Z CM21), and NAP (K&Z CM21; Napf summit, Emmental)'
+ * 	- SCHMUCKI_* : Edgar Schmucki's statistical models (Jan 2014) based on SWin and SWout measurements at 4 stations:
+ *      Weissfluhjoch study plot (WFJ, 2540 m asl; K&Z CM21), Davos (DAV, 1594 m asl; K&Z CM21), Napf (NAP, 1404 m asl; K&Z CM21),
+ *      and Payerne (PAY, 490 m asl; K&Z CM21). The variant (*_GSZ) considers grain size as a parameter, while the *_OGS variant
+ *      replaces grain size with optical equivalent grain size. The user can choose from two average values, ALL_DATA and CUSTOM,
+ *      the former being the average of all albedo values obtained from all four stations, the latter being the mean of the albedo averages for
+ *      each single station WFJ, DAV, and PAY; it seems better suited for stations lying below 1500 m asl in Switzerland.
  * 	- NIED : The Japanese version of LEHNING_2
  * - MEASURED: Use measured incoming and reflected shortwave radiation fluxes; limited quality checks will be performed.
  *             The chosen parameterization will be computed for comparison.
  * - FIXED: Use a fixed albedo by assigning ALBEDO-FIXEDVALUE a value between 0.05 and 0.95.
  * @param i_snow_albedo type of albedo computation ()
- * @param i_albedo_parameterizations available:
+ * @param i_albedo_parameterization (see above)
+ * @param i_albAverageSchmucki 
  * @param i_albedo_fixed_value to use
  * @param Edata compute albedo for this element
  * @param Tss Snow surface temperature (K)
  * @param Mdata
  */
-double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const std::string& i_albedo_parameterization, const double& i_albedo_fixedValue,
-                                       const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata)
+double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki,
+                                       const double& i_albedo_fixedValue, const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata)
 {
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
@@ -318,7 +317,8 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		Alb = i_albedo_fixedValue;
 	} else if ((SnLaws::ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
 		Alb = Constants::glacier_albedo;
-	} else if (i_albedo_parameterization == "LEHNING_0") {
+	}
+	else if (i_albedo_parameterization == "LEHNING_0") {
 		const double weight=0.1;
 		const double a = -0.2, b = 1.3, c = -0.012, d = -0.011, e = 0.0024, f = 0.018;
 		const double g = -7.8e-6, h = -3.1e-3, i = 3.5e-4, j = 1.6e-7, k = -2.4e-7;
@@ -358,6 +358,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		} else {
 			age = MIN(30., age);
 		}
+
 		const double inter = 1.442;
 		const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
 		const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
@@ -373,43 +374,41 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 		}
 	}
-	else if (i_albedo_parameterization == "SCHMUCKI") { //from SCHMUCKI_ALLX30 regression
-		if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
+	else if (i_albedo_parameterization == "SCHMUCKI_GSZ") { //from SCHMUCKI_ALLX35 regression with classical grain size
+		double Alb1, av;
+		if (i_albAverageSchmucki == "ALL_DATA")
+			av = 0.7832462; // Mean value for all data @ WFJ, DAV, NAP, and PAY
+		else if (i_albAverageSchmucki == "CUSTOM")
+			av = 0.74824; // mean of single averages @ WFJ, DAV, and PAY
+		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
 			age = 0.;
-			//av = 0.7542; // estimated from comparison with measurements at Dome C
-		} else {
-			age = MIN(30., age);
-		}
-		double Alb1;
-		double av = 0.7832462; // Mean value of overall regression @ WFJ, DAV, PAY, and NAP is 0.7832462; mean of single regressions @ WFJ, DAV, PAY, and NAP is 0.74824
-		switch (albVS) {
-		case albVS_X30: {
-			const double inter = 1.155936;
-			const double Cms = -8.26886072e-2, Cage = -2.813654e-4, Crg = -1.321285606e-1, Crho = -4.206185e-4;
-			const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
-			Alb1 = inter + Cms*moist_snow + Cage*age + Crg*Edata.rg + Crho*Edata.Rho;
-			break;
-		}
-		case albVS_X32: {
-			const double inter = 1.148088;
-			const double Cms = -4.412422e-2, Cage = -1.523871e-3, Cogs = -1.099020e-1, Crho = -3.638010e-4, Cswin = -7.140708e-5;
-			const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
-			Alb1 = inter + Cms*moist_snow + Cage*age + Cogs*(Edata.ogs/2.) + Crho*Edata.Rho + Cswin*Mdata.iswr;
-			break;
-		}
-		case albVS_X33: {
-			const double inter = 1.107822;
-			const double Cms = -6.938441e-2, Cage = -2.432537e-3, Cogs = -1.292977e-1, Cswin = -6.305287e-5;
-			const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
-			Alb1 = inter + Cms*moist_snow + Cage*age + Cogs*(Edata.ogs/2.) + Cswin*Mdata.iswr;
-			break;
-		}
-		default:
-			prn_msg(__FILE__, __LINE__, "err", Date(),
-			        "albVersion=%d not a valid choice for schmucki's albedo parameterization!", albVS);
-			throw IOException("Choice for schmucki's albedo parameterizationnot implemented yet!", AT);
-		}
 
+		const double inter = 1.178904;
+		const double Cms = -5.691804e-02, Cage = -2.840603e-04, Crg = -1.029158e-01, Crho = -5.030213e-04, Cswin = -6.780479e-5;
+		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
+		Alb1 = inter + Cms*moist_snow + Cage*age + Crg*(Edata.rg) + Crho*Edata.Rho + Cswin*Mdata.iswr;
+
+		if (Alb1 > 0.) {
+			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
+		} else {
+			Alb = Constants::min_albedo;
+			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
+		}
+	}
+	else if (i_albedo_parameterization == "SCHMUCKI_OGS") { //from SCHMUCKI_ALLX32 regression with optical grain size
+		double Alb1, av;
+		if (i_albAverageSchmucki == "ALL_DATA")
+			av = 0.7832462; // Mean value of regression @ WFJ  only
+			else if (i_albAverageSchmucki == "CUSTOM")
+			av = 0.74824; // Mean of single regressions @ WFJ, DAV, PAY, and NAP
+		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
+			age = 0.;
+
+		const double inter = 1.148088;
+		const double Cms = -4.412422e-02, Cage = -1.523871e-03, Cogs = -1.099020e-01, Crho = -3.638010e-04, Cswin = -7.140708e-05;
+		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
+		Alb1 = inter + Cms*moist_snow + Cage*age + Cogs*(Edata.ogs/2.) + Crho*Edata.Rho + Cswin*Mdata.iswr;
+		
 		if (Alb1 > 0.) {
 			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 		} else {
@@ -434,7 +433,8 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			Alb = Constants::min_albedo;
 			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Alb1=%lf set Alb to %lf", Alb1, Alb);
 		}
-	} else {
+	}
+	else {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Albedo parameterization %s not implemented yet!", i_albedo_parameterization.c_str());
 		throw IOException("The required snow albedo model is not implemented yet!", AT);
 	}

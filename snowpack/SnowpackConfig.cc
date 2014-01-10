@@ -39,6 +39,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
+	advancedConfig["ALBEDO_AVERAGE_SCHMUCKI"] = "ALL_DATA";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_PARAMETERIZATION"] = "MONTI";

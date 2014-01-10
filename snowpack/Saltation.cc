@@ -390,7 +390,7 @@ int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const doub
 bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const double& slope_angle, const double& dg,
                                   double& massflux, double& c_salt)
 {
-	if (saltation_model == "SORENSEN") {
+	if (saltation_model == "SORENSEN") { // Default model
 		// Sorensen
 		const double tauS = i_tauS;
 		const double ustar = sqrt(tauS / Constants::density_air);
@@ -402,9 +402,9 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 			massflux = 0.;
 			c_salt = 0.;
 		}
-	} else {
+	}
+	else if (saltation_model == "DOORSCHOT") { // Judith Doorschot's model
 		int    k = 5;
-		// Judith Doorschot
 		// Initialize Shear Stress Distribution
 		const double taumean = i_tauS;
 		const double taumax = 15.* i_tauS;
@@ -466,6 +466,10 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		// Fill return Values
 		massflux = flux_mean;
 		c_salt = cs_mean;
+	}
+	else {
+		prn_msg(__FILE__, __LINE__, "err", Date(), "Saltation model %s not implemented yet!", saltation_model.c_str());
+		throw IOException("The required saltation model is not implemented yet!", AT);
 	}
 
 	return true;
