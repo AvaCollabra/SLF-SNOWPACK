@@ -81,7 +81,7 @@ class Slope {
  * To cumulate various mass fluxes over either hazard or time series time steps
  */
 class Cumsum {
-	
+
 	public:
 		Cumsum(const unsigned int nSlopes);
 
@@ -510,7 +510,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		}
 	} else { // Virtual slope
 		currentSector.mH = Constants::undefined;
-		
+
 		// A) Compute depth of snowfall (hn*) and new snow density (rho_hn*)
 		double hn_slope = 0., rho_hn_slope = SnLaws::min_hn_density;
 		if (vecXdata[slope.mainStation].hn > 0.) {
@@ -1102,11 +1102,11 @@ void real_main (int argc, char *argv[])
 					if (mn_ctrl.HzDump) {
 						// NOTE qr_Hdata was first saved at the end of the mainStation simulation, at which time the drift index could not be computed!
 						hazard.getHazardDataSlope(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
-						                          sn_Zdata.drift24, cumsum.drift, vecXdata[slope.sector], 
+						                          sn_Zdata.drift24, cumsum.drift, vecXdata[slope.sector],
 						                          slope.luvDriftIndex, slope.north, slope.south);
 						cumsum.drift = 0.;
 					}
-					
+
 					// Update erosion mass from windward virtual slope
 					cumsum.erosion[slope.sector] += vecXdata[slope.sector].ErosionMass;
 				}

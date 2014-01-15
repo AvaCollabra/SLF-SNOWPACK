@@ -738,11 +738,8 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 
 	if (!(useCanopyModel && (Xdata.Cdata.height > 3.5))) {
 		// What snow depth should be used?
-		double hs;
-		if (enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle))
-			hs = Xdata.mH - Xdata.Ground;
-		else
-			hs = Xdata.cH - Xdata.Ground;
+		const bool use_hs_meas = enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle);
+		const double hs = (use_hs_meas)? Xdata.mH - Xdata.Ground : Xdata.cH - Xdata.Ground;
 		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
 			if ((hs < 0.02) || (NDS[nN-1].T > C_TO_K(3.5))
 			                  || ((hs < 0.05) && (NDS[nN-1].T > C_TO_K(1.7)))) {
@@ -1253,7 +1250,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
                             SurfaceFluxes& Sdata)
 {
 	bool add_element = false;
-	double delta_cH = 0.;           // Actual enforced snow depth
+	double delta_cH = 0.; // Actual enforced snow depth
 	double hn = 0.; //new snow amount
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
@@ -1382,7 +1379,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		}
 
 		// Now determine whether the increase in snow depth is large enough.
-		//   NOTE On virtual slopes use new snow depth and density from either flat field or luv slope
+		// NOTE On virtual slopes use new snow depth and density from either flat field or luv slope
 		if ((delta_cH >= height_new_elem * cos_sl)
 		        || (Xdata.hn > 0.)
 		            || add_element) {

@@ -445,8 +445,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
 			        mH, cH);
 		}
-	} else if (cH > Constants::eps){ // assume settling error
-        double factor_corr=0., sum_total_correction=0.;
+	} else if (cH > Constants::eps) { // assume settling error
+		double factor_corr=0., sum_total_correction=0.;
 		//Test whether normalization quantity does not lead to an arithmetic exception
 		//This is a work around for weird cases in which the whole snowpack appears at once
 		if (EMS[nE-1].depositionDate.getJulian() <= EMS[soil_node].depositionDate.getJulian())
@@ -483,7 +483,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		// ... above marked element (translation only) ...
 		// Squeeze or blow-up
 		for (size_t e = soil_node; e < nE; e++) {
-            double ddL, dL=0.; // Length changes
+			double ddL, dL=0.; // Length changes
 			if ((!(EMS[e].mk > 20 || EMS[e].mk == 3))
 			        && (Mdata.date.getJulian() > EMS[e].depositionDate.getJulian())) {
 				const double surf_date = EMS[nE-1].depositionDate.getJulian();
