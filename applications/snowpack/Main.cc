@@ -315,10 +315,10 @@ void editMeteoData(mio::MeteoData& md, const string& variant)
 }
 
 // Return true if snowpack can compute the next timestep, else false
-bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant)
+bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
 {
-	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_rad=false;
-	bool miss_ea=false;
+	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_hs=false;
+	bool miss_rad=false, miss_ea=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
@@ -327,7 +327,9 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	if ((variant != "ANTARCTICA")
 	        && ((md(MeteoData::ISWR) == mio::IOUtils::nodata) && (md(MeteoData::RSWR) == mio::IOUtils::nodata)))
 		miss_rad=true;
-	if ((md(MeteoData::HNW) == mio::IOUtils::nodata) && (md(MeteoData::HS) == mio::IOUtils::nodata))
+	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
+		miss_hs=true;
+	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata) && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_precip=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -340,6 +342,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		if(miss_ta) cerr << "TA ";
 		if(miss_rh) cerr << "RH ";
 		if(miss_rad) cerr << "radiation ";
+		if(miss_hs) cerr << "HS ";
 		if(miss_precip) cerr << "precipitations ";
 		if(miss_ea) cerr << "ea ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
@@ -910,6 +913,7 @@ void real_main (int argc, char *argv[])
 
 		bool computed_one_timestep = false;
 		double meteo_step_length = -1.;
+		const bool enforce_snow_height = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 
 		// START TIME INTEGRATION LOOP
 		do {
@@ -929,7 +933,7 @@ void real_main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant);
-			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant)) {
+			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				current_date -= calculation_step_length/1440;
