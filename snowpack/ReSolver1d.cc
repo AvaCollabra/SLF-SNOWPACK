@@ -1754,6 +1754,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						ActiveSolver=DGESVD;
 					} else {
 						if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying with smaller time step...\n", info);
+						solver_result=-1;
 					}
 				}
 #else
