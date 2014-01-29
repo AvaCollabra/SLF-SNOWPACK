@@ -40,6 +40,11 @@
 class Meteo {
 
 	public:
+		typedef enum {
+			RICHARDSON,  ///< Simplified Richardson number stability correction
+			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns & Weidner
+			NEUTRAL_MO  ///< Assume neutral MO stratification
+		} ATM_STABILITY;
 
 		Meteo(const SnowpackConfig& i_cfg);
 
@@ -48,8 +53,8 @@ class Meteo {
 		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata);
 		static void compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata);
 		static void radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes);
-		void setStability(const int& i_neutral);
-		int getStability() const;
+		void setStability(const ATM_STABILITY& i_stability);
+		ATM_STABILITY getStability() const;
 
  	private:
 		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height=true);
@@ -63,7 +68,7 @@ class Meteo {
 
 		Canopy canopy;
 		double roughness_length, height_of_wind_value;
-		int neutral;
+		ATM_STABILITY stability;
 		bool research_mode, useCanopyModel, alpine3d;
 };
 

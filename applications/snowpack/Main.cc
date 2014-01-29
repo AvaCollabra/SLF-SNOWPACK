@@ -329,7 +329,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		miss_rad=true;
 	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_hs=true;
-	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata) && (md(MeteoData::HS) == mio::IOUtils::nodata))
+	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata))
 		miss_precip=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -343,7 +343,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		if(miss_rh) cerr << "RH ";
 		if(miss_rad) cerr << "radiation ";
 		if(miss_hs) cerr << "HS ";
-		if(miss_precip) cerr << "precipitations ";
+		if(miss_precip) cerr << "precipitation ";
 		if(miss_ea) cerr << "ea ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;

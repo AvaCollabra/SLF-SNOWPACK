@@ -31,21 +31,23 @@ ENDIF(SNOWPACK_STANDALONE)
 ###########################################################
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
+SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
+
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
 
 #build for use with POPC in parallel objects
-SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
-IF(POPC)
+#SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
+#IF(POPC)
 	#FIND_PACKAGE(Popc REQUIRED)
-	SET(METEOIO_LIBRARY "METEOIO_LIBRARY-NOTFOUND" CACHE FILEPATH "Cleared." FORCE)
-	FIND_PACKAGE(MeteoIO)
-	SET(CMAKE_CXX_COMPILER popcc) #this does not work, the user still has to do it manually
+	#SET(METEOIO_LIBRARY "METEOIO_LIBRARY-NOTFOUND" CACHE FILEPATH "Cleared." FORCE)
+	#FIND_PACKAGE(MeteoIO)
+	#SET(CMAKE_CXX_COMPILER popcc) #this does not work, the user still has to do it manually
 	#INCLUDE(CMakeForceCompiler)
 	#CMAKE_FORCE_CXX_COMPILER(popcc POPCC)
-	SET(POPC_EXT "popc")
-ENDIF(POPC)
+	#SET(POPC_EXT "popc")
+#ENDIF(POPC)
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
@@ -215,7 +217,6 @@ IF (DOXYGEN_FOUND)
 	ADD_DEPENDENCIES(doc documentation)
 ENDIF (DOXYGEN_FOUND)
 #Install the documentation if the user desires it
-SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 IF(INSTALL_DOC)
 	IF(WIN32)
 		SET(DOC_PATH "doc")

@@ -38,19 +38,21 @@ using namespace mio;
 ************************************************************/
 
 Meteo::Meteo(const SnowpackConfig& cfg)
-       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), neutral(0),
+       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), stability(MONIN_OBUKHOV),
          research_mode(false), useCanopyModel(false), alpine3d(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 
-	/**
-	 * @brief Defines the way to deal with atmospheric stability:
-	 * -    0: Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
-	 * -    1: Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also
-	 *         recommended with Neumann b.c., i.e., BC_CHANGE=0
-	 * - (-1): Simplified Richardson number stability correction
-	 */
-	cfg.getValue("NEUTRAL", "Snowpack", neutral);
+	std::string stability_model;
+	cfg.getValue("Atmospheric_Stability", "Snowpack", stability_model);
+	if(stability_model=="RICHARDSON")
+		stability = RICHARDSON; //Simplified Richardson number stability correction
+	else if(stability_model=="NEUTRAL_MO")
+		stability = NEUTRAL_MO; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
+	else if(stability_model=="MONIN_OBUKHOV")
+		stability = MONIN_OBUKHOV; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
+	else
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 
 	/**
 	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
@@ -75,20 +77,20 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 
 /**
  * @brief set the atmosphere stability to a given value
- * @param i_neutral stability model (see possible values in constructor)
+ * @param i_stability stability model (see possible values in constructor)
  */
-void Meteo::setStability(const int& i_neutral)
+void Meteo::setStability(const Meteo::ATM_STABILITY& i_stability)
 {
-	neutral = i_neutral;
+	stability = i_stability;
 }
 
 /**
  * @brief get the atmosphere stability
  * @return stability model (see possible values in constructor)
  */
-int Meteo::getStability() const
+Meteo::ATM_STABILITY Meteo::getStability() const
 {
-	return neutral;
+	return stability;
 }
 
 /**
@@ -207,10 +209,10 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		const double z_ratio = log((zref - d_pump) / z0);
 
 		// Stability corrections
-		if (neutral < 0) { // Switch for Richardson
+		if (stability==RICHARDSON) {
 			//compute ustar & psi_s
 			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s);
-		} else if (neutral == 0 || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) { // MO Iteration
+		} else if (stability==MONIN_OBUKHOV || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) {
 			//compute ustar, psi_s & psi_m
 			MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		} else { // NEUTRAL

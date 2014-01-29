@@ -1446,7 +1446,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 
 	double CanopyEvaporation=0., INTEVAP=0., TRANSPIRATION=0.;
 
-	for ( int ebalitt = 0; ebalitt < 7; ebalitt++ ) { 
+	for ( int ebalitt = 0; ebalitt < 7; ebalitt++ ) {
 		const double TC_OLD = Xdata.Cdata.temp; // Cdata.temp is updated in the iteration...
 
 		// update ce_canopy as function of wetfraction
@@ -1461,7 +1461,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		                         canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
 
 		// compute properties h0 and h1 in eq (3)
-		// NOTE: for sparse canopies turbulent fluxes should be scaled in the 
+		// NOTE: for sparse canopies turbulent fluxes should be scaled in the
 		// canopy EB calculation; for the moment scalingfactor is 1
 		cn_LineariseSensibleHeatFlux(ch_canopy, Mdata.ta, h0, h1, 1.);
 
@@ -1478,7 +1478,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		cn_CanopyEvaporationComponents(ce_canopy, ce_transpiration, LECANOPY, Mdata.ta, Xdata.Cdata.storage,
 		                               M_TO_H(calculation_step_length), CanopyEvaporation, INTEVAP, TRANSPIRATION,
 		                               RNCANOPY, HCANOPY, Xdata.Cdata.temp, r0, r1, h0, h1, LECANOPYCORR, wetfrac);
-		const double newstorage = Xdata.Cdata.storage - INTEVAP; 
+		const double newstorage = Xdata.Cdata.storage - INTEVAP;
 
 		// wet surface fraction
 		wetfrac = cn_CanopyWetFraction(intcapacity, newstorage);
