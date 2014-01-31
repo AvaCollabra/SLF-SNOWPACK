@@ -349,17 +349,19 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				const double L0 = EMS[e].L;
 				// If there is water ...
 				if (EMS[e].theta[WATER] > 0.) {
-					const double theta_w0 = EMS[e].theta[WATER];
+					//For the top layer, it is important to keep a tiny amount of liquid water, so we are able to detect whether we need the
+					//implicit or explicit treatment of the top boundary condition when solving the heat equation.
+					const double theta_w0 = EMS[e].theta[WATER]-((e==nE-1)?(2.*Constants::eps):0.);
 					dM = ql*sn_dt/Constants::lh_vaporization;
 					M = theta_w0*Constants::density_water*L0;
 					// Check that you only take the available mass of water
 					if (-dM >= M) {
 						dM = -M;
+						EMS[e].theta[WATER] += dM/(Constants::density_water*L0);
 						// Add solutes to Storage
 						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 							M_Solutes[ii] += EMS[e].conc[WATER][ii]*theta_w0*L0;
 						}
-						EMS[e].theta[WATER] = 0.0;
 					} else {
 						EMS[e].theta[WATER] += dM/(Constants::density_water*L0);
 						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
