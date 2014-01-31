@@ -1511,6 +1511,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 				const double density = (is_surface_hoar)? hoar_density_buried : rho_hn;
 				fillNewSnowElement(Mdata, length, density, is_surface_hoar, Xdata.number_of_solutes, EMS[e]);
+				// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
+				// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
+				if(nOldE>0 && EMS[nOldE-1].theta[WATER]>0. && EMS[nOldE-1].theta[ICE]>0.) {
+					EMS[e].theta[WATER]+=(2.*Constants::eps);
+					EMS[e].theta[ICE]-=(2.*Constants::eps)*(Constants::density_water/Constants::density_ice);
+					EMS[e].theta[AIR]+=((Constants::density_water/Constants::density_ice)-1.)*(2.*Constants::eps);
+				}
 				Xdata.ColdContent += EMS[e].coldContent(); //update cold content
 			}   // End elements
 
