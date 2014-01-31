@@ -360,7 +360,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 }
 
 void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
-                          const ZwischenData& Zdata) const
+                          const ZwischenData& Zdata)
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
@@ -401,7 +401,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 }
 
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& /*Zdata*/) const
+                          const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& /*Zdata*/)
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
@@ -462,7 +462,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 	sno_writer.write(vec_timestamp, vec_data);
 }
 
-void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const
+void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
 {
 	/*
 	 * Set the basic, mandatory header key/value pairs for a SMET file
@@ -479,7 +479,7 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const Date& date,
-                              smet::SMETWriter& smet_writer) const
+                              smet::SMETWriter& smet_writer)
 {
 	/*
 	 * The non-compulsory header key/value pairs for SNO files are set in this procedure
@@ -531,7 +531,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 }
 
 void SmetIO::setFormatting(const size_t& nr_solutes,
-                           std::vector<int>& vec_width, std::vector<int>&  vec_precision) const
+                           std::vector<int>& vec_width, std::vector<int>&  vec_precision)
 {
 	/*
 	 * When writing a SNOW SMET file each written parameter may have a different

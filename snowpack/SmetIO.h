@@ -52,15 +52,15 @@ class SmetIO : public SnowpackIOInterface {
 
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
-		void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const;
-		void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date,
-		                      smet::SMETWriter& smet_writer) const;
-		void setFormatting(const size_t& nr_solutes,
-		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
-		void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                  const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata) const;
-		void writeHazFile(const std::string& hazfilename, const mio::Date& date,
-		                  const SnowStation& Xdata, const ZwischenData& Zdata) const;
+		static void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer);
+		static void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date,
+		                      smet::SMETWriter& smet_writer);
+		static void setFormatting(const size_t& nr_solutes,
+		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision);
+		static void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
+		                  const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata);
+		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
+		                  const SnowStation& Xdata, const ZwischenData& Zdata);
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
 		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
