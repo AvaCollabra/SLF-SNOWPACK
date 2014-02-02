@@ -35,6 +35,7 @@ using namespace std;
  */
 const double PhaseChange::theta_r = 0.0;
 const double PhaseChange::RE_theta_r = 1E-5/1000.;	//It is recommended that this value is REQUIRED_ACCURACY_THETA/1000. (see ReSolver1d.cc)
+const double PhaseChange::RE_theta_threshold = 1E-5; 	//It is recommended that this value is REQUIRED_ACCURACY_THETA
 
 //Saturated Water Content, for now we say 1.0
 const double PhaseChange::theta_s = 1.0;
