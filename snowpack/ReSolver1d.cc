@@ -2263,6 +2263,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
 							// scaling with the heat capacity.
 							if((SnowpackElement[i]+2)==nE) {
+								//We would like to adjust the top node now, but this will also influence the energy balance in the next time step. In this way, it may introduce oscillations at the top node.
 								//NDS[SnowpackElement[i]+2].T+=(tmp_N_T_up-NDS[SnowpackElement[i]+1].T);
 							} else {
 								NDS[SnowpackElement[i]+2].T+=0.5*(tmp_N_T_up-NDS[SnowpackElement[i]+1].T);
