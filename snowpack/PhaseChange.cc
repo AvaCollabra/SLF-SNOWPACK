@@ -597,21 +597,22 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 		throw;
 	}
 
-	//To ensure energy balance, the top node should become at melting_tk/freezing_tk when a mixture of ice and water is present,
-	//regardless of occurring phase changes and associated changes in (nodal) temperatures. The surface node is special in that
-	//it determines the energy fluxes and thus the energy balance.
-	//Note this is only an additional check, as it should have happened with the phase change in the top element.
-	if(EMS[nE-1].theta[WATER] > cmp_theta + Constants::eps && EMS[nE-1].theta[ICE] > Constants::eps) {
-		if(EMS[nE-1].Te < EMS[nE-1].freezing_tk) {
-			NDS[nE].T=EMS[nE-1].freezing_tk;
-		} else {
-			NDS[nE].T=EMS[nE-1].melting_tk;
+	if(nE>0) {
+		//To ensure energy balance, the top node should become at melting_tk/freezing_tk when a mixture of ice and water is present,
+		//regardless of occurring phase changes and associated changes in (nodal) temperatures. The surface node is special in that
+		//it determines the energy fluxes and thus the energy balance.
+		//Note this is only an additional check, as it should have happened with the phase change in the top element.
+		if(EMS[nE-1].theta[WATER] > cmp_theta + Constants::eps && EMS[nE-1].theta[ICE] > Constants::eps) {
+			if(EMS[nE-1].Te < EMS[nE-1].freezing_tk) {
+				NDS[nE].T=EMS[nE-1].freezing_tk;
+			} else {
+				NDS[nE].T=EMS[nE-1].melting_tk;
+			}
 		}
-	}
-
-	// After restructuring nodal temperatures, calculate element temperature again
-	for (e = 0; e < nE; e++) {
-	        EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+		// After restructuring nodal temperatures, calculate element temperature again
+		for (e = 0; e < nE; e++) {
+			EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+		}
 	}
 }
 
