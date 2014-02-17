@@ -201,9 +201,9 @@ Cumsum::Cumsum(const unsigned int nSlopes)
           erosion(nSlopes, 0.)
 {}
 
-void Usage(const string& programname)
+void Version()
 {
-#ifdef _MSC_VER
+	#ifdef _MSC_VER
 	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
@@ -211,16 +211,21 @@ void Usage(const string& programname)
 	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
 		<< "\tLibsnowpack " << snowpack::getLibVersion() << endl
 		<< "\tMeteoIO " << mio::getLibVersion() << endl;
+}
+
+void Usage(const string& programname)
+{
+	Version();
 
 	cout << "Usage: " << programname << endl
 		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)" << endl
 		<< "\t[-c, --config=<ini file> (e.g. io.ini)]" << endl
 		<< "\t[-m, --mode=[operational or research] (default: research)]" << endl
 		<< "\t[-s, --stations=[comma delimited stationnames] (e.g. DAV2,WFJ2)] (NOTE: ONLY in operational mode)" << endl
+		<< "\t[-v, --version] Print the version number" << endl
 		<< "\t[-h, --help] Print help message and version information]" << endl << endl;
 
 	cout << "Example: " << programname << " -c io.ini -m research -e 1996-06-17T00:00" << endl << endl;
-	exit(1);
 }
 
 void parseCmdLine(int argc, char **argv, string& end_date_str)
@@ -234,11 +239,12 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 		{"mode", required_argument, 0, 'm'},
 		{"config", required_argument, 0, 'c'},
 		{"stations", required_argument, 0, 's'},
+		{"version", no_argument, 0, 'v'},
 		{"help", no_argument, 0, 'h'},
 		{0, 0, 0, 0}
 	};
 
-	while ((opt=getopt_long( argc, argv, ":e:m:c:s:h", long_options, &longindex)) != -1) {
+	while ((opt=getopt_long( argc, argv, ":e:m:c:s:v:h", long_options, &longindex)) != -1) {
 		switch (opt) {
 		case 0:
 			break;
@@ -253,6 +259,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 			if (!(mode == "RESEARCH" || mode == "OPERATIONAL")) {
 				cerr << endl << "[E] Command line option '-" << char(opt) << "' requires 'research' or 'operational' as operand" << endl;
 				Usage(string(argv[0]));
+				exit(1);
 			}
 			break;
 		case 'c':
@@ -264,17 +271,25 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 		case ':': //operand missing
 			cerr << endl << "[E] Command line option '-" << char(opt) << "' requires an operand" << endl;
 			Usage(string(argv[0]));
+			exit(1);
+			break;
+		case 'v':
+			Version();
+			exit(1);
 			break;
 		case 'h':
 			Usage(string(argv[0]));
+			exit(1);
 			break;
 		case '?':
 			cerr << endl << "[E] Unknown argument detected" << endl;
 			Usage(string(argv[0]));
+			exit(1);
 			break;
 		default:
 			cerr << endl << "[E] getopt returned character code " <<  opt << endl;
 			Usage(string(argv[0]));
+			exit(1);
 		}
 	}
 
