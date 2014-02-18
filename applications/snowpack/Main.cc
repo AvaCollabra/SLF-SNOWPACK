@@ -349,7 +349,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
 
-	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_ea) {
+	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_hs || miss_ea) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
