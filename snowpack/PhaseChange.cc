@@ -457,15 +457,21 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 						// Now make the nodal temperatures reflect the state of the element they represent.
 						if(EMS[e].theta[ICE] > Constants::eps) {
 							// If ice is present in melting conditions, nodal temperatures must equal melting_tk
-							NDS[e].T = NDS[e+1].T = EMS[e].melting_tk;
+							if(e!=0) {
+								NDS[e].T = NDS[e+1].T = EMS[e].melting_tk;
+							} else {
+  								// NOTE Bottom soil node temperature cannot be changed
+								NDS[e+1].T = EMS[e].melting_tk;
+							}
 						} else {
 							// If melting and no ice is present, nodal temperature cannot be below melting_tk
 							if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
 								// It seems to be better to leave the top node untouched, as it will influence the energy balance in the next time step and it may introduce oscillations at the top node.
-        							if(e!=nE-1) NDS[e+1].T = MAX(NDS[e+1].T, EMS[e].freezing_tk);
-	        						NDS[e].T = MAX(NDS[e].T, EMS[e].freezing_tk);
-                                                        }
-                				}
+								if(e!=nE-1) NDS[e+1].T = MAX(NDS[e+1].T, EMS[e].freezing_tk);
+								// NOTE Bottom soil node temperature cannot be changed
+								if(e!=0) NDS[e].T = MAX(NDS[e].T, EMS[e].freezing_tk);
+							}
+						}
                 				
 						// Now that we have performed a phase change, we correct the other nodal temperatures of adjacent elements
 						// to stay as close as possible in satisfying energy balance.
@@ -477,9 +483,8 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
 								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
 								// scaling with the heat capacity.
-								if((e-1)==0) {
-									NDS[e-1].T+=(tmp_N_T_down-NDS[e].T);
-								} else {
+								if((e-1)>0) {
+									// NOTE Bottom soil node temperature cannot be changed
 									NDS[e-1].T+=0.5*(tmp_N_T_down-NDS[e].T);
 								}
 							}
@@ -546,14 +551,20 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 						// Now make the nodal temperatures reflect the state of the element they represent.
 						if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
 							// If water is present in freezing conditions, nodal temperatures must equal freezing_tk
-							NDS[e].T = NDS[e+1].T = EMS[e].freezing_tk;	
+							if(e!=0) {
+								NDS[e].T = NDS[e+1].T = EMS[e].freezing_tk;	
+							} else {
+								// NOTE Bottom soil node temperature cannot be changed
+								NDS[e+1].T = EMS[e].freezing_tk;	
+							}
 						} else {
 							// If freezing and no liquid water is present anymore, nodal temperature cannot be above freezing_tk
 							if(EMS[e].theta[ICE] > Constants::eps) {
 								//It seems to be better to leave the top node untouched, as it will influence the energy balance in the next time step and it may introduce oscillations at the top node.
         							if(e!=nE-1) NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].freezing_tk);
-	        						NDS[e].T = MIN(NDS[e].T, EMS[e].freezing_tk);
-                                                        }
+								// NOTE Bottom soil node temperature cannot be changed
+	        						if(e!=0) NDS[e].T = MIN(NDS[e].T, EMS[e].freezing_tk);
+							}
 						}
 
 						// Now that we have performed a phase change, we correct the other nodal temperatures of adjacent elements
@@ -566,9 +577,8 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
 								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
 								// scaling with the heat capacity.
-								if((e-1)==0) {
-									NDS[e-1].T+=(tmp_N_T_down-NDS[e].T);
-								} else {
+								if((e-1)>0) {
+									// NOTE Bottom soil node temperature cannot be changed
 									NDS[e-1].T+=0.5*(tmp_N_T_down-NDS[e].T);
 								}
 							}
