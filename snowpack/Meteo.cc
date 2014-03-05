@@ -109,22 +109,22 @@ void Meteo::projectPrecipitations(const double& slope_angle, double& precips, do
 void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s)
 {
 	const double Ri = Constants::g / t_surf_v * (ta_v - t_surf_v) * zref / Optim::pow2(vw);
+	double stab_ratio = (Ri<0.2)? Ri : Ri/(1.-5.*Ri); //is it neutral & stable -> Ri
 	double psi_m;
 
 	if (Ri < 0.) { // unstable
-		const double stab_ratio = Ri;
+		stab_ratio = Ri;
 		const double dummy = pow((1. - 15. * stab_ratio), 0.25);
 		psi_m = log((0.5 * (1. + dummy*dummy)) * (0.5 * (1. + dummy)) * (0.5 * (1. + dummy)))
 				- 2. * atan(dummy) + 0.5 * Constants::pi;
 		psi_s = 2. * log(0.5 * (1. + dummy*dummy));
 	} else if (Ri < 0.1999) { // stable
-		const double stab_ratio = Ri / (1. - 5. * Ri);
+		stab_ratio = Ri / (1. - 5. * Ri);
 		psi_m = psi_s = -5. * stab_ratio;
 	} else {
-		const double stab_ratio = Ri / (1. - 5. * 0.1999);
+		stab_ratio = Ri / (1. - 5. * 0.1999);
 		psi_m = psi_s = -5. * stab_ratio;
 	}
-
 	ustar = 0.4 * vw / (z_ratio - psi_m);
 }
 
@@ -175,9 +175,9 @@ void Meteo::MOStability(const double& ta_v, const double& t_surf_v, const double
  * @param adjust_VW_height if set to false, assumes a constant measurement height for wind values (default: true, ie.
  * take into account the snow height decreasing the sensor height above the surface)
  */
-void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& adjust_VW_height) const
+void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& adjust_VW_height)
 {
-	const unsigned int max_iter = 100;
+	const int max_iter = 100;
 
 	// Ideal approximation of pressure and vapor pressure
 	const double p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
@@ -200,7 +200,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	double z0_old, z0 = roughness_length;
 	double ustar_old, ustar = 0.4 * vw / log((zref - d_pump) / z0);
 	double psi_m = 0., psi_s = 0.;
-	unsigned int iter = 0;
+	int iter = 0;
 	do {
 		iter++;
 		ustar_old = ustar;
@@ -222,12 +222,12 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
 
 	if(iter==max_iter) {
-		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
-		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
-		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 		Mdata.z0 = roughness_length;
 		Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
 		Mdata.psi_s = 0.;
+		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
+		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 		return;
 	}
 
@@ -244,7 +244,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
  * @param hs_a3hl6 snow depth average from t_now - 6 h to t_now - 3 h
  * @return whether grass should be detected
  */
-bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const double& hs_a3hl6)
+bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const double hs_a3hl6)
 {
 	if (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) { //Detect only when there is no snow pack yet.
 		if ((hs_a3hl6 != Constants::undefined) && (Mdata.hs_a3h != Constants::undefined)) {
@@ -300,7 +300,7 @@ void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
 
 void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata)
 {
-	const std::string sw_mode = cfg.get("SW_MODE", "Snowpack");
+	std::string sw_mode = cfg.get("SW_MODE", "Snowpack");
 	const bool force_sw_mode = cfg.get("FORCE_SW_MODE", "SnowpackAdvanced"); //Adjust for correct radiation input if ground is effectively bare. It HAS to be set to true in operational mode.
 	const bool enforce_hs = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 	const double iswr_ref = (sw_mode == "REFLECTED") ?  Mdata.rswr/station.Albedo : Mdata.iswr;

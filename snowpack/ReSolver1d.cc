@@ -696,7 +696,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const double MAX_VAL_TIMESTEP=900.;		//Maximum time step allowed in Richards solver.
 	const double MAX_VAL_TIMESTEP_FOR_SNOW=900.;	//Maximum time step allowed in Richards solver when there are snow layers in the domain.
 	const double BS_MAX_ITER=5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
-	const double SF_epsilon=1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
+	const double SF_epsilon=1E-5;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 	//Initializing and defining Richards solver time domain
 	const double snowpack_dt = sn_dt;		//Time step of SNOWPACK (in seconds)
@@ -888,16 +888,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 			const double deltaT=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 			EMS[i].Te+=deltaT;
-			if(i==0) {
-				NDS[i].T+=deltaT;
-			} else {
-			  	NDS[i].T+=0.5*deltaT;
-			}
-			if(i==nE-1) {
-				NDS[i+1].T+=deltaT;
-			} else {
-				NDS[i+1].T+=0.5*deltaT;
-			}
+			NDS[i].T+=deltaT;
+			NDS[i+1].T+=deltaT;
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
@@ -2416,16 +2408,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//In case we had to melt ice to get theta_r, we have to adjust the temperature:
 			EMS[i].Te -= dT[i];
-			if(i==0) {
-				NDS[i].T -= dT[i];
-			} else {
-			  	NDS[i].T -= 0.5*dT[i];
-			}
-			if(i==nE-1) {
-				NDS[i+1].T -= dT[i];
-			} else {
-				NDS[i+1].T -= 0.5*dT[i];
-			}
+			NDS[i].T -= dT[i];
+			NDS[i+1].T -= dT[i];
 
 			//And adjust all the properties accordingly
 			EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
