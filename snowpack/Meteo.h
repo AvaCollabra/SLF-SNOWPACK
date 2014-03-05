@@ -48,8 +48,8 @@ class Meteo {
 
 		Meteo(const SnowpackConfig& i_cfg);
 
-		void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
-		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double hs_a3hl6);
+		static void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
+		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double& hs_a3hl6);
 		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata);
 		static void compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata);
 		static void radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes);
@@ -57,7 +57,7 @@ class Meteo {
 		ATM_STABILITY getStability() const;
 
  	private:
-		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height=true);
+		void MicroMet(const SnowStation& Xdata, CurrentMeteo& Mdata, const bool& adjust_VW_height=true) const;
 		static double getParameterAverage(mio::IOManager& io, const mio::MeteoData::Parameters& param,
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 		static void RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref,
