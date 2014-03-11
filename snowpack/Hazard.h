@@ -60,7 +60,7 @@ class Hazard {
 			overwrite,      // overwrite <index>[0] w/o shifting
 			pushOverwrite   // push vector values and overwrite <index>[0]
 		};
-		
+
 		void actOnVector(std::vector<double>& oldVector, const double& newValue, const ActVec& action);
 
 		double compDriftIndex(std::vector<double>& vecDrift, const double& drift, const double& rho,

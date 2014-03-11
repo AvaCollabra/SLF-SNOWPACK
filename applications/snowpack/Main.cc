@@ -1113,17 +1113,19 @@ void real_main (int argc, char *argv[])
 						cumsum.rain += surfFluxes.mass[SurfaceFluxes::MS_RAIN];
 						cumsum.snow += surfFluxes.mass[SurfaceFluxes::MS_HNW];
 					}
-				} else if (slope.luvDriftIndex) {
+				} else {
 					const unsigned int i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep-1 : 0;
-					// Update drifting snow index (VI24),
-					//   considering only snow eroded from the windward slope
-					cumulate(cumsum.drift, surfFluxes.drift);
+					if (slope.luvDriftIndex) {
+						// Update drifting snow index (VI24),
+						// considering only snow eroded from the windward slope
+						cumulate(cumsum.drift, surfFluxes.drift);
+					}
 					if (mn_ctrl.HzDump) {
-						// NOTE qr_Hdata was first saved at the end of the mainStation simulation, at which time the drift index could not be computed!
+						// NOTE qr_Hdata was first saved at the end of the mainStation simulation, at which time the drift index could not be dumped!
 						hazard.getHazardDataSlope(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
 						                          sn_Zdata.drift24, cumsum.drift, vecXdata[slope.sector],
 						                          slope.luvDriftIndex, slope.north, slope.south);
-						cumsum.drift = 0.;
+						if(slope.luvDriftIndex) cumsum.drift = 0.;
 					}
 
 					// Update erosion mass from windward virtual slope
