@@ -222,9 +222,7 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& X
 
 	try {
 		deleteProfile(Pdata[0].stationname, Pdata[0].loc_for_snow, dateOfProfile, dateOfProfile);
-		//dumpASCIIProfile(Xdata, Pdata);
 		insertProfile(Pdata);
-
 	} catch (const exception& e){
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(), ":");
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "while writing profile data for %s%d to %s,",
@@ -525,9 +523,9 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		if (Hdata_ind[i].runoff != -1)   stmt->setNumber(param++, Hdata[i].runoff);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].lwi_S != -1)  stmt->setNumber(param++, Hdata[i].lwi_S);
-		else stmt->setNull(param++, occi::OCCINUMBER);
 		if (Hdata_ind[i].lwi_N != -1)  stmt->setNumber(param++, Hdata[i].lwi_N);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].lwi_S != -1)  stmt->setNumber(param++, Hdata[i].lwi_S);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		try {

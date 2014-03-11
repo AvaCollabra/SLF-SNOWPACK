@@ -944,12 +944,10 @@ SnowStation::~SnowStation()
 void SnowStation::compSnowpackMasses()
 {
 	mass_sum = swe = lwc_sum = 0.;
-	if (nElems > SoilNode) {
-		for (size_t e = SoilNode; e < nElems; e++) {
-			mass_sum += Edata[e].M;
-			swe += Edata[e].L * Edata[e].Rho;
-			lwc_sum += Edata[e].L * (Edata[e].theta[WATER] * Constants::density_water);
-		}
+	for (size_t e = SoilNode; e < nElems; e++) {
+		mass_sum += Edata[e].M;
+		swe += Edata[e].L * Edata[e].Rho;
+		lwc_sum += Edata[e].L * (Edata[e].theta[WATER] * Constants::density_water);
 	}
 }
 
