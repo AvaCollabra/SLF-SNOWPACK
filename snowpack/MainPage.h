@@ -350,7 +350,37 @@
  * - you don't have to provide lat/lon, you can provide easiting/northing instead alongside an epsg code (see MeteoIO documentation)
  * - the ProfileDate will be used as starting date for the simulation. Therefore, make sure you have meteorological data from this point on!
  * - the number of soil and snow layers <b>must</b> be right!
- * - timestamps follow the ISO format, temperatures are given in Kelvin, thicknesses in m, fractional volumes are between 0 and 1 (and the total sum <b>must</b> be exactly one), densities are in kg/m<SUP>3</SUP>
+ * - timestamps follow the ISO format, temperatures are given in Kelvin, thicknesses in m, fractional volumes are between 0 and 1 (and the total sum <b>must</b> be exactly one), densities are in kg/m<SUP>3</SUP> (see the definition of the fields in the table below)
+ *
+ * <center><table border="0">
+ * <caption>initial snow profile fields description</caption>
+ * <tr><td>
+ * <table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>timestamp</th><td>ISO formatted time</td></tr>
+ * <tr><th>Layer_Thick</th><td>layer thickness [mm]</td></tr>
+ * <tr><th>K</th><td>layer temperature [K]</td></tr>
+ * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
+ * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
+ * <tr><th>Conduc_S</th><td>soil thermal conductivity [w/(mK)]</td></tr>
+ * <tr><th>HeatCapac_S</th><td>soil thermal capacity [J/K]</td></tr>
+ * </table></td><td><table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>rg</th><td>grain radius [mm]</td></tr>
+ * <tr><th>rb</th><td>bond radius [mm]</td></tr>
+ * <tr><th>dd</th><td>dendricity [0-1]</td></tr>
+ * <tr><th>sp</th><td>spericity [0-1]</td></tr>
+ * <tr><th>mk</th><td>marker</td></tr>
+ * <tr><th>mass_hoar</th><td>mass of surface hoar []</td></tr>
+ * <tr><th>ne</th><td>number of elements</td></tr>
+ * <tr><th>CDot</th><td> </td></tr>
+ * <tr><th>metamo</th><td> </td></tr>
+ * <tr><th> <br></th><td> </td></tr>
+ * </table></td></tr>
+ * </table></center>
  *
  * Usually, simulations are started at a point in time when no snow is on the ground, therefore not requiring the definition of snow layers. An example is given below with one snow layer:
  * @code
@@ -380,7 +410,7 @@
  * TimeCountDeltaHS = 0.000000
  * fields           = timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
  * [DATA]
- * 2009-09-19T02:30 0.003399 273.15 0.579671 0.068490 0.351839 0.000000 0.0 0.0 0.0 1.432384 1.028390 0.000000 1.000000 22
+ * 2009-09-19T02:30 0.003399 273.15 0.579671 0.068490 0.351839 0.000000 0.0 0.0 0.0 1.432384 1.028390 0.000000 1.000000 22 0.000000 1 0.000000 0.000000
  * @endcode
  *
  * @section hazard_data Hazard data
