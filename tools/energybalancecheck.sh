@@ -63,23 +63,23 @@ fi
 
 # Determine column mapping
 #  -- date and time
-coldatetime=`echo ${header} | sed 's/,/\n/g' | grep -n "Date" | awk -F: '{print $1}'`
+coldatetime=`echo ${header} | sed 's/,/\n/g' | grep -nx "Date" | awk -F: '{print $1}'`
 
 #  -- snow height
-colhsmeasured=`echo ${header} | sed 's/,/\n/g' | grep -n "Measured snow depth HS" | awk -F: '{print $1}'`
-colhsmodel=`echo ${header} | sed 's/,/\n/g' | grep -n "Modelled snow depth (vertical)" | awk -F: '{print $1}'`
+colhsmeasured=`echo ${header} | sed 's/,/\n/g' | grep -nx "Measured snow depth HS" | awk -F: '{print $1}'`
+colhsmodel=`echo ${header} | sed 's/,/\n/g' | grep -nx "Modelled snow depth (vertical)" | awk -F: '{print $1}'`
 
 #  -- energy balance terms
-colSHF=`echo ${header} | sed 's/,/\n/g' | grep -n "Sensible heat" | awk -F: '{print $1}'`
-colLHF=`echo ${header} | sed 's/,/\n/g' | grep -n "Latent heat" | awk -F: '{print $1}'`
-colOLWR=`echo ${header} | sed 's/,/\n/g' | grep -n "Outgoing longwave radiation" | awk -F: '{print $1}'`
-colILWR=`echo ${header} | sed 's/,/\n/g' | grep -n "Incoming longwave radiation" | awk -F: '{print $1}'`
-colRSWR=`echo ${header} | sed 's/,/\n/g' | grep -n "Reflected shortwave radiation" | awk -F: '{print $1}'`
-colISWR=`echo ${header} | sed 's/,/\n/g' | grep -n "Incoming shortwave radiation" | awk -F: '{print $1}'`
-colsoilheat=`echo ${header} | sed 's/,/\n/g' | grep -n "Heat flux at ground surface" | awk -F: '{print $1}'`
-colRainNRG=`echo ${header} | sed 's/,/\n/g' | grep -n "Heat advected to the surface by liquid precipitation" | awk -F: '{print $1}'`
-colIntNRG=`echo ${header} | sed 's/,/\n/g' | grep -n "Internal energy change" | awk -F: '{print $1}'`
-colPhchEnergy=`echo ${header} | sed 's/,/\n/g' | grep -n "Melt freeze part of internal energy change" | awk -F: '{print $1}'`
+colSHF=`echo ${header} | sed 's/,/\n/g' | grep -nx "Sensible heat" | awk -F: '{print $1}'`
+colLHF=`echo ${header} | sed 's/,/\n/g' | grep -nx "Latent heat" | awk -F: '{print $1}'`
+colOLWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Outgoing longwave radiation" | awk -F: '{print $1}'`
+colILWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming longwave radiation" | awk -F: '{print $1}'`
+colRSWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Reflected shortwave radiation" | awk -F: '{print $1}'`
+colISWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming shortwave radiation" | awk -F: '{print $1}'`
+colsoilheat=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat flux at ground surface" | awk -F: '{print $1}'`
+colRainNRG=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat advected to the surface by liquid precipitation" | awk -F: '{print $1}'`
+colIntNRG=`echo ${header} | sed 's/,/\n/g' | grep -nx "Internal energy change" | awk -F: '{print $1}'`
+colPhchEnergy=`echo ${header} | sed 's/,/\n/g' | grep -nx "Melt freeze part of internal energy change" | awk -F: '{print $1}'`
 
 error=0
 if [ -z "${coldatetime}" ]; then
