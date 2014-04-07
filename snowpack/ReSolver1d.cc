@@ -898,6 +898,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			} else {
 				NDS[i+1].T+=0.5*deltaT;
 			}
+			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / snowpack_dt; // (W m-3)
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
@@ -2431,6 +2432,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
 			EMS[i].M=EMS[i].L*EMS[i].Rho;
+			
+			//Every change in ice content in a specific layer must be associated with phase changes. Store the associated energy accordingly.
+			EMS[i].Qmf += ((EMS[i].theta[ICE]-snowpackBACKUPTHETAICE[i]) * Constants::density_ice * Constants::lh_fusion) / snowpack_dt; // (W m-3)
 		} else {										//We are in snow and don't have enough water, snow should be dry, so set back to initial values.
 			//NOTE: there is an issue to be solved here when Richard domain does not match snowpack domain (use of sublayers)!!
 			wateroverflow[i]+=(EMS[i].theta[WATER]-theta_d[i]);				//This is water which stays or is taken out from the domain by this layer.
