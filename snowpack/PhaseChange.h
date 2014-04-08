@@ -59,7 +59,9 @@ class PhaseChange {
 		double sn_dt; ///< The calculation_step_length in seconds
 
 		double cold_content_in;		///< cold content before first PhaseChange call (for checking energy balance)
+		double cold_content_soil_in;	///< cold content before first PhaseChange call (for checking energy balance)
 		double cold_content_out;	///< cold content after last PhaseChange call (for checking energy balance)
+		double cold_content_soil_out;	///< cold content after last PhaseChange call (for checking energy balance)
 
 		static const double theta_s; ///< Saturated Water Content, for now we say  1.0
 };

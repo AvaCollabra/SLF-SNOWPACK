@@ -425,6 +425,7 @@ class SnowStation {
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
+		void compSoilInternalEnergyChange(const double& sn_dt);
 		double getLiquidWaterIndex() const;
 		double getModelledTemperature(const double& z) const;
 
@@ -472,8 +473,11 @@ class SnowStation {
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
 		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
-		double dIntEnergy;          ///< Internal energy change (J m-2)
-		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change (J m-2)
+		double ColdContentSoil;     ///< Cold content of soil (J m-2)
+		double dIntEnergy;          ///< Internal energy change of snowpack (J m-2)
+		double dIntEnergySoil;      ///< Internal energy change of soil (J m-2)
+		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change of snowpack (J m-2)
+		double meltFreezeEnergySoil;///< Melt freeze part of internal energy change of soil (J m-2)
 		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
@@ -563,8 +567,10 @@ class SurfaceFluxes {
 		double sw_diff;    ///< incoming diffuse shortwave radiation
 		double pAlbedo;    ///< parameterized Albedo (used for OUTPUT only)
 		double mAlbedo;    ///< measured Albedo (used for OUTPUT only)
-		double dIntEnergy; ///< Internal energy change in J m-2 (used for OUTPUT only)
-		double meltFreezeEnergy; ///< Melt freeze part of internal energy change in J m-2  (used for OUTPUT only)
+		double dIntEnergy;           ///< Internal energy change in J m-2 in snowpack (used for OUTPUT only)
+		double dIntEnergySoil;       ///< Internal energy change in J m-2 in soil (used for OUTPUT only)
+		double meltFreezeEnergy;     ///< Melt freeze part of internal energy change in J m-2 in snowpack (used for OUTPUT only)
+		double meltFreezeEnergySoil; ///< Melt freeze part of internal energy change in J m-2 in soil (used for OUTPUT only)
 
 		/// @brief Other surface data:
 		double drift;      ///< the surface flux of drifting snow in kg m-1 s-1
