@@ -268,7 +268,10 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
 		} else { // with soil & snow
 			qg0 += -((E_soil.k[TEMPERATURE] * E_snow.L + E_snow.k[TEMPERATURE] * E_soil.L) / (E_soil.L + E_snow.L) / 2.0)
 			* ((E_snow.Te - E_soil.Te) / ((E_soil.L + E_snow.L)/2.0));
+			// Take care of energy flow between snow and soil in case of shortwave absorption by the soil:
+			qg0 -= E_soil.sw_abs;
 		}
+
 	} else if (Xdata.getNumberOfElements() > 0) { // without soil but with snow
 		if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
 			qg0 += 0.;
