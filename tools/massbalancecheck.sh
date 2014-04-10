@@ -67,19 +67,19 @@ fi
 
 # Determine column mapping
 #  -- date and time
-coldatetime=`echo ${header} | sed 's/,/\n/g' | grep -n "Date" | awk -F: '{print $1}'`
+coldatetime=`echo ${header} | sed 's/,/\n/g' | grep -nx "Date" | awk -F: '{print $1}'`
 
 #  -- mass balance terms
-colrainrate=`echo ${header} | sed 's/,/\n/g' | grep -n "Rain rate" | awk -F: '{print $1}'`
-colsnowrate=`echo ${header} | sed 's/,/\n/g' | grep -n "Precipitation rate at surface (solid only)" | awk -F: '{print $1}'`
-colhsmeasured=`echo ${header} | sed 's/,/\n/g' | grep -n "Measured snow depth HS" | awk -F: '{print $1}'`
-colhsmodel=`echo ${header} | sed 's/,/\n/g' | grep -n "Modelled snow depth (vertical)" | awk -F: '{print $1}'`
-colSWE=`echo ${header} | sed 's/,/\n/g' | grep -n "SWE (of snowpack)" | awk -F: '{print $1}'`
-colLWC=`echo ${header} | sed 's/,/\n/g' | grep -n "Liquid Water Content (of snowpack)" | awk -F: '{print $1}'`
-colrunoff_surf=`echo ${header} | sed 's/,/\n/g' | grep -n "Snowpack runoff (virtual lysimeter)" | awk -F: '{print $1}'`
-colsubl=`echo ${header} | sed 's/,/\n/g' | grep -n "Sublimation" | awk -F: '{print $1}'`
-colevap=`echo ${header} | sed 's/,/\n/g' | grep -n "Evaporation" | awk -F: '{print $1}'`
-colwinddrift=`echo ${header} | sed 's/,/\n/g' | grep -n "Eroded mass" | awk -F: '{print $1}'`
+colrainrate=`echo ${header} | sed 's/,/\n/g' | grep -nx "Rain rate" | awk -F: '{print $1}'`
+colsnowrate=`echo ${header} | sed 's/,/\n/g' | grep -nx "Precipitation rate at surface (solid only)" | awk -F: '{print $1}'`
+colhsmeasured=`echo ${header} | sed 's/,/\n/g' | grep -nx "Measured snow depth HS" | awk -F: '{print $1}'`
+colhsmodel=`echo ${header} | sed 's/,/\n/g' | grep -nx "Modelled snow depth (vertical)" | awk -F: '{print $1}'`
+colSWE=`echo ${header} | sed 's/,/\n/g' | grep -nx "SWE (of snowpack)" | awk -F: '{print $1}'`
+colLWC=`echo ${header} | sed 's/,/\n/g' | grep -nx "Liquid Water Content (of snowpack)" | awk -F: '{print $1}'`
+colrunoff_surf=`echo ${header} | sed 's/,/\n/g' | grep -nx "Snowpack runoff (virtual lysimeter)" | awk -F: '{print $1}'`
+colsubl=`echo ${header} | sed 's/,/\n/g' | grep -nx "Sublimation" | awk -F: '{print $1}'`
+colevap=`echo ${header} | sed 's/,/\n/g' | grep -nx "Evaporation" | awk -F: '{print $1}'`
+colwinddrift=`echo ${header} | sed 's/,/\n/g' | grep -nx "Eroded mass" | awk -F: '{print $1}'`
 
 error=0
 if [ -z "${coldatetime}" ]; then

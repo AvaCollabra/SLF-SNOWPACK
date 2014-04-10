@@ -12,6 +12,14 @@ if [ $# -lt 1 ]; then
 	echo "      3) using options firstdate and lastdate, one can define a period over which the mass balance should be" > /dev/stderr
 	echo "         determined. Default is full period in met-file. No spaces in command line options are allowed!" > /dev/stderr
 	echo "" > /dev/stderr
+	echo "How to interpret the results?" > /dev/stderr
+	echo "  The script distinghuishes between two situations:" > /dev/stderr
+	echo "  1) If a snow cover is present, the energy change of the soil is the sum of the bottom heat flux and the soil-snow heat flux." > /dev/stderr
+	echo "     These fluxes are shown in the output and accordingly, all other fluxes (e.g., turbulent fluxes) are set to 0.0." > /dev/stderr
+	echo "     This is not because they are 0.0, but because they are not directly contributing to the energy change of the soil." > /dev/stderr
+	echo "  1) If a snow cover is not present, the energy change of the soil is the sum of the bottom heat flux and the sum of" > /dev/stderr
+	echo "     turbulent and radiative fluxes at the surface. These fluxes are shown in the output." > /dev/stderr
+	echo "" > /dev/stderr
 	echo "Examples:" > /dev/stderr
 	echo " ./energybalancecheck.sh WFJ2_flat.met > output.txt	Writes energy balance in output.txt and shows overall energy balance statistics on screen." > /dev/stderr
 	echo " ./energybalancecheck.sh WFJ2_flat.met > /dev/null	Just shows overall energy balance statistics on screen." > /dev/stderr
@@ -77,9 +85,10 @@ colILWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming longwave radiation
 colRSWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Reflected shortwave radiation" | awk -F: '{print $1}'`
 colISWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming shortwave radiation" | awk -F: '{print $1}'`
 colsoilheat=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat flux at ground surface" | awk -F: '{print $1}'`
+colbottomheat=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat flux at bottom of snow or soil pack" | awk -F: '{print $1}'`
 colRainNRG=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat advected to the surface by liquid precipitation" | awk -F: '{print $1}'`
-colIntNRG=`echo ${header} | sed 's/,/\n/g' | grep -nx "Internal energy change" | awk -F: '{print $1}'`
-colPhchEnergy=`echo ${header} | sed 's/,/\n/g' | grep -nx "Melt freeze part of internal energy change" | awk -F: '{print $1}'`
+colIntNRG=`echo ${header} | sed 's/,/\n/g' | grep -nx "Internal energy change soil" | awk -F: '{print $1}'`
+colPhchEnergy=`echo ${header} | sed 's/,/\n/g' | grep -nx "Melt freeze part of internal energy change soil" | awk -F: '{print $1}'`
 
 error=0
 if [ -z "${coldatetime}" ]; then
@@ -122,16 +131,22 @@ if [ -z "${colsoilheat}" ]; then
 	echo "energybalancecheck.sh: ERROR: soil heat flux not found in one of the columns." > /dev/stderr
 	error=1
 fi
+if [ -z "${colbottomheat}" ]; then
+	echo "energybalancecheck.sh: ERROR: bottom heat flux not found in one of the columns." > /dev/stderr
+	error=1
+fi
 if [ -z "${colRainNRG}" ]; then
 	echo "energybalancecheck.sh: ERROR: rain energy not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colIntNRG}" ]; then
-	echo "energybalancecheck.sh: ERROR: internal energy change not found in one of the columns." > /dev/stderr
+	echo "energybalancecheck.sh: ERROR: internal energy change soil not found in one of the columns." > /dev/stderr
+	echo "  Make sure to set OUT_HAZ = FALSE and OUT_SOILEB = TRUE in the ini-file." > /dev/stderr
 	error=1
 fi
 if [ -z "${colPhchEnergy}" ]; then
-	echo "energybalancecheck.sh: ERROR: phase change energy not found in one of the columns." > /dev/stderr
+	echo "energybalancecheck.sh: ERROR: phase change energy soil not found in one of the columns." > /dev/stderr
+	echo "  Make sure to set OUT_HAZ = FALSE and OUT_SOILEB = TRUE in the ini-file." > /dev/stderr
 	error=1
 fi
 if [ "${error}" -eq 1 ]; then
@@ -147,9 +162,9 @@ fi
 
 
 # Create header
-echo "#Date time measured_HS modelled_HS SHF     LHF    OLWR   ILWR   RSWR   ISWR   SoilHeatFlux RainEnergy PhaseChangeEnergy deltaIntEnergy EnergyBalance energy_in energy_out"
-echo "#--   --   --          --          E+      E+     E+     E+     E+     E+     E+           E+         --                E-             error         totals    totals"
-echo "#-    -    cm          cm          W_m-2   W_m-2  W_m-2  W_m-2  W_m-2  W_m-2  W_m-2        W_m-2      W_m-2             W_m-2          W_m-2         W_m-2     W_m-2"
+echo "#Date time measured_HS modelled_HS SHF     LHF    OLWR   ILWR   RSWR   ISWR   SoilHeatFlux BottomHeatFlux RainEnergy PhaseChangeEnergy deltaIntEnergy EnergyBalance energy_in energy_out"
+echo "#--   --   --          --          E+      E+     E+     E+     E+     E+     E+           E+             E+         --                E-             error         totals    totals"
+echo "#-    -    cm          cm          W_m-2   W_m-2  W_m-2  W_m-2  W_m-2  W_m-2  W_m-2        W_m-2          W_m-2      W_m-2             W_m-2          W_m-2         W_m-2     W_m-2"
 
 
 
@@ -158,22 +173,20 @@ echo "#-    -    cm          cm          W_m-2   W_m-2  W_m-2  W_m-2  W_m-2  W_m
 sed '1,/\[DATA\]/d' ${met_file} | \
 #  -- Select all the energybalance terms, make them correct sign and correct units. Also makes sure some terms are only considered when they are a part of the SNOW energy balance (like SHF, which may also originate from soil).
 #     Note: some terms need a change of sign, others need to be converted from kJ/m^2 to W/m^2 and one needs an extra term to be added.
-#     Note we store the previous modeled HS, to know whether e.g. SHF was actually from soil or from snow. For the first time step it doesn't matter what we do here, as we will cut out this first line later.
-#         (We cannot cut out this first line here, as the previous time step modeled HS is also needed for the energy balance calculations).
-awk -F, '{n++; if(n==1) {prevHS=1}; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', ($'${colhsmodel}'>0.0)?($'${colSHF}'):0, ($'${colhsmodel}'>0.0)?($'${colLHF}'):0, ($'${colhsmodel}'>0.0)?-1.0*($'${colOLWR}'):0, ($'${colhsmodel}'>0.0)?($'${colILWR}'):0, ($'${colhsmodel}'>0.0)?-1.0*($'${colRSWR}'):0, ($'${colhsmodel}'>0.0)?($'${colISWR}'):0, ($'${colhsmodel}'>0.0)?($'${colsoilheat}'):0, ($'${colhsmodel}'>0.0)?($'${colRainNRG}'):0, ($'${colhsmodel}'>0.0)?($'${colPhchEnergy}'*(1000.0/((24.0/'${nsamplesperday}')*3600))):0, ($'${colhsmodel}'>0.0 && $'${colIntNRG}'!=-999.0)?(1000.0*$'${colIntNRG}'/((24.0/'${nsamplesperday}')*3600)+$'${colsoilheat}'):0; prevHS=$'${colhsmodel}'}' | \
+awk -F, '{print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', ($'${colhsmodel}'==0)?($'${colSHF}'):0, ($'${colhsmodel}'==0)?($'${colLHF}'):0, ($'${colhsmodel}'==0)?-1.0*($'${colOLWR}'):0, ($'${colhsmodel}'==0)?($'${colILWR}'):0, ($'${colhsmodel}'==0)?-1.0*($'${colRSWR}'):0, ($'${colhsmodel}'==0)?($'${colISWR}'):0, ($'${colhsmodel}'>0.0)?(-1.0*$'${colsoilheat}'):0, $'${colbottomheat}', ($'${colhsmodel}'==0)?($'${colRainNRG}'):0, $'${colPhchEnergy}'*(1000.0/((24.0/'${nsamplesperday}')*3600)), ($'${colIntNRG}'!=-999.0)?(1000.0*$'${colIntNRG}'/((24.0/'${nsamplesperday}')*3600)):0}' | \
 #  -- Reformat time
 sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%02d", $3, $2, $1, $4, $5; for(i=6; i<=NF; i++) {printf " %s", $i}; printf "\n"}' | \
 # Now select period
 awk '($1>='${firstdate}' && $1<='${lastdate}') {print $0}' | \
 #  -- Now do all the other calculations
 #     except for the first line (for the first line, we cannot determine the energy balance, as the previous value of modeled HS is unknown, so we don't know whether there was a snowpack).
-awk '{n++; if(n>1) \
+awk '{ \
 	#Determine energy balance error:
-	energybalance=$5+$6+$7+$8+$9+$10+$11+$12-$14; \
+	energybalance=$5+$6+$7+$8+$9+$10+$11+$12+$13-$15; \
 	#Determine energy input in system (taking the terms only when they are positive)
-	energy_in=(($5>0.0)?$5:0)+(($6>0.0)?$6:0)+(($7>0.0)?$7:0)+(($8>0.0)?$8:0)+(($9>0.0)?$9:0)+(($10>0.0)?$10:0)+(($11>0.0)?$11:0)+(($12>0.0)?$12:0); \
+	energy_in=(($5>0.0)?$5:0)+(($6>0.0)?$6:0)+(($7>0.0)?$7:0)+(($8>0.0)?$8:0)+(($9>0.0)?$9:0)+(($10>0.0)?$10:0)+(($11>0.0)?$11:0)+(($12>0.0)?$12:0)+(($13>0.0)?$13:0); \
 	#Determine energy output in system (taking the terms only when they are negative)
-	energy_out=(($5<0.0)?$5:0)+(($6<0.0)?$6:0)+(($7<0.0)?$7:0)+(($8<0.0)?$8:0)+(($9<0.0)?$9:0)+(($10<0.0)?$10:0)+(($11<0.0)?$11:0)+(($12<0.0)?$12:0); \
+	energy_out=(($5<0.0)?$5:0)+(($6<0.0)?$6:0)+(($7<0.0)?$7:0)+(($8<0.0)?$8:0)+(($9<0.0)?$9:0)+(($10<0.0)?$10:0)+(($11<0.0)?$11:0)+(($12<0.0)?$12:0)+(($13<0.0)?$13:0); \
 	#Do the statistics (energy balance error sum, min and max values)
 	energybalancesum+=energybalance; energybalancesum2+=sqrt(energybalance*energybalance); if(energybalance>maxenergybalance){maxenergybalance=energybalance; maxenergybalancedate=$1; maxenergybalancetime=$2}; if(energybalance<minenergybalance){minenergybalance=energybalance; minenergybalancedate=$1; minenergybalancetime=$2}; \
 	#Write to stdout
