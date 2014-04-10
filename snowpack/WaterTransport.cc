@@ -596,14 +596,17 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					merged=false;
 					if(Xdata.SoilNode>0.) {							// Case of soil present
 						// In case of soil and removal of first snow element above soil:
+						// First, make sure there is no ice anymore, as we do not want to transfer ice over soil-snow interface:
+						EMS[eUpper].theta[WATER]+=EMS[eUpper].theta[ICE]*(Constants::density_ice/Constants::density_water);
+						// Take care of energy used for melting the ice:
+						const double ql = (EMS[eUpper].theta[ICE] * EMS[eUpper].L * Constants::density_ice * Constants::lh_fusion );	// J/m^2
+						//ql is energy crossing the soil-snow interface and should be considered part of the soil-snow heat flux:
+						Sdata.qg0 += ql/sn_dt;
+						//Adjust upper soil element for the energy extracted to melt the ice:
+						EMS[eUpper-1].Te -= ql / (EMS[eUpper-1].c[TEMPERATURE] * EMS[eUpper-1].Rho * EMS[eUpper-1].L);
+						// Set amount of ice to 0.
+						EMS[eUpper].theta[ICE]=0.;
 						if(iwatertransportmodel_soil != RICHARDSEQUATION) {	//Only move water into soil when we don't run richardssolver for soil
-							// First, make sure there is no ice anymore, as we do not want to transfer ice over soil-snow interface:
-							EMS[eUpper].theta[WATER]+=EMS[eUpper].theta[ICE]*(Constants::density_ice/Constants::density_water);
-							// Take care of energy used for melting the ice:
-							const double A = (EMS[eUpper-1].c[TEMPERATURE] * EMS[eUpper-1].Rho) / ( Constants::density_ice * Constants::lh_fusion );
-							EMS[eUpper-1].Te -= EMS[eUpper].theta[ICE] / A;
-							// Set amount of ice to 0.
-							EMS[eUpper].theta[ICE]=0.;
 							// Now do actual merging of the elements:
 							SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
 						} else {
