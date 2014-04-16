@@ -269,7 +269,7 @@ class ElementData {
 		std::vector<double> k;     ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
 		//   Stored in order to visualize constitutive laws
 		//   Will be used for creep field hydraulic conductivity in m3 s kg-1
-		std::vector<double> c;     ///< For example, specific heat of TEMPERATURE field (J kg)
+		std::vector<double> c;     ///< For example, specific heat of TEMPERATURE field (J kg-1 K-1)
 		//   Will also be used for creep specific snow water capacity  in m3 J-1
 		std::vector<double> soil;  ///< Contains the heat conductivity, capacity and dry density of the soil (solid, non-ice)  component phase
 		double Rho;                ///< mean element density (or BULK density; kg m-3), that is, rho=M/V=sum( theta(i)*rho(i) )
