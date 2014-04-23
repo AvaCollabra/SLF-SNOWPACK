@@ -1092,7 +1092,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	} // end FOR loop over time step iterations (loop executed only more than once in case of "NIED")
 
 	//Now solve richards equation:
-	if(iwatertransportmodel_snow == RICHARDSEQUATION || iwatertransportmodel_soil == RICHARDSEQUATION) {
+	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
 		RichardsEquationSolver1d.SolveRichardsEquation(Xdata, Sdata);
 	}
 
@@ -1199,7 +1199,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 		throw;
 	}
 
-	if(iwatertransportmodel_snow == RICHARDSEQUATION && iwatertransportmodel_soil != RICHARDSEQUATION) {
+	if(iwatertransportmodel_snow == RICHARDSEQUATION && (iwatertransportmodel_soil != RICHARDSEQUATION && useSoilLayers)) {
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "You can only use RICHARDSEQUATION for snow when you also use RICHARDSEQUATION for soil!");
 		throw;
 	}
