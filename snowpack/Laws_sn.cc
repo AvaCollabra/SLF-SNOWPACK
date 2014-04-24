@@ -1526,7 +1526,6 @@ double SnLaws::ArrheniusLaw(const double ActEnergy, const double T, const double
  */
 double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 {
-	double ea = IOUtils::nodata;
 	const double ILWR = (md(MeteoData::ILWR)>1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 
 	if (ILWR!=IOUtils::nodata)
