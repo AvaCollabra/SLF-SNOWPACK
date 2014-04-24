@@ -46,8 +46,9 @@ const double PhaseChange::theta_s = 1.0;
 
 PhaseChange::PhaseChange(const SnowpackConfig& cfg)
              : iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-	       watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-	       sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)
+               watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+               sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_soil_in(IOUtils::nodata),
+               cold_content_out(IOUtils::nodata), cold_content_soil_out(IOUtils::nodata)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -388,9 +389,6 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 	double ql_Rest;
 	ElementData* EMS;
 	nE = Xdata.getNumberOfElements(); EMS = &Xdata.Edata[0]; vector<NodeData>& NDS = Xdata.Ndata;
-	
-	// Determine whether a layer can be considered dry or not.
-	const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 
 	try {
 		// In the first step:
@@ -428,6 +426,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 			while (e > 0) {
 				e--;
 				const double i_Te = EMS[e].Te;
+				const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 				const bool MoistLayer=((((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && EMS[e].theta[WATER]>PhaseChange::RE_theta_threshold+Constants::eps) || (!((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && (EMS[e].theta[WATER]>Constants::eps)))?true:false;
 				try {
 					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {
@@ -482,7 +481,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 								if(e!=0) NDS[e].T = MAX(NDS[e].T, EMS[e].freezing_tk);
 							}
 						}
-                				
+
 						// Now that we have performed a phase change, we correct the other nodal temperatures of adjacent elements
 						// to stay as close as possible in satisfying energy balance.
 						if(e!=0) {
@@ -525,6 +524,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 		if (Xdata.SubSurfaceFrze) {
 			for (e = nE-1; e > 0; e--) {
 				const double i_Te = EMS[e].Te;
+				const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 				const bool MoistLayer=((((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && EMS[e].theta[WATER]>PhaseChange::RE_theta_threshold+Constants::eps) || (!((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && (EMS[e].theta[WATER]>Constants::eps)))?true:false;
 				try {
 					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {	// For Richards Equation, phase changes in soil are taken care of in WaterTransport
@@ -557,15 +557,15 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 						} else {
 							NDS[e].T += 0.5*(EMS[e].Te - i_Te);
 						}
-						
+
 						// Now make the nodal temperatures reflect the state of the element they represent.
 						if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
 							// If water is present in freezing conditions, nodal temperatures must equal freezing_tk
 							if(e!=0) {
-								NDS[e].T = NDS[e+1].T = EMS[e].freezing_tk;	
+								NDS[e].T = NDS[e+1].T = EMS[e].freezing_tk;
 							} else {
 								// NOTE Bottom soil node temperature cannot be changed
-								NDS[e+1].T = EMS[e].freezing_tk;	
+								NDS[e+1].T = EMS[e].freezing_tk;
 							}
 						} else {
 							// If freezing and no liquid water is present anymore, nodal temperature cannot be above freezing_tk
@@ -623,6 +623,8 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 		//by the freezing_tk and melting_tk in case only water or only ice is present. The surface node is special in that
 		//it determines the energy fluxes and thus the energy balance.
 		//Note this is only an additional check, as it should have happened with the phase change in the top element.
+		const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+
 		if(EMS[nE-1].theta[WATER] > cmp_theta) {
 			NDS[nE].T=MAX(NDS[nE].T, EMS[nE-1].freezing_tk);
 		}
