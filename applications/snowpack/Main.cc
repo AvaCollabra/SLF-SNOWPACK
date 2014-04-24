@@ -301,6 +301,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 
 void editMeteoData(mio::MeteoData& md, const string& variant)
 {
+	//HACK: these should be handled by DataGenerators
 	// Since we cannot deal with precipitation nodata, we set it to zero (HACK)
 	if (md(MeteoData::HNW) == mio::IOUtils::nodata)
 		md(MeteoData::HNW) = 0.0;
@@ -315,8 +316,10 @@ void editMeteoData(mio::MeteoData& md, const string& variant)
 		md(MeteoData::TSG) = 273.15;
 
 	//Add the atmospheric emissivity as a parameter
-	if (!md.param_exists("EA")) md.addParameter("EA");
+	if (!md.param_exists("EA")) {
+		md.addParameter("EA");
 		md("EA") = SnLaws::AirEmissivity(md, variant);
+	}
 
 	// Snow stations without separate wind station use their own wind for local drifting and blowing snow
 	if (!md.param_exists("VW_DRIFT")) {
@@ -415,6 +418,23 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.adv_heat = md("ADV_HEAT");
 }
 
+double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
+{
+	std::vector<mio::MeteoData> MyMeteol3h;
+
+	try {
+		io.getMeteoData(current_date - 3.0/24.0, MyMeteol3h);  // meteo data with 3 h (left) lag
+	} catch (...) {
+		cerr << "[E] failed to read meteo data with 3 hours (left) lag\n";
+		throw;
+	}
+
+	if (MyMeteol3h[0].param_exists("HS_A3H") && (MyMeteol3h[0]("HS_A3H") != mio::IOUtils::nodata))
+		return MyMeteol3h[0]("HS_A3H");
+	else
+		return Constants::undefined;
+}
+
 /**
  * @brief Make sure that both short wave fluxes get at least a "realistic" value but measured albedo only if both fluxes are measured
  * @note To be done only for flat field or single slope station
@@ -455,7 +475,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
                             const Slope& slope, SnowpackConfig& cfg,
                             SunObject &sun,
                             double& precip, const double& lw_in, const double hs_a3hl6,
-                            double& tot_mass_in)
+                            double& tot_mass_in,
+                            const std::string& variant)
 {
 	SnowStation &currentSector = vecXdata[slope.sector]; //alias: the current station
 	const bool isMainStation = (slope.sector == slope.mainStation);
@@ -562,13 +583,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 		// B) Check whether to use incoming longwave as estimated from station field
 		const bool meas_incoming_longwave = cfg.get("MEAS_INCOMING_LONGWAVE", "SnowpackAdvanced");
 		if (!meas_incoming_longwave) {
-			double ea = 0.;
-			if ((lw_in > 50.) && (lw_in < 300.)) {
-				ea = Atmosphere::blkBody_Emissivity(lw_in, Mdata.ta);
-			}
-			if ((ea > 0.55) && (ea < 1.0)) {
-				Mdata.ea = ea;
-			}
+			Mdata.ea = SnLaws::AirEmissivity(lw_in, Mdata.ta, variant);
 		}
 	}
 }
@@ -961,31 +976,21 @@ void real_main (int argc, char *argv[])
 			                 first_backup, backup_days_between);
 			//Radiation data
 			sun.setDate(current_date.getJulian(), current_date.getTimeZone());
-
-			std::vector<mio::MeteoData> MyMeteol3h;
-			try {
-				io.getMeteoData(current_date - 3.0/24.0, MyMeteol3h);  // meteo data with 3 h (left) lag
-			} catch (...) {
-				cerr << "[E] failed to read meteo data with 3 hours (left) lag\n";
-				throw;
-			}
-			double hs_a3hl6;
-			if (MyMeteol3h[0].param_exists("HS_A3H") && (MyMeteol3h[0]("HS_A3H") != mio::IOUtils::nodata))
-				hs_a3hl6 = MyMeteol3h[0]("HS_A3H");
-			else
-				hs_a3hl6 = Constants::undefined;
+			const double hs_a3hl6 = getHS_last3hours(io, current_date);
 
 			// START LOOP OVER ASPECTS
 			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
+
+				//fill Snowpack internal structure with forcing data
 				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
 				Mdata.copySnowTemperatures(vecMyMeteo[i_stn], slope_sequence);
 				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
                                        sun, cumsum.precip, lw_in, hs_a3hl6,
-                                       tot_mass_in);
+                                       tot_mass_in, variant);
 
 				// Notify user every fifteen days of date being processed
 				const double notify_start = floor(vecSSdata[slope.mainStation].profileDate.getJulian()) + 15.5;
