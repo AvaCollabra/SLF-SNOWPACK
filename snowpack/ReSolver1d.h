@@ -65,7 +65,7 @@ class ReSolver1d {
 		//K_Average types
 		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, MINIMUMVALUE, UPSTREAM};
 		//Van genuchten model types
-		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI, YAMAGUCHI_ADAPTED, DAANEN};
+		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI2012, YAMAGUCHI2010, YAMAGUCHI2010_ADAPTED, DAANEN};
 		//Solvers
 		enum SOLVERS{DGESVD, DGTSV, TDMA};
 		//Boundary conditions

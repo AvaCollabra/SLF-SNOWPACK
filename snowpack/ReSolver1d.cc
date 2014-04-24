@@ -587,10 +587,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //   Describes an more efficient way of treating the gravity term, and describes a way of estimating the hydraulic conductivity at the nodes.
 // - Li, C.W. (1993) A Simplified Newton Iteration Method With Linear Finite Elements for Transient Unsaturated Flow. Water Resources Research (29:4) 965-971.
 //   Describes how the hydraulic conductivity at the interface nodes can be approximated by integration.
-// - Yamaguchi, S., Katsushima, T., Sato, A. and Kumakura, T. (2011) Water retention curve of snow with different grain sizes. Cold Regions Science and Technology (64:2) 87-93.
-//   Describes van Genuchten parameters (alpha and n) for snow, based on measurements.
+// - Yamaguchi, S., Katsushima, T., Sato, A. and Kumakura, T. (2010) Water retention curve of snow with different grain sizes. Cold Regions Science and Technology (64:2) 87-93.
+//   Describes van Genuchten parameters (alpha and n) for snow, based on measurements. Experiments for around 550 kg/m^3 dense snow.
+// - Yamaguchi, S., Watanabe, K., Katsushima, T., Sato, A., Kumakura, T. (2012) Dependence of the water retention curve of snow on snow characteristics. Annals of Glaciology 53(61). doi: 10.3189/2012AoG61A001
+//   Update of the Yamaguchi (2010) paper: describes van Genuchten parameters (alpha and n) for snow, based on measurements. Experiments for a range of snow densities.
 // - Hirashima, H., Yamaguchi, S., Sato, A., and Lehning, M. (2010) Numerical modeling of liquid water movement through layered snow based on new measurements of the water retention curve. Cold Regions Science and Technology (64:2), 94-103.
-//   Describes van Genuchten parameters for snow, based on Yamaguchi (2011).
+//   Describes van Genuchten parameters for snow, based on Yamaguchi (2010).
 // - Rathfelder, K and Abriola, L. (1994) Mass conservative numerical solutions of the head-based Richards equation. Water Resources Research (30:9) 2579-2586.
 //   Describes an implementation of variable grid spacing for solving Richards Equation in 1D.
 
@@ -640,7 +642,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const BoundaryConditions BottomBC = DIRICHLET;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
-	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI_ADAPTED;	//(Recommended: YAMAGUCHI_ADAPTED) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
+	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2010_ADAPTED;//(Recommended: YAMAGUCHI2010_ADAPTED) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
 	const bool alpine3d=false;						//Flag for alpine3d simulations. Note: this flag is not necessary to set, but it will enforce some precautions to provide extra numerical stability (at the cost of small mass balance violations).
 
 	//Setting some program flow variables
@@ -1003,7 +1005,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			switch ( VGModelTypeSnow ) {	//Set Van Genuchten parameters for snow, depending on the chosen model for snow.
 
-			case YAMAGUCHI:
+			case YAMAGUCHI2012:
+				//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
+				GRAINRADIUSLOWERTHRESHOLD=0.1;		//Lower threshold
+				GRAINRADIUSUPPERTHRESHOLD=4.0;		//Upper threshold. 2.02 is value for n>1, which is required.
+				//Now limit grain sizes
+				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
+				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
+
+				//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
+				alpha[i]=4.4E6*pow((EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.), -0.98);	//See Eq. 6 in Yamaguchi (2012).
+				n[i]=1.+2.7E-3*pow((EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.), 0.61);	//See Eq. 7 in Yamaguchi (2012).
+				break;
+
+			case YAMAGUCHI2010:
 				//Limit grain size, to stay within the bounds of the Van Genuchten parameterizations for snow.
 	  			GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
 				GRAINRADIUSUPPERTHRESHOLD=2.0;		//Upper threshold. 2.02 is value for n>1, which is required.
@@ -1012,11 +1027,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
 
 				//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
-				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2011).
-				n[i]=-3.3*(2.*EMS[SnowpackElement[i]].rg)+14.4;				//See Eq. 11 (note d is defined as diameter in mm!) in Yamaguchi (2011).
+				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
+				n[i]=-3.3*(2.*EMS[SnowpackElement[i]].rg)+14.4;				//See Eq. 11 (note d is defined as diameter in mm!) in Yamaguchi (2010).
 				break;
 
-			case YAMAGUCHI_ADAPTED:
+			case YAMAGUCHI2010_ADAPTED:
 				//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
 	  			GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
 				GRAINRADIUSUPPERTHRESHOLD=4.0;		//Upper threshold
@@ -1024,8 +1039,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
 				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
 
-				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2011).
-				//Instead of the linear fit in Yamaguchi (2011), Hirashima (2011) approximated the data with a power law fit, valid for the whole range of grain sizes:
+				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
+				//Instead of the linear fit in Yamaguchi (2010), Hirashima (2011) approximated the data with a power law fit, valid for the whole range of grain sizes:
 				n[i]=15.68*exp(-0.46*(2.*EMS[SnowpackElement[i]].rg)) + 1.;		//Hirashima (2011), Eq. 17
 				break;
 

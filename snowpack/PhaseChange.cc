@@ -93,7 +93,7 @@ PhaseChange::PhaseChange(const SnowpackConfig& cfg)
  * -# Computation of densities and water generation rate.
  * @param *Edata
  * @param dt Time step (s)
- * @param *ql_Rest Latent heat flux balance (W m-2)
+ * @param *ql_Rest Latent heat flux balance (J m-2)
  */
 void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSolutes, const double& dt,
                                      double& ql_Rest, const mio::Date& date_in)
@@ -383,10 +383,10 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
  * The basic equation in both subsurface processes is: \n
  * d_th(i) = A * dt \n
  * with th(i) volumetric ice content (1), c_p(T) specific heat capacity of ice (J kg-1 K-1),
- * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K ),
+ * Q_f the freezing / melting energy (J kg-1), T the absolute temperature (K),
  * and the coefficient: \n
  * A = c_p(T) * th(i) * Q_f \n
- * ql_Rest is the Energy that is transferred from the upper element to the lower one
+ * ql_Rest is the Energy that is transferred from the upper element to the lower one (J m-2)
  * in case of complete melting of the former
  * @param Xdata
  * @param date_in is the current date

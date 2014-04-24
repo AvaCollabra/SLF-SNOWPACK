@@ -556,10 +556,20 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
 {
 	double resWatCont;
 
-	if (theta_i > 0.23) {
-		resWatCont = 0.0264 + 0.0099 * (1. - theta_i) / theta_i;
+	const double fraction = Constants::density_water/Constants::density_ice;
+	const double limit_theta_i = 1. - fraction * ((1. + 0.0165 * fraction) - sqrt((1. + 0.0165 * fraction)*(1. + 0.0165 * fraction) - 4. * fraction * 0.0264)) / (2. * fraction);	// abc-formula
+
+	if (theta_i > limit_theta_i) {
+		// This case is the limiting case where:
+		//            theta_i + (theta_r * (Constants::density_water/Constants::density_ice)) >= 1.0
+		// In that case, set the residual water content equal to the pore space
+		resWatCont = (1. - theta_i) * (Constants::density_ice/Constants::density_water);
 	} else {
-		resWatCont = 0.08 - 0.1023 * (theta_i - 0.03);
+		if (theta_i > 0.23) {
+			resWatCont = 0.0264 + 0.0099 * (1. - theta_i) / theta_i;
+		} else {
+			resWatCont = 0.08 - 0.1023 * (theta_i - 0.03);
+		}
 	}
 	return MIN(resWatCont, 0.08); //NOTE: MIN() only needed in case of theta_i < 0.03
 }
