@@ -300,7 +300,7 @@ double SnLaws::conductivity_water(const double& Temperature)
  * - FIXED: Use a fixed albedo by assigning ALBEDO-FIXEDVALUE a value between 0.05 and 0.95.
  * @param i_snow_albedo type of albedo computation ()
  * @param i_albedo_parameterization (see above)
- * @param i_albAverageSchmucki 
+ * @param i_albAverageSchmucki
  * @param i_albedo_fixed_value to use
  * @param Edata compute albedo for this element
  * @param Tss Snow surface temperature (K)
@@ -408,7 +408,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		const double Cms = -4.412422e-02, Cage = -1.523871e-03, Cogs = -1.099020e-01, Crho = -3.638010e-04, Cswin = -7.140708e-05;
 		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
 		Alb1 = inter + Cms*moist_snow + Cage*age + Cogs*(Edata.ogs/2.) + Crho*Edata.Rho + Cswin*Mdata.iswr;
-		
+
 		if (Alb1 > 0.) {
 			Alb = MAX(Constants::min_albedo, MIN(Constants::max_albedo, av + log(Alb1)));
 		} else {
@@ -1526,27 +1526,41 @@ double SnLaws::ArrheniusLaw(const double ActEnergy, const double T, const double
  */
 double SnLaws::AirEmissivity(mio::MeteoData& md, const std::string& variant)
 {
-	double ea = IOUtils::nodata;
 	const double ILWR = (md(MeteoData::ILWR)>1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 
-	if(ILWR!=IOUtils::nodata)
-		ea = Atmosphere::blkBody_Emissivity(ILWR, md(MeteoData::TA));
+	if (ILWR!=IOUtils::nodata)
+		return AirEmissivity(ILWR, md(MeteoData::TA), variant);
 	else {
 		const double cloudiness = (md(MeteoData::ILWR)>0. && md(MeteoData::ILWR)<=1.)? md(MeteoData::ILWR) : IOUtils::nodata;
 		const double ilwr_p = Atmosphere::ILWR_parametrized(md.meta.position.getLat(), md.meta.position.getLon(), md.meta.position.getAltitude(),
 	                                        md.date.getJulian(), md.date.getTimeZone(),
 	                                        md(MeteoData::RH), md(MeteoData::TA), md(MeteoData::ISWR), cloudiness);
-		if(ilwr_p!=IOUtils::nodata && md(MeteoData::TA)!=IOUtils::nodata)
-			ea = Atmosphere::blkBody_Emissivity(ilwr_p, md(MeteoData::TA));
-	}
 
-	double min_emissivity;
-	if (variant != "ANTARCTICA") {
-		min_emissivity = 0.55;
-	} else {
-		min_emissivity = 0.31;
+		return AirEmissivity(ilwr_p, md(MeteoData::TA), variant);
 	}
-	if(ea==IOUtils::nodata || ea<min_emissivity) ea = min_emissivity;
+}
+
+/**
+ * @brief Compute the air emissivity
+ * In any case, the returned air emissivity will be between min_air_emissivity and 1,
+ * min_air_emissivity depending on the variant. It returns min_air_emissivity if ta==nodata
+ * or ilwr==nodata
+ * @param ilwr incoming long wave radiation (W/m^2)
+ * @param ta air temperature (K)
+ * @param variant variant to use for the minimum allowed air emissivity
+ * @note observed minimum air emissivities:
+ * 	- default: 0.55 (from 1993 data at Weissfluhjoch)
+ * 	- Antarctica: 0.31 (from 2006/2007 data of Dome C)
+ * @return air emissivity in range [MIN_AIR_EMISSIVITY,1.] (1)
+ */
+double SnLaws::AirEmissivity(const double& ilwr, const double& ta, const std::string& variant)
+{
+	const double min_emissivity = (variant != "ANTARCTICA")? 0.55 : 0.31;
+
+	if(ilwr==IOUtils::nodata || ta==IOUtils::nodata) return min_emissivity;
+
+	const double ea = Atmosphere::blkBody_Emissivity(ilwr, ta); //return 1 if >1
+	if (ea<min_emissivity) return min_emissivity;
 	return ea;
 }
 
