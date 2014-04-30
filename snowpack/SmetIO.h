@@ -48,7 +48,7 @@ class SmetIO : public SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-		                             const std::vector<ProcessInd>& Hdata_ind, const int& num);
+		                             const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;

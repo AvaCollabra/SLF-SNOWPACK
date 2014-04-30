@@ -43,7 +43,7 @@ class SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata) = 0;
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                     const std::vector<ProcessInd>& Hdata_ind, const int& num) = 0;
+                                     const std::vector<ProcessInd>& Hdata_ind, const size_t& num) = 0;
 };
 
 #endif //End of SnowpackIOInterface.h

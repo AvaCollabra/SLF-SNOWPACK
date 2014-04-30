@@ -133,7 +133,7 @@ void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stati
 	stmt->setAutoCommit(true);
 
 	stmt->setString(1, stationName);   // set 1st variable's value (station name)
-	stmt->setUInt(2, stationNumber); // set 2nd variable's value (station number)
+	stmt->setUInt(2, static_cast<unsigned int>(stationNumber)); // set 2nd variable's value (station number)
 	stmt->setDate(3, OracleDate(dateStart));       // set 4rd variable's value (begin date)
 	stmt->setDate(4, OracleDate(dateEnd));         // set 5th variable's value (enddate)
 
@@ -168,7 +168,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	for(size_t ii=0; ii<nL; ++ii) {
 		stmt->setDate(1, profDate);
 		stmt->setString(2, stat_abk);
-		stmt->setUInt(3, stao_nr);
+		stmt->setUInt(3, static_cast<unsigned int>(stao_nr));
 		stmt->setNumber(4, Pdata[ii].height);
 
 		stmt->setDate(5, OracleDate(Pdata[ii].depositionDate));
@@ -234,11 +234,11 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& X
 }
 
 bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                               const std::vector<ProcessInd>& Hdata_ind, const int& num)
+                               const std::vector<ProcessInd>& Hdata_ind, const size_t& num)
 {
 	//num is incremented after each new data is added. It is therefore the index of the next element to write
 	//Hdata has been allocated nr_timesteps elements, but it might be that only num<nr_timesteps have been filled
-	if ((num <= 0) || (num > (int)Hdata.size())){
+	if ((num == 0) || (num > Hdata.size())){
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No hazard data either deleted from or inserted into %s: %d steps while Hdata.size=%d", oracleDB.c_str(), num, Hdata.size());
 		return false; //nothing to do
 	}
