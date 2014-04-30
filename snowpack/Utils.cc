@@ -186,7 +186,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 				}
 			}
 		} else {
-			for (size_t jj = 0; jj < nSlopes; jj++) {
+			for (unsigned int jj = 0; jj < nSlopes; jj++) {
 				if (jj > 0) {
 					snprintf(fname, MAX_STRING_LENGTH-1, "%s%d.%s", ftrunc, jj, ext.c_str());
 				} else {
@@ -264,47 +264,48 @@ double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, co
  * @param Sdata
  * @param Xdata
 */
-void averageFluxTimeSeries(const int& n_steps, const bool& useCanopyModel, SurfaceFluxes& Sdata, SnowStation& Xdata)
+void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, SurfaceFluxes& Sdata, SnowStation& Xdata)
 {
+	const double nr_steps = static_cast<double>( n_steps );
 	// Mean energy fluxes (W m-2), including albedo
-	Sdata.lw_in   /= n_steps;
-	Sdata.lw_out  /= n_steps;
-	Sdata.lw_net  /= n_steps;
-	Sdata.qs      /= n_steps;
-	Sdata.ql      /= n_steps;
-	Sdata.qr      /= n_steps;
-	Sdata.qg      /= n_steps;
-	Sdata.qg0     /= n_steps;
-	Sdata.sw_hor  /= n_steps;
-	Sdata.sw_in   /= n_steps;
-	Sdata.sw_out  /= n_steps;
-	Sdata.qw      /= n_steps;
-	Sdata.sw_dir  /= n_steps;
-	Sdata.sw_diff /= n_steps;
-	Sdata.pAlbedo /= n_steps;
+	Sdata.lw_in   /= nr_steps;
+	Sdata.lw_out  /= nr_steps;
+	Sdata.lw_net  /= nr_steps;
+	Sdata.qs      /= nr_steps;
+	Sdata.ql      /= nr_steps;
+	Sdata.qr      /= nr_steps;
+	Sdata.qg      /= nr_steps;
+	Sdata.qg0     /= nr_steps;
+	Sdata.sw_hor  /= nr_steps;
+	Sdata.sw_in   /= nr_steps;
+	Sdata.sw_out  /= nr_steps;
+	Sdata.qw      /= nr_steps;
+	Sdata.sw_dir  /= nr_steps;
+	Sdata.sw_diff /= nr_steps;
+	Sdata.pAlbedo /= nr_steps;
 	if (Sdata.mAlbedo != Constants::undefined)
-		Sdata.mAlbedo /= n_steps;
+		Sdata.mAlbedo /= nr_steps;
 
 	if (useCanopyModel) {
 		// *radiation
-		Xdata.Cdata.rswrac /= n_steps;
-		Xdata.Cdata.iswrac /= n_steps;
-		Xdata.Cdata.rswrbc /= n_steps;
-		Xdata.Cdata.iswrbc /= n_steps;
-		Xdata.Cdata.ilwrac /= n_steps;
-		Xdata.Cdata.rlwrac /= n_steps;
-		Xdata.Cdata.ilwrbc /= n_steps;
-		Xdata.Cdata.rlwrbc /= n_steps;
-		Xdata.Cdata.rsnet /= n_steps;
-		Xdata.Cdata.rlnet /= n_steps;
+		Xdata.Cdata.rswrac /= nr_steps;
+		Xdata.Cdata.iswrac /= nr_steps;
+		Xdata.Cdata.rswrbc /= nr_steps;
+		Xdata.Cdata.iswrbc /= nr_steps;
+		Xdata.Cdata.ilwrac /= nr_steps;
+		Xdata.Cdata.rlwrac /= nr_steps;
+		Xdata.Cdata.ilwrbc /= nr_steps;
+		Xdata.Cdata.rlwrbc /= nr_steps;
+		Xdata.Cdata.rsnet /= nr_steps;
+		Xdata.Cdata.rlnet /= nr_steps;
 		// turbulent heat fluxes
-		Xdata.Cdata.sensible /= n_steps;
-		Xdata.Cdata.latent /= n_steps;
-		Xdata.Cdata.latentcorr /= n_steps;
+		Xdata.Cdata.sensible /= nr_steps;
+		Xdata.Cdata.latent /= nr_steps;
+		Xdata.Cdata.latentcorr /= nr_steps;
 		// auxiliaries
-		Xdata.Cdata.canopyalb /= n_steps;
-		Xdata.Cdata.totalalb /= n_steps;
-		Xdata.Cdata.intcapacity /= n_steps;
+		Xdata.Cdata.canopyalb /= nr_steps;
+		Xdata.Cdata.totalalb /= nr_steps;
+		Xdata.Cdata.intcapacity /= nr_steps;
 	}
 }
 

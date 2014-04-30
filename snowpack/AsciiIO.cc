@@ -1949,7 +1949,7 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 }
 
 bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
-                              const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
+                              const std::vector<ProcessInd>& /*Hdata_ind*/, const size_t& /*num*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }

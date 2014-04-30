@@ -979,7 +979,7 @@ void real_main (int argc, char *argv[])
 			const double hs_a3hl6 = getHS_last3hours(io, current_date);
 
 			// START LOOP OVER ASPECTS
-			for (size_t slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
+			for (unsigned int slope_sequence=0; slope_sequence<slope.nSlopes; slope_sequence++) {
 				double tot_mass_in = 0.; // To check mass balance over one CALCULATION_STEP_LENGTH if MASS_BALANCE is set
 				SnowpackConfig tmpcfg(cfg);
 
@@ -1048,7 +1048,7 @@ void real_main (int argc, char *argv[])
 								cumsum.erosion[slope.mainStation] = -surfFluxes.mass[SurfaceFluxes::MS_WIND];
 						}
 					}
-					const unsigned int i_hz = mn_ctrl.HzStep;
+					const size_t i_hz = mn_ctrl.HzStep;
 					if (mode == "OPERATIONAL") {
 						if (!cumsum_mass) { // Cumulate flat field runoff in operational mode
 							qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
@@ -1119,7 +1119,7 @@ void real_main (int argc, char *argv[])
 						cumsum.snow += surfFluxes.mass[SurfaceFluxes::MS_HNW];
 					}
 				} else {
-					const unsigned int i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep-1 : 0;
+					const size_t i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep-1 : 0;
 					if (slope.luvDriftIndex) {
 						// Update drifting snow index (VI24),
 						// considering only snow eroded from the windward slope
@@ -1151,22 +1151,22 @@ void real_main (int argc, char *argv[])
 					}
 
 					if (precip_rates) { // Precip rates in kg m-2 h-1
-						surfFluxes.mass[SurfaceFluxes::MS_RAIN] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
-						surfFluxes.mass[SurfaceFluxes::MS_HNW] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
+						surfFluxes.mass[SurfaceFluxes::MS_RAIN] /= static_cast<double>(mn_ctrl.nAvg)*M_TO_H(calculation_step_length);
+						surfFluxes.mass[SurfaceFluxes::MS_HNW] /= static_cast<double>(mn_ctrl.nAvg)*M_TO_H(calculation_step_length);
 						if ((mode == "OPERATIONAL") && (!cumsum_mass)) {
 							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] = cumsum.runoff;
-							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
+							surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] /= static_cast<double>(mn_ctrl.nAvg)*M_TO_H(calculation_step_length);
 							cumsum.runoff = 0.;
 						}
 					}
 
 					// Erosion mass rate in kg m-2 h-1
 					surfFluxes.mass[SurfaceFluxes::MS_WIND] = cumsum.erosion[slope.sector];
-					surfFluxes.mass[SurfaceFluxes::MS_WIND] /= mn_ctrl.nAvg*M_TO_H(calculation_step_length);
+					surfFluxes.mass[SurfaceFluxes::MS_WIND] /= static_cast<double>(mn_ctrl.nAvg)*M_TO_H(calculation_step_length);
 
 					// Dump
-					const unsigned int i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep - 1 : 0;
-					unsigned int i_hz0 = (mn_ctrl.HzStep > 1) ? mn_ctrl.HzStep - 2 : 0;
+					const size_t i_hz = (mn_ctrl.HzStep > 0) ? mn_ctrl.HzStep - 1 : 0;
+					size_t i_hz0 = (mn_ctrl.HzStep > 1) ? mn_ctrl.HzStep - 2 : 0;
 					if (slope.mainStationDriftIndex)
 						i_hz0 = i_hz;
 					const double wind_trans24 = (slope.sector == slope.mainStation) ? qr_Hdata.at(i_hz0).wind_trans24 : qr_Hdata.at(i_hz).wind_trans24;

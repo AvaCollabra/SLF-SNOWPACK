@@ -52,7 +52,7 @@ class SnowpackIO : public SnowpackIOInterface {
 		virtual void writeProfile(const mio::Date& date, const SnowStation& Xdata);
 
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                     const std::vector<ProcessInd>& Hdata_ind, const int& num);
+                                     const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
 		SnowpackIO& operator=(const SnowpackIO& source);
 

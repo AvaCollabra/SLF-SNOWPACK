@@ -84,7 +84,7 @@ class CurrentMeteo {
 		size_t getMaxNumberMeasTemperatures() const;
 		void getFixedPositions(std::vector<double>& positions) const;
 		size_t getNumberFixedPositions() const;
-		void copySnowTemperatures(const mio::MeteoData& md, const int current_slope);
+		void copySnowTemperatures(const mio::MeteoData& md, const unsigned int& current_slope);
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
 
 		const std::string toString() const;
@@ -415,7 +415,7 @@ class SnowStation {
 		~SnowStation();
 		SnowStation& operator=(const SnowStation&); ///<Assignement operator
 
-		void initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector);
+		void initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sector);
 		void resize(const size_t& number_of_elements);
 
 		void reduceNumberOfElements(const size_t& rnE);

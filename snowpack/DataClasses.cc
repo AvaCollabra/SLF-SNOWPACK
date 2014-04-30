@@ -157,7 +157,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const double cos_sl = Xdata.cos_sl;
 	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
 
-	const unsigned int nL = surf_hoar? nE+1 : nE;
+	const size_t nL = surf_hoar? nE+1 : nE;
 	std::vector<SnowProfileLayer> Pdata(nL);
 
 	// Generate the profile data from the element data (1 layer = 1 element)
@@ -1156,7 +1156,7 @@ void SnowStation::reduceNumberOfElements(const size_t& rnE)
  * @param SSdata
  * @param i_sector defines the exposition sector of the slope (width 360./number_slopes)
  */
-void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const unsigned int i_sector)
+void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sector)
 {
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
@@ -1488,15 +1488,15 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		return (sum_ice_depth>=ice_depth_glacier);
 	} else {
 		bool is_pure_ice=true;
-		const unsigned int check_depth=5;
-		const int top_index = nElems-1;
-		const int top_index_toCheck = top_index - check_depth;
-		const int soil_index = SoilNode-1;
-		const int end_index = (top_index_toCheck>soil_index)? top_index_toCheck : soil_index;
+		const size_t check_depth=5;
+		const size_t top_index = nElems-1;
+		const size_t top_index_toCheck = top_index - check_depth;
+		const size_t soil_index = SoilNode-1;
+		const size_t end_index = (top_index_toCheck>soil_index)? top_index_toCheck : soil_index;
 
 		if(nElems==0 || top_index==soil_index) return false; //there are only soil layers or none
 
-		for(int layer_index=top_index; layer_index>end_index; layer_index--) {
+		for(size_t layer_index=top_index; layer_index-- > end_index; ) {
 			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7) && (Edata[layer_index].mk % 10 != 8)) {
 				is_pure_ice=false;
 				break;
@@ -1663,7 +1663,7 @@ size_t CurrentMeteo::getMaxNumberMeasTemperatures() const
 	return maxNumberMeasTemperatures;
 }
 
-void CurrentMeteo::copySnowTemperatures(const mio::MeteoData& md, const int current_slope)
+void CurrentMeteo::copySnowTemperatures(const mio::MeteoData& md, const unsigned int& current_slope)
 {
 	std::vector<double> positions;
 	getFixedPositions(positions);

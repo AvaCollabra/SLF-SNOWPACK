@@ -32,7 +32,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
               input_snow_as_smet(false), output_snow_as_smet(false),
               output_prf_as_ascii(false), output_ts_as_ascii(false),
               output_prf_as_imis(false), output_haz_as_imis(false)
-              
+
 {
 	//Format of initial snow profile:
 	const string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
@@ -146,7 +146,7 @@ void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 
 #ifdef IMISDBIO
 bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
-                                 const std::vector<ProcessInd>& Hdata_ind, const int& num)
+                                 const std::vector<ProcessInd>& Hdata_ind, const size_t& num)
 {
 	if(output_haz_as_imis)
 		return imisdbio->writeHazardData(stationID, Hdata, Hdata_ind, num);
@@ -154,7 +154,7 @@ bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector
 }
 #else
 bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::vector<ProcessDat>& /*Hdata*/,
-                                 const std::vector<ProcessInd>& /*Hdata_ind*/, const int& /*num*/)
+                                 const std::vector<ProcessInd>& /*Hdata_ind*/, const size_t& /*num*/)
 {
 	return false;
 }
