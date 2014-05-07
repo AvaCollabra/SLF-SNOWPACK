@@ -2131,7 +2131,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 			}
 
-			if(niter>500 || (niter>MAX_ITER && solver_result==-1)) {
+			if(niter>500) {
 				//Print latest state for debugging:
 				if(WriteOutNumerics_Level0==true) {
 					for (i = uppernode; i >= lowernode; i--) {
