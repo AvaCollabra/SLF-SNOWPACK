@@ -412,9 +412,8 @@ int ReSolver1d::pinv(int /*m*/, int /*n*/, int /*lda*/, double */*a*/) {
  * @param ksat Saturated hydraulic conductivity
  * @param he Air entry pressure
  */
-void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he)
+void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, double *alpha, double *m, double *n, double *ksat, double *he)
 {
-	double theta_s;
 	double MaximumPoreSize=0.;	//Maximum pore size (diameter) in [m]
 
 	//Set van Genuchten parameters
@@ -422,7 +421,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 		case ORGANIC:
 			//Organic: Nemes (2001), Development of Soil Hydraulic Pedotransfer Functions on a European scale: Their Usefulness in the Assessment of Soil Quality.
 			*theta_r=0.01;
-			theta_s=0.766;
+			*theta_s=0.766;
 			*alpha=1.3;
 			*n=1.2039;
 			*ksat=8.000/(365.*24.*60.*60.);
@@ -432,7 +431,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 		//ROSETTA Class Average Hydraulic Parameters: http://ars.usda.gov/Services/docs.htm?docid=8955
 		case CLAY:
 			*theta_r=0.098;
-			theta_s=0.459;
+			*theta_s=0.459;
 			*n=1.253;
 			*alpha=1.496;
 			*ksat=0.14757/(24.*60.*60.);
@@ -441,7 +440,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			
 		case CLAYLOAM:
 			*theta_r=0.079;
-			theta_s=0.442;
+			*theta_s=0.442;
 			*n=1.416;
 			*alpha=1.581;
 			*ksat=0.0818/(24.*60.*60.);
@@ -450,16 +449,16 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case LOAM:
 			*theta_r=0.061;
-			theta_s=0.399;
+			*theta_s=0.399;
 			*alpha=1.11;
 			*n=1.47;
 			*ksat=0.02947/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case LOAMSAND:
+		case LOAMYSAND:
 			*theta_r=0.049;
-			theta_s=0.39;
+			*theta_s=0.39;
 			*n=1.746;
 			*alpha=3.475;
 			*ksat=1.052/(24.*60.*60.);
@@ -468,34 +467,34 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case SAND:
 			*theta_r=0.053;
-			theta_s=0.375;
+			*theta_s=0.375;
 			*n=3.177;
 			*alpha=3.524;
 			*ksat=6.427/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 
-		case SANDCLAY:
+		case SANDYCLAY:
 			*theta_r=0.117;
-			theta_s=0.385;
+			*theta_s=0.385;
 			*n=1.208;
 			*alpha=3.342;
 			*ksat=0.1135/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 			
-		case SANDCLAYLOAM:
+		case SANDYCLAYLOAM:
 			*theta_r=0.063;
-			theta_s=0.384;
+			*theta_s=0.384;
 			*n=1.330;
 			*alpha=2.109;
 			*ksat=0.1318/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 			
-		case SANDLOAM:
+		case SANDYLOAM:
 			*theta_r=0.039;
-			theta_s=0.387;
+			*theta_s=0.387;
 			*n=1.4488;
 			*alpha=2.667;
 			*ksat=0.3828/(24.*60.*60.);
@@ -504,25 +503,25 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			
 		case SILT:
 			*theta_r=0.050;
-			theta_s=0.489;
+			*theta_s=0.489;
 			*n=1.6788;
 			*alpha=0.6577;
 			*ksat=0.4375/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 			
-		case SILTCLAY:
+		case SILTYCLAY:
 			*theta_r=0.111;
-			theta_s=0.481;
+			*theta_s=0.481;
 			*n=1.321;
 			*alpha=1.622;
 			*ksat=0.09616/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
 			
-		case SILTCLAYLOAM:
+		case SILTYCLAYLOAM:
 			*theta_r=0.090;
-			theta_s=0.482;
+			*theta_s=0.482;
 			*n=1.5205;
 			*alpha=0.8395;
 			*ksat=0.1112/(24.*60.*60.);
@@ -531,7 +530,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 			
 		case SILTLOAM:
 			*theta_r=0.065;
-			theta_s=0.439;
+			*theta_s=0.439;
 			*n=1.6634;
 			*alpha=0.5058;
 			*ksat=0.1824/(24.*60.*60.);
@@ -540,7 +539,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 
 		case WFJGRAVELSAND: //Gravel/sand
 			*theta_r=0.01;
-			theta_s=0.35;
+			*theta_s=0.35;
 			*n=4.5;
 			*alpha=3.5;
 			*ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
@@ -549,7 +548,6 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_soil, do
 	}
 	
 	*he=AirEntryPressureHead(MaximumPoreSize, 273.);
-	*theta_soil=1.-theta_s;
 	*m=(*n-1.)/(*n);
 
 	return;
@@ -1093,57 +1091,69 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			switch ( runcase ) {
 			case UNIFORMSOIL:
 				//Uniform soil
-				SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(SAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(CLAY, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				//SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				//SetSoil(CLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case IMISDEFAULT:
 				//Default case (IMIS):
 				if(tmpheight<=0.25001) {
 					//Silt loam
-					//SetSoil(ORGANIC, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					//SetSoil(SILTLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					SetSoil(SANDLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					//SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					//SetSoil(SILTLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else { //Gravel/sand
 					if(tmpheight<1.001) {
-						SetSoil(SAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+						SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 					} else {
-						SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+						SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 					}
 				}
 				break;
 			case WFJ:
 				//Case WFJ:
-				SetSoil(WFJGRAVELSAND, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case CDP:
 				//Case Col de Porte
-				SetSoil(SANDLOAM, &theta_r[i], &EMS[SnowpackElement[i]].theta[SOIL], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case ALPINE3D:
-				double dummy;	//To keep original theta[SOIL], we send a dummy to SetSoil.
 				if(EMS[SnowpackElement[i]].rg < 0.5) {
-					SetSoil(ORGANIC, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 1.) {
-					SetSoil(CLAY, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(CLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 2.) {
+					SetSoil(CLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 3.) {
-					SetSoil(LOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(LOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 4.) {
+					SetSoil(LOAMYSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 5.) {
-					SetSoil(SILTLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 6.) {
+					SetSoil(SANDYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 7.) {
+					SetSoil(SANDYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 8.) {
-					SetSoil(SANDLOAM, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 9.) {
+					SetSoil(SILT, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 10.) {
-					SetSoil(SAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(SILTYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 11.) {
+					SetSoil(SILTYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				} else if (EMS[SnowpackElement[i]].rg < 12.) {
+					SetSoil(SILTLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else {
-					SetSoil(WFJGRAVELSAND, &theta_r[i], &dummy, &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+					SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				}
 				break;
 			}
 			//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
 			//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].
 			//However, this will not work in the Richards, as theta[WATER] is varying per time step. So we keep free a volume as if the soil is saturated AND will freeze:
-			theta_s[i]=1.-EMS[SnowpackElement[i]].theta[SOIL];			//Determine the room to be maximum possible filled with water
-			theta_s[i]*=(Constants::density_ice/Constants::density_water);		//Make sure theta_s is small enough, so in case of saturation, all water can freeze.
+			EMS[SnowpackElement[i]].theta[SOIL]=1.-((Constants::density_water/Constants::density_ice)*theta_s[i]);	//Determine the soil content based on the pore space
 		}
 
 		//Calculate m:
