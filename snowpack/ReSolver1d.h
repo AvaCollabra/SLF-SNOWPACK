@@ -78,7 +78,7 @@ class ReSolver1d {
 		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e);
 		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i);
 		double AirEntryPressureHead(double MaximumPoreSize, double Temperature);
-		void SetSoil(SoilTypes type, double *theta_r, double *theta_soil, double *alpha, double *m, double *n, double *ksat, double *he);
+		void SetSoil(SoilTypes type, double *theta_r, double *theta_s, double *alpha, double *m, double *n, double *ksat, double *he);
 
 		// Solvers
 		int TDMASolver (int n, double *a, double *b, double *c, double *v, double *x);
