@@ -743,7 +743,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	} else {						//RE for both snow and soil
 		toplayer=nE;					//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers_snowpack: only soil.
 	}
-
+	if(toplayer==0) return;				//Nothing to do here!
 
 	//Initializations of the convergence criteria
 	int trigger_layer_accuracy=-1;			//At which layer the accuracy was not reached.
