@@ -624,6 +624,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //	  - Is there a massbalance problem? Then probably the fluxes at the top and/or bottom are not correctly calculated, or there is a real bug.
 //	    Massbalance errors also arise when k_ip12(i-1) != k_im12(i)! The nodal values should always be the same for both the upper and lower node!
 //	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
+//
+// TODO IN FUTURE DEVELOPMENT
+// -  Check the limited influx condition. It seems to be too restrictive, rejecting infiltrating water when it would still be able to handle it. This can be seen by comparing simulations with and
+//    without this boundary condition. Reason may be that the implementation of the criterion is neglecting water leaving the top node at the same time, creating some extra room for infiltrating
+//    water.
+// -  Implement a strategy what to do with the rejected infilitrating water. Either built-up a water layer (theta[WATER]==1) on top (real ponding), or write it out in a kind of overland flow variable.
+
 	//Initializations
 	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, ALPINE3D};
 
