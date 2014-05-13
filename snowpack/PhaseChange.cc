@@ -226,7 +226,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 	/*
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen
-	*/
+	 */
 	const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && Edata.theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && Edata.theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
 	if ((Edata.Te >= T_freeze) || (Edata.theta[WATER] <= cmp_theta_r)) {
 		return;
@@ -383,23 +383,29 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
  * @param date_in is the current date
  * @param verbose print detailed warnings for various situations? (default=true)
  */
-void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose)
+double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose)
 {
 	size_t e, nE;
 	double ql_Rest;
 	ElementData* EMS;
 	nE = Xdata.getNumberOfElements(); EMS = &Xdata.Edata[0]; vector<NodeData>& NDS = Xdata.Ndata;
+	double retTopNodeT=NDS[nE].T;
 
+	// Backup the nodal temperatures, in order to reconstruct an energy conservative temperature array during phase changes
+	e = nE;
+	std::vector<double> tmp_N_T_up(nE, 0.);
+	std::vector<double> tmp_N_T_down(nE, 0.);
+	while (e > 0) {
+		e--;
+		tmp_N_T_up[e]=NDS[e+1].T;
+		tmp_N_T_down[e]=NDS[e].T;
+	}
+
+	// Execute phase changes
 	try {
-		// In the first step:
-		// 1) check the density
-		// 2) set flags for SubSurfaceMelt and SubSurfaceFrze
-
-		//Reset flags
-		Xdata.SubSurfaceMelt = false;
-		Xdata.SubSurfaceFrze = false;
-
-		for (e = 0; e < nE; e++) {
+		ql_Rest = 0.;
+		e = nE;
+		while (e > 0) {
 			if (EMS[e].theta[SOIL] == 0.0) {
 				if (verbose && !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
 					prn_msg(__FILE__, __LINE__, "wrn", date_in, "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
@@ -412,236 +418,167 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
-        		const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
-			// Set flags
-			if (EMS[e].Te > EMS[e].melting_tk && EMS[e].theta[ICE] > Constants::eps)
-				Xdata.SubSurfaceMelt = true;
-			if (EMS[e].Te < EMS[e].freezing_tk && EMS[e].theta[WATER] > cmp_theta_r + Constants::eps)
-				Xdata.SubSurfaceFrze = true;
-		}
+			e--;
+			double i_Te = EMS[e].Te;
+			// Determine whether a layer can be considered dry or not.
+			const double cmp_theta = ((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 
-		if (Xdata.SubSurfaceMelt) {
-			ql_Rest = 0.;
-			e = nE;
-			while (e > 0) {
-				e--;
-				const double i_Te = EMS[e].Te;
-				const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
-				const bool MoistLayer=((((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && EMS[e].theta[WATER]>PhaseChange::RE_theta_threshold+Constants::eps) || (!((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && (EMS[e].theta[WATER]>Constants::eps)))?true:false;
-				try {
-					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {
-						compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest, date_in);
-					}
-				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "msg-", Date(), "in compSubSurfaceMelt at element %d of %d", e, nE);
-					throw IOException("Run-time error in compPhaseChange()", AT);
-				}
-				// See whether hoar has melted
-				if (EMS[e].theta[WATER] > Constants::eps) {
-					NDS[e].hoar = 0.;
-					NDS[e+1].hoar = 0.;
-				}
-				// Make sure all nodal temperatures are consistent with the temperature change of the element
-				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
-					if(EMS[e].Te!=i_Te) {				//Check if phase change did occur
-						// Store current nodal temperatures
-					        double tmp_N_T_up=NDS[e+1].T;
-						double tmp_N_T_down=NDS[e].T;
-						// Adjust nodal temperatures based on change in element temperature
-						if(e==nE-1) {
-						        if((EMS[e].theta[ICE] > Constants::eps && EMS[e].theta[WATER] > cmp_theta + Constants::eps2) || MoistLayer==true) {
-							        NDS[e+1].T = EMS[e].melting_tk;
-							} else {
-        							NDS[e+1].T += (EMS[e].Te - i_Te);
-                                                        }
-						} else {
-							NDS[e+1].T += 0.5*(EMS[e].Te - i_Te);
-						}
-						if(e==0) {
-							NDS[e].T += (EMS[e].Te - i_Te);
-						} else {
-							NDS[e].T += 0.5*(EMS[e].Te - i_Te);
-						}
+			const bool MoistLayer = (EMS[e].theta[WATER] > cmp_theta + Constants::eps) ? true : false;
+			if(MoistLayer==true && e==nE-1 && nE>Xdata.SoilNode) retTopNodeT=EMS[nE-1].melting_tk;
 
-						// Now make the nodal temperatures reflect the state of the element they represent.
-						if(EMS[e].theta[ICE] > Constants::eps) {
-							// If ice is present in melting conditions, nodal temperatures must equal melting_tk
-							if(e!=0) {
-								NDS[e].T = NDS[e+1].T = EMS[e].melting_tk;
-							} else {
-  								// NOTE Bottom soil node temperature cannot be changed
-								NDS[e+1].T = EMS[e].melting_tk;
-							}
-						} else {
-							// If melting and no ice is present, nodal temperature cannot be below melting_tk
-							if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
-								// It seems to be better to leave the top node untouched, as it will influence the energy balance in the next time step and it may introduce oscillations at the top node.
-								if(e!=nE-1) NDS[e+1].T = MAX(NDS[e+1].T, EMS[e].freezing_tk);
-								// NOTE Bottom soil node temperature cannot be changed
-								if(e!=0) NDS[e].T = MAX(NDS[e].T, EMS[e].freezing_tk);
-							}
-						}
-
-						// Now that we have performed a phase change, we correct the other nodal temperatures of adjacent elements
-						// to stay as close as possible in satisfying energy balance.
-						if(e!=0) {
-							if(EMS[e-1].theta[ICE] > Constants::eps && EMS[e-1].theta[WATER] > cmp_theta + Constants::eps) {
-								// In case the element below is in melting/freezing state, set the node to melting temperature
-								NDS[e].T=EMS[e].melting_tk;
-							} else {
-								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-								// scaling with the heat capacity.
-								if((e-1)>0) {
-									// NOTE Bottom soil node temperature cannot be changed
-									NDS[e-1].T+=0.5*(tmp_N_T_down-NDS[e].T);
-								}
-							}
-						}
-						if(e!=nE-1) {
-							if(EMS[e+1].theta[ICE] > Constants::eps && EMS[e+1].theta[WATER] > cmp_theta + Constants::eps) {
-								// In case the element above is in melting/freezing state, set the node to melting temperature
-								NDS[e+1].T=EMS[e].melting_tk;
-							} else {
-								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-								// scaling with the heat capacity.
-								if((e+2)==nE) {
-									//We would like to adjust the top node now, but this will also influence the energy balance in the next time step. In this way, it may introduce oscillations at the top node.
-									//NDS[e+2].T+=(tmp_N_T_up-NDS[e+1].T);
-								} else {
-									NDS[e+2].T+=0.5*(tmp_N_T_up-NDS[e+1].T);
-								}
-							}
-						}
-					}
+			// Try melting
+			try {
+				if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {
+					compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest, date_in);
 				}
+			} catch(...) {
+				prn_msg(__FILE__, __LINE__, "msg-", Date(), "in compSubSurfaceMelt at element %d of %d", e, nE);
+				throw IOException("Run-time error in compPhaseChange()", AT);
 			}
-		}
-		// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
+			// See whether hoar has melted
+			if (EMS[e].theta[WATER] > Constants::eps) {
+				NDS[e].hoar = 0.;
+				NDS[e+1].hoar = 0.;
+			}
 
-		// Subsurface refreezing check
-		if (Xdata.SubSurfaceFrze) {
-			for (e = nE-1; e > 0; e--) {
-				const double i_Te = EMS[e].Te;
-				const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
-				const bool MoistLayer=((((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && EMS[e].theta[WATER]>PhaseChange::RE_theta_threshold+Constants::eps) || (!((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) && (EMS[e].theta[WATER]>Constants::eps)))?true:false;
-				try {
-					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {	// For Richards Equation, phase changes in soil are taken care of in WaterTransport
-						compSubSurfaceFrze(EMS[e], Xdata.number_of_solutes, sn_dt, date_in);
-					}
-				} catch(...) {
-					prn_msg(__FILE__, __LINE__, "msg-", date_in, "SubSurfaceFrze at element %d of %d", e, nE);
-					throw IOException("Run-time error in compPhaseChange()", AT);
+			// Try freezing
+			try {
+				if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {	// For Richards Equation, phase changes in soil are taken care of in WaterTransport
+					compSubSurfaceFrze(EMS[e], Xdata.number_of_solutes, sn_dt, date_in);
 				}
-				// Make sure all nodal temperatures are consistent with the temperature change of the element
-				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
-					// Note: the MoistLayer==true is mainly there for the Richards equation, where there is always some amount of
-					// liquid water present in a layer, so we should additionally check if the phase change was significant.
-					if(EMS[e].Te!=i_Te && MoistLayer==true) {			//Check if phase change did occur
-						// Store current nodal temperatures
-						double tmp_N_T_up=NDS[e+1].T;
-						double tmp_N_T_down=NDS[e].T;
-						// Adjust nodal temperatures based on change in element temperature
-						if(e==nE-1) {
-						        if(EMS[e].theta[WATER] > cmp_theta + Constants::eps || MoistLayer==true) {
-						                NDS[e+1].T = EMS[e].melting_tk;
-						        } else {
-							        NDS[e+1].T += (EMS[e].Te - i_Te);
-                                                        }
-						} else {
-							NDS[e+1].T += 0.5*(EMS[e].Te - i_Te);
-						}
-						if(e==0) {
-							NDS[e].T += (EMS[e].Te - i_Te);
-						} else {
-							NDS[e].T += 0.5*(EMS[e].Te - i_Te);
-						}
+			} catch(...) {
+				prn_msg(__FILE__, __LINE__, "msg-", date_in, "SubSurfaceFrze at element %d of %d", e, nE);
+				throw IOException("Run-time error in compPhaseChange()", AT);
+			}
 
-						// Now make the nodal temperatures reflect the state of the element they represent.
+			// Make sure all nodal temperatures are consistent with the temperature change of the element
+			//if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
+			if(e < Xdata.SoilNode && iwatertransportmodel_soil==RICHARDSEQUATION) {
+				// In case we use Richards equation for soil, phase transisitions are calculated there. The solver for Richards equation adjusts the element temperatures
+				// and stores the heat associated with the phase transitions in Qmf. Here, we use Qmf to calculate i_Te, and adjust the nodes here.
+				i_Te = EMS[e].Te - ( (EMS[e].Qmf * sn_dt) / (EMS[e].c[TEMPERATURE] * EMS[e].Rho));
+			}
+			if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
+				// Check if phase change did occur
+				// Note: the MoistLayer==true is mainly there for the Richards equation for snow, where there is always some amount of
+				// liquid water present in a layer, so we should additionally check if the phase change was significant.
+				if(EMS[e].Te!=i_Te && (iwatertransportmodel_snow!=RICHARDSEQUATION || (MoistLayer==true && e>=Xdata.SoilNode))) {
+					// Adjust nodal temperatures based on change in element temperature
+					if(e==nE-1) {
+						// The top node is our starting point and treated special:
+
+						// First estimate is a change in nodal temperatures equal to the change in element temperatures
+						NDS[e+1].T += (EMS[e].Te - i_Te);
+						NDS[e].T += (EMS[e].Te - i_Te);
+
+						// Now check the nodal temperatures against the state of the element
 						if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
-							// If water is present in freezing conditions, nodal temperatures must equal freezing_tk
-							if(e!=0) {
-								NDS[e].T = NDS[e+1].T = EMS[e].freezing_tk;
+							// If there is water, nodal temperatures cannot exceed melting temperature
+							NDS[e].T=MAX(NDS[e].T, EMS[e].melting_tk);
+							NDS[e+1].T=MAX(NDS[e+1].T, EMS[e].melting_tk);
+						}
+						if(EMS[e].theta[ICE] > Constants::eps) {
+							// If there is ice, nodal temperatures cannot exceed freezing temperature
+							NDS[e].T=MIN(NDS[e].T, EMS[e].freezing_tk);
+							NDS[e+1].T=MIN(NDS[e+1].T, EMS[e].freezing_tk);
+						}
+
+						// We now bring the nodal temperatures in agreement with the element temperature
+						NDS[e+1].T=2.*EMS[e].Te-NDS[e].T;
+
+						// If the element is in melting or freezing conditions (meaning that phase transition is incomplete due to limited energy available)
+						// both nodes should be at melting or freezing temperature. We judge this by the presence of ice in melting conditions, or the presence of water in freezing conditions.
+						if(((EMS[e].theta[ICE] > Constants::eps && EMS[e].Te < i_Te) || (EMS[e].theta[WATER] > cmp_theta + Constants::eps && EMS[e].Te > i_Te))) {
+							NDS[e+1].T = NDS[e].T = (EMS[e].Te < i_Te) ? EMS[e].melting_tk : EMS[e].freezing_tk;
+						}
+
+						// Now that we adjust the nodal temperatures, correct the adjacent nodal temperatures, such that the energy content remains constant
+						if(e>1) {
+							NDS[e-1].T+=(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L)/(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L + EMS[e-2].c[TEMPERATURE]*EMS[e-2].Rho*EMS[e-2].L)*(tmp_N_T_down[e]-NDS[e].T);
+						} else {
+							if(e==1) NDS[e-1].T=2.*EMS[e-1].Te-NDS[e].T;
+						}
+					} else {
+						// For nodes other than the top node:
+
+						// Now make the nodal temperatures reflect the state of the element they represent. Either the element is in phase transition (if-block),
+						// or the phase transition is either complete or not occurring (else-block),
+						if((EMS[e].theta[ICE] > Constants::eps2 && EMS[e].Te < i_Te) || (EMS[e].theta[WATER] > cmp_theta + Constants::eps && EMS[e].Te > i_Te)) {
+							// Ice present in melting conditions or water present in freezing conditions? Incomplete phase transition due to limited energy availability.
+
+							// Backup current nodal temperatures, to reconstruct an energy conservative temperature array
+							tmp_N_T_up[e] = NDS[e+1].T;
+
+							// Make nodes in agreement with melting or freezing conditions
+							NDS[e].T = NDS[e+1].T = (EMS[e].Te < i_Te) ? EMS[e].melting_tk : EMS[e].freezing_tk;
+
+							// Now that we adjust the nodal temperatures, correct the adjacent nodal temperatures, such that the energy content remains constant
+							// First the node above
+							if(e<nE-2) {
+								NDS[e+2].T+=(EMS[e+1].c[TEMPERATURE]*EMS[e+1].Rho*EMS[e+1].L)/(EMS[e+1].c[TEMPERATURE]*EMS[e+1].Rho*EMS[e+1].L + EMS[e+2].c[TEMPERATURE]*EMS[e+2].Rho*EMS[e+2].L)*(tmp_N_T_up[e]-NDS[e+1].T);
 							} else {
-								// NOTE Bottom soil node temperature cannot be changed
-								NDS[e+1].T = EMS[e].freezing_tk;
+								if(e==nE-2) {
+									NDS[e+2].T=2.*EMS[e+1].Te-NDS[e+1].T;
+								}
+							}
+							// Then the node below
+							if(e>1) {
+								NDS[e-1].T+=(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L)/(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L + EMS[e-2].c[TEMPERATURE]*EMS[e-2].Rho*EMS[e-2].L)*(tmp_N_T_down[e]-NDS[e].T);
+							} else {
+								if(e==1) NDS[e-1].T=2.*EMS[e-1].Te-NDS[e].T;
 							}
 						} else {
-							// If freezing and no liquid water is present anymore, nodal temperature cannot be above freezing_tk
-							if(EMS[e].theta[ICE] > Constants::eps) {
-								//It seems to be better to leave the top node untouched, as it will influence the energy balance in the next time step and it may introduce oscillations at the top node.
-        							if(e!=nE-1) NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].freezing_tk);
-								// NOTE Bottom soil node temperature cannot be changed
-	        						if(e!=0) NDS[e].T = MIN(NDS[e].T, EMS[e].freezing_tk);
+							// Complete phase transitions or no phase transition
+							// Energy conservative way to determine the temperature of the node below the element:
+							NDS[e].T=2.*EMS[e].Te-NDS[e+1].T;
+							// Now check if we would have phase change in the element below. If so, we don't need to consider an energy conservative adjustment, because
+							// the element will be treated in the next step.
+							if(e>0 && ((EMS[e-1].Te < EMS[e-1].freezing_tk && EMS[e-1].theta[WATER] <= cmp_theta) || (EMS[e-1].Te > EMS[e-1].melting_tk && EMS[e-1].theta[ICE] <= 0.))) {
+								// No phase change in element below, so adjust the adjacent nodes.
+								if(e>1) {
+									NDS[e-1].T+=(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L)/(EMS[e-1].c[TEMPERATURE]*EMS[e-1].Rho*EMS[e-1].L + EMS[e-2].c[TEMPERATURE]*EMS[e-2].Rho*EMS[e-2].L)*(tmp_N_T_down[e]-NDS[e].T);
+								} else {
+									if(e==1) NDS[e-1].T=2.*EMS[e-1].Te-NDS[e].T;
+								}
 							}
 						}
 
-						// Now that we have performed a phase change, we correct the other nodal temperatures of adjacent elements
-						// to stay as close as possible in satisfying energy balance.
-						if(e!=0) {
-							if(EMS[e-1].theta[ICE] > Constants::eps && EMS[e-1].theta[WATER] > cmp_theta + Constants::eps) {
-								// In case the element below is in melting/freezing state, set the node to freezing temperature
-								NDS[e].T=EMS[e].freezing_tk;
-							} else {
-								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-								// scaling with the heat capacity.
-								if((e-1)>0) {
-									// NOTE Bottom soil node temperature cannot be changed
-									NDS[e-1].T+=0.5*(tmp_N_T_down-NDS[e].T);
-								}
+						// Check the new nodal temperatures to make sure
+						if(e<nE-1) {
+							if(EMS[e+1].theta[WATER] > cmp_theta + Constants::eps) {
+								NDS[e+2].T=MAX(NDS[e+2].T, EMS[e+1].melting_tk);
+							}
+							if(EMS[e+1].theta[ICE] > Constants::eps) {
+								NDS[e+2].T=MIN(NDS[e+2].T, EMS[e+1].freezing_tk);
 							}
 						}
-						if(e!=nE-1) {
-							if(EMS[e+1].theta[ICE] > Constants::eps && EMS[e+1].theta[WATER] > cmp_theta + Constants::eps) {
-								// In case the element above is in melting/freezing state, set the node to freezing temperature
-								NDS[e+1].T=EMS[e].freezing_tk;
-							} else {
-								// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-								// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-								// scaling with the heat capacity.
-								if((e+2)==nE) {
-									//We would like to adjust the top node now, but this will also influence the energy balance in the next time step. In this way, it may introduce oscillations at the top node.
-									//NDS[e+2].T+=(tmp_N_T_up-NDS[e+1].T);
-								} else {
-									NDS[e+2].T+=0.5*(tmp_N_T_up-NDS[e+1].T);
-								}
+						if(e>0) {
+							if(EMS[e-1].theta[WATER] > cmp_theta + Constants::eps) {
+								NDS[e-1].T=MAX(NDS[e-1].T, EMS[e-1].melting_tk);
+							}
+							if(EMS[e-1].theta[ICE] > Constants::eps) {
+								NDS[e-1].T=MIN(NDS[e-1].T, EMS[e-1].freezing_tk);
 							}
 						}
 					}
 				}
+				// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
+			} else {
+				// In case we use Richards equation for soil, phase changes will be calculated in ReSolver1d::SolveRichardsEquation
+				// Nevertheless, we need to make sure to define the return value:
+				if(EMS[e].Te!=i_Te) NDS[e].T=2.*EMS[e].Te-NDS[e+1].T;
+				if(e==nE-1 && nE==Xdata.SoilNode) retTopNodeT=NDS[e+1].T;
 			}
 		}
 	} catch (const exception& ) {
 		throw;
 	}
 
-	if(nE>0) {
-		//To ensure energy balance, the top node should become at melting_tk/freezing_tk when a mixture of ice and water is present,
-		//regardless of occurring phase changes and associated changes in (nodal) temperatures. Similarly, the surface node is limited
-		//by the freezing_tk and melting_tk in case only water or only ice is present. The surface node is special in that
-		//it determines the energy fluxes and thus the energy balance.
-		//Note this is only an additional check, as it should have happened with the phase change in the top element.
-		const double cmp_theta=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
-
-		if(EMS[nE-1].theta[WATER] > cmp_theta) {
-			NDS[nE].T=MAX(NDS[nE].T, EMS[nE-1].freezing_tk);
-		}
-		if(EMS[nE-1].theta[ICE] > Constants::eps) {
-			NDS[nE].T=MIN(NDS[nE].T, EMS[nE-1].melting_tk);
-		}
-		if(EMS[nE-1].theta[WATER] > cmp_theta + Constants::eps && EMS[nE-1].theta[ICE] > Constants::eps) {
-			if(EMS[nE-1].Te < EMS[nE-1].freezing_tk) {
-				NDS[nE].T=EMS[nE-1].freezing_tk;
-			} else {
-				NDS[nE].T=EMS[nE-1].melting_tk;
-			}
-		}
-		// After restructuring nodal temperatures, calculate element temperature again
-		for (e = 0; e < nE; e++) {
-			EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
-		}
+	// Now reconstruct element temperatures
+	for (e = 0; e < nE; e++) {
+		EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
 	}
+
+	return retTopNodeT;
 }
 

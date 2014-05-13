@@ -878,8 +878,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
-	ReSolver_dt(-1), SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false),
-	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
+	ReSolver_dt(-1), windward(false), nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
@@ -888,8 +887,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
-	ReSolver_dt(-1), SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward),
-	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
+	ReSolver_dt(-1), windward(c.windward), nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
 	if(this != &source) {
@@ -938,8 +936,6 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		nElems = source.nElems;
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
-		SubSurfaceMelt = source.SubSurfaceMelt;
-		SubSurfaceFrze = source.SubSurfaceFrze;
 		windward = source.windward;
 		ReSolver_dt = source.ReSolver_dt;
 	}
@@ -1564,7 +1560,7 @@ const std::string SnowStation::toString() const
 	os << "Soil:\tSoilNode=" << SoilNode  << " depth=" << Ground << " BareSoil_z0=" << BareSoil_z0 << " SoilAlb=" << SoilAlb << "\n";
 	os << "Snow:\tMeasured HS=" << mH << " Calculated HS=" << cH << " SWE=" << swe << " LWCtot" << lwc_sum << " New snow=" << hn << " of density=" << rho_hn << "\n";
 	os << "Snow Albedo:\tAlbedo=" << Albedo << " parametrized Albedo=" << pAlbedo << "\n";
-	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy << " SubSurfaceMelt=" << SubSurfaceMelt << " SubSurfaceFrze=" << SubSurfaceFrze << "\n";
+	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy;
 	os << "Snowdrift:\tsector=" << sector << " windward=" << windward << " ErosionLevel=" << ErosionLevel << " ErosionMass=" << ErosionMass << "\n";
 	os << "Stability:\tS_d(" << z_S_d << ")=" << S_d << " S_n(" << z_S_n << ")=" << S_n << " S_s(" << z_S_s << ")=" << S_s;
 	os << " S_1=" << S_class1 << " S_2=" << S_class2 << " S_4(" << z_S_4 << ")=" << S_4 << " S_5(" << z_S_5 << ")=" << S_5 << "\n";

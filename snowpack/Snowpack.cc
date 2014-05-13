@@ -898,9 +898,6 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// Set the default solution routine convergence parameters
 	unsigned int MaxItnTemp = 40; // maximum 40 iterations for temperature field
 	double ControlTemp = 0.01;    // solution convergence to within 0.01 degC
-	// Set the phase change booleans
-	Xdata.SubSurfaceMelt = false;
-	Xdata.SubSurfaceFrze = false;
 	// Determine the displacement depth d_pump and the wind pumping speed at the surface
 	const double d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
 	double v_pump = (nE > Xdata.SoilNode || SnLaws::wind_pump_soil)? SnLaws::compWindPumpingVelocity(Mdata, d_pump) : 0.0;
@@ -1185,7 +1182,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 {
 	//basic parameters
 	elem.depositionDate = Mdata.date;
-	elem.Te = t_surf;
+	elem.Te = MIN(t_surf, Constants::melting_tk);
 	elem.L0 = elem.L = length;
 	elem.Rho = density;
 	assert(elem.Rho>=0. || elem.Rho==IOUtils::nodata); //we want positive density
@@ -1494,12 +1491,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			const double Ln = (hn / (double)nAddE);               // New snow element length
 			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
 			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
-				NDS[n].T = t_surf;                  // Temperature of the new node
-				NDS[n].z = z0;                      // New nodal position
-				NDS[n].u = 0.0;                     // Initial displacement is 0
-				NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
-				NDS[n].udot = 0.0;                  // Settlement rate is also 0
-				NDS[n].f = 0.0;                     // Unbalanced forces are 0
+				NDS[n].T = t_surf; 				// Temperature of the new node
+				NDS[n].z = z0;					// New nodal position
+				NDS[n].u = 0.0;					// Initial displacement is 0
+				NDS[n].hoar = 0.0;				// The new snow surface hoar is set to zero
+				NDS[n].udot = 0.0;				// Settlement rate is also 0
+				NDS[n].f = 0.0;					// Unbalanced forces are 0
 				NDS[n].S_n = INIT_STABILITY;
 				NDS[n].S_s = INIT_STABILITY;
 				z0 += Ln;
@@ -1660,16 +1657,24 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		phasechange.initialize(Xdata);
 
 		// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
+		double ret_topN_T=0;
 		if(!alpine3d)
-			phasechange.compPhaseChange(Xdata, Mdata.date);
+			ret_topN_T=phasechange.compPhaseChange(Xdata, Mdata.date);
 		else
-			phasechange.compPhaseChange(Xdata, Mdata.date, false);
+			ret_topN_T=phasechange.compPhaseChange(Xdata, Mdata.date, false);
+
+		// Create backup of the top node temperature and assign the returned value to it, in order to assess the energy balance
+		const double tmp_topN_T=Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
+		Xdata.Ndata[Xdata.getNumberOfNodes()-1].T=ret_topN_T;
 
 		// Compute the final heat fluxes
 		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
 		                      // linearized w/ respect to Tss and thus remains unchanged
 		                      // throughout the temperature iterations!!!
 		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+
+		// Now that the final heat fluxes have been calculated, restore the top node temperature
+		Xdata.Ndata[Xdata.getNumberOfNodes()-1].T=tmp_topN_T;
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);

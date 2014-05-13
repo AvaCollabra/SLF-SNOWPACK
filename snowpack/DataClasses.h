@@ -479,8 +479,6 @@ class SnowStation {
 		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change of snowpack (J m-2)
 		double meltFreezeEnergySoil;///< Melt freeze part of internal energy change of soil (J m-2)
 		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
-		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		bool windward;              ///< True for windward (luv) slope
 
 		static const double comb_thresh_l, comb_thresh_ice, comb_thresh_water;

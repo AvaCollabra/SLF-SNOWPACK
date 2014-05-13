@@ -597,6 +597,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 // PROBLEM SOLVER GUIDE:
 // KNOWN ISSUES:
+//	- When using Richars-Equation, the new energy conservative PhaseChange-schemes may cause snow temperatures to be above 273.15K. As long as they are transient, it should not considered
+//        to be a problem. Future optimization here may be possible. It's likely related to the fact that when solving Richards-Equation, basically every snow layer has some amount of water in it,
+//        albeit very tiny. But this causes some difficulties in determining whether snow is wet or dry, so whether the nodes are at melting temperature.
 //      - In case of floating point exceptions: ReSolver1d has some problems when (in CMake) DEBUG_ARITHM is set to ON. You can safely set it to OFF, as the code detects for
 //        illegal operations itself and takes appropriate measures, like choosing another solver or reducing the time step.
 //	- In case of non-convergence of the solver: Numerical problems were found when the SNOWPACK time step is larger than 15 minutes. For example caused by the settling routine,
@@ -896,16 +899,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 			const double deltaT=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 			EMS[i].Te+=deltaT;
-			if(i==0) {
-				NDS[i].T+=deltaT;
-			} else {
-			  	NDS[i].T+=0.5*deltaT;
-			}
-			if(i==nE-1) {
+
+			if(i==nE-1 && i>=0) {
 				NDS[i+1].T+=deltaT;
-			} else {
-				NDS[i+1].T+=0.5*deltaT;
+				NDS[i].T+=deltaT;
 			}
+
 			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / snowpack_dt; // (W m-3)
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
@@ -1101,7 +1100,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Uniform soil
 				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				//SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(CLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+				//SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
 			case IMISDEFAULT:
 				//Default case (IMIS):
@@ -2238,82 +2237,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(fabs(delta_Te[i]) > 0. && SnowpackElement[i]<Xdata.SoilNode) {			//Check if phase change did occur in soil
 					EMS[SnowpackElement[i]].Te+=delta_Te[i];
 					EMS[SnowpackElement[i]].melting_tk=EMS[SnowpackElement[i]].freezing_tk=T_melt[i];
-
-					// Store current nodal temperatures
-					double tmp_N_T_up=NDS[SnowpackElement[i]+1].T;
-					double tmp_N_T_down=NDS[SnowpackElement[i]].T;
-
-					//Calculate the threshold of temperature difference between the element temperature and the melting/freezing temperature, which is determined by the used accuracy for solving the soil freezing/thawing equation.
-					//Below this threshold, the soil layer should be considered to be in melting/freezing state (no complete melt/freeze occurred).
-					double tmp_threshold=(SF_epsilon) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-
-					// Adjust nodal temperatures based on change in element temperature
-					if(SnowpackElement[i]==nE-1) {
-						if(fabs(EMS[SnowpackElement[i]].Te-EMS[SnowpackElement[i]].melting_tk)<tmp_threshold) {
-							NDS[SnowpackElement[i]+1].T = EMS[SnowpackElement[i]].melting_tk;
-						} else {
-							NDS[SnowpackElement[i]+1].T += delta_Te[i];
-						}
-					} else {
-						NDS[SnowpackElement[i]+1].T += 0.5*delta_Te[i];
-					}
-					if(SnowpackElement[i]==0) {
-						NDS[SnowpackElement[i]].T += delta_Te[i];
-					} else {
-						NDS[SnowpackElement[i]].T += 0.5*delta_Te[i];
+					if(SnowpackElement[i]==nE-1 && SnowpackElement[i]>=0) {
+						NDS[SnowpackElement[i]+1].T+=delta_Te[i];
+						NDS[SnowpackElement[i]].T+=delta_Te[i];
 					}
 
-					if(fabs(EMS[SnowpackElement[i]].Te-EMS[SnowpackElement[i]].melting_tk)<tmp_threshold) {
-						// If water is present in freezing conditions, nodal temperatures must equal freezing_tk
-						NDS[SnowpackElement[i]].T = NDS[SnowpackElement[i]+1].T = EMS[SnowpackElement[i]].freezing_tk;	
-					} else {
-						// If freezing and no liquid water is present anymore, nodal temperature cannot be above freezing_tk
-						if(EMS[SnowpackElement[i]].Te < EMS[SnowpackElement[i]].melting_tk) {
-							NDS[SnowpackElement[i]+1].T = MIN(NDS[SnowpackElement[i]+1].T, EMS[SnowpackElement[i]].freezing_tk);
-							NDS[SnowpackElement[i]].T = MIN(NDS[SnowpackElement[i]].T, EMS[SnowpackElement[i]].freezing_tk);
-						} else {
-							NDS[SnowpackElement[i]+1].T = MAX(NDS[SnowpackElement[i]+1].T, EMS[SnowpackElement[i]].freezing_tk);
-							NDS[SnowpackElement[i]].T = MAX(NDS[SnowpackElement[i]].T, EMS[SnowpackElement[i]].freezing_tk);
-						}
-					}
-
-					// Now that we have performed a phase change, we correct the other nodal temperatures to
-					// stay as close as possible in satisfying energy balance.
-					if(SnowpackElement[i]!=0) {
-						//Calculate the threshold for the layer below
-	  					tmp_threshold=(SF_epsilon) / ((EMS[SnowpackElement[i]-1].c[TEMPERATURE] * EMS[SnowpackElement[i]-1].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-						if(fabs(EMS[SnowpackElement[i]-1].Te+delta_Te[i-1]-EMS[SnowpackElement[i]-1].melting_tk)<tmp_threshold) {
-							// In case the element below is in melting/freezing state, set the node to freezing temperature
-							NDS[SnowpackElement[i]].T=0.5*(EMS[SnowpackElement[i]].freezing_tk+EMS[SnowpackElement[i]-1].freezing_tk);
-						} else {
-							// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-							// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-							// scaling with the heat capacity.
-							if((SnowpackElement[i]-1)==0) {
-								NDS[SnowpackElement[i]-1].T+=(tmp_N_T_down-NDS[SnowpackElement[i]].T);
-							} else {
-								NDS[SnowpackElement[i]-1].T+=0.5*(tmp_N_T_down-NDS[SnowpackElement[i]].T);
-							}
-						}
-					}
-					if(SnowpackElement[i]!=nE-1) {
-						//Calculate the threshold for the layer above
-						tmp_threshold=(SF_epsilon) / ((EMS[SnowpackElement[i]+1].c[TEMPERATURE] * EMS[SnowpackElement[i]+1].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-						if(fabs(EMS[SnowpackElement[i]+1].Te+delta_Te[i+1]-EMS[SnowpackElement[i]+1].melting_tk)<tmp_threshold) {
-							// In case the element above is in melting/freezing state, set the node to lowest freezing temperature
-							NDS[SnowpackElement[i]+1].T=0.5*(EMS[SnowpackElement[i]].freezing_tk+EMS[SnowpackElement[i]+1].freezing_tk);
-						} else {
-							// In other cases, adjust the nodal temperature below the element below, such that the energy of the node is not affected by the change in nodal temperature.
-							// Note that we do half the temperature change, as by changing the node, the other element is also affected. This could be optimized by
-							// scaling with the heat capacity.
-							if((SnowpackElement[i]+2)==nE) {
-								//We would like to adjust the top node now, but this will also influence the energy balance in the next time step. In this way, it may introduce oscillations at the top node.
-								//NDS[SnowpackElement[i]+2].T+=(tmp_N_T_up-NDS[SnowpackElement[i]+1].T);
-							} else {
-								NDS[SnowpackElement[i]+2].T+=0.5*(tmp_N_T_up-NDS[SnowpackElement[i]+1].T);
-							}
-						}
-					}
+					// Now that we have performed a phase change, we should correct the nodal temperatures too. This will be done later in PhaseChange,
+					// by using Qmf to determine amount of phase change that occurred.
 				}
 
 				//We adapted the elements and nodes to the temperature change, so set it to 0.
@@ -2452,15 +2382,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//In case we had to melt ice to get theta_r, we have to adjust the temperature:
 			EMS[i].Te -= dT[i];
-			if(i==0) {
-				NDS[i].T -= dT[i];
-			} else {
-			  	NDS[i].T -= 0.5*dT[i];
-			}
-			if(i==nE-1) {
-				NDS[i+1].T -= dT[i];
-			} else {
-				NDS[i+1].T -= 0.5*dT[i];
+			if(i==nE-1 && i>=0) {
+				NDS[i+1].T-=dT[i];
+				NDS[i].T-=dT[i];
 			}
 
 			//And adjust all the properties accordingly

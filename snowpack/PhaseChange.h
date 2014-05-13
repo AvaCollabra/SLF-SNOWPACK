@@ -38,7 +38,7 @@ class PhaseChange {
 		PhaseChange(const SnowpackConfig& i_cfg);
 		void initialize(SnowStation& Xdata);								//Call before first call to compPhaseChange in a time step
 		void finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in);	//Call after last call to compPhaseChange in a time step
-		void compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step
+		double compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step, returning the temperature of the top node (K)
 
 		static const double RE_theta_r;		///< Residual Water Content for snow, when using water transport model "RICHARDSEQUATION"
 		static const double RE_theta_threshold; ///< Threshold Water Content for snow, when using water transport model "RICHARDSEQUATION", to determine what is dry and wet snow
