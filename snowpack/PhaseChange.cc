@@ -406,6 +406,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 		ql_Rest = 0.;
 		e = nE;
 		while (e > 0) {
+			e--;
 			if (EMS[e].theta[SOIL] == 0.0) {
 				if (verbose && !(EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
 					prn_msg(__FILE__, __LINE__, "wrn", date_in, "Phase Change Begin: rho[%d]=%f", e, EMS[e].Rho);
@@ -418,7 +419,6 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
-			e--;
 			double i_Te = EMS[e].Te;
 			// Determine whether a layer can be considered dry or not.
 			const double cmp_theta = ((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
