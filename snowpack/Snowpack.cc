@@ -56,7 +56,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), albedo_average_schmucki(), sw_absorption_scheme(),
             albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
             meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
-            height_new_elem(0.), thresh_rain(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
+            height_new_elem(0.), thresh_rain(0.), thresh_rain_range(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
             minimum_l_element(0.), t_surf(0.),
@@ -149,6 +149,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 
 	//Rain only for air temperatures warmer than threshold (degC)
 	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
+	//If thresh_rain_range!=0: use gradual transition between rain and snow, where thresh_rain_range specifies the temperature range, and thresh_rain specifies the 50% rain and 50% snow mark.
+	cfg.getValue("THRESH_RAIN_RANGE", "SnowpackAdvanced", thresh_rain_range);
 
 	/* Precipitation only for humidity above and temperature difference within threshold (1)
 	 * - thresh rh (default): 0.50
@@ -572,8 +574,9 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
 	}
 
-	if (Tair >= C_TO_K(thresh_rain)) {
-		const double gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
+	if (Tair >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range) {
+		const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+		const double gamma = ((Mdata.hnw * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (Tair - Tss);
 	} else {
 		Bdata.qr = 0.;
@@ -632,8 +635,9 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		//NOTE: should it not be linearized then?
 		Fe[1] += Bdata.ql;
 		// Advected rain energy: linear dependence on snow surface temperature
-		if (T_air >= C_TO_K(thresh_rain)) {
-			const double gamma = (Mdata.hnw / sn_dt) * Constants::specific_heat_water;
+		if (T_air >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range) {
+			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			const double gamma = ((Mdata.hnw * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
 			Se[1][1] += gamma;
 			Fe[1] += gamma * T_air;
 		}
@@ -1270,12 +1274,17 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		Sdata.cRho_hn = -rho_hn;
 
 	if (!enforce_measured_snow_heights) { // HNW driven
-		if (Mdata.ta < C_TO_K(thresh_rain)) {
+		if (Mdata.ta < C_TO_K(thresh_rain) + 0.5 * thresh_rain_range) {
+			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 0. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			const double tmp_snowfraction = 1. - tmp_rainfraction;
 			if ((cumu_precip > 0.) && (rho_hn != Constants::undefined)) {
+				// This is now very important to make sure that the rain fraction will not accumulate
+				// Note that cumu_precip will always be considered snowfall, as we substract all rainfall amounts
+				cumu_precip -= Mdata.hnw * tmp_rainfraction;
 				if ((hn_density == "MEASURED") || ((hn_density == "FIXED") && (rho_hn > SnLaws::max_hn_density))) {
 					// Make sure that a new element is timely added in the above cases
 					// TODO check whether needed in both cases
-					if (((meteo_step_length / sn_dt) * Mdata.hnw) <= cumu_precip) {
+					if (((meteo_step_length / sn_dt) * (Mdata.hnw * tmp_snowfraction)) <= cumu_precip) {
 						delta_cH = (cumu_precip / rho_hn);
 						add_element = true;
 					}
@@ -1305,7 +1314,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	const double melting_tk = (nOldE>0)? Xdata.Edata[nOldE-1].melting_tk : Constants::melting_tk;
 	const double dtempAirSnow = (change_bc && !meas_tss)? Mdata.ta - melting_tk : Mdata.ta - t_surf; //we use t_surf only if meas_tss & change_bc
 
-	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain)) && (dtempAirSnow < thresh_dtempAirSnow))
+	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain) + 0.5 * thresh_rain_range) && (dtempAirSnow < thresh_dtempAirSnow))
                                || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 
 	// In addition, let's check whether the ground is already snowed in or cold enough to build up a snowpack

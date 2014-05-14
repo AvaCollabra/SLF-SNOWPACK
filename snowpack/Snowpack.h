@@ -140,7 +140,7 @@ class Snowpack {
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
 		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
-		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, sn_dt;
+		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, thresh_rain_range, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dtempAirSnow;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_size, new_snow_bond_size;
