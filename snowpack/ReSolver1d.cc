@@ -1543,13 +1543,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
 				// Now reduce flux when necessary:
-  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.)
-				     && ((LIMITEDFLUXINFILTRATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || (int(nsoillayers_snowpack)<int(nE) && toplayer==nsoillayers_snowpack && LIMITEDFLUXINFILTRATION_snowsoil==true)))
-				        || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
+  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
+				     (LIMITEDFLUXINFILTRATION_soil==true && int(nsoillayers_snowpack)==int(nE))
+				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && int(nsoillayers_snowpack)<int(nE) && toplayer==nsoillayers_snowpack)
+				           || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
 					// Influx condition
 					// Determine the limiting flux:
 					const double flux_compare =														//The limiting flux is:
-					        (dz[uppernode]*(theta_s[uppernode] - theta_np1_m[uppernode])/dt)								// net flux that would lead to saturation of the top layer
+					        (dz[uppernode]*(theta_s[uppernode] - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt)					// net flux that would lead to saturation of the top layer
 					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_e[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + cos_sl) : 0.);	// plus what could leave below
 
 					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
