@@ -1338,14 +1338,15 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 /**
  * @brief Boolean routine to check whether two snow elements can be combined
- * -# NO ACTION will be taken if one of the two elements is
- * 	- a soil element
- * 	- larger than join_thresh_l
- * 	- tagged
- * 	- dry surface hoar (mk=3),
- * 	- dendritic but not both
- * -# OTHERWISE we use criteria for dendricity, sphericity, volumetric ice or water content, grain size and marker
- * - NOTE Whatever type of thin elements are treated in WaterTransport::mergingElements()
+ * - \b no \b action will be taken if one of the two elements is
+ *      - a soil element
+ *      - larger than join_thresh_l
+ *      - tagged
+ *      - dry surface hoar (mk=3)
+ *      - dendritic but not both
+ * - \b otherwise we use criteria for dendricity, sphericity, volumetric ice or water content, grain size and marker
+ * - Whatever type of thin elements are treated in WaterTransport::mergingElements()
+ *
  * @param Edata0 Lower element
  * @param Edata1 Upper element
  * @return true if the two elements should be combined, false otherwise
