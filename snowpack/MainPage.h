@@ -92,8 +92,8 @@
 
 /**
  * @page general General concepts
- * The one-dimensional snow cover model SNOWPACK (Lehning et al., 1999; Bartelt and Lehning, 2002; Lehning et al., 2002a, b),
- * initially programmed in C, was primarily developed for the support of avalanche warning in Switzerland (it has now been ported to C++).
+ * The one-dimensional snow cover model SNOWPACK (Lehning et al., 1999; Bartelt and Lehning, 2002; Lehning et al., 2002a, b), 
+ * was primarily developed for the support of avalanche warning in Switzerland.
  * However, this physical model is also used for other applications such as permafrost investigations (Lütschg et al., 2003),
  * the assessment of snow – vegetation interactions, climate research (Rasmus and Räisänen, 2003; Bavay et al., 2009), mass- and energy balance
  * calculations for arctic areas (Meirold-Mautner and Lehning, 2003) and calculations of chemical solute transport in snow (Waldner et al., 2003).
@@ -114,7 +114,7 @@
  * \image latex snowpack_column.eps "The SNOWPACK soil/snow/canopy column" width=0.5\textwidth
  * The SNOWPACK model is built around a 1D soil/snow/canopy column (see figure above). This in effect neglects lateral transfers and only considers vertical
  * gradients and transfers. The snow is modeled as a three phase porous medium (ice/liquid water/water vapor) but can also contain an arbitrary amount of soil
- * in order to simulate from purely soil layers to snow layers, including ice lenses, permafrost, ponding, etc An arbitrary number of layers can be simulated,
+ * in order to simulate from purely soil layers to snow layers, including ice lenses, permafrost, ponding, etc. An arbitrary number of layers can be simulated,
  * according to needs. Because of its lagragian grid, SNOWPACK can simulate very thin layers if needed (ice crust, hoar).
  *
  *
@@ -140,8 +140,8 @@
  * \image html snowpack_physics.png "Structure of the SNOWPACK model"
  * \image latex snowpack_physics.eps "Structure of the SNOWPACK model" width=0.9\textwidth
  *
- * These concepts are visible through the source code, as well as through some keys in the configuration file. Therefore, please keep them in mind when preparing your
- * simulations!
+ * The user can configure variants of these basic model concepts. The way of interaction is primarily through a configuration file but also changes to the source code by
+ * users are in principle possible. In any case, a sufficient understanding of the modeling concept will ensure a safe operation of the model.
  *
  * @subsection model_ebalance Energy Balance
  * The figure below shows the various fluxes that are part of the energy balance of the SNOWPACK model. These are available in the output files as well as

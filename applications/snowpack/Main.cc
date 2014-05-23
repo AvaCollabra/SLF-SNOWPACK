@@ -244,6 +244,11 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 		{0, 0, 0, 0}
 	};
 
+	if (argc==1) { //no arguments provided
+		Usage(string(argv[0]));
+		exit(1);
+	}
+
 	while ((opt=getopt_long( argc, argv, ":e:m:c:s:v:h", long_options, &longindex)) != -1) {
 		switch (opt) {
 		case 0:
@@ -275,11 +280,11 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 			break;
 		case 'v':
 			Version();
-			exit(1);
+			exit(0);
 			break;
 		case 'h':
 			Usage(string(argv[0]));
-			exit(1);
+			exit(0);
 			break;
 		case '?':
 			cerr << endl << "[E] Unknown argument detected" << endl;
@@ -296,6 +301,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 	if (!setEnd) {
 		cerr << endl << "[E] You must specify an enddate for the simulation!" << endl;
 		Usage(string(argv[0]));
+		exit(1);
 	}
 }
 
@@ -728,20 +734,19 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 // SNOWPACK MAIN **************************************************************
 void real_main (int argc, char *argv[])
 {
-	if (argc==1) Usage(string(argv[0]));
-
 #ifdef DEBUG_ARITHM
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
 #endif
+	//parse the command line arguments
+	string end_date_str;
+	parseCmdLine(argc, argv, end_date_str);
+
 	const bool prn_check = false;
 	mio::Timer meteoRead_timer;
 	mio::Timer run_timer;
 	run_timer.start();
 	time_t nowSRT = time(NULL);
 	MainControl mn_ctrl; //Time step control parameters
-
-	string end_date_str("");
-	parseCmdLine(argc, argv, end_date_str); //parse the command line arguments
 
 	SnowpackConfig cfg(cfgfile);
 
@@ -754,7 +759,7 @@ void real_main (int argc, char *argv[])
 		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
 	}
 
-	string outpath(""), experiment(""), db_name(""), variant("");
+	string outpath, experiment, db_name, variant;
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::IOUtils::nothrow);
 
 	// Add keys to perform running mean in Antarctic variant
@@ -768,7 +773,7 @@ void real_main (int argc, char *argv[])
 		cfg.addKey("RH_AVG::arg1", "Filters", "soft 101 360000");
 	}
 
-	std::string tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
+	const std::string tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
 	if (tst_sw_mode == "BOTH") { //HACK: this is only for INP!
 		// Make sure there is not only one of ISWR and RSWR available
 		bool iswr_inp=true, rswr_inp = true;
