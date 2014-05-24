@@ -764,8 +764,8 @@ void real_main (int argc, char *argv[])
 
 	// Add keys to perform running mean in Antarctic variant
 	if (variant == "ANTARCTICA") {
-		cfg.addKey("COPY::VW_AVG", "Input", "VW");
-		cfg.addKey("COPY::RH_AVG", "Input", "RH");
+		cfg.addKey("VW_AVG::COPY", "Input", "VW");
+		cfg.addKey("RH_AVG::COPY", "Input", "RH");
 
 		cfg.addKey("VW_AVG::filter1", "Filters", "mean_avg");
 		cfg.addKey("VW_AVG::arg1", "Filters", "soft 101 360000");
