@@ -41,7 +41,7 @@ unsigned short SnowStation::number_of_solutes = 0;
 const double SnowStation::thresh_moist_snow = 0.003;
 const double SnowStation::thresh_moist_soil = 0.0001;
 
-/// Both elements must be smaller than JOIN_THRESH_L (m) for an action to be taken
+/// Both elements must be smaller than COMB_THRESH_L (m) for an action to be taken
 const double SnowStation::comb_thresh_l = 0.015;
 /// Volumetric ice content (1), i.e., about 46 kg m-3
 const double SnowStation::comb_thresh_ice = 0.05;
@@ -1371,7 +1371,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  * @brief Boolean routine to check whether two snow elements can be combined
  * - \b no \b action will be taken if one of the two elements is
  *      - a soil element
- *      - larger than join_thresh_l
+ *      - larger than comb_thresh_l
  *      - tagged
  *      - dry surface hoar (mk=3)
  *      - dendritic but not both
