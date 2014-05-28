@@ -821,15 +821,15 @@ void real_main (int argc, char *argv[])
 	if (detect_grass) {
 		// we need various average values of tss and hs, all for "past" windows (left)
 		// Require at least one value per 3 hours
-		cfg.addKey("COPY::TSS_A24H", "Input", "TSS");
+		cfg.addKey("TSS_A24H::COPY", "Input", "TSS");
 		cfg.addKey("TSS_A24H::filter1", "Filters", "mean_avg");
 		cfg.addKey("TSS_A24H::arg1", "Filters", "left 48 86340"); //TODO change # data required to 4
 
-		cfg.addKey("COPY::TSS_A12H", "Input", "TSS");
+		cfg.addKey("TSS_A12H::COPY", "Input", "TSS");
 		cfg.addKey("TSS_A12H::filter1", "Filters", "mean_avg");
 		cfg.addKey("TSS_A12H::arg1", "Filters", "left 24 43140"); //TODO change # data required to 2
 
-		cfg.addKey("COPY::HS_A3H", "Input", "HS");
+		cfg.addKey("HS_A3H::COPY", "Input", "HS");
 		cfg.addKey("HS_A3H::filter1", "Filters", "mean_avg");
 		cfg.addKey("HS_A3H::arg1", "Filters", "left 6 10740"); //TODO change # data required to 1
 	}
