@@ -1562,8 +1562,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						if(isPonding==true) TopFluxRate=0.;
 					}
 
-					if(flux_compare < TopFluxRate) {
-						TopFluxRate=MAX(0., flux_compare);
+					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
+						TopFluxRate=MAX(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || toplayer==nsoillayers_snowpack)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
