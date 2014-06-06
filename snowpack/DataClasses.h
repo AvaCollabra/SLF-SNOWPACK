@@ -541,7 +541,7 @@ class SurfaceFluxes {
 
 		void reset(const bool& cumsum_mass);
 		void compSnowSoilHeatFlux(const SnowStation& Xdata);
-		void collectSurfaceFluxes(const BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt);
+		void collectSurfaceFluxes(const BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
 
 		/**
 		 * @brief Energy fluxes:

@@ -290,7 +290,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
  * @param Mdata
  */
 void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
-                                         SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt)
+                                         SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
 	// 1) Short wave fluxes and Albedo.
 	//     Depending on settings (sw_mode) and conditions,
@@ -524,7 +524,7 @@ void ElementData::heatCapacity()
  */
 double ElementData::coldContent() const
 {
-	return (Rho * c[TEMPERATURE] * (Te - melting_tk) * L);
+	return (Rho * c[TEMPERATURE] * (Te - Constants::melting_tk) * L);
 }
 
 /**
