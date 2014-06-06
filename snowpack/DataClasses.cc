@@ -290,7 +290,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
  * @param Mdata
  */
 void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
-                                         SnowStation& Xdata, const CurrentMeteo& Mdata)
+                                         SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt)
 {
 	// 1) Short wave fluxes and Albedo.
 	//     Depending on settings (sw_mode) and conditions,
@@ -326,6 +326,15 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	}
 	if(Xdata.SoilNode>0) {
 		dIntEnergySoil += Xdata.dIntEnergySoil;
+		// Now take care of the source and sink terms:
+		dIntEnergySoil += (mass[MS_SOIL_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[0].Te - Xdata.Edata[0].melting_tk));
+		if (Xdata.SoilNode <  Xdata.getNumberOfElements()) {
+			dIntEnergySoil -= mass[MS_SNOWPACK_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode].Te - Xdata.Edata[Xdata.SoilNode].melting_tk);
+		}
+		if (Xdata.SoilNode == Xdata.getNumberOfElements()) {
+			//Note: at this stage, MS_RAIN is still in kg/m^2! In Main.cc, it is recalculated to kg/m^2/h if PRECIP_RATES==TRUE.
+			dIntEnergySoil -= (mass[MS_RAIN] + mass[MS_EVAPORATION] + mass[MS_SUBLIMATION]) * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode-1].Te - Xdata.Edata[Xdata.SoilNode-1].melting_tk);
+		}
 		meltFreezeEnergySoil += Xdata.meltFreezeEnergySoil;
 	}
 
@@ -509,13 +518,13 @@ void ElementData::heatCapacity()
 }
 
 /**
- * @brief Computes cold content of an element
+ * @brief Computes cold content of an element, taking melting_tk as reference
  * @version 10.08
  * @return Cold content (J m-2)
  */
 double ElementData::coldContent() const
 {
-	return (Rho * c[TEMPERATURE] * (Te - Constants::melting_tk) * L);
+	return (Rho * c[TEMPERATURE] * (Te - melting_tk) * L);
 }
 
 /**
@@ -1796,7 +1805,7 @@ const std::string SurfaceFluxes::toString() const
 	os << "Short wave: sw_in=" << sw_in << " sw_out=" << sw_out << " qw=" << qw << "\n";
 	os << "Short wave: sw_hor=" << sw_hor << " sw_dir=" << sw_dir << " sw_diff=" << sw_diff << "\n";
 	os << "Albedo: mAlbedo=" << mAlbedo << " pAlbedo=" << pAlbedo << "\n";
-	os << "Energy: qs=" << qs << " ql=" << ql << " qw=" << qw << " qr=" << qr << " qg=" << qg << " gq0=" << qg0 << "\n";
+	os << "Energy: qs=" << qs << " ql=" << ql << " qw=" << qw << " qr=" << qr << " qg=" << qg << " qg0=" << qg0 << "\n";
 	os << "Energy: dIntEnergy=" << dIntEnergy << "\n";
 	os << "Mass change: hoar=" << hoar << " drift=" << drift << " snow_depth_correction=" << dhs_corr << "\n";
 	os << "Snow: mRho_hn=" << mRho_hn << " cRho_hn=" << cRho_hn << "\n";

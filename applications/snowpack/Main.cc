@@ -1014,7 +1014,7 @@ void real_main (int argc, char *argv[])
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
 
 				/***** OUTPUT SECTION *****/
-				surfFluxes.collectSurfaceFluxes(sn_Bdata, vecXdata[slope.sector], Mdata);
+				surfFluxes.collectSurfaceFluxes(sn_Bdata, vecXdata[slope.sector], Mdata, sn_dt);
 				if (slope.sector == slope.mainStation) { // main station only (usually flat field)
 					// Calculate consistent lw_in for virtual slopes
 					if ( vecXdata[slope.mainStation].getNumberOfElements() > 0 ) {
