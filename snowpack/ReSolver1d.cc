@@ -24,9 +24,7 @@
 	typedef double doublereal;
 
 	// Declare the function interfaces with the LAPACK library (taken from clapack.h):
-	#ifdef __cplusplus
-		extern "C" {
-	#endif
+	extern "C" {
 		/* Subroutine */ int dgesvd_(char *jobu, char *jobvt, integer *m, integer *n,
 		doublereal *a, integer *lda, doublereal *s, doublereal *u, integer *
 		ldu, doublereal *vt, integer *ldvt, doublereal *work, integer *lwork,
@@ -40,9 +38,7 @@
 		/* Subroutine */ int dgtsv_(integer *n, integer *nrhs, doublereal *dl,
 		doublereal *d__, doublereal *du, doublereal *b, integer *ldb, integer
 		*info);
-	#ifdef __cplusplus
-		}
-	#endif
+	}
 #endif
 #include <string.h>
 
@@ -217,7 +213,7 @@ double ReSolver1d::AirEntryPressureHead(double MaximumPoreSize, double Temperatu
 	}
 	const double delta_P=-1.*(2.*SurfaceTension)/(0.5*MaximumPoreSize);
 	const double air_entry_head=delta_P/(Constants::density_water*Constants::g);
-	
+
 	return air_entry_head;
 }
 
@@ -248,9 +244,9 @@ int ReSolver1d::TDMASolver (int n, double *a, double *b, double *c, double *v, d
          * x - the solution
 	 * Return value: 0 = succes, otherwise: error
          */
-	if(b[n-1]==0.) return -1;		// This will cause division by 0, so return with error code.
-	for (int i = 1; i < n; i++)
-	{
+	if (b[n-1]==0.) return -1;		// This will cause division by 0, so return with error code.
+
+	for (int i = 1; i < n; i++) {
 		if(b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
 		double m = a[i-1]/b[i-1];
 		b[i] = b[i] - m * c[i - 1];
@@ -437,7 +433,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.14757/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case CLAYLOAM:
 			*theta_r=0.079;
 			*theta_s=0.442;
@@ -482,7 +478,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.1135/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SANDYCLAYLOAM:
 			*theta_r=0.063;
 			*theta_s=0.384;
@@ -491,7 +487,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.1318/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SANDYLOAM:
 			*theta_r=0.039;
 			*theta_s=0.387;
@@ -500,7 +496,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.3828/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SILT:
 			*theta_r=0.050;
 			*theta_s=0.489;
@@ -509,7 +505,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.4375/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SILTYCLAY:
 			*theta_r=0.111;
 			*theta_s=0.481;
@@ -518,7 +514,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.09616/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SILTYCLAYLOAM:
 			*theta_r=0.090;
 			*theta_s=0.482;
@@ -527,7 +523,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			*ksat=0.1112/(24.*60.*60.);
 			MaximumPoreSize=0.005;
 			break;
-			
+
 		case SILTLOAM:
 			*theta_r=0.065;
 			*theta_s=0.439;
@@ -546,7 +542,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 			MaximumPoreSize=0.005;
 			break;
 	}
-	
+
 	*he=AirEntryPressureHead(MaximumPoreSize, 273.);
 	*m=(*n-1.)/(*n);
 
@@ -990,7 +986,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			theta_r[i]=MAX(0., MIN(0.02, MAX(EMS[SnowpackElement[i]].theta_r, TuningFactor*EMS[SnowpackElement[i]].theta[WATER])));
 			//Decrease theta_r in case of refreezing:
 			theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-(REQUIRED_ACCURACY_THETA/10.)));
-			
+
 			theta_s[i]=(1. - EMS[SnowpackElement[i]].theta[ICE])*(Constants::density_ice/Constants::density_water);
 
 			//Make ice layers inactive:
@@ -1072,9 +1068,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 			const double tmp_dynamic_viscosity_water=0.001792;				//In Pa/s, from WaterTransport code by Hirashima: 0.001792
-			
+
 			switch ( K_PARAM ) {	//Set saturated hydraulic conductivity
-			
+
 			case SHIMIZU:
 				//This formulation for ksat is proposed by Shimizu (1970), and is valid up to 450 kg/m^3. See Equation 5 in Jordan, 1999 + conversion from hydraulic permeability to hydraulic conductivity.
 				if(EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice>450.) {
@@ -2251,7 +2247,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 				//We adapted the elements and nodes to the temperature change, so set it to 0.
 				delta_Te[i]=0.;
-				
+
 				//Set initial solution for next iteration
 				if(activelayer[i]==true) {
 					theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_m[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_mp1[i]);
@@ -2394,7 +2390,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
 			EMS[i].M=EMS[i].L*EMS[i].Rho;
-			
+
 			//Every change in ice content in a specific layer must be associated with phase changes. Store the associated energy accordingly.
 			EMS[i].Qmf += ((EMS[i].theta[ICE]-snowpackBACKUPTHETAICE[i]) * Constants::density_ice * Constants::lh_fusion) / snowpack_dt; // (W m-3)
 		} else {										//We are in snow and don't have enough water, snow should be dry, so set back to initial values.
