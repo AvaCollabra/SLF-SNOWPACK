@@ -629,13 +629,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //    or write it out in a kind of overland flow variable.
 
 	//Initializations
-	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, ALPINE3D};
+	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, SNOFILE};
 
 	//
 	// BEGIN OF SETTINGS
 	//
-	const RunCases runcase = IMISDEFAULT;					//Defines what the soil looks like
-	const BoundaryConditions TopBC = LIMITEDFLUXEVAPORATION;		//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).
+	const RunCases runcase = SNOFILE;					//Defines what the soil looks like. Recommended: SNOFILE, soil type based on grain size in sno file.
+	const BoundaryConditions TopBC = LIMITEDFLUX;				//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).
 		//In case you select one of the LIMITEDFLUX options, specify whether these are only for soil, for snow or for both:
 		const bool LIMITEDFLUXEVAPORATION_soil=true;
 		const bool LIMITEDFLUXEVAPORATION_snow=true;
@@ -1125,7 +1125,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Case Col de Porte
 				SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				break;
-			case ALPINE3D:
+			case SNOFILE:
 				if(EMS[SnowpackElement[i]].rg < 0.5) {
 					SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				} else if (EMS[SnowpackElement[i]].rg < 1.) {
