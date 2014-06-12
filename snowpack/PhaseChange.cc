@@ -436,7 +436,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 				throw IOException("Run-time error in compPhaseChange()", AT);
 			}
 			// See whether hoar has melted
-			if (EMS[e].theta[WATER] > Constants::eps) {
+			if (EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
 				NDS[e].hoar = 0.;
 				NDS[e+1].hoar = 0.;
 			}
