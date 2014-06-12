@@ -266,8 +266,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
 			qg0 += -E_soil.k[TEMPERATURE]
 			* E_soil.gradT;
 		} else { // with soil & snow
-			qg0 += -E_soil.k[TEMPERATURE]
-			* E_soil.gradT;
+			qg0 += ( ( -E_snow.k[TEMPERATURE] * E_snow.gradT ) + ( -E_soil.k[TEMPERATURE] * E_soil.gradT ) ) / 2.;
 			// Take care of energy flow between snow and soil in case of shortwave absorption by the soil:
 			qg0 -= E_soil.sw_abs;
 		}
