@@ -327,13 +327,13 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	if(Xdata.SoilNode>0) {
 		dIntEnergySoil += Xdata.dIntEnergySoil;
 		// Now take care of the source and sink terms:
-		dIntEnergySoil += (mass[MS_SOIL_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[0].Te - Xdata.Edata[0].melting_tk));
+		dIntEnergySoil += (mass[MS_SOIL_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[0].Te - Constants::melting_tk));
 		if (Xdata.SoilNode <  Xdata.getNumberOfElements()) {
-			dIntEnergySoil -= mass[MS_SNOWPACK_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode].Te - Xdata.Edata[Xdata.SoilNode].melting_tk);
+			dIntEnergySoil -= mass[MS_SNOWPACK_RUNOFF] * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode].Te - Constants::melting_tk);
 		}
 		if (Xdata.SoilNode == Xdata.getNumberOfElements()) {
 			//Note: at this stage, MS_RAIN is still in kg/m^2! In Main.cc, it is recalculated to kg/m^2/h if PRECIP_RATES==TRUE.
-			dIntEnergySoil -= (mass[MS_RAIN] + mass[MS_EVAPORATION] + mass[MS_SUBLIMATION]) * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode-1].Te - Xdata.Edata[Xdata.SoilNode-1].melting_tk);
+			dIntEnergySoil -= (mass[MS_RAIN] + mass[MS_EVAPORATION] + mass[MS_SUBLIMATION]) * Constants::specific_heat_water * (Xdata.Edata[Xdata.SoilNode-1].Te - Constants::melting_tk);
 		}
 		meltFreezeEnergySoil += Xdata.meltFreezeEnergySoil;
 	}
