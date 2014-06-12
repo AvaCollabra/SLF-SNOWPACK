@@ -452,17 +452,17 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			}
 
 			// Make sure all nodal temperatures are consistent with the temperature change of the element
-			//if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
-			if(e < Xdata.SoilNode && iwatertransportmodel_soil==RICHARDSEQUATION) {
+			if (e < Xdata.SoilNode && iwatertransportmodel_soil == RICHARDSEQUATION) {
 				// In case we use Richards equation for soil, phase transisitions are calculated there. The solver for Richards equation adjusts the element temperatures
 				// and stores the heat associated with the phase transitions in Qmf. Here, we use Qmf to calculate i_Te, and adjust the nodes here.
-				i_Te = EMS[e].Te - ( (EMS[e].Qmf * sn_dt) / (EMS[e].c[TEMPERATURE] * EMS[e].Rho));
+				i_Te = EMS[e].Te;
+				EMS[e].Te += ( (EMS[e].Qmf * sn_dt) / (EMS[e].c[TEMPERATURE] * EMS[e].Rho));
 			}
-			if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
+			if ( e >= Xdata.SoilNode || iwatertransportmodel_soil != RICHARDSEQUATION ) {
 				// Check if phase change did occur
 				// Note: the MoistLayer==true is mainly there for the Richards equation for snow, where there is always some amount of
 				// liquid water present in a layer, so we should additionally check if the phase change was significant.
-				if(EMS[e].Te!=i_Te && (iwatertransportmodel_snow!=RICHARDSEQUATION || (MoistLayer==true && e>=Xdata.SoilNode))) {
+				if ( EMS[e].Te != i_Te && (iwatertransportmodel_snow != RICHARDSEQUATION || (MoistLayer == true && e >= Xdata.SoilNode))) {
 					// Adjust nodal temperatures based on change in element temperature
 					if(e==nE-1) {
 						// The top node is our starting point and treated special:
@@ -560,23 +560,46 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 								NDS[e-1].T=MIN(NDS[e-1].T, EMS[e-1].freezing_tk);
 							}
 						}
+						EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
 					}
 				}
 				// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
 			} else {
-				// In case we use Richards equation for soil, phase changes will be calculated in ReSolver1d::SolveRichardsEquation
-				// Nevertheless, we need to make sure to define the return value:
-				if(EMS[e].Te!=i_Te) NDS[e].T=2.*EMS[e].Te-NDS[e+1].T;
-				if(e==nE-1 && nE==Xdata.SoilNode) retTopNodeT=NDS[e+1].T;
+				if ( EMS[e].Te != i_Te && iwatertransportmodel_soil == RICHARDSEQUATION && e < Xdata.SoilNode ) {
+					// In case we use Richards equation for soil and have recent phase changes (Te != i_Te), then, adjust nodes accordingly.
+					if(e==nE-1) {
+						NDS[e+1].T+=EMS[e].Te-i_Te;
+						if(EMS[e].theta[ICE] > Constants::eps) {
+							// If there is ice, nodal temperatures cannot exceed freezing temperature
+							NDS[e+1].T=EMS[e].freezing_tk;
+						}
+						retTopNodeT=NDS[e+1].T;
+					} else if (e==Xdata.SoilNode-1) {
+						NDS[e+1].T=2.*EMS[e].Te-NDS[e].T;
+					} else {
+						if(EMS[e].theta[ICE] > Constants::eps) {
+							NDS[e].T=EMS[e].freezing_tk;
+						} else {
+							NDS[e].T=2.*EMS[e].Te-NDS[e+1].T;
+						}
+					}
+					EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+				} else {
+					// In case we use Richards equation for soil, phase changes will be calculated in ReSolver1d::SolveRichardsEquation
+					// Nevertheless, we need to make sure to define the return value:
+					if(e==nE-1 && nE==Xdata.SoilNode) {
+						if(EMS[e].theta[ICE] > Constants::eps) {
+							// When soil is freezing or thawing when using Richards Equation, we should return the melting temperature.
+							retTopNodeT=EMS[e].melting_tk;
+						} else {
+							retTopNodeT=NDS[e+1].T;
+						}
+					}
+				}
 			}
 		}
 	} catch (const exception& ) {
 		throw;
-	}
-
-	// Now reconstruct element temperatures
-	for (e = 0; e < nE; e++) {
-		EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
 	}
 
 	return retTopNodeT;
