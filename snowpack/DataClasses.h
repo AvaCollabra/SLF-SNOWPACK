@@ -288,6 +288,7 @@ class ElementData {
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
+		double QIntmf;             ///< Apparent change in internal energy due to phase change (caused by difference in heat capacity of water and ice)
 		double dE, E, Ee, Ev;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
 		double EDot, EvDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, E/sn_dt)
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress

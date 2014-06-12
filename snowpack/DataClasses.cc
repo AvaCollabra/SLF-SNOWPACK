@@ -453,7 +453,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
-                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
+                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), theta_r(0.), dhf(0.) {}
@@ -1009,11 +1009,14 @@ void SnowStation::compSoilInternalEnergyChange(const double& sn_dt)
 		meltFreezeEnergySoil = 0.;
 		const double i_cold_content = ColdContentSoil;
 		ColdContentSoil = 0.;
+		double tmp_sum_QIntmf = 0.;
 		for (size_t e=0; e<SoilNode; e++) {
+			tmp_sum_QIntmf += Edata[e].QIntmf * Edata[e].L * sn_dt;
+			Edata[e].QIntmf=0.;
 			meltFreezeEnergySoil -= Edata[e].Qmf * Edata[e].L * sn_dt;
 			ColdContentSoil += Edata[e].coldContent();
 		}
-		dIntEnergySoil += (ColdContentSoil - i_cold_content) + (meltFreezeEnergySoil - i_meltFreezeEnergy);
+		dIntEnergySoil += (ColdContentSoil - i_cold_content) + (meltFreezeEnergySoil - i_meltFreezeEnergy) - tmp_sum_QIntmf;
 	} else {
                 meltFreezeEnergySoil = 0.;
 		ColdContentSoil = 0.;
@@ -1289,6 +1292,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].sw_abs = 0.;
 			// Phase change variables
 			Edata[e].Qmf = 0.;
+			Edata[e].QIntmf = 0.;
 			Edata[e].dth_w = 0.;
 			// Micro-structure data
 			Edata[e].dd = SSdata.Ldata[ll].dd;
