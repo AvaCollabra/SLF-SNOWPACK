@@ -565,13 +565,18 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	assert(Tair>=t_crazy_min && Tair<=t_crazy_max);
 	assert(Tss>=t_crazy_min && Tss<=t_crazy_max);
 
-	Bdata.qs = MIN (350., MAX (-350., alpha * (Tair - Tss)));
+	Bdata.qs = alpha * (Tair - Tss);
 
 	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
 
-	if ((Xdata.getNumberOfElements() > 0)
-		/*&& (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] >= min_ice_content)*/) { //HACK: how should we handle large fluxes?
-		Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
+	if (Xdata.getNumberOfElements() > 0) {
+	  	// Limit fluxes in case of explicit treatment of boundary conditions
+		const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+		if (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > theta_r + Constants::eps		// Water and ice ...
+		    && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps) {		// ... coexisting
+			Bdata.qs = MIN (350., MAX (-350., Bdata.qs));
+			Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
+		}
 	}
 
 	if (Tair >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range) {
@@ -1656,7 +1661,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
 				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
 			surfaceCode = DIRICHLET_BC;
-			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+			melting_tk = (Xdata.getNumberOfElements()>0) ? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 			compTemperatureProfile(Xdata, Mdata, Bdata);
 		}
