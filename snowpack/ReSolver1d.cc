@@ -694,7 +694,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const double MAX_VAL_TIMESTEP=900.;		//Maximum time step allowed in Richards solver.
 	const double MAX_VAL_TIMESTEP_FOR_SNOW=900.;	//Maximum time step allowed in Richards solver when there are snow layers in the domain.
 	const double BS_MAX_ITER=5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
-	const double SF_epsilon=1E-5;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
+	const double SF_epsilon=1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 	//Initializing and defining Richards solver time domain
 	const double snowpack_dt = sn_dt;		//Time step of SNOWPACK (in seconds)
