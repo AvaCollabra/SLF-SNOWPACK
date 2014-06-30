@@ -569,21 +569,13 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 					// In case we use Richards equation for soil and have recent phase changes (Te != i_Te), then, adjust nodes accordingly.
 					if(e==nE-1) {
 						NDS[e+1].T+=EMS[e].Te-i_Te;
-						if(EMS[e].theta[ICE] > Constants::eps) {
-							// If there is ice, nodal temperatures cannot exceed freezing temperature
-							NDS[e+1].T=EMS[e].freezing_tk;
-						}
 						retTopNodeT=NDS[e+1].T;
 					} else if (e==Xdata.SoilNode-1) {
-						NDS[e+1].T=2.*EMS[e].Te-NDS[e].T;
+						NDS[e+1].T=(EMS[e].Te + EMS[e+1].Te)/2.0;
 					} else {
-						if(EMS[e].theta[ICE] > Constants::eps) {
-							NDS[e].T=EMS[e].freezing_tk;
-						} else {
-							NDS[e].T=2.*EMS[e].Te-NDS[e+1].T;
-						}
+						NDS[e+1].T+=0.5*(EMS[e].Te-i_Te);
 					}
-					EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+					NDS[e].T+=0.5*(EMS[e].Te-i_Te);
 				} else {
 					// In case we use Richards equation for soil, phase changes will be calculated in ReSolver1d::SolveRichardsEquation
 					// Nevertheless, we need to make sure to define the return value:
