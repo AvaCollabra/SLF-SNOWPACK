@@ -1402,6 +1402,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			niter++;
 			niter_snowpack_dt++;
 			memstate++;
+			int solver_result=0;
 
 			//Prepare matrices
 			//Update state properties
@@ -1447,6 +1448,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			 		//Calculate the specific moisture capacity (which is derivative d.theta/d.h)
 					if(Se[i]<1.)	{	//No saturation
 						C[i]=alpha[i]*n[i]*m[i]*((theta_s[i]-theta_r[i])/Sc[i])*(pow((alpha[i]*fabs(h_np1_m[i])), (n[i]-1.)))*(pow(1.+pow((alpha[i]*fabs(h_np1_m[i])), n[i]), (-1.*m[i]-1.)));
+						if(isnan(C[i])) solver_result=-1;
 					} else {		//Saturation
 						C[i]=0.;
 					}
@@ -1770,56 +1772,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					printf("SOLVER: i=%d - r_mpfd=%E term_up=%E term_down=%E a=%E adl=%E adu=%E [%E - %E]\n", i, r_mpfd[i], term_up[i], term_down[i], ainv[i*(uppernode+1)+i]/*a[i][i]*/, adl[i], adu[i], K[i], C[i]);
 				}
 			}
-
-			//Now call the designated solver.
-			int solver_result=0;
-			if (ActiveSolver==TDMA) {
-				// Note: TDMA is very rapid, but has the problem that when elements in the matrix differ order of magnitudes, rounding errors can occur that destroy accuracy.
-				// For this reason, it is better to use DGTSV solver, which does partial pivoting to prevent this. See: http://en.wikipedia.org/wiki/Pivot_element#Partial_and_complete_pivoting
-				const int matrixdimensions=(uppernode-lowernode)+1;
-				solver_result=TDMASolver(matrixdimensions, &adl[0], &ad[0], &adu[0], &r_mpfd[0], &r_mpfd2[0]);
-			}
-
-			if(ActiveSolver==DGTSV) {
-#ifdef CLAPACK
-				// Solver for Tridiagonal matrices, with partial pivoting.
-				int info=0;
-				const int matrixdimensions=(uppernode-lowernode)+1;
-				const int vectordimensions=1;
-				dgtsv_( (integer*) &matrixdimensions, (integer*) &vectordimensions, &adl[0], &ad[0], &adu[0], &r_mpfd2[0], (integer*) &matrixdimensions, (integer*) &info );
-
-				if(info!=0) {
-					//= 0: successful exit
-					//< 0: if INFO = -i, the i-th argument had an illegal value
-					//> 0: if INFO = i, U(i,i) is exactly zero, and the solution
-					//    has not been computed.  The factorization has not been
-					//    completed unless i = N.
-					if(AllowSwitchSolver==true) {
-						if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying DGESVD/DGESDD...\n", info);
-						ActiveSolver=DGESVD;
-					} else {
-						if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying with smaller time step...\n", info);
-						solver_result=-1;
-					}
-				}
-#else
-				throw InvalidArgumentException("you cannot use solver DGTSV when libraries BLAS and LAPACK are not installed. Either install these libraries, or choose solver TDMA", AT);
-#endif
-			}
-
-			if(ActiveSolver==DGESVD) {
-#ifdef CLAPACK
-				//Do Moore-Penrose matrix inversion, using singular value decomposition (SVD), so we can write: H = A' * R
-				solver_result=pinv((uppernode-lowernode)+1, (uppernode-lowernode)+1, (uppernode-lowernode)+1, &ainv[0]);
-#else
-				throw InvalidArgumentException("you cannot use solver DGESVD when libraries BLAS and LAPACK are not installed. Either install these libraries, or choose solver TDMA", AT);
-#endif
-			}
-
-
-			//Apply new iteration solution
-
-			//Reset convergence tracking variables:
+			
+			//Before solving the system of equations, reset convergence tracking variables:
 			track_accuracy_h=0.;
 			track_accuracy_theta=0.;
 			track_trigger_layer_accuracy=-1;
@@ -1830,25 +1784,75 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			boolConvergence=true;			//We initialize it as true, and set it to false when necessary.
 			mass2=0.;
 
-			//This is a little bit complicated. The problem started when we did soil freezing. If then suddenly an isnan is detected somewhere in the model domain, some part of the soil is already through the phasechange function, other parts not (maybe).
-			//It is difficult to revert this soil freezing, so therefore, we need first to loop over i to determine the complete solution vector delta_h, and then an other loop over i to apply the new solution.
-			//However, if a proper way to revert soil freezing is made, this extra loop can be removed.
-			for (i = uppernode; i >= lowernode; i--) {
-				//Determine delta h:
-				if(ActiveSolver==DGESVD) {
-					delta_h[memstate%nmemstates][i]=0.;
-					//Note: after inverting, ainv is non tridiagonal, so we have to loop over all elements.
-					for (k = uppernode; k >= lowernode; k--) {
-					//for (k = MIN(uppernode, i+1); k >= MAX(lowernode, i-1); k--) {
-						delta_h[memstate%nmemstates][i]+=ainv[i*(uppernode+1)+k]*r_mpfd[k];
-					}
-				} else {	//In case of DGTSV, solution is returned in r_mpfd2, overwriting original content.
-					delta_h[memstate%nmemstates][i]=r_mpfd2[i];
+			//Now call the designated solver.
+			if(solver_result==0) {
+				if (ActiveSolver==TDMA) {
+					// Note: TDMA is very rapid, but has the problem that when elements in the matrix differ order of magnitudes, rounding errors can occur that destroy accuracy.
+					// For this reason, it is better to use DGTSV solver, which does partial pivoting to prevent this. See: http://en.wikipedia.org/wiki/Pivot_element#Partial_and_complete_pivoting
+					const int matrixdimensions=(uppernode-lowernode)+1;
+					solver_result=TDMASolver(matrixdimensions, &adl[0], &ad[0], &adu[0], &r_mpfd[0], &r_mpfd2[0]);
 				}
-				if(isnan(delta_h[memstate%nmemstates][i])==true || isinf(delta_h[memstate%nmemstates][i])==true) {
-					solver_result=-1;
+
+				if(ActiveSolver==DGTSV) {
+#ifdef CLAPACK
+					// Solver for Tridiagonal matrices, with partial pivoting.
+					int info=0;
+					const int matrixdimensions=(uppernode-lowernode)+1;
+					const int vectordimensions=1;
+					dgtsv_( (integer*) &matrixdimensions, (integer*) &vectordimensions, &adl[0], &ad[0], &adu[0], &r_mpfd2[0], (integer*) &matrixdimensions, (integer*) &info );
+
+					if(info!=0) {
+						//= 0: successful exit
+						//< 0: if INFO = -i, the i-th argument had an illegal value
+						//> 0: if INFO = i, U(i,i) is exactly zero, and the solution
+						//    has not been computed.  The factorization has not been
+						//    completed unless i = N.
+						if(AllowSwitchSolver==true) {
+							if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying DGESVD/DGESDD...\n", info);
+							ActiveSolver=DGESVD;
+						} else {
+							if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying with smaller time step...\n", info);
+							solver_result=-1;
+						}
+					}
+#else
+					throw InvalidArgumentException("you cannot use solver DGTSV when libraries BLAS and LAPACK are not installed. Either install these libraries, or choose solver TDMA", AT);
+#endif
+				}
+
+				if(ActiveSolver==DGESVD) {
+#ifdef CLAPACK
+					//Do Moore-Penrose matrix inversion, using singular value decomposition (SVD), so we can write: H = A' * R
+					solver_result=pinv((uppernode-lowernode)+1, (uppernode-lowernode)+1, (uppernode-lowernode)+1, &ainv[0]);
+#else
+					throw InvalidArgumentException("you cannot use solver DGESVD when libraries BLAS and LAPACK are not installed. Either install these libraries, or choose solver TDMA", AT);
+#endif
+				}
+
+
+				//Apply new iteration solution
+
+				//This is a little bit complicated. The problem started when we did soil freezing. If then suddenly an isnan is detected somewhere in the model domain, some part of the soil is already through the phasechange function, other parts not (maybe).
+				//It is difficult to revert this soil freezing, so therefore, we need first to loop over i to determine the complete solution vector delta_h, and then an other loop over i to apply the new solution.
+				//However, if a proper way to revert soil freezing is made, this extra loop can be removed.
+				for (i = uppernode; i >= lowernode; i--) {
+					//Determine delta h:
+					if(ActiveSolver==DGESVD) {
+						delta_h[memstate%nmemstates][i]=0.;
+						//Note: after inverting, ainv is non tridiagonal, so we have to loop over all elements.
+						for (k = uppernode; k >= lowernode; k--) {
+						//for (k = MIN(uppernode, i+1); k >= MAX(lowernode, i-1); k--) {
+							delta_h[memstate%nmemstates][i]+=ainv[i*(uppernode+1)+k]*r_mpfd[k];
+						}
+					} else {	//In case of DGTSV, solution is returned in r_mpfd2, overwriting original content.
+						delta_h[memstate%nmemstates][i]=r_mpfd2[i];
+					}
+					if(isnan(delta_h[memstate%nmemstates][i])==true || isinf(delta_h[memstate%nmemstates][i])==true) {
+						solver_result=-1;
+					}
 				}
 			}
+
 
 			//Apply Dirichlet BCs:
 			if(aTopBC==DIRICHLET) {
