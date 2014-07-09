@@ -1111,6 +1111,11 @@ void real_main (int argc, char *argv[])
 						hazard.getHazardDataMainStation(qr_Hdata.at(i_hz), qr_Hdata_ind.at(i_hz),
 						                                sn_Zdata, cumsum.drift, slope.mainStationDriftIndex,
 						                                vecXdata[slope.mainStation], Mdata, surfFluxes);
+						if (slope.nSlopes==1) { //only one slope, so set lwi_N and lwi_S to the same value
+							const double lwi = vecXdata[slope.mainStation].getLiquidWaterIndex();
+							qr_Hdata.at(i_hz).lwi_N = lwi;
+							qr_Hdata.at(i_hz).lwi_S = lwi;
+						}
 						mn_ctrl.HzStep++;
 						if (slope.mainStationDriftIndex)
 							cumsum.drift = 0.;
