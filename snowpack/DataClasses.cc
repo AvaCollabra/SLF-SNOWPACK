@@ -220,7 +220,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
-    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
+    sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
     drift(0.), mass(N_MASS_CHANGES), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined) {}
 
 void SurfaceFluxes::reset(const bool& cumsum_mass)
@@ -243,7 +243,9 @@ void SurfaceFluxes::reset(const bool& cumsum_mass)
 		pAlbedo = 0.;
 		mAlbedo = 0.;
 		dIntEnergy = 0.;
+		dIntEnergySoil = 0.;
 		meltFreezeEnergy = 0.;
+		meltFreezeEnergySoil = 0.;
 		mass[MS_HNW] = 0.;
 		mass[MS_RAIN] = 0.;
 	} else {
@@ -318,6 +320,10 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	if (Xdata.getNumberOfElements() > Xdata.SoilNode) {
 		dIntEnergy += Xdata.dIntEnergy;
 		meltFreezeEnergy += Xdata.meltFreezeEnergy;
+	}
+	if(Xdata.SoilNode>0) {
+		dIntEnergySoil += Xdata.dIntEnergySoil;
+		meltFreezeEnergySoil += Xdata.meltFreezeEnergySoil;
 	}
 
 	// 6) Collect total masses of snowpack
@@ -868,7 +874,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	cH(0.), mH(0.), mass_sum(0.), swe(0.), lwc_sum(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
-	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), dIntEnergy(0.), meltFreezeEnergy(0.),
+	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false),
 	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
@@ -878,7 +884,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	cH(c.cH), mH(c.mH), mass_sum(c.mass_sum), swe(c.swe), lwc_sum(c.lwc_sum), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
-	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), dIntEnergy(c.dIntEnergy), meltFreezeEnergy(c.meltFreezeEnergy),
+	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward),
 	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
@@ -920,8 +926,11 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		Kt = source.Kt;
 		tag_low = source.tag_low;
 		ColdContent = source.ColdContent;
+		ColdContentSoil = source.ColdContentSoil;
 		dIntEnergy = source.dIntEnergy;
+		dIntEnergySoil = source.dIntEnergySoil;
 		meltFreezeEnergy = source.meltFreezeEnergy;
+		meltFreezeEnergySoil = source.meltFreezeEnergySoil;
 		nNodes = source.nNodes;
 		nElems = source.nElems;
 		useCanopyModel = source.useCanopyModel;
@@ -980,6 +989,28 @@ void SnowStation::compSnowpackInternalEnergyChange(const double& sn_dt)
                 meltFreezeEnergy = 0.;
 		ColdContent = 0.;
 		dIntEnergy = 0.;
+	}
+}
+
+/**
+ * @brief Computes the internal energy change of the soil during one computation time step (J m-2)
+ */
+void SnowStation::compSoilInternalEnergyChange(const double& sn_dt)
+{
+	if (SoilNode > 0) {
+		const double i_meltFreezeEnergy = meltFreezeEnergySoil;
+		meltFreezeEnergySoil = 0.;
+		const double i_cold_content = ColdContentSoil;
+		ColdContentSoil = 0.;
+		for (size_t e=0; e<SoilNode; e++) {
+			meltFreezeEnergySoil -= Edata[e].Qmf * Edata[e].L * sn_dt;
+			ColdContentSoil += Edata[e].coldContent();
+		}
+		dIntEnergySoil += (ColdContentSoil - i_cold_content) + (meltFreezeEnergySoil - i_meltFreezeEnergy);
+	} else {
+                meltFreezeEnergySoil = 0.;
+		ColdContentSoil = 0.;
+		dIntEnergySoil = 0.;
 	}
 }
 
@@ -1286,6 +1317,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// Cold content and snowpack masses
 	compSnowpackInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
+	compSoilInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
 	compSnowpackMasses();
 
 	// INITIALIZE CANOPY DATA

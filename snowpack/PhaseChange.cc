@@ -302,10 +302,13 @@ void PhaseChange::initialize(SnowStation& Xdata)
 
 	// Get cold content
 	cold_content_in=Xdata.ColdContent;
+	cold_content_soil_in=Xdata.ColdContentSoil;
 
 	// Reset meltFreezeEnergy and dIntEnergy
 	Xdata.meltFreezeEnergy=0.;
+	Xdata.meltFreezeEnergySoil=0.;
 	Xdata.dIntEnergy=0.;
+	Xdata.dIntEnergySoil=0.;
 
 	return;
 }
@@ -318,6 +321,7 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 	size_t e, nE;
 	double sum_Qmf=0.;
 	cold_content_out=0.;
+	cold_content_soil_out=0.;
 
 	ElementData* EMS;
 	bool prn_CK = false;
@@ -359,8 +363,14 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 					throw IOException("Run-time error in compPhaseChange()", AT);
 				}
 			}
-			cold_content_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - EMS[e].melting_tk) * EMS[e].L;
-			sum_Qmf += EMS[e].Qmf * EMS[e].L;
+			if (e>=Xdata.SoilNode) {
+				// Snow element
+				cold_content_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te - EMS[e].melting_tk) * EMS[e].L;
+				sum_Qmf += EMS[e].Qmf * EMS[e].L;
+			} else {
+				// Soil element
+				cold_content_soil_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te) * EMS[e].L;
+			}
 		}
 		if (prn_CK && (sum_Qmf > 0.)) {
 			prn_msg(__FILE__, __LINE__, "msg+", date_in, "Checking energy balance  (W/m2):");
