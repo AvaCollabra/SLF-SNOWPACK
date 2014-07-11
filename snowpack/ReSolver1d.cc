@@ -622,10 +622,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 //	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
 //
 // TODO IN FUTURE DEVELOPMENT
-// -  Check the limited influx condition. It seems to be too restrictive, rejecting infiltrating water when it would still be able to handle it. This can be seen by comparing simulations with and
-//    without this boundary condition. Reason may be that the implementation of the criterion is neglecting water leaving the top node at the same time, creating some extra room for infiltrating
-//    water.
-// -  Implement a strategy what to do with the rejected infilitrating water. Either built-up a water layer (theta[WATER]==1) on top (real ponding), or write it out in a kind of overland flow variable.
+// -  Implement a strategy what to do with the rejected infilitrating water in case of LIMITEDFLUX and LIMITEDFLUXINFILTRATION. Either built-up a water layer (theta[WATER]==1) on top (real ponding),
+//    or write it out in a kind of overland flow variable.
 
 	//Initializations
 	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, ALPINE3D};
@@ -640,7 +638,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const bool LIMITEDFLUXEVAPORATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_soil=true;
 		const bool LIMITEDFLUXINFILTRATION_snow=true;
-		const bool LIMITEDFLUXINFILTRATION_snowsoil=false;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
+		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
 	const BoundaryConditions BottomBC = DIRICHLET;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
@@ -1534,13 +1532,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
 				// Now reduce flux when necessary:
-  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.)
-				     && ((LIMITEDFLUXINFILTRATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || (int(nsoillayers_snowpack)<int(nE) && toplayer==nsoillayers_snowpack && LIMITEDFLUXINFILTRATION_snowsoil==true)))
-				        || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
+  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
+				     (LIMITEDFLUXINFILTRATION_soil==true && int(nsoillayers_snowpack)==int(nE))
+				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && int(nsoillayers_snowpack)<int(nE) && toplayer==nsoillayers_snowpack)
+				           || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
 					// Influx condition
-					const double head_compare=h_e[uppernode];
-					// We limit the flux such that when h_np1_m[uppernode]==saturated, the flux would become 0:
-					const double flux_compare=k_np1_m_ip12[uppernode]*((((head_compare-(dz_up[uppernode]*cos_sl))-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
+					// Determine the limiting flux:
+					const double flux_compare =														//The limiting flux is:
+					        (dz[uppernode]*(theta_s[uppernode] - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt)					// net flux that would lead to saturation of the top layer
+					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_e[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + cos_sl) : 0.);	// plus what could leave below
 
 					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
 					if(alpine3d==true) {
