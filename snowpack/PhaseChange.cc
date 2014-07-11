@@ -47,7 +47,8 @@ const double PhaseChange::theta_s = 1.0;
 PhaseChange::PhaseChange(const SnowpackConfig& cfg)
              : iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
 	       watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-	       sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_out(IOUtils::nodata)
+	       sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_soil_in(IOUtils::nodata),
+	       cold_content_out(IOUtils::nodata), cold_content_soil_out(IOUtils::nodata)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
