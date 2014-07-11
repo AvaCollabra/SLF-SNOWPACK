@@ -70,6 +70,7 @@ class WaterTransport {
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
 		double thresh_rain;
+		double thresh_rain_range;
 		double sn_dt;
 		double hoar_thresh_rh;
 		double hoar_thresh_vw;
