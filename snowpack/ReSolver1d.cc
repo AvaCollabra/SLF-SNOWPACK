@@ -998,62 +998,65 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//Set air entry pressure
 			h_e[i]=AirEntryPressureHead(0.005, 273.);
 
-			double GRAINRADIUSLOWERTHRESHOLD=0.;		//Lower threshold
-			double GRAINRADIUSUPPERTHRESHOLD=0.;		//Upper threshold. 2.02 is value for n>1, which is required.
+			//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
 			const double tmprg=EMS[SnowpackElement[i]].rg;	//Backup original grain size value
-
 
 			switch ( VGModelTypeSnow ) {	//Set Van Genuchten parameters for snow, depending on the chosen model for snow.
 
 			case YAMAGUCHI2012:
-				//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
-				GRAINRADIUSLOWERTHRESHOLD=0.1;		//Lower threshold
-				GRAINRADIUSUPPERTHRESHOLD=4.0;		//Upper threshold. 2.02 is value for n>1, which is required.
-				//Now limit grain sizes
-				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
-				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
+				{
+					//Calculate ratio density/grain size (see Yamaguchi (2012)):
+					double tmp_rho_d=(EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.);
 
-				//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
-				alpha[i]=4.4E6*pow((EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.), -0.98);	//See Eq. 6 in Yamaguchi (2012).
-				n[i]=1.+2.7E-3*pow((EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.), 0.61);	//See Eq. 7 in Yamaguchi (2012).
-				break;
+					//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
+					tmp_rho_d=MAX(2000., tmp_rho_d);
+					alpha[i]=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
+					n[i]=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
+					break;
+				}
 
 			case YAMAGUCHI2010:
-				//Limit grain size, to stay within the bounds of the Van Genuchten parameterizations for snow.
-	  			GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
-				GRAINRADIUSUPPERTHRESHOLD=2.0;		//Upper threshold. 2.02 is value for n>1, which is required.
-				//Now limit grain sizes
-				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
-				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
+				{
+					//Limit grain size, to stay within the bounds of the Van Genuchten parameterizations for snow.
+					const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
+					const double GRAINRADIUSUPPERTHRESHOLD=2.0;		//Upper threshold. 2.02 is value for n>1, which is required.
+					//Now limit grain sizes
+					if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
+					if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
 
-				//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
-				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
-				n[i]=-3.3*(2.*EMS[SnowpackElement[i]].rg)+14.4;				//See Eq. 11 (note d is defined as diameter in mm!) in Yamaguchi (2010).
-				break;
+					//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
+					alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
+					n[i]=-3.3*(2.*EMS[SnowpackElement[i]].rg)+14.4;				//See Eq. 11 (note d is defined as diameter in mm!) in Yamaguchi (2010).
+					break;
+				}
 
 			case YAMAGUCHI2010_ADAPTED:
-				//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
-	  			GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
-				GRAINRADIUSUPPERTHRESHOLD=4.0;		//Upper threshold
-				//Now limit grain sizes
-				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
-				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
+				{
+					//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
+					const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
+					const double GRAINRADIUSUPPERTHRESHOLD=4.0;		//Upper threshold
+					//Now limit grain sizes
+					if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
+					if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
 
-				alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
-				//Instead of the linear fit in Yamaguchi (2010), Hirashima (2011) approximated the data with a power law fit, valid for the whole range of grain sizes:
-				n[i]=15.68*exp(-0.46*(2.*EMS[SnowpackElement[i]].rg)) + 1.;		//Hirashima (2011), Eq. 17
-				break;
+					alpha[i]=7.3*(2.*EMS[SnowpackElement[i]].rg)+1.9;			//See Eq. 12 (note d is defined as diameter in mm!) in Yamaguchi (2010).
+					//Instead of the linear fit in Yamaguchi (2010), Hirashima (2011) approximated the data with a power law fit, valid for the whole range of grain sizes:
+					n[i]=15.68*exp(-0.46*(2.*EMS[SnowpackElement[i]].rg)) + 1.;		//Hirashima (2011), Eq. 17
+					break;
+				}
 
 			case DAANEN:
-				GRAINRADIUSLOWERTHRESHOLD=0.0;		//Equal to Yamaguchi adapted
-				GRAINRADIUSUPPERTHRESHOLD=4.0;		//Equal to Yamaguchi adapted
-				//Now limit grain sizes
-				if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
-				if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
+				{
+					const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Equal to Yamaguchi adapted
+					const double GRAINRADIUSUPPERTHRESHOLD=4.0;		//Equal to Yamaguchi adapted
+					//Now limit grain sizes
+					if(EMS[SnowpackElement[i]].rg>GRAINRADIUSUPPERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSUPPERTHRESHOLD;
+					if(EMS[SnowpackElement[i]].rg<GRAINRADIUSLOWERTHRESHOLD) EMS[SnowpackElement[i]].rg=GRAINRADIUSLOWERTHRESHOLD;
 
-				alpha[i]=30.*(2.*EMS[SnowpackElement[i]].rg)+12.;
-				n[i]=0.800*(2.*EMS[SnowpackElement[i]].rg)+3.;
-				break;
+					alpha[i]=30.*(2.*EMS[SnowpackElement[i]].rg)+12.;
+					n[i]=0.800*(2.*EMS[SnowpackElement[i]].rg)+3.;
+					break;
+				}
 
 			}
 
@@ -1551,8 +1554,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						if(isPonding==true) TopFluxRate=0.;
 					}
 
-					if(flux_compare < TopFluxRate) {
-						TopFluxRate=MAX(0., flux_compare);
+					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
+						TopFluxRate=MAX(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || toplayer==nsoillayers_snowpack)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {

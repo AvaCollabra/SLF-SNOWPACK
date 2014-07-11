@@ -152,7 +152,6 @@ echo "#--   --   --          --          E+      E+     E+     E+     E+     E+ 
 echo "#-    -    cm          cm          W_m-2   W_m-2  W_m-2  W_m-2  W_m-2  W_m-2  W_m-2        W_m-2      W_m-2             W_m-2          W_m-2         W_m-2     W_m-2"
 
 
-
 # Process data (note that the lines below are all piped together).
 #  -- Cut out data
 sed '1,/\[DATA\]/d' ${met_file} | \
@@ -175,9 +174,9 @@ awk '{n++; if(n>1) \
 	#Determine energy output in system (taking the terms only when they are negative)
 	energy_out=(($5<0.0)?$5:0)+(($6<0.0)?$6:0)+(($7<0.0)?$7:0)+(($8<0.0)?$8:0)+(($9<0.0)?$9:0)+(($10<0.0)?$10:0)+(($11<0.0)?$11:0)+(($12<0.0)?$12:0); \
 	#Do the statistics (energy balance error sum, min and max values)
-	energybalancesum+=energybalance; energybalancesum2+=sqrt(energybalance*energybalance); if(energybalance>maxenergybalance){maxenergybalance=energybalance; maxenergybalancedate=$1; maxenergybalancetime=$2}; if(energybalance<minenergybalance){minenergybalance=energybalance; minenergybalancedate=$1; minenergybalancetime=$2}; \
+	ndatapoints++; energybalancesum+=energybalance; energybalancesum2+=sqrt(energybalance*energybalance); incomingsum+=energy_in; if(energybalance>maxenergybalance){maxenergybalance=energybalance; maxenergybalancedate=$1; maxenergybalancetime=$2}; if(energybalance<minenergybalance){minenergybalance=energybalance; minenergybalancedate=$1; minenergybalancetime=$2}; \
 	#Write to stdout
 	print $0, energybalance, energy_in, energy_out}; \
 #Write out statistics to stderr:
-END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of energy balance error (W_m-2): %.6f\nSum of absolute energy balance error (W_m-2): %.6f\nMaximum positive energy balance error (W_m-2): %.6f at %08d, %04d\nMinimum negative energy balance error (W_m-2): %.6f at %08d, %04d\n", energybalancesum, energybalancesum2, maxenergybalance, maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
+END {printf "Summary of file: '${met_file}'\n-------------------------------------------------------------------------------------\nSum of energy balance error (W_m-2): %.6f (time averaged (W_m-2): %.6f [= %.6f%% from incoming energy])\nSum of absolute energy balance error (W_m-2): %.6f (time averaged (W_m-2): %.6f [= %.6f%% from incoming energy])\nMaximum positive energy balance error (W_m-2): %.6f (= %.0f J_m-2) at %08d, %04d\nMinimum negative energy balance error (W_m-2): %.6f (= %.0f J_m-2) at %08d, %04d\n", energybalancesum, (energybalancesum/ndatapoints), energybalancesum/incomingsum*100.0, energybalancesum2, (energybalancesum2/ndatapoints), energybalancesum2/incomingsum*100.0, maxenergybalance, maxenergybalance*(86400/'${nsamplesperday}'), maxenergybalancedate, maxenergybalancetime, minenergybalance, minenergybalance*(86400/'${nsamplesperday}'), minenergybalancedate, minenergybalancetime > "/dev/stderr"}'
 
