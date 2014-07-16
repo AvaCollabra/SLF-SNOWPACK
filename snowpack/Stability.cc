@@ -609,7 +609,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 	double rho_Pk = Constants::eps2, dz_Pk = Constants::eps2; // Penetration depth Pk, from mean slab density
 	double top_crust = 0., thick_crust = 0.;  // Crust properties
 	bool crust = false;                       // Checks for crust
-	int e_crust = Constants::iundefined;
+	size_t e_crust = Constants::stundefined;
 
 	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
 	size_t e = Xdata.getNumberOfElements();
@@ -620,7 +620,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 		// Look for the first (from top) with thickness perp to slope > 3cm
 		if (!crust) {
 			if ( (Xdata.Edata[e].mk%100 >= 20) && (Xdata.Edata[e].Rho > 500.) ) {
-				if (e_crust == Constants::iundefined) {
+				if (e_crust == Constants::stundefined) {
 					e_crust = e;
 					top_crust = (Xdata.Ndata[e+1].z + Xdata.Ndata[e+1].u)/cos_sl;
 					thick_crust += Xdata.Edata[e].L;
@@ -632,7 +632,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 				if (thick_crust > Stability::min_thick_crust) {
 					crust = true;
 				} else {
-					e_crust = Constants::iundefined;
+					e_crust = Constants::stundefined;
 					top_crust = 0.;
 					thick_crust = 0.;
 				}

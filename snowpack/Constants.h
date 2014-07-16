@@ -17,6 +17,9 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include <stdio.h>
+
 /**
  * @file Constants.h
  * @version 10.02
@@ -43,6 +46,7 @@
 namespace Constants {
 	const double undefined = -999.; ///<This is the snowpack undefined value
 	const int iundefined = -999; ///<This is the snowpack undefined value
+	const size_t stundefined = static_cast<size_t>(-999);
 	const double min_percent_values = 0.9;
 
 	const double pi = 3.14159265358979323846;
