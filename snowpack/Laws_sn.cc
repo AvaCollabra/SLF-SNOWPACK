@@ -1167,7 +1167,7 @@ double SnLaws::loadingRateStressDEFAULT(ElementData& Edata, const mio::Date& dat
 	const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 
 	double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
-	if (Edata.theta[WATER] > Constants::eps)
+	if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 		sigReac *= 0.37 * (1. + Edata.theta[WATER]);
 	return sigReac;
 }
@@ -1182,7 +1182,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
-		if (Edata.theta[WATER] > Constants::eps)
+		if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 			sigReac *= 0.37 * (1. + Edata.theta[WATER]); // 0.2 ; 0.37
 // 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
 // 		              * MAX(0.1, 1. - 9.*Edata.theta[WATER]);
