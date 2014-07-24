@@ -2236,22 +2236,29 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					StopLoop=false;					//In case StopLoop was set true (last time step), we set it back to false. It might be that the smaller time step won't match the SNOWPACK time step any longer.
 					mass1=0.;					//Because we fiddle around with theta, we should update mass1 (mass at beginning of time step)
 					for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
-						h_n[i]=MAX(h_d, MIN(0., h_n[i]));
-						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
+						// Update the SafeMode mass balance error tracking variable by "removing" all water
+						SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
+						// Make sure pressure head is in secure limits:
+						h_n[i]=MAX(h_d, MIN(h_e[i], h_n[i]));
+						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
 						//Deal with dry layers
-						if(theta_n[i]<theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
-							SafeMode_MBE+=(theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
+						if(theta_n[i]+theta_i_n[i] < theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
 							theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
-							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 						}
 						//Deal with wet layers
-						if(theta_n[i]>theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
-							SafeMode_MBE+=(theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)  -  theta_np1_m[i])*dz[i]*Constants::density_water;
-							theta_n[i]=theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.);
-							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_np1_m[i]);
+						if(theta_n[i]+theta_i_n[i] > theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
+							theta_i_n[i]*=0.90;
+							theta_n[i]=((theta_n[i]-theta_r[i])*0.9)+theta_r[i];
+							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 						}
+						// Update the SafeMode mass balance error tracking variable by "adding" the water again
+						SafeMode_MBE+=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
 
+						h_np1_m[i]=h_n[i];			//Reset initial guess for next iteration
+						theta_np1_m[i]=theta_n[i];		//Reset initial guess for next iteration
 						theta_i_np1_m[i]=theta_i_n[i];		//Set back ice content due to soil freezing/thawing
+						
 						delta_Te_i[i]=0.;			//Reset temperature change due to soil freezing/thawing
 						delta_Te_adv_i[i]=0.;			//Reset temperature change due to heat advection by water flowing
 
