@@ -2209,9 +2209,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						h_np1_m[i]=h_n[i];			//Reset initial guess for next iteration
 						theta_np1_m[i]=theta_n[i];		//Reset initial guess for next iteration
 						theta_i_np1_m[i]=theta_i_n[i];		//Set back ice content due to soil freezing/thawing
-						
-						delta_Te_i[i]=0.;			//Reset temperature change due to soil freezing/thawing
-						delta_Te_adv_i[i]=0.;			//Reset temperature change due to heat advection by water flowing
 
 						//The real rescue is to throw away the sink/source terms:
 						SafeMode_MBE+=s[i]*(sn_dt-TimeAdvance)*Constants::density_water*dz[i];
