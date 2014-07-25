@@ -237,14 +237,23 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
 
 	SSdata.HS_last = get_doubleval(sno_reader, "HS_Last");
-	const double lat = get_doubleval(sno_reader, "latitude");
-	const double lon = get_doubleval(sno_reader, "longitude");
-	const double alt = get_doubleval(sno_reader, "altitude");
-	const double slope_angle = get_doubleval(sno_reader, "SlopeAngle");
-	const double azi = get_doubleval(sno_reader, "SlopeAzi");
 
 	mio::Coords tmppos;
-	tmppos.setLatLon(lat, lon, alt);
+	const double alt = get_doubleval(sno_reader, "altitude");
+	if (keyExists(sno_reader, "latitude")) {
+		const double lat = get_doubleval(sno_reader, "latitude");
+		const double lon = get_doubleval(sno_reader, "longitude");
+		tmppos.setLatLon(lat, lon, alt);
+	} else {
+		const double easting = get_doubleval(sno_reader, "easting");
+		const double northing = get_doubleval(sno_reader, "northing");
+		const int epsg = get_intval(sno_reader, "epsg");
+		tmppos.setEPSG(epsg);
+		tmppos.setXY(easting, northing, alt);
+	}
+
+	const double slope_angle = get_doubleval(sno_reader, "SlopeAngle");
+	const double azi = get_doubleval(sno_reader, "SlopeAzi");
 	SSdata.meta.setStationData(tmppos, stationID, station_name);
 	SSdata.meta.setSlope(slope_angle, azi);
 
@@ -297,6 +306,14 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	SSdata.TimeCountDeltaHS = get_doubleval(sno_reader, "TimeCountDeltaHS");
 
 	return SSdata.profileDate;
+}
+
+bool SmetIO::keyExists(const smet::SMETReader& reader, const std::string& key) const
+{
+	const double nodata = reader.get_header_doublevalue("nodata");
+	const double value = reader.get_header_doublevalue(key);
+
+	return value!=nodata;
 }
 
 double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& key) const
