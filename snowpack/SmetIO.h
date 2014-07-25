@@ -61,6 +61,7 @@ class SmetIO : public SnowpackIOInterface {
 		                  const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata);
 		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
 		                  const SnowStation& Xdata, const ZwischenData& Zdata);
+		bool keyExists(const smet::SMETReader& reader, const std::string& key) const;
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
 		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
