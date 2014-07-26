@@ -64,6 +64,9 @@ class ZwischenData {
 		ZwischenData(): hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0) {};
 		void reset();                ///< Sets all the values in the vectors to 0.0
 
+		friend std::iostream& operator<<(std::iostream& os, const ZwischenData& data);
+		friend std::iostream& operator>>(std::iostream& is, ZwischenData& data);
+
 		std::vector<double> hoar24;  ///< Twenty-four hour hoar index every half-hour over one day 48
 		std::vector<double> drift24; ///< Twenty-four hour hoar index every half-hour over one day 48
 		std::vector<double> hn3;    ///< Three hour new snow heights every half-hour over three days 144
@@ -167,6 +170,9 @@ class LayerData {
 	public:
 		LayerData();
 
+		friend std::iostream& operator<<(std::iostream& os, const LayerData& data);
+		friend std::iostream& operator>>(std::iostream& is, LayerData& data);
+
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double hl;                  ///< The height of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
@@ -208,6 +214,8 @@ class SN_SNOWSOIL_DATA {
 		}
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data);
+		friend std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data);
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
@@ -257,6 +265,8 @@ class ElementData {
                         const double& theta_w, const double& res_wat_cont);
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const ElementData& data);
+		friend std::iostream& operator>>(std::iostream& is, ElementData& data);
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element length (m)
@@ -309,6 +319,8 @@ class NodeData {
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const NodeData& data);
+		friend std::iostream& operator>>(std::iostream& is, NodeData& data);
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -353,6 +365,8 @@ class CanopyData {
 		void initializeSurfaceExchangeData();
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const CanopyData& data);
+		friend std::iostream& operator>>(std::iostream& is, CanopyData& data);
 
 		// Aa
 		double storage;  ///< intercepted water (mm or kg m-2)
@@ -408,10 +422,9 @@ class CanopyData {
  */
 class SnowStation {
 	public:
-		SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
+		explicit SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
 		SnowStation(const SnowStation& c);
 
-		const std::string toString() const;
 		~SnowStation();
 		SnowStation& operator=(const SnowStation&); ///<Assignement operator
 
@@ -435,6 +448,10 @@ class SnowStation {
 		bool hasSoilLayers() const;
 
 		size_t find_tag(const size_t& tag) const;
+
+		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const SnowStation& data);
+		friend std::iostream& operator>>(std::iostream& is, SnowStation& data);
 
 		mio::StationData meta;      ///< Station meta data
 		double cos_sl;              ///< Cosinus of slope angle, initialized once!
