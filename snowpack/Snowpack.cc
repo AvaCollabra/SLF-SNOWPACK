@@ -361,6 +361,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			SigC -= (EMS[e+1].M / 2.) * SigC_fac;
 		SigC -= (EMS[e].M / 2.) * SigC_fac;
 		EMS[e].C = SigC;
+		assert(EMS[e].C<0.);
 		if (EMS[e].CDot / SigC > 0.05) {
 			EMS[e].CDot *= exp(-0.037 * S_TO_D(sn_dt));
 		} else {

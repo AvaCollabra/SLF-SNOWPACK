@@ -595,7 +595,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&s_theta), sizeof(size_t));
 	os.write(reinterpret_cast<const char*>(&data.theta[0]), (s_theta)*sizeof(data.theta[0]));
 	os << data.conc;
-	
+
 	const size_t s_k = data.k.size();
 	os.write(reinterpret_cast<const char*>(&s_k), sizeof(size_t));
 	os.write(reinterpret_cast<const char*>(&data.k[0]), (s_k)*sizeof(data.k[0]));
@@ -658,7 +658,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	data.theta.resize(s_theta);
 	is.read(reinterpret_cast<char*>(&data.theta[0]), (s_theta)*sizeof(data.theta[0]));
 	is >> data.conc;
-	
+
 	size_t s_k;
 	is.read(reinterpret_cast<char*>(&s_k), sizeof(size_t));
 	data.k.resize(s_k);
@@ -1611,6 +1611,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 		SigC -= (.5*Edata[e].M) * Constants::g * cos_sl;
 
 		Edata[e].C = SigC;
+		assert(Edata[e].C<0.);
 	}
 
 	// Cold content and snowpack masses
@@ -2316,7 +2317,7 @@ LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
 
 std::iostream& operator<<(std::iostream& os, const LayerData& data)
 {
-	os << data.depositionDate;		
+	os << data.depositionDate;
 	os.write(reinterpret_cast<const char*>(&data.hl), sizeof(data.hl));
 	os.write(reinterpret_cast<const char*>(&data.ne), sizeof(data.ne));
 	os.write(reinterpret_cast<const char*>(&data.tl), sizeof(data.tl));
@@ -2358,7 +2359,7 @@ std::iostream& operator<<(std::iostream& os, const LayerData& data)
 
 std::iostream& operator>>(std::iostream& is, LayerData& data)
 {
-	is >> data.depositionDate;		
+	is >> data.depositionDate;
 	is.read(reinterpret_cast<char*>(&data.hl), sizeof(data.hl));
 	is.read(reinterpret_cast<char*>(&data.ne), sizeof(data.ne));
 	is.read(reinterpret_cast<char*>(&data.tl), sizeof(data.tl));
