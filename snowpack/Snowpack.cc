@@ -650,10 +650,10 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
 		Fe[1] += delta * pow( Mdata.ea, 0.25 ) * T_air;
-	} // end else
 
-	// Because of the implicit time integration, must subtract this term from the flux ....
-	Fe[1] -= Se[1][1] * T_snow;
+		// Because of the implicit time integration, must subtract this term from the flux ....
+		Fe[1] -= Se[1][1] * T_snow;
+	} // end else
 }
 
 /**
