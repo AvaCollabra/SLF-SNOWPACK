@@ -37,17 +37,6 @@ SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
 
-#build for use with POPC in parallel objects
-#SET(POPC OFF CACHE BOOL "Compile for POPC ON or OFF")
-#IF(POPC)
-	#FIND_PACKAGE(Popc REQUIRED)
-	#SET(METEOIO_LIBRARY "METEOIO_LIBRARY-NOTFOUND" CACHE FILEPATH "Cleared." FORCE)
-	#FIND_PACKAGE(MeteoIO)
-	#SET(CMAKE_CXX_COMPILER popcc) #this does not work, the user still has to do it manually
-	#INCLUDE(CMakeForceCompiler)
-	#CMAKE_FORCE_CXX_COMPILER(popcc POPCC)
-	#SET(POPC_EXT "popc")
-#ENDIF(POPC)
 ###########################################################
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
@@ -94,11 +83,7 @@ ELSE(MSVC)
 	SET(WARNINGS "-Wall")
 	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
-	IF(POPC)
-		SET(EXTRA_WARNINGS "-Wextra -Wno-ignored-qualifiers")
-	ELSE(POPC)
-		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
-	ENDIF(POPC)
+	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
 	IF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID) #Android does not like ansi...
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 		IF(WIN32) #for gcc on windows
@@ -196,7 +181,6 @@ ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
 	COMMAND cmake -E remove_directory tests/res1exp/Testing
 	)
-
 
 ###########################################################
 #for the uninstall target

@@ -76,6 +76,37 @@ void ZwischenData::reset()
 	hn24.resize(144, 0.0);
 }
 
+std::iostream& operator<<(std::iostream& os, const ZwischenData& data)
+{
+	const size_t s_hoar24 = data.hoar24.size();
+	os.write(reinterpret_cast<const char*>(&s_hoar24), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.hoar24[0]), (s_hoar24)*sizeof(data.hoar24[0]));
+	os.write(reinterpret_cast<const char*>(&data.drift24[0]), (s_hoar24)*sizeof(data.drift24[0]));
+
+	const size_t s_hn3 = data.hn3.size();
+	os.write(reinterpret_cast<const char*>(&s_hn3), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.hn3[0]), (s_hn3)*sizeof(data.hn3[0]));
+	os.write(reinterpret_cast<const char*>(&data.hn24[0]), (s_hn3)*sizeof(data.hn24[0]));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, ZwischenData& data)
+{
+	size_t s_hoar24, s_hn3;
+	is.read(reinterpret_cast<char*>(&s_hoar24), sizeof(size_t));
+	data.hoar24.resize(s_hoar24);
+	data.drift24.resize(s_hoar24);
+	is.read(reinterpret_cast<char*>(&data.hoar24[0]), (s_hoar24)*sizeof(data.hoar24[0]));
+	is.read(reinterpret_cast<char*>(&data.drift24[0]), (s_hoar24)*sizeof(data.drift24[0]));
+
+	is.read(reinterpret_cast<char*>(&s_hn3), sizeof(size_t));
+	data.hn3.resize(s_hn3);
+	data.hn24.resize(s_hn3);
+	is.read(reinterpret_cast<char*>(&data.hn3[0]), (s_hn3)*sizeof(data.hn3[0]));
+	is.read(reinterpret_cast<char*>(&data.hn24[0]), (s_hn3)*sizeof(data.hn24[0]));
+	return is;
+}
+
 SnowProfileLayer::SnowProfileLayer()
                   : profileDate(), stationname(), loc_for_snow(0), loc_for_wind(0),
                     depositionDate(), height(0.), rho(0.), T(0.), gradT(0.), v_strain_rate(0.),
@@ -372,6 +403,100 @@ void CanopyData::reset(const bool& cumsum_mass)
 	}
 }
 
+std::iostream& operator<<(std::iostream& os, const CanopyData& data)
+{
+	os.write(reinterpret_cast<const char*>(&data.storage), sizeof(data.storage));
+	os.write(reinterpret_cast<const char*>(&data.temp), sizeof(data.temp));
+	os.write(reinterpret_cast<const char*>(&data.sigf), sizeof(data.sigf));
+	os.write(reinterpret_cast<const char*>(&data.ec), sizeof(data.ec));
+
+	os.write(reinterpret_cast<const char*>(&data.lai), sizeof(data.lai));
+	os.write(reinterpret_cast<const char*>(&data.z0m), sizeof(data.z0m));
+	os.write(reinterpret_cast<const char*>(&data.z0h), sizeof(data.z0h));
+	os.write(reinterpret_cast<const char*>(&data.zdispl), sizeof(data.zdispl));
+	os.write(reinterpret_cast<const char*>(&data.height), sizeof(data.height));
+	os.write(reinterpret_cast<const char*>(&data.direct_throughfall), sizeof(data.direct_throughfall));
+
+	os.write(reinterpret_cast<const char*>(&data.ra), sizeof(data.ra));
+	os.write(reinterpret_cast<const char*>(&data.rc), sizeof(data.rc));
+	os.write(reinterpret_cast<const char*>(&data.rs), sizeof(data.rs));
+	os.write(reinterpret_cast<const char*>(&data.rstransp), sizeof(data.rstransp));
+	os.write(reinterpret_cast<const char*>(&data.canopyalb), sizeof(data.canopyalb));
+	os.write(reinterpret_cast<const char*>(&data.totalalb), sizeof(data.totalalb));
+	os.write(reinterpret_cast<const char*>(&data.wetfraction), sizeof(data.wetfraction));
+	os.write(reinterpret_cast<const char*>(&data.intcapacity), sizeof(data.intcapacity));
+
+	os.write(reinterpret_cast<const char*>(&data.rswrac), sizeof(data.rswrac));
+	os.write(reinterpret_cast<const char*>(&data.iswrac), sizeof(data.iswrac));
+	os.write(reinterpret_cast<const char*>(&data.rswrbc), sizeof(data.rswrbc));
+	os.write(reinterpret_cast<const char*>(&data.iswrbc), sizeof(data.iswrbc));
+	os.write(reinterpret_cast<const char*>(&data.ilwrac), sizeof(data.ilwrac));
+	os.write(reinterpret_cast<const char*>(&data.rlwrac), sizeof(data.rlwrac));
+	os.write(reinterpret_cast<const char*>(&data.ilwrbc), sizeof(data.ilwrbc));
+	os.write(reinterpret_cast<const char*>(&data.rlwrbc), sizeof(data.rlwrbc));
+	os.write(reinterpret_cast<const char*>(&data.rsnet), sizeof(data.rsnet));
+	os.write(reinterpret_cast<const char*>(&data.rlnet), sizeof(data.rlnet));
+
+	os.write(reinterpret_cast<const char*>(&data.sensible), sizeof(data.sensible));
+	os.write(reinterpret_cast<const char*>(&data.latent), sizeof(data.latent));
+	os.write(reinterpret_cast<const char*>(&data.latentcorr), sizeof(data.latentcorr));
+
+	os.write(reinterpret_cast<const char*>(&data.transp), sizeof(data.transp));
+	os.write(reinterpret_cast<const char*>(&data.intevap), sizeof(data.intevap));
+
+	os.write(reinterpret_cast<const char*>(&data.interception), sizeof(data.interception));
+	os.write(reinterpret_cast<const char*>(&data.throughfall), sizeof(data.throughfall));
+	os.write(reinterpret_cast<const char*>(&data.snowunload), sizeof(data.snowunload));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, CanopyData& data)
+{
+	is.read(reinterpret_cast<char*>(&data.storage), sizeof(data.storage));
+	is.read(reinterpret_cast<char*>(&data.temp), sizeof(data.temp));
+	is.read(reinterpret_cast<char*>(&data.sigf), sizeof(data.sigf));
+	is.read(reinterpret_cast<char*>(&data.ec), sizeof(data.ec));
+
+	is.read(reinterpret_cast<char*>(&data.lai), sizeof(data.lai));
+	is.read(reinterpret_cast<char*>(&data.z0m), sizeof(data.z0m));
+	is.read(reinterpret_cast<char*>(&data.z0h), sizeof(data.z0h));
+	is.read(reinterpret_cast<char*>(&data.zdispl), sizeof(data.zdispl));
+	is.read(reinterpret_cast<char*>(&data.height), sizeof(data.height));
+	is.read(reinterpret_cast<char*>(&data.direct_throughfall), sizeof(data.direct_throughfall));
+
+	is.read(reinterpret_cast<char*>(&data.ra), sizeof(data.ra));
+	is.read(reinterpret_cast<char*>(&data.rc), sizeof(data.rc));
+	is.read(reinterpret_cast<char*>(&data.rs), sizeof(data.rs));
+	is.read(reinterpret_cast<char*>(&data.rstransp), sizeof(data.rstransp));
+	is.read(reinterpret_cast<char*>(&data.canopyalb), sizeof(data.canopyalb));
+	is.read(reinterpret_cast<char*>(&data.totalalb), sizeof(data.totalalb));
+	is.read(reinterpret_cast<char*>(&data.wetfraction), sizeof(data.wetfraction));
+	is.read(reinterpret_cast<char*>(&data.intcapacity), sizeof(data.intcapacity));
+
+	is.read(reinterpret_cast<char*>(&data.rswrac), sizeof(data.rswrac));
+	is.read(reinterpret_cast<char*>(&data.iswrac), sizeof(data.iswrac));
+	is.read(reinterpret_cast<char*>(&data.rswrbc), sizeof(data.rswrbc));
+	is.read(reinterpret_cast<char*>(&data.iswrbc), sizeof(data.iswrbc));
+	is.read(reinterpret_cast<char*>(&data.ilwrac), sizeof(data.ilwrac));
+	is.read(reinterpret_cast<char*>(&data.rlwrac), sizeof(data.rlwrac));
+	is.read(reinterpret_cast<char*>(&data.ilwrbc), sizeof(data.ilwrbc));
+	is.read(reinterpret_cast<char*>(&data.rlwrbc), sizeof(data.rlwrbc));
+	is.read(reinterpret_cast<char*>(&data.rsnet), sizeof(data.rsnet));
+	is.read(reinterpret_cast<char*>(&data.rlnet), sizeof(data.rlnet));
+
+	is.read(reinterpret_cast<char*>(&data.sensible), sizeof(data.sensible));
+	is.read(reinterpret_cast<char*>(&data.latent), sizeof(data.latent));
+	is.read(reinterpret_cast<char*>(&data.latentcorr), sizeof(data.latentcorr));
+
+	is.read(reinterpret_cast<char*>(&data.transp), sizeof(data.transp));
+	is.read(reinterpret_cast<char*>(&data.intevap), sizeof(data.intevap));
+
+	is.read(reinterpret_cast<char*>(&data.interception), sizeof(data.interception));
+	is.read(reinterpret_cast<char*>(&data.throughfall), sizeof(data.throughfall));
+	is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
+	return is;
+}
+
 const std::string CanopyData::toString() const
 {
 	std::stringstream os;
@@ -457,6 +582,134 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), theta_r(0.), dhf(0.) {}
+
+std::iostream& operator<<(std::iostream& os, const ElementData& data)
+{
+	os << data.depositionDate;
+	os.write(reinterpret_cast<const char*>(&data.L0), sizeof(data.L0));
+	os.write(reinterpret_cast<const char*>(&data.L), sizeof(data.L));
+	os.write(reinterpret_cast<const char*>(&data.Te), sizeof(data.Te));
+	os.write(reinterpret_cast<const char*>(&data.gradT), sizeof(data.gradT));
+	os.write(reinterpret_cast<const char*>(&data.melting_tk), sizeof(data.melting_tk));
+	os.write(reinterpret_cast<const char*>(&data.freezing_tk), sizeof(data.freezing_tk));
+
+	const size_t s_theta = data.theta.size();
+	os.write(reinterpret_cast<const char*>(&s_theta), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.theta[0]), (s_theta)*sizeof(data.theta[0]));
+	os << data.conc;
+
+	const size_t s_k = data.k.size();
+	os.write(reinterpret_cast<const char*>(&s_k), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.k[0]), (s_k)*sizeof(data.k[0]));
+
+	const size_t s_c = data.c.size();
+	os.write(reinterpret_cast<const char*>(&s_c), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.c[0]), (s_c)*sizeof(data.c[0]));
+
+	const size_t s_soil = data.soil.size();
+	os.write(reinterpret_cast<const char*>(&s_soil), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.soil[0]), (s_soil)*sizeof(data.soil[0]));
+
+	os.write(reinterpret_cast<const char*>(&data.Rho), sizeof(data.Rho));
+	os.write(reinterpret_cast<const char*>(&data.M), sizeof(data.M));
+	os.write(reinterpret_cast<const char*>(&data.sw_abs), sizeof(data.sw_abs));
+	os.write(reinterpret_cast<const char*>(&data.rg), sizeof(data.rg));
+	os.write(reinterpret_cast<const char*>(&data.dd), sizeof(data.dd));
+	os.write(reinterpret_cast<const char*>(&data.sp), sizeof(data.sp));
+	os.write(reinterpret_cast<const char*>(&data.ogs), sizeof(data.ogs));
+	os.write(reinterpret_cast<const char*>(&data.rb), sizeof(data.rb));
+	os.write(reinterpret_cast<const char*>(&data.N3), sizeof(data.N3));
+	os.write(reinterpret_cast<const char*>(&data.mk), sizeof(data.mk));
+	os.write(reinterpret_cast<const char*>(&data.type), sizeof(data.type));
+	os.write(reinterpret_cast<const char*>(&data.metamo), sizeof(data.metamo));
+	os.write(reinterpret_cast<const char*>(&data.dth_w), sizeof(data.dth_w));
+	os.write(reinterpret_cast<const char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
+	os.write(reinterpret_cast<const char*>(&data.Qmf), sizeof(data.Qmf));
+
+	os.write(reinterpret_cast<const char*>(&data.dE), sizeof(data.dE));
+	os.write(reinterpret_cast<const char*>(&data.E), sizeof(data.E));
+	os.write(reinterpret_cast<const char*>(&data.Ee), sizeof(data.Ee));
+	os.write(reinterpret_cast<const char*>(&data.Ev), sizeof(data.Ev));
+	os.write(reinterpret_cast<const char*>(&data.EDot), sizeof(data.EDot));
+	os.write(reinterpret_cast<const char*>(&data.EvDot), sizeof(data.EvDot));
+
+	os.write(reinterpret_cast<const char*>(&data.S), sizeof(data.S));
+	os.write(reinterpret_cast<const char*>(&data.C), sizeof(data.C));
+	os.write(reinterpret_cast<const char*>(&data.CDot), sizeof(data.CDot));
+	os.write(reinterpret_cast<const char*>(&data.ps2rb), sizeof(data.ps2rb));
+	os.write(reinterpret_cast<const char*>(&data.s_strength), sizeof(data.s_strength));
+	os.write(reinterpret_cast<const char*>(&data.hard), sizeof(data.hard));
+	os.write(reinterpret_cast<const char*>(&data.S_dr), sizeof(data.S_dr));
+	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
+	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, ElementData& data)
+{
+	is >> data.depositionDate;
+	is.read(reinterpret_cast<char*>(&data.L0), sizeof(data.L0));
+	is.read(reinterpret_cast<char*>(&data.L), sizeof(data.L));
+	is.read(reinterpret_cast<char*>(&data.Te), sizeof(data.Te));
+	is.read(reinterpret_cast<char*>(&data.gradT), sizeof(data.gradT));
+	is.read(reinterpret_cast<char*>(&data.melting_tk), sizeof(data.melting_tk));
+	is.read(reinterpret_cast<char*>(&data.freezing_tk), sizeof(data.freezing_tk));
+
+	size_t s_theta;
+	is.read(reinterpret_cast<char*>(&s_theta), sizeof(size_t));
+	data.theta.resize(s_theta);
+	is.read(reinterpret_cast<char*>(&data.theta[0]), (s_theta)*sizeof(data.theta[0]));
+	is >> data.conc;
+
+	size_t s_k;
+	is.read(reinterpret_cast<char*>(&s_k), sizeof(size_t));
+	data.k.resize(s_k);
+	is.read(reinterpret_cast<char*>(&data.k[0]), (s_k)*sizeof(data.k[0]));
+
+	size_t s_c;
+	is.read(reinterpret_cast<char*>(&s_c), sizeof(size_t));
+	data.c.resize(s_c);
+	is.read(reinterpret_cast<char*>(&data.c[0]), (s_c)*sizeof(data.c[0]));
+
+	size_t s_soil;
+	is.read(reinterpret_cast<char*>(&s_soil), sizeof(size_t));
+	data.soil.resize(s_soil);
+	is.read(reinterpret_cast<char*>(&data.soil[0]), (s_soil)*sizeof(data.soil[0]));
+
+	is.read(reinterpret_cast<char*>(&data.Rho), sizeof(data.Rho));
+	is.read(reinterpret_cast<char*>(&data.M), sizeof(data.M));
+	is.read(reinterpret_cast<char*>(&data.sw_abs), sizeof(data.sw_abs));
+	is.read(reinterpret_cast<char*>(&data.rg), sizeof(data.rg));
+	is.read(reinterpret_cast<char*>(&data.dd), sizeof(data.dd));
+	is.read(reinterpret_cast<char*>(&data.sp), sizeof(data.sp));
+	is.read(reinterpret_cast<char*>(&data.ogs), sizeof(data.ogs));
+	is.read(reinterpret_cast<char*>(&data.rb), sizeof(data.rb));
+	is.read(reinterpret_cast<char*>(&data.N3), sizeof(data.N3));
+	is.read(reinterpret_cast<char*>(&data.mk), sizeof(data.mk));
+	is.read(reinterpret_cast<char*>(&data.type), sizeof(data.type));
+	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
+	is.read(reinterpret_cast<char*>(&data.dth_w), sizeof(data.dth_w));
+	is.read(reinterpret_cast<char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
+	is.read(reinterpret_cast<char*>(&data.Qmf), sizeof(data.Qmf));
+
+	is.read(reinterpret_cast<char*>(&data.dE), sizeof(data.dE));
+	is.read(reinterpret_cast<char*>(&data.E), sizeof(data.E));
+	is.read(reinterpret_cast<char*>(&data.Ee), sizeof(data.Ee));
+	is.read(reinterpret_cast<char*>(&data.Ev), sizeof(data.Ev));
+	is.read(reinterpret_cast<char*>(&data.EDot), sizeof(data.EDot));
+	is.read(reinterpret_cast<char*>(&data.EvDot), sizeof(data.EvDot));
+
+	is.read(reinterpret_cast<char*>(&data.S), sizeof(data.S));
+	is.read(reinterpret_cast<char*>(&data.C), sizeof(data.C));
+	is.read(reinterpret_cast<char*>(&data.CDot), sizeof(data.CDot));
+	is.read(reinterpret_cast<char*>(&data.ps2rb), sizeof(data.ps2rb));
+	is.read(reinterpret_cast<char*>(&data.s_strength), sizeof(data.s_strength));
+	is.read(reinterpret_cast<char*>(&data.hard), sizeof(data.hard));
+	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
+	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
+	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
+	return is;
+}
 
 /**
  * @brief Check volumetric content
@@ -865,6 +1118,42 @@ const std::string ElementData::toString() const
 	os << "\tStability: S_dr=" << S_dr << " hard=" << hard << " dhf=" << dhf << "\n";
 	os << "</ElementData>\n";
 	return os.str();
+}
+
+std::iostream& operator<<(std::iostream& os, const NodeData& data)
+{
+	os.write(reinterpret_cast<const char*>(&data.z), sizeof(data.z));
+	os.write(reinterpret_cast<const char*>(&data.u), sizeof(data.u));
+	os.write(reinterpret_cast<const char*>(&data.f), sizeof(data.f));
+	os.write(reinterpret_cast<const char*>(&data.udot), sizeof(data.udot));
+	os.write(reinterpret_cast<const char*>(&data.T), sizeof(data.T));
+	os.write(reinterpret_cast<const char*>(&data.S_n), sizeof(data.S_n));
+	os.write(reinterpret_cast<const char*>(&data.S_s), sizeof(data.S_s));
+	os.write(reinterpret_cast<const char*>(&data.ssi), sizeof(data.ssi));
+	os.write(reinterpret_cast<const char*>(&data.hoar), sizeof(data.hoar));
+
+	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
+	os.write(reinterpret_cast<const char*>(&data.S_dhf), sizeof(data.S_dhf));
+	os.write(reinterpret_cast<const char*>(&data.Sigdhf), sizeof(data.Sigdhf));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, NodeData& data)
+{
+	is.read(reinterpret_cast<char*>(&data.z), sizeof(data.z));
+	is.read(reinterpret_cast<char*>(&data.u), sizeof(data.u));
+	is.read(reinterpret_cast<char*>(&data.f), sizeof(data.f));
+	is.read(reinterpret_cast<char*>(&data.udot), sizeof(data.udot));
+	is.read(reinterpret_cast<char*>(&data.T), sizeof(data.T));
+	is.read(reinterpret_cast<char*>(&data.S_n), sizeof(data.S_n));
+	is.read(reinterpret_cast<char*>(&data.S_s), sizeof(data.S_s));
+	is.read(reinterpret_cast<char*>(&data.ssi), sizeof(data.ssi));
+	is.read(reinterpret_cast<char*>(&data.hoar), sizeof(data.hoar));
+
+	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
+	is.read(reinterpret_cast<char*>(&data.S_dhf), sizeof(data.S_dhf));
+	is.read(reinterpret_cast<char*>(&data.Sigdhf), sizeof(data.Sigdhf));
+	return is;
 }
 
 const std::string NodeData::toString() const
@@ -1324,6 +1613,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 		SigC -= (.5*Edata[e].M) * Constants::g * cos_sl;
 
 		Edata[e].C = SigC;
+		assert(Edata[e].C<0.);
 	}
 
 	// Cold content and snowpack masses
@@ -1552,6 +1842,161 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 }
 
+std::iostream& operator<<(std::iostream& os, const SnowStation& data)
+{
+	// HACK: nothing is done for the void* Kt
+
+	os << data.meta;
+	os.write(reinterpret_cast<const char*>(&data.cos_sl), sizeof(data.cos_sl));
+	os.write(reinterpret_cast<const char*>(&data.sector), sizeof(data.sector));
+
+	os << data.Cdata;
+	os.write(reinterpret_cast<const char*>(&data.pAlbedo), sizeof(data.pAlbedo));
+	os.write(reinterpret_cast<const char*>(&data.Albedo), sizeof(data.Albedo));
+	os.write(reinterpret_cast<const char*>(&data.SoilAlb), sizeof(data.SoilAlb));
+	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
+	os.write(reinterpret_cast<const char*>(&data.SoilNode), sizeof(data.SoilNode));
+	os.write(reinterpret_cast<const char*>(&data.Ground), sizeof(data.Ground));
+	os.write(reinterpret_cast<const char*>(&data.cH), sizeof(data.cH));
+	os.write(reinterpret_cast<const char*>(&data.mH), sizeof(data.mH));
+	os.write(reinterpret_cast<const char*>(&data.mass_sum), sizeof(data.mass_sum));
+	os.write(reinterpret_cast<const char*>(&data.swe), sizeof(data.swe));
+	os.write(reinterpret_cast<const char*>(&data.lwc_sum), sizeof(data.lwc_sum));
+	os.write(reinterpret_cast<const char*>(&data.hn), sizeof(data.hn));
+	os.write(reinterpret_cast<const char*>(&data.rho_hn), sizeof(data.rho_hn));
+	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
+	os.write(reinterpret_cast<const char*>(&data.ErosionMass), sizeof(data.ErosionMass));
+	os.write(reinterpret_cast<const char*>(&data.S_class1), sizeof(data.S_class1));
+	os.write(reinterpret_cast<const char*>(&data.S_class2), sizeof(data.S_class2));
+	os.write(reinterpret_cast<const char*>(&data.S_d), sizeof(data.S_d));
+	os.write(reinterpret_cast<const char*>(&data.z_S_d), sizeof(data.z_S_d));
+	os.write(reinterpret_cast<const char*>(&data.S_n), sizeof(data.S_n));
+	os.write(reinterpret_cast<const char*>(&data.z_S_n), sizeof(data.z_S_n));
+	os.write(reinterpret_cast<const char*>(&data.S_s), sizeof(data.S_s));
+	os.write(reinterpret_cast<const char*>(&data.z_S_s), sizeof(data.z_S_s));
+	os.write(reinterpret_cast<const char*>(&data.S_4), sizeof(data.S_4));
+	os.write(reinterpret_cast<const char*>(&data.z_S_4), sizeof(data.z_S_4));
+	os.write(reinterpret_cast<const char*>(&data.S_5), sizeof(data.S_5));
+	os.write(reinterpret_cast<const char*>(&data.z_S_5), sizeof(data.z_S_5));
+
+	const size_t s_Ndata = data.Ndata.size();
+	os.write(reinterpret_cast<const char*>(&s_Ndata), sizeof(size_t));
+	for (size_t ii=0; ii<s_Ndata; ii++) os << data.Ndata[ii];
+
+	const size_t s_Edata = data.Edata.size();
+	os.write(reinterpret_cast<const char*>(&s_Edata), sizeof(size_t));
+	for (size_t ii=0; ii<s_Edata; ii++) os << data.Edata[ii];
+
+	// void *Kt
+	os.write(reinterpret_cast<const char*>(&data.tag_low), sizeof(data.tag_low));
+	os.write(reinterpret_cast<const char*>(&data.ColdContent), sizeof(data.ColdContent));
+	os.write(reinterpret_cast<const char*>(&data.ColdContentSoil), sizeof(data.ColdContentSoil));
+	os.write(reinterpret_cast<const char*>(&data.dIntEnergy), sizeof(data.dIntEnergy));
+	os.write(reinterpret_cast<const char*>(&data.dIntEnergySoil), sizeof(data.dIntEnergySoil));
+	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
+	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
+	os.write(reinterpret_cast<const char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
+	os.write(reinterpret_cast<const char*>(&data.windward), sizeof(data.windward));
+
+	//static member variables
+	/*os.write(reinterpret_cast<const char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_ice), sizeof(data.comb_thresh_ice));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_water), sizeof(data.comb_thresh_water));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_dd), sizeof(data.comb_thresh_dd));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_sp), sizeof(data.comb_thresh_sp));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
+	os.write(reinterpret_cast<const char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
+	os.write(reinterpret_cast<const char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
+	os.write(reinterpret_cast<const char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
+	os.write(reinterpret_cast<const char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
+
+	// private member variables:
+	os.write(reinterpret_cast<const char*>(&data.nNodes), sizeof(data.nNodes));
+	os.write(reinterpret_cast<const char*>(&data.nElems), sizeof(data.nElems));
+	os.write(reinterpret_cast<const char*>(&data.useCanopyModel), sizeof(data.useCanopyModel));
+	os.write(reinterpret_cast<const char*>(&data.useSoilLayers), sizeof(data.useSoilLayers));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, SnowStation& data)
+{
+	// HACK: nothing is done for the void* Kt
+
+	is >> data.meta;
+	is.read(reinterpret_cast<char*>(&data.cos_sl), sizeof(data.cos_sl));
+	is.read(reinterpret_cast<char*>(&data.sector), sizeof(data.sector));
+
+	is >> data.Cdata;
+	is.read(reinterpret_cast<char*>(&data.pAlbedo), sizeof(data.pAlbedo));
+	is.read(reinterpret_cast<char*>(&data.Albedo), sizeof(data.Albedo));
+	is.read(reinterpret_cast<char*>(&data.SoilAlb), sizeof(data.SoilAlb));
+	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
+	is.read(reinterpret_cast<char*>(&data.SoilNode), sizeof(data.SoilNode));
+	is.read(reinterpret_cast<char*>(&data.Ground), sizeof(data.Ground));
+	is.read(reinterpret_cast<char*>(&data.cH), sizeof(data.cH));
+	is.read(reinterpret_cast<char*>(&data.mH), sizeof(data.mH));
+	is.read(reinterpret_cast<char*>(&data.mass_sum), sizeof(data.mass_sum));
+	is.read(reinterpret_cast<char*>(&data.swe), sizeof(data.swe));
+	is.read(reinterpret_cast<char*>(&data.lwc_sum), sizeof(data.lwc_sum));
+	is.read(reinterpret_cast<char*>(&data.hn), sizeof(data.hn));
+	is.read(reinterpret_cast<char*>(&data.rho_hn), sizeof(data.rho_hn));
+	is.read(reinterpret_cast<char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
+	is.read(reinterpret_cast<char*>(&data.ErosionMass), sizeof(data.ErosionMass));
+	is.read(reinterpret_cast<char*>(&data.S_class1), sizeof(data.S_class1));
+	is.read(reinterpret_cast<char*>(&data.S_class2), sizeof(data.S_class2));
+	is.read(reinterpret_cast<char*>(&data.S_d), sizeof(data.S_d));
+	is.read(reinterpret_cast<char*>(&data.z_S_d), sizeof(data.z_S_d));
+	is.read(reinterpret_cast<char*>(&data.S_n), sizeof(data.S_n));
+	is.read(reinterpret_cast<char*>(&data.z_S_n), sizeof(data.z_S_n));
+	is.read(reinterpret_cast<char*>(&data.S_s), sizeof(data.S_s));
+	is.read(reinterpret_cast<char*>(&data.z_S_s), sizeof(data.z_S_s));
+	is.read(reinterpret_cast<char*>(&data.S_4), sizeof(data.S_4));
+	is.read(reinterpret_cast<char*>(&data.z_S_4), sizeof(data.z_S_4));
+	is.read(reinterpret_cast<char*>(&data.S_5), sizeof(data.S_5));
+	is.read(reinterpret_cast<char*>(&data.z_S_5), sizeof(data.z_S_5));
+
+	size_t s_Ndata;
+	is.read(reinterpret_cast<char*>(&s_Ndata), sizeof(size_t));
+	data.Ndata.resize(s_Ndata);
+	for (size_t ii=0; ii<s_Ndata; ii++) is >> data.Ndata[ii];
+
+	size_t s_Edata;
+	is.read(reinterpret_cast<char*>(&s_Edata), sizeof(size_t));
+	data.Edata.resize(s_Edata);
+	for (size_t ii=0; ii<s_Edata; ii++) is >> data.Edata[ii];
+
+	data.Kt = NULL;
+
+	is.read(reinterpret_cast<char*>(&data.tag_low), sizeof(data.tag_low));
+	is.read(reinterpret_cast<char*>(&data.ColdContent), sizeof(data.ColdContent));
+	is.read(reinterpret_cast<char*>(&data.ColdContentSoil), sizeof(data.ColdContentSoil));
+	is.read(reinterpret_cast<char*>(&data.dIntEnergy), sizeof(data.dIntEnergy));
+	is.read(reinterpret_cast<char*>(&data.dIntEnergySoil), sizeof(data.dIntEnergySoil));
+	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
+	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
+	is.read(reinterpret_cast<char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
+	is.read(reinterpret_cast<char*>(&data.windward), sizeof(data.windward));
+
+	//static member variables
+	/*is.read(reinterpret_cast<char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_ice), sizeof(data.comb_thresh_ice));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_water), sizeof(data.comb_thresh_water));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_dd), sizeof(data.comb_thresh_dd));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_sp), sizeof(data.comb_thresh_sp));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
+	is.read(reinterpret_cast<char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
+	is.read(reinterpret_cast<char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
+	is.read(reinterpret_cast<char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
+	is.read(reinterpret_cast<char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
+
+	// private member variables:
+	is.read(reinterpret_cast<char*>(&data.nNodes), sizeof(data.nNodes));
+	is.read(reinterpret_cast<char*>(&data.nElems), sizeof(data.nElems));
+	is.read(reinterpret_cast<char*>(&data.useCanopyModel), sizeof(data.useCanopyModel));
+	is.read(reinterpret_cast<char*>(&data.useSoilLayers), sizeof(data.useSoilLayers));
+	return is;
+}
+
 const std::string SnowStation::toString() const
 {
 	std::stringstream os;
@@ -1770,6 +2215,57 @@ const std::string CurrentMeteo::toString() const
 	return os.str();
 }
 
+std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data)
+{
+	os << data.meta;
+	os << data.profileDate;
+	os.write(reinterpret_cast<const char*>(&data.nN), sizeof(data.nN));
+	os.write(reinterpret_cast<const char*>(&data.Height), sizeof(data.Height));
+	os.write(reinterpret_cast<const char*>(&data.nLayers), sizeof(data.nLayers));
+
+	const size_t s_Ldata = data.Ldata.size();
+	os.write(reinterpret_cast<const char*>(&s_Ldata), sizeof(size_t));
+	for (size_t ii=0; ii<s_Ldata; ii++) os << data.Ldata[ii];
+
+	os.write(reinterpret_cast<const char*>(&data.HS_last), sizeof(data.HS_last));
+	os.write(reinterpret_cast<const char*>(&data.Albedo), sizeof(data.Albedo));
+	os.write(reinterpret_cast<const char*>(&data.SoilAlb), sizeof(data.SoilAlb));
+	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
+	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
+	os.write(reinterpret_cast<const char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data)
+{
+	is >> data.meta;
+	is >> data.profileDate;
+	is.read(reinterpret_cast<char*>(&data.nN), sizeof(data.nN));
+	is.read(reinterpret_cast<char*>(&data.Height), sizeof(data.Height));
+	is.read(reinterpret_cast<char*>(&data.nLayers), sizeof(data.nLayers));
+
+	size_t s_Ldata;
+	is.read(reinterpret_cast<char*>(&s_Ldata), sizeof(size_t));
+	data.Ldata.resize(s_Ldata);
+	for (size_t ii=0; ii<s_Ldata; ii++) is >> data.Ldata[ii];
+
+	is.read(reinterpret_cast<char*>(&data.HS_last), sizeof(data.HS_last));
+	is.read(reinterpret_cast<char*>(&data.Albedo), sizeof(data.Albedo));
+	is.read(reinterpret_cast<char*>(&data.SoilAlb), sizeof(data.SoilAlb));
+	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
+	is.read(reinterpret_cast<char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
+	is.read(reinterpret_cast<char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	is.read(reinterpret_cast<char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
+	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	is.read(reinterpret_cast<char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
+	is.read(reinterpret_cast<char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
+	return is;
+}
+
 const std::string SN_SNOWSOIL_DATA::toString() const
 {
 	std::stringstream os;
@@ -1834,6 +2330,94 @@ LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
                      rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
 {
+}
+
+std::iostream& operator<<(std::iostream& os, const LayerData& data)
+{
+	os << data.depositionDate;
+	os.write(reinterpret_cast<const char*>(&data.hl), sizeof(data.hl));
+	os.write(reinterpret_cast<const char*>(&data.ne), sizeof(data.ne));
+	os.write(reinterpret_cast<const char*>(&data.tl), sizeof(data.tl));
+	os.write(reinterpret_cast<const char*>(&data.phiSoil), sizeof(data.phiSoil));
+	os.write(reinterpret_cast<const char*>(&data.phiIce), sizeof(data.phiIce));
+	os.write(reinterpret_cast<const char*>(&data.phiWater), sizeof(data.phiWater));
+	os.write(reinterpret_cast<const char*>(&data.phiVoids), sizeof(data.phiVoids));
+
+	const size_t s_csoil = data.cSoil.size();
+	os.write(reinterpret_cast<const char*>(&s_csoil), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.cSoil[0]), (s_csoil)*sizeof(data.cSoil[0]));
+
+	const size_t s_cice = data.cIce.size();
+	os.write(reinterpret_cast<const char*>(&s_cice), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.cIce[0]), (s_cice)*sizeof(data.cIce[0]));
+
+	const size_t s_cwater = data.cWater.size();
+	os.write(reinterpret_cast<const char*>(&s_cwater), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.cWater[0]), (s_cwater)*sizeof(data.cWater[0]));
+
+	const size_t s_cvoids = data.cVoids.size();
+	os.write(reinterpret_cast<const char*>(&s_cvoids), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.cVoids[0]), (s_cvoids)*sizeof(data.cVoids[0]));
+
+	os.write(reinterpret_cast<const char*>(&data.SoilRho), sizeof(data.SoilRho));
+	os.write(reinterpret_cast<const char*>(&data.SoilK), sizeof(data.SoilK));
+	os.write(reinterpret_cast<const char*>(&data.SoilC), sizeof(data.SoilC));
+	os.write(reinterpret_cast<const char*>(&data.rg), sizeof(data.rg));
+	os.write(reinterpret_cast<const char*>(&data.sp), sizeof(data.sp));
+	os.write(reinterpret_cast<const char*>(&data.dd), sizeof(data.dd));
+	os.write(reinterpret_cast<const char*>(&data.rb), sizeof(data.rb));
+	os.write(reinterpret_cast<const char*>(&data.mk), sizeof(data.mk));
+
+	os.write(reinterpret_cast<const char*>(&data.hr), sizeof(data.hr));
+	os.write(reinterpret_cast<const char*>(&data.CDot), sizeof(data.CDot));
+	os.write(reinterpret_cast<const char*>(&data.metamo), sizeof(data.metamo));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, LayerData& data)
+{
+	is >> data.depositionDate;
+	is.read(reinterpret_cast<char*>(&data.hl), sizeof(data.hl));
+	is.read(reinterpret_cast<char*>(&data.ne), sizeof(data.ne));
+	is.read(reinterpret_cast<char*>(&data.tl), sizeof(data.tl));
+	is.read(reinterpret_cast<char*>(&data.phiSoil), sizeof(data.phiSoil));
+	is.read(reinterpret_cast<char*>(&data.phiIce), sizeof(data.phiIce));
+	is.read(reinterpret_cast<char*>(&data.phiWater), sizeof(data.phiWater));
+	is.read(reinterpret_cast<char*>(&data.phiVoids), sizeof(data.phiVoids));
+
+	size_t s_csoil;
+	is.read(reinterpret_cast<char*>(&s_csoil), sizeof(size_t));
+	data.cSoil.resize(s_csoil);
+	is.read(reinterpret_cast<char*>(&data.cSoil[0]), (s_csoil)*sizeof(data.cSoil[0]));
+
+	size_t s_cice;
+	is.read(reinterpret_cast<char*>(&s_cice), sizeof(size_t));
+	data.cIce.resize(s_cice);
+	is.read(reinterpret_cast<char*>(&data.cIce[0]), (s_cice)*sizeof(data.cIce[0]));
+
+	size_t s_cwater;
+	is.read(reinterpret_cast<char*>(&s_cwater), sizeof(size_t));
+	data.cWater.resize(s_cwater);
+	is.read(reinterpret_cast<char*>(&data.cWater[0]), (s_cwater)*sizeof(data.cWater[0]));
+
+	size_t s_cvoids;
+	is.read(reinterpret_cast<char*>(&s_cvoids), sizeof(size_t));
+	data.cVoids.resize(s_cvoids);
+	is.read(reinterpret_cast<char*>(&data.cVoids[0]), (s_cvoids)*sizeof(data.cVoids[0]));
+
+	is.read(reinterpret_cast<char*>(&data.SoilRho), sizeof(data.SoilRho));
+	is.read(reinterpret_cast<char*>(&data.SoilK), sizeof(data.SoilK));
+	is.read(reinterpret_cast<char*>(&data.SoilC), sizeof(data.SoilC));
+	is.read(reinterpret_cast<char*>(&data.rg), sizeof(data.rg));
+	is.read(reinterpret_cast<char*>(&data.sp), sizeof(data.sp));
+	is.read(reinterpret_cast<char*>(&data.dd), sizeof(data.dd));
+	is.read(reinterpret_cast<char*>(&data.rb), sizeof(data.rb));
+	is.read(reinterpret_cast<char*>(&data.mk), sizeof(data.mk));
+
+	is.read(reinterpret_cast<char*>(&data.hr), sizeof(data.hr));
+	is.read(reinterpret_cast<char*>(&data.CDot), sizeof(data.CDot));
+	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
+	return is;
 }
 
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
