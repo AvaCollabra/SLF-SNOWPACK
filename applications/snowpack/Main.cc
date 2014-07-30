@@ -731,36 +731,9 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	return true;
 }
 
-// SNOWPACK MAIN **************************************************************
-void real_main (int argc, char *argv[])
+void addSpecialKeys(SnowpackConfig &cfg)
 {
-#ifdef DEBUG_ARITHM
-	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
-#endif
-	//parse the command line arguments
-	string end_date_str;
-	parseCmdLine(argc, argv, end_date_str);
-
-	const bool prn_check = false;
-	mio::Timer meteoRead_timer;
-	mio::Timer run_timer;
-	run_timer.start();
-	time_t nowSRT = time(NULL);
-	MainControl mn_ctrl; //Time step control parameters
-
-	SnowpackConfig cfg(cfgfile);
-
-	const double i_time_zone = cfg.get("TIME_ZONE", "Input"); //get user provided input time_zone
-	if (end_date_str == "NOW") { //interpret user provided end date
-		dateEnd.setFromSys();
-		dateEnd.setTimeZone(i_time_zone);
-		dateEnd.rnd(1800, mio::Date::DOWN);
-	} else {
-		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
-	}
-
-	string outpath, experiment, db_name, variant;
-	cfg.getValue("VARIANT", "SnowpackAdvanced", variant, mio::IOUtils::nothrow);
+	const string variant = cfg.get("VARIANT", "SnowpackAdvanced", mio::IOUtils::nothrow);
 
 	// Add keys to perform running mean in Antarctic variant
 	if (variant == "ANTARCTICA") {
@@ -785,26 +758,11 @@ void real_main (int argc, char *argv[])
 		}
 	}
 
-	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
-	bool soil_flux = false;
-	if (useSoilLayers) {
-		cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux);
-		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Start SNOWPACK w/ soil layers in %s mode", mode.c_str());
-	} else {
-		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Start SNOWPACK in %s mode", mode.c_str());
-	}
-	if (variant != "DEFAULT") {
-		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Variant is '%s'", variant.c_str());
-	}
-	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
-	        "%s compiled on %s at %s", string(argv[0]).c_str(), __DATE__, __TIME__);
-
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	bool detect_grass = cfg.get("DETECT_GRASS", "SnowpackAdvanced");
 	if (mode == "OPERATIONAL") {
 		cfg.addKey("RESEARCH", "SnowpackAdvanced", "false");
 		cfg.addKey("AVGSUM_TIME_SERIES", "Output", "false");
-		cfg.getValue("DBNAME", "Output", db_name, mio::IOUtils::nothrow);
 		if (useCanopyModel) {
 			throw mio::IOException("Please don't set CANOPY to 1 in OPERATIONAL mode", AT);
 		}
@@ -812,12 +770,8 @@ void real_main (int argc, char *argv[])
 			cfg.addKey("DETECT_GRASS", "SnowpackAdvanced", "true");
 			detect_grass = true;
 		}
-	} else {
-		cfg.getValue("EXPERIMENT", "Output", experiment, mio::IOUtils::nothrow);
-		cfg.getValue("METEOPATH", "Output", outpath);
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Experiment : %s", experiment.c_str());
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Output dir : %s", outpath.c_str());
 	}
+
 	if (detect_grass) {
 		// we need various average values of tss and hs, all for "past" windows (left)
 		// Require at least one value per 3 hours
@@ -833,7 +787,68 @@ void real_main (int argc, char *argv[])
 		cfg.addKey("HS_A3H::filter1", "Filters", "mean_avg");
 		cfg.addKey("HS_A3H::arg1", "Filters", "left 6 10740"); //TODO change # data required to 1
 	}
+}
 
+void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
+{
+	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
+	if (useSoilLayers) {
+		bool soil_flux = false;
+		cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux);
+		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Start SNOWPACK w/ soil layers in %s mode", mode.c_str());
+	} else {
+		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Start SNOWPACK in %s mode", mode.c_str());
+	}
+
+	const string variant = cfg.get("VARIANT", "SnowpackAdvanced", mio::IOUtils::nothrow);
+	if (variant != "DEFAULT") {
+		prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Variant is '%s'", variant.c_str());
+	}
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(),
+	        "%s compiled on %s at %s", name.c_str(), __DATE__, __TIME__);
+
+	if (mode != "OPERATIONAL") {
+		const string experiment = cfg.get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
+		const string outpath = cfg.get("METEOPATH", "Output");
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Experiment : %s", experiment.c_str());
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Output dir : %s", outpath.c_str());
+	}
+}
+
+// SNOWPACK MAIN **************************************************************
+void real_main (int argc, char *argv[])
+{
+#ifdef DEBUG_ARITHM
+	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
+#endif
+	//parse the command line arguments
+	string end_date_str;
+	parseCmdLine(argc, argv, end_date_str);
+
+	const bool prn_check = false;
+	mio::Timer meteoRead_timer;
+	mio::Timer run_timer;
+	run_timer.start();
+	time_t nowSRT = time(NULL);
+	MainControl mn_ctrl; //Time step control parameters
+
+	SnowpackConfig cfg(cfgfile);
+	addSpecialKeys(cfg);
+
+	const double i_time_zone = cfg.get("TIME_ZONE", "Input"); //get user provided input time_zone
+	if (end_date_str == "NOW") { //interpret user provided end date
+		dateEnd.setFromSys();
+		dateEnd.setTimeZone(i_time_zone);
+		dateEnd.rnd(1800, mio::Date::DOWN);
+	} else {
+		mio::IOUtils::convertString(dateEnd, end_date_str, i_time_zone);
+	}
+
+	const string variant = cfg.get("VARIANT", "SnowpackAdvanced", mio::IOUtils::nothrow);
+	const string experiment = cfg.get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
+	const string outpath = cfg.get("METEOPATH", "Output", mio::IOUtils::nothrow);
+	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
+	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	const double sn_dt = M_TO_S(calculation_step_length); //Calculation time step in seconds
 
@@ -882,6 +897,9 @@ void real_main (int argc, char *argv[])
 		}
 	}
 
+	//now, let's start!
+	printStartInfo(cfg, string(argv[0]));
+
 	// START LOOP OVER ALL STATIONS
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
@@ -927,6 +945,7 @@ void real_main (int argc, char *argv[])
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
 		} else {
+			const string db_name = cfg.get("DBNAME", "Output", mio::IOUtils::nothrow);
 			if (!db_name.empty() && (db_name == "sdbo" || db_name == "sdbt"))
 				mn_ctrl.sdbDump = true;
 		}
