@@ -185,8 +185,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	const double vw = MAX(0.3, Mdata.vw);
 
 	// Initialize snow surface temperature as well as virtual temperatures for stability
-	// Note: suppress unstable conditions in case of sub-freezing conditions in alpine3d simulations, to prevent strong cooling fluxes and subsequent strong TSS oscillations (see issue 377).
-	const double t_surf = (Xdata.Ndata[Xdata.getNumberOfElements()].T > Mdata.ta && Xdata.Ndata[Xdata.getNumberOfElements()].T <= Constants::melting_tk && alpine3d == true) ? (Mdata.ta) : (Xdata.Ndata[Xdata.getNumberOfElements()].T);
+	const double t_surf = Xdata.Ndata[Xdata.getNumberOfElements()].T;
 	const double ta_v = Mdata.ta * (1. + 0.377 * sat_vap / p0);
 	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
