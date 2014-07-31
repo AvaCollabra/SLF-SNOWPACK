@@ -18,6 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <snowpack/ReSolver1d.h>
+#include <snowpack/Snowpack.h>
 #ifdef CLAPACK
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
 	typedef long int integer;
@@ -859,6 +860,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		setvbuf(stdout, NULL, _IONBF, 0);
 	}
 
+
+#ifdef DEBUG_ARITHM
+	if(boolFirstFunctionCall==true) {
+		// Warn users for compilation with DEBUG_ARITHM = ON. The solver uses isnan and isinf to check if the time step is too large.
+		prn_msg( __FILE__, __LINE__, "wrn", Date(), "SNOWPACK has been compiled with DEBUG_ARITHM set to ON. This will likely result in a \"Floating point exception\" when using Richards equation solver. It is strongly recommended to set DEBUG_ARITHM to OFF!");
+	}
+#endif
 
 	//Backup SNOWPACK state
 	for (i = 0; i<toplayer; i++) {		//Cycle through all SNOWPACK layers
