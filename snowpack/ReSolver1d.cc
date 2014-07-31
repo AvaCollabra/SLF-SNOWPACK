@@ -246,7 +246,7 @@ int ReSolver1d::TDMASolver (int n, double *a, double *b, double *c, double *v, d
 	 * Return value: 0 = succes, otherwise: error
          */
 	if (b[n-1]==0.) return -1;		// This will cause division by 0, so return with error code.
-	
+
 	for (int i = 1; i < n; i++) {
 		if(b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
 		double m = a[i-1]/b[i-1];
@@ -1770,7 +1770,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					printf("SOLVER: i=%d - r_mpfd=%E term_up=%E term_down=%E a=%E adl=%E adu=%E [%E - %E]\n", i, r_mpfd[i], term_up[i], term_down[i], ainv[i*(uppernode+1)+i]/*a[i][i]*/, adl[i], adu[i], K[i], C[i]);
 				}
 			}
-			
+
 			//Before solving the system of equations, reset convergence tracking variables:
 			track_accuracy_h=0.;
 			track_accuracy_theta=0.;
