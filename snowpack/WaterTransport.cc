@@ -584,7 +584,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					EMS[eUpper].M = EMS[eUpper].Rho*EMS[eUpper].L;
 				}
 				// We always merge snow elements, except if it is the top element, which is removed when the ice contents is below the threshold.
-				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) && (EMS[eUpper].L < minimum_l_element) ) {
+				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
 					merged=false;
 				} else {
 					merged=true;
