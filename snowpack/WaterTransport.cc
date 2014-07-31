@@ -626,7 +626,16 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// route mass and solute load to runoff
 					if (iwatertransportmodel_snow != RICHARDSEQUATION || (rnE-1)==Xdata.SoilNode) {	//When snow water transport is solved by Richards Equation, we calculate this there.
 															//Note: the second clause is necessary, because when we remove the last snow element, there is no way for the Richards Solver to figure out that this surfacefluxrate is still coming from the snowpack.
-						Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
+						if (iwatertransportmodel_snow == RICHARDSEQUATION) {
+							// Special case for RE: if all snow elements disappear, soilsurfacesourceflux has no meaning, so it should become part of the surfacefluxrate:
+							RichardsEquationSolver1d.surfacefluxrate += RichardsEquationSolver1d.soilsurfacesourceflux;
+							RichardsEquationSolver1d.soilsurfacesourceflux = 0.;
+							// Now make sure surfacefluxrate is considered snowpack runoff:
+							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += RichardsEquationSolver1d.surfacefluxrate*Constants::density_water*sn_dt;
+						} else {
+							// Bucket and NIED case:
+							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
+						}
 					}
 
 					if (Xdata.SoilNode == 0) { // In case of no soil
