@@ -555,6 +555,8 @@ class SurfaceFluxes {
 		};
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data);
+		friend std::iostream& operator>>(std::iostream& is, SurfaceFluxes& data);
 
 		SurfaceFluxes();
 

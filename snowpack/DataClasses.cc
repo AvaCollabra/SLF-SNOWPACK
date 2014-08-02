@@ -374,6 +374,88 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	mass[MS_WATER] = Xdata.lwc_sum;
 }
 
+std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)
+{
+	os.write(reinterpret_cast<const char*>(&data.lw_in), sizeof(data.lw_in));
+	os.write(reinterpret_cast<const char*>(&data.lw_out), sizeof(data.lw_out));
+	os.write(reinterpret_cast<const char*>(&data.lw_net), sizeof(data.lw_net));
+	os.write(reinterpret_cast<const char*>(&data.qs), sizeof(data.qs));
+	os.write(reinterpret_cast<const char*>(&data.ql), sizeof(data.ql));
+	os.write(reinterpret_cast<const char*>(&data.hoar), sizeof(data.hoar));
+	os.write(reinterpret_cast<const char*>(&data.qr), sizeof(data.qr));
+	os.write(reinterpret_cast<const char*>(&data.qg), sizeof(data.qg));
+	os.write(reinterpret_cast<const char*>(&data.qg0), sizeof(data.qg0));
+	os.write(reinterpret_cast<const char*>(&data.sw_hor), sizeof(data.sw_hor));
+	os.write(reinterpret_cast<const char*>(&data.sw_in), sizeof(data.sw_in));
+	os.write(reinterpret_cast<const char*>(&data.sw_out), sizeof(data.sw_out));
+	os.write(reinterpret_cast<const char*>(&data.qw), sizeof(data.qw));
+	os.write(reinterpret_cast<const char*>(&data.sw_dir), sizeof(data.sw_dir));
+	os.write(reinterpret_cast<const char*>(&data.sw_diff), sizeof(data.sw_diff));
+	os.write(reinterpret_cast<const char*>(&data.pAlbedo), sizeof(data.pAlbedo));
+	os.write(reinterpret_cast<const char*>(&data.mAlbedo), sizeof(data.mAlbedo));
+	os.write(reinterpret_cast<const char*>(&data.dIntEnergy), sizeof(data.dIntEnergy));
+	os.write(reinterpret_cast<const char*>(&data.dIntEnergySoil), sizeof(data.dIntEnergySoil));
+	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
+	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
+
+	os.write(reinterpret_cast<const char*>(&data.drift), sizeof(data.drift));
+
+	const size_t s_mass = data.mass.size();
+	os.write(reinterpret_cast<const char*>(&s_mass), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.mass[0]), (s_mass)*sizeof(data.mass[0]));
+
+	const size_t s_load = data.load.size();
+	os.write(reinterpret_cast<const char*>(&s_load), sizeof(size_t));
+	os.write(reinterpret_cast<const char*>(&data.load[0]), (s_load)*sizeof(data.load[0]));
+
+	os.write(reinterpret_cast<const char*>(&data.dhs_corr), sizeof(data.dhs_corr));
+	os.write(reinterpret_cast<const char*>(&data.cRho_hn), sizeof(data.cRho_hn));
+	os.write(reinterpret_cast<const char*>(&data.mRho_hn), sizeof(data.mRho_hn));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, SurfaceFluxes& data)
+{
+	is.read(reinterpret_cast<char*>(&data.lw_in), sizeof(data.lw_in));
+	is.read(reinterpret_cast<char*>(&data.lw_out), sizeof(data.lw_out));
+	is.read(reinterpret_cast<char*>(&data.lw_net), sizeof(data.lw_net));
+	is.read(reinterpret_cast<char*>(&data.qs), sizeof(data.qs));
+	is.read(reinterpret_cast<char*>(&data.ql), sizeof(data.ql));
+	is.read(reinterpret_cast<char*>(&data.hoar), sizeof(data.hoar));
+	is.read(reinterpret_cast<char*>(&data.qr), sizeof(data.qr));
+	is.read(reinterpret_cast<char*>(&data.qg), sizeof(data.qg));
+	is.read(reinterpret_cast<char*>(&data.qg0), sizeof(data.qg0));
+	is.read(reinterpret_cast<char*>(&data.sw_hor), sizeof(data.sw_hor));
+	is.read(reinterpret_cast<char*>(&data.sw_in), sizeof(data.sw_in));
+	is.read(reinterpret_cast<char*>(&data.sw_out), sizeof(data.sw_out));
+	is.read(reinterpret_cast<char*>(&data.qw), sizeof(data.qw));
+	is.read(reinterpret_cast<char*>(&data.sw_dir), sizeof(data.sw_dir));
+	is.read(reinterpret_cast<char*>(&data.sw_diff), sizeof(data.sw_diff));
+	is.read(reinterpret_cast<char*>(&data.pAlbedo), sizeof(data.pAlbedo));
+	is.read(reinterpret_cast<char*>(&data.mAlbedo), sizeof(data.mAlbedo));
+	is.read(reinterpret_cast<char*>(&data.dIntEnergy), sizeof(data.dIntEnergy));
+	is.read(reinterpret_cast<char*>(&data.dIntEnergySoil), sizeof(data.dIntEnergySoil));
+	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
+	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
+
+	is.read(reinterpret_cast<char*>(&data.drift), sizeof(data.drift));
+
+	size_t s_mass;
+	is.read(reinterpret_cast<char*>(&s_mass), sizeof(size_t));
+	data.mass.resize(s_mass);
+	is.read(reinterpret_cast<char*>(&data.mass[0]), (s_mass)*sizeof(data.mass[0]));
+
+	size_t s_load;
+	is.read(reinterpret_cast<char*>(&s_load), sizeof(size_t));
+	data.load.resize(s_load);
+	is.read(reinterpret_cast<char*>(&data.load[0]), (s_load)*sizeof(data.load[0]));
+
+	is.read(reinterpret_cast<char*>(&data.dhs_corr), sizeof(data.dhs_corr));
+	is.read(reinterpret_cast<char*>(&data.cRho_hn), sizeof(data.cRho_hn));
+	is.read(reinterpret_cast<char*>(&data.mRho_hn), sizeof(data.mRho_hn));
+	return is;
+}
+
 void CanopyData::reset(const bool& cumsum_mass)
 {
 	if (cumsum_mass) { // Do not reset cumulated mass balance
