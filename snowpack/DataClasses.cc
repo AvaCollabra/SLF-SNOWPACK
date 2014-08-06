@@ -2104,6 +2104,17 @@ const std::string SnowStation::toString() const
 	return os.str();
 }
 
+CurrentMeteo::CurrentMeteo()
+        : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
+          vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
+          iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
+          hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
+          ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
+          fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
+          numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
+{}
+
+
 CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
@@ -2246,6 +2257,124 @@ void CurrentMeteo::copySolutes(const mio::MeteoData& md, const size_t& i_number_
 	} else {
 		return;
 	}
+}
+
+std::iostream& operator<<(std::iostream& os, const CurrentMeteo& data)
+{
+	os << data.date;
+	os.write(reinterpret_cast<const char*>(&data.ta), sizeof(data.ta));
+	os.write(reinterpret_cast<const char*>(&data.rh), sizeof(data.rh));
+	os.write(reinterpret_cast<const char*>(&data.rh_avg), sizeof(data.rh_avg));
+	os.write(reinterpret_cast<const char*>(&data.vw), sizeof(data.vw));
+	os.write(reinterpret_cast<const char*>(&data.vw_avg), sizeof(data.vw_avg));
+	os.write(reinterpret_cast<const char*>(&data.vw_max), sizeof(data.vw_max));
+	os.write(reinterpret_cast<const char*>(&data.dw), sizeof(data.dw));
+	os.write(reinterpret_cast<const char*>(&data.vw_drift), sizeof(data.vw_drift));
+	os.write(reinterpret_cast<const char*>(&data.dw_drift), sizeof(data.dw_drift));
+	os.write(reinterpret_cast<const char*>(&data.ustar), sizeof(data.ustar));
+	os.write(reinterpret_cast<const char*>(&data.z0), sizeof(data.z0));
+	os.write(reinterpret_cast<const char*>(&data.psi_s), sizeof(data.psi_s));
+	os.write(reinterpret_cast<const char*>(&data.iswr), sizeof(data.iswr));
+	os.write(reinterpret_cast<const char*>(&data.rswr), sizeof(data.rswr));
+	os.write(reinterpret_cast<const char*>(&data.mAlbedo), sizeof(data.mAlbedo));
+	os.write(reinterpret_cast<const char*>(&data.diff), sizeof(data.diff));
+	os.write(reinterpret_cast<const char*>(&data.dir_h), sizeof(data.dir_h));
+	os.write(reinterpret_cast<const char*>(&data.elev), sizeof(data.elev));
+	os.write(reinterpret_cast<const char*>(&data.ea), sizeof(data.ea));
+	os.write(reinterpret_cast<const char*>(&data.tss), sizeof(data.tss));
+	os.write(reinterpret_cast<const char*>(&data.tss_a12h), sizeof(data.tss_a12h));
+	os.write(reinterpret_cast<const char*>(&data.tss_a24h), sizeof(data.tss_a24h));
+	os.write(reinterpret_cast<const char*>(&data.ts0), sizeof(data.ts0));
+	os.write(reinterpret_cast<const char*>(&data.hnw), sizeof(data.hnw));
+	os.write(reinterpret_cast<const char*>(&data.hs), sizeof(data.hs));
+	os.write(reinterpret_cast<const char*>(&data.hs_a3h), sizeof(data.hs_a3h));
+	os.write(reinterpret_cast<const char*>(&data.hs_rate), sizeof(data.hs_rate));
+	os.write(reinterpret_cast<const char*>(&data.adv_heat), sizeof(data.adv_heat));
+
+	const size_t s_ts = data.ts.size();
+	os.write(reinterpret_cast<const char*>(&s_ts), sizeof(size_t));
+	for (size_t ii=0; ii<s_ts; ii++) os << data.ts[ii];
+
+	const size_t s_zv_ts = data.zv_ts.size();
+	os.write(reinterpret_cast<const char*>(&s_zv_ts), sizeof(size_t));
+	for (size_t ii=0; ii<s_zv_ts; ii++) os << data.zv_ts[ii];
+
+	const size_t s_conc = data.conc.size();
+	os.write(reinterpret_cast<const char*>(&s_conc), sizeof(size_t));
+	for (size_t ii=0; ii<s_conc; ii++) os << data.conc[ii];
+
+	os.write(reinterpret_cast<const char*>(&data.rho_hn), sizeof(data.rho_hn));
+
+	const size_t s_fixedPositions = data.fixedPositions.size();
+	os.write(reinterpret_cast<const char*>(&s_fixedPositions), sizeof(size_t));
+	for (size_t ii=0; ii<s_fixedPositions; ii++) os << data.fixedPositions[ii];
+
+	os.write(reinterpret_cast<const char*>(&data.minDepthSubsurf), sizeof(data.minDepthSubsurf));
+	os.write(reinterpret_cast<const char*>(&data.maxNumberMeasTemperatures), sizeof(data.maxNumberMeasTemperatures));
+	os.write(reinterpret_cast<const char*>(&data.numberMeasTemperatures), sizeof(data.numberMeasTemperatures));
+	os.write(reinterpret_cast<const char*>(&data.numberFixedRates), sizeof(data.numberFixedRates));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, CurrentMeteo& data)
+{
+	is >> data.date;
+	is.read(reinterpret_cast<char*>(&data.ta), sizeof(data.ta));
+	is.read(reinterpret_cast<char*>(&data.rh), sizeof(data.rh));
+	is.read(reinterpret_cast<char*>(&data.rh_avg), sizeof(data.rh_avg));
+	is.read(reinterpret_cast<char*>(&data.vw), sizeof(data.vw));
+	is.read(reinterpret_cast<char*>(&data.vw_avg), sizeof(data.vw_avg));
+	is.read(reinterpret_cast<char*>(&data.vw_max), sizeof(data.vw_max));
+	is.read(reinterpret_cast<char*>(&data.dw), sizeof(data.dw));
+	is.read(reinterpret_cast<char*>(&data.vw_drift), sizeof(data.vw_drift));
+	is.read(reinterpret_cast<char*>(&data.dw_drift), sizeof(data.dw_drift));
+	is.read(reinterpret_cast<char*>(&data.ustar), sizeof(data.ustar));
+	is.read(reinterpret_cast<char*>(&data.z0), sizeof(data.z0));
+	is.read(reinterpret_cast<char*>(&data.psi_s), sizeof(data.psi_s));
+	is.read(reinterpret_cast<char*>(&data.iswr), sizeof(data.iswr));
+	is.read(reinterpret_cast<char*>(&data.rswr), sizeof(data.rswr));
+	is.read(reinterpret_cast<char*>(&data.mAlbedo), sizeof(data.mAlbedo));
+	is.read(reinterpret_cast<char*>(&data.diff), sizeof(data.diff));
+	is.read(reinterpret_cast<char*>(&data.dir_h), sizeof(data.dir_h));
+	is.read(reinterpret_cast<char*>(&data.elev), sizeof(data.elev));
+	is.read(reinterpret_cast<char*>(&data.ea), sizeof(data.ea));
+	is.read(reinterpret_cast<char*>(&data.tss), sizeof(data.tss));
+	is.read(reinterpret_cast<char*>(&data.tss_a12h), sizeof(data.tss_a12h));
+	is.read(reinterpret_cast<char*>(&data.tss_a24h), sizeof(data.tss_a24h));
+	is.read(reinterpret_cast<char*>(&data.ts0), sizeof(data.ts0));
+	is.read(reinterpret_cast<char*>(&data.hnw), sizeof(data.hnw));
+	is.read(reinterpret_cast<char*>(&data.hs), sizeof(data.hs));
+	is.read(reinterpret_cast<char*>(&data.hs_a3h), sizeof(data.hs_a3h));
+	is.read(reinterpret_cast<char*>(&data.hs_rate), sizeof(data.hs_rate));
+	is.read(reinterpret_cast<char*>(&data.adv_heat), sizeof(data.adv_heat));
+
+	size_t s_ts;
+	is.read(reinterpret_cast<char*>(&s_ts), sizeof(size_t));
+	data.ts.resize(s_ts);
+	for (size_t ii=0; ii<s_ts; ii++) is >> data.ts[ii];
+
+	size_t s_zv_ts;
+	is.read(reinterpret_cast<char*>(&s_zv_ts), sizeof(size_t));
+	data.zv_ts.resize(s_zv_ts);
+	for (size_t ii=0; ii<s_zv_ts; ii++) is >> data.zv_ts[ii];
+
+	size_t s_conc;
+	is.read(reinterpret_cast<char*>(&s_conc), sizeof(size_t));
+	data.conc.resize(s_conc);
+	for (size_t ii=0; ii<s_conc; ii++) is >> data.conc[ii];
+
+	is.read(reinterpret_cast<char*>(&data.rho_hn), sizeof(data.rho_hn));
+
+	size_t s_fixedPositions;
+	is.read(reinterpret_cast<char*>(&s_fixedPositions), sizeof(size_t));
+	data.fixedPositions.resize(s_fixedPositions);
+	for (size_t ii=0; ii<s_fixedPositions; ii++) is >> data.fixedPositions[ii];
+
+	is.read(reinterpret_cast<char*>(&data.minDepthSubsurf), sizeof(data.minDepthSubsurf));
+	is.read(reinterpret_cast<char*>(&data.maxNumberMeasTemperatures), sizeof(data.maxNumberMeasTemperatures));
+	is.read(reinterpret_cast<char*>(&data.numberMeasTemperatures), sizeof(data.numberMeasTemperatures));
+	is.read(reinterpret_cast<char*>(&data.numberFixedRates), sizeof(data.numberFixedRates));
+	return is;
 }
 
 const std::string CurrentMeteo::toString() const
