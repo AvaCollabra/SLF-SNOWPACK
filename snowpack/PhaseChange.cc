@@ -460,9 +460,9 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			}
 			if ( e >= Xdata.SoilNode || iwatertransportmodel_soil != RICHARDSEQUATION ) {
 				// Check if phase change did occur
-				// Note: the MoistLayer==true is mainly there for the Richards equation for snow, where there is always some amount of
-				// liquid water present in a layer, so we should additionally check if the phase change was significant.
-				if ( EMS[e].Te != i_Te && (iwatertransportmodel_snow != RICHARDSEQUATION || (MoistLayer == true && e >= Xdata.SoilNode))) {
+				// Note: the MoistLayer==true is mainly there for the Richards equation for snow, where there is always some amount of liquid water
+				// present in a layer, so we should additionally check if the phase change was significant, or the phase change involved snow melt.
+				if ( EMS[e].Te != i_Te && (iwatertransportmodel_snow != RICHARDSEQUATION || EMS[e].Te < i_Te || (MoistLayer == true && e >= Xdata.SoilNode))) {
 					// Adjust nodal temperatures based on change in element temperature
 					if(e==nE-1) {
 						// The top node is our starting point and treated special:
