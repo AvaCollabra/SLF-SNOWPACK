@@ -79,6 +79,7 @@ class ZwischenData {
  */
 class CurrentMeteo {
 	public:
+		CurrentMeteo();
 		CurrentMeteo(const SnowpackConfig& i_cfg);
 		void reset(const SnowpackConfig& i_cfg);
 		void setMeasTempParameters(const mio::MeteoData& md);
@@ -91,6 +92,8 @@ class CurrentMeteo {
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const CurrentMeteo& data);
+		friend std::iostream& operator>>(std::iostream& is, CurrentMeteo& data);
 
 		mio::Date date;  ///< Date of current meteo data
 		double ta;       ///< Air temperature (K)
@@ -554,6 +557,8 @@ class SurfaceFluxes {
 		};
 
 		const std::string toString() const;
+		friend std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data);
+		friend std::iostream& operator>>(std::iostream& is, SurfaceFluxes& data);
 
 		SurfaceFluxes();
 
