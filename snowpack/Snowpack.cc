@@ -588,7 +588,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 		Bdata.qr = 0.;
 	}
 
-	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
+	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);	// The term Constants::emissivity_snow represents the part of ILWR that is absorbed.
 	Bdata.lw_out = Constants::emissivity_snow * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
 
