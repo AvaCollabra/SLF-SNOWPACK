@@ -739,7 +739,8 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 			break;
 		default: // FC, DH, FCmx
 			Sig_c2 = 18.5*exp(2.11*log(rho_ri));
-			Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
+			if (STpar.sig_n>0.)
+				Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
 			// phi = 0.08*Sig_c2 + 0.224;
 			// Above correction not used by Jamieson & Johnston (1998), but considered by Lehning et al., Ann. Glaciol., 38, 331-338 (2004)
 			break;
