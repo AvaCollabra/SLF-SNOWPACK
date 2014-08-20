@@ -39,7 +39,7 @@ class SmetIO : public SnowpackIOInterface {
 		virtual void readSnowCover(const std::string& i_snowfile, const std::string& stationID,
 		                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata);
 
-		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
+		virtual void writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 		                            const ZwischenData& Zdata, const bool& forbackup=false);
 
 		virtual void writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
@@ -53,12 +53,11 @@ class SmetIO : public SnowpackIOInterface {
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 		static void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer);
-		static void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date,
-		                      smet::SMETWriter& smet_writer);
+		static void setSnoSmetHeader(const SnowStation& Xdata, const mio::Date& date, smet::SMETWriter& smet_writer);
 		static void setFormatting(const size_t& nr_solutes,
 		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision);
 		static void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                  const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata);
+		                         const ZwischenData& Zdata);
 		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
 		                  const SnowStation& Xdata, const ZwischenData& Zdata);
 		bool keyExists(const smet::SMETReader& reader, const std::string& key) const;

@@ -502,6 +502,8 @@ class SnowStation {
 		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
 		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		bool windward;              ///< True for windward (luv) slope
+		double WindScalingFactor;   ///< Local scaling factor for wind at drift station
+		double TimeCountDeltaHS;    ///< Time counter tracking erroneous settlement in operational mode
 
 		static const double comb_thresh_l, comb_thresh_ice, comb_thresh_water;
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;

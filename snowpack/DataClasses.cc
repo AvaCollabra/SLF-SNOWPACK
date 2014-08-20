@@ -1256,6 +1256,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false),
+	WindScalingFactor(1.), TimeCountDeltaHS(0.),
 	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
 SnowStation::SnowStation(const SnowStation& c) :
@@ -1266,6 +1267,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward),
+	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
 	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
@@ -1318,6 +1320,8 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		SubSurfaceMelt = source.SubSurfaceMelt;
 		SubSurfaceFrze = source.SubSurfaceFrze;
 		windward = source.windward;
+		WindScalingFactor = source.WindScalingFactor;
+		TimeCountDeltaHS = source.TimeCountDeltaHS;
 		ReSolver_dt = source.ReSolver_dt;
 	}
 	return *this;
@@ -1572,6 +1576,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
+
+	WindScalingFactor = SSdata.WindScalingFactor;
+	TimeCountDeltaHS = SSdata.TimeCountDeltaHS;
 
 	meta = SSdata.meta;
 	cos_sl = cos(meta.getSlopeAngle()*mio::Cst::to_rad);
@@ -1978,6 +1985,8 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.SubSurfaceMelt), sizeof(data.SubSurfaceMelt));
 	os.write(reinterpret_cast<const char*>(&data.SubSurfaceFrze), sizeof(data.SubSurfaceFrze));
 	os.write(reinterpret_cast<const char*>(&data.windward), sizeof(data.windward));
+	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	os.write(reinterpret_cast<const char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
 	os.write(reinterpret_cast<const char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
@@ -2050,6 +2059,8 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.SubSurfaceMelt), sizeof(data.SubSurfaceMelt));
 	is.read(reinterpret_cast<char*>(&data.SubSurfaceFrze), sizeof(data.SubSurfaceFrze));
 	is.read(reinterpret_cast<char*>(&data.windward), sizeof(data.windward));
+	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	is.read(reinterpret_cast<char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
 	is.read(reinterpret_cast<char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
@@ -2085,6 +2096,8 @@ const std::string SnowStation::toString() const
 	os << "Snow Albedo:\tAlbedo=" << Albedo << " parametrized Albedo=" << pAlbedo << "\n";
 	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy << " SubSurfaceMelt=" << SubSurfaceMelt << " SubSurfaceFrze=" << SubSurfaceFrze << "\n";
 	os << "Snowdrift:\tsector=" << sector << " windward=" << windward << " ErosionLevel=" << ErosionLevel << " ErosionMass=" << ErosionMass << "\n";
+	os << "WindScalingFactor:          " << WindScalingFactor << "\n";
+	os << "TimeCountDeltaHS:           " << TimeCountDeltaHS << "\n";
 	os << "Stability:\tS_d(" << z_S_d << ")=" << S_d << " S_n(" << z_S_n << ")=" << S_n << " S_s(" << z_S_s << ")=" << S_s;
 	os << " S_1=" << S_class1 << " S_2=" << S_class2 << " S_4(" << z_S_4 << ")=" << S_4 << " S_5(" << z_S_5 << ")=" << S_5 << "\n";
 

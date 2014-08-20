@@ -1226,8 +1226,7 @@ void real_main (int argc, char *argv[])
 					std::stringstream ss;
 					ss << vecStationIDs[i_stn];
 					if (slope.sector != slope.mainStation) ss << slope.sector;
-					snowpackio.writeSnowCover(current_date, vecXdata[slope.sector],
-					                          vecSSdata[slope.sector], sn_Zdata, true);
+					snowpackio.writeSnowCover(current_date, vecXdata[slope.sector], sn_Zdata, true);
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					        "Backup Xdata dumped for station %s [%.2f days, step %d]", ss.str().c_str(),
 					        (current_date.getJulian()
@@ -1256,7 +1255,7 @@ void real_main (int argc, char *argv[])
 					// Operational mode ONLY: dump snow depth discrepancy time counter
 					vecSSdata[slope.mainStation].TimeCountDeltaHS = time_count_deltaHS;
 				}
-				snowpackio.writeSnowCover(current_date, vecXdata[sector], vecSSdata[sector], sn_Zdata);
+				snowpackio.writeSnowCover(current_date, vecXdata[sector], sn_Zdata);
 				if (sector == slope.mainStation) {
 					prn_msg(__FILE__, __LINE__, "msg", mio::Date(),
 					        "Writing data to sno file(s) for %s (station %s) on %s",

@@ -428,7 +428,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
  * @param Zdata
  * @param forbackup dump Xdata on the go
  */
-void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
+void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snoold";
@@ -478,9 +478,9 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, co
 	fout << "CanopyLeafAreaIndex= " << setprecision(6) << Xdata.Cdata.lai << "\n";
 	fout << "CanopyDirectThroughfall= " << setprecision(2) << Xdata.Cdata.direct_throughfall << "\n";
 	// Additional parameters
-	fout << "WindScalingFactor= " << SSdata.WindScalingFactor << "\n";
+	fout << "WindScalingFactor= " << Xdata.WindScalingFactor << "\n";
 	fout << "ErosionLevel= " << Xdata.ErosionLevel << "\n";
-	fout << "TimeCountDeltaHS= " << SSdata.TimeCountDeltaHS << "\n";
+	fout << "TimeCountDeltaHS= " << Xdata.TimeCountDeltaHS << "\n";
 
 	// Layer Data
 	fout << "YYYY MM DD HH MI Layer_Thick           T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V";
