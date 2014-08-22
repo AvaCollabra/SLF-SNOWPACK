@@ -359,8 +359,7 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
  * @param forbackup dump Xdata on the go
  */
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
-                            const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& Zdata,
-                            const bool& forbackup)
+                            const ZwischenData& Zdata, const bool& forbackup)
 {
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".sno";
 	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".haz";
@@ -372,7 +371,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 		hazfilename += ss.str();
 	}
 
-	writeSnoFile(snofilename, date, Xdata, SSdata, Zdata);
+	writeSnoFile(snofilename, date, Xdata, Zdata);
 	writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
@@ -418,7 +417,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 }
 
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const SN_SNOWSOIL_DATA& SSdata, const ZwischenData& /*Zdata*/)
+                          const ZwischenData& /*Zdata*/)
 {
 	/*
 	 * This procedure creates a SMETWriter object, sets its header and copies all required
@@ -434,7 +433,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 	}
 
 	setBasicHeader(Xdata, ss.str(), sno_writer);
-	setSnoSmetHeader(Xdata, SSdata, date, sno_writer);
+	setSnoSmetHeader(Xdata, date, sno_writer);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -495,8 +494,7 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
 }
 
-void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const Date& date,
-                              smet::SMETWriter& smet_writer)
+void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
 {
 	/*
 	 * The non-compulsory header key/value pairs for SNO files are set in this procedure
@@ -540,10 +538,10 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& 
 	smet_writer.set_header_value("CanopyDirectThroughfall", ss.str());
 
 	// Additional parameters
-	ss.str(""); ss << fixed << setprecision(2) << SSdata.WindScalingFactor;
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.WindScalingFactor;
 	smet_writer.set_header_value("WindScalingFactor", ss.str());
 	smet_writer.set_header_value("ErosionLevel", static_cast<double>(Xdata.ErosionLevel));
-	ss.str(""); ss << fixed << setprecision(6) << SSdata.TimeCountDeltaHS;
+	ss.str(""); ss << fixed << setprecision(6) << Xdata.TimeCountDeltaHS;
 	smet_writer.set_header_value("TimeCountDeltaHS", ss.str());
 }
 

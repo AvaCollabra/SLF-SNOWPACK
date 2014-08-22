@@ -116,13 +116,13 @@ void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string&
 	}
 }
 
-void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata,
+void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                                 const ZwischenData& Zdata, const bool& forbackup)
 {
 	if (output_snow_as_smet){
-		smetio->writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+		smetio->writeSnowCover(date, Xdata, Zdata, forbackup);
 	} else {
-		asciiio->writeSnowCover(date, Xdata, SSdata, Zdata, forbackup);
+		asciiio->writeSnowCover(date, Xdata, Zdata, forbackup);
 	}
 }
 

@@ -1257,7 +1257,9 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
-	ReSolver_dt(-1), windward(false), nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
+	ReSolver_dt(-1), windward(false),
+	WindScalingFactor(1.), TimeCountDeltaHS(0.),
+	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
@@ -1266,7 +1268,9 @@ SnowStation::SnowStation(const SnowStation& c) :
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
-	ReSolver_dt(-1), windward(c.windward), nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
+	ReSolver_dt(-1), windward(c.windward),
+	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
+	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
 	if(this != &source) {
@@ -1316,6 +1320,8 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
 		windward = source.windward;
+		WindScalingFactor = source.WindScalingFactor;
+		TimeCountDeltaHS = source.TimeCountDeltaHS;
 		ReSolver_dt = source.ReSolver_dt;
 	}
 	return *this;
@@ -1573,6 +1579,9 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	Albedo = SSdata.Albedo;
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
+
+	WindScalingFactor = SSdata.WindScalingFactor;
+	TimeCountDeltaHS = SSdata.TimeCountDeltaHS;
 
 	meta = SSdata.meta;
 	cos_sl = cos(meta.getSlopeAngle()*mio::Cst::to_rad);
@@ -1979,6 +1988,8 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
 	os.write(reinterpret_cast<const char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
 	os.write(reinterpret_cast<const char*>(&data.windward), sizeof(data.windward));
+	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	os.write(reinterpret_cast<const char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
 	/*os.write(reinterpret_cast<const char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
@@ -2058,6 +2069,8 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
 	is.read(reinterpret_cast<char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
 	is.read(reinterpret_cast<char*>(&data.windward), sizeof(data.windward));
+	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
+	is.read(reinterpret_cast<char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
 	/*is.read(reinterpret_cast<char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
@@ -2102,6 +2115,8 @@ const std::string SnowStation::toString() const
 	os << "Snow Albedo:\tAlbedo=" << Albedo << " parametrized Albedo=" << pAlbedo << "\n";
 	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy;
 	os << "Snowdrift:\tsector=" << sector << " windward=" << windward << " ErosionLevel=" << ErosionLevel << " ErosionMass=" << ErosionMass << "\n";
+	os << "WindScalingFactor:          " << WindScalingFactor << "\n";
+	os << "TimeCountDeltaHS:           " << TimeCountDeltaHS << "\n";
 	os << "Stability:\tS_d(" << z_S_d << ")=" << S_d << " S_n(" << z_S_n << ")=" << S_n << " S_s(" << z_S_s << ")=" << S_s;
 	os << " S_1=" << S_class1 << " S_2=" << S_class2 << " S_4(" << z_S_4 << ")=" << S_4 << " S_5(" << z_S_5 << ")=" << S_5 << "\n";
 
