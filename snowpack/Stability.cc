@@ -20,6 +20,8 @@
 
 #include <snowpack/Stability.h>
 
+#include <assert.h>
+
 using namespace mio;
 using namespace std;
 
@@ -739,6 +741,7 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 			break;
 		default: // FC, DH, FCmx
 			Sig_c2 = 18.5*exp(2.11*log(rho_ri));
+			assert(STpar.sig_n>0.); //in a few cases, we have received sig_n<0 from the caller
 			if (STpar.sig_n>0.)
 				Sig_c3 = 1.36*exp(0.55*log(STpar.sig_n/STpar.cos_psi_ref));
 			// phi = 0.08*Sig_c2 + 0.224;
