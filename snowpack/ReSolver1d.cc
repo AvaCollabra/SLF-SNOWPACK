@@ -1938,14 +1938,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								// So the new liquid water content basically is the same equation, but we have to adapt EMS[SnowpackElement[i]].Te to the amount of ice we create (delta_i).
 								if((theta_i_np1_m[i] > 0. && (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > T_melt[i]) || (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) < T_melt[i]) {
 
-									const double tmp_theta_air = 1. - theta_i_n[i] - (theta_np1_mp1[i] + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) - EMS[SnowpackElement[i]].theta[SOIL];					//Units: [m^3 m^-3]
-									const double tmp_rho = (Constants::density_ice * theta_i_n[i] + Constants::density_water * (theta_np1_mp1[i] + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) + EMS[SnowpackElement[i]].soil[SOIL_RHO] * EMS[SnowpackElement[i]].theta[SOIL]);	//Units: [kg m-3]
-									const double tmp_c_p = (Constants::density_air * tmp_theta_air * Constants::specific_heat_air							//Units: [J kg-1 K-1]
-												+ Constants::density_ice * theta_i_n[i] * Constants::specific_heat_ice
-												+ Constants::density_water * (theta_np1_mp1[i] + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) * Constants::specific_heat_water
-												+ EMS[SnowpackElement[i]].soil[SOIL_RHO] * EMS[SnowpackElement[i]].theta[SOIL] * EMS[SnowpackElement[i]].soil[SOIL_C]
-												) / tmp_rho;
-
 									if(WriteOutNumerics_Level2==true) printf("BEFORE [%d]: theta_w: %.15f theta_i_np1_m: %.15f theta_s: %.15f  T: %.3f  rho: %.8f  cp: %.8f  ColdC: %f\n", i, theta_np1_mp1[i], theta_i_np1_m[i], theta_s[i], EMS[SnowpackElement[i]].Te + delta_Te[i] + delta_Te_i[i], tmp_rho, tmp_c_p, tmp_rho * tmp_c_p * (EMS[SnowpackElement[i]].Te + delta_Te[i] + delta_Te_i[i]) * EMS[SnowpackElement[i]].L);
 
 									//Determine maximum possible change in ice content, which should be between 0, and theta_water > theta_d (all possible water freezes). Then maximum ice content is determined based on the temperature difference between element and T_melt.
