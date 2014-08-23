@@ -2556,32 +2556,28 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		while ((e >= Xdata.SoilNode) && (ql < -Constants::eps2)) {  // While energy is available and we are in snow
 			const double L0 = EMS[e].L;
 			// If there is no water or if there was not enough water ...
-			const double theta_i0 = EMS[e].theta[ICE];
+			// Note: as we do not pass through mergeElements anymore, we must assure that elements do not disappear here.
+			// By specifying a minimum value just below the Snowpack::min_ice_content, we make sure the element gets removed the next time it passes mergeElements.
+			const double theta_i0 = MAX(0., EMS[e].theta[ICE] - (0.99*Snowpack::min_ice_content));
 			double M = theta_i0*Constants::density_ice*L0;
 			double dM = ql*sn_dt/Constants::lh_sublimation;
-			if (-dM > M) {
-				dM = -M;
-				// Add solutes to Storage
-				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					M_Solutes[ii] += EMS[e].conc[ICE][ii]*theta_i0*L0;
-				}
-				EMS[e].theta[ICE]=0.0; dL = 0.;
-			} else {
-				dL = dM/(EMS[e].Rho);
-				if (e < Xdata.SoilNode) {
-					dL = 0.;
-				}
-				NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
-				NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
+			if (-dM > M) dM = -M;
 
-				EMS[e].E = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
-				EMS[e].theta[ICE] *= L0/EMS[e].L;
-				EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
-				EMS[e].theta[WATER] *= L0/EMS[e].L;
-				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-					EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
-				}
+			dL = dM/(EMS[e].Rho);
+			if (e < Xdata.SoilNode) {
+				dL = 0.;
 			}
+			NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
+			NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
+
+			EMS[e].E = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
+			EMS[e].theta[ICE] *= L0/EMS[e].L;
+			EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
+			EMS[e].theta[WATER] *= L0/EMS[e].L;
+			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
+				EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
+			}
+
 			EMS[e].M += dM;
 			// Instead of evaporating, we sublimate the ice matrix:
 			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= dM*(Constants::lh_sublimation/Constants::lh_vaporization);	//Correct evaporation for sublimated mass
