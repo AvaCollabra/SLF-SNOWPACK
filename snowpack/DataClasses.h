@@ -167,7 +167,7 @@ enum SN_SOIL_DATA{
 
 /**
  * @brief Parameters of the different layers of the snowpack \n
- * It is used as a pointer (array) within the SSdata (profile) data structure.
+ * The layers form a vector within the SSdata (profile) data structure.
  */
 class LayerData {
 	public:
@@ -177,7 +177,7 @@ class LayerData {
 		friend std::iostream& operator>>(std::iostream& is, LayerData& data);
 
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
-		double hl;                  ///< The height of the layer in m
+		double hl;                  ///< The thickness of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
 		double tl;                  ///< Temperature at the top of the layer in K or degC
 		double phiSoil;             ///< Volumetric soil content in %
@@ -224,12 +224,12 @@ class SN_SNOWSOIL_DATA {
 		mio::Date profileDate;            ///< Date of profile
 		size_t nN;                        ///< Total number of FE nodes
 		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
-		size_t nLayers;                   ///< Total number of snowpack layers
+		size_t nLayers;                   ///< Total number of snowpack layers at loading
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
-		double HS_last;                   ///< Last checked measured Snow Height
+		double HS_last;                   ///< Last checked calculated snow depth used for albedo control
 		double Albedo;                    ///< Snow albedo
-		double SoilAlb;                   ///< Soil albedo; default 0.2
-		double BareSoil_z0;               ///< Bare soil roughness in m; default 0.02 m
+		double SoilAlb;                   ///< Soil albedo, default 0.2
+		double BareSoil_z0;               ///< Bare soil roughness in m, default 0.02 m
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
@@ -272,7 +272,7 @@ class ElementData {
 		friend std::iostream& operator>>(std::iostream& is, ElementData& data);
 
 		mio::Date depositionDate;  ///< Date of deposition
-		double L0, L;              ///< Original and present element length (m)
+		double L0, L;              ///< Original and present element thickness (m)
 		double Te;                 ///< mean element temperature (K)
 		double gradT;              ///< temperature gradient over element (K m-1)
 		double melting_tk;	   ///< melt temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
@@ -373,10 +373,10 @@ class CanopyData {
 		friend std::iostream& operator>>(std::iostream& is, CanopyData& data);
 
 		// Aa
-		double storage;  ///< intercepted water (mm or kg m-2)
-		double temp;	   ///< temperature (K)
-		double sigf;	   ///< radiation transmissivity (1)
-		double ec;       ///< longwave emissivity (1)
+		double storage;     ///< intercepted water (mm or kg m-2)
+		double temp;        ///< temperature (K)
+		double sigf;        ///< radiation transmissivity (1)
+		double ec;          ///< longwave emissivity (1)
 		// Ab
 		double lai;
 		double z0m;
@@ -470,7 +470,7 @@ class SnowStation {
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
 		double mH;                  ///< The ENFORCED snowpack height, including soil depth if SNP_SOIL == 1
-		double mass_sum;            ///< Total mass summing mass of elements
+		double mass_sum;            ///< Total mass summing mass of snow elements
 		double swe;                 ///< Total mass summing snow water equivalent of elements
 		double lwc_sum;             ///< Total liquid water in snowpack
 		double hn;                  ///< Depth of new snow to be used on slopes
@@ -483,8 +483,8 @@ class SnowStation {
 		double z_S_d;               ///< Depth of Minimum Direct Action Stability
 		double S_n;                 ///< Minimum Natural Stability Index
 		double z_S_n;               ///< Depth of Minimum Natural Stability
-		double S_s;                 ///< Minimum Alternative Stability Index (ASI; skier stability)
-		double z_S_s;               ///< Depth of Minimum ASI
+		double S_s;                 ///< Minimum Skier Stability Index (SSI)
+		double z_S_s;               ///< Depth of Minimum SSI
 		double S_4;                 ///< stab_index4
 		double z_S_4;               ///< Depth of stab_index4
 		double S_5;                 ///< stab_index5
@@ -631,13 +631,13 @@ class SnowProfileLayer {
 		double theta_a;        ///< 0 to 1, volume fraction of air (-)
 		double grain_size;     ///< 0 to 100       (mm)
 		double bond_size;      ///< 0 to 100       (mm)
-		double dendricity;     ///< 0 to 1         (-)
-		double sphericity;     ///< 0 to 1         (-)
+		double dendricity;     ///< 0 to 1         (1)
+		double sphericity;     ///< 0 to 1         (1)
 		double ogs;            ///< 0 to 100, optical equivalent grain size (mm)
-		double coordin_num;    ///< 0 to 10        (-)
-		size_t marker;         ///< 0 to 999       (-)
-		short unsigned int type; ///< 0 to 999     (-)
-		double hard;           ///< 0. to 5.       (-)
+		double coordin_num;    ///< 0 to 10        (1)
+		size_t marker;         ///< 0 to 999       (1)
+		short unsigned int type; ///< 0 to 999     (1)
+		double hard;           ///< 0. to 5.       (1)
 
 	private:
 		void generateLayer(const ElementData& Edata, const NodeData& Ndata);

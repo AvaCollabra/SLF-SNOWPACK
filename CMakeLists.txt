@@ -28,9 +28,14 @@ IF(SNOWPACK_STANDALONE)
 	ADD_SUBDIRECTORY(applications/snowpack)
 ENDIF(SNOWPACK_STANDALONE)
 
+IF(PROFEVAL)
+	ADD_SUBDIRECTORY(applications/profeval)
+ENDIF(PROFEVAL)
+
 ###########################################################
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
+SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
 SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")

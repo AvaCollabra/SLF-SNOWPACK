@@ -24,24 +24,41 @@ using namespace std;
 using namespace mio;
 
 #ifdef IMISDBIO
-SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(NULL),
-#else
-SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
+	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(NULL),
+#ifdef CAAMLIO
+		caamlio(NULL),
 #endif
-              asciiio(NULL), smetio(NULL),
-              input_snow_as_smet(false), output_snow_as_smet(false),
-              output_prf_as_ascii(false), output_ts_as_ascii(false),
-              output_prf_as_imis(false), output_haz_as_imis(false)
+#elif CAAMLIO
+	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : caamlio(NULL),
+#else
+	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
+#endif
+	smetio(NULL), asciiio(NULL),
+	input_snow_as_smet(false), output_snow_as_smet(false),
+	input_snow_as_caaml(false), output_snow_as_caaml(false),
+	input_snow_as_ascii(false), output_snow_as_ascii(false),
+	output_prf_as_ascii(false), output_prf_as_caaml(false), output_prf_as_imis(false),
+	output_ts_as_ascii(false), output_haz_as_imis(false)
 
 {
 	//Format of initial snow profile:
+	//TODO: document Input::SNOW = SMET, CAAML, or SNOOLD
 	const string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
-	if (in_snow == "SMET") { //TODO: document Input::SNOW = SMET or SNOOLD
+	if (in_snow == "SNOOLD") {
+		input_snow_as_ascii = true;
+	} else if (in_snow == "CAAML") {
+		input_snow_as_caaml = true;
+	} else {
 		input_snow_as_smet = true;
 	}
 	//Format of transitional and final snow profile(s):
+	//TODO: document ouput::SNOW = SMET, CAAML, or SNOOLD
 	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
-	if (out_snow == "SMET") { //TODO: document ouput::SNOW = SMET or SNOOLD
+	if (out_snow == "SNOOLD") {
+		output_snow_as_ascii = true;
+	} else if (out_snow == "CAAML") {
+		output_snow_as_caaml = true;
+	} else {
 		output_snow_as_smet = true;
 	}
 	/* Profiles may also be dumped in up to 4 formats specified by the key PROFILE_FORMAT in section [Output]:
@@ -71,7 +88,10 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 //set the "plugins" pointers
 	RunInfo run_info;
 	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
-	if(output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
+	if(input_snow_as_ascii || output_snow_as_ascii || output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
+#ifdef CAAMLIO
+	if(input_snow_as_caaml || output_snow_as_caaml) caamlio = new CaaMLIO(cfg, run_info);
+#endif
 #ifdef IMISDBIO
 	output_haz_as_imis = output_prf_as_imis;
 	if(output_prf_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
@@ -80,18 +100,26 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
 
 SnowpackIO::SnowpackIO(const SnowpackIO& source) :
 #ifdef IMISDBIO
-          imisdbio(source.imisdbio),
+	imisdbio(source.imisdbio),
 #endif
-          asciiio(source.asciiio), smetio(source.smetio),
-          input_snow_as_smet(source.input_snow_as_smet), output_snow_as_smet(source.output_snow_as_smet),
-          output_prf_as_ascii(source.output_prf_as_ascii), output_ts_as_ascii(source.output_ts_as_ascii),
-          output_prf_as_imis(source.output_prf_as_imis), output_haz_as_imis(source.output_haz_as_imis)
+#ifdef CAAMLIO
+	caamlio(source.caamlio),
+#endif
+	smetio(source.smetio), asciiio(source.asciiio),
+	input_snow_as_smet(source.input_snow_as_smet), output_snow_as_smet(source.input_snow_as_smet),
+	input_snow_as_caaml(source.input_snow_as_caaml), output_snow_as_caaml(source.output_snow_as_caaml),
+	input_snow_as_ascii(source.input_snow_as_ascii), output_snow_as_ascii(source.output_snow_as_ascii),
+	output_prf_as_ascii(source.output_prf_as_ascii), output_prf_as_caaml(source.output_prf_as_caaml), output_prf_as_imis(source.output_prf_as_imis),
+	output_ts_as_ascii(source.output_ts_as_ascii), output_haz_as_imis(source.output_haz_as_imis)
 {}
 
 SnowpackIO::~SnowpackIO()
 {
 	if(smetio != NULL) delete smetio;
 	if(asciiio != NULL) delete asciiio;
+#ifdef CAAMLIO
+	if(caamlio != NULL) delete caamlio;
+#endif
 #ifdef IMISDBIO
 	if(imisdbio != NULL) delete imisdbio;
 #endif
@@ -99,30 +127,42 @@ SnowpackIO::~SnowpackIO()
 
 bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const
 {
-	if (input_snow_as_smet){
-		return smetio->snowCoverExists(i_snowfile, stationID);
-	} else {
+	if (input_snow_as_ascii) {
 		return asciiio->snowCoverExists(i_snowfile, stationID);
+#ifdef CAAMLIO
+	} else if (input_snow_as_caaml){
+		return caamlio->snowCoverExists(i_snowfile, stationID);
+#endif
+	} else {
+		return smetio->snowCoverExists(i_snowfile, stationID);
 	}
 }
 
 void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                                SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
-	if (input_snow_as_smet){
-		smetio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
-	} else {
+	if (input_snow_as_ascii) {
 		asciiio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+#ifdef CAAMLIO
+	} else if (input_snow_as_caaml) {
+		caamlio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
+#endif
+	} else {
+		smetio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
 	}
 }
 
 void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                                 const ZwischenData& Zdata, const bool& forbackup)
 {
-	if (output_snow_as_smet){
-		smetio->writeSnowCover(date, Xdata, Zdata, forbackup);
-	} else {
+	if (output_snow_as_ascii) {
 		asciiio->writeSnowCover(date, Xdata, Zdata, forbackup);
+#ifdef CAAMLIO
+	} else if (output_snow_as_caaml) {
+		caamlio->writeSnowCover(date, Xdata, Zdata, forbackup);
+#endif
+	} else {
+		smetio->writeSnowCover(date, Xdata, Zdata, forbackup);
 	}
 }
 
@@ -137,6 +177,11 @@ void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 {
 	if (output_prf_as_ascii)
 		asciiio->writeProfile(date, Xdata);
+
+#ifdef CAAMLIO
+	if (output_prf_as_caaml)
+		caamlio->writeProfile(date, Xdata);
+#endif
 
 #ifdef IMISDBIO
 	if (output_prf_as_imis)
@@ -166,14 +211,21 @@ SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
 #ifdef IMISDBIO
 		imisdbio = source.imisdbio;
 #endif
+#ifdef CAAMLIO
+		caamlio = source.caamlio;
+#endif
 		asciiio = source.asciiio;
 		smetio = source.smetio;
 		output_prf_as_ascii = source.output_prf_as_ascii;
+		output_prf_as_caaml = source.output_prf_as_caaml;
 		output_prf_as_imis = source.output_prf_as_imis;
+		output_snow_as_caaml = source.output_snow_as_caaml;
 		output_snow_as_smet = source.output_snow_as_smet;
+		input_snow_as_caaml = source.input_snow_as_caaml;
 		input_snow_as_smet = source.input_snow_as_smet;
 		output_ts_as_ascii = source.output_ts_as_ascii;
 		output_haz_as_imis = source.output_haz_as_imis;
 	}
 	return *this;
 }
+

@@ -112,8 +112,7 @@ void ImisDBIO::readSnowCover(const std::string& /*i_snowfile*/, const std::strin
 }
 
 void ImisDBIO::writeSnowCover(const mio::Date& /*date*/, const SnowStation& /*Xdata*/,
-                              const SN_SNOWSOIL_DATA& /*SSdata*/, const ZwischenData& /*Zdata*/,
-                              const bool& /*forbackup*/)
+                              const ZwischenData& /*Zdata*/, const bool& /*forbackup*/)
 {
 	throw IOException("Nothing implemented here!", AT);
 }

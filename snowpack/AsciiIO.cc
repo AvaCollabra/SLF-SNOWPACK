@@ -40,7 +40,7 @@ const bool AsciiIO::t_gnd = false;
  ************************************************************/
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), variant(), experiment(), sw_mode(),
-           inpath(), snowfile(), i_snopath(), outpath(), o_snopath(),
+           inpath(), snowfile(), i_snowpath(), outpath(), o_snowpath(),
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
@@ -63,9 +63,9 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	string snowpath;
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
-		i_snopath = snowpath;
+		i_snowpath = snowpath;
 	} else {
-		i_snopath = inpath;
+		i_snowpath = inpath;
 	}
 	cfg.getValue("TIME_ZONE", "Input", time_zone);
 
@@ -88,9 +88,9 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
-		o_snopath = snowpath;
+		o_snowpath = snowpath;
 	} else {
-		o_snopath = outpath;
+		o_snowpath = outpath;
 	}
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
 	cfg.getValue("PROFILE_FORMAT", "Output", vecProfileFmt);
@@ -114,7 +114,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
  */
 bool AsciiIO::snowCoverExists(const std::string& i_snowfile, const std::string& /*stationID*/) const
 {
-	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	if (snofilename.rfind(".snoold") == string::npos) {
 		snofilename += ".snoold";
 	}
@@ -134,7 +134,7 @@ bool AsciiIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
 void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                             SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
-	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	if (snofilename.rfind(".snoold") == string::npos) {
 		snofilename += ".snoold";
 	}
@@ -162,7 +162,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 	SSdata.profileDate = Date::rnd(Date(YYYY, MM, DD, HH, MI, time_zone), 1.);
 
-	// Last checked measured Snow Height used for data Control of next run
+	// Last checked calculated snow depth used for albedo control
 	if (fscanf(fin, "\nHS_Last=%lf", &SSdata.HS_last) != 1) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read HS_Last in file "+snofilename, AT);
@@ -431,7 +431,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".snoold";
+	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".snoold";
 	if (forbackup){
 		stringstream ss;
 		ss << (int)(date.getJulian() + 0.5);
@@ -455,7 +455,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	date.getDate(yyyy,mm,dd,hh,mi);
 	fout << "ProfileDate= " << setfill('0') << setw(4) << yyyy << " " << setw(2) << mm << " " << setw(2) << dd << " " << setw(2) << hh << " " << setw(2) << mi << "\n";
 
-	// Last checked Snow Depth used for data Control of next run
+	// Last checked calculated snow depth used for albedo control of next run
 	fout << "HS_Last= " << Xdata.cH - Xdata.Ground << "\n";
 
 	// Latitude, Longitude, Altitude, Slope Angle, Slope Azimut

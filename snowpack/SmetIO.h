@@ -50,6 +50,10 @@ class SmetIO : public SnowpackIOInterface {
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
 		                             const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
+		mio::Date read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata);
+		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
+		                         const SnowStation& Xdata, const ZwischenData& Zdata);
+
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 		static void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer);
@@ -58,18 +62,15 @@ class SmetIO : public SnowpackIOInterface {
 		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision);
 		static void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
 		                         const ZwischenData& Zdata);
-		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
-		                  const SnowStation& Xdata, const ZwischenData& Zdata);
 		bool keyExists(const smet::SMETReader& reader, const std::string& key) const;
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
 		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		mio::Date read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
 		                              SN_SNOWSOIL_DATA& SSdata);
-		mio::Date read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata);
 
 	private:
-		std::string outpath, o_snopath, snowpath, experiment, inpath, i_snopath, sw_mode;
+		std::string outpath, o_snowpath, snowpath, experiment, inpath, i_snowpath, sw_mode;
 		const RunInfo info;
 		double in_dflt_TZ;
 		bool useSoilLayers, perp_to_slope;

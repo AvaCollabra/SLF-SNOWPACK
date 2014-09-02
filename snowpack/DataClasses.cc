@@ -1026,6 +1026,7 @@ double ElementData::neck2VolumetricStrain() const
 	const double Ln = neckLength();
 	return (Ln / (2. * rg + Ln));
 }
+
 /**
  * @brief Determine the type of snow \n
  * First revisited by Fierz and Bellaire 2006 and 2007
