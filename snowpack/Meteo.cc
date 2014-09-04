@@ -309,7 +309,6 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 	double H_toa, H_direct, H_diffuse;
 	sun.getHorizontalRadiation(H_toa, H_direct, H_diffuse);
 	const double Md = sun.getSplitting(iswr_ref);
-
 	double dir_h, diff;
 	if ((iswr_ref > 0.) && (H_direct > 0.)) {
 		dir_h = (1. - Md)*iswr_ref;
