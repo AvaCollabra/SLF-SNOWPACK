@@ -909,11 +909,11 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 
 /**
  * @brief LONGWAVE RADIATION COEFFICIENT
- * (This routine might look a bit unusual:
+ * This routine might look a bit unusual:
  * Radiation is treated as a CONVECTIVE boundary condition, similar to the sensible and latent heat
  * exchanges.  The exchange coefficient, however, is not a constant, dependent on say the wind
  * velocity, rather it is dependent on the temperature.  This routine computes the "pseudo"
- * convective heat exchange coefficient for radiation.)
+ * convective heat exchange coefficient for radiation.
  * @version 9Y.mm
  * @param t_snow Snow surface temperature (K)
  * @param t_atm Temperature of the atmosphere, i.e., air (K)

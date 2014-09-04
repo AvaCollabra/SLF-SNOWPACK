@@ -173,6 +173,7 @@ class LayerData {
 	public:
 		LayerData();
 
+		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const LayerData& data);
 		friend std::iostream& operator>>(std::iostream& is, LayerData& data);
 

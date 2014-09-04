@@ -2482,11 +2482,10 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 	os << "nN:                         " << nN << "\n";
 	os << "Height:                     " << Height << "\n";
 	os << "nLayers:                    " << nLayers << "\n";
-	os << "TODO LayerDATA\n";
-	/*for (unsigned int ii=1; ii<LayerData.size(); ii++) {
-		os << "<LayerData index=" << ii << ">\n" << Ldata[ii] << "</LayerData>\n";
-	}
-	*/
+
+	for(size_t ii=0; ii<nLayers; ii++)
+		os << Ldata[ii].toString();
+
 	os << "HS_last:                    " << HS_last << "\n";
 	os << "Albedo:                     " << Albedo << "\n";
 	os << "SoilAlb:                    " << SoilAlb << "\n";
@@ -2625,6 +2624,24 @@ std::iostream& operator>>(std::iostream& is, LayerData& data)
 	is.read(reinterpret_cast<char*>(&data.CDot), sizeof(data.CDot));
 	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
 	return is;
+}
+
+const std::string LayerData::toString() const
+{
+	std::stringstream os;
+	os << "<LayerData>\n";
+
+	os << depositionDate.toString(mio::Date::ISO) << "\n";
+	os << "\theight:" << hl << " (" << ne << "elements) at " << tl << "K\n";
+	os << "\tvolumetric contents: " << phiIce << " ice, " << phiWater << " water, " << phiVoids << " voids, ";
+	os << phiSoil << " soil, total = " << phiIce+phiWater+phiVoids+phiSoil << "%\n";
+	os << "\tSoil properties: " << SoilRho << " kg/m^3, " << SoilK << " W/(m*K), " << SoilC << " J/K\n";
+	os << "\tSoil microstructure: rg=" << rg << " sp=" << sp << " dd=" << dd << " rb=" << rb << " mk=" << mk << "\n";
+	os << "\tStability: surface hoar=" << hr << " kg/m^2, stress rate=" << CDot << " Pa/s, metamo=" << metamo << "\n";
+	os << "\tNumber of solutes: " << cSoil.size() << " in soil, " << cIce.size() << " in ice, " << cWater.size() << " in water, " << cVoids.size() << " in voids\n";
+
+	os << "</LayerData>\n";
+	return os.str();
 }
 
 /// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
