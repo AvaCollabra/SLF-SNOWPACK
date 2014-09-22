@@ -15,7 +15,7 @@
     You should have received a copy of the GNU Lesser General Public License
     along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 */
-#include "CaaMLIO.h"
+#include <snowpack/plugins/CaaMLIO.h>
 //#include <meteoio/meteolaws/Atmosphere.h>
 
 #include <sstream>
@@ -254,15 +254,15 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 			xmlChar *att = xmlGetProp(cur_node, xml_attribute);
 // 			const std::string field( (const char*)(att) );
 // 			xmlFree(att);
-// 
+//
 // 			if (cur_node->children->type == XML_TEXT_NODE) {
 // 				const std::string value( (const char*)(cur_node->children->content) );
-// 
+//
 // 				if(field=="identifier") xml_id = value;
 // 				//else if(field=="station_abbreviation") sd.stationID = value;
 // 				else if(field=="station_name") sd.stationName = value;
 // 				else if(field=="missing_value_code") IOUtils::convertString(plugin_nodata, value);
-// 
+//
 // 				if(use_model_loc) {
 // 					if(field=="station_height") IOUtils::convertString(altitude, value);
 // 					else if(field=="station_latitude") IOUtils::convertString(latitude, value);
@@ -275,14 +275,14 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	sd.stationID = station_id;
-// 
+//
 // 	if(latitude==IOUtils::nodata || longitude==IOUtils::nodata || altitude==IOUtils::nodata)
 // 		throw NoAvailableDataException("Some station location information is missing for station \""+station_id+"\"", AT);
 // 	sd.position.setProj(coordin, coordinparam);
 // 	sd.position.setLatLon(latitude, longitude, altitude);
-// 
+//
 // 	if(xml_id.empty())
 // 		throw NoAvailableDataException("CAAML station id missing for station \""+station_id+"\"", AT);
 // 	xml_stations_id[station_id] = xml_id;
@@ -295,14 +295,14 @@ void CaaMLIO::closeIn_CAAML() throw()
 // //private CosmoXMLIO
 // {
 // 	double iswr_dir = IOUtils::nodata, iswr_diff = IOUtils::nodata;
-// 
+//
 // 	//collect all the data fields
 // 	for (xmlNode *cur_node = element; cur_node; cur_node = cur_node->next) {
 // 		if (cur_node->type == XML_ELEMENT_NODE) {
 // 			xmlChar *att = xmlGetProp(cur_node, xml_attribute);
 // 			const std::string field( (const char*)(att) );
 // 			xmlFree(att);
-// 
+//
 // 			if (cur_node->children->type == XML_TEXT_NODE) {
 // 				const std::string value( (const char*)(cur_node->children->content) );
 // 				if(field=="reference_ts") {
@@ -313,7 +313,7 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 					double tmp;
 // 					IOUtils::convertString(tmp, value);
 // 					tmp = IOUtils::standardizeNodata(tmp, plugin_nodata);
-// 
+//
 // 					//for now, we hard-code the fields mapping
 // 					if(field=="108005") md(MeteoData::TA) = tmp;
 // 					else if(field=="108014") md(MeteoData::RH) = tmp/100.;
@@ -331,23 +331,23 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 			}
 // 		}
 // 	}
-// 
+//
 // 	if(iswr_diff!=IOUtils::nodata && iswr_dir!=IOUtils::nodata)
 // 		md(MeteoData::ISWR) = iswr_diff+iswr_dir;
-// 
+//
 // 	//because of the Kalman filter applied on VW, sometimes VW_MAX<VW
 // 	if(md(MeteoData::VW)!=IOUtils::nodata && md(MeteoData::VW_MAX)!=IOUtils::nodata && md(MeteoData::VW_MAX)<md(MeteoData::VW))
 // 		md(MeteoData::VW_MAX) = md(MeteoData::VW);
-// 
+//
 // 	return read_ok;
 // }
-// 
+//
 // size_t CaaMLIO::getFileIdx(const Date& start_date) const
 // //private CosmoXMLIO
 // {
 // 	if(cache_snow_files.empty())
 // 		throw InvalidArgumentException("No input files found or configured!", AT);
-// 
+//
 // 	//find which file we should open
 // 	if(cache_snow_files.size()==1) {
 // 		return 0;
@@ -357,7 +357,7 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 				return idx--;
 // 			}
 // 		}
-// 
+//
 // 		//not found, we take the closest timestamp we have
 // 		if(start_date<cache_snow_files.front().first)
 // 			return 0;
@@ -365,14 +365,14 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 			return cache_snow_files.size()-1;
 // 	}
 // }
-// 
+//
 // void CaaMLIO::readStationData(const Date& station_date, std::vector<StationData>& vecStation)
 // {
 // 	vecStation.clear();
-// 
+//
 // 	const std::string snowfile( cache_snow_files[ getFileIdx(station_date) ].second );
 // 	openIn_CAAML(snowfile);
-// 
+//
 // 	//read all the stations' metadata
 // 	for(size_t ii=0; ii<input_id.size(); ii++) {
 // 		StationData sd;
@@ -382,32 +382,32 @@ void CaaMLIO::closeIn_CAAML() throw()
 // 		}
 // 		vecStation.push_back(sd);
 // 	}
-// 
+//
 // 	closeIn_CAAML();
 // }
 
 // bool CaaMLIO::parseCaamlData(const Date& dateStart, const Date& dateEnd, const std::string& station_id, const StationData& sd, const xmlXPathContextPtr& xpathCtx, std::vector<MeteoData> &vecMeteo) const
 // {
 // 	const std::string xpath = SnowData_xpath+"[@id='identifier' and text()='"+station_id+"']";
-// 
+//
 // 	xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)xpath.c_str(), xpathCtx);
 // 	if(xpathObj == NULL) return false;
-// 
+//
 // 	//check the number of matches
 // 	const xmlNodeSetPtr &data = xpathObj->nodesetval;
 // 	const int nr_data = (data) ? data->nodeNr : 0;
 // 	if(nr_data==0)
 // 		throw NoAvailableDataException("No data found for station \""+station_id+"\"", AT);
-// 
+//
 // 	//loop over all data for this station_id
 // 	for(int ii=0; ii<nr_data; ii++) {
 // 		MeteoData md( Date(), sd);
-// 
+//
 // 		const MeteoReadStatus status = parseMeteoDataPoint(dateStart, dateEnd, data->nodeTab[ii], md);
 // 		if(status==read_stop) break;
 // 		if(status==read_ok) vecMeteo.push_back( md );
 // 	}
-// 
+//
 // 	xmlXPathFreeObject(xpathObj);
 // 	return true;
 // }
@@ -469,10 +469,10 @@ std::string CaaMLIO::getFilenamePrefix(const std::string& fnam, const std::strin
 {
 	//TODO: read only once (in constructor)
 	string filename_prefix = path + "/" + fnam;
-	
+
 	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
 		filename_prefix += "_" + experiment;
-	
+
 	return filename_prefix;
 }
 
@@ -484,7 +484,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	openIn_CAAML(in_snowFilename);
 
 	//Read actual data
-// 	const std::string xpath = SnowData_xpath;  
+// 	const std::string xpath = SnowData_xpath;
 // 	const std::string xpath = SnowData_xpath+"/caaml:profileDepth";
 	const std::string xpath = SnowData_xpath+"/caaml:stratProfile/caaml:Layer";
 
@@ -507,17 +507,17 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 // 	cur_node = (data->nodeTab[0]);
 	std::cout << xmlGetProp(cur_node, (const xmlChar *)"uom") << endl;
 	std::cout << (const xmlChar*) (cur_node->children->content) << endl;
-	
+
 	// preliminary checks TODO reword
 // 	if (SSdata.nLayers > 0)
 // 		SSdata.Ldata.resize(SSdata.nLayers, LayerData());
-// 
+//
 // 	if (vec_timestamp.size() != SSdata.nLayers)
 // 		throw InvalidFormatException("Xdata: Layers expected != layers read in " + sno_reader.get_filename(), AT);
-// 
+//
 // 	const size_t nr_of_fields = sno_reader.get_nr_of_fields();
 // 	const size_t nr_of_solutes = (nr_of_fields - 18) / 4;
-// 
+//
 // 	if (SnowStation::number_of_solutes != nr_of_solutes)
 // 		throw InvalidFormatException("Mismatch in number_of_solutes and fields in " + sno_reader.get_filename(), AT);
 
@@ -527,14 +527,14 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 // 		//firstly deal with date
 // 		IOUtils::convertString(SSdata.Ldata[ll].depositionDate, vec_timestamp[ll], in_tz);
 // 		SSdata.Ldata[ll].depositionDate.rnd(1.);
-// 
+//
 // 		if (SSdata.Ldata[ll].depositionDate > SSdata.profileDate) {
 // 			prn_msg(__FILE__, __LINE__, "err", Date(),
 // 					"Layer %d from bottom is younger (%lf) than ProfileDate (%lf) !!!",
 // 					ll+1, SSdata.Ldata[ll].depositionDate.getJulian(), SSdata.profileDate.getJulian());
 // 					throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 // 		}
-// 
+//
 // 		//secondly with the actual data
 // 		SSdata.Ldata[ll].hl = vec_data[current_index++];
 // 		SSdata.Ldata[ll].tl = vec_data[current_index++];
@@ -542,7 +542,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 // 		SSdata.Ldata[ll].phiWater = vec_data[current_index++];
 // 		SSdata.Ldata[ll].phiVoids = vec_data[current_index++];
 // 		SSdata.Ldata[ll].phiSoil = vec_data[current_index++];
-// 
+//
 // 		if (SSdata.Ldata[ll].tl < 100.) {
 // 			SSdata.Ldata[ll].tl = C_TO_K(SSdata.Ldata[ll].tl);
 // 		}
@@ -556,16 +556,16 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 // 		SSdata.Ldata[ll].mk = static_cast<unsigned short int>(vec_data[current_index++]+.5); //int
 // 		SSdata.Ldata[ll].hr = vec_data[current_index++];
 // 		SSdata.Ldata[ll].ne = static_cast<unsigned int>(vec_data[current_index++]+.5); //int
-// 
+//
 // 		if (SSdata.Ldata[ll].rg>0. && SSdata.Ldata[ll].rb >= SSdata.Ldata[ll].rg) {
 // 			//HACK To avoid surprises in lwsn_ConcaveNeckRadius()
 // 			SSdata.Ldata[ll].rb = Metamorphism::max_grain_bond_ratio * SSdata.Ldata[ll].rg;
 // 			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Layer %d from bottom: bond radius rb/rg larger than Metamorphism::max_grain_bond_ratio=%lf (rb=%lf mm, rg=%lf mm)! Reset to Metamorphism::max_grain_bond_ratio", ll+1, Metamorphism::max_grain_bond_ratio, SSdata.Ldata[ll].rb, SSdata.Ldata[ll].rg);
 // 		}
-// 
+//
 // 		SSdata.Ldata[ll].CDot = vec_data[current_index++];
 // 		SSdata.Ldata[ll].metamo = vec_data[current_index++];
-// 
+//
 // 		for (size_t ii=0; ii<SnowStation::number_of_solutes; ii++) {
 // 			SSdata.Ldata[ll].cIce[ii] = vec_data[current_index++];
 // 			SSdata.Ldata[ll].cWater[ii] = vec_data[current_index++];
@@ -573,7 +573,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 // 			SSdata.Ldata[ll].cSoil[ii] = vec_data[current_index++];
 // 		}
 // 	} //for loop over layers
-// 
+//
 // 	SSdata.nN = 1;
 // 	SSdata.Height = 0.;
 // 	for (size_t ll = 0; ll < SSdata.nLayers; ll++) {

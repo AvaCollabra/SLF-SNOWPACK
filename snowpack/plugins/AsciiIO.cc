@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/AsciiIO.h>
+#include <snowpack/plugins/AsciiIO.h>
 
 using namespace std;
 using namespace mio;
