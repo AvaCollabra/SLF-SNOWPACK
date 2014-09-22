@@ -438,7 +438,6 @@ bool CaaMLIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
  */
 void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                             SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
-//public SnowpackIO
 {
 	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	string hazfilename(snofilename);
@@ -596,7 +595,6 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 void CaaMLIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-//public SnowpackIO
 	string snofilename = ""; //getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".caaml";
 	string hazfilename = ""; //getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".haz";
 

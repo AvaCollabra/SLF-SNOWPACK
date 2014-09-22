@@ -27,25 +27,21 @@
 #define __LIBSNOWPACK_H__
 
 #include <snowpack/Aggregate.h>
-//#include <snowpack/AsciiIO.h>
-//#include <snowpack/CaaMLIO.h>
 #include <snowpack/Canopy.h>
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Hazard.h>
-//#include <snowpack/ImisDBIO.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Metamorphism.h>
 #include <snowpack/Meteo.h>
 #include <snowpack/PhaseChange.h>
 #include <snowpack/ReSolver1d.h>
 #include <snowpack/Saltation.h>
-//#include <snowpack/SmetIO.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/SnowpackConfig.h>
 #include <snowpack/Snowpack.h>
-#include <snowpack/SnowpackIO.h>
-#include <snowpack/SnowpackIOInterface.h>
+#include <snowpack/plugins/SnowpackIO.h>
+#include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/Solver.h>
 #include <snowpack/Stability.h>
 #include <snowpack/Utils.h>
