@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/ImisDBIO.h>
+#include <snowpack/plugins/ImisDBIO.h>
 
 using namespace std;
 using namespace mio;

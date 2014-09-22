@@ -1,10 +1,13 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
 
+INCLUDE("${PROJECT_SOURCE_DIR}/snowpack/plugins/CMakeLists.txt")
+
+FIND_PACKAGE(MeteoIO)
+INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
+LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
+
 SET(snowpacklib_sources
 	DataClasses.cc
-	SmetIO.cc
-	SnowpackIO.cc
-	AsciiIO.cc
 	SnowpackConfig.cc
 	Meteo.cc
 	Saltation.cc
@@ -21,25 +24,8 @@ SET(snowpacklib_sources
 	PhaseChange.cc
 	SnowDrift.cc
 	Solver.cc
+	${plugins_sources}
 )
-
-FIND_PACKAGE(MeteoIO)
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
-LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
-
-IF(PLUGIN_IMISIO)
-	SET(snowpacklib_sources ${snowpacklib_sources} ImisDBIO.cc)
-	FIND_PACKAGE(OCCI)
-	INCLUDE_DIRECTORIES(SYSTEM ${OCCI_INCLUDE_DIR})
-	LINK_DIRECTORIES(${OCCI_LIBRARIES}) #this, so that if the users types in paths, it works
-ENDIF(PLUGIN_IMISIO)
-
-IF(PLUGIN_CAAMLIO)
-	SET(snowpacklib_sources ${snowpacklib_sources} CaaMLIO.cc)
-	FIND_PACKAGE(LibXml2)
-	INCLUDE_DIRECTORIES(SYSTEM ${LIBXML2_INCLUDE_DIR})
-	LINK_DIRECTORIES(${LIBXML2_LIBRARIES})
-ENDIF(PLUGIN_CAAMLIO)
 
 #set names for static and dynamic library
 IF(BUILD_STATIC_LIBS)

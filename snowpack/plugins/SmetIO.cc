@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/SmetIO.h>
+#include <snowpack/plugins/SmetIO.h>
 
 using namespace std;
 using namespace mio;

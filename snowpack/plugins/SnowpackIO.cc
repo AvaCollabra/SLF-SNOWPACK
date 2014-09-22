@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/SnowpackIO.h>
+#include <snowpack/plugins/SnowpackIO.h>
 
 using namespace std;
 using namespace mio;

@@ -21,12 +21,13 @@
 #ifndef __SNOWPACKIO_H__
 #define __SNOWPACKIO_H__
 
-#include <snowpack/SnowpackIOInterface.h>
-#include <snowpack/SmetIO.h>
-#include <snowpack/AsciiIO.h>
 #include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 
+#include <snowpack/plugins/SnowpackIOInterface.h>
+
+#include <snowpack/plugins/SmetIO.h>
+#include <snowpack/plugins/AsciiIO.h>
 #ifdef CAAMLIO
 #include <snowpack/CaaMLIO.h>
 #endif
