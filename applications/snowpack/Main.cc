@@ -203,7 +203,7 @@ Cumsum::Cumsum(const unsigned int nSlopes)
 
 void Version()
 {
-	#ifdef _MSC_VER
+#ifdef _MSC_VER
 	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
