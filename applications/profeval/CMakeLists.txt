@@ -1,24 +1,25 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
+IF(COMMAND cmake_policy)
+	CMAKE_POLICY(SET CMP0003 NEW)
+ENDIF(COMMAND cmake_policy)
 
 IF(MSVC)
 	SET(getopt_src getopt.c getopt_long.c)
 ENDIF(MSVC)
 
-SET(snowpack-app_sources
-	Main.cc
+SET(profeval_sources
+# 	ProfEval.cc
+	readCaaML.cc
+# 	writeCaaML.cc
 	${getopt_src}
 )
 
-IF(POPC)
-        SET(SN_LINKS "snowpackpopc")
-ELSE(POPC)
-        SET(SN_LINKS "snowpack")
-ENDIF(POPC)
+SET(SN_LINKS "snowpack")
 LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 
 FIND_PACKAGE(MeteoIO REQUIRED)
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
-#LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
+LINK_DIRECTORIES(${METEOIO_LIBRARIES}) #this, so that if the users types in paths, it works
 LIST(APPEND SN_LINKS ${METEOIO_LIBRARIES})
 
 IF(APPLE)
@@ -58,15 +59,15 @@ IF(UNIX)
 ENDIF(UNIX)
 
 #Prepare executable
-SET(BINARY "snowpack.app")
-ADD_EXECUTABLE(${BINARY} ${snowpack-app_sources})
+SET(BINARY "profeval.app")
+ADD_EXECUTABLE(${BINARY} ${profeval_sources})
 
 TARGET_LINK_LIBRARIES(${BINARY} ${SN_LINKS})
 
 SET_TARGET_PROPERTIES(${BINARY} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
 	CLEAN_DIRECT_OUTPUT 1
-	OUTPUT_NAME "snowpack"
+	OUTPUT_NAME "profeval"
 )
 
 INSTALL(TARGETS ${BINARY}

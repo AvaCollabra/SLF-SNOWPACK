@@ -502,7 +502,7 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 }
 
 /**
- * @brief Michi's Advective Heat Flux Implementation
+ * @brief Michi's Advective Heat Flux Implementation (mimicking heat advection by infiltrating water?)
  * @version 0.1
  * @param Xdata The advective heat flux will be added to Xdata.sw_abs
  * @param advective_heat heat flux (positive or negative) to add (W m-3)
@@ -635,13 +635,13 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
  */
 double SnLaws::compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const size_t& i_e)
 {
-	const size_t max_depth = (i_e>7)? i_e-7 : 0;
+	const size_t max_depth = (i_e>7)? i_e-7 : 0; //NOTE Works only for snow
 	double vapor_enhance = 1.;
 
 	const size_t e_stop = MAX(Xdata.SoilNode, max_depth);
 	size_t e;
 	for(e = i_e; e --> e_stop; ) { //decrements from i_e down to e_stop (included) even if e_stop==0
-		//TODO: check limit on theta_water and second condition (to be checked on e only??)
+		//TODO: check limit on theta_water and second condition (to be checked on i_e only??)
 		if ((Xdata.Edata[e].theta[WATER] > SnowStation::thresh_moist_snow) && (Xdata.Edata[i_e].theta[ICE] < 0.7)) {
 			vapor_enhance = SnLaws::montana_vapor_fudge;
 			break;

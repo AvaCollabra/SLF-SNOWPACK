@@ -21,10 +21,10 @@
 #ifndef __ASCIIIO_H__
 #define __ASCIIIO_H__
 
+#include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>
 #include <snowpack/SnowpackIOInterface.h>
 #include <snowpack/Hazard.h>
-#include <meteoio/MeteoIO.h>
 #include <snowpack/Canopy.h>
 
 class AsciiIO : public SnowpackIOInterface {
@@ -98,7 +98,7 @@ class AsciiIO : public SnowpackIOInterface {
 
 		std::set<std::string> setAppendableFiles;
 		std::string variant, experiment, sw_mode;
-		std::string inpath, snowfile, i_snopath, outpath, o_snopath;
+		std::string inpath, snowfile, i_snowpath, outpath, o_snowpath;
 		const RunInfo info;
 
 		std::vector<std::string> vecProfileFmt;
@@ -109,7 +109,7 @@ class AsciiIO : public SnowpackIOInterface {
 		size_t numberMeasTemperatures, maxNumberMeasTemperatures;
 		size_t numberTags, numberFixedSensors, totNumberSensors;
 
-		double time_zone; // input data time zone
+		double time_zone; // time zone of input
 		double calculation_step_length, hazard_steps_between, ts_days_between;
 		double min_depth_subsurf, hoar_density_surf, hoar_min_size_surf;
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;

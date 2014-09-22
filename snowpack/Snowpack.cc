@@ -791,7 +791,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	try {
 		SnLaws::compShortWaveAbsorption(sw_absorption_scheme, Xdata, I0);
 	} catch(const exception&){
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in sn_SnowTemperature");
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Runtime error in compTemperatureProfile");
 		throw;
 	}
 
@@ -851,19 +851,19 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	if (errno != 0 || U==NULL) {
         free(U);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector U)", strerror(errno));
-		throw IOException("Runtime error in sn_SnowTemperature", AT);
+		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	dU=(double *) realloc(dU, nN*sizeof(double));
 	if (errno != 0 || dU==NULL) {
         free(U); free(dU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector dU)", strerror(errno));
-		throw IOException("Runtime error in sn_SnowTemperature", AT);
+		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	ddU=(double *) realloc(ddU, nN*sizeof(double));
 	if (errno != 0 || ddU==NULL) {
 	    free(U); free(dU); free(ddU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector ddU)", strerror(errno));
-		throw IOException("Runtime error in sn_SnowTemperature", AT);
+		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 
 	// Make sure that the global data structures know where the pointers are for the next integration step after the reallocation ....
@@ -894,7 +894,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
 			prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
 			free(U); free(dU); free(ddU);
-			throw IOException("Runtime error in sn_SnowTemperature", AT);
+			throw IOException("Runtime error in compTemperatureProfile", AT);
 		}
 	}
 	// Set the iteration counters, as well as the phase change boolean values
@@ -942,7 +942,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				for (size_t n = 0; n < nN; n++)
 					fprintf(stdout, "U[%u]=%g K\n", (unsigned int)n, U[n]);
 				free(U); free(dU); free(ddU);
-				throw IOException("Runtime error in sn_SnowTemperature", AT);
+				throw IOException("Runtime error in compTemperatureProfile", AT);
 			}
 			ds_AssembleMatrix( (MYTYPE*)Kt, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
@@ -1035,7 +1035,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
 			        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
 			free(U); free(dU); free(ddU);
-			throw IOException("Runtime error in sn_SnowTemperature", AT);
+			throw IOException("Runtime error in compTemperatureProfile", AT);
 		}
 		for (size_t n = 0; n < nN; n++)
 			U[n] += ddU[ n ];

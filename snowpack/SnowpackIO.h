@@ -22,11 +22,14 @@
 #define __SNOWPACKIO_H__
 
 #include <snowpack/SnowpackIOInterface.h>
-#include <snowpack/AsciiIO.h>
 #include <snowpack/SmetIO.h>
+#include <snowpack/AsciiIO.h>
 #include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 
+#ifdef CAAMLIO
+#include <snowpack/CaaMLIO.h>
+#endif
 #ifdef IMISDBIO
 #include <snowpack/ImisDBIO.h>
 #endif
@@ -60,11 +63,16 @@ class SnowpackIO : public SnowpackIOInterface {
 #ifdef IMISDBIO
 		ImisDBIO *imisdbio;
 #endif
-		AsciiIO *asciiio;
+#ifdef CAAMLIO
+		CaaMLIO *caamlio;
+#endif
 		SmetIO *smetio;
+		AsciiIO *asciiio;
 		bool input_snow_as_smet, output_snow_as_smet;
-		bool output_prf_as_ascii, output_ts_as_ascii;
-		bool output_prf_as_imis, output_haz_as_imis;
+		bool input_snow_as_caaml, output_snow_as_caaml;
+		bool input_snow_as_ascii, output_snow_as_ascii;
+		bool output_prf_as_ascii, output_prf_as_caaml, output_prf_as_imis;
+		bool output_ts_as_ascii, output_haz_as_imis;
 };
 
 #endif //End of SnowpackIO.h

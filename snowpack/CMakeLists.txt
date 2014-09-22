@@ -35,7 +35,7 @@ IF(PLUGIN_IMISIO)
 ENDIF(PLUGIN_IMISIO)
 
 IF(PLUGIN_CAAMLIO)
-	SET(snowpacklib_sources ${snowpacklib_sources} CaamlIO.cc)
+	SET(snowpacklib_sources ${snowpacklib_sources} CaaMLIO.cc)
 	FIND_PACKAGE(LibXml2)
 	INCLUDE_DIRECTORIES(SYSTEM ${LIBXML2_INCLUDE_DIR})
 	LINK_DIRECTORIES(${LIBXML2_LIBRARIES})

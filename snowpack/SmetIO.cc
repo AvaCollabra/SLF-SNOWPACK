@@ -24,7 +24,7 @@ using namespace std;
 using namespace mio;
 
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-        : outpath(), o_snopath(), snowpath(), experiment(), inpath(), i_snopath(), sw_mode(),
+        : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info),
           in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
 {
@@ -37,18 +37,18 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
-		o_snopath = snowpath;
+		o_snowpath = snowpath;
 	} else {
-		o_snopath = outpath;
+		o_snowpath = outpath;
 	}
 
 	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
 	snowpath = string();
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	if (!snowpath.empty()) {
-		i_snopath = snowpath;
+		i_snowpath = snowpath;
 	} else {
-		i_snopath = inpath;
+		i_snowpath = inpath;
 	}
 }
 
@@ -60,7 +60,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
  */
 bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /*stationID*/) const
 {
-	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 
 	if (snofilename.rfind(".sno") == string::npos) {
 		snofilename += ".sno";
@@ -80,7 +80,7 @@ bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /
 void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
-	string snofilename = getFilenamePrefix(i_snowfile, i_snopath, false);
+	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	string hazfilename(snofilename);
 
 	if (snofilename.rfind(".sno") == string::npos) {
@@ -111,7 +111,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	smet::SMETReader haz_reader(hazfilename);
 
 	Date profile_date;
-	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
+	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -361,8 +361,8 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                             const ZwischenData& Zdata, const bool& forbackup)
 {
-	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".sno";
-	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snopath) + ".haz";
+	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno";
+	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz";
 
 	if (forbackup){
 		stringstream ss;
@@ -505,7 +505,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
 
-	// Last checked Snow Depth used for data Control of next run
+	// Last checked calculated snow depth used for albedo control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
 
