@@ -21,7 +21,7 @@
 #ifndef __IMISDBIO_H__
 #define __IMISDBIO_H__
 
-#include <snowpack/SnowpackIOInterface.h>
+#include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 #include <occi.h>

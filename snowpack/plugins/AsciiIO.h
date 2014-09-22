@@ -23,7 +23,7 @@
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>
-#include <snowpack/SnowpackIOInterface.h>
+#include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Canopy.h>
 

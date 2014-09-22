@@ -20,7 +20,7 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>
-#include <snowpack/SnowpackIOInterface.h>
+#include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Canopy.h>
 #include <snowpack/SmetIO.h>
@@ -88,7 +88,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		/*static const*/ double in_tz; //plugin specific time zones
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 		double caaml_nodata; //plugin specific no data value
-		
+
 		xmlDocPtr in_doc;
 		xmlXPathContextPtr in_xpathCtx;
 		xmlCharEncoding in_encoding;
