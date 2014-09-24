@@ -30,8 +30,8 @@
 
 #include <snowpack/DataClasses.h>
 #include <snowpack/Constants.h>
-#include <snowpack/Snowpack.h> //some constants are necessary
-#include <snowpack/Metamorphism.h>
+#include <snowpack/snowpackCore/Snowpack.h> //some constants are necessary
+#include <snowpack/snowpackCore/Metamorphism.h>
 
 class SnLaws {
 

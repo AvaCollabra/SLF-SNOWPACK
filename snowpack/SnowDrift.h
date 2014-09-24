@@ -25,7 +25,7 @@
 #include <snowpack/Constants.h>
 #include <cmath>
 #include <snowpack/Saltation.h>
-#include <snowpack/Snowpack.h>
+#include <snowpack/snowpackCore/Snowpack.h>
 #include <vector>
 
 class Saltation;

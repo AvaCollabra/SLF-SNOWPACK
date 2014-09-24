@@ -26,8 +26,8 @@
 
 #include <snowpack/DataClasses.h>
 #include <snowpack/Utils.h>
-#include <snowpack/Canopy.h>
-#include <snowpack/Metamorphism.h>
+#include <snowpack/snowpackCore/Canopy.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
 #include <assert.h>
 
 using namespace mio;

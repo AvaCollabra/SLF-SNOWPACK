@@ -110,8 +110,8 @@
 * and Martin Schneebeli.  They were first used in the 2d snowpack code haefeli.
 */
 
-#include <snowpack/Metamorphism.h>
-#include <snowpack/Snowpack.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/Snowpack.h>
 
 using namespace std;
 using namespace mio;

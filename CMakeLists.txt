@@ -181,6 +181,7 @@ MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
 #for the install target
 FILE(GLOB hfiles "snowpack/*.h")
 FILE(GLOB hpluginfiles "snowpack/plugins/*.h")
+FILE(GLOB hcorefiles "snowpack/snowpackCore/*.h")
 
 IF(WIN32) #handle the special case of WIN32 needing import libraries
 	FILE(GLOB_RECURSE importlibs "lib/libsnow*.lib*")
@@ -192,6 +193,7 @@ ENDIF(WIN32)
 
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT headers)
+INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
 #INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
 ADD_CUSTOM_TARGET(distclean make clean

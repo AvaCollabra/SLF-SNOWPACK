@@ -31,11 +31,11 @@
 
 #include <snowpack/SnowpackConfig.h>
 #include <snowpack/Constants.h>
-#include <snowpack/Snowpack.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Utils.h>
 #include <snowpack/Laws_sn.h>
-#include <snowpack/Canopy.h>
+#include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/snowpackCore/Canopy.h>
 
 class Meteo {
 
