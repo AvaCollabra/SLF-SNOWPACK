@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/PhaseChange.h>
-#include <snowpack/Snowpack.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
+#include <snowpack/snowpackCore/Snowpack.h>
 
 using namespace mio;
 using namespace std;

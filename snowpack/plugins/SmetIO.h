@@ -25,7 +25,6 @@
 #include <snowpack/Constants.h>
 #include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/Hazard.h>
-#include <snowpack/Canopy.h>
 
 #include <string>
 

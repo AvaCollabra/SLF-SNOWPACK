@@ -29,10 +29,10 @@
 #include <snowpack/plugins/SmetIO.h>
 #include <snowpack/plugins/AsciiIO.h>
 #ifdef CAAMLIO
-#include <snowpack/CaaMLIO.h>
+#include <snowpack/plugins/CaaMLIO.h>
 #endif
 #ifdef IMISDBIO
-#include <snowpack/ImisDBIO.h>
+#include <snowpack/plugins/ImisDBIO.h>
 #endif
 
 class SnowpackIO : public SnowpackIOInterface {

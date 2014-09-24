@@ -26,26 +26,28 @@
 #ifndef __LIBSNOWPACK_H__
 #define __LIBSNOWPACK_H__
 
-#include <snowpack/Aggregate.h>
-#include <snowpack/Canopy.h>
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
 #include <snowpack/Hazard.h>
 #include <snowpack/Laws_sn.h>
-#include <snowpack/Metamorphism.h>
 #include <snowpack/Meteo.h>
-#include <snowpack/PhaseChange.h>
-#include <snowpack/ReSolver1d.h>
 #include <snowpack/Saltation.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/SnowpackConfig.h>
-#include <snowpack/Snowpack.h>
-#include <snowpack/plugins/SnowpackIO.h>
-#include <snowpack/plugins/SnowpackIOInterface.h>
-#include <snowpack/Solver.h>
 #include <snowpack/Stability.h>
 #include <snowpack/Utils.h>
-#include <snowpack/WaterTransport.h>
+
+#include <snowpack/plugins/SnowpackIO.h>
+#include <snowpack/plugins/SnowpackIOInterface.h>
+
+#include <snowpack/snowpackCore/Aggregate.h>
+#include <snowpack/snowpackCore/Canopy.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
+#include <snowpack/snowpackCore/ReSolver1d.h>
+#include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/snowpackCore/Solver.h>
+#include <snowpack/snowpackCore/WaterTransport.h>
 
 #endif
 

@@ -18,7 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/Aggregate.h>
+#include <snowpack/snowpackCore/Aggregate.h>
 
 /************************************************************
  * static section                                           *

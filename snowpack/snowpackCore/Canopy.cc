@@ -149,8 +149,8 @@
 
  */
 
-#include <snowpack/Canopy.h>
-#include <snowpack/Snowpack.h>
+#include <snowpack/snowpackCore/Canopy.h>
+#include <snowpack/snowpackCore/Snowpack.h>
 #include <meteoio/MeteoIO.h>
 
 #include <assert.h>

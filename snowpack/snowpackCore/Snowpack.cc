@@ -24,7 +24,7 @@
  * @brief This module contains the driving routines for the 1d snowpack model
  */
 
-#include <snowpack/Snowpack.h>
+#include <snowpack/snowpackCore/Snowpack.h>
 #include <assert.h>
 
 using namespace mio;

@@ -1,6 +1,7 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
 
 INCLUDE("${PROJECT_SOURCE_DIR}/snowpack/plugins/CMakeLists.txt")
+INCLUDE("${PROJECT_SOURCE_DIR}/snowpack/snowpackCore/CMakeLists.txt")
 
 FIND_PACKAGE(MeteoIO)
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
@@ -11,20 +12,13 @@ SET(snowpacklib_sources
 	SnowpackConfig.cc
 	Meteo.cc
 	Saltation.cc
-	Snowpack.cc
-	Aggregate.cc
 	Laws_sn.cc
 	Utils.cc
 	Stability.cc
-	WaterTransport.cc
-	ReSolver1d.cc
-	Canopy.cc
 	Hazard.cc
-	Metamorphism.cc
-	PhaseChange.cc
 	SnowDrift.cc
-	Solver.cc
 	${plugins_sources}
+	${core_sources}
 )
 
 #set names for static and dynamic library

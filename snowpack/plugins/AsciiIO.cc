@@ -19,6 +19,7 @@
 */
 
 #include <snowpack/plugins/AsciiIO.h>
+#include <snowpack/snowpackCore/Canopy.h>
 
 using namespace std;
 using namespace mio;

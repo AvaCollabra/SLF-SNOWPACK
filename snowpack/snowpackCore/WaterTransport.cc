@@ -18,9 +18,9 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <snowpack/WaterTransport.h>
-#include <snowpack/Snowpack.h>
-#include <snowpack/ReSolver1d.h>
+#include <snowpack/snowpackCore/WaterTransport.h>
+#include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/snowpackCore/ReSolver1d.h>
 
 #include <assert.h>
 

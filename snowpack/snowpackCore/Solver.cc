@@ -7,7 +7,7 @@
 * in order to solve a linear system of equations
 */
 
-#include <snowpack/Solver.h>
+#include <snowpack/snowpackCore/Solver.h>
 
 /*
 * DEFINE STATEMENTS
