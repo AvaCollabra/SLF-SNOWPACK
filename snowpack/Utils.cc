@@ -19,7 +19,7 @@
 */
 /**
  * @file Utils.cc
- * @version 10.02
+ * @version 11.03
  * @brief This module contains all-purpose functions
  */
 
@@ -326,6 +326,67 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
 	type -= int ((*F1)*100);
 	*F2   = int (floor(type/10.));
 	*F3   = int (type - (*F2)*10);
+}
+
+/**
+ * @brief Performs simple unit conversion (supports temperature, prefixes and exponents)
+ * @author Adrien Gaudard
+ * @version 11.03
+ * @param val Value (expressed in unitIn)
+ * @param unitIn (units of input)
+ * @param unitOut (units of output)
+ * return Value (expressed in unitOut)
+ */
+double unitConversion(double val, const char* unitIn, const char* unitOut)
+{	
+	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
+		return (val+273.15);
+	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {
+		return (val-273.15);
+	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°F")) {
+		return ((val-273.15)*1.8+32.);
+	} else if (!strcmp(unitIn,"°F") && !strcmp(unitOut,"K")) {
+		return ((val-32.)/1.8+273.15);
+	}  else if (!strcmp(unitIn,"°F") && !strcmp(unitOut,"°C")) {
+		return ((val-32.)/1.8);
+	}  else if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"°F")) {
+		return (val*1.8+32.);
+	} else {
+		double ratio = 1.;
+		if (strlen(unitIn) > 1+isdigit(unitIn[strlen(unitIn)-1])) {
+			char unitInPrefix = unitIn[0];
+			if (unitInPrefix == 'n') {
+				ratio *= 1./1000000000.;
+			} else if (unitInPrefix == 'u') {
+				ratio *= 1./1000000.;
+			} else if (unitInPrefix == 'm') {
+				ratio *= 1./1000.;
+			} else if (unitInPrefix == 'c') {
+				ratio *= 1./100.;
+			} else if (unitInPrefix == 'd') {
+				ratio *= 1./10.;
+			} else if (unitInPrefix == 'h') {
+				ratio *= 100.;
+			} else if (unitInPrefix == 'k') {
+				ratio *= 1000.;
+			} else if (unitInPrefix == 'M') {
+				ratio *= 1000000.;
+			} else if (unitInPrefix == 'G') {
+				ratio *= 1000000000.;
+			}
+		}
+		if (isdigit(unitIn[strlen(unitIn)-1])) {
+			ratio = pow(ratio,(int)(unitIn[strlen(unitIn)-1]-'0'));
+		}
+		if (val==IOUtils::nodata) {
+			return ratio;
+		}
+		if (strlen(unitOut) > 1+isdigit(unitOut[strlen(unitOut)-1])) {
+			ratio /= unitConversion(IOUtils::nodata,unitOut,unitIn);
+		}
+		return val*ratio;
+	}
+	throw IOException("Unable to perform unit conversion.", AT);
 }
 
 /**

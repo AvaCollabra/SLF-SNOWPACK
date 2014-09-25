@@ -87,7 +87,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		/*static const*/ double in_tz; //plugin specific time zones
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 		double caaml_nodata; //plugin specific no data value
-
+		
 		xmlDocPtr in_doc;
 		xmlXPathContextPtr in_xpathCtx;
 		xmlCharEncoding in_encoding;
@@ -95,6 +95,14 @@ class CaaMLIO : public SnowpackIOInterface {
 		static const xmlChar* xml_namespace;
 		static const xmlChar* xml_namespace_abrev;
 		static const std::string StationMetaData_xpath, SnowData_xpath;
+		
+		double lwc_codeToVal(char* code);
+		char* lwc_valToCode(double val);
+		double hardness_codeToVal(char* code);
+		char* hardness_valToCode(double code);
+		double* form_codeToVal(char* code);
+		char* form_valToCode(double* val);
+
 };
 
 #endif //End of CAAMLIO.h
