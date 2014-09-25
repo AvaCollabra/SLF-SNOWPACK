@@ -1434,8 +1434,16 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	}
 	// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 	if (out_t && (fixedPositions.size() || Mdata.getNumberFixedRates())) {
+		const size_t nrFixedPositions = MIN(5, fixedPositions.size());
+		if (Mdata.zv_ts.size()!=nrFixedPositions || Mdata.ts.size()!=nrFixedPositions) {
+			std::ostringstream ss;
+			ss << "Configured " << nrFixedPositions << " fixed positions but found " << Mdata.zv_ts.size() << " snow temperatures depths and ";
+			ss << Mdata.ts.size() << " snow temperatures";
+			throw IndexOutOfBoundsException(ss.str(), AT);
+		}
+
 		size_t jj = 0;
-		for (size_t ii = 0; ii < MIN(5, fixedPositions.size()); ii++)
+		for (size_t ii = 0; ii < nrFixedPositions; ii++)
 			jj += writeTemperatures(TFile, Mdata.zv_ts.at(ii), Mdata.ts.at(ii), ii, Xdata);
 		for (; jj < 10; jj++)
 			fprintf(TFile,",");
