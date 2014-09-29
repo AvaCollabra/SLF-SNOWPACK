@@ -153,12 +153,13 @@ class Snowpack {
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
-
+		
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
 		bool advective_heat;
 		double heat_begin, heat_end;
+		double temp_index_degree_day;
 }; //end class Snowpack
 
 #endif
