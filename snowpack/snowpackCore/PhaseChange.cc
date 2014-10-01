@@ -462,7 +462,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 				// Check if phase change did occur
 				// Note: the MoistLayer==true is mainly there for the Richards equation for snow, where there is always some amount of liquid water
 				// present in a layer, so we should additionally check if the phase change was significant, or the phase change involved snow melt.
-				if ( EMS[e].Te != i_Te && (iwatertransportmodel_snow != RICHARDSEQUATION || EMS[e].Te < i_Te || (MoistLayer == true && e >= Xdata.SoilNode))) {
+				if ((EMS[e].Te != i_Te && (iwatertransportmodel_snow != RICHARDSEQUATION || EMS[e].Te < i_Te || (MoistLayer == true && e >= Xdata.SoilNode)))) {
 					// Adjust nodal temperatures based on change in element temperature
 					if(e==nE-1) {
 						// The top node is our starting point and treated special:
@@ -592,6 +592,19 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 		}
 	} catch (const exception& ) {
 		throw;
+	}
+
+	// Check surface node, in case TSS is above melting point, but the element itself is below melting point and consquently, phase changes did not occur.
+	if (NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) {
+		//In case the surface temperature is above the melting point of the upper element and it consists still of ice
+		if(nE==1) {
+			NDS[nE-1].T+=(NDS[nE].T-EMS[nE-1].melting_tk);
+			NDS[nE].T=EMS[nE-1].melting_tk;
+		}
+		if(nE>1) {
+			NDS[nE-1].T+=(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[e-1].L)/(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[nE-1].L + EMS[nE-2].c[TEMPERATURE]*EMS[nE-2].Rho*EMS[nE-2].L)*(NDS[nE].T-EMS[nE-1].melting_tk);
+			NDS[nE].T=EMS[nE-1].melting_tk;
+		}
 	}
 
 	return retTopNodeT;
