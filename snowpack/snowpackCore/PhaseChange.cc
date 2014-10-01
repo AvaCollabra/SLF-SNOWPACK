@@ -330,9 +330,9 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 
 	try {
 		// In the final step compute temperature and temperature gradient, check both density and mass balance
+		//Check Nodal temperatures
+		double thresh_th_w=0.;
 		for (e = 0; e < nE; e++) {
-			//Check Nodal temperatures
-			double thresh_th_w;
 			// In soils, some water may still be liquid below freezing
 			if (EMS[e].theta[SOIL] > Constants::eps2) {
 				thresh_th_w = PhaseChange::theta_r;
@@ -372,6 +372,11 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 				// Soil element
 				cold_content_soil_out += EMS[e].c[TEMPERATURE] * EMS[e].Rho * (EMS[e].Te) * EMS[e].L;
 			}
+		}
+		if(nE>0) {
+			// Make sure the top node is consistent with the element it represents, in order for a correct calculation of the energy balance in the next time step.
+			if(EMS[nE-1].theta[WATER] > thresh_th_w) NDS[nE].T = MAX(NDS[nE].T, EMS[nE-1].melting_tk);
+			if(EMS[nE-1].theta[ICE] > 0.) NDS[nE].T = MIN(NDS[nE].T, EMS[nE-1].melting_tk);
 		}
 		if (prn_CK && (sum_Qmf > 0.)) {
 			prn_msg(__FILE__, __LINE__, "msg+", date_in, "Checking energy balance  (W/m2):");
@@ -446,6 +451,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 			while (e > 0) {
 				e--;
 				const double i_Te = EMS[e].Te;
+				const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
 				try {
 					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {
 						compSubSurfaceMelt(EMS[e], Xdata.number_of_solutes, sn_dt, ql_Rest, date_in);
@@ -463,9 +469,9 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
 					NDS[e].T += (EMS[e].Te - i_Te);
 					NDS[e+1].T += (EMS[e].Te - i_Te);
-					if(EMS[e].theta[ICE]>0.) {	// If ice is present, nodal temperature cannot exceed melting_tk
-						NDS[e].T = MIN(NDS[e].T, EMS[e].melting_tk);
-						NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].melting_tk);
+					if(EMS[e].theta[ICE] > 0. && EMS[e].theta[WATER] > cmp_theta_r) {	// If ice is present, nodal temperature cannot exceed melting_tk
+						NDS[e].T = EMS[e].melting_tk;
+						NDS[e+1].T = EMS[e].melting_tk;
 					}
 				}
 			}
@@ -476,6 +482,7 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 		if (Xdata.SubSurfaceFrze) {
 			for (e = 0; e < nE; e++) {
 				const double i_Te = EMS[e].Te;
+				const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[e].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[e].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
 				try {
 					if(!(iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) {	// For Richards Equation, phase changes in soil are taken care of in WaterTransport
 						compSubSurfaceFrze(EMS[e], Xdata.number_of_solutes, sn_dt, date_in);
@@ -488,9 +495,9 @@ void PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, 
 				if( (e < Xdata.SoilNode && iwatertransportmodel_soil!=RICHARDSEQUATION) || (e >= Xdata.SoilNode) ) {
 					NDS[e].T += (EMS[e].Te - i_Te);
 					NDS[e+1].T += (EMS[e].Te - i_Te);
-					if(EMS[e].theta[ICE]>0.) {	// If ice is present, nodal temperature cannot exceed melting_tk
-  						NDS[e].T = MIN(NDS[e].T, EMS[e].melting_tk);
-						NDS[e+1].T = MIN(NDS[e+1].T, EMS[e].melting_tk);
+					if(EMS[e].theta[ICE] > 0. && EMS[e].theta[WATER] > cmp_theta_r) {	// If ice is present, nodal temperature cannot exceed melting_tk
+  						NDS[e].T = EMS[e].melting_tk;
+						NDS[e+1].T = EMS[e].melting_tk;
 					}
 				}
 			}
