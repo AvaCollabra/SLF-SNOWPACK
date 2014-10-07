@@ -1840,7 +1840,12 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	double LNew = L_lower;               //Length of "new" element
 
 	if (merge) {
-		LNew += L_upper;
+		// Determine new element length under the condition of keeping the density of the lower element constant.
+		if(EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
+			LNew += (EdataUpper.Rho * L_upper) / EdataLower.Rho;
+		} else {
+			LNew += L_upper;
+		}
 		EdataLower.depositionDate = EdataUpper.depositionDate;
 		if (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
 			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
