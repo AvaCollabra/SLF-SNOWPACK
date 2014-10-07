@@ -595,15 +595,21 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 	}
 
 	// Check surface node, in case TSS is above melting point, but the element itself is below melting point and consquently, phase changes did not occur.
-	if (NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) {
-		//In case the surface temperature is above the melting point of the upper element and it consists still of ice
-		if(nE==1) {
-			NDS[nE-1].T+=(NDS[nE].T-EMS[nE-1].melting_tk);
-			NDS[nE].T=EMS[nE-1].melting_tk;
-		}
-		if(nE>1) {
-			NDS[nE-1].T+=(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[nE-1].L)/(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[nE-1].L + EMS[nE-2].c[TEMPERATURE]*EMS[nE-2].Rho*EMS[nE-2].L)*(NDS[nE].T-EMS[nE-1].melting_tk);
-			NDS[nE].T=EMS[nE-1].melting_tk;
+	if (nE >= 1) {	// Only check when there are elements.
+		if (NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) {
+			//In case the surface temperature is above the melting point of the upper element and it still consists of ice
+			if(nE==1) {
+				// If only 1 element is present, the bottom node is adjusted with the same amount as the upper node, so we don't alter the internal energy state of the element ...
+				NDS[nE-1].T+=(NDS[nE].T-EMS[nE-1].melting_tk);
+				// ... and the top node is set to melting conditions
+				NDS[nE].T=EMS[nE-1].melting_tk;
+			}
+			if(nE>1) {
+				// If we have more than 1 element, we adjust the nE-1 node such that internal energy is conserved between element nE-1 and nE-2 ...
+				NDS[nE-1].T+=(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[nE-1].L)/(EMS[nE-1].c[TEMPERATURE]*EMS[nE-1].Rho*EMS[nE-1].L + EMS[nE-2].c[TEMPERATURE]*EMS[nE-2].Rho*EMS[nE-2].L)*(NDS[nE].T-EMS[nE-1].melting_tk);
+				// ... and the top node is set to melting conditions
+				NDS[nE].T=EMS[nE-1].melting_tk;
+			}
 		}
 	}
 
