@@ -594,9 +594,10 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 		throw;
 	}
 
-	// Check surface node, in case TSS is above melting point, but the element itself is below melting point and consquently, phase changes did not occur.
+	// Check surface node, in case TSS is above melting point, but the element itself is below melting point and consequently, phase changes did not occur.
 	if (nE >= 1) {	// Only check when there are elements.
-		if (NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) {
+		const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+		if ((NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) || (NDS[nE].T < EMS[nE-1].freezing_tk && EMS[nE-1].theta[WATER] > cmp_theta_r)) {
 			//In case the surface temperature is above the melting point of the upper element and it still consists of ice
 			if(nE==1) {
 				// If only 1 element is present, the bottom node is adjusted with the same amount as the upper node, so we don't alter the internal energy state of the element ...
