@@ -1,16 +1,22 @@
 #building version number in variable _versionString
 
 MACRO (GETDATE TODAY)
-    IF (WIN32)
-        EXECUTE_PROCESS(COMMAND "cmd" " /C date /T" OUTPUT_VARIABLE ${TODAY})
-        string(REGEX REPLACE "(..)/(..)/(....).*" "\\3\\2\\1" ${TODAY} ${${TODAY}})
-    ELSEIF(UNIX)
-        EXECUTE_PROCESS(COMMAND "date" "+%Y-%m-%d" OUTPUT_VARIABLE ${TODAY})
-        string(REGEX REPLACE "(....)-(..)-(..).*" "\\1\\2\\3" ${TODAY} ${${TODAY}})
-    ELSE (WIN32)
-        MESSAGE(SEND_ERROR "date not implemented")
-        SET(${TODAY} 000000)
-    ENDIF (WIN32)
+	IF(CMAKE_VERSION VERSION_GREATER 2.8.11)
+		STRING(TIMESTAMP TODAY "%Y%m%d")
+	ELSE(CMAKE_VERSION VERSION_GREATER 2.8.11)
+		IF (WIN32)
+			EXECUTE_PROCESS(COMMAND "cmd" " /C date /T" OUTPUT_VARIABLE ${TODAY})
+			STRING(REGEX REPLACE "(..)/(..)/(....) .*\n" "\\3\\2\\1" ${TODAY} ${${TODAY}}) #US format
+			STRING(REGEX REPLACE "(..)-(..)-(....) .*\n" "\\3\\2\\1" ${TODAY} ${${TODAY}}) #UK format
+			STRING(REGEX REPLACE "(..)\\.(..)\\.(....) .*\n" "\\3\\2\\1" ${TODAY} ${${TODAY}}) #CH format
+		ELSEIF(UNIX)
+			EXECUTE_PROCESS(COMMAND "date" "+%Y-%m-%d" OUTPUT_VARIABLE ${TODAY})
+			string(REGEX REPLACE "(....)-(..)-(..).*" "\\1\\2\\3" ${TODAY} ${${TODAY}})
+		ELSE (WIN32)
+			MESSAGE(SEND_ERROR "date not implemented")
+			SET(${TODAY} 000000)
+		ENDIF (WIN32)
+	ENDIF(CMAKE_VERSION VERSION_GREATER 2.8.11)
 ENDMACRO (GETDATE)
 
 MACRO(BuildVersion)
