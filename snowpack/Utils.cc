@@ -302,6 +302,13 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 		Xdata.Cdata.sensible /= nr_steps;
 		Xdata.Cdata.latent /= nr_steps;
 		Xdata.Cdata.latentcorr /= nr_steps;
+		// 2Layer canopy model
+		Xdata.Cdata.CondFluxCanop /=n_steps;
+		Xdata.Cdata.CondFluxTrunks /=n_steps;
+		Xdata.Cdata.HTRUNKS /=n_steps;
+		Xdata.Cdata.LWnet_Trunks /=n_steps;
+		Xdata.Cdata.SWnet_Trunks /=n_steps;
+		Xdata.Cdata.forestfloor_alb /=n_steps;
 		// auxiliaries
 		Xdata.Cdata.canopyalb /= nr_steps;
 		Xdata.Cdata.totalalb /= nr_steps;

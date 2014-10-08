@@ -476,6 +476,13 @@ void CanopyData::reset(const bool& cumsum_mass)
 		sensible=0.0;
 		latent=0.0;
 		latentcorr=0.0;
+		// 2layer canopy model
+	        CondFluxCanop = 0.;
+       		CondFluxTrunks = 0.;
+		HTRUNKS = 0.;
+	        LWnet_Trunks = 0.;
+	        SWnet_Trunks = 0.;
+	        forestfloor_alb = 0.;
 		// auxiliaries
 		canopyalb=0.0;
 		totalalb=0.0;
@@ -642,12 +649,21 @@ void CanopyData::initializeSurfaceExchangeData()
 	sensible = 0.0;
 	latent = 0.0;
 	latentcorr = 0.0;
+	// 2layer canopy model
+        CondFluxCanop = 0.;
+        CondFluxTrunks = 0.;
+        LWnet_Trunks = 0.;
+        SWnet_Trunks = 0.;
+        forestfloor_alb = 0.;
+	HTRUNKS = 0.;
 	// mass fluxes
 	transp = 0.0;
 	intevap = 0.0;
 	interception = 0.0;
 	throughfall = 0.0;
 	snowunload = 0.0;
+	snowfac = 0.0; // snowfall above canopy
+        rainfac = 0.0; // rainfall above canopy
 	// auxiliaries
 	canopyalb = 0.0;
 	totalalb = 0.0;
@@ -1715,16 +1731,33 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// INITIALIZE CANOPY DATA
 	Cdata.height = (SSdata.Canopy_Height > 0.0)? SSdata.Canopy_Height : 0.;
+        Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
+        Cdata.temp = 273.15;              // temperature (K)
+        Cdata.Ttrunk = 273.15;              // trunk temperature (K)
+        Cdata.HTRUNKS = 0.;
+        Cdata.SWnet_Trunks = 0.;
+        Cdata.LWnet_Trunks = 0.;
+        Cdata.CondFluxCanop = 0.;
+        Cdata.CondFluxTrunks = 0.;
+        Cdata.forestfloor_alb = 0.;
+        Cdata.snowfac=0.;
+        Cdata.rainfac=0.;
+        Cdata.liquidfraction=0.;
+        Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+                Cdata.wetfraction = 0.0;
+		Cdata.intcapacity = 0.0;
+		Cdata.ra = 0.0;
+                Cdata.rc = 0.0;
+                Cdata.rs = 0.0;
+                Cdata.rstransp = 0.0;
+		Cdata.sigftrunk = 0.;
+		Cdata.HMLeaves=3.*4190; 
+		Cdata.HMTrunks=30.*4190;
 	if (useCanopyModel) {
-		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
-		Cdata.temp = 273.15;	          // temperature (K)
-		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
-		Cdata.wetfraction = 0.0;
-		Cdata.lai = SSdata.Canopy_LAI;
-
-		Cdata.sigf = 1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // radiation transmissivity (-)
-		Cdata.ec = 1.0;               //longwave emissivity
-
+		Cdata.BasalArea = SSdata.Canopy_BasalArea;
+		Cdata.sigf = 1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // 1-radiation transmissivity (-)
+                Cdata.ec = 1.0;               //longwave emissivity
+                Cdata.lai = SSdata.Canopy_LAI;
 		Cdata.z0m = Cdata.height*0.1;
 		Cdata.z0h = Cdata.z0m*0.1;
 		Cdata.zdispl = Cdata.height*0.66;
@@ -1733,11 +1766,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Invalid Canopy Throughfall (%lf) given in sno file! It should be between 0 and 1.", SSdata.Canopy_Direct_Throughfall);
 			throw IOException("Snowpack Initialization failed", AT);
 		}
-		Cdata.ra = 0.0;
-		Cdata.rc = 0.0;
-		Cdata.rs = 0.0;
-		Cdata.rstransp = 0.0;
 	} else {
+                Cdata.BasalArea = 0.0;
 		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
 		Cdata.temp = 273.15;	          // temperature (K)
 		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
@@ -2149,7 +2179,8 @@ CurrentMeteo::CurrentMeteo()
           hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
-          numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
+          numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates(), hnws(0.),hnwl(0.)
+// hnws and hnwl added for the SnowMIP variant with mixed precip
 {}
 
 
@@ -2465,6 +2496,7 @@ std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data)
 	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+        os.write(reinterpret_cast<const char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
@@ -2491,6 +2523,7 @@ std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data)
 	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	is.read(reinterpret_cast<char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+        is.read(reinterpret_cast<char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	is.read(reinterpret_cast<char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
@@ -2517,6 +2550,7 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 	os << "BareSoil_z0:                " << BareSoil_z0 << "\n";
 	os << "Canopy_Height:              " << Canopy_Height << "\n";
 	os << "Canopy_LAI:                 " << Canopy_LAI << "\n";
+        os << "Canopy_BasalArea:           " << Canopy_BasalArea << "\n";
 	os << "Canopy_Direct_Throughfall:  " << Canopy_Direct_Throughfall << "\n";
 	os << "WindScalingFactor:          " << WindScalingFactor << "\n";
 	os << "ErosionLevel:               " << ErosionLevel << "\n";

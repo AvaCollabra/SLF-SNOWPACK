@@ -232,7 +232,13 @@ void SnowpackConfig::setDefaults()
 		if (max_number_meas_temperatures.empty()) addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, IOUtils::nothrow);
 		if (min_depth_subsurf.empty()) addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
-
+	} else if (variant == "2L_CANOPY") {
+		string Twolayercanopy; getValue("TWO_LAYER_CANOPY", "Snowpack", Twolayercanopy, IOUtils::nothrow);	
+		if (Twolayercanopy.empty()) addKey("TWO_LAYER_CANOPY", "Snowpack", "true");
+                string CanopyHeatMass; getValue("CANOPY_HEAT_MASS", "Snowpack", CanopyHeatMass, IOUtils::nothrow);
+                if (CanopyHeatMass.empty()) addKey("CANOPY_HEAT_MASS", "Snowpack", "true");
+		string canopytransmission; getValue("CANOPY_TRANSMISSION", "Snowpack", canopytransmission, IOUtils::nothrow);
+                if (canopytransmission.empty()) addKey("CANOPY_TRANSMISSION", "Snowpack", "true");
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
 	}
