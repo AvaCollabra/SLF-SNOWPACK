@@ -87,6 +87,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATER_LAYER"] = "false";
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
+	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";	// Only for use with RE.
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 	advancedConfig["ADVECTIVE_HEAT"] = "0.0";
 	advancedConfig["HEAT_BEGIN"] = "0.0";
@@ -173,6 +174,7 @@ void SnowpackConfig::setDefaults()
 	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, IOUtils::nothrow);
 	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, IOUtils::nothrow);
 	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, IOUtils::nothrow);
+	string lb_cond_waterflux; getValue("LB_COND_WATERFLUX", "SnowpackAdvanced", lb_cond_waterflux, IOUtils::nothrow);
 
 	if ((variant.empty()) || (variant == "DEFAULT")) {
 		// Use default settings
@@ -289,4 +291,9 @@ void SnowpackConfig::setDefaults()
 		ss << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}
+
+	/**
+	 * @brief Default lower boundary condition for Richards equation solver \n
+	 */
+	if (watertransportmodel_soil == "RICHARDSEQUATION" && lb_cond_waterflux.empty()) addKey("LB_COND_WATERFLUX", "SnowpackAdvanced", "FREEDRAINAGE");
 }

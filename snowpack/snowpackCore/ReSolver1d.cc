@@ -51,7 +51,7 @@ using namespace mio;
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE),
              sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -86,6 +86,21 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
 		iwatertransportmodel_soil=NIED;
 	} else if (watertransportmodel_soil=="RICHARDSEQUATION") {
 		iwatertransportmodel_soil=RICHARDSEQUATION;
+	}
+
+	//Set lower boundary condition
+	std::string tmp_lb_cond_waterflux;
+	cfg.getValue("LB_COND_WATERFLUX", "SnowpackAdvanced", tmp_lb_cond_waterflux);
+	if (tmp_lb_cond_waterflux=="DIRICHLET") {
+		BottomBC=DIRICHLET;
+	} else if (tmp_lb_cond_waterflux=="WATERTABLE") {
+		BottomBC=WATERTABLE;
+	} else if (tmp_lb_cond_waterflux=="FREEDRAINAGE") {
+		BottomBC=FREEDRAINAGE;
+	} else if (tmp_lb_cond_waterflux=="GRAVITATIONALDRAINAGE") {
+		BottomBC=GRAVITATIONALDRAINAGE;
+	} else if (tmp_lb_cond_waterflux=="SEEPAGE") {
+		BottomBC=SEEPAGEBOUNDARY;
 	}
 }
 
@@ -643,7 +658,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const bool LIMITEDFLUXINFILTRATION_soil=true;
 		const bool LIMITEDFLUXINFILTRATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
-	const BoundaryConditions BottomBC = DIRICHLET;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2010_ADAPTED;//(Recommended: YAMAGUCHI2010_ADAPTED) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
@@ -1329,21 +1343,22 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		totalsourcetermflux+=s[i]*dz[i];
 	}
 
-	//Initialize upper boundary in case of Dirichlet: saturated
+
+	//Initialize upper boundary in case of Dirichlet
 	if(TopBC==DIRICHLET) {
 		aTopBC=DIRICHLET;
-		htop=0.;
-		h_n[uppernode]=htop;
-
-		wateroverflow[uppernode]+=(theta_n[uppernode]);	//First we remove all water from the lowest element
-		theta_n[uppernode]=fromHtoTHETAforICE(h_n[uppernode], theta_r[uppernode], theta_s[uppernode], alpha[uppernode], m[uppernode], n[uppernode], Sc[uppernode], h_e[uppernode], theta_i_n[uppernode]);
-		wateroverflow[uppernode]-=(theta_n[uppernode]);	//Then we add the saturated boundary water content from the lowest element.
+		htop=h_n[uppernode];
 	}
 
-	//Initialize lower boundary in case of Dirichlet: saturated
+	//Initialize lower boundary in case of Dirichlet
 	if(BottomBC==DIRICHLET) {
+		hbottom=h_n[lowernode];
+	}
+
+	//Initialize lower boundary in case of WATERTABLE: saturated
+	if(BottomBC==WATERTABLE) {
 		aBottomBC=DIRICHLET;
-		hbottom=0.;
+		hbottom=h_e[lowernode];
 		h_n[lowernode]=hbottom;
 
 		wateroverflow[lowernode]+=(theta_n[lowernode]);	//First we remove all water from the lowest element
@@ -1586,6 +1601,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						TopFluxRate=MIN(0., flux_compare);
 					}
 				}
+			} else if (TopBC==WATERTABLE) {
+				printf("ERROR in ReSolver1d.cc: WATERTABLE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				throw;
 			} else if (TopBC==FREEDRAINAGE) {
 				printf("ERROR in ReSolver1d.cc: FREEDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
 				throw;
@@ -1600,6 +1618,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			if (BottomBC==DIRICHLET) {
 				aBottomBC=DIRICHLET;		//Set Dirichlet BC.
+				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
+				theta_np1_m[lowernode]=theta_n[lowernode];
+			} else if (BottomBC==WATERTABLE) {
+				aBottomBC=DIRICHLET;		//Water table is a Dirichlet BC.
 				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
 				theta_np1_m[lowernode]=theta_n[lowernode];
 			} else if (BottomBC==NEUMANN) {
