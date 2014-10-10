@@ -809,6 +809,55 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	return is;
 }
 
+ElementData& ElementData::operator=(const ElementData& source) {
+	if(this != &source) {
+		depositionDate = source.depositionDate;
+		L0 = source.L0;
+		L = source.L;
+		Te = source.Te;
+		gradT = source.gradT;
+		melting_tk = source.melting_tk;
+		freezing_tk = source.freezing_tk;
+		theta = source.theta;
+		conc = source.conc;
+		k = source.k;
+		c = source.c;
+		soil = source.soil;
+		Rho = source.Rho;
+		M = source.M;
+		sw_abs = source.sw_abs;
+		rg = source.rg;
+		dd = source.dd;
+		sp = source.sp;
+		ogs = source.ogs;
+		rb = source.rb;
+		N3 = source.N3;
+		mk = source.mk;
+		type = source.type;
+		metamo = source.metamo;
+		dth_w = source.dth_w;
+		res_wat_cont = source.res_wat_cont;
+		Qmf = source.Qmf;
+		QIntmf = source.QIntmf;
+		dE = source.dE;
+		E = source.E;
+		Ee = source.Ee;
+		Ev = source.Ev;
+		EDot = source.EDot;
+		EvDot = source.EvDot;
+		S = source.S;
+		C = source.C;
+		CDot = source.CDot;
+		ps2rb = source.ps2rb;
+		s_strength = source.s_strength;
+		hard = source.hard;
+		S_dr = source.S_dr;
+		theta_r = source.theta_r;
+		dhf = source.dhf;
+	}
+	return *this;
+}
+
 /**
  * @brief Check volumetric content
  * @version 11.01
@@ -1267,6 +1316,24 @@ const std::string NodeData::toString() const
 	return os.str();
 }
 
+NodeData& NodeData::operator=(const NodeData& source) {
+	if(this != &source) {
+		z = source.z;
+		u = source.u;
+		f = source.f;
+		udot = source.udot;
+		T = source.T;
+		S_n = source.S_n;
+		S_s = source.S_s;
+		ssi = source.ssi;
+		hoar = source.hoar;
+		dhf = source.dhf;
+		S_dhf = source.S_dhf;
+		Sigdhf = source.Sigdhf;
+	}
+	return *this;
+}
+
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
 	meta(), cos_sl(1.), sector(0), Cdata(), pAlbedo(0.), Albedo(0.),
 	SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), Ground(0.),
@@ -1509,7 +1576,7 @@ bool SnowStation::hasSoilLayers() const
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
  */
-void SnowStation::combineElements(const size_t& i_number_top_elements)
+void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements)
 {
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
@@ -1517,7 +1584,7 @@ void SnowStation::combineElements(const size_t& i_number_top_elements)
 
 	size_t nRemove=0;       // Number of elements to be removed
 	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
-		if (combineCondition(Edata[eLower], Edata[eUpper])) {
+		if (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements)) {
 			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
 			nRemove++;
 			Edata[eUpper].Rho = Constants::undefined;
@@ -1792,6 +1859,18 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 }
 
 /**
+ * @brief Determine flexible maximum element length for combining two elements
+ * - Function required for REDUCE_N_ELEMENTS function for "aggressive" combining for layers deeper in the
+ *   snowpack, to reduce the number of elements and thus the computational load. 
+ * @param depth Distance of the element from the snow surface
+ * @return Maximum element length.
+ */
+double SnowStation::flexibleMaxElemLength(const double& depth)
+{
+	return double(int(int(depth * 100.) / 10) + 1) * comb_thresh_l;
+}
+
+/**
  * @brief Boolean routine to check whether two snow elements can be combined
  * - \b no \b action will be taken if one of the two elements is
  *      - a soil element
@@ -1804,11 +1883,21 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  *
  * @param Edata0 Lower element
  * @param Edata1 Upper element
+ * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack, to reduce the number of elements and thus the computational load.
  * @return true if the two elements should be combined, false otherwise
  */
-bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1)
+bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements)
 {
-	if ( (Edata0.L > comb_thresh_l) || (Edata1.L > comb_thresh_l) )
+	// Default max_elem_l
+	double max_elem_l = comb_thresh_l;
+
+	// When aggressive combining is activated, override max_elem_l when necessary
+	if (reduce_n_elements == true) {
+		max_elem_l = flexibleMaxElemLength(depth);
+	}
+
+
+	if ( (Edata0.L > max_elem_l) || (Edata1.L > max_elem_l) )
 		return false;
 
 	if ( Edata0.mk%100 != Edata1.mk%100 )
@@ -1843,6 +1932,48 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
 		return false;
 
 	return true;
+}
+
+/**
+ * @brief Split elements when they are near the top of the snowpack, when REDUCE_N_ELEMENTS is used.
+ * - This function split elements when they are getting closer to the top of the snowpack. This is required
+ *   when using the "aggressive" merging option (REDUCE_N_ELEMENTS). When snow melt brings elements back to the
+ *   snow surface, smaller layer spacing is required to accurately describe temperature and moisture gradients.
+ */
+void SnowStation::splitElements()
+{
+	//Return when no snow present
+	if (nElems == SoilNode) return;
+
+	for (size_t e = SoilNode; e < nElems; e++) {
+		double max_elem_l = comb_thresh_l;
+		const double depth = cH - Ndata[e].z;
+		max_elem_l = flexibleMaxElemLength(depth);
+		if(0.5*(Edata[e].L) > max_elem_l) {
+			resize(nElems+1);
+			if(e!=nElems-1) { // If it is not the top node that needs splitting ...
+				// then shift all elements and nodes above upward
+				for(size_t ee = nElems-1; ee >= e+2; ee--) {
+					Edata[ee]=Edata[ee-1];
+					Ndata[ee+1]=Ndata[ee];
+					Ndata[ee]=Ndata[ee-1];
+				}
+			}
+			// Fill info of new element
+			Edata[e+1]=Edata[e];
+			// Half the element
+			Edata[e].L*=0.5;
+			Edata[e].L0*=0.5;
+			Edata[e+1].L*=0.5;
+			Edata[e+1].L0*=0.5;
+			Edata[e].M*=0.5;
+			Edata[e+1].M*=0.5;
+			// Fill info of new node
+			Ndata[e+2]=Ndata[e+1];
+			// Position the new node correctly in the domain
+			Ndata[e+1].z=Ndata[e].z+Edata[e].L;
+		}
+	}
 }
 
 /**

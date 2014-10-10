@@ -275,6 +275,8 @@ class ElementData {
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const ElementData& data);
 		friend std::iostream& operator>>(std::iostream& is, ElementData& data);
+		ElementData& operator=(const ElementData&); ///<Assignement operator
+
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element thickness (m)
@@ -330,6 +332,7 @@ class NodeData {
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const NodeData& data);
 		friend std::iostream& operator>>(std::iostream& is, NodeData& data);
+		NodeData& operator=(const NodeData&); ///<Assignement operator
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -465,9 +468,10 @@ class SnowStation {
 		void resize(const size_t& number_of_elements);
 
 		void reduceNumberOfElements(const size_t& rnE);
-		void combineElements(const size_t& number_top_elements);
-		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
+		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements);
+		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
+		void splitElements();
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
@@ -543,6 +547,7 @@ class SnowStation {
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
+		static double flexibleMaxElemLength(const double& depth); ///< When using REDUCE_N_ELEMENTS, this function determines the max element length, depending on depth inside the snowpack.
 };
 
 /**
