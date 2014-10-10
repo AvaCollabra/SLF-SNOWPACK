@@ -1867,7 +1867,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  */
 double SnowStation::flexibleMaxElemLength(const double& depth)
 {
-	return double(int(int(depth * 100.) / 10) + 1) * comb_thresh_l;
+	const double upper_limit_length=1.0;
+	return MIN(double(int(int(depth * 100.) / 10) + 1) * comb_thresh_l, upper_limit_length);
 }
 
 /**
@@ -1970,8 +1971,12 @@ void SnowStation::splitElements()
 			Edata[e+1].M*=0.5;
 			// Fill info of new node
 			Ndata[e+2]=Ndata[e+1];
+			Ndata[e+1].hoar=0.;
+			Ndata[e+1].T=Edata[e].Te;
 			// Position the new node correctly in the domain
-			Ndata[e+1].z=Ndata[e].z+Edata[e].L;
+			Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
+			Ndata[e+2].u*=0.5;
+			Ndata[e+1].u*=0.5;
 		}
 	}
 }
