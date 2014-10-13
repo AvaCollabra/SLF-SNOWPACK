@@ -275,8 +275,6 @@ class ElementData {
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const ElementData& data);
 		friend std::iostream& operator>>(std::iostream& is, ElementData& data);
-		ElementData& operator=(const ElementData&); ///<Assignement operator
-
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element thickness (m)
@@ -332,7 +330,6 @@ class NodeData {
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const NodeData& data);
 		friend std::iostream& operator>>(std::iostream& is, NodeData& data);
-		NodeData& operator=(const NodeData&); ///<Assignement operator
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m

@@ -809,55 +809,6 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	return is;
 }
 
-ElementData& ElementData::operator=(const ElementData& source) {
-	if(this != &source) {
-		depositionDate = source.depositionDate;
-		L0 = source.L0;
-		L = source.L;
-		Te = source.Te;
-		gradT = source.gradT;
-		melting_tk = source.melting_tk;
-		freezing_tk = source.freezing_tk;
-		theta = source.theta;
-		conc = source.conc;
-		k = source.k;
-		c = source.c;
-		soil = source.soil;
-		Rho = source.Rho;
-		M = source.M;
-		sw_abs = source.sw_abs;
-		rg = source.rg;
-		dd = source.dd;
-		sp = source.sp;
-		ogs = source.ogs;
-		rb = source.rb;
-		N3 = source.N3;
-		mk = source.mk;
-		type = source.type;
-		metamo = source.metamo;
-		dth_w = source.dth_w;
-		res_wat_cont = source.res_wat_cont;
-		Qmf = source.Qmf;
-		QIntmf = source.QIntmf;
-		dE = source.dE;
-		E = source.E;
-		Ee = source.Ee;
-		Ev = source.Ev;
-		EDot = source.EDot;
-		EvDot = source.EvDot;
-		S = source.S;
-		C = source.C;
-		CDot = source.CDot;
-		ps2rb = source.ps2rb;
-		s_strength = source.s_strength;
-		hard = source.hard;
-		S_dr = source.S_dr;
-		theta_r = source.theta_r;
-		dhf = source.dhf;
-	}
-	return *this;
-}
-
 /**
  * @brief Check volumetric content
  * @version 11.01
@@ -1314,24 +1265,6 @@ const std::string NodeData::toString() const
 	os << "\tStability: S_n=" << S_n << " S_s=" << S_s << " ssi=" << ssi << "\n";
 	os << "</NodeData>\n";
 	return os.str();
-}
-
-NodeData& NodeData::operator=(const NodeData& source) {
-	if(this != &source) {
-		z = source.z;
-		u = source.u;
-		f = source.f;
-		udot = source.udot;
-		T = source.T;
-		S_n = source.S_n;
-		S_s = source.S_s;
-		ssi = source.ssi;
-		hoar = source.hoar;
-		dhf = source.dhf;
-		S_dhf = source.S_dhf;
-		Sigdhf = source.Sigdhf;
-	}
-	return *this;
 }
 
 SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
