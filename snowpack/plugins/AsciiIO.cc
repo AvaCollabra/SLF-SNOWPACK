@@ -264,10 +264,6 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		fclose(fin);
 		throw InvalidFormatException("Can not read CanopyLeafAreaIndex in file "+snofilename, AT);
 	}
-        if (fscanf(fin, "\nCanopyBasalArea=%lf",&SSdata.Canopy_BasalArea) != 1) {
-                fclose(fin);
-                throw InvalidFormatException("Can not read CanopyBasalArea in file "+snofilename, AT);
-        }
 	if (fscanf(fin, "\nCanopyDirectThroughfall=%lf",&SSdata.Canopy_Direct_Throughfall) != 1) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read CanopyDirectThroughfall in file "+snofilename, AT);
@@ -1529,8 +1525,6 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		writeTimeSeriesAddCalibration(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
 	} else if (variant == "ANTARCTICA") {
 		writeTimeSeriesAddAntarctica(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
-	} else if (variant == "2L_CANOPY" && out_canopy && useCanopyModel) {
-                Canopy::cn_writeTimeSeriesAdd2LCanopy(TFile, &Xdata.Cdata);
 	} else {
 		writeTimeSeriesAddDefault(Xdata, Sdata, Mdata, crust, dhs_corr, mass_corr, nCalcSteps, TFile);
 	}
@@ -1777,8 +1771,8 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			if (maxNumberMeasTemperatures == 5) {
 				fprintf(fout, ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5");
 				if (useCanopyModel && out_canopy) {
-				fprintf(fout, ",Interception storage,Canopy surface temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation to canopy,Sensible heat flux to canopy,Latent heat flux to canopy, Biomass heat storage flux in canopy, Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload, Reflected longwave radiations above canopy, Incoming longwave radiation above canopy, Reflected shortwave radiation above canopy, Incoming shortwave radiation above canopy");
-				fprintf(fout, ",Total albedo of the surface (canopy + ground),Net radiation to the surface,surface (ground + canopy) radiative temperature, Forestfloor albedo, Snowfall rate above canopy, Rainfall rate above canopy,Evapotranspiration of the total surface (ground + canopy), empty field");
+					fprintf(fout, ",Interception storage,Canopy surface temperature,Canopy albedo,Wet fraction,Interception capacity,Net shortwave radiation absorbed by canopy,Net longwave radiation absorbed by canopy,Net radiation to canopy,Sensible heat flux to canopy,Latent heat flux to canopy,Transpiration of the canopy,Evaporation and sublimation of interception (liquid and frozen),Interception rate,Throughfall,Snow unload,Sensible heat flux to the surface (ground+canopy),Latent heat flux to the surface (ground+canopy),Longwave radiation up above canopy,Longwave radiation down above canopy");
+					fprintf(fout, ",Net longwave radiation to the surface (ground + canopy),Shortwave radiation up above canopy,Shortwave radiation down above canopy,Net shortwave radiation to the surface (ground + canopy),Total land surface albedo,Total net radiation to the surface (ground + canopy),Surface radiative temperature (ground + canopy),Precipitation Above Canopy,Evapotranspiration of the total surface (ground + canopy)");
 				} else {
 					fprintf(fout,",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-");
 				}
@@ -1836,8 +1830,6 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 				if (maxNumberMeasTemperatures == 5)
 					fprintf(fout, ",Measured snow depth HS");
 				fprintf(fout, "Internal energy change,Surface input (sum fluxes),rho_hn(measured),rho_hn(Zwart),rho_hn(Lehning),rho_hn(Bellaire),rho_hn(PAHAUT)");
-			} else if (variant == "2L_CANOPY") {
-			 fprintf(fout, ",Trunk temperature, Trunk biomass heat storage flux, net LW radiations to Trunk layer, net SW radiations to Trunk layer, sensible heat flux to trunk layer");
 			} else {
 				fprintf(fout, ",Soil runoff,Internal energy change,Surface input (sum fluxes),Measured new snow density,Modeled new snow density,Crust thickness (S-slope)");
 				if (!research_mode)
@@ -1901,9 +1893,6 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 				if (maxNumberMeasTemperatures == 5)
 					fprintf(fout, ",cm");
 				fprintf(fout, ",kJ m-2,kJ m-2,kg m-3,kg m-3,kg m-3,kg m-3,kg m-3");
-			} else if (variant == "2L_CANOPY") {
-                                fprintf(fout, ",degC,W m-2,W m-2,W m-2,W m-2,,,");
-
 			} else {
 				fprintf(fout, ",kg m-2,kJ m-2,kJ m-2,kg m-3,kg m-3,cm");
 				if (!research_mode)

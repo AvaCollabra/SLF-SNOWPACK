@@ -306,13 +306,15 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 }
 
 void editMeteoData(mio::MeteoData& md, const string& variant)
-{
-	//HACK: these should be handled by DataGenerators
-	// Since we cannot deal with precipitation nodata, we set it to zero (HACK)
-	if (md(MeteoData::HNW) == mio::IOUtils::nodata && md("HNW_L") == mio::IOUtils::nodata && md("HNW_S") == mio::IOUtils::nodata ){
-		md(MeteoData::HNW) = 0.0;
-		md("HNW_L") = 0.0;
-		md("HNW_S") = 0.0;} // SnowMIP version
+{ //HACK: these should be handled by DataGenerators
+	if (!md.param_exists("HNW_L")) {
+		md.addParameter("HNW_L");
+		md("HNW_L") = IOUtils::nodata;
+	}
+	if (!md.param_exists("HNW_S")) {
+		md.addParameter("HNW_S");
+		md("HNW_S") = IOUtils::nodata;
+	}
 
 	if (md(MeteoData::VW) == mio::IOUtils::nodata)
 		md(MeteoData::VW) = 1.0; // if no wind measurement exists assume 1 m/s; ori: 3 m/s
@@ -355,7 +357,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		miss_rad=true;
 	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_hs=true;
-	if (!enforce_snow_height && ((md(MeteoData::HNW) == mio::IOUtils::nodata)|| (md.param_exists("HNW_S") && (md("HNW_S") == mio::IOUtils::nodata))))
+	if (!enforce_snow_height && ((md(MeteoData::HNW) == mio::IOUtils::nodata) && (md("HNW_L") == mio::IOUtils::nodata) && (md("HNW_S") == mio::IOUtils::nodata)) )
 		miss_precip=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -410,16 +412,11 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	else
 		Mdata.tss_a24h = Constants::undefined;
 	Mdata.ts0 = md(MeteoData::TSG);
-	//modifs snowMIP version
-	if (md.param_exists("HNW_L") && md.param_exists("HNW_S") && (md("HNW_L") != mio::IOUtils::nodata) && (md("HNW_S") != mio::IOUtils::nodata)){
-	Mdata.hnws=md("HNW_S");
-	Mdata.hnwl=md("HNW_L");
-	Mdata.hnw =mio::IOUtils::nodata;}
-	else{
-	Mdata.hnws=mio::IOUtils::nodata;
-        Mdata.hnwl=mio::IOUtils::nodata;
-	Mdata.hnw = md(MeteoData::HNW);}
-	// --
+
+	Mdata.hnws = md("HNW_S");
+	Mdata.hnwl = md("HNW_L");
+	Mdata.hnw = md(MeteoData::HNW);
+
 	Mdata.hs = md(MeteoData::HS);
 	if (md.param_exists("HS_A3H") && (md("HS_A3H") != mio::IOUtils::nodata))
 		Mdata.hs_a3h = md("HS_A3H");
@@ -553,12 +550,13 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			cfg.addKey("SW_MODE", "Snowpack", "INCOMING"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
 		// modifs SnowMIP version
-		if (Mdata.hnw != mio::IOUtils::nodata){	
+		if (Mdata.hnw != mio::IOUtils::nodata) {
 			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
 		} else {
 			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnws, Mdata.hs);
-			Mdata.hnwl *= cos(currentSector.meta.getSlopeAngle()*mio::Cst::to_rad);}
-		// --
+			double dummy_hs = 0.;
+			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnwl, dummy_hs);
+		}
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
@@ -566,8 +564,11 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	if (isMainStation) {
 		// Update precipitation memory of main station
-		if (Mdata.hnw != mio::IOUtils::nodata){precip += Mdata.hnw;} 
-		else {precip += Mdata.hnws + Mdata.hnwl;}
+		if (Mdata.hnw != mio::IOUtils::nodata) {
+			precip += Mdata.hnw;
+		} else {
+			precip += Mdata.hnws + Mdata.hnwl;
+		}
 
 		if (Mdata.hs != mio::IOUtils::nodata) {
 			currentSector.mH = Mdata.hs + currentSector.Ground;

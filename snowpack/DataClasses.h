@@ -120,9 +120,8 @@ class CurrentMeteo {
 		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
 		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
 		double hnw;      ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
-// For SnowMIP version : hnws, hnwl
-		double hnws;
-		double hnwl;
+		double hnws;     ///< Solid precipitation (for SnowMIP)
+		double hnwl;     ///< Liquid precipitation (for SnowMIP)
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
@@ -236,7 +235,7 @@ class SN_SNOWSOIL_DATA {
 		double BareSoil_z0;               ///< Bare soil roughness in m, default 0.02 m
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
-                double Canopy_BasalArea;          ///< Canopy Basal Area in m2 m-2
+		double Canopy_BasalArea;          ///< Canopy Basal Area in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
 		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
 		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
@@ -368,12 +367,10 @@ class CanopyData {
 		     totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.),
 		     iswrbc(0.), ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.),
 		     sensible(0.), latent(0.), latentcorr(0.), transp(0.), intevap(0.),
-		     interception(0.), throughfall(0.), snowunload(0.), 
-		     // modifs for SnowMIP version
+		     interception(0.), throughfall(0.), snowunload(0.),
 		     snowfac(0.), rainfac(0.),liquidfraction(0.),
-		     // modifs for Heat Mass, 2layercanopy and forestfloor_alb
 		     sigftrunk(0), Ttrunk(0.), CondFluxCanop(0.), CondFluxTrunks(0.),
-		     LWnet_Trunks(0.), SWnet_Trunks(0.), HTRUNKS(0.), 
+		     LWnet_Trunks(0.), SWnet_Trunks(0.), HTRUNKS(0.),
 		     forestfloor_alb(0.), BasalArea(0), HMLeaves(0.), HMTrunks(0.) {}
 
 		void reset(const bool& cumsum_mass);
@@ -427,23 +424,20 @@ class CanopyData {
 		double interception;
 		double throughfall;
 		double snowunload;
-		double snowfac; // snowfall above canopy
-		double rainfac; // rainfall above canopy
+		double snowfac;     ///< snowfall above canopy
+		double rainfac;     ///< rainfall above canopy
 		double liquidfraction;
-                // modifs for Heat Mass, 2layercanopy and forestfloor_alb
-		double sigftrunk; 	///< radiation interception cross section for trunk layer ()
-                double Ttrunk;		///< trunk temperature (K)
-                double CondFluxCanop;	///< biomass heat storage flux towards Canopy (if 1L)
-					///< 	towards Leaves (if 2L). (>0 towards canopy)
-                double CondFluxTrunks;	///< biomass heat storage flux towards Trunks (if 2L)
-                double LWnet_Trunks;	///< net LW to trunks (>0 towards trunks)
-                double SWnet_Trunks;	///< net SW to trunks (>0 towards trunks)
-                double HTRUNKS;		///< sensible heat flux from trunks 
-					///<	(>0 if heat lost from trunk)
-                double forestfloor_alb;	///< albedo of the forest floor
-                double BasalArea;	///< basal area of trees on the stand
-		double HMLeaves;	///< Leaves heat mass (J K-1 /m2 ground surface)
-		double HMTrunks;	///< Trunks heat mass (J K-1 /m2 ground surface)
+		double sigftrunk;   ///< radiation interception cross section for trunk layer ()
+		double Ttrunk;      ///< trunk temperature (K)
+		double CondFluxCanop; ///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)
+		double CondFluxTrunks; ///< biomass heat storage flux towards Trunks (if 2L)
+		double LWnet_Trunks; ///< net LW to trunks (>0 towards trunks)
+		double SWnet_Trunks; ///< net SW to trunks (>0 towards trunks)
+		double HTRUNKS;      ///< sensible heat flux from trunks (>0 if heat lost from trunk)
+		double forestfloor_alb; ///< albedo of the forest floor
+		double BasalArea;    ///< basal area of trees on the stand
+		double HMLeaves;     ///< Leaves heat mass (J K-1 /m2 ground surface)
+		double HMTrunks;     ///< Trunks heat mass (J K-1 /m2 ground surface)
 
 };
 

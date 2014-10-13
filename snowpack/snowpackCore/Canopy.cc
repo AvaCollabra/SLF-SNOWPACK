@@ -26,10 +26,10 @@
  * in a canopy layer above thesnow or soil surface.
 
  * - 2014-09-29 2layer canopy model by I. Gouttevin et al, plus few additional features listed below.
-                (0) CRUCIAL NOTE: 
-			- an additionnal parameter is now required in the input/station.snoold file : CanopyBasalArea (m2/m2), 
+                (0) CRUCIAL NOTE:
+			- an additionnal parameter is now required in the input/station.snoold file : CanopyBasalArea (m2/m2),
                           to be placed after CanopyLeafAreaIndex.
-			- the 2layer model with heat mass and corresponding canopy outputs is activated with the key: 
+			- the 2layer model with heat mass and corresponding canopy outputs is activated with the key:
 			  variant = 2L_CANOPY in [SnowpackAdvanced]. If you wish to have only one of these features you can
 			  play with the keys TWO_LAYER_CANOPY and CANOPY_HEAT_MASS in [Snowpack], which will erase the "true"
 			  default values of 2L_CANOPY.
@@ -43,37 +43,37 @@
 				temperatures (TC and Ttrunk) that affect LW radiations to the ground.
 				Optionally, trunks can get direct solar insolation (important for sparse canopies), look for
 				CanClosDirTrunks in the code
-			- further details: Gouttevin et al. (2014): A two-layer canopy with thermal inertia for an improved modelling 
+			- further details: Gouttevin et al. (2014): A two-layer canopy with thermal inertia for an improved modelling
 				of the sub-canopy snowpack energy-balance (in prep).
 
 		(ii) canopy heat mass:
 			- key: CANOPY_HEAT_MASS = true [Snowpack]
-			- logical in the code: CanopyHeatMass 
+			- logical in the code: CanopyHeatMass
 			- content: the canopy gets an heat mass (whole, or separate between trunks and leaves if Twolayercanopy) that
 				adds a biomass heat flux term in the canopy energy balance.
-			- NOTE: an additionnal parameter is now required in the input/station.snoold file : CanopyBasalArea (m2/m2), 
+			- NOTE: an additionnal parameter is now required in the input/station.snoold file : CanopyBasalArea (m2/m2),
 				to be placed after CanopyLeafAreaIndex. Example value for closed canopies like Alptal : 0.004.
-                        - further details: Gouttevin et al. (2014): A two-layer canopy with thermal inertia for an improved modelling 
+                        - further details: Gouttevin et al. (2014): A two-layer canopy with thermal inertia for an improved modelling
                                 of the sub-canopy snowpack energy-balance (in prep).
 
 		(iii) outputs of the Canopy model:
 			Some cleaning was done to suppressed outputs that can be easily derived from other outputs.
-			There is now space for outputs specific to the 2layer model, which are written if variant = 2L_CANOPY in 
+			There is now space for outputs specific to the 2layer model, which are written if variant = 2L_CANOPY in
 			[SnowpackAdvanced] (Canopy:: cn_writeTimeSeriesAdd2LCanopy).
 
 		(iv) forest-floor albedo:
 			- key: FORESTFLOOR_ALB = true [Snowpack]
-			- logical in the code: forestfloor_alb  
+			- logical in the code: forestfloor_alb
 			- content: Litter falling on the forest floor can reduce albedo. This effect is currently parameterized
 				through an exponential decay of the albedo to a value of 0.3 with a time-constant of 7 days,
 				based on parameterizations commonly used in Land-Surface models.
-				There is room for improvement !  				   
-		
+				There is room for improvement !
+
 		(v) SnowMIP version:
-			For the SnowMIP exepriment (Rutter et al., 2009) snowpack was modified (by T. Jonas ?) to take liquid 
+			For the SnowMIP exepriment (Rutter et al., 2009) snowpack was modified (by T. Jonas ?) to take liquid
 			and solid precipitation inputs. This is now possible in the default snowpack as long as HNW_L and HNW_S
-			are provided in the meteorological input file (MyStation.met). PSUM/HNW can be provided additionally but 
-			won't be read. The reading of HNW_S/HNW_L is done by application/snowpack/Main.cc. Class CurentMeteo 
+			are provided in the meteorological input file (MyStation.met). PSUM/HNW can be provided additionally but
+			won't be read. The reading of HNW_S/HNW_L is done by application/snowpack/Main.cc. Class CurentMeteo
 			is modified to have 2 supplementary variables : hnwl and hnws. Canopy.cc is modified to deal with these
 			mixed precipitations following the original code "HACK" by T. Jonas.
 
@@ -247,7 +247,7 @@ const double Canopy::can_diameter = 1.0;  // average canopy (tree) diameter [m],
 /// @brief ENERGY BALANCE
 /// parameters for HeatMass and 2layercanopy
 const double Canopy:: biomass_heat_capacity = 2800. ;	// from Linroth et al., 2013 (J Kg-1 K-1)
-const double Canopy:: biomass_density = 900. ;		// from Linroth et al., 2013 (Kg m-3) 
+const double Canopy:: biomass_density = 900. ;		// from Linroth et al., 2013 (Kg m-3)
 const double Canopy:: lai_frac_top_default = 0.5 ;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
 const double Canopy:: trunk_frac_height = 0.2 ;  	// (optional) fraction of total tree height occupied by trunks,
 							// used to calculate direct solar insolation of trunks.
@@ -258,7 +258,7 @@ const double Canopy:: et = 1. ; 			// trunk emissivity
 /// @brief Stab. corr. aerodyn. resist. above and below canopy: 0=off and 1=on (Monin-Obukhov formulation)
 const bool Canopy::canopy_stabilitycorrection = true;
 /// @brief Ratio between canopy height and roughness length
-const double Canopy::roughmom_to_canopyheight_ratio = 0.10; 
+const double Canopy::roughmom_to_canopyheight_ratio = 0.10;
 /// @brief As above for displacement height
 const double Canopy::displ_to_canopyheight_ratio = 0.6667;
 
@@ -346,19 +346,20 @@ void Canopy::cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const Sur
 }
 void Canopy::cn_writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdata)
 {
-        fprintf(OutFile, ",%f,%f,%f,%f,%f,,,",
+	fprintf(OutFile, ",%f,%f,%f,%f,%f,,,",
 	K_TO_C(Cdata->Ttrunk),      // Trunk temperature (degC)
-        Cdata->CondFluxTrunks,      // Trunk biomass heat storage flux (W m-2)
-        Cdata->LWnet_Trunks,        // net LW radiations to Trunk layer (W m-2)
-        Cdata->SWnet_Trunks,        // net SW radiations to Trunk layer (W m-2)
-        -Cdata->HTRUNKS);           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
+	Cdata->CondFluxTrunks,      // Trunk biomass heat storage flux (W m-2)
+	Cdata->LWnet_Trunks,        // net LW radiations to Trunk layer (W m-2)
+	Cdata->SWnet_Trunks,        // net SW radiations to Trunk layer (W m-2)
+	-Cdata->HTRUNKS);           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
 }
 /****i*******************************************************
  * non-static section                                       *
  ************************************************************/
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(),
-	hn_density_fixedValue(Constants::undefined), thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false), CanopyHeatMass(false), canopytransmission(true), Twolayercanopy(false), forestfloor_alb(false)
+          hn_density_fixedValue(Constants::undefined), thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false),
+          CanopyHeatMass(false), Twolayercanopy(false), canopytransmission(true), forestfloor_alb(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -606,7 +607,7 @@ double Canopy::cn_f3(const double& vpd)
 double Canopy::cn_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai)
 {
 	// in the future, temperature threshold might be abandoned
-	if ( K_TO_C(tair) < thresh_rain && density_of_new_snow > 0 ){
+	if ( K_TO_C(tair) < thresh_rain && density_of_new_snow > 0 ) {
 		return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_new_snow ));
 	} else {
 		return (Canopy::int_cap_rain * lai);
@@ -616,7 +617,7 @@ double Canopy::cn_IntCapacity(const double& tair, const double& density_of_new_s
 double Canopy::cn_IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws)
 {
         // in the future, temperature threshold might be abandoned
-        if ( (K_TO_C(tair) < thresh_rain | hnws>0.0) && density_of_mixed > 0 ){
+        if ( (K_TO_C(tair) < thresh_rain || hnws>0.0) && density_of_mixed > 0. ) {
                 return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_mixed ));
         } else {
                 return (Canopy::int_cap_rain * lai);
@@ -830,7 +831,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 
 	/*
 	 * Linearise RNC arond TC(t) by using TC(t)=TC(t-1)^4+4*TC(t-1)^3*(TC(t)-TC(t-1)),
- 
+
 	* which gives us r0 and r1, correpsonding to RNC(t)=r0+r1*TC(t)
 	 */
 	const double TC_old = Cdata.temp;
@@ -854,7 +855,7 @@ void Canopy::cn_LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyDat
 
 /**
  * @brief Same as the LineariseNetRadiation routine, but for 2layer canopies.
- * Objective : 
+ * Objective :
  * 		netradtrunk = rt0 + rt1 * Ttrunk + rt2 * TC
  *  		netradcanop = r0 + r1*TC + r2* Ttrunk
  * Method : using linearisation of TC**4 and Ttrunk**4
@@ -883,7 +884,7 @@ void Canopy::cn_LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyD
 	// modifs for forestfloor_alb : ag -> ag1
         const double ag1 = (snow)? Xdata.Albedo : Xdata.SoilAlb;
 
-	// modifs for forestfloor_alb 
+	// modifs for forestfloor_alb
         const size_t nE = Xdata.getNumberOfElements();
         const double age = (snow && forestfloor_alb) ? MAX(0., Mdata.date.getJulian() - Xdata.Edata[nE-1].depositionDate.getJulian()) : 0.; // days
         const double ag = (ag1 -.3)* exp(-age/7.) + 0.3;
@@ -999,8 +1000,8 @@ void Canopy::cn_LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyD
 
         // 2.2. LW
 	const double rt0p = rsnettrunk + et*(1-attfactor_LW)* (eg * Constants::stefan_boltzmann * Optim::pow4(Tsfc) + ilwrac * (1. - sigf));
-	const double rt1p = -2. * Constants::stefan_boltzmann *et* (1-attfactor_LW) ; 
-	const double rt2p = et*(1-attfactor_LW) * Cdata.ec * sigf * Constants::stefan_boltzmann ; 
+	const double rt1p = -2. * Constants::stefan_boltzmann *et* (1-attfactor_LW) ;
+	const double rt2p = et*(1-attfactor_LW) * Cdata.ec * sigf * Constants::stefan_boltzmann ;
 
         rt0 = rt0p - 3. * rt1p * Optim::pow4(Tt_old) - 3. * rt2p *  Optim::pow4(TC_old) ;
         rt1 = 4.* rt1p * Optim::pow3(Tt_old);
@@ -1025,7 +1026,7 @@ void Canopy::cn_LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyD
  * Method:      Trunk energy balance equation : rt0 + rt1 * Ttrunk + rt2 * TC = h0t + h1t *Ttrunk + let0 + let1 * Ttrunk + HMt0 + HMt1 * Ttrunk
  *                                      =>      Ttrunk = (ht0 + let0 + HMt0 - rt0 -  r2t *TC) / (r1t - ht1 -let1 -HMt1)
  *                              rewritten as :  Ttrunk = TT0/r2 + TT1/r2 * TC
- *                              so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC. 
+ *                              so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC.
  * @param r2
  * @param rt0
  * @param rt1
@@ -1133,7 +1134,7 @@ HMTrunks= 0.5 * BasalArea * height * biomass_density * biomass_heat_capacity;
 
 /**
  * @brief the conductive heat flux to the leaf layer is already a linear function of TC(t),
- * @param tc_old 
+ * @param tc_old
  * @param lai
  * @param HM0
  * @param HM1
@@ -1265,7 +1266,7 @@ void Canopy :: cn_CanopyEnergyBalance2L(double& h0, double& h1,  double& le0,
  * @param HM0
  * @param HM1
  */
-void Canopy::cn_CanopyEvaporationComponents(double& ce_canopy, 
+void Canopy::cn_CanopyEvaporationComponents(double& ce_canopy,
                                       double& ce_transpiration, double& LECANOPY,
                                       double& ta,double& I, double DT,
                                       double& CanopyEvaporation,
@@ -1706,7 +1707,7 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 	double attfactor_SWdir = 1. ;
 
 	if (Twolayercanopy) {
-	attfactor_SW = (1. - sigftrunk) ; 
+	attfactor_SW = (1. - sigftrunk) ;
 	attfactor_LW = (1. - sigftrunk);
 	attfactor_SWdir = (1. - sigftrunkdirect) ;
 	}
@@ -1721,10 +1722,10 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
         const double  iswrbc_loc2 = *iswrac * (1. - sigfdirect) / (1.0 - sigfdirect * ac * ag) *attfactor_SWdir ;
         const double  rswrbc_loc2 = iswrbc_loc2 * ag;
 
-	// Additional Direct Shortwave radiation term due to trunks direct insolation (optional, default = not used) 
+	// Additional Direct Shortwave radiation term due to trunks direct insolation (optional, default = not used)
 	// >> to be weighed by CanClosDirTrunks in the final EB equation
-	const double  rswrac_loc3 = *iswrac * (sigftrunkdirect * trunkalb +  ag * (1.0 - sigfdirect) / (1.0 - sigfdirect * ac * ag) *attfactor_SWdir) ; 
-	const double  iswrbc_loc3 = *iswrac * attfactor_SWdir / (1.0 - sigfdirect * ac * ag) ; 
+	const double  rswrac_loc3 = *iswrac * (sigftrunkdirect * trunkalb +  ag * (1.0 - sigfdirect) / (1.0 - sigfdirect * ac * ag) *attfactor_SWdir) ;
+	const double  iswrbc_loc3 = *iswrac * attfactor_SWdir / (1.0 - sigfdirect * ac * ag) ;
 	const double  rswrbc_loc3 = iswrbc_loc3 * ag;
 
 	// Longwave radiation fluxes above and below canopy:
@@ -1754,7 +1755,7 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 		CanClosDirLeaves =  CanopyClosureDiffuse;
 		CanClosDirTrunks = 0.;
 		}
-	} 
+	}
 
 	// Shortwave fluxes (diffuse)
 	*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
@@ -1778,12 +1779,12 @@ void Canopy::cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, d
 
 	// For 2layercanopy : radiations to trunks
 	if(Twolayercanopy){
-		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * (*iswrac) * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse 
+		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * (*iswrac) * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse
 				+ CanClosDirLeaves * RadFracDirect *(*iswrac) * (1. -sigf) * (1.-trunkalb)*(1. - attfactor_SWdir)
                                 + CanClosDirTrunks *  RadFracDirect *(*iswrac) * (1.-trunkalb)*(1. - attfactor_SWdir) ;
 		Xdata.Cdata.LWnet_Trunks = RAT  * CanopyClosureDiffuse ;
 	}
-} 
+}
 
 /**
  * @brief MAIN CANOPY FUNCTION CALLED BY Meteo.c
@@ -1832,8 +1833,8 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	Xdata.Cdata.rainfac+=Mdata.hnwl;}
 	else{
 	Xdata.Cdata.snowfac+=(K_TO_C(Mdata.ta) > thresh_rain)? 0. :Mdata.hnw;
-	Xdata.Cdata.rainfac+=(K_TO_C(Mdata.ta) > thresh_rain)? Mdata.hnw:0.;	
-	}	
+	Xdata.Cdata.rainfac+=(K_TO_C(Mdata.ta) > thresh_rain)? Mdata.hnw:0.;
+	}
 	/*
 	 * 1.1 compute the interception capacity [mm m-2]
 	 * 1.1a Always new snow density as estimate of density in intercepted storage
@@ -1914,7 +1915,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	// Secondly, transmissivity of direct solar radiation
 	const double sigfdirect = (Canopy::canopytransmission)? cn_CanopyTransmissivity(lai_frac_top*Xdata.Cdata.lai, Mdata.elev) : Xdata.Cdata.sigf;
         const double sigftrunkdirect =(Canopy::canopytransmission)? cn_CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Mdata.elev) : Xdata.Cdata.sigftrunk;
-	
+
 	/*
 	 * Reference Height [m above snow surface] for meteo input, at least 2 m above canopy height above snow surface
 	 * 2006-03-01: introduced new definition of reference height above canopy for Alpine3D applications
@@ -2002,7 +2003,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 
 		// compute properties r0 and r1 in eq (2) (and downward lw and sw for snowpack model)
 		if (Twolayercanopy) {
-                cn_LineariseNetRadiation2L(Mdata, Xdata.Cdata, Xdata, iswrac, rsnet, ilwrac, r0, r1, r2, rt0, rt1, rt2, 
+                cn_LineariseNetRadiation2L(Mdata, Xdata.Cdata, Xdata, iswrac, rsnet, ilwrac, r0, r1, r2, rt0, rt1, rt2,
                                          canopyalb, canopyclosuredirect, radfracdirect, sigfdirect,sigftrunkdirect, r1p, r2p);
 		} else {
 		cn_LineariseNetRadiation(Mdata, Xdata.Cdata, Xdata, iswrac, rsnet, ilwrac, r0, r1,
@@ -2038,7 +2039,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		cn_CanopyEnergyBalance2L(h0, h1, le0, le1, HM0, HM1, TT0, TT1,
 		                       ce_canopy, ce_condensation,
 		                       r0, r1, r2, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, RNCANOPY, HCANOPY, LECANOPY);
-	
+
 		}else{
 		cn_CanopyEnergyBalance(h0, h1, le0, le1, HM0, HM1,
                                        ce_canopy, ce_condensation,
