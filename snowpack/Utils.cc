@@ -305,7 +305,7 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 		// 2Layer canopy model
 		Xdata.Cdata.CondFluxCanop /=n_steps;
 		Xdata.Cdata.CondFluxTrunks /=n_steps;
-		Xdata.Cdata.HTRUNKS /=n_steps;
+		Xdata.Cdata.QStrunks /=n_steps;
 		Xdata.Cdata.LWnet_Trunks /=n_steps;
 		Xdata.Cdata.SWnet_Trunks /=n_steps;
 		Xdata.Cdata.forestfloor_alb /=n_steps;
@@ -345,7 +345,7 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
  * return Value (expressed in unitOut)
  */
 double unitConversion(double val, const char* unitIn, const char* unitOut)
-{	
+{
 	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
 		return (val+273.15);
 	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {

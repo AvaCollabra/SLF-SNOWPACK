@@ -370,7 +370,7 @@ class CanopyData {
 		     interception(0.), throughfall(0.), snowunload(0.),
 		     snowfac(0.), rainfac(0.),liquidfraction(0.),
 		     sigftrunk(0), Ttrunk(0.), CondFluxCanop(0.), CondFluxTrunks(0.),
-		     LWnet_Trunks(0.), SWnet_Trunks(0.), HTRUNKS(0.),
+		     LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.),
 		     forestfloor_alb(0.), BasalArea(0), HMLeaves(0.), HMTrunks(0.) {}
 
 		void reset(const bool& cumsum_mass);
@@ -433,7 +433,7 @@ class CanopyData {
 		double CondFluxTrunks; ///< biomass heat storage flux towards Trunks (if 2L)
 		double LWnet_Trunks; ///< net LW to trunks (>0 towards trunks)
 		double SWnet_Trunks; ///< net SW to trunks (>0 towards trunks)
-		double HTRUNKS;      ///< sensible heat flux from trunks (>0 if heat lost from trunk)
+		double QStrunks;      ///< sensible heat flux from trunks (>0 if heat lost from trunk)
 		double forestfloor_alb; ///< albedo of the forest floor
 		double BasalArea;    ///< basal area of trees on the stand
 		double HMLeaves;     ///< Leaves heat mass (J K-1 /m2 ground surface)

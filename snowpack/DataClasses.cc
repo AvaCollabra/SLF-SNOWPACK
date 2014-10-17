@@ -479,7 +479,7 @@ void CanopyData::reset(const bool& cumsum_mass)
 		// 2layer canopy model
 		CondFluxCanop = 0.;
 		CondFluxTrunks = 0.;
-		HTRUNKS = 0.;
+		QStrunks = 0.;
 		LWnet_Trunks = 0.;
 		SWnet_Trunks = 0.;
 		forestfloor_alb = 0.;
@@ -655,7 +655,7 @@ void CanopyData::initializeSurfaceExchangeData()
 	LWnet_Trunks = 0.;
 	SWnet_Trunks = 0.;
 	forestfloor_alb = 0.;
-	HTRUNKS = 0.;
+	QStrunks = 0.;
 	// mass fluxes
 	transp = 0.0;
 	intevap = 0.0;
@@ -1734,7 +1734,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	Cdata.storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
 	Cdata.temp = 273.15; // temperature (K)
 	Cdata.Ttrunk = 273.15; // trunk temperature (K)
-	Cdata.HTRUNKS = 0.;
+	Cdata.QStrunks = 0.;
 	Cdata.SWnet_Trunks = 0.;
 	Cdata.LWnet_Trunks = 0.;
 	Cdata.CondFluxCanop = 0.;

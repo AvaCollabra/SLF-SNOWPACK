@@ -351,7 +351,7 @@ void Canopy::cn_writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdat
 	Cdata->CondFluxTrunks,      // Trunk biomass heat storage flux (W m-2)
 	Cdata->LWnet_Trunks,        // net LW radiations to Trunk layer (W m-2)
 	Cdata->SWnet_Trunks,        // net SW radiations to Trunk layer (W m-2)
-	-Cdata->HTRUNKS);           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
+	-Cdata->QStrunks);           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
 }
 /****i*******************************************************
  * non-static section                                       *
@@ -2148,7 +2148,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
         Xdata.Cdata.CondFluxCanop += HM0 + HM1 * Xdata.Cdata.temp;
 	if (Twolayercanopy){
         	Xdata.Cdata.CondFluxTrunks += HMt0 + HMt1 * Xdata.Cdata.Ttrunk;
-        	Xdata.Cdata.HTRUNKS += ht0 + ht1 * Xdata.Cdata.Ttrunk;
+        	Xdata.Cdata.QStrunks += ht0 + ht1 * Xdata.Cdata.Ttrunk;
 	}
 
 
