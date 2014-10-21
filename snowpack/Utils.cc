@@ -344,8 +344,21 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
  * @param unitOut (units of output)
  * return Value (expressed in unitOut)
  */
-double unitConversion(double val, const char* unitIn, const char* unitOut)
+double unitConversion(const double val, char* unitIn, char* unitOut)
 {
+	if (!strcmp(unitIn,"degK") || !strcmp(unitIn,"°K") || !strcmp(unitIn,"Kelvin"))
+		unitIn = (char*) "K";
+	if (!strcmp(unitOut,"degK") || !strcmp(unitOut,"°K") || !strcmp(unitOut,"Kelvin"))
+		unitOut = (char*) "K";
+	if (!strcmp(unitIn,"degC") || !strcmp(unitIn,"Celsius"))
+		unitIn = (char*) "°C";
+	if (!strcmp(unitOut,"degC") || !strcmp(unitOut,"Celsius"))
+		unitOut = (char*) "°C";
+	if (!strcmp(unitIn,"degF") || !strcmp(unitIn,"Fahrenheit"))
+		unitIn = (char*) "°F";
+	if (!strcmp(unitOut,"degF") || !strcmp(unitOut,"Fahrenheit"))
+		unitOut = (char*) "°F";
+	
 	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
 		return (val+273.15);
 	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {
@@ -362,7 +375,11 @@ double unitConversion(double val, const char* unitIn, const char* unitOut)
 		double ratio = 1.;
 		if (strlen(unitIn) > 1+isdigit(unitIn[strlen(unitIn)-1])) {
 			char unitInPrefix = unitIn[0];
-			if (unitInPrefix == 'n') {
+			if (unitInPrefix == 'f') {
+				ratio *= 1./1000000000000000.;
+			} else if (unitInPrefix == 'p') {
+				ratio *= 1./1000000000000.;
+			} else if (unitInPrefix == 'n') {
 				ratio *= 1./1000000000.;
 			} else if (unitInPrefix == 'u') {
 				ratio *= 1./1000000.;
@@ -380,6 +397,10 @@ double unitConversion(double val, const char* unitIn, const char* unitOut)
 				ratio *= 1000000.;
 			} else if (unitInPrefix == 'G') {
 				ratio *= 1000000000.;
+			} else if (unitInPrefix == 'T') {
+				ratio *= 1000000000000.;
+			} else if (unitInPrefix == 'P') {
+				ratio *= 1000000000000000.;
 			}
 		}
 		if (isdigit(unitIn[strlen(unitIn)-1])) {

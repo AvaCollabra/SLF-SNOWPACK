@@ -182,7 +182,7 @@ class LayerData {
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double hl;                  ///< The thickness of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
-		double tl;                  ///< Temperature at the top of the layer in K or degC
+		double tl;                  ///< Temperature at the top of the layer in K
 		double phiSoil;             ///< Volumetric soil content in %
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
