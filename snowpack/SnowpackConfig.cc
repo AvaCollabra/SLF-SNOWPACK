@@ -96,6 +96,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["TWO_LAYER_CANOPY"] = "true";
 	advancedConfig["CANOPY_HEAT_MASS"] = "true";
 	advancedConfig["CANOPY_TRANSMISSION"] = "true";
+	advancedConfig["FORESTFLOOR_ALB"] = "true";
 
 	//[Input] section
 	inputConfig["METEOPATH"] = "./input";

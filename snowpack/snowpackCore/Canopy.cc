@@ -359,7 +359,7 @@ void Canopy::cn_writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdat
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(),
           hn_density_fixedValue(Constants::undefined), thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false),
-          CanopyHeatMass(false), Twolayercanopy(false), canopytransmission(true), forestfloor_alb(false)
+          CanopyHeatMass(true), Twolayercanopy(true), canopytransmission(true), forestfloor_alb(true)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -373,10 +373,10 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 
-	cfg.getValue("CANOPY_HEAT_MASS", "Snowpack", CanopyHeatMass);
-        cfg.getValue("CANOPY_TRANSMISSION", "Snowpack", canopytransmission);
-	cfg.getValue("TWO_LAYER_CANOPY", "Snowpack", Twolayercanopy);
-	cfg.getValue("FORESTFLOOR_ALB", "Snowpack", forestfloor_alb);
+	cfg.getValue("CANOPY_HEAT_MASS", "SnowpackAdvanced", CanopyHeatMass);
+        cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
+	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy);
+	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 }
 
 /**
