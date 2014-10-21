@@ -28,9 +28,6 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
-#include <libxml/parserInternals.h>
-#include <libxml/xpathInternals.h>
-#include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 
 /**
@@ -102,9 +99,10 @@ class CaaMLIO : public SnowpackIOInterface {
 		static const xmlChar *xml_ns_snp, *xml_ns_abrev_snp;
 		static const std::string TimeData_xpath, StationMetaData_xpath, SnowData_xpath;
 
-		xmlNodeSetPtr xmlGetData(const std::string path);
+		xmlNodeSetPtr xmlGetData(const std::string& path);
 		mio::Date xmlGetDate();
 		mio::StationData xmlGetStationData(const std::string& stationID);
+		double xmlGetData(const std::string& xpath, const std::string& property, const double& dflt);
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		bool getLayersDir();
 		LayerData xmlGetLayer(xmlNodePtr cur);
