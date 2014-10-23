@@ -176,8 +176,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
 	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
 	cfg.getValue("T_CRAZY_MAX", "SnowpackAdvanced", t_crazy_max);
-
-        cfg.getValue("FORESTFLOOR_ALB", "Snowpack", forestfloor_alb);
+	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 
 	/* Initial new snow parameters, see computeSnowFall()
 	* - that rg and rb are equal to 0.5*gsz and 0.5*bsz, respectively. Both given in millimetres
@@ -646,7 +645,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		// Explicit
 		// Now allow a temperature index method if desired by the user
 		if ( (temp_index_degree_day > 0.) && (T_air > T_s)) {
-			Fe[1] += temp_index_degree_day*(T_air - T_s); 
+			Fe[1] += temp_index_degree_day*(T_air - T_s);
 		} else {
 			Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 		}
@@ -817,7 +816,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	}
 	Xdata.Albedo = Albedo; // Assign albedo, either parameterized or measured, to Xdata
 	double I0 = Mdata.iswr - Mdata.rswr; // Net irradiance perpendicular to slope
-	
+
 	const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 	if ( (temp_index_degree_day > 0.) && (nE > 0) && (EMS[nE-1].theta[WATER] > theta_r + Constants::eps)		// Water and ice ...
 	   && (EMS[nE-1].theta[ICE] > Constants::eps) && (Mdata.ta > EMS[nE-1].Te)) I0 = 0.;
@@ -1310,7 +1309,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization, hn_density_fixedValue,
                                                Mdata, Xdata, t_surf, variant);
-	double precip_snow, precip_rain; 
+	double precip_snow, precip_rain;
 
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
@@ -1326,7 +1325,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			} else {
 				precip_snow=Mdata.hnws;
 				precip_rain=Mdata.hnwl;
-			}			
+			}
 			if ((cumu_precip > 0.) && (rho_hn != Constants::undefined)) {
 				// This is now very important to make sure that the rain fraction will not accumulate
 				// Note that cumu_precip will always be considered snowfall, as we substract all rainfall amounts

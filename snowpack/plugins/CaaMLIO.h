@@ -103,6 +103,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		mio::Date xmlGetDate();
 		mio::StationData xmlGetStationData(const std::string& stationID);
 		double xmlGetData(const std::string& xpath, const std::string& property, const double& dflt);
+		int xmlGetData(const std::string& xpath, const std::string& property, const int& dflt);
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		bool getLayersDir();
 		LayerData xmlGetLayer(xmlNodePtr cur);

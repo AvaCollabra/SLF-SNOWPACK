@@ -433,6 +433,21 @@ double CaaMLIO::xmlGetData(const string& xpath, const string& property, const do
 	return val;
 }
 
+int CaaMLIO::xmlGetData(const string& xpath, const string& property, const int& dflt)
+{
+	const string path = SnowData_xpath+xpath+":"+property;
+	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx);
+	int val = IOUtils::nodata;
+
+	if (xpathObj->nodesetval->nodeNr > 0)
+		sscanf((const char*)xpathObj->nodesetval->nodeTab[0], "%d", &val);
+	else
+		val = dflt;
+
+	xmlXPathFreeObject(xpathObj);
+	return val;
+}
+
 void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
 	xmlNodeSetPtr data;
