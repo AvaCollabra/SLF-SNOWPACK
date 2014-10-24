@@ -452,8 +452,6 @@ void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
 	std::string xpath = "/caaml:customData/snp";
 	Xdata.Albedo = xmlSetVal(xpath,"Albedo",0.6);
-	cout << Xdata.Albedo;
-	return;
 	Xdata.SoilAlb = xmlSetVal(xpath,"SoilAlb",0.2);
 	Xdata.BareSoil_z0 = xmlSetVal(xpath,"BareSoil_z0",0.02);
 	Xdata.Canopy_Height = xmlSetVal(xpath,"CanopyHeight",0.);

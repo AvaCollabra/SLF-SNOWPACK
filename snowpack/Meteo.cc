@@ -44,7 +44,7 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 
 	std::string stability_model;
-	cfg.getValue("Atmospheric_Stability", "Snowpack", stability_model);
+	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", stability_model);
 	if(stability_model=="RICHARDSON")
 		stability = RICHARDSON; //Simplified Richardson number stability correction
 	else if(stability_model=="NEUTRAL_MO")
