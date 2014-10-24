@@ -418,14 +418,14 @@ StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 	return metatmp;
 }
 
-double CaaMLIO::xmlGetData(const string& xpath, const string& property, const double& dflt)
+double CaaMLIO::xmlSetVal(const string& xpath, const string& property, const double& dflt)
 {
 	const string path = SnowData_xpath+xpath+":"+property;
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx);
 	double val = IOUtils::nodata;
 
 	if (xpathObj->nodesetval->nodeNr > 0)
-		sscanf((const char*)xpathObj->nodesetval->nodeTab[0], "%lf", &val);
+		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%lf", &val);
 	else
 		val = dflt;
 
@@ -433,14 +433,14 @@ double CaaMLIO::xmlGetData(const string& xpath, const string& property, const do
 	return val;
 }
 
-int CaaMLIO::xmlGetData(const string& xpath, const string& property, const int& dflt)
+int CaaMLIO::xmlSetVal(const string& xpath, const std::string& property, const int& dflt)
 {
 	const string path = SnowData_xpath+xpath+":"+property;
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx);
 	int val = IOUtils::nodata;
 
 	if (xpathObj->nodesetval->nodeNr > 0)
-		sscanf((const char*)xpathObj->nodesetval->nodeTab[0], "%d", &val);
+		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%d", &val);
 	else
 		val = dflt;
 
@@ -450,62 +450,19 @@ int CaaMLIO::xmlGetData(const string& xpath, const string& property, const int& 
 
 void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
-	xmlNodeSetPtr data;
-
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:Albedo").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:Albedo");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.Albedo);
-	} else {
-		Xdata.Albedo = 0.6;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:SoilAlb").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:SoilAlb");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.SoilAlb);
-	} else {
-		Xdata.SoilAlb = 0.2;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:BareSoil_z0").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:BareSoil_z0");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.BareSoil_z0);
-	} else {
-		Xdata.BareSoil_z0 = 0.02;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:CanopyHeight").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:CanopyHeight");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.Canopy_Height);
-	} else {
-		Xdata.Canopy_Height = 0.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:CanopyLAI").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:CanopyLAI");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.Canopy_LAI);
-	} else {
-		Xdata.Canopy_LAI = 0.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:CanopyDirectThroughfall").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:CanopyDirectThroughfall");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.Canopy_Direct_Throughfall);
-	} else {
-		Xdata.Canopy_Direct_Throughfall = 1.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:WindScalingFactor").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:WindScalingFactor");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.WindScalingFactor);
-	} else {
-		Xdata.WindScalingFactor = 1.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:ErosionLevel").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:ErosionLevel");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%d", &Xdata.ErosionLevel);
-	} else {
-		Xdata.ErosionLevel = 0;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:customData/snp:TimeCountDeltaHS").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:customData/snp:TimeCountDeltaHS");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Xdata.TimeCountDeltaHS);
-	} else {
-		Xdata.TimeCountDeltaHS = 0.;
-	}
+	std::string xpath = "/caaml:customData/snp";
+	Xdata.Albedo = xmlSetVal(xpath,"Albedo",0.6);
+	cout << Xdata.Albedo;
+	return;
+	Xdata.SoilAlb = xmlSetVal(xpath,"SoilAlb",0.2);
+	Xdata.BareSoil_z0 = xmlSetVal(xpath,"BareSoil_z0",0.02);
+	Xdata.Canopy_Height = xmlSetVal(xpath,"CanopyHeight",0.);
+	Xdata.Canopy_LAI = xmlSetVal(xpath,"CanopyLAI",0.);
+	Xdata.Canopy_BasalArea = xmlSetVal(xpath,"CanopyBasalArea",0.);
+	Xdata.Canopy_Direct_Throughfall = xmlSetVal(xpath,"CanopyDirectThroughfall",1.);
+	Xdata.WindScalingFactor = xmlSetVal(xpath,"WindScalingFactor",1.);
+	Xdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",0.);
+	Xdata.TimeCountDeltaHS = xmlSetVal(xpath,"TimeCountDeltaHS",0.);
 }
 
 //Direction in which the layers should be read and stored in SSdata
@@ -696,32 +653,11 @@ void CaaMLIO::setProfileVal(std::vector<LayerData> &Layers, std::vector<size_t> 
 }
 
 void CaaMLIO::setCustomLayerData(LayerData &Layer) {
-	xmlNodeSetPtr data;
-
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:phiSoil").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:phiSoil");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Layer.phiSoil);
-	} else {
-		Layer.phiSoil = 0.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:SurfaceHoarMass").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:SurfaceHoarMass");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Layer.hr);
-	} else {
-		Layer.hr = 0.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:StressRate").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:StressRate");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Layer.CDot);
-	} else {
-		Layer.CDot = 0.;
-	}
-	if (xmlXPathEvalExpression((const xmlChar*)(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:Metamorphism").c_str(),in_xpathCtx)->nodesetval->nodeNr) {
-		data = xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer/caaml:customData/snp:Metamorphism");
-		sscanf((const char*) xmlNodeGetContent(data->nodeTab[0]), "%lf", &Layer.metamo);
-	} else {
-		Layer.metamo = 0.;
-	}
+	std::string xpath = "/caaml:stratProfile/caaml:Layer/caaml:customData/snp";
+	Layer.phiSoil = xmlSetVal(xpath,"phiSoil",0.);
+	Layer.hr = xmlSetVal(xpath,"SurfaceHoarMass",0.);
+	Layer.CDot = xmlSetVal(xpath,"StressRate",0.);
+	Layer.metamo = xmlSetVal(xpath,"Metamorphism",0.);
 }
 
 //Set the deposition date of the layers based on their arrangement (if no data in the file)
@@ -876,6 +812,8 @@ void CaaMLIO::writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStati
 	xmlWriteElement(writer,(prefix_snp+"CanopyHeight").c_str(),tempStr,"uom","m");
 	sprintf(tempStr,"%.4f",Xdata.Cdata.lai);
 	xmlWriteElement(writer,(prefix_snp+"CanopyLAI").c_str(),tempStr,"","");
+	sprintf(tempStr,"%.4f",Xdata.Cdata.BasalArea);
+	xmlWriteElement(writer,(prefix_snp+"CanopyBasalArea").c_str(),tempStr,"","");
 	sprintf(tempStr,"%.4f",Xdata.Cdata.throughfall);
 	xmlWriteElement(writer,(prefix_snp+"CanopyDirectThroughfall").c_str(),tempStr,"","");
 	sprintf(tempStr,"%.4f",Xdata.WindScalingFactor);
