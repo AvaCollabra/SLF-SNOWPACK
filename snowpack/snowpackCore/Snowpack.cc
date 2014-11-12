@@ -808,7 +808,8 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			else
 				Mdata.rswr = Mdata.iswr * Albedo;
 		} else {
-			Mdata.rswr = Mdata.iswr = 0.;
+			// When mAlbedo is undefined, either rswr or iswr is undefined. Then, use parameterization of albedo. Note: in Main.cc, the rswr and iswr are brought in agreement when either one is missing. This is crucial!
+			Mdata.rswr = Mdata.iswr * Albedo;
 		}
 	} else {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "sw_mode = %s not implemented yet!", sw_mode.c_str());
