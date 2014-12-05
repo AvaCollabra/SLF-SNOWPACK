@@ -54,22 +54,13 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 	else
 		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 
-	/**
-	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
-	 * Default value and operational mode: 0.002 m
-	 */
+	//Initial estimate of the roughness length for the site; will be adjusted iteratively, default value and operational mode: 0.002 m
 	cfg.getValue("ROUGHNESS_LENGTH", "Snowpack", roughness_length);
 
-	/**
-	 * @brief Defines whether the canopy model is used \n
-	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
-	 */
+	//Defines whether the canopy model is used. OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 
-	/**
-	 * @brief Define the heights of the meteo measurements above ground (m) \n
-	 * Required for surface energy exchange computation and for drifting and blowing snow.
-	 */
+	//Define the heights of the meteo measurements above ground (m). Required for surface energy exchange computation and for drifting and blowing snow.
 	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
