@@ -155,7 +155,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		}
 		Edata.theta[ICE] += dth_i;
 		Edata.theta[WATER] += dth_w;
-		Edata.theta[AIR] = MAX (0.0, 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[SOIL]);
+		Edata.theta[AIR] = MAX (0.0, 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
 		// State when you have solid element
 		if ( Edata.theta[AIR] <= 0.0 ) {
 			Edata.theta[AIR] = 0.0;
@@ -177,12 +177,12 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		if (!Edata.checkVolContent()) {
 			prn_msg(__FILE__, __LINE__, "err", date_in, "Sum theta[I,W,A,S] > 1");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			        "Ice: %f, Water: %f, Air: %f Soil: %f",
-			        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[AIR], Edata.theta[SOIL]);
+			        "Ice: %f, Water: %f, Water_pref: %f, Air: %f Soil: %f",
+			        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[WATER_PREF], Edata.theta[AIR], Edata.theta[SOIL]);
 			throw IOException("In compSubSurfaceMelt!", AT);
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE]
-		                + (Constants::density_water * Edata.theta[WATER] )
+		                + (Constants::density_water * (Edata.theta[WATER] + Edata.theta[WATER]) )
 		                    + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		Edata.heatCapacity();
 	}
@@ -244,11 +244,11 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 			dT = dth_i / A;
 		}
 		// See if the element is pure ICE
-		if ((Edata.theta[ICE] + cmp_theta_r + dth_i + Edata.theta[SOIL]) >= 1.0) {
+		if ((Edata.theta[ICE] + cmp_theta_r + dth_i + Edata.theta[SOIL] + Edata.theta[WATER_PREF]) >= 1.0) {
 			dth_w = - fabs( Edata.theta[WATER] - cmp_theta_r );
 			dth_i = - (Constants::density_water / Constants::density_ice) * dth_w;
 			Edata.theta[WATER] = cmp_theta_r;
-			Edata.theta[ICE] = 1.0 - Edata.theta[SOIL] - Edata.theta[WATER];
+			Edata.theta[ICE] = 1.0 - Edata.theta[SOIL] - Edata.theta[WATER] - Edata.theta[WATER_PREF];
 			Edata.theta[AIR] = 0.0;
 		} else {
 			// Concentration of solutes
@@ -260,7 +260,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 			}
 			Edata.theta[ICE] += dth_i;
 			Edata.theta[WATER] += dth_w;
-			Edata.theta[AIR] = MAX(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[SOIL]);
+			Edata.theta[AIR] = MAX(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
 		}
 		// State when the element is wet (PERMAFROST)
 		if (Edata.theta[WATER] >= 1.0) {
@@ -271,12 +271,12 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		if (!Edata.checkVolContent()) {
 			prn_msg(__FILE__, __LINE__, "err", date_in, "Sum theta[I,W,A,S] > 1");
 			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			        "Ice: %f, Water: %f, Air: %f Soil: %f",
-			        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[AIR], Edata.theta[SOIL]);
+			        "Ice: %f, Water: %f, Water_pref: %f, Air: %f Soil: %f",
+			        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[WATER_PREF], Edata.theta[AIR], Edata.theta[SOIL]);
 			throw IOException("In compSubSurfaceFrze!", AT);
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE] +
-		                (Constants::density_water * Edata.theta[WATER]) +
+		                (Constants::density_water * (Edata.theta[WATER] + Edata.theta[WATER_PREF])) +
 		                    (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		Edata.heatCapacity();
 		// Compute the volumetric refreezing power
@@ -415,8 +415,8 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (verbose && !EMS[e].checkVolContent()) {
 				prn_msg(__FILE__, __LINE__, "msg+", date_in,
-				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Air %f Soil %f",
-				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
+				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Water_pref %Air %f Soil %f",
+				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
 			double i_Te = EMS[e].Te;

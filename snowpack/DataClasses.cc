@@ -861,7 +861,7 @@ void ElementData::heatCapacity()
 
 	c_p  = Constants::density_air * theta[AIR] * Constants::specific_heat_air;
 	c_p += Constants::density_ice * theta[ICE] * Constants::specific_heat_ice;
-	c_p += Constants::density_water * theta[WATER] * Constants::specific_heat_water;
+	c_p += Constants::density_water * (theta[WATER] + theta[WATER_PREF]) * Constants::specific_heat_water;
 	c_p += soil[SOIL_RHO] * theta[SOIL] * soil[SOIL_C];
 	c_p /= Rho;
 	c[TEMPERATURE] = c_p;
@@ -1367,7 +1367,7 @@ void SnowStation::compSnowpackMasses()
 	for (size_t e = SoilNode; e < nElems; e++) {
 		mass_sum += Edata[e].M;
 		swe += Edata[e].L * Edata[e].Rho;
-		lwc_sum += Edata[e].L * (Edata[e].theta[WATER] * Constants::density_water);
+		lwc_sum += Edata[e].L * ((Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]) * Constants::density_water);
 	}
 }
 
@@ -1678,7 +1678,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 				Edata[e].conc[AIR][ii]  = SSdata.Ldata[ll].cVoids[ii];
 			}
 			Edata[e].Rho = Edata[e].theta[ICE]*Constants::density_ice +
-				Edata[e].theta[WATER]*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
+				(Edata[e].theta[WATER]+Edata[e].theta[WATER_PREF])*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
 			assert(Edata[e].Rho >= 0. || Edata[e].Rho==IOUtils::nodata); //we want positive density
 			// conductivities, specific heat and moisture content
 			Edata[e].k[TEMPERATURE] = Edata[e].k[SEEPAGE] = Edata[e].k[SETTLEMENT] = 0.;
@@ -1964,21 +1964,23 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
-	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
+	EdataLower.theta[WATER_PREF] = (L_upper*EdataUpper.theta[WATER_PREF] + L_lower*EdataLower.theta[WATER_PREF]) / LNew;
+	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[WATER_PREF] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
 	// For snow, check if there is enough space to store all ice if all water would freeze. This also takes care of cases where theta[AIR]<0.
-	if ((merge==false && topElement==true) && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < EdataLower.theta[WATER]*((Constants::density_water/Constants::density_ice)-1.)) {
+	if ((merge==false && topElement==true) && EdataLower.theta[SOIL]<Constants::eps2 && EdataLower.theta[AIR] < (EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF])*((Constants::density_water/Constants::density_ice)-1.)) {
 		// Note: we can only do this for the uppermost snow element, as otherwise it is not possible to adapt the element length.
 		// If there is not enough space, adjust element length:
-		EdataLower.theta[AIR] = EdataLower.theta[WATER]*((Constants::density_water/Constants::density_ice)-1.);
-		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER];
+		EdataLower.theta[AIR] = (EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF])*((Constants::density_water/Constants::density_ice)-1.);
+		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF];
 		LNew *= tmpsum;
 		EdataLower.L0 = EdataLower.L = LNew;
 		EdataLower.theta[AIR] /= tmpsum;
 		EdataLower.theta[ICE] /= tmpsum;
 		EdataLower.theta[WATER] /= tmpsum;
+		EdataLower.theta[WATER_PREF] /= tmpsum;
 	}
 	EdataLower.snowResidualWaterContent();
-	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + (EdataLower.theta[WATER]*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
+	EdataLower.Rho = (EdataLower.theta[ICE]*Constants::density_ice) + ((EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF])*Constants::density_water) + (EdataLower.theta[SOIL]*EdataLower.soil[SOIL_RHO]);
 
 	for (size_t ii = 0; ii < SnowStation::number_of_solutes; ii++) {
 		for (size_t kk = 0; kk < N_COMPONENTS; kk++) {

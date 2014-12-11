@@ -343,7 +343,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			mf = 1.;
 			// av *= exp(-age/1700.);
 		}
-		const double Alb1 = Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
+		const double Alb1 = Crho*Edata.Rho + Clwc*(Edata.theta[WATER]+Edata.theta[WATER_PREF]) + Cdd*Edata.dd + Csp*Edata.sp
 		+ Cmf*mf + Crb*Edata.rb +  Cta*Ta + Ctss*Tss
 		+ Cv*Mdata.vw+ Cswout*Mdata.rswr + Cta_tss*Ta*Tss;
 		Alb = av + log(1.0 + Alb1);
@@ -363,7 +363,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		const double Cage = -0.000575, Cta = -0.006, Cv = 0.00762, Clwc = -0.2735;
 		const double Crho = -0.000056, Crh = 0.0333, Crb = -0.301, Crg = 0.175;
 		const double Cdd = 0.064, Csp = -0.0736, Ctss = 0.00459, Cswout = -0.000101;
-		const double Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*Edata.theta[WATER]
+		const double Alb1 = inter + Cage*age + Crho*Edata.Rho + Clwc*(Edata.theta[WATER]+Edata.theta[WATER_PREF])
 		+ Cdd*Edata.dd + Csp*Edata.sp + Crg*Edata.rg + Crb*Edata.rb
 		+ Cta*Ta + Ctss*Tss + Cv*Mdata.vw + Cswout*Mdata.rswr
 		+ Crh*Mdata.rh;
@@ -385,7 +385,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 
 		const double inter = 1.178904;
 		const double Cms = -5.691804e-02, Cage = -2.840603e-04, Crg = -1.029158e-01, Crho = -5.030213e-04, Cswin = -6.780479e-5;
-		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
+		const double moist_snow = ((Edata.theta[WATER]+Edata.theta[WATER_PREF]) > SnowStation::thresh_moist_snow)? 1. : 0.;
 		Alb1 = inter + Cms*moist_snow + Cage*age + Crg*(Edata.rg) + Crho*Edata.Rho + Cswin*Mdata.iswr;
 
 		if (Alb1 > 0.) {
@@ -406,7 +406,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 
 		const double inter = 1.148088;
 		const double Cms = -4.412422e-02, Cage = -1.523871e-03, Cogs = -1.099020e-01, Crho = -3.638010e-04, Cswin = -7.140708e-05;
-		const double moist_snow = (Edata.theta[WATER] > SnowStation::thresh_moist_snow)? 1. : 0.;
+		const double moist_snow = ((Edata.theta[WATER]+Edata.theta[WATER_PREF]) > SnowStation::thresh_moist_snow)? 1. : 0.;
 		Alb1 = inter + Cms*moist_snow + Cage*age + Cogs*(Edata.ogs/2.) + Crho*Edata.Rho + Cswin*Mdata.iswr;
 
 		if (Alb1 > 0.) {
@@ -423,7 +423,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		const double Crho = -0.000047, Crh = 0.129, Crb = -0.306, Crg = 0.107;
 		const double Cdd = 0.076, Csp = 0.00964, Ctss = -0.000166, Cswout = -1.8e-5;
 
-		const double Alb1 = inter + Crho*Edata.Rho + Clwc*Edata.theta[WATER] + Cdd*Edata.dd + Csp*Edata.sp
+		const double Alb1 = inter + Crho*Edata.Rho + Clwc*(Edata.theta[WATER]+Edata.theta[WATER_PREF]) + Cdd*Edata.dd + Csp*Edata.sp
 		+ Crg*Edata.rg + Crb*Edata.rb + Cta*Ta + Ctss*Tss + Cv*Mdata.vw
 		+ Cswout*Mdata.rswr + Crh*Mdata.rh + Cage*age;
 
@@ -572,7 +572,7 @@ double SnLaws::compWindPumpingVelocity(const CurrentMeteo& Mdata, const double& 
  */
 double SnLaws::compWindGradientSnow(const ElementData& Edata, double& v_pump)
 {
-	const double v_EXt = SnLaws::wind_ext_coef * (Edata.Rho + 2.e4 * Edata.theta[WATER]);
+	const double v_EXt = SnLaws::wind_ext_coef * (Edata.Rho + 2.e4 * (Edata.theta[WATER]+Edata.theta[WATER_PREF]));
 	const double dv = v_pump * (1. - exp(-v_EXt * (Edata.L)));
 	v_pump -= dv;
 
@@ -598,19 +598,19 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		const double c_clay = 1.3, c_sand = 0.27;
 		const double beta1 = 6., beta2 = 4.978, c_mineral = 2.9;
 		const double weight = (c_clay - Edata.soil[SOIL_K]) / (c_clay - c_sand);
-		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + Edata.theta[WATER]
+		const double C_eff_soil_max = Edata.theta[SOIL] * c_mineral + (Edata.theta[WATER]+Edata.theta[WATER_PREF])
 		                              * SnLaws::conductivity_water(Edata.Te) + Edata.theta[ICE]
 		                              * SnLaws::conductivity_ice(Edata.Te);
 
 		C_eff_soil = (beta1 + weight * beta2) * Edata.theta[ICE];
-		if (Edata.theta[WATER] > SnowStation::thresh_moist_soil) {
+		if ((Edata.theta[WATER]+Edata.theta[WATER_PREF]) > SnowStation::thresh_moist_soil) {
 			const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
-			C_eff_soil += MAX( 0.27, (alpha1 + alpha2 * weight) * log(alpha3 * Edata.theta[WATER]) );
+			C_eff_soil += MAX( 0.27, (alpha1 + alpha2 * weight) * log(alpha3 * (Edata.theta[WATER]+Edata.theta[WATER_PREF])) );
 		} else
 			C_eff_soil += 0.27;
 			C_eff_soil = MIN(C_eff_soil_max, C_eff_soil);
 	} else {
-		C_eff_soil = Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te)
+		C_eff_soil = Edata.soil[SOIL_K] + (Edata.theta[WATER]+Edata.theta[WATER_PREF]) * SnLaws::conductivity_water(Edata.Te)
                        + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);
 	}
 
@@ -808,7 +808,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	double eS;
 
 	// Vapor Pressures
-	const double th_w_ss = (nElems>0)? Xdata.Edata[nElems-1].theta[WATER] : 0.;
+	const double th_w_ss = (nElems>0)? (Xdata.Edata[nElems-1].theta[WATER]+Xdata.Edata[nElems-1].theta[WATER_PREF]) : 0.;
 
 	// TODO The part below needs to be rewritten in a more consistent way !!!
 	//      In particular, look closely at the condition within compLatentHeat()
@@ -899,7 +899,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 		const double eS = Atmosphere::waterSaturationPressure(Xdata.Ndata[nElems].T);
 		if (eS >= eA) {
 			c = 1. / c + SnLaws::rsoilmin / MAX(SnLaws::relsatmin, MIN(1.,
-			                                    Xdata.Edata[nElems-1].theta[WATER]
+			                                    (Xdata.Edata[nElems-1].theta[WATER]+Xdata.Edata[nElems-1].theta[WATER_PREF])
 			                                    / Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()));
 			c = 1. / c;
 		}

@@ -861,6 +861,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	std::vector<double> dT(nE, 0.);				//Stores the energy needed to create theta_r from the ice matrix.
 	std::vector<double> snowpackBACKUPTHETAICE(nE, 0.);	//Backup array for the initial SNOWPACK theta ice
 	std::vector<double> snowpackBACKUPTHETAWATER(nE, 0.);	//Backup array for the initial SNOWPACK theta water
+	std::vector<double> snowpackBACKUPTHETAWATER_PREF(nE, 0.);	//Backup array for the initial SNOWPACK theta water
 	std::vector<double> wateroverflow(nE, 0.);		//Array for all the water that is >theta_s (m^3/m^3)]. This water is just thrown away in the model and is a leak in the mass balance.
 
         //For soil freezing/thawing
@@ -890,23 +891,25 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].theta[ICE]=1.;
 		}
 		//Do the basic check of the sum of element contents.
-		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
+		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
 		if((sum>1.+Constants::eps || sum<1.-Constants::eps) && (boolFirstFunctionCall!=true)) {
 			printf("WARNING: very strange, sum of element contents != 1. (but %f) at layer %d/%d. Values scaled.\n", sum, i, nE);
 			//Note: we do not scale theta[SOIL].
-			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
+			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
 			EMS[i].theta[AIR]/=correction_factor;
 			wateroverflow[i]+=(EMS[i].theta[ICE]-(EMS[i].theta[ICE]/correction_factor))*(Constants::density_ice/Constants::density_water);	//We just throw away the ice, without considering melting it.
 			EMS[i].theta[ICE]/=correction_factor;
 			wateroverflow[i]+=EMS[i].theta[WATER]-(EMS[i].theta[WATER]/correction_factor);
 			EMS[i].theta[WATER]/=correction_factor;
+			wateroverflow[i]+=EMS[i].theta[WATER_PREF]-(EMS[i].theta[WATER_PREF]/correction_factor);
+			EMS[i].theta[WATER_PREF]/=correction_factor;
 		} else {
 			if(boolFirstFunctionCall==true) {
-				EMS[i].theta[AIR]=1.-EMS[i].theta[SOIL]-EMS[i].theta[ICE]-EMS[i].theta[WATER];
+				EMS[i].theta[AIR]=1.-EMS[i].theta[SOIL]-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
 			}
 		}
 
-		if (WriteOutNumerics_Level2==true) printf("RECEIVING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f Te=%.15f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].Te);
+		if (WriteOutNumerics_Level2==true) printf("RECEIVING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te);
 
 
 		//In case we don't want to allow soil to freeze, melt all ice that is there:
@@ -927,13 +930,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / snowpack_dt;	// Units: [W m-3]
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
-			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
+			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
 			EMS[i].M=EMS[i].L*EMS[i].Rho;
 		}
 
 		//Make backup of incoming values for theta[ICE] and theta[WATER]. This is used in case we allow dry snow layers  *AND*  MIN_VAL_THETA_SNOWPACK > 0., to determine original water content and how much water was added to the domain.
 		snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
 		snowpackBACKUPTHETAWATER[i]=EMS[i].theta[WATER];
+		snowpackBACKUPTHETAWATER_PREF[i]=EMS[i].theta[WATER_PREF];
 	}
 
 
@@ -2470,8 +2474,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//Now we have checked everything, we make it fit between [0, 1]: to get rid off all round-off errors
 			EMS[i].theta[AIR]=MAX(0, MIN(1., EMS[i].theta[AIR]));
 			EMS[i].theta[WATER]=MAX(0, MIN(1., EMS[i].theta[WATER]));
+			EMS[i].theta[WATER_PREF]=MAX(0, MIN(1., EMS[i].theta[WATER_PREF]));
 			EMS[i].theta[ICE]=MAX(0, MIN(1., EMS[i].theta[ICE]));
-			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + (EMS[i].theta[WATER] * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
+			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
 			EMS[i].M=EMS[i].L*EMS[i].Rho;
 			EMS[i].heatCapacity();
 
@@ -2485,26 +2490,28 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			EMS[i].theta[ICE]=snowpackBACKUPTHETAICE[i];
 			EMS[i].theta[WATER]=snowpackBACKUPTHETAWATER[i];
+			EMS[i].theta[WATER_PREF]=snowpackBACKUPTHETAWATER_PREF[i];
 			//Now we have checked everything, we make it fit between [0, 1]: to get rid off all round-off errors
 			EMS[i].theta[AIR]=MAX(0, MIN(1., EMS[i].theta[AIR]));
 			EMS[i].theta[WATER]=MAX(0, MIN(1., EMS[i].theta[WATER]));
+			EMS[i].theta[WATER_PREF]=MAX(0, MIN(1., EMS[i].theta[WATER_PREF]));
 			EMS[i].theta[ICE]=MAX(0, MIN(1., EMS[i].theta[ICE]));
 		}
 
 		//Then check the volumetric contents. This we do, to make a crash at this place, and we have information about the Richards solver available in the core file.
 		//Do some checks on volumetric contents:
-		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
-		if(EMS[i].theta[WATER]<0.-Constants::eps2 || EMS[i].theta[AIR]<0.-Constants::eps2 || EMS[i].theta[AIR] > 1.+Constants::eps2 || EMS[i].theta[ICE]<0.-Constants::eps2 || EMS[i].theta[ICE] > 1.+Constants::eps2) {
-			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER]);
+		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
+		if(EMS[i].theta[WATER]<0.-Constants::eps2 || EMS[i].theta[WATER_PREF]<0.-Constants::eps2 || EMS[i].theta[AIR]<0.-Constants::eps2 || EMS[i].theta[AIR] > 1.+Constants::eps2 || EMS[i].theta[ICE]<0.-Constants::eps2 || EMS[i].theta[ICE] > 1.+Constants::eps2) {
+			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);
 			printf("   -- if this happens and ice<0, check theta_d. Maybe there was so much water created, that it was more than there was ice. This is not accounted for.\n");
 			throw;
 		}
 		if(sum > 1.+Constants::eps2) {
-			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER]);
+			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);
 			throw;
 		}
 		if(sum < 1.-Constants::eps2) {
-			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER]);
+			printf("ERROR at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);
 			throw;
 		}
 	}
@@ -2528,7 +2535,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
 			if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
 		}
-		if (WriteOutNumerics_Level2==true) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f Te=%.15f\n", i, EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].Te);
+		if (WriteOutNumerics_Level2==true) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f\n", i, EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te);
 	}
 
 	double totalwateroverflow=0.;					//Total water outflow due to numerical issues (requiring minimum theta_r, maximum theta_s, etc), in m^3/m^2
@@ -2588,6 +2595,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[e].theta[ICE] *= L0/EMS[e].L;
 			EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
 			EMS[e].theta[WATER] *= L0/EMS[e].L;
+			EMS[e].theta[WATER_PREF] *= L0/EMS[e].L;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
 			}
@@ -2599,8 +2607,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
 			//Update volumetric contents
-			EMS[e].theta[AIR]=1.-EMS[e].theta[ICE]-EMS[e].theta[WATER]-EMS[e].theta[SOIL];
-			EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER] * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
+			EMS[e].theta[AIR]=1.-EMS[e].theta[ICE]-EMS[e].theta[WATER]-EMS[e].theta[WATER_PREF]-EMS[e].theta[SOIL];
+			EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF]) * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
 			EMS[e].heatCapacity();
 
 			e--;
