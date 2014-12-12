@@ -351,7 +351,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				*/
 				const double L0 = EMS[e].L;
 				// If there is water ...
-				if (EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF] > ((e==nE-1)?(2.*Constants::eps):0.)) {
+				if ((EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF]) > ((e==nE-1)?(2.*Constants::eps):0.)) {
 					//For the top layer, it is important to keep a tiny amount of liquid water, so we are able to detect whether we need the
 					//implicit or explicit treatment of the top boundary condition when solving the heat equation.
 					const double theta_w0 = (EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF])-((e==nE-1)?(2.*Constants::eps):0.);

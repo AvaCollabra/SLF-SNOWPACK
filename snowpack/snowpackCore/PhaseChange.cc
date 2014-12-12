@@ -182,7 +182,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 			throw IOException("In compSubSurfaceMelt!", AT);
 		}
 		Edata.Rho = Constants::density_ice * Edata.theta[ICE]
-		                + (Constants::density_water * (Edata.theta[WATER] + Edata.theta[WATER]) )
+		                + (Constants::density_water * (Edata.theta[WATER] + Edata.theta[WATER_PREF]))
 		                    + (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		Edata.heatCapacity();
 	}
