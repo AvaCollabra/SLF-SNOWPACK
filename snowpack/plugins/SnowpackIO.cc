@@ -48,9 +48,11 @@ using namespace mio;
 		input_snow_as_ascii = true;
 	} else if (in_snow == "CAAML") {
 		input_snow_as_caaml = true;
-	} else {
+	} else if (in_snow == "SMET") {
 		input_snow_as_smet = true;
-	}
+	} else
+		throw InvalidArgumentException("Invalid input snow profile format '"+in_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
+
 	//Format of transitional and final snow profile(s):
 	//TODO: document ouput::SNOW = SMET, CAAML, or SNOOLD
 	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
@@ -58,9 +60,11 @@ using namespace mio;
 		output_snow_as_ascii = true;
 	} else if (out_snow == "CAAML") {
 		output_snow_as_caaml = true;
-	} else {
+	} else if (out_snow == "SMET") {
 		output_snow_as_smet = true;
-	}
+	} else
+		throw InvalidArgumentException("Invalid output snow profile format '"+out_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
+
 	/* Profiles may also be dumped in up to 4 formats specified by the key PROFILE_FORMAT in section [Output]:
 	 * PRO   : ASCII-format for visulization with SN_GUI, includes soil elements
 	 * PRF   : Snow profiles in tabular ASCII-format, aggregated if AGGREGATE_PRF is set
