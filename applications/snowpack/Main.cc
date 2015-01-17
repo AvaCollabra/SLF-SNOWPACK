@@ -1255,7 +1255,7 @@ void real_main (int argc, char *argv[])
 			for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
 				if ((mode == "OPERATIONAL") && (sector == slope.mainStation)) {
 					// Operational mode ONLY: dump snow depth discrepancy time counter
-					vecSSdata[slope.mainStation].TimeCountDeltaHS = time_count_deltaHS;
+					vecXdata[slope.mainStation].TimeCountDeltaHS = time_count_deltaHS;
 				}
 				snowpackio.writeSnowCover(current_date, vecXdata[sector], sn_Zdata);
 				if (sector == slope.mainStation) {
