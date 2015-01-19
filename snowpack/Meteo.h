@@ -42,7 +42,7 @@ class Meteo {
 	public:
 		typedef enum {
 			RICHARDSON,  ///< Simplified Richardson number stability correction
-			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns & Weidner
+			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
 			NEUTRAL_MO  ///< Assume neutral MO stratification
 		} ATM_STABILITY;
 

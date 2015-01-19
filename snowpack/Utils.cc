@@ -358,7 +358,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		unitIn = (char*) "°F";
 	if (!strcmp(unitOut,"degF") || !strcmp(unitOut,"Fahrenheit"))
 		unitOut = (char*) "°F";
-	
+
 	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
 		return (val+273.15);
 	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {

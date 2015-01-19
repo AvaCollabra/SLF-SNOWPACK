@@ -28,7 +28,7 @@
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 #if !defined(LIBXML_XPATH_ENABLED)
-#error Please enable XPATH in your version of libxml!
+	#error Please enable XPATH in your version of libxml!
 #endif
 #if !defined(LIBXML_SAX1_ENABLED)
 	#error Please enable SAX1 in your version of libxml!
