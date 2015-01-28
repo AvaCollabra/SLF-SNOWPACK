@@ -249,6 +249,16 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 	marker      = MAX(profile_layer.marker, marker);
 }
 
+const std::string BoundCond::toString() const
+{
+	std::stringstream os;
+	os << "<BoundCond>\n";
+	os << "\tlw_out=" << lw_out << " lw_net=" << lw_net << "\n";
+	os << "\tQsensible=" << qs << " Qlatent=" << ql << " Qrain=" << qr << " Qgeo=" << qg << "\n";
+	os <<"</BoundCond>\n";
+	return os.str();
+}
+
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
     sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
@@ -294,8 +304,7 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
 		const ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
 
 		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
-			qg0 += -E_soil.k[TEMPERATURE]
-			* E_soil.gradT;
+			qg0 += -E_soil.k[TEMPERATURE] * E_soil.gradT;
 		} else { // with soil & snow
 			qg0 += ( ( -E_snow.k[TEMPERATURE] * E_snow.gradT ) + ( -E_soil.k[TEMPERATURE] * E_soil.gradT ) ) / 2.;
 			// Take care of energy flow between snow and soil in case of shortwave absorption by the soil:
@@ -374,6 +383,33 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	mass[MS_TOTALMASS] = Xdata.mass_sum;
 	mass[MS_SWE] = Xdata.swe;
 	mass[MS_WATER] = Xdata.lwc_sum;
+}
+
+/**
+ * @brief If multiple surface fluxes have been summed over multiple time steps, the
+ * fluxes then need to be averaged by the number of steps.
+ * @param factor Averaging factor (for example, number of 1/Nsteps)
+ */
+void SurfaceFluxes::averageEnergyFluxes(const double& factor)
+{
+	lw_in *= factor;
+	lw_out *= factor;
+	lw_net *= factor;
+	qs *= factor;
+	ql *= factor;
+	qr *= factor;
+	qg *= factor;
+	qg0 *= factor;
+	sw_hor *= factor;
+	sw_in *= factor;
+	sw_out *= factor;
+	qw *= factor;
+	sw_dir *= factor;
+	sw_diff *= factor;
+	dIntEnergy *= factor;
+	dIntEnergySoil *= factor;
+	meltFreezeEnergy *= factor;
+	meltFreezeEnergySoil *= factor;
 }
 
 std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)

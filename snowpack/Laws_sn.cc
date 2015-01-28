@@ -453,16 +453,9 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 {
 	ElementData *EMS = &Xdata.Edata[0];
 	const size_t nE = Xdata.getNumberOfElements();
+	if (nE==0) return;
 
-	size_t bottom_element;
-	if (Xdata.SoilNode > 0)
-		bottom_element = Xdata.SoilNode - 1;
-	else {
-		if (nE == 0)
-			return;
-		else
-			bottom_element = Xdata.SoilNode;
-	}
+	const size_t bottom_element = (Xdata.SoilNode > 0)? Xdata.SoilNode - 1 : Xdata.SoilNode;
 	for (size_t e = bottom_element; e < nE; e++)
 		EMS[e].sw_abs = 0.;
 
@@ -804,7 +797,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 {
 	const size_t nElems = Xdata.getNumberOfElements();
 	const double T_air = Mdata.ta;
-	const double Tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
+	const double Tss = Xdata.Ndata[nElems].T;
 	double eS;
 
 	// Vapor Pressures
