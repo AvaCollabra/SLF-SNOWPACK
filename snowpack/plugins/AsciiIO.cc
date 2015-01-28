@@ -964,7 +964,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 		const double cos_sl = Xdata.cos_sl;
 		const size_t nL = Pdata.size();
 		ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
-		ofs << Pdata[nL-1].T << "," << K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";;
+		ofs << Pdata[nL-1].T << "," << K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
 		//Minima of stability indices at their respective depths as well as stability classifications
 		ofs << "#,s_height,s_index,s_class1,s_class2\n";
 		ofs << " ,cm,1,1,1\n";
