@@ -268,52 +268,10 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 {
 	const double nr_steps = static_cast<double>( n_steps );
 	// Mean energy fluxes (W m-2), including albedo
-	Sdata.lw_in   /= nr_steps;
-	Sdata.lw_out  /= nr_steps;
-	Sdata.lw_net  /= nr_steps;
-	Sdata.qs      /= nr_steps;
-	Sdata.ql      /= nr_steps;
-	Sdata.qr      /= nr_steps;
-	Sdata.qg      /= nr_steps;
-	Sdata.qg0     /= nr_steps;
-	Sdata.sw_hor  /= nr_steps;
-	Sdata.sw_in   /= nr_steps;
-	Sdata.sw_out  /= nr_steps;
-	Sdata.qw      /= nr_steps;
-	Sdata.sw_dir  /= nr_steps;
-	Sdata.sw_diff /= nr_steps;
-	Sdata.pAlbedo /= nr_steps;
-	if (Sdata.mAlbedo != Constants::undefined)
-		Sdata.mAlbedo /= nr_steps;
+	Sdata.multiplyFluxes(1./nr_steps);
 
-	if (useCanopyModel) {
-		// *radiation
-		Xdata.Cdata.rswrac /= nr_steps;
-		Xdata.Cdata.iswrac /= nr_steps;
-		Xdata.Cdata.rswrbc /= nr_steps;
-		Xdata.Cdata.iswrbc /= nr_steps;
-		Xdata.Cdata.ilwrac /= nr_steps;
-		Xdata.Cdata.rlwrac /= nr_steps;
-		Xdata.Cdata.ilwrbc /= nr_steps;
-		Xdata.Cdata.rlwrbc /= nr_steps;
-		Xdata.Cdata.rsnet /= nr_steps;
-		Xdata.Cdata.rlnet /= nr_steps;
-		// turbulent heat fluxes
-		Xdata.Cdata.sensible /= nr_steps;
-		Xdata.Cdata.latent /= nr_steps;
-		Xdata.Cdata.latentcorr /= nr_steps;
-		// 2Layer canopy model
-		Xdata.Cdata.CondFluxCanop /=n_steps;
-		Xdata.Cdata.CondFluxTrunks /=n_steps;
-		Xdata.Cdata.QStrunks /=n_steps;
-		Xdata.Cdata.LWnet_Trunks /=n_steps;
-		Xdata.Cdata.SWnet_Trunks /=n_steps;
-		Xdata.Cdata.forestfloor_alb /=n_steps;
-		// auxiliaries
-		Xdata.Cdata.canopyalb /= nr_steps;
-		Xdata.Cdata.totalalb /= nr_steps;
-		Xdata.Cdata.intcapacity /= nr_steps;
-	}
+	if (useCanopyModel) 
+		Xdata.Cdata.multiplyFluxes(1./nr_steps);
 }
 
 /**

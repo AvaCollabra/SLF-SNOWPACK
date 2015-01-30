@@ -87,18 +87,18 @@ using namespace mio;
 		}
 	}
 	//Format of meteo time series:
-    output_ts_as_ascii = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
+	output_ts_as_ascii = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
 
-//set the "plugins" pointers
+	//set the "plugins" pointers
 	RunInfo run_info;
-	if(input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
-	if(input_snow_as_ascii || output_snow_as_ascii || output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
+	if (input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
+	if (input_snow_as_ascii || output_snow_as_ascii || output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef CAAMLIO
-	if(input_snow_as_caaml || output_snow_as_caaml) caamlio = new CaaMLIO(cfg, run_info);
+	if (input_snow_as_caaml || output_snow_as_caaml) caamlio = new CaaMLIO(cfg, run_info);
 #endif
 #ifdef IMISDBIO
 	output_haz_as_imis = output_prf_as_imis;
-	if(output_prf_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
+	if (output_prf_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
 #endif
 }
 
@@ -119,13 +119,13 @@ SnowpackIO::SnowpackIO(const SnowpackIO& source) :
 
 SnowpackIO::~SnowpackIO()
 {
-	if(smetio != NULL) delete smetio;
-	if(asciiio != NULL) delete asciiio;
+	if (smetio != NULL) delete smetio;
+	if (asciiio != NULL) delete asciiio;
 #ifdef CAAMLIO
-	if(caamlio != NULL) delete caamlio;
+	if (caamlio != NULL) delete caamlio;
 #endif
 #ifdef IMISDBIO
-	if(imisdbio != NULL) delete imisdbio;
+	if (imisdbio != NULL) delete imisdbio;
 #endif
 }
 
@@ -173,7 +173,7 @@ void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                  const ProcessDat& Hdata, const double wind_trans24)
 {
-	if(output_ts_as_ascii)
+	if (output_ts_as_ascii)
 		asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 

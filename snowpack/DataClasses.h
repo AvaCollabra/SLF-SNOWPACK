@@ -375,6 +375,7 @@ class CanopyData {
 
 		void reset(const bool& cumsum_mass);
 		void initializeSurfaceExchangeData();
+		void multiplyFluxes(const double& factor);
 
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const CanopyData& data);
@@ -593,7 +594,7 @@ class SurfaceFluxes {
 		void reset(const bool& cumsum_mass);
 		void compSnowSoilHeatFlux(const SnowStation& Xdata);
 		void collectSurfaceFluxes(const BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
-		void averageEnergyFluxes(const double& factor);
+		void multiplyFluxes(const double& factor);
 
 		/**
 		 * @brief Energy fluxes:

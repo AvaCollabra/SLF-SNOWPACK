@@ -387,10 +387,11 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 
 /**
  * @brief If multiple surface fluxes have been summed over multiple time steps, the
- * fluxes then need to be averaged by the number of steps.
- * @param factor Averaging factor (for example, number of 1/Nsteps)
+ * fluxes then need to be averaged by the number of steps. The albedos are also
+ * averaged in this method.
+ * @param factor Averaging factor (for example, 1/Nsteps)
  */
-void SurfaceFluxes::averageEnergyFluxes(const double& factor)
+void SurfaceFluxes::multiplyFluxes(const double& factor)
 {
 	lw_in *= factor;
 	lw_out *= factor;
@@ -406,10 +407,10 @@ void SurfaceFluxes::averageEnergyFluxes(const double& factor)
 	qw *= factor;
 	sw_dir *= factor;
 	sw_diff *= factor;
-	dIntEnergy *= factor;
-	dIntEnergySoil *= factor;
-	meltFreezeEnergy *= factor;
-	meltFreezeEnergySoil *= factor;
+	if (pAlbedo != Constants::undefined)
+		pAlbedo *= factor;
+	if (mAlbedo != Constants::undefined)
+		mAlbedo *= factor;
 }
 
 std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)
@@ -526,6 +527,41 @@ void CanopyData::reset(const bool& cumsum_mass)
 	} else {
 		initializeSurfaceExchangeData();
 	}
+}
+
+/**
+ * @brief If multiple fluxes have been summed over multiple time steps, the
+ * fluxes then need to be averaged by the number of steps. The albedos are also
+ * averaged in this method.
+ * @param factor Averaging factor (for example, 1/Nsteps)
+ */
+void CanopyData::multiplyFluxes(const double& factor)
+{
+	rswrac *= factor;
+	iswrac *= factor;
+	rswrbc *= factor;
+	iswrbc *= factor;
+	ilwrac *= factor;
+	rlwrac *= factor;
+	ilwrbc *= factor;
+	rlwrbc *= factor;
+	rsnet *= factor;
+	rlnet *= factor;
+	// turbulent heat fluxes
+	sensible *= factor;
+	latent *= factor;
+	latentcorr *= factor;
+	// 2Layer canopy model
+	CondFluxCanop *= factor;
+	CondFluxTrunks *= factor;
+	QStrunks *= factor;
+	LWnet_Trunks *= factor;
+	SWnet_Trunks *= factor;
+	forestfloor_alb *= factor;
+	// auxiliaries
+	canopyalb *= factor;
+	totalalb *= factor;
+	intcapacity *= factor;
 }
 
 std::iostream& operator<<(std::iostream& os, const CanopyData& data)

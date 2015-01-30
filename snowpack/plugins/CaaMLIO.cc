@@ -815,7 +815,7 @@ void CaaMLIO::writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStati
 	xmlWriteElement(writer,(prefix_snp+"CanopyDirectThroughfall").c_str(),tempStr,"","");
 	sprintf(tempStr,"%.4f",Xdata.WindScalingFactor);
 	xmlWriteElement(writer,(prefix_snp+"WindScalingFactor").c_str(),tempStr,"","");
-	sprintf(tempStr,"%d",Xdata.ErosionLevel);
+	sprintf(tempStr,"%d",static_cast<unsigned int>(Xdata.ErosionLevel));
 	xmlWriteElement(writer,(prefix_snp+"ErosionLevel").c_str(),tempStr,"","");
 	sprintf(tempStr,"%.4f",Xdata.TimeCountDeltaHS);
 	xmlWriteElement(writer,(prefix_snp+"TimeCountDeltaHS").c_str(),tempStr,"","");
