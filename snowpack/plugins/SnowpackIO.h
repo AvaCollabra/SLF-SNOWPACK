@@ -21,20 +21,48 @@
 #ifndef __SNOWPACKIO_H__
 #define __SNOWPACKIO_H__
 
-#include <snowpack/DataClasses.h>
 #include <meteoio/MeteoIO.h>
 
+#include <snowpack/DataClasses.h>
 #include <snowpack/plugins/SnowpackIOInterface.h>
-
 #include <snowpack/plugins/SmetIO.h>
 #include <snowpack/plugins/AsciiIO.h>
 #ifdef CAAMLIO
-#include <snowpack/plugins/CaaMLIO.h>
+	#include <snowpack/plugins/CaaMLIO.h>
 #endif
 #ifdef IMISDBIO
-#include <snowpack/plugins/ImisDBIO.h>
+	#include <snowpack/plugins/ImisDBIO.h>
 #endif
 
+/**
+ * @page snowpackio Snowpack formats
+ * Snowpack has the ability to read various format for its meteorological input data through the 
+ * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library, so please check into
+ * MeteoIO's documentation, in the <i>"Available plugins and usage"</i> section for the applicable formats.
+ *
+ * @section available_single_profile_plugins Available plugins for single snow profiles
+ * The Snowpack specific data are supported directly in Snowpack and the formats listed in the table below 
+ * are available, both for input and output of snow profiles with the <b>"SNOW"</b> keyword. 
+ * Please read the documentation for each plugin in order to know the plugin-specific keywords!
+ * <center><table border="1">
+ * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
+ * <tr><td>\subpage ascii "SNOOLD"</td><td>legacy Snowpack profile</td><td></td></tr>
+ * <tr><td>\subpage smet "SMET"</td><td>SMET based profile, recommended</td><td></td></tr>
+ * <tr><td>\subpage caaml "CAAML"</td><td>CAAML profile</td><td><A HREF="http://xmlsoft.org/">libxml</A></td></tr>
+ * </table></center>
+ * 
+ * @section available_profile_ts_plugins Available plugins for snow profiles time series
+ * The Snowpack specific data are supported directly in Snowpack and the formats listed in the table below 
+ * are available for output of snow profiles time series with the <b>"PROFILE_FORMAT"</b> keyword. 
+ * Please read the documentation for each plugin in order to know the plugin-specific keywords!
+ * <center><table border="1">
+ * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
+ * <tr><td>\subpage ascii "PRO"</td><td>legacy Snowpack profile time series</td><td></td></tr>
+ * <tr><td>\subpage ascii "PRF"</td><td>easier to parse profile time series</td><td></td></tr>
+ * <tr><td>\subpage profile_imis "IMIS"</td><td>write profile time series to the IMIS database</td><td></td></tr>
+ * </table></center>
+ *
+ */
 class SnowpackIO : public SnowpackIOInterface {
 
 	public:

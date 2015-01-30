@@ -23,6 +23,118 @@
 using namespace std;
 using namespace mio;
 
+/**
+ * @page smet SMET
+ * @section smet_format Format
+ * This plugin reads the SMET files as specified in the 
+ * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library documentation (under 
+ * <i>"Available plugins and usage"</i>, then <i>"smet"</i>).
+ *
+ * @section layers_data Layers data
+ * The snow/soil layers file has the structure described below:
+ * - the SMET signature (to identify the file as SMET as well as the format version)
+ * - a Header section containing the metadata for the location
+ * - a Data section containing description of the layers (if any). Please note that the layers are given from the bottom to the top.
+ *
+ * The following points are important to remember:
+ * - the station_id field is often used to generate output file names
+ * - you don't have to provide lat/lon, you can provide easiting/northing instead alongside an epsg code (see MeteoIO documentation)
+ * - the ProfileDate will be used as starting date for the simulation. Therefore, make sure you have meteorological data from this point on!
+ * - the number of soil and snow layers <b>must</b> be right!
+ * - timestamps follow the ISO format, temperatures are given in Kelvin, thicknesses in m, fractional volumes are between 0 and 1 (and the total sum <b>must</b> be exactly one), densities are in kg/m<SUP>3</SUP> (see the definition of the fields in the table below)
+ *
+ * <center><table border="0">
+ * <caption>initial snow profile fields description</caption>
+ * <tr><td>
+ * <table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>timestamp</th><td>ISO formatted time</td></tr>
+ * <tr><th>Layer_Thick</th><td>layer thickness [mm]</td></tr>
+ * <tr><th>K</th><td>layer temperature [K]</td></tr>
+ * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
+ * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
+ * <tr><th>Conduc_S</th><td>soil thermal conductivity [w/(mK)]</td></tr>
+ * <tr><th>HeatCapac_S</th><td>soil thermal capacity [J/K]</td></tr>
+ * </table></td><td><table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>rg</th><td>grain radius [mm]</td></tr>
+ * <tr><th>rb</th><td>bond radius [mm]</td></tr>
+ * <tr><th>dd</th><td>dendricity [0-1]</td></tr>
+ * <tr><th>sp</th><td>spericity [0-1]</td></tr>
+ * <tr><th>mk</th><td>marker</td></tr>
+ * <tr><th>mass_hoar</th><td>mass of surface hoar []</td></tr>
+ * <tr><th>ne</th><td>number of elements</td></tr>
+ * <tr><th>CDot</th><td> </td></tr>
+ * <tr><th>metamo</th><td> </td></tr>
+ * <tr><th> <br></th><td> </td></tr>
+ * </table></td></tr>
+ * </table></center>
+ *
+ * Usually, simulations are started at a point in time when no snow is on the ground, therefore not requiring the definition of snow layers. An example is given below with one snow layer:
+ * @code
+ * SMET 1.1 ASCII
+ * [HEADER]
+ * station_id       = DAV2
+ * station_name     = Davos:Baerentaelli
+ * latitude         = 46.701
+ * longitude        = 9.82
+ * altitude         = 2560
+ * nodata           = -999
+ * tz               = 1
+ * source           = WSL-Institute for Snow and Avalanche Research SLF; CFierz, 2011-10
+ * ProfileDate      = 2009-10-01T00:00
+ * HS_Last          = 0.0000
+ * SlopeAngle       = 38.0
+ * SlopeAzi         = 0.0
+ * nSoilLayerData   = 0
+ * nSnowLayerData   = 1
+ * SoilAlbedo       = 0.20
+ * BareSoil_z0      = 0.200
+ * CanopyHeight     = 0.00
+ * CanopyLeafAreaIndex     = 0.00
+ * CanopyDirectThroughfall = 1.00
+ * WindScalingFactor       = 1.19
+ * ErosionLevel     = 0
+ * TimeCountDeltaHS = 0.000000
+ * fields           = timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
+ * [DATA]
+ * 2009-09-19T02:30 0.003399 273.15 0.579671 0.068490 0.351839 0.000000 0.0 0.0 0.0 1.432384 1.028390 0.000000 1.000000 22 0.000000 1 0.000000 0.000000
+ * @endcode
+ *
+ * @section hazard_data Hazard data
+ * The hazards file contain the temporal history of various parameters that are relevant for avalanche warning (such as three hours new
+ * snow fall, etc). If such file is not provided, the internal data structures for such data will be initialized to zero (which is
+ * what you usually want when starting a simulation before the start of the snow season). The hazards file has the following structure:
+ * @code
+ * SMET 1.1 ASCII
+ * [HEADER]
+ * station_id       = DAV2
+ * station_name     = Davos:Baerentaelli
+ * latitude         = 46.701
+ * longitude        = 9.82
+ * altitude         = 2560
+ * nodata           = -999
+ * tz               = 1
+ * ProfileDate      = 2012-06-11T17:30
+ * fields           = timestamp SurfaceHoarIndex DriftIndex ThreeHourNewSnow TwentyFourHourNewSnow
+ * [DATA]
+ * 2010-06-08T18:00       -999       -999   0.000000   0.000000
+ * 2010-06-08T18:30       -999       -999   0.000000   0.000000
+ * 2010-06-08T19:00       -999       -999   0.000000   0.000000
+ * 2010-06-08T19:30       -999       -999   0.000000   0.000000
+ * 2010-06-08T20:00       -999       -999   0.000000   0.000000
+ * 2010-06-08T20:30       -999       -999   0.000000   0.000000
+ * 2010-06-08T21:00       -999       -999   0.000000   0.000000
+ * ...
+ * 2010-06-11T17:30       -999       -999   0.000000   0.000000
+ * @endcode
+ * 
+ * As can be seen in this example, the various indices as well as the snow statistics are given every half an hour in reverse chronological order until
+ * the profile date. 
+ */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info),

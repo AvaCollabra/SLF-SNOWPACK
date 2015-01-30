@@ -23,15 +23,12 @@
 using namespace std;
 using namespace mio;
 
+SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 #ifdef IMISDBIO
-	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : imisdbio(NULL),
-#ifdef CAAMLIO
-		caamlio(NULL),
+	imisdbio(NULL),
 #endif
-#elif CAAMLIO
-	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) : caamlio(NULL),
-#else
-	SnowpackIO::SnowpackIO(const SnowpackConfig& cfg) :
+#ifdef CAAMLIO
+	caamlio(NULL),
 #endif
 	smetio(NULL), asciiio(NULL),
 	input_snow_as_smet(false), output_snow_as_smet(false),

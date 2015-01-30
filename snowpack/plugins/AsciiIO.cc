@@ -39,6 +39,17 @@ const bool AsciiIO::t_gnd = false;
 /************************************************************
  * non-static section                                       *
  ************************************************************/
+
+/**
+ * @page ascii ASCII profiles and time series
+ * @section sno_format SNOOLD single profile
+ * 
+ * @section pro_format PRO profiles time series
+ * 
+ * @section prf_format PRF profiles time series
+ * 
+ * 
+ */
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), variant(), experiment(), sw_mode(),
            inpath(), snowfile(), i_snowpath(), outpath(), o_snowpath(),
