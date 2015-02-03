@@ -50,7 +50,7 @@ using namespace mio;
  * <tr><th>Field</th><th>Description</th></tr>
  * <tr><th>timestamp</th><td>ISO formatted time</td></tr>
  * <tr><th>Layer_Thick</th><td>layer thickness [mm]</td></tr>
- * <tr><th>K</th><td>layer temperature [K]</td></tr>
+ * <tr><th>T</th><td>layer temperature [K]</td></tr>
  * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>

@@ -46,7 +46,7 @@ using namespace mio;
  * This plugin reads the CAAML files as generated according <A HREF="http://caaml.org/">CAAML V5.0</A>'s 
  * <A HREF="http://caaml.org/Schemas/V5.0/Profiles/SnowProfileIACS">specification</A>.
  *
- * @section camml_keywords Keywords
+ * @section caaml_keywords Keywords
  * This plugin uses the following keywords:
  * - COORDSYS:  input coordinate system (see Coords) specified in the [Input] section
  * - SNOW:     specify COSMOCAAML for [Input] section

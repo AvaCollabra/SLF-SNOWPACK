@@ -41,15 +41,230 @@ const bool AsciiIO::t_gnd = false;
  ************************************************************/
 
 /**
- * @page ascii ASCII profiles and time series
- * @section sno_format SNOOLD single profile
+ * @page snoold_format SNOOLD single profile
+ * @section snoold_structure General structure
+ * The snow/soil layers file has the structure described below:
+ * - a header section containing the metadata for the location;
+ * - a data section containing description of the layers (if any). Please note that the layers are given from the bottom to the top.
+ * - a hazard data section.
+ *
+ * The following points are important to remember:
+ * - the ProfileDate will be used as starting date for the simulation. Therefore, make sure you have meteorological data from this point on!
+ * - the number of soil and snow layers <b>must</b> be right!
  * 
- * @section pro_format PRO profiles time series
+ * @section snoold_fields Fields definition
+ * <center><table border="0">
+ * <caption>initial snow profile fields description</caption>
+ * <tr><td>
+ * <table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>YYYY</th><td>Year</td></tr>
+ * <tr><th>MM</th><td>Month</td></tr>
+ * <tr><th>DD</th><td>Day</td></tr>
+ * <tr><th>HH</th><td>Hour</td></tr>
+ * <tr><th>MI</th><td>Minutes</td></tr>
+ * <tr><th>Layer_Thick</th><td>layer thickness [mm]</td></tr>
+ * <tr><th>T</th><td>layer temperature [K]</td></tr>
+ * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
+ * <tr><th> <br></th><td> </td></tr>
+ * </table></td><td><table border="1">
+ * <tr><th>Field</th><th>Description</th></tr>
+ * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
+ * <tr><th>Conduc_S</th><td>soil thermal conductivity [w/(mK)]</td></tr>
+ * <tr><th>HeatCapac_S</th><td>soil thermal capacity [J/K]</td></tr>
+ * <tr><th>rg</th><td>grain radius [mm]</td></tr>
+ * <tr><th>rb</th><td>bond radius [mm]</td></tr>
+ * <tr><th>dd</th><td>dendricity [0-1]</td></tr>
+ * <tr><th>sp</th><td>spericity [0-1]</td></tr>
+ * <tr><th>mk</th><td>marker</td></tr>
+ * <tr><th>mass_hoar</th><td>mass of surface hoar []</td></tr>
+ * <tr><th>ne</th><td>number of elements</td></tr>
+ * <tr><th>CDot</th><td> </td></tr>
+ * <tr><th>metamo</th><td> </td></tr>
+ * </table></td></tr>
+ * </table></center>
+ *
+ * @section snoold_example Example
+ * Usually, simulations are started at a point in time when no snow is on the ground, therefore not requiring the definition of snow layers. An example is given below with two soil layers:
+ * @code
+ * [SNOWPACK_INITIALIZATION]
+ * StationName=Davos:Baerentaelli
+ * ProfileDate=1999 10 01 00 00
+ * HS_Last=0.0
+ * Latitude=46.701
+ * Longitude=9.82
+ * Altitude=2560
+ * SlopeAngle=0
+ * SlopeAzi=0
+ * nSoilLayerData=2
+ * nSnowLayerData=0
+ * SoilAlbedo=0.5
+ * BareSoil_z0=0.02
+ * CanopyHeight=0.
+ * CanopyLeafAreaIndex=0.
+ * CanopyDirectThroughfall=0
+ * WindScalingFactor=1.00
+ * ErosionLevel=0
+ * TimeCountDeltaHS=0.00
+ * YYYY MM DD HH MI Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
+ * 1980 10 01 00 00 10 278.15 0.00 0.02 0.01 0.97 2400.0 0.3 900.0 10000 0.0 0.0 0.0 0 0.0 50 0.0 0.0
+ * 1980 10 01 00 00 0.5 278.15 0.00 0.02 0.01 0.97 2400.0 0.3 900.0 10000 0.0 0.0 0.0 0 0.0 20 0.0 0.0
+ * SurfaceHoarIndex
+ * 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+ * DriftIndex
+ * 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+ * ThreeHourNewSnow
+ * 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+ * TwentyFourHourNewSnow
+ * 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 
+ * End
+ * @endcode
+ *
+ */
+
+/**
+ * @page pro_format PRO profiles time series
+ * @section pro_structure General structure
+ * The PRO profile time series file has the structure described below:
+ * - a header section containing the metadata for the location;
+ * - another header defining the properties and attributing them a code;
+ * - a data section containing the layers' properties prefixed by the property code.
  * 
- * @section prf_format PRF profiles time series
- * 
+ * @section pro_example Example
+ * The time resolved snow profiles are stored in <i>".pro"</i> files structured as following:
+ * @code
+ * [STATION_PARAMETERS]
+ * StationName      = Davos:Baerentaelli
+ * Latitude         = 46.701
+ * Longitude        = 9.82
+ * Altitude         = 2560
+ * SlopeAngle= 0.00
+ * SlopeAzi= 0.00
+ *
+ * [HEADER]
+ * #2012-06-11T16:37, Snowpack DEFAULT version 20120611.193 run by "bavay" (research mode)
+ * 0500,Date
+ * 0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)
+ * 0502,nElems,element density (kg m-3)
+ * 0503,nElems,element temperature (degC)
+ * 0506,nElems,liquid water content by volume (%)
+ * 0508,nElems,dendricity (1)
+ * 0509,nElems,sphericity (1)
+ * 0510,nElems,coordination number (1)
+ * 0511,nElems,bond size (mm)
+ * 0512,nElems,grain size (mm)
+ * 0513,nElems,grain type (Swiss Code F1F2F3)
+ * 0515,nElems,ice volume fraction (%)
+ * 0516,nElems,air volume fraction (%)
+ * 0517,nElems,stress in (kPa)
+ * 0518,nElems,viscosity (GPa s)
+ * 0519,nElems,soil volume fraction (%)
+ * 0520,nElems,temperature gradient (K m-1)
+ * 0521,nElems,thermal conductivity (W K-1 m-1)
+ * 0522,nElems,absorbed shortwave radiation (W m-2)
+ * 0523,nElems,viscous deformation rate (1.e-6 s-1)
+ * 0530,nElems,position (cm) and minimum stability indices:
+ *           profile type, stability class, z_Sdef, Sdef, z_Sn38, Sn38, z_Sk38, Sk38
+ * 0531,nElems,deformation rate stability index Sdef
+ * 0532,nElems,natural stability index Sn38
+ * 0533,nElems,stability index Sk38
+ * 0534,nElems,hand hardness either (N) or index steps (1)
+ * 0535,nElems,optical equivalent grain size (mm)
+ * 0601,nElems,snow shear strength (kPa)
+ * 0602,nElems,grain size difference (mm)
+ * 0603,nElems,hardness difference (1)
+ * 0604,nElems,ssi
+ * 0605,nElems,inverse texture index ITI (Mg m-4)
+ *
+ * [DATA]
+ * @endcode
+ * The each data line starts with a code as described in the header followed by the number of elements (except for the date line) and
+ * for each element, the value of the matching parameter. For example, the lines:
+ * @code
+ * 0500,10.12.1995 12:30
+ * 0501,31,27.21,29.07,30.62,31.57,33.30,35.25,37.46,39.82,40.92,42.86,44.22,45.74,47.41,49.15,50.63,52.46,54.58
+ * 0502,17,277.7,274.2,268.6,267.0,258.4,248.4,233.5,218.1,207.8,225.1,185.9,176.0,162.5,155.0,127.7,122.7,114.4
+ * @endcode
+ * provide the date and time (line starting with 0500), then the elements heights for each of the 17 elements (line starting with 0501) and the elements densities (line starting with 0502).
  * 
  */
+
+/**
+ * @page met_format MET meteorological time series
+ * @section met_structure General structure
+ * The MET  time series of meteorological data has the structure defined below:
+ * - a header  section containing the metadata for the location;
+ * - another header defining the properties and their order;
+ * - a data section containing the various meteorological parameters and fluxes.
+ * 
+ * @section met_example Example
+ * @code
+ * [STATION_PARAMETERS]
+ * StationName= Weissfluhjoch:StudyPlot_MST
+ * Latitude= 46.83
+ * Longitude= 9.81
+ * Altitude= 2540
+ * SlopeAngle= 0.00
+ * SlopeAzi= 0.00
+ * DepthTemp= 0
+ *
+ * [HEADER]
+ * #2012-06-11T16:37, Snowpack DEFAULT version 20120611.193 run by "bavay" (research mode)
+ * ,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100
+ * ID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal),Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),Total
+snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured),Measured snow depth HS or Solute load at soil surface,SWE (of snowpack),Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,Soil runoff,Internal energy change,Surface input (sum fluxes),Measured new snow density,Modeled new snow density,Crust thickness (S-slope),Measured sensible heat,Measured latent heat
+ * ,,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,degC,degC,degC,degC,W m-2,degC,W m-2,W m-2,W m-2,W m-2,W m-2,W m-2,1,%,m s-1,m s-1,deg,kg m-2 h-1,cm,cm,mm,cm,cm,cm,kg m-2,kg m-2 h-1,kg m-2 h-1,kg m-2,kg m-2,kg m-2,degC,degC,degC,degC,degC,degC,degC,degC,degC,degC,cm or kg m-2,kg m-2,kg m-2,-,-,cm,1,cm,1,cm,1,cm,1,cm,1,,,,,,,,,,,,,,,,,,,,,,,,,,,,,kg m-2,kJ m-2,kJ m-2,kg m-3,kg m-3,cm,W m-2,W m-2
+ *
+ * [DATA]
+ * 0203,01.11.1995 00:30,0.795426,-4.160588,308.899297,293.706000,-15.193297,0.000000,0.000000,0.000000,0.090000,0.000000,-0.100000,0.200000,-0.100000,-999.000000,-0.100000,-999.000000,0.000000,0.000000,0.000000,0.000000,0.000000,-999.000000,95.800000,0.800000,0.800000,278.200000,0.000000,0.00,0.00,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,0.000000,,,,,,,,,,,0.00,0.000000,0.000000,-1,-1,0.0,6.00,0.0,6.00,0.0,6.00,0.0,6.00,0.0,0.00,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,-999.000000,-16.702613,-0.0,-151.3,0.000000,,
+ * @endcode
+ * Data lines start with an id, followed by the date and the other fields, as shown in the header.
+ *
+ * @section met_keywords Keywords
+ * This plugin uses the following keywords:
+ * - in the [Output] section:
+ *     - AVGSUM_TIME_SERIES
+ *     - EXPERIMENT
+ *     - METEOPATH
+ *     - SNOWPATH
+ *     - TS_DAYS_BETWEEN
+ *     - OUT_CANOPY
+ *     - OUT_HAZ
+ *     - OUT_HEAT
+ *     - OUT_LOAD
+ *     - OUT_LW
+ *     - OUT_MASS
+ *     - OUT_METEO
+ *     - OUT_SOILEB
+ *     - OUT_STAB
+ *     - OUT_SW
+ *     - OUT_T
+ *
+ * - in the [SnowpackAdvanced] section:
+ *     - HOAR_DENSITY_SURF
+ *     - HOAR_MIN_SIZE_SURF
+ *     - MIN_DEPTH_SUBSURF
+ *     - PERP_TO_SLOPE
+ *     - RESEARCH
+ *     - VARIANT
+ *
+ */
+ 
+/**
+ * @page prf_format PRF profiles time series
+ * @section prf_structure General structure
+ * 
+ * @section prf_example Example
+ * 
+ * @section prf_keywords Keywords
+ * This plugin uses the following keywords:
+ * - AGGREGATE_PRF: if enabled, layers are aggregated in order to reduce their number, in the [Output] section;
+ * 
+ */
+
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
          : setAppendableFiles(), variant(), experiment(), sw_mode(),
            inpath(), snowfile(), i_snowpath(), outpath(), o_snowpath(),

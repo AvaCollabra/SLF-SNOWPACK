@@ -32,8 +32,7 @@
  *        -# \subpage uses "Use cases"
  *    -# Inputs / Outputs
  *        -# \subpage requirements "Data requirements"
- *        -# \subpage input_formats "Input file formats"
- *        -# \subpage output_formats "Output file formats"
+ *        -# \subpage snowpackio "File formats"
  *    -# Simulation tools
  *        -# \subpage configuration "Configuring a simulation"
  *        -# \subpage sngui_config "Visualization with sngui"
@@ -227,12 +226,11 @@
 
 /**
  * @page getopt_copyright BSD copyright notice
- * This copyright notice applies to files applications/snowpack/getopt.* and getopt_long.*. All other
- * files in this product are covered by the <a href="http://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> or above,
- * or <a href="http://www.gnu.org/licenses/gpl.txt">GPL version 3</a> or above unless otherwise specified.
+ * This copyright notice applies to files applications/snowpack/getopt.* and getopt_long.* as used on the MS Windows
+ * platform. All other files in this product are covered by the <a href="http://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> 
+ * or above, or <a href="http://www.gnu.org/licenses/gpl.txt">GPL version 3</a> or above unless otherwise specified.
  *
- * Copyright (c) 1987, 1993, 1994
- *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 1987, 1993, 1994 The Regents of the University of California.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -330,21 +328,6 @@
  *       layers are present
  *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
  *       This parameter can be set in the SnowpackAdvanced section of the io.ini file.
- */
-
-/**
- * @page input_formats File formats
- * Several kind of information need to be given to %Snowpack for a simulation:
- * -# the description of the place where the snow pack has to be simulated: latitutde, longitude, elevation, slope, ...
- * -# the time series of the various meteorological parameters
- * -# the intial state of the various soil and snow layers
- *
- * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
- * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation, in the 
- * <i>"Available plugins and usage"</i> section for the relevant formats.
- * 
- * The available formats for providing the initial state of the layers are listed at  the \subpage snowpackio "Snowpack formats" page.
- * 
  */
 
 /**
