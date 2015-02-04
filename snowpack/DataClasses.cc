@@ -1261,7 +1261,7 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 		case 4: // PPgp Graupel
 			a = 0; b = 0; c = 0;
 			break;
-		case 7: case 8: // Glacier ice & IFil, that is, ice layers within the snowpack
+		case 7: case 8: case 17: case 18: case 27: case 28: // Glacier ice & IFil, that is, ice layers within the snowpack
 			a = 8; b = 8; c = 0;
 			break;
 	}
