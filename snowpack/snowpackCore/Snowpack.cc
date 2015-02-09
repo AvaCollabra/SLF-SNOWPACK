@@ -762,11 +762,14 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				eAlbedo--;
 		default: // Snow, glacier ice, PLASTIC, or soil
 			if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
-			// modifs for forestfloor alb
-				double	Albedo1 = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
-        			const double age = (forestfloor_alb) ? MAX(0., Mdata.date.getJulian() - Xdata.Edata[eAlbedo].depositionDate.getJulian()) : 0.; // day
-				Albedo = (Albedo1 -.3)* exp(-age/7.) + 0.3;
-
+				if(!(useCanopyModel && (Xdata.Cdata.height > 3.5))) {
+					Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+				} else {
+					// modifs for forestfloor alb
+					const double Albedo1 = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+					const double age = (forestfloor_alb) ? MAX(0., Mdata.date.getJulian() - Xdata.Edata[eAlbedo].depositionDate.getJulian()) : 0.; // day
+					Albedo = (Albedo1 -.3)* exp(-age/7.) + 0.3;
+				}
 			} else { // PLASTIC, or soil
 				Albedo = Xdata.SoilAlb;
 			}
