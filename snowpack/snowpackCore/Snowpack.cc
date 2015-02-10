@@ -946,26 +946,33 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			NDS[0].T = Mdata.ts0;
 		}
 	}
+	
 	// Copy Temperature at time0 into First Iteration
+	const double T_min_Element = 50., T_max_Element = 500.;
 	for (size_t n = 0; n < nN; n++) {
 		U[n] = NDS[n].T;
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
-		/*if (!(U[n] > 50. && U[n] < 500.)) {
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
-			prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
-			free(U); free(dU); free(ddU);
-			throw IOException("Runtime error in compTemperatureProfile", AT);
-		}*/
-		if (!(U[n] > 50. && U[n] < 500.)) {
-			const double T_mean_down = (n>=1)? 0.5*(NDS[n].T+NDS[n-1].T) : IOUtils::nodata;
-			const double T_mean_up = (n<(nN-1))? 0.5*(NDS[n].T+NDS[n+1].T) : IOUtils::nodata;
-			if (T_mean_down>50. && T_mean_down<500.) U[n] = T_mean_down;
-			else if (T_mean_up>50. && T_mean_up<500.) U[n] = T_mean_up;
-			if (!(U[n] > 50. && U[n] < 500.)) U[n]=C_TO_K(0.);
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration! Reset to %.2lf", U[n]);
+		if (!(U[n] > T_min_Element && U[n] < T_max_Element)) {
+			if (alpine3d) {
+				const double T_mean_down = (n>=1)? 0.5*(NDS[n].T+NDS[n-1].T) : IOUtils::nodata;
+				const double T_mean_up = (n<(nN-1))? 0.5*(NDS[n].T+NDS[n+1].T) : IOUtils::nodata;
+				if (T_mean_down>T_min_Element && T_mean_down<T_max_Element) U[n] = T_mean_down;
+				else if (T_mean_up>T_min_Element && T_mean_up<T_max_Element) U[n] = T_mean_up;
+				if (U[n] <= T_min_Element) U[n] = .5*( C_TO_K(0.) + T_min_Element); //too cold -> reset to avg(Tmin, 0C)
+				if (U[n] >= T_max_Element) U[n] = .5*( C_TO_K(0.) + T_max_Element); //too hot -> reset to avg(Tmax, 0C)
+				
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration! Reset to %.2lf", U[n]);
+			} else {
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
+				prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
+				
+				free(U); free(dU); free(ddU);
+				throw IOException("Runtime error in compTemperatureProfile", AT);
+			}
 		}
 	}
+	
 	// Set the iteration counters, as well as the phase change boolean values
 	unsigned int iteration = 0;   // iteration counter (not really required)
 	bool NotConverged = true;     // true if iteration did not converge
