@@ -63,6 +63,9 @@ class PhaseChange {
 		double cold_content_out;	///< cold content after last PhaseChange call (for checking energy balance)
 		double cold_content_soil_out;	///< cold content after last PhaseChange call (for checking energy balance)
 
+		bool alpine3d;			///< flag for alpine3d simulations
+		double t_crazy_min, t_crazy_max;///< reasonable temperature bounds
+
 		static const double theta_s; ///< Saturated Water Content, for now we say  1.0
 };
 
