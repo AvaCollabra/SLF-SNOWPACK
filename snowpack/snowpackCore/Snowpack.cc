@@ -948,21 +948,27 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	}
 	
 	// Copy Temperature at time0 into First Iteration
-	const double T_min_Element = 50., T_max_Element = 500.;
+	const double T_min_node = 50., T_max_node = 500.;
 	for (size_t n = 0; n < nN; n++) {
 		U[n] = NDS[n].T;
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
-		if (!(U[n] > T_min_Element && U[n] < T_max_Element)) {
+		if (!(U[n] > T_min_node && U[n] < T_max_node)) {
 			if (alpine3d) {
+				const double Tnode_orig = U[n];
 				const double T_mean_down = (n>=1)? 0.5*(NDS[n].T+NDS[n-1].T) : IOUtils::nodata;
 				const double T_mean_up = (n<(nN-1))? 0.5*(NDS[n].T+NDS[n+1].T) : IOUtils::nodata;
-				if (T_mean_down>T_min_Element && T_mean_down<T_max_Element) U[n] = T_mean_down;
-				else if (T_mean_up>T_min_Element && T_mean_up<T_max_Element) U[n] = T_mean_up;
-				if (U[n] <= T_min_Element) U[n] = .5*( C_TO_K(0.) + T_min_Element); //too cold -> reset to avg(Tmin, 0C)
-				if (U[n] >= T_max_Element) U[n] = .5*( C_TO_K(0.) + T_max_Element); //too hot -> reset to avg(Tmax, 0C)
+				if (T_mean_down>T_min_node && T_mean_down<T_max_node) U[n] = T_mean_down;
+				else if (T_mean_up>T_min_node && T_mean_up<T_max_node) U[n] = T_mean_up;
+				if (U[n] <= T_min_node) U[n] = .5*( C_TO_K(0.) + T_min_node); //too cold -> reset to avg(Tmin, 0C)
+				if (U[n] >= T_max_node) U[n] = .5*( C_TO_K(0.) + T_max_node); //too hot -> reset to avg(Tmax, 0C)
 				
-				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration! Reset to %.2lf", U[n]);
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration for node %d / %d (soil node=%d)! Reset from %.2lf to %.2lf", n, nN, Xdata.SoilNode, Tnode_orig, U[n]);
+				for(size_t ii=0; ii<nE; ++ii) {
+					std::cout << "   " << ii << "\t" << U[ii] << " " << EMS[ii].Te << " " << U[ii+1] << " " << " " << EMS[ii].L << " " << EMS[ii].Rho << "\n";
+					if (ii==Xdata.SoilNode)
+						std::cout << "---- end soil ----\n";
+				}
 			} else {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
 				prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
