@@ -1386,11 +1386,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 						add_element = true;
 					}
 				}
-			} else {
+			} else
 				return;
-			}
-			// bug correction for the writing of snowfall in the output
-			Sdata.mass[SurfaceFluxes::MS_HNW] += precip_snow;
 		} else {
 			// This is now very important to make sure that rain will not accumulate
 			cumu_precip -= Mdata.hnw;
