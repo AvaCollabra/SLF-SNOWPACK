@@ -35,7 +35,7 @@
 #endif
 
 /**
- * @page snowpackio Snowpack formats
+ * @page snowpackio Snowpack data formats
  * 
  * @section snowpack_inputs_outputs Snowpack inputs versus outputs
  * %Snowpack needs several kind of information to be provided for a simulation and then writes out

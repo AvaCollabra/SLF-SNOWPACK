@@ -32,7 +32,7 @@
  *        -# \subpage uses "Use cases"
  *    -# Inputs / Outputs
  *        -# \subpage requirements "Data requirements"
- *        -# \subpage snowpackio "File formats"
+ *        -# \subpage snowpackio "Data file formats"
  *    -# Simulation tools
  *        -# \subpage configuration "Configuring a simulation"
  *        -# \subpage sngui_config "Visualization with sngui"
