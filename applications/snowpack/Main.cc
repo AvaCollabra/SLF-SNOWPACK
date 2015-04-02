@@ -1320,8 +1320,8 @@ int main(int argc, char *argv[]) {
 		real_main(argc, argv);
 	} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
-		exit(1);
+		return EXIT_FAILURE;
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
