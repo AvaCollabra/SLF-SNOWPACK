@@ -46,8 +46,7 @@ SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML p
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
 IF(WIN32)
-	#otherwise the lib files are not generated
-	SET(BUILD_STATIC_LIBS ON)
+	SET(BUILD_STATIC_LIBS ON) #otherwise the lib files are not generated
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
@@ -182,19 +181,9 @@ MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
 FILE(GLOB hfiles "snowpack/*.h")
 FILE(GLOB hpluginfiles "snowpack/plugins/*.h")
 FILE(GLOB hcorefiles "snowpack/snowpackCore/*.h")
-
-IF(WIN32) #handle the special case of WIN32 needing import libraries
-	FILE(GLOB_RECURSE importlibs "lib/libsnow*.lib*")
-	FILE(GLOB dlls "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
-	INSTALL(FILES ${importlibs} ${dlls} DESTINATION lib COMPONENT libraries)
-ENDIF(WIN32)
-#FILE(GLOB_RECURSE solibs "lib/libsnow*.${DLL_EXT}")
-#FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
-
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT headers)
 INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
-#INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
 ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
@@ -250,9 +239,12 @@ IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
 	IF(BUILD_SHARED_LIBS) #consider that if STATIC, we don't need the libs
-		FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
-		INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
-		INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
+		FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*.${DLL_EXT}")
+		IF(WIN32)
+			INSTALL(FILES ${meteoio_libs} DESTINATION bin COMPONENT exe)
+		ELSE(WIN32)
+			INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT exe)
+		ENDIF(WIN32)
 	ENDIF(BUILD_SHARED_LIBS)
 	IF(INSTALL_DOC)
 		IF(WIN32)
@@ -262,7 +254,6 @@ IF(CPACK_BUNDLE_ALL)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/share/doc/meteoio")
 			SET(METEOIO_DOC ${DOC_PATH}/../meteoio)
 		ENDIF(WIN32)
-		INSTALL(DIRECTORY "${METEOIO_INSTALLED_DOC}/examples" DESTINATION ${METEOIO_DOC} COMPONENT examples)
 		INSTALL(DIRECTORY "${METEOIO_INSTALLED_DOC}/html" DESTINATION ${METEOIO_DOC} COMPONENT documentation)
 		FILE(GLOB meteoio_docs "${METEOIO_INSTALLED_DOC}/*.*")
 		INSTALL(FILES ${meteoio_docs} DESTINATION ${METEOIO_DOC} COMPONENT documentation)
@@ -298,22 +289,14 @@ SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${
 
 #installation by components for formats that support it
 #SET(CPACK_COMPONENTS_ALL_GROUPS_IN_ONE_PACKAGE 1)
-SET(CPACK_COMPONENTS_ALL libraries headers documentation examples exe)
-SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack library")
-SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK library itself")
-SET(CPACK_COMPONENT_LIBRARIES_GROUP Runtime)
-SET(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "Header files")
-SET(CPACK_COMPONENT_HEADERS_DESCRIPTION "Necessary C++ header files for developing applications using SNOWPACK")
-SET(CPACK_COMPONENT_HEADERS_GROUP Development)
-SET(CPACK_COMPONENT_HEADERS_DEPENDS libraries)
-SET(CPACK_COMPONENT_DEVELOPMENT_GROUP "Development")
-SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an application based on SNOWPACK")
+SET(CPACK_COMPONENTS_ALL documentation examples exe)
+SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack static library")
+SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK static library")
 SET(CPACK_COMPONENT_EXE_DISPLAY_NAME "Snowpack application")
 SET(CPACK_COMPONENT_EXE_DESCRIPTION "The SNOWPACK standalone model")
 SET(CPACK_COMPONENT_EXE_GROUP Runtime)
 SET(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
 SET(CPACK_COMPONENT_GROUP_RUNTIME_DESCRIPTION "What you need to run an application based on SNOWPACK")
-SET(CPACK_COMPONENT_EXE_DEPENDS libraries)
 IF(INSTALL_DOC)
 	SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
 	SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documentation of the SNOWPACK usage and API both for the end user and the developer using SNOWPACK in his/her application")
@@ -369,7 +352,6 @@ ELSE(UNIX)
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://models.slf.ch/p/snowpack/" "Home page"
 				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
-				"${METEOIO_DOC}/examples" "MeteoIO examples"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS

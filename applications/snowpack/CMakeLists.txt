@@ -73,14 +73,3 @@ INSTALL(TARGETS ${BINARY}
 	RUNTIME DESTINATION bin
 	COMPONENT exe
 )
-
-###########################################################
-## Bundle MeteoIO
-###########################################################
-IF(WIN32)
-	IF(CPACK_BUNDLE_ALL AND NOT BUILD_STATIC_LIBS) #we consider that if !bundle, the user knows how to handle is library path
-		FILE(GLOB METEOIO_DLL "${METEOIO_ROOT}/lib/libmeteo*.dll")
-		FILE(GLOB SNOWPACK_DLL "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
-		INSTALL(FILES ${METEOIO_DLL} ${SNOWPACK_DLL} DESTINATION bin COMPONENT exe)
-	ENDIF(CPACK_BUNDLE_ALL AND NOT BUILD_STATIC_LIBS)
-ENDIF(WIN32)
