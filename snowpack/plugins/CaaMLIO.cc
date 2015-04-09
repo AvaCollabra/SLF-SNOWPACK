@@ -693,7 +693,6 @@ void CaaMLIO::setDepositionDates(std::vector<LayerData> &Layers, const Date prof
  * @brief This routine writes the status of the snow cover at program termination and at specified backup times
  * @param date current
  * @param Xdata
- * @param SSdata
  * @param Zdata
  * @param forbackup dump Xdata on the go
  */
@@ -859,7 +858,7 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 				xmlTextWriterEndElement(writer);
 			}
 
-			xmlWriteElement(writer,(prefix+"hardness").c_str(),hardness_valToCode(Xdata.Edata[ii].hard).c_str(),"uom","N");
+			xmlWriteElement(writer,(prefix+"hardness").c_str(),hardness_valToCode(Xdata.Edata[ii].hard).c_str(),"uom","N"); //HACK: check values... seem always the same!
 
 			xmlWriteElement(writer,(prefix+"lwc").c_str(),lwc_valToCode(Xdata.Edata[ii].theta[WATER]).c_str(),"uom","");
 			xmlTextWriterEndElement(writer);
@@ -959,7 +958,7 @@ void CaaMLIO::writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xd
 				sprintf(hgtStr,"%.4f",100*Xdata.Edata[ii].L);
 				xmlWriteElement(writer,(prefix+"thickness").c_str(),hgtStr,"","");
 
-				sprintf(hardStr,"%d",999);
+				sprintf(hardStr,"%d",999); //HACK write out real value or skip section!
 				xmlWriteElement(writer,(prefix+"hardness").c_str(),hardStr,"","");
 				xmlTextWriterEndElement(writer);
 				cumHgt -= Xdata.Edata[ii].L;

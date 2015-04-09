@@ -1580,6 +1580,7 @@ bool SnowStation::hasSoilLayers() const
  * as defined in combineCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
+ * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack
  */
 void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements)
 {

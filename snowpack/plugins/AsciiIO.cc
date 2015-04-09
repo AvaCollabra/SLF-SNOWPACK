@@ -367,10 +367,8 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	FILE *fin = fopen(snofilename.c_str(), "r");
-	if (fin == NULL) {
-		prn_msg(__FILE__, __LINE__, "msg+", Date(), "Cannot open profile INPUT file: %s", snofilename.c_str());
-		throw IOException("Cannot generate Xdata from file "+snofilename, AT);
-	}
+	if (fin == NULL)
+		throw IOException("Cannot open input profile "+snofilename, AT);
 
 	// Header, Station Name and Julian Date
 	char station_name[MAX_STRING_LENGTH];
@@ -651,7 +649,6 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
  * @version 11.02
  * @param date current
  * @param Xdata
- * @param SSdata
  * @param Zdata
  * @param forbackup dump Xdata on the go
  */

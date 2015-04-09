@@ -1078,7 +1078,7 @@ n1100:
  * @param neqns -- number of equations.
  * @param xadj -- adjacency structure.
 * output parameters --
- * @param (head,dfrow,backward) -- degree doubly linked structure.
+ * @param (head,forward,backward) -- degree doubly linked structure.
  * @param qsize -- size of supernode ( initialized to one).
  * @param list -- linked list.
  * @param marker -- marker vector.
@@ -1115,14 +1115,13 @@ static int  MmdInit(int neqns, int *xadj, int *head, int *forward, int *backward
 * permutation vectors in the multiple elimination version of the minimum degree ordering
 * algorithm.
 * input parameters --
- * @param neqns -- number of equations.
- * @param qsize -- size of supernodes at elimination.
+* @param neqns -- number of equations.
+* @param qsize -- size of supernodes at elimination.
 * updated parameters --
- * @param invp -- inverse permutation vector. on input, if qsize[node] = 0, then node has been
- * @param merged into the node -invp[node]; otherwise,
- * @param -invp[node] is its inverse labelling.
- * output parameters --
- * @param perm -- the permutation vector.
+* @param invp -- inverse permutation vector. on input, if qsize[node] = 0, then node has been
+* output parameters --
+* @param perm -- the permutation vector.
+* @param nsize -- number of supernodes
 */
 static void  MmdNumbering(int neqns, int *perm, int *invp, int *qsize, int *nsize)
 {
