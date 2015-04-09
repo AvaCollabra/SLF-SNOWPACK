@@ -67,8 +67,12 @@ ENDIF(WIN32)
 
 #build METEOIO_ROOT so we can provide a hint for searching for the header file
 GET_FILENAME_COMPONENT(meteoio_libs_root ${METEOIO_LIBRARY} PATH)
-SET(METEOIO_ROOT "${meteoio_libs_root}/../")
-STRING(REPLACE  " " "\\ " METEOIO_ROOT ${METEOIO_ROOT})
+IF(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
+	GET_FILENAME_COMPONENT(METEOIO_ROOT ${meteoio_libs_root} DIRECTORY)
+ELSE(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
+	SET(METEOIO_ROOT "${meteoio_libs_root}/../")
+	STRING(REPLACE  " " "\\ " METEOIO_ROOT ${METEOIO_ROOT})
+ENDIF(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
 
 # locate main header file
 FIND_PATH(METEOIO_INCLUDE_DIR

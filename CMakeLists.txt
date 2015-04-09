@@ -350,7 +350,7 @@ ELSE(UNIX)
 				"bin/inishell.jar" "inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "Home page"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
