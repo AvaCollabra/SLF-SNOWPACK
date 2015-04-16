@@ -478,7 +478,7 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 		double I0_band = I0;
 		for (size_t e = nE-1; e > bottom_element; e--) {
 			// Radiation absorbed by element e, transparent (=0.) for water
-			const double dI = (EMS[e].mk%10 != 9)? I0 * (1. - exp(-EMS[e].extinction() * EMS[e].L)) : 0.;
+			const double dI = MAX(I0_band, (EMS[e].mk%10 != 9) ? I0_band * (1. - exp(-EMS[e].extinction() * EMS[e].L)) : 0.);
 			EMS[e].sw_abs += dI;
 			I0_band -= dI;
 		}
