@@ -660,7 +660,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
-	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2010_ADAPTED;//(Recommended: YAMAGUCHI2010_ADAPTED) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
+	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2012;	//(Recommended: YAMAGUCHI2012) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
 	const bool alpine3d=false;						//Flag for alpine3d simulations. Note: this flag is not necessary to set, but it will enforce some precautions to provide extra numerical stability (at the cost of small mass balance violations).
 
 	//Setting some program flow variables
