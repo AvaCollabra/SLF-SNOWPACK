@@ -2344,7 +2344,7 @@ void CurrentMeteo::reset(const SnowpackConfig& i_cfg)
 	*this = CurrentMeteo(i_cfg);
 }
 
-/* @brief description:
+/* Description:
 * - Measured and/or modelled temperatures can be monitored at fixed positions (m).
 * - At most MAX_NUMBER_MEAS_TEMPERATURES can be monitored (by default 5). Measured temperatures
 *     are read in from the input file. If you use the smet format, do not forget to properly

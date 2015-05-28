@@ -214,11 +214,11 @@ void SnowpackConfig::setDefaults()
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 
-		addKey("FIRST_BACKUP", "Output", "1500.");
-		addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
-		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
-		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
+		//addKey("FIRST_BACKUP", "Output", "1500.");
+		//addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
+		//addKey("FIXED_RATES", "SnowpackAdvanced", "false");
+		//addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		//addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");

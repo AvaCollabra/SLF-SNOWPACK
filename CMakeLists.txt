@@ -268,11 +268,11 @@ IF(CPACK_BUNDLE_ALL)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack. This consists of a library and a program calling it so it can easily be integrated into other models.")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Welcome.txt")
 SET(CPACK_PACKAGE_NAME "Snowpack")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Snowpack")
-SET(CPACK_PACKAGE_CONTACT "Mathias Bavay ")
+SET(CPACK_PACKAGE_CONTACT "Mathias Bavay <Mathias.Bavay@wsl.ch>")
 SET(CPACK_PACKAGE_VENDOR "WSL Institute for Snow and Avalanche Research")
 SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons\\\\icon.ico")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.txt")
@@ -283,8 +283,7 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 SET(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
 SET(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-#SET(CPACK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-SET(CPACK_ARCH "i386")
+SET(CPACK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${CPACK_ARCH}")
 
 #installation by components for formats that support it
@@ -312,7 +311,7 @@ ENDIF(INSTALL_DOC)
 IF(UNIX)
 	IF(APPLE)
 		SET(CPACK_GENERATOR "PackageMaker;")
-		SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}-${VERSION}")
+		SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}")
 		SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
 		SET(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
 		SET_SOURCE_FILES_PROPERTIES(${CPACK_BUNDLE_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
@@ -323,16 +322,21 @@ IF(UNIX)
 		SET(CPACK_DEBIAN_PACKAGE_NAME "snowpack")
 		SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
 		#objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
-		IF(CPACK_BUNDLE_ALL)
-			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
-		ELSE(CPACK_BUNDLE_ALL)
-			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio")
-		ENDIF(CPACK_BUNDLE_ALL)
-		SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
+		IF(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, libc6")
+		ELSE(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++, meteoio")
+		ENDIF(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+		#SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
+		IF("${CPACK_ARCH}" STREQUAL "x86_64")
+			SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+		ELSE("${CPACK_ARCH}" STREQUAL "x86_64")
+			SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "${CPACK_ARCH}")
+		ENDIF("${CPACK_ARCH}" STREQUAL "x86_64")
 		SET(CPACK_RPM_PACKAGE_NAME "snowpack")
 		SET(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
 		SET(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, meteoio")
-		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "${CPACK_ARCH}")
 		SET(CPACK_RPM_PACKAGE_GROUP "Applications/Science")
 	ENDIF(APPLE)
 ELSE(UNIX)
@@ -347,7 +351,7 @@ ELSE(UNIX)
 		IF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
-				"bin/inishell.jar" "inishell"
+				"bin/inishell.jar" "SNOWPACK inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
@@ -357,16 +361,16 @@ ELSE(UNIX)
 				SET(CPACK_NSIS_MENU_LINKS
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "Home page")
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
-				"bin/inishell.jar" "inishell"
-				"https://models.slf.ch/p/snowpack/" "Home page"
+				"bin/inishell.jar" "SNOWPACK inishell"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "Home page")
+				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
 

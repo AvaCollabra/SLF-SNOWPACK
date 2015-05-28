@@ -221,6 +221,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	 * check with the corresponding SNO SMET file
 	 */
 	smet::SMETReader haz_reader(hazfilename);
+	const unsigned char nr_datalines = 144;
 
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
@@ -231,12 +232,12 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	vector<double> vec_data;
 	haz_reader.read(vec_timestamp, vec_data);
 
-	if (vec_timestamp.size() != 144)
+	if (vec_timestamp.size() != nr_datalines)
 		throw InvalidFormatException("There need to be 144 data lines in " + haz_reader.get_filename(), AT);
 
 	size_t current_index = 0;
-	for (size_t ii=0; ii<144; ii++) {
-		const size_t index = 143 - ii;
+	for (size_t ii=0; ii<nr_datalines; ii++) {
+		const size_t index = nr_datalines - 1 - ii;
 		if (ii>=96){
 			Zdata.hoar24[index]  = vec_data[current_index++];
 			Zdata.drift24[index] = vec_data[current_index++];

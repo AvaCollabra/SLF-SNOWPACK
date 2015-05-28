@@ -258,7 +258,6 @@ bool CaaMLIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
  */
 void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                             SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
-//public SnowpackIO
 {
 	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	string hazfilename(snofilename);

@@ -1,19 +1,19 @@
 /***********************************************************************************/
 /*  Copyright 2009-2010 WSL Institute for Snow and Avalanche Research    SLF-DAVOS */
 /***********************************************************************************/
-/* This file is part of MeteoIO.
-    MeteoIO is free software: you can redistribute it and/or modify
+/* This file is part of SNOWPACK.
+    SNOWPACK is free software: you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    MeteoIO is distributed in the hope that it will be useful,
+    SNOWPACK is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU Lesser General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
+    along with SNOWPACK.  If not, see <http://www.gnu.org/licenses/>.
 */
 #ifndef __MAINPAGE_H__
 #define __MAINPAGE_H__
@@ -57,7 +57,7 @@
  * <br>
  * <p>
  * In order to ease the integration of SNOWPACK into other models, it is now structured as a library (libsnowpack) and an application that uses the library to perform
- * simulations (snowpack). This library is available under LGPL version 3 or above, see <a href="http://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>.
+ * simulations (snowpack). This library is available under LGPL version 3 or above, see <a href="https://www.gnu.org/licenses/lgpl.txt">www.gnu.org</a>.
  * The Visual C++ version uses a BSD-licensed port of getopt for Visual C++, with a \subpage getopt_copyright "BSD copyright notice".
  * </p></small></i></center>
  */
@@ -227,8 +227,8 @@
 /**
  * @page getopt_copyright BSD copyright notice
  * This copyright notice applies to files applications/snowpack/getopt.* and getopt_long.* as used on the MS Windows
- * platform. All other files in this product are covered by the <a href="http://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> 
- * or above, or <a href="http://www.gnu.org/licenses/gpl.txt">GPL version 3</a> or above unless otherwise specified.
+ * platform. All other files in this product are covered by the <a href="https://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> 
+ * or above, or <a href="https://www.gnu.org/licenses/gpl.txt">GPL version 3</a> or above unless otherwise specified.
  *
  * Copyright (c) 1987, 1993, 1994 The Regents of the University of California.  All rights reserved.
  *
@@ -365,14 +365,14 @@
  * SnopViz javascript tool.
  * 
  * @section sngui_config The sngui tool
- * This java application can be  <a href="models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site.
+ * This java application can be  <a href="https://models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site.
  * \image html sngui_overview_small.png "sngui overview"
  * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
  *
  * @section snopviz The SnopViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
- * Chrome >= 38). You can either use it <a href="models.slf.ch/snopviz">online</a> and then open your profile to visualize or you can 
- * <a href="models.slf.ch/snopviz">download</a> a pre-packaged version that can be installed for offline use on your computer.
+ * Chrome >= 38). You can either use it <a href="https://models.slf.ch/snopviz">online</a> and then open your profile to visualize or you can 
+ * <a href="https://models.slf.ch/snopviz">download</a> a pre-packaged version that can be installed for offline use on your computer.
  * \image html snopviz_small.png "SnopViz overview"
  * \image latex snopviz.eps "SnopVizi overview" width=0.9\textwidth
  * 
