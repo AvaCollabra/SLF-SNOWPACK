@@ -120,6 +120,8 @@ class CurrentMeteo {
 		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
 		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
 		double hnw;      ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
+		double hnws;     ///< Solid precipitation (for SnowMIP)
+		double hnwl;     ///< Liquid precipitation (for SnowMIP)
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
@@ -180,7 +182,7 @@ class LayerData {
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double hl;                  ///< The thickness of the layer in m
 		size_t ne;                  ///< Number of finite elements in the the layer (hl/ne defines elm. size)
-		double tl;                  ///< Temperature at the top of the layer in K or degC
+		double tl;                  ///< Temperature at the top of the layer in K
 		double phiSoil;             ///< Volumetric soil content in %
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
@@ -211,7 +213,7 @@ class SN_SNOWSOIL_DATA {
 	public:
 		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
                      nLayers(0), Ldata(), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
-                     Canopy_Height(0.), Canopy_LAI(0.), Canopy_Direct_Throughfall(0.),
+                     Canopy_Height(0.), Canopy_LAI(0.),Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
                      WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
 		{
 			Ldata.clear();
@@ -233,6 +235,7 @@ class SN_SNOWSOIL_DATA {
 		double BareSoil_z0;               ///< Bare soil roughness in m, default 0.02 m
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
+		double Canopy_BasalArea;          ///< Canopy Basal Area in m2 m-2
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
 		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
 		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
@@ -302,6 +305,7 @@ class ElementData {
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
+		double QIntmf;             ///< Apparent change in internal energy due to phase change (caused by difference in heat capacity of water and ice)
 		double dE, E, Ee, Ev;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
 		double EDot, EvDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, E/sn_dt)
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress
@@ -363,38 +367,43 @@ class CanopyData {
 		     totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.),
 		     iswrbc(0.), ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.),
 		     sensible(0.), latent(0.), latentcorr(0.), transp(0.), intevap(0.),
-		     interception(0.), throughfall(0.), snowunload(0.) {}
+		     interception(0.), throughfall(0.), snowunload(0.),
+		     snowfac(0.), rainfac(0.),liquidfraction(0.),
+		     sigftrunk(0), Ttrunk(0.), CondFluxCanop(0.), CondFluxTrunks(0.),
+		     LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.),
+		     forestfloor_alb(0.), BasalArea(0), HMLeaves(0.), HMTrunks(0.) {}
 
 		void reset(const bool& cumsum_mass);
 		void initializeSurfaceExchangeData();
+		void multiplyFluxes(const double& factor);
 
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const CanopyData& data);
 		friend std::iostream& operator>>(std::iostream& is, CanopyData& data);
 
-		// Aa
+		// State variable
 		double storage;     ///< intercepted water (mm or kg m-2)
 		double temp;        ///< temperature (K)
 		double sigf;        ///< radiation transmissivity (1)
 		double ec;          ///< longwave emissivity (1)
-		// Ab
+		// parameters
 		double lai;
 		double z0m;
 		double z0h;
 		double zdispl;
 		double height;
 		double direct_throughfall;
-		// Ac
+		// aerodynamic resistances
 		double ra;          ///< from canopy air to reference height
 		double rc;          ///< from canopy to canopy air
 		double rs;          ///< from subsurface to canpopy air
 		double rstransp;    ///< stomatal surface resistance for transpiration
-		// Ba
+		// Averaged variables
 		double canopyalb;   ///< canopy albedo [-]
 		double totalalb;    ///< total albedo above canopy and snow/soil surface [-]
 		double wetfraction; ///< fraction of canopy covered by interception [-]
 		double intcapacity; ///< maximum interception storage [mm]
-		// Bb
+		// Radiations
 		double rswrac;      ///< upward shortwave above canopy
 		double iswrac;	    ///< downward shortwave radiation above canopy
 		double rswrbc;      ///< upward shortwave below canopy
@@ -405,17 +414,32 @@ class CanopyData {
 		double rlwrbc;      ///< upward longwave radiation BELOW canopy
 		double rsnet;       ///< net shortwave radiation
 		double rlnet;       ///< net longwave radiation
-		// Bc
+		// Turbulent fluxes
 		double sensible;
 		double latent;
 		double latentcorr;
-		// Bd
+		// Evap fluxes
 		double transp;
 		double intevap;
-		// Be
+		// Mass fluxes
 		double interception;
 		double throughfall;
 		double snowunload;
+		double snowfac;     ///< snowfall above canopy
+		double rainfac;     ///< rainfall above canopy
+		double liquidfraction;
+		double sigftrunk;   ///< radiation interception cross section for trunk layer ()
+		double Ttrunk;      ///< trunk temperature (K)
+		double CondFluxCanop; ///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)
+		double CondFluxTrunks; ///< biomass heat storage flux towards Trunks (if 2L)
+		double LWnet_Trunks; ///< net LW to trunks (>0 towards trunks)
+		double SWnet_Trunks; ///< net SW to trunks (>0 towards trunks)
+		double QStrunks;      ///< sensible heat flux from trunks (>0 if heat lost from trunk)
+		double forestfloor_alb; ///< albedo of the forest floor
+		double BasalArea;    ///< basal area of trees on the stand
+		double HMLeaves;     ///< Leaves heat mass (J K-1 /m2 ground surface)
+		double HMTrunks;     ///< Trunks heat mass (J K-1 /m2 ground surface)
+
 };
 
 /**
@@ -436,9 +460,10 @@ class SnowStation {
 		void resize(const size_t& number_of_elements);
 
 		void reduceNumberOfElements(const size_t& rnE);
-		void combineElements(const size_t& number_top_elements);
-		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1);
+		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements);
+		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
+		void splitElements();
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
@@ -500,8 +525,6 @@ class SnowStation {
 		double meltFreezeEnergy;    ///< Melt freeze part of internal energy change of snowpack (J m-2)
 		double meltFreezeEnergySoil;///< Melt freeze part of internal energy change of soil (J m-2)
 		double ReSolver_dt;         ///< Last used RE time step in the previous SNOWPACK time step
-		char SubSurfaceMelt;        ///< Subsurface melting flag ( yes/no ) for exposition
-		char SubSurfaceFrze;        ///< Subsurface refreezing flag ( yes/no ) for exposition
 		bool windward;              ///< True for windward (luv) slope
 		double WindScalingFactor;   ///< Local scaling factor for wind at drift station
 		double TimeCountDeltaHS;    ///< Time counter tracking erroneous settlement in operational mode
@@ -516,6 +539,7 @@ class SnowStation {
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
+		static double flexibleMaxElemLength(const double& depth); ///< When using REDUCE_N_ELEMENTS, this function determines the max element length, depending on depth inside the snowpack.
 };
 
 /**
@@ -525,6 +549,7 @@ class BoundCond {
 
 	public:
 		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {};
+		const std::string toString() const;
 
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation
@@ -569,6 +594,7 @@ class SurfaceFluxes {
 		void reset(const bool& cumsum_mass);
 		void compSnowSoilHeatFlux(const SnowStation& Xdata);
 		void collectSurfaceFluxes(const BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata);
+		void multiplyFluxes(const double& factor);
 
 		/**
 		 * @brief Energy fluxes:

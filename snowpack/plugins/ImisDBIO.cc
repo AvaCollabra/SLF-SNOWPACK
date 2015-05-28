@@ -25,6 +25,24 @@ using namespace mio;
 using namespace oracle;
 using namespace oracle::occi;
 
+/**
+ * @page profile_imis IMIS
+ * @section imis_description Description
+ * This plugin writes the profiles time series and meteorological time series and fluxes in the 
+ * <A HREF="http://www.slf.ch/ueber/organisation/warnung_praevention/warn_informationssysteme/messnetze_daten/imis/index_EN">IMIS</A>
+ * database and therefore provides the simulation data for the <A HREF="https://www.ifkis.ch/">IFKIS</A> platform.
+ * @note The profiles are simplifed (ie. aggregated) in order to reduce their number of layers in this plugin.
+ *
+ * @section imis_keywords Keywords
+ * The following keywords are used by this plugin:
+ * - DBNAME: which database to use, using the Oracle SID name as defined in tns_names, [Output] section;
+ * - DBUSER: user name, [Output] section;
+ * - DBPASS: user password, [Output] section;
+ * - HOAR_DENSITY_SURF: density of the surface hoar (kg/m3), [SnowpackAdvanced] section;
+ * - HOAR_MIN_SIZE_SURF: minimum size to show surface hoar on the surface (mm), [SnowpackAdvanced] section.
+ * 
+ */
+
 const double ImisDBIO::time_zone = 1.; //All IMIS data is in gmt+1
 
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";

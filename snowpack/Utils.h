@@ -70,6 +70,8 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel,
 
 void typeToCode(int *F1, int *F2, int *F3, int type);
 
+double unitConversion(const double val, char* unitIn, char* unitOut);
+
 bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, double& tot_mass_in);
 
 size_t findUpperNode(const double& z, const std::vector<NodeData>& Ndata, const size_t& nN);

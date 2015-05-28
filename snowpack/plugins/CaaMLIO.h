@@ -28,6 +28,7 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xmlwriter.h>
 
 /**
  * @class CaaMLIO
@@ -79,7 +80,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                   const ZwischenData& Zdata) const;
+		                   const ZwischenData& Zdata);
 
 		const RunInfo info;
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
@@ -91,10 +92,42 @@ class CaaMLIO : public SnowpackIOInterface {
 		xmlDocPtr in_doc;
 		xmlXPathContextPtr in_xpathCtx;
 		xmlCharEncoding in_encoding;
-// 		static const xmlChar* xml_attribute;
-		static const xmlChar* xml_namespace;
-		static const xmlChar* xml_namespace_abrev;
-		static const std::string StationMetaData_xpath, SnowData_xpath;
+		static const xmlChar *xml_ns_caaml, *xml_ns_abrev_caaml;
+		static const xmlChar *xml_ns_gml, *xml_ns_abrev_gml;
+		static const xmlChar *xml_ns_xsi, *xml_ns_abrev_xsi;
+		static const xmlChar *xml_ns_slf, *xml_ns_abrev_slf;
+		static const xmlChar *xml_ns_snp, *xml_ns_abrev_snp;
+		static const std::string TimeData_xpath, StationMetaData_xpath, SnowData_xpath;
+
+		xmlNodeSetPtr xmlGetData(const std::string& path);
+		mio::Date xmlGetDate();
+		mio::StationData xmlGetStationData(const std::string& stationID);
+		double xmlSetVal(const std::string& xpath, const std::string& property, const double& dflt);
+		int xmlSetVal(const std::string& xpath, const std::string& property, const int& dflt);
+		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
+		bool getLayersDir();
+		LayerData xmlGetLayer(xmlNodePtr cur);
+		void getProfiles(const std::string path, size_t &len, std::vector<double> &depths, std::vector<double> &val);
+		void setProfileVal(std::vector<LayerData> &Layers, std::vector<size_t> len, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val);
+		void setCustomLayerData(LayerData &Layer);
+		void setDepositionDates(std::vector<LayerData> &Layers, const mio::Date);
+
+		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
+		void writeDate(const xmlTextWriterPtr writer, const mio::Date date);
+		void writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeCustomLayerData(const xmlTextWriterPtr writer, const ElementData& Edata, const NodeData& Ndata);
+		void writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeStationData(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+
+		double lwc_codeToVal(const char* code);
+		std::string lwc_valToCode(const double val);
+		double hardness_codeToVal(char* code);
+		std::string hardness_valToCode(const double code);
+		double* form_codeToVal(const char* code);
+		std::string form_valToCode(const int var);
+		std::string form_valToCode_old(const double* var);
+
 };
 
 #endif //End of CAAMLIO.h

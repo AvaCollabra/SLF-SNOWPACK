@@ -453,16 +453,9 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 {
 	ElementData *EMS = &Xdata.Edata[0];
 	const size_t nE = Xdata.getNumberOfElements();
+	if (nE==0) return;
 
-	size_t bottom_element;
-	if (Xdata.SoilNode > 0)
-		bottom_element = Xdata.SoilNode - 1;
-	else {
-		if (nE == 0)
-			return;
-		else
-			bottom_element = Xdata.SoilNode;
-	}
+	const size_t bottom_element = (Xdata.SoilNode > 0)? Xdata.SoilNode - 1 : Xdata.SoilNode;
 	for (size_t e = bottom_element; e < nE; e++)
 		EMS[e].sw_abs = 0.;
 
@@ -485,7 +478,7 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 		double I0_band = I0;
 		for (size_t e = nE-1; e > bottom_element; e--) {
 			// Radiation absorbed by element e, transparent (=0.) for water
-			const double dI = (EMS[e].mk%10 != 9)? I0 * (1. - exp(-EMS[e].extinction() * EMS[e].L)) : 0.;
+			const double dI = MAX(I0_band, (EMS[e].mk%10 != 9) ? I0_band * (1. - exp(-EMS[e].extinction() * EMS[e].L)) : 0.);
 			EMS[e].sw_abs += dI;
 			I0_band -= dI;
 		}
@@ -804,7 +797,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 {
 	const size_t nElems = Xdata.getNumberOfElements();
 	const double T_air = Mdata.ta;
-	const double Tss = Xdata.Ndata[Xdata.getNumberOfElements()].T;
+	const double Tss = Xdata.Ndata[nElems].T;
 	double eS;
 
 	// Vapor Pressures
@@ -1078,7 +1071,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
-		} else if (Mdata.hnw > 0.) {
+		} else if (Mdata.hnw > 0. || Mdata.hnws >0) {
 			if (i_hn_density_fixedValue > 0. && i_hn_density_fixedValue > min_hn_density) // use density of surface snowpack
 				rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
 			else
@@ -1167,7 +1160,7 @@ double SnLaws::loadingRateStressDEFAULT(ElementData& Edata, const mio::Date& dat
 	const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 
 	double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
-	if (Edata.theta[WATER] > Constants::eps)
+	if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 		sigReac *= 0.37 * (1. + Edata.theta[WATER]);
 	return sigReac;
 }
@@ -1182,7 +1175,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
-		if (Edata.theta[WATER] > Constants::eps)
+		if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 			sigReac *= 0.37 * (1. + Edata.theta[WATER]); // 0.2 ; 0.37
 // 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
 // 		              * MAX(0.1, 1. - 9.*Edata.theta[WATER]);

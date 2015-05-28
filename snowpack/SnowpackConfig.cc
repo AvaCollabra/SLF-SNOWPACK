@@ -55,6 +55,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["HOAR_THRESH_VW"] = "3.5";
 	advancedConfig["JAM"] = "false";
 	advancedConfig["COMBINE_ELEMENTS"] = "true";
+	advancedConfig["REDUCE_N_ELEMENTS"] = "false";
 	advancedConfig["MASS_BALANCE"] = "false";
 	advancedConfig["MAX_NUMBER_MEAS_TEMPERATURES"] = "5";
 	advancedConfig["MEAS_INCOMING_LONGWAVE"] = "false";
@@ -87,10 +88,15 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATER_LAYER"] = "false";
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
+	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";	// Only for use with RE.
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
 	advancedConfig["ADVECTIVE_HEAT"] = "0.0";
 	advancedConfig["HEAT_BEGIN"] = "0.0";
 	advancedConfig["HEAT_END"] = "0.0";
+	advancedConfig["TWO_LAYER_CANOPY"] = "true";
+	advancedConfig["CANOPY_HEAT_MASS"] = "true";
+	advancedConfig["CANOPY_TRANSMISSION"] = "true";
+	advancedConfig["FORESTFLOOR_ALB"] = "true";
 
 	//[Input] section
 	inputConfig["METEOPATH"] = "./input";
@@ -173,6 +179,7 @@ void SnowpackConfig::setDefaults()
 	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, IOUtils::nothrow);
 	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, IOUtils::nothrow);
 	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, IOUtils::nothrow);
+	string lb_cond_waterflux; getValue("LB_COND_WATERFLUX", "SnowpackAdvanced", lb_cond_waterflux, IOUtils::nothrow);
 
 	if ((variant.empty()) || (variant == "DEFAULT")) {
 		// Use default settings
@@ -207,11 +214,11 @@ void SnowpackConfig::setDefaults()
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 
-		addKey("FIRST_BACKUP", "Output", "1500.");
-		addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
-		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
-		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
+		//addKey("FIRST_BACKUP", "Output", "1500.");
+		//addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
+		//addKey("FIXED_RATES", "SnowpackAdvanced", "false");
+		//addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		//addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
@@ -230,7 +237,6 @@ void SnowpackConfig::setDefaults()
 		if (max_number_meas_temperatures.empty()) addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, IOUtils::nothrow);
 		if (min_depth_subsurf.empty()) addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
-
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
 	}
@@ -289,4 +295,9 @@ void SnowpackConfig::setDefaults()
 		ss << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}
+
+	/**
+	 * @brief Default lower boundary condition for Richards equation solver \n
+	 */
+	if (watertransportmodel_soil == "RICHARDSEQUATION" && lb_cond_waterflux.empty()) addKey("LB_COND_WATERFLUX", "SnowpackAdvanced", "FREEDRAINAGE");
 }

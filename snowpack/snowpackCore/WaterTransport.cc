@@ -499,7 +499,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) {
+	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take hnw_l into account?
 		hoar = MIN(hoar,0.);
 	}
 
@@ -566,11 +566,11 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {
 			enforce_merge = false;
 		}
-		//const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && eUpper>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && eUpper<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+		const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && eUpper>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && eUpper<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
 		if (((EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_merge)
 		       && (EMS[eUpper].theta[SOIL] < Constants::eps2)
-		           && (EMS[eUpper].mk % 100 != 9) ){  	// no PLASTIC or WATER_LAYER please
-			       //&& !(eUpper > 0 && eUpper == nE-1 && EMS[eUpper].L > Constants::eps && EMS[eUpper-1].theta[SOIL] < Constants::eps && EMS[eUpper].theta[ICE] > Constants::eps && EMS[eUpper].theta[WATER] < theta_r + Constants::eps && EMS[eUpper-1].theta[WATER] > theta_r + Constants::eps)) {	// Don't merge a dry surface snow layer with a wet one below, as the surface node may then experience a sudden increase in temperature, destroying energy balance.
+		           && (EMS[eUpper].mk % 100 != 9)  	// no PLASTIC or WATER_LAYER please
+			       && !(eUpper > 0 && eUpper == nE-1 && EMS[eUpper].theta[ICE] > 0.01 * Snowpack::min_ice_content && EMS[eUpper].L > 0.01 * minimum_l_element && EMS[eUpper-1].theta[SOIL] < Constants::eps && EMS[eUpper].theta[ICE] > Constants::eps && EMS[eUpper].theta[WATER] < theta_r + Constants::eps && EMS[eUpper-1].theta[WATER] > theta_r + Constants::eps)) {	// Don't merge a dry surface snow layer with a wet one below, as the surface node may then experience a sudden increase in temperature, destroying energy balance.
 			bool UpperJoin=false;			// Default is joining with elements below
 			bool merged = true;		// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
@@ -774,9 +774,10 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	if (!useSoilLayers && nN == 1) {
 		return;
 	} else { // add rainfall to snow/soil pack
-		if ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) {
+		 // Variant for mixed precipitation in the forcing, like Snowmip2
+		if ( ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) || (Mdata.hnwl > 0.) ) {
 			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			double Store = (Mdata.hnw * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
+			double Store = (Mdata.hnwl > 0.) ? Mdata.hnwl / Constants::density_water : (Mdata.hnw * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
@@ -855,7 +856,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
 			RichardsEquationSolver1d.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
-			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw * tmp_rainfraction;
+			Sdata.mass[SurfaceFluxes::MS_RAIN] += (Mdata.hnwl > 0)? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
 		}
 	}
 
@@ -1228,12 +1229,13 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
-		if (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range)) {
+		if (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range) || Mdata.hnwl > 0.) {
 			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.hnw * tmp_rainfraction;
-			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += Mdata.hnw * tmp_rainfraction;
+			double precip_rain = (Mdata.hnwl > 0.) ? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
+			Sdata.mass[SurfaceFluxes::MS_RAIN] += precip_rain;
+			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += precip_rain;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-				Sdata.load[ii] += Mdata.conc[ii] * Mdata.hnw * tmp_rainfraction /*/ S_TO_H(sn_dt)*/;
+				Sdata.load[ii] += Mdata.conc[ii] * precip_rain /*/ S_TO_H(sn_dt)*/;
 			}
 		}
 		return;

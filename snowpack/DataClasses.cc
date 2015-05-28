@@ -249,10 +249,20 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 	marker      = MAX(profile_layer.marker, marker);
 }
 
+const std::string BoundCond::toString() const
+{
+	std::stringstream os;
+	os << "<BoundCond>\n";
+	os << "\tlw_out=" << lw_out << " lw_net=" << lw_net << "\n";
+	os << "\tQsensible=" << qs << " Qlatent=" << ql << " Qrain=" << qr << " Qgeo=" << qg << "\n";
+	os <<"</BoundCond>\n";
+	return os.str();
+}
+
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
     sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
-    drift(0.), mass(N_MASS_CHANGES), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined) {}
+    drift(0.), mass(N_MASS_CHANGES, 0.), load(SnowStation::number_of_solutes), dhs_corr(0.), cRho_hn(Constants::undefined), mRho_hn(Constants::undefined) {}
 
 void SurfaceFluxes::reset(const bool& cumsum_mass)
 {
@@ -294,12 +304,13 @@ void SurfaceFluxes::compSnowSoilHeatFlux(const SnowStation& Xdata) {
 		const ElementData& E_soil = Xdata.Edata[Xdata.SoilNode-1];
 
 		if (Xdata.getNumberOfElements()-1 < Xdata.SoilNode) { // with soil but no snow
-			qg0 += -E_soil.k[TEMPERATURE]
-			* E_soil.gradT;
+			qg0 += -E_soil.k[TEMPERATURE] * E_soil.gradT;
 		} else { // with soil & snow
-			qg0 += -((E_soil.k[TEMPERATURE] * E_snow.L + E_snow.k[TEMPERATURE] * E_soil.L) / (E_soil.L + E_snow.L) / 2.0)
-			* ((E_snow.Te - E_soil.Te) / ((E_soil.L + E_snow.L)/2.0));
+			qg0 += ( ( -E_snow.k[TEMPERATURE] * E_snow.gradT ) + ( -E_soil.k[TEMPERATURE] * E_soil.gradT ) ) / 2.;
+			// Take care of energy flow between snow and soil in case of shortwave absorption by the soil:
+			qg0 -= E_soil.sw_abs;
 		}
+
 	} else if (Xdata.getNumberOfElements() > 0) { // without soil but with snow
 		if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
 			qg0 += 0.;
@@ -372,6 +383,34 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	mass[MS_TOTALMASS] = Xdata.mass_sum;
 	mass[MS_SWE] = Xdata.swe;
 	mass[MS_WATER] = Xdata.lwc_sum;
+}
+
+/**
+ * @brief If multiple surface fluxes have been summed over multiple time steps, the
+ * fluxes then need to be averaged by the number of steps. The albedos are also
+ * averaged in this method.
+ * @param factor Averaging factor (for example, 1/Nsteps)
+ */
+void SurfaceFluxes::multiplyFluxes(const double& factor)
+{
+	lw_in *= factor;
+	lw_out *= factor;
+	lw_net *= factor;
+	qs *= factor;
+	ql *= factor;
+	qr *= factor;
+	qg *= factor;
+	qg0 *= factor;
+	sw_hor *= factor;
+	sw_in *= factor;
+	sw_out *= factor;
+	qw *= factor;
+	sw_dir *= factor;
+	sw_diff *= factor;
+	if (pAlbedo != Constants::undefined)
+		pAlbedo *= factor;
+	if (mAlbedo != Constants::undefined)
+		mAlbedo *= factor;
 }
 
 std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)
@@ -474,6 +513,13 @@ void CanopyData::reset(const bool& cumsum_mass)
 		sensible=0.0;
 		latent=0.0;
 		latentcorr=0.0;
+		// 2layer canopy model
+		CondFluxCanop = 0.;
+		CondFluxTrunks = 0.;
+		QStrunks = 0.;
+		LWnet_Trunks = 0.;
+		SWnet_Trunks = 0.;
+		forestfloor_alb = 0.;
 		// auxiliaries
 		canopyalb=0.0;
 		totalalb=0.0;
@@ -481,6 +527,41 @@ void CanopyData::reset(const bool& cumsum_mass)
 	} else {
 		initializeSurfaceExchangeData();
 	}
+}
+
+/**
+ * @brief If multiple fluxes have been summed over multiple time steps, the
+ * fluxes then need to be averaged by the number of steps. The albedos are also
+ * averaged in this method.
+ * @param factor Averaging factor (for example, 1/Nsteps)
+ */
+void CanopyData::multiplyFluxes(const double& factor)
+{
+	rswrac *= factor;
+	iswrac *= factor;
+	rswrbc *= factor;
+	iswrbc *= factor;
+	ilwrac *= factor;
+	rlwrac *= factor;
+	ilwrbc *= factor;
+	rlwrbc *= factor;
+	rsnet *= factor;
+	rlnet *= factor;
+	// turbulent heat fluxes
+	sensible *= factor;
+	latent *= factor;
+	latentcorr *= factor;
+	// 2Layer canopy model
+	CondFluxCanop *= factor;
+	CondFluxTrunks *= factor;
+	QStrunks *= factor;
+	LWnet_Trunks *= factor;
+	SWnet_Trunks *= factor;
+	forestfloor_alb *= factor;
+	// auxiliaries
+	canopyalb *= factor;
+	totalalb *= factor;
+	intcapacity *= factor;
 }
 
 std::iostream& operator<<(std::iostream& os, const CanopyData& data)
@@ -640,12 +721,21 @@ void CanopyData::initializeSurfaceExchangeData()
 	sensible = 0.0;
 	latent = 0.0;
 	latentcorr = 0.0;
+	// 2layer canopy model
+	CondFluxCanop = 0.;
+	CondFluxTrunks = 0.;
+	LWnet_Trunks = 0.;
+	SWnet_Trunks = 0.;
+	forestfloor_alb = 0.;
+	QStrunks = 0.;
 	// mass fluxes
 	transp = 0.0;
 	intevap = 0.0;
 	interception = 0.0;
 	throughfall = 0.0;
 	snowunload = 0.0;
+	snowfac = 0.0; // snowfall above canopy
+	rainfac = 0.0; // rainfall above canopy
 	// auxiliaries
 	canopyalb = 0.0;
 	totalalb = 0.0;
@@ -658,7 +748,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
-                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.),
+                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), theta_r(0.), dhf(0.) {}
@@ -1171,7 +1261,7 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 		case 4: // PPgp Graupel
 			a = 0; b = 0; c = 0;
 			break;
-		case 7: case 8: // Glacier ice & IFil, that is, ice layers within the snowpack
+		case 7: case 8: case 17: case 18: case 27: case 28: // Glacier ice & IFil, that is, ice layers within the snowpack
 			a = 8; b = 8; c = 0;
 			break;
 	}
@@ -1256,7 +1346,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
-	ReSolver_dt(-1), SubSurfaceMelt('x'), SubSurfaceFrze('x'), windward(false),
+	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
 	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
@@ -1267,7 +1357,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
-	ReSolver_dt(-1), SubSurfaceMelt(c.SubSurfaceMelt), SubSurfaceFrze(c.SubSurfaceFrze), windward(c.windward),
+	ReSolver_dt(-1), windward(c.windward),
 	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
 	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
@@ -1318,8 +1408,6 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		nElems = source.nElems;
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
-		SubSurfaceMelt = source.SubSurfaceMelt;
-		SubSurfaceFrze = source.SubSurfaceFrze;
 		windward = source.windward;
 		WindScalingFactor = source.WindScalingFactor;
 		TimeCountDeltaHS = source.TimeCountDeltaHS;
@@ -1387,11 +1475,14 @@ void SnowStation::compSoilInternalEnergyChange(const double& sn_dt)
 		meltFreezeEnergySoil = 0.;
 		const double i_cold_content = ColdContentSoil;
 		ColdContentSoil = 0.;
+		double tmp_sum_QIntmf = 0.;
 		for (size_t e=0; e<SoilNode; e++) {
+			tmp_sum_QIntmf += Edata[e].QIntmf * Edata[e].L * sn_dt;
+			Edata[e].QIntmf=0.;
 			meltFreezeEnergySoil -= Edata[e].Qmf * Edata[e].L * sn_dt;
 			ColdContentSoil += Edata[e].coldContent();
 		}
-		dIntEnergySoil += (ColdContentSoil - i_cold_content) + (meltFreezeEnergySoil - i_meltFreezeEnergy);
+		dIntEnergySoil += (ColdContentSoil - i_cold_content) + (meltFreezeEnergySoil - i_meltFreezeEnergy) - tmp_sum_QIntmf;
 	} else {
                 meltFreezeEnergySoil = 0.;
 		ColdContentSoil = 0.;
@@ -1489,8 +1580,9 @@ bool SnowStation::hasSoilLayers() const
  * as defined in combineCondition(), simply average the microstructure properties \n
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
+ * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack
  */
-void SnowStation::combineElements(const size_t& i_number_top_elements)
+void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements)
 {
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
@@ -1498,7 +1590,7 @@ void SnowStation::combineElements(const size_t& i_number_top_elements)
 
 	size_t nRemove=0;       // Number of elements to be removed
 	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
-		if (combineCondition(Edata[eLower], Edata[eUpper])) {
+		if (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements)) {
 			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
 			nRemove++;
 			Edata[eUpper].Rho = Constants::undefined;
@@ -1670,6 +1762,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].sw_abs = 0.;
 			// Phase change variables
 			Edata[e].Qmf = 0.;
+			Edata[e].QIntmf = 0.;
 			Edata[e].dth_w = 0.;
 			// Micro-structure data
 			Edata[e].dd = SSdata.Ldata[ll].dd;
@@ -1711,16 +1804,33 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// INITIALIZE CANOPY DATA
 	Cdata.height = (SSdata.Canopy_Height > 0.0)? SSdata.Canopy_Height : 0.;
+	Cdata.storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
+	Cdata.temp = 273.15; // temperature (K)
+	Cdata.Ttrunk = 273.15; // trunk temperature (K)
+	Cdata.QStrunks = 0.;
+	Cdata.SWnet_Trunks = 0.;
+	Cdata.LWnet_Trunks = 0.;
+	Cdata.CondFluxCanop = 0.;
+	Cdata.CondFluxTrunks = 0.;
+	Cdata.forestfloor_alb = 0.;
+	Cdata.snowfac=0.;
+	Cdata.rainfac=0.;
+	Cdata.liquidfraction=0.;
+	Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
+	Cdata.wetfraction = 0.0;
+	Cdata.intcapacity = 0.0;
+	Cdata.ra = 0.0;
+	Cdata.rc = 0.0;
+	Cdata.rs = 0.0;
+	Cdata.rstransp = 0.0;
+	Cdata.sigftrunk = 0.;
+	Cdata.HMLeaves=3.*4190.; //HACK what is this 4190?
+	Cdata.HMTrunks=30.*4190.;
 	if (useCanopyModel) {
-		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
-		Cdata.temp = 273.15;	          // temperature (K)
-		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
-		Cdata.wetfraction = 0.0;
+		Cdata.BasalArea = SSdata.Canopy_BasalArea;
+		Cdata.sigf = 1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // 1-radiation transmissivity (-)
+		Cdata.ec = 1.0; //longwave emissivity
 		Cdata.lai = SSdata.Canopy_LAI;
-
-		Cdata.sigf = 1.-exp(-Canopy::krnt_lai * (Cdata.lai)); // radiation transmissivity (-)
-		Cdata.ec = 1.0;               //longwave emissivity
-
 		Cdata.z0m = Cdata.height*0.1;
 		Cdata.z0h = Cdata.z0m*0.1;
 		Cdata.zdispl = Cdata.height*0.66;
@@ -1729,20 +1839,16 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Invalid Canopy Throughfall (%lf) given in sno file! It should be between 0 and 1.", SSdata.Canopy_Direct_Throughfall);
 			throw IOException("Snowpack Initialization failed", AT);
 		}
-		Cdata.ra = 0.0;
-		Cdata.rc = 0.0;
-		Cdata.rs = 0.0;
-		Cdata.rstransp = 0.0;
 	} else {
-		Cdata.storage = 0.0;           // intercepted water (kg m-2 or mm Water Equivalent)
-		Cdata.temp = 273.15;	          // temperature (K)
+		Cdata.BasalArea = 0.0;
+		Cdata.storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
+		Cdata.temp = 273.15; // temperature (K)
 		Cdata.canopyalb = Canopy::can_alb_dry; // albedo [-], which is a function of the dry canopy albedo and intercepted snow
 		Cdata.wetfraction = 0.0;
 		Cdata.intcapacity = 0.0;
 		Cdata.lai = 0.0;
-		Cdata.sigf = 1.0;              // radiation transmissivity (-)
-		Cdata.ec = 1.0;                //longwave emissivity
-
+		Cdata.sigf = 1.0; // radiation transmissivity (-)
+		Cdata.ec = 1.0; //longwave emissivity
 		Cdata.z0m = 0.0;
 		Cdata.z0h = 0.0;
 		Cdata.zdispl = 0.0;
@@ -1758,6 +1864,19 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 }
 
 /**
+ * @brief Determine flexible maximum element length for combining two elements
+ * - Function required for REDUCE_N_ELEMENTS function for "aggressive" combining for layers deeper in the
+ *   snowpack, to reduce the number of elements and thus the computational load.
+ * @param depth Distance of the element from the snow surface
+ * @return Maximum element length.
+ */
+double SnowStation::flexibleMaxElemLength(const double& depth)
+{
+	const double upper_limit_length=1.0;
+	return MIN(double(int(int(depth * 100.) / 10) + 1) * comb_thresh_l, upper_limit_length);
+}
+
+/**
  * @brief Boolean routine to check whether two snow elements can be combined
  * - \b no \b action will be taken if one of the two elements is
  *      - a soil element
@@ -1770,11 +1889,21 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  *
  * @param Edata0 Lower element
  * @param Edata1 Upper element
+ * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack, to reduce the number of elements and thus the computational load.
  * @return true if the two elements should be combined, false otherwise
  */
-bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1)
+bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements)
 {
-	if ( (Edata0.L > comb_thresh_l) || (Edata1.L > comb_thresh_l) )
+	// Default max_elem_l
+	double max_elem_l = comb_thresh_l;
+
+	// When aggressive combining is activated, override max_elem_l when necessary
+	if (reduce_n_elements == true) {
+		max_elem_l = flexibleMaxElemLength(depth);
+	}
+
+
+	if ( (Edata0.L > max_elem_l) || (Edata1.L > max_elem_l) )
 		return false;
 
 	if ( Edata0.mk%100 != Edata1.mk%100 )
@@ -1812,6 +1941,52 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
 }
 
 /**
+ * @brief Split elements when they are near the top of the snowpack, when REDUCE_N_ELEMENTS is used.
+ * - This function split elements when they are getting closer to the top of the snowpack. This is required
+ *   when using the "aggressive" merging option (REDUCE_N_ELEMENTS). When snow melt brings elements back to the
+ *   snow surface, smaller layer spacing is required to accurately describe temperature and moisture gradients.
+ */
+void SnowStation::splitElements()
+{
+	//Return when no snow present
+	if (nElems == SoilNode) return;
+
+	for (size_t e = SoilNode; e < nElems; e++) {
+		double max_elem_l = comb_thresh_l;
+		const double depth = cH - Ndata[e].z;
+		max_elem_l = flexibleMaxElemLength(depth);
+		if(0.5*(Edata[e].L) > max_elem_l) {
+			resize(nElems+1);
+			if(e!=nElems-1) { // If it is not the top node that needs splitting ...
+				// then shift all elements and nodes above upward
+				for(size_t ee = nElems-1; ee >= e+2; ee--) {
+					Edata[ee]=Edata[ee-1];
+					Ndata[ee+1]=Ndata[ee];
+					Ndata[ee]=Ndata[ee-1];
+				}
+			}
+			// Fill info of new element
+			Edata[e+1]=Edata[e];
+			// Half the element
+			Edata[e].L*=0.5;
+			Edata[e].L0*=0.5;
+			Edata[e+1].L*=0.5;
+			Edata[e+1].L0*=0.5;
+			Edata[e].M*=0.5;
+			Edata[e+1].M*=0.5;
+			// Fill info of new node
+			Ndata[e+2]=Ndata[e+1];
+			Ndata[e+1].hoar=0.;
+			Ndata[e+1].T=Edata[e].Te;
+			// Position the new node correctly in the domain
+			Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
+			Ndata[e+2].u*=0.5;
+			Ndata[e+1].u*=0.5;
+		}
+	}
+}
+
+/**
  * @brief Merging two elements
  * - Joining:
  * 	- Keep the lower element, that is, the lowest snow element always survives!
@@ -1836,7 +2011,12 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	double LNew = L_lower;               //Length of "new" element
 
 	if (merge) {
-		LNew += L_upper;
+		// Determine new element length under the condition of keeping the density of the lower element constant.
+		if(EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
+			LNew += (EdataUpper.Rho * L_upper) / EdataLower.Rho;
+		} else {
+			LNew += L_upper;
+		}
 		EdataLower.depositionDate = EdataUpper.depositionDate;
 		if (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
 			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
@@ -1975,6 +2155,7 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&s_Edata), sizeof(size_t));
 	for (size_t ii=0; ii<s_Edata; ii++) os << data.Edata[ii];
 
+	// void *Kt
 	os.write(reinterpret_cast<const char*>(&data.tag_low), sizeof(data.tag_low));
 	os.write(reinterpret_cast<const char*>(&data.ColdContent), sizeof(data.ColdContent));
 	os.write(reinterpret_cast<const char*>(&data.ColdContentSoil), sizeof(data.ColdContentSoil));
@@ -1983,13 +2164,20 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
 	os.write(reinterpret_cast<const char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
 	os.write(reinterpret_cast<const char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
-	os.write(reinterpret_cast<const char*>(&data.SubSurfaceMelt), sizeof(data.SubSurfaceMelt));
-	os.write(reinterpret_cast<const char*>(&data.SubSurfaceFrze), sizeof(data.SubSurfaceFrze));
 	os.write(reinterpret_cast<const char*>(&data.windward), sizeof(data.windward));
 	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	os.write(reinterpret_cast<const char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
+	/*os.write(reinterpret_cast<const char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_ice), sizeof(data.comb_thresh_ice));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_water), sizeof(data.comb_thresh_water));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_dd), sizeof(data.comb_thresh_dd));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_sp), sizeof(data.comb_thresh_sp));
+	os.write(reinterpret_cast<const char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
+	os.write(reinterpret_cast<const char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
+	os.write(reinterpret_cast<const char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
+	os.write(reinterpret_cast<const char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
 	os.write(reinterpret_cast<const char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
 
 	// private member variables:
@@ -2057,13 +2245,20 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergy), sizeof(data.meltFreezeEnergy));
 	is.read(reinterpret_cast<char*>(&data.meltFreezeEnergySoil), sizeof(data.meltFreezeEnergySoil));
 	is.read(reinterpret_cast<char*>(&data.ReSolver_dt), sizeof(data.ReSolver_dt));
-	is.read(reinterpret_cast<char*>(&data.SubSurfaceMelt), sizeof(data.SubSurfaceMelt));
-	is.read(reinterpret_cast<char*>(&data.SubSurfaceFrze), sizeof(data.SubSurfaceFrze));
 	is.read(reinterpret_cast<char*>(&data.windward), sizeof(data.windward));
 	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	is.read(reinterpret_cast<char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
 
 	//static member variables
+	/*is.read(reinterpret_cast<char*>(&data.comb_thresh_l), sizeof(data.comb_thresh_l));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_ice), sizeof(data.comb_thresh_ice));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_water), sizeof(data.comb_thresh_water));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_dd), sizeof(data.comb_thresh_dd));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_sp), sizeof(data.comb_thresh_sp));
+	is.read(reinterpret_cast<char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
+	is.read(reinterpret_cast<char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
+	is.read(reinterpret_cast<char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
+	is.read(reinterpret_cast<char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
 	is.read(reinterpret_cast<char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
 
 	// private member variables:
@@ -2095,7 +2290,7 @@ const std::string SnowStation::toString() const
 	os << "Soil:\tSoilNode=" << SoilNode  << " depth=" << Ground << " BareSoil_z0=" << BareSoil_z0 << " SoilAlb=" << SoilAlb << "\n";
 	os << "Snow:\tMeasured HS=" << mH << " Calculated HS=" << cH << " SWE=" << swe << " LWCtot" << lwc_sum << " New snow=" << hn << " of density=" << rho_hn << "\n";
 	os << "Snow Albedo:\tAlbedo=" << Albedo << " parametrized Albedo=" << pAlbedo << "\n";
-	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy << " SubSurfaceMelt=" << SubSurfaceMelt << " SubSurfaceFrze=" << SubSurfaceFrze << "\n";
+	os << "Energy:\tColdContent=" << ColdContent << " dIntEnergy=" << dIntEnergy;
 	os << "Snowdrift:\tsector=" << sector << " windward=" << windward << " ErosionLevel=" << ErosionLevel << " ErosionMass=" << ErosionMass << "\n";
 	os << "WindScalingFactor:          " << WindScalingFactor << "\n";
 	os << "TimeCountDeltaHS:           " << TimeCountDeltaHS << "\n";
@@ -2122,7 +2317,7 @@ CurrentMeteo::CurrentMeteo()
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
+          hnw(0.), hnws(0.), hnwl(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -2133,7 +2328,7 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          hnw(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
+          hnw(0.), hnws(0.), hnwl(0.), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -2149,7 +2344,7 @@ void CurrentMeteo::reset(const SnowpackConfig& i_cfg)
 	*this = CurrentMeteo(i_cfg);
 }
 
-/* @brief description:
+/* Description:
 * - Measured and/or modelled temperatures can be monitored at fixed positions (m).
 * - At most MAX_NUMBER_MEAS_TEMPERATURES can be monitored (by default 5). Measured temperatures
 *     are read in from the input file. If you use the smet format, do not forget to properly
@@ -2441,6 +2636,7 @@ std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data)
 	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
@@ -2467,6 +2663,7 @@ std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data)
 	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	is.read(reinterpret_cast<char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	is.read(reinterpret_cast<char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	is.read(reinterpret_cast<char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
@@ -2493,6 +2690,7 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 	os << "BareSoil_z0:                " << BareSoil_z0 << "\n";
 	os << "Canopy_Height:              " << Canopy_Height << "\n";
 	os << "Canopy_LAI:                 " << Canopy_LAI << "\n";
+	os << "Canopy_BasalArea:           " << Canopy_BasalArea << "\n";
 	os << "Canopy_Direct_Throughfall:  " << Canopy_Direct_Throughfall << "\n";
 	os << "WindScalingFactor:          " << WindScalingFactor << "\n";
 	os << "ErosionLevel:               " << ErosionLevel << "\n";

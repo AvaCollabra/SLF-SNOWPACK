@@ -50,14 +50,6 @@ class ReSolver1d {
 
 		//To prevent string comparisons, we define an enumerated list:
 		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
-		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
-
-		std::string watertransportmodel_snow;
-		std::string watertransportmodel_soil;
-		double sn_dt;
-		bool useSoilLayers, water_layer;
-
-
 		//Soil types
 		enum SoilTypes{ORGANIC, CLAY, CLAYLOAM, LOAM, LOAMYSAND, SAND, SANDYCLAY, SANDYCLAYLOAM, SANDYLOAM, SILT, SILTYCLAY, SILTYCLAYLOAM, SILTLOAM, WFJGRAVELSAND};
 		//Hydraulic conductivity parameterizations
@@ -69,7 +61,17 @@ class ReSolver1d {
 		//Solvers
 		enum SOLVERS{DGESVD, DGTSV, TDMA};
 		//Boundary conditions
-		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY};
+		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, WATERTABLE, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY};
+		
+		
+		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
+
+		std::string watertransportmodel_snow;
+		std::string watertransportmodel_soil;
+		BoundaryConditions BottomBC;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
+
+		double sn_dt;
+		bool useSoilLayers, water_layer;
 
 
 		// Van Genuchten functions

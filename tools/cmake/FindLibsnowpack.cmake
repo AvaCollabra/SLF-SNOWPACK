@@ -10,11 +10,11 @@ IF(WIN32)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\Snowpack]" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
-		${LIBSNOWPACK_ROOT1}/lib
-		${LIBSNOWPACK_ROOT2}/lib
-		${LIBSNOWPACK_ROOT3}/lib
-		${SRC_DIR}/snowpack/lib
-		"C:/Program Files/Snowpack/lib" )
+		${LIBSNOWPACK_ROOT1}/bin
+		${LIBSNOWPACK_ROOT2}/bin
+		${LIBSNOWPACK_ROOT3}/bin
+		${SRC_DIR}/snowpack/bin
+		"C:/Program Files/Snowpack/bin" )
 
 	IF(MSVC)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
@@ -61,7 +61,12 @@ ENDIF(WIN32)
 
 #build LIBSNOWPACK_ROOT so we can provide a hint for searching for the header file
 GET_FILENAME_COMPONENT(snowpack_libs_root ${LIBSNOWPACK_LIBRARY} PATH)
-SET(LIBSNOWPACK_ROOT "${snowpack_libs_root}/../")
+IF(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
+	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT ${snowpack_libs_root} DIRECTORY)
+ELSE(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
+	SET(LIBSNOWPACK_ROOT "${snowpack_libs_root}/../")
+	STRING(REPLACE  " " "\\ " LIBSNOWPACK_ROOT ${LIBSNOWPACK_ROOT})
+ENDIF(${CMAKE_VERSION} VERSION_GREATER "2.8.11")
 
 # locate main header file
 FIND_PATH(LIBSNOWPACK_INCLUDE_DIR

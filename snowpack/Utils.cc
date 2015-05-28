@@ -19,7 +19,7 @@
 */
 /**
  * @file Utils.cc
- * @version 10.02
+ * @version 11.03
  * @brief This module contains all-purpose functions
  */
 
@@ -268,45 +268,10 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 {
 	const double nr_steps = static_cast<double>( n_steps );
 	// Mean energy fluxes (W m-2), including albedo
-	Sdata.lw_in   /= nr_steps;
-	Sdata.lw_out  /= nr_steps;
-	Sdata.lw_net  /= nr_steps;
-	Sdata.qs      /= nr_steps;
-	Sdata.ql      /= nr_steps;
-	Sdata.qr      /= nr_steps;
-	Sdata.qg      /= nr_steps;
-	Sdata.qg0     /= nr_steps;
-	Sdata.sw_hor  /= nr_steps;
-	Sdata.sw_in   /= nr_steps;
-	Sdata.sw_out  /= nr_steps;
-	Sdata.qw      /= nr_steps;
-	Sdata.sw_dir  /= nr_steps;
-	Sdata.sw_diff /= nr_steps;
-	Sdata.pAlbedo /= nr_steps;
-	if (Sdata.mAlbedo != Constants::undefined)
-		Sdata.mAlbedo /= nr_steps;
+	Sdata.multiplyFluxes(1./nr_steps);
 
-	if (useCanopyModel) {
-		// *radiation
-		Xdata.Cdata.rswrac /= nr_steps;
-		Xdata.Cdata.iswrac /= nr_steps;
-		Xdata.Cdata.rswrbc /= nr_steps;
-		Xdata.Cdata.iswrbc /= nr_steps;
-		Xdata.Cdata.ilwrac /= nr_steps;
-		Xdata.Cdata.rlwrac /= nr_steps;
-		Xdata.Cdata.ilwrbc /= nr_steps;
-		Xdata.Cdata.rlwrbc /= nr_steps;
-		Xdata.Cdata.rsnet /= nr_steps;
-		Xdata.Cdata.rlnet /= nr_steps;
-		// turbulent heat fluxes
-		Xdata.Cdata.sensible /= nr_steps;
-		Xdata.Cdata.latent /= nr_steps;
-		Xdata.Cdata.latentcorr /= nr_steps;
-		// auxiliaries
-		Xdata.Cdata.canopyalb /= nr_steps;
-		Xdata.Cdata.totalalb /= nr_steps;
-		Xdata.Cdata.intcapacity /= nr_steps;
-	}
+	if (useCanopyModel) 
+		Xdata.Cdata.multiplyFluxes(1./nr_steps);
 }
 
 /**
@@ -326,6 +291,88 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
 	type -= int ((*F1)*100);
 	*F2   = int (floor(type/10.));
 	*F3   = int (type - (*F2)*10);
+}
+
+/**
+ * @brief Performs simple unit conversion (supports temperature, prefixes and exponents)
+ * @author Adrien Gaudard
+ * @version 11.03
+ * @param val Value (expressed in unitIn)
+ * @param unitIn (units of input)
+ * @param unitOut (units of output)
+ * return Value (expressed in unitOut)
+ */
+double unitConversion(const double val, char* unitIn, char* unitOut)
+{
+	if (!strcmp(unitIn,"degK") || !strcmp(unitIn,"°K") || !strcmp(unitIn,"Kelvin"))
+		unitIn = (char*) "K";
+	if (!strcmp(unitOut,"degK") || !strcmp(unitOut,"°K") || !strcmp(unitOut,"Kelvin"))
+		unitOut = (char*) "K";
+	if (!strcmp(unitIn,"degC") || !strcmp(unitIn,"Celsius"))
+		unitIn = (char*) "°C";
+	if (!strcmp(unitOut,"degC") || !strcmp(unitOut,"Celsius"))
+		unitOut = (char*) "°C";
+	if (!strcmp(unitIn,"degF") || !strcmp(unitIn,"Fahrenheit"))
+		unitIn = (char*) "°F";
+	if (!strcmp(unitOut,"degF") || !strcmp(unitOut,"Fahrenheit"))
+		unitOut = (char*) "°F";
+
+	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
+		return (val+273.15);
+	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {
+		return (val-273.15);
+	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°F")) {
+		return ((val-273.15)*1.8+32.);
+	} else if (!strcmp(unitIn,"°F") && !strcmp(unitOut,"K")) {
+		return ((val-32.)/1.8+273.15);
+	}  else if (!strcmp(unitIn,"°F") && !strcmp(unitOut,"°C")) {
+		return ((val-32.)/1.8);
+	}  else if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"°F")) {
+		return (val*1.8+32.);
+	} else {
+		double ratio = 1.;
+		if (strlen(unitIn) > 1+isdigit(unitIn[strlen(unitIn)-1])) {
+			char unitInPrefix = unitIn[0];
+			if (unitInPrefix == 'f') {
+				ratio *= 1./1000000000000000.;
+			} else if (unitInPrefix == 'p') {
+				ratio *= 1./1000000000000.;
+			} else if (unitInPrefix == 'n') {
+				ratio *= 1./1000000000.;
+			} else if (unitInPrefix == 'u') {
+				ratio *= 1./1000000.;
+			} else if (unitInPrefix == 'm') {
+				ratio *= 1./1000.;
+			} else if (unitInPrefix == 'c') {
+				ratio *= 1./100.;
+			} else if (unitInPrefix == 'd') {
+				ratio *= 1./10.;
+			} else if (unitInPrefix == 'h') {
+				ratio *= 100.;
+			} else if (unitInPrefix == 'k') {
+				ratio *= 1000.;
+			} else if (unitInPrefix == 'M') {
+				ratio *= 1000000.;
+			} else if (unitInPrefix == 'G') {
+				ratio *= 1000000000.;
+			} else if (unitInPrefix == 'T') {
+				ratio *= 1000000000000.;
+			} else if (unitInPrefix == 'P') {
+				ratio *= 1000000000000000.;
+			}
+		}
+		if (isdigit(unitIn[strlen(unitIn)-1])) {
+			ratio = pow(ratio,(int)(unitIn[strlen(unitIn)-1]-'0'));
+		}
+		if (val==IOUtils::nodata) {
+			return ratio;
+		}
+		if (strlen(unitOut) > 1+isdigit(unitOut[strlen(unitOut)-1])) {
+			ratio /= unitConversion(IOUtils::nodata,unitOut,unitIn);
+		}
+		return val*ratio;
+	}
+	throw IOException("Unable to perform unit conversion.", AT);
 }
 
 /**
