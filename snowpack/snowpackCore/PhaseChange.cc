@@ -152,7 +152,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 			Edata.Te = T_melt;
 		}
 		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
-		Edata.dth_w = dth_w; // (1)
+		Edata.dth_w += dth_w; // (1)
 		for (unsigned int ii = 0; ii < nSolutes; ii++) {
 			if( dth_w > 0. ) {
 				Edata.conc[WATER][ii] = (Edata.theta[WATER] * Edata.conc[WATER][ii]
@@ -287,7 +287,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		Edata.heatCapacity();
 		// Compute the volumetric refreezing power
 		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
-		Edata.dth_w = dth_w;
+		Edata.dth_w += dth_w;
 		Edata.Te += dT;
 	}
 }
