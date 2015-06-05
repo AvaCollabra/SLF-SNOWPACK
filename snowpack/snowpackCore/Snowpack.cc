@@ -25,6 +25,7 @@
  */
 
 #include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/Meteo.h>
 #include <assert.h>
 
 using namespace mio;
@@ -134,6 +135,12 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - "BOTH" downward and reflected SW radiation is used
 	 * @note { If SW_MODE == "BOTH", the input must hold both fluxes! } */
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
+
+	/* Defines used atmospheric stability, used for determining if dynamic time steps may be required */
+	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", atm_stability_model);
+
+	/* Allow dynamic time stepping in case of unstable atmospheric stratification */
+	cfg.getValue("ALLOW_DYNAMIC_TIMESTEPPING", "SnowpackAdvanced", allow_dynamic_timestepping);
 
 	/* Height of new snow element (m) [NOT read from CONSTANTS_User.INI] \n
 	 * Controls the addition of new snow layers. Set in qr_ReadParameters() \n
@@ -1733,40 +1740,57 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		} else
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_precip);
 
-		// Reinitialize and compute the initial meteo heat fluxes
-		memset((&Bdata), 0, sizeof(BoundCond));
-		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
-
-		// Compute the temperature profile in the snowpack and soil, if present
-		compTemperatureProfile(Xdata, Mdata, Bdata);
-
-		// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
-		// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
-		//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
-		//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
-		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
-				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
-			surfaceCode = DIRICHLET_BC;
-			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
-			compTemperatureProfile(Xdata, Mdata, Bdata);
+		int niter = 1;				// Default number of time steps for the temperature equation/subsequent phase changes (sub-time steps) within one snowpack time step.
+		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
+		if((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && (atm_stability_model != "NEUTRAL_MO" && allow_dynamic_timestepping == true)) {
+			// In unstable conditions, things get sensitive, so we reduce the SNOWPACK time step for the temperature equation and phase change
+			// Note: when the stability correction does not converge, neutral conditions are assumed, and psi_s==0, but still it is wise to use a reduced time step.
+			// We then also need to check if NEUTRAL_MO was not chosen, because then psi_s is also 0 without the need to reduce the time step.
+			sn_dt = 60.;			// Set to 60 seconds
+			niter = int(sn_dt_bcu/sn_dt);	// Number of sub-time steps for temperature equation/phase change
 		}
-		Sdata.compSnowSoilHeatFlux(Xdata);
+		for(int i = 1; i <= niter; i++) {	// Cycle over sub-time steps
+			if(i > 1) {
+				// After the first sub-time step, update Meteo object to reflect on the new stability state
+				Meteo M(cfg);
+				M.compMeteo(Mdata, Xdata);
+			}
+			// Reinitialize and compute the initial meteo heat fluxes
+			memset((&Bdata), 0, sizeof(BoundCond));
+			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 
-		// Inialize PhaseChange
-		phasechange.initialize(Xdata);
+			// Compute the temperature profile in the snowpack and soil, if present
+			compTemperatureProfile(Xdata, Mdata, Bdata);
 
-		// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
-		if(!alpine3d)
-			phasechange.compPhaseChange(Xdata, Mdata.date);
-		else
-			phasechange.compPhaseChange(Xdata, Mdata.date, false);
+			// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
+			// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
+			//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
+			//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
+			if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
+					&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
+				surfaceCode = DIRICHLET_BC;
+				melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
+				compTemperatureProfile(Xdata, Mdata, Bdata);
+			}
+			if(i == niter) Sdata.compSnowSoilHeatFlux(Xdata);
 
-		// Compute the final heat fluxes
-		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
-		                      // linearized w/ respect to Tss and thus remains unchanged
-		                      // throughout the temperature iterations!!!
-		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+			// Inialize PhaseChange at the first sub-time step
+			if(i == 1) phasechange.initialize(Xdata);
+
+			// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
+			if(!alpine3d)
+				phasechange.compPhaseChange(Xdata, Mdata.date);
+			else
+				phasechange.compPhaseChange(Xdata, Mdata.date, false);
+
+			// Compute the final heat fluxes at the last sub-time step
+			if(i == niter) Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
+							     // linearized w/ respect to Tss and thus remains unchanged
+							     // throughout the temperature iterations!!!
+			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+		}
+		sn_dt = sn_dt_bcu;	// Set back snowpack time step to orginal value
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
