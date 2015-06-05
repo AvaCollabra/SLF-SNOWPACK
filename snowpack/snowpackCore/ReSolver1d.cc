@@ -2655,7 +2655,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if(AllowSoilFreezing == true) {
 				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
 				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
-				EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
+				EMS[i].freezing_tk=EMS[i].melting_tk=EMS[i].Te;
 			} else {
 				EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
 				//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
