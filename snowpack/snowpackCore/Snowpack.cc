@@ -140,7 +140,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", atm_stability_model);
 
 	/* Allow dynamic time stepping in case of unstable atmospheric stratification */
-	cfg.getValue("ALLOW_DYNAMIC_TIMESTEPPING", "SnowpackAdvanced", allow_dynamic_timestepping);
+	cfg.getValue("ALLOW_ADAPTIVE_TIMESTEPPING", "SnowpackAdvanced", allow_adaptive_timestepping);
 
 	/* Height of new snow element (m) [NOT read from CONSTANTS_User.INI] \n
 	 * Controls the addition of new snow layers. Set in qr_ReadParameters() \n
@@ -1742,7 +1742,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		int niter = 1;				// Default number of time steps for the temperature equation/subsequent phase changes (sub-time steps) within one snowpack time step.
 		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
-		if((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && (atm_stability_model != "NEUTRAL_MO" && allow_dynamic_timestepping == true)) {
+		if((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && (atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true)) {
 			// In unstable conditions, things get sensitive, so we reduce the SNOWPACK time step for the temperature equation and phase change
 			// Note: when the stability correction does not converge, neutral conditions are assumed, and psi_s==0, but still it is wise to use a reduced time step.
 			// We then also need to check if NEUTRAL_MO was not chosen, because then psi_s is also 0 without the need to reduce the time step.

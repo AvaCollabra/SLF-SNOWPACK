@@ -142,7 +142,7 @@ class Snowpack {
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
 		std::string atm_stability_model;
-		bool allow_dynamic_timestepping;
+		bool allow_adaptive_timestepping;
 		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, thresh_rain_range, sn_dt;
