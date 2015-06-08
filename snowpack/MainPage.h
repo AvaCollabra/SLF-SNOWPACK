@@ -265,7 +265,8 @@
 /**
  * @page requirements Data requirements
  * %Snowpack performs physical modeling of the various processes taking place between the soil, snow cover and atmosphere in order to
- * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters:
+ * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters (please check the 
+ * required units in the plugin documentation):
  * - air temperature (TA)
  * - relative humidity (RH)
  * - wind speed (VW)

@@ -1005,6 +1005,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		if ( SnowpackElement[i] >= nsoillayers_snowpack) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
+			if(EMS[SnowpackElement[i]].theta[ICE]>0.99) {
+				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
+				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-0.99)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
+				dT[SnowpackElement[i]]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+				printf("[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (%f): i=%d --- dT=%f T=%f  theta[WATER]=%f  theta[ICE]=%f\n", tmp_missing_theta, i, dT[SnowpackElement[i]], EMS[SnowpackElement[i]].Te, EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
+				EMS[SnowpackElement[i]].theta[WATER]+=tmp_missing_theta;
+				EMS[SnowpackElement[i]].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
+				EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[WATER];
+			}
 			//Scaling theta_r between 0 and 0.02:
 			const double TuningFactor=0.75;				//Tuning factor for scaling
 			//Increase theta_r in case of wetting:
@@ -2646,7 +2655,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if(AllowSoilFreezing == true) {
 				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
 				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
-				EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
+				EMS[i].freezing_tk=EMS[i].melting_tk=EMS[i].Te;
 			} else {
 				EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
 				//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
