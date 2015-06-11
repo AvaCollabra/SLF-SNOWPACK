@@ -210,6 +210,10 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		enhanced_wind_slab = false; //true; //
 	}
 
+	//Set albedo range for snow
+	min_snow_albedo=0.3;
+	max_snow_albedo=0.95;
+
 	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
 	new_snow_bond_size = 0.25 * new_snow_grain_size;
 
@@ -771,7 +775,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
 			Albedo = MAX(Albedo, Mdata.rswr / Constants::solcon);
 		
-		Albedo = MAX(Xdata.SoilAlb, MIN(0.95, Albedo));
+		if ((nE > Xdata.SoilNode)) Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
 	}
 	
 	return Albedo;
