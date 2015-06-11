@@ -733,7 +733,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	double Albedo = Xdata.SoilAlb; //pure soil profile will remain with soil albedo
 
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
-	if ((nE > Xdata.SoilNode)) { //there are some non-soil layers
+	if (nE > Xdata.SoilNode) { //there are some non-soil layers
 		size_t eAlbedo = nE-1;
 		const size_t marker = EMS[eAlbedo].mk % 10;
 		
@@ -775,7 +775,13 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
 			Albedo = MAX(Albedo, Mdata.rswr / Constants::solcon);
 		
-		if ((nE > Xdata.SoilNode)) Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
+		if (nE > Xdata.SoilNode) {
+			// For snow
+			Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
+		} else {
+			// For soil
+			Albedo = MAX(0.05, MIN(0.95, Albedo));
+		}
 	}
 	
 	return Albedo;
