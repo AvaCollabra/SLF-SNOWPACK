@@ -1005,12 +1005,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		if ( SnowpackElement[i] >= nsoillayers_snowpack) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
-			if(EMS[SnowpackElement[i]].theta[ICE]>0.99) {
+			const double max_allowed_ice=0.95;			//An ice pore space of 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+			if(EMS[SnowpackElement[i]].theta[ICE]>max_allowed_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
-				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-0.99)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
+				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-max_allowed_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
 				dT[SnowpackElement[i]]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 				printf("[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (%f): i=%d --- dT=%f T=%f  theta[WATER]=%f  theta[ICE]=%f\n", tmp_missing_theta, i, dT[SnowpackElement[i]], EMS[SnowpackElement[i]].Te, EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
-				EMS[SnowpackElement[i]].theta[WATER]+=tmp_missing_theta;
+				EMS[SnowpackElement[i]].theta[WATER]+=0.99*tmp_missing_theta;	//Here, we make a small mass balance error, but it should prevent fully saturated layers
 				EMS[SnowpackElement[i]].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
 				EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[WATER];
 			}
