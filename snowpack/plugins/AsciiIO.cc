@@ -683,8 +683,8 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	fout << "HS_Last= " << Xdata.cH - Xdata.Ground << "\n";
 
 	// Latitude, Longitude, Altitude, Slope Angle, Slope Azimut
-	fout << "Latitude= " << fixed << setprecision(4) << Xdata.meta.position.getLat() << "\n";
-	fout << "Longitude= "<< fixed << setprecision(4) << Xdata.meta.position.getLon() << "\n";
+	fout << "Latitude= " << fixed << std::setw(11) << std::setprecision(8) << Xdata.meta.position.getLat() << "\n";
+	fout << "Longitude= "<< fixed << std::setw(11) << std::setprecision(8) << Xdata.meta.position.getLon() << "\n";
 	fout << "Altitude= " << fixed << setprecision(0) <<  Xdata.meta.position.getAltitude() << "\n";
 	fout << "SlopeAngle= " << fixed << setprecision(2) << Xdata.meta.getSlopeAngle() << "\n";
 	fout << "SlopeAzi= " << fixed << setprecision(2) << Xdata.meta.getAzimuth() << "\n";
@@ -1966,8 +1966,8 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			const string stationname = Xdata.meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",  stationname.c_str());
-			fprintf(fout, "\nLatitude= %.2f",   Xdata.meta.position.getLat());
-			fprintf(fout, "\nLongitude= %.2f",  Xdata.meta.position.getLon());
+			fprintf(fout, "\nLatitude= %.8f",   Xdata.meta.position.getLat());
+			fprintf(fout, "\nLongitude= %.8f",  Xdata.meta.position.getLon());
 			fprintf(fout, "\nAltitude= %.0f",   Xdata.meta.position.getAltitude());
 			fprintf(fout, "\nSlopeAngle= %.2f", Xdata.meta.getSlopeAngle());
 			fprintf(fout, "\nSlopeAzi= %.2f",   Xdata.meta.getAzimuth());
@@ -2129,8 +2129,8 @@ bool AsciiIO::checkHeader(const SnowStation& Xdata, const std::string& filename,
 			const string stationname = Xdata.meta.getStationName();
 			fprintf(fout, "[STATION_PARAMETERS]");
 			fprintf(fout, "\nStationName= %s",   stationname.c_str());
-			fprintf(fout, "\nLatitude= %.2f",   Xdata.meta.position.getLat());
-			fprintf(fout, "\nLongitude= %.2f",  Xdata.meta.position.getLon());
+			fprintf(fout, "\nLatitude= %.8f",   Xdata.meta.position.getLat());
+			fprintf(fout, "\nLongitude= %.8f",  Xdata.meta.position.getLon());
 			fprintf(fout, "\nAltitude= %.0f",   Xdata.meta.position.getAltitude());
 			fprintf(fout, "\nSlopeAngle= %.2f", Xdata.meta.getSlopeAngle());
 			fprintf(fout, "\nSlopeAzi= %.2f",   Xdata.meta.getAzimuth());
