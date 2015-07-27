@@ -2060,7 +2060,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 										}
 									}
 									if(BS_converged==false) {
-										printf("[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = %f.\n", dt);
+										if(WriteOutNumerics_Level0==true) printf("[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = %f.\n", dt);
 										if(WriteOutNumerics_Level1==true) {
 											printf("  -- BS_ITER [%d]: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te + delta_Te[i] + delta_Te_i[i] + delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
 											printf("  -- %.15f %.15f %.15f %.15f %.15f   %.15f %.15f\n", T_melt[i], EMS[SnowpackElement[i]].Te, delta_Te_adv[i], delta_Te_adv_i[i], delta_Te[i], EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
