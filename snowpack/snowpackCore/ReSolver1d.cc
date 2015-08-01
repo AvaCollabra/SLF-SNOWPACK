@@ -1942,6 +1942,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 										+ Constants::density_water * (theta_np1_mp1[i] + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) * Constants::specific_heat_water
 										+ EMS[SnowpackElement[i]].soil[SOIL_RHO] * EMS[SnowpackElement[i]].theta[SOIL] * EMS[SnowpackElement[i]].soil[SOIL_C]
 										) / tmp_rho;
+							delta_Te_adv_i[i]=0.;
 							if (tmp_flux_above>0.) {	//Positve flux from above (= influx in current layer)
 								//Advected heat
 								const double tmp_adv_heat = ((EMS[SnowpackElement[i+1]].Te + delta_Te_adv[i+1] + delta_Te[i+1]) - (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te[i])) * Constants::density_water * tmp_flux_above * Constants::specific_heat_water;	//Units [J/m^2]
@@ -1950,6 +1951,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							if (tmp_flux_below<0.) {	//Negative flux from below (=influx in current layer)
 								//Advected heat
 								const double tmp_adv_heat = ((EMS[SnowpackElement[i-1]].Te + delta_Te_adv[i-1] + delta_Te[i-1]) - (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te[i])) * Constants::density_water * (-1.*tmp_flux_below) * Constants::specific_heat_water;	//Units [J/m^2]
+								//In rare cases, we may have inflow from above AND below, so we add (+=) the temperature change due to heat advection
 								delta_Te_adv_i[i] += (tmp_adv_heat) / (tmp_c_p * tmp_rho * EMS[SnowpackElement[i]].L);
 							}
 
