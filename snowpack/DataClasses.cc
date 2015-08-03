@@ -2098,7 +2098,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 		if(nElems==0 || top_index==soil_index) return false; //there are only soil layers or none
 
-		for(size_t layer_index=top_index; layer_index-- > end_index; ) {
+		for(size_t layer_index=top_index+1; layer_index-- > end_index; ) { //because it is decremented right away when testing...
 			if(Edata[layer_index].type!=880 && (Edata[layer_index].mk % 10 != 7) && (Edata[layer_index].mk % 10 != 8)) {
 				is_pure_ice=false;
 				break;
