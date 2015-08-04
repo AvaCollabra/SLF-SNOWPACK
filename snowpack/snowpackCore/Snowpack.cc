@@ -599,8 +599,12 @@ if (Mdata.hnw != mio::IOUtils::nodata){
 		Bdata.qr = 0.;
 	}
 } else {
+	if (Mdata.hnwl != mio::IOUtils::nodata) {
 		const double gamma = (Mdata.hnwl / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (Tair - Tss);
+	} else {
+		Bdata.qr = 0.;
+	}
 }
 // end Variant
 	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
@@ -672,11 +676,13 @@ if (Mdata.hnw != mio::IOUtils::nodata){
 			Fe[1] += gamma * T_air;
 		}
 } else {
-                        const double gamma = (Mdata.hnwl / sn_dt) * Constants::specific_heat_water;
-                        Se[1][1] += gamma;
-                        Fe[1] += gamma * T_air;
-
+	if (Mdata.hnwl != mio::IOUtils::nodata) {
+			const double gamma = (Mdata.hnwl / sn_dt) * Constants::specific_heat_water;
+			Se[1][1] += gamma;
+			Fe[1] += gamma * T_air;
+	}
 } // end Variant
+
 		// Net longwave radiation: NON-linear dependence on snow surface temperature
 		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
