@@ -54,12 +54,12 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(),
             variant(), viscosity_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), albedo_average_schmucki(), sw_absorption_scheme(),
-            albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
+           /* atm_stability_model(),*/ /*allow_adaptive_timestepping(false),*/ albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
             meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), thresh_rain(0.), thresh_rain_range(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), t_surf(0.),
+            minimum_l_element(0.), t_surf(0.), min_snow_albedo(0.), max_snow_albedo(1.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
@@ -202,6 +202,10 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		bond_factor_rh = 1.0;
 		enhanced_wind_slab = false; //true; //
 	}
+
+	//Set albedo range for snow
+	min_snow_albedo=0.3;
+	max_snow_albedo=0.95;
 
 	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
 	new_snow_bond_size = 0.25 * new_snow_grain_size;
@@ -424,7 +428,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			// Make sure settling is not larger than the space that is available (basically settling can at most reduce theta[AIR] to 0).
 			// We also leave some room in case all liquid water freezes and thereby expands.
 			double MaxSettlingFactor=1.;	// An additional maximum settling factor, between 0 and 1. 1: allow maximize possible settling, 0: no settling allowed.
-			if (watertransportmodel_snow=="RICHARDSEQUATION" && alpine3d==true) MaxSettlingFactor=0.9;	//For stability in the numerical solver.
+			if (watertransportmodel_snow=="RICHARDSEQUATION") MaxSettlingFactor=0.9;	//For stability in the numerical solver.
 			dL = MAX(dL, MIN(0., -1.*MaxSettlingFactor*L0*(EMS[e].theta[AIR]-((Constants::density_water/Constants::density_ice)-1.)*EMS[e].theta[WATER])));
 
 			// Limit dL when the element length drops below minimum_l_element. This element will be merged in WaterTransport::mergingElements later on.
@@ -722,7 +726,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	double Albedo = Xdata.SoilAlb; //pure soil profile will remain with soil albedo
 
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
-	if ((nE > Xdata.SoilNode)) { //there are some non-soil layers
+	if (nE > Xdata.SoilNode) { //there are some non-soil layers
 		size_t eAlbedo = nE-1;
 		const size_t marker = EMS[eAlbedo].mk % 10;
 		
@@ -764,7 +768,13 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
 			Albedo = MAX(Albedo, Mdata.rswr / Constants::solcon);
 		
-		Albedo = MAX(Xdata.SoilAlb, MIN(0.95, Albedo));
+		if (nE > Xdata.SoilNode) {
+			// For snow
+			Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
+		} else {
+			// For soil
+			Albedo = MAX(0.05, MIN(0.95, Albedo));
+		}
 	}
 	
 	return Albedo;
