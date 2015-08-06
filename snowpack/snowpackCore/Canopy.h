@@ -27,6 +27,8 @@
 #include <snowpack/Utils.h>
 #include <snowpack/Laws_sn.h>
 
+#include <fstream>
+
 class Canopy {
 
  	public:
@@ -35,29 +37,29 @@ class Canopy {
 		static void DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		void runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,
 		                    double height_of_wind_val, const bool& alpine3d=false);
-		static void writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata);
+		static void writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdata);
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
 
  	private:
 		double get_f1(const double& ris);
-		double get_RootFraction(const double& zupper, const double& zlower);
+		double RootFraction(const double& zupper, const double& zlower);
 		void SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS);
 		double get_f4(const double& tempC);
 		double get_f2f4(const size_t& SoilNode, ElementData* EMS);
 		double get_f3(const double& vpd);
-		double get_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
-		double get_IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws);
-		double get_IntUnload(const double& capacity, const double& storage);
-		double get_IntRate(const double& capacity, const double& storage, const double& prec,
+		double IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
+		double IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws);
+		double IntUnload(const double& capacity, const double& storage);
+		double IntRate(const double& capacity, const double& storage, const double& prec,
 		                  const double& direct);
 
-		double get_CanopyAlbedo(const double& tair, const double& wetfrac);
-		double get_TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
+		double CanopyAlbedo(const double& tair, const double& wetfrac);
+		double TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
 		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
 
-		double get_CanopyShadeSoilCover(const double& HEIGHT, const double& COVER, const double& ELEV);
-		double get_CanopyWetFraction(const double& capacity, const double& storage);
-		double get_CanopyTransmissivity(const double& lai, const double& elev);
+		double CanopyShadeSoilCover(const double& HEIGHT, const double& COVER, const double& ELEV);
+		double CanopyWetFraction(const double& capacity, const double& storage);
+		double CanopyTransmissivity(const double& lai, const double& elev);
 
 		void LineariseNetRadiation(const CurrentMeteo& Mdata,const CanopyData& Cdata, const SnowStation& Xdata,
 		                              double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
@@ -78,21 +80,21 @@ class Canopy {
 
 		void LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor);
 
-                void get_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
+                void CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
                                                          const double& le1, const double& HM0,  const double& HM1,
                                                          const double& ce_canopy,
                                                          const double& ce_condensation,
                                                          double& r0, double& r1, double& TCANOPY, double& RNCANOPY,
                                                          double& HCANOPY, double& LECANOPY);
 
-		void get_CanopyEnergyBalance2L(double& h0, double& h1, double& le0,
+		void CanopyEnergyBalance2L(double& h0, double& h1, double& le0,
                                                          double& le1, double& HM0, double& HM1, double& TT0, double& TT1,
 					                 const double& ce_canopy,
                                                          const double& ce_condensation,
                                                          double& r0, double& r1, double& r2, double& TCANOPY, double& Ttrunk, double& RNCANOPY,
                                                          double& HCANOPY, double& LECANOPY);
 
-		void get_CanopyEvaporationComponents(double& ce_canopy,
+		void CanopyEvaporationComponents(double& ce_canopy,
                                       double& ce_transpiration, double& LECANOPY,
                                       double& ta,double& I, double DT,
                                       double& CanopyEvaporation,
@@ -102,7 +104,7 @@ class Canopy {
                                       double& LECANOPYCORR,
                                       double& wetfraction, double& HM0, double& HM1);
 
-		void get_CanopyEvaporationComponents2L(double& ce_canopy,
+		void CanopyEvaporationComponents2L(double& ce_canopy,
 							double& ce_transpiration, double& LECANOPY,
 							double& ta, double& I, double DT,
 							double& CanopyEvaporation,
@@ -117,12 +119,12 @@ class Canopy {
 		double get_psih(const double& xi);
 		double RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
 
-		void get_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
+		void CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
 								  const double& wetfraction, SnowStation& Xdata, double& ch_canopy,
 								  double& ce_canopy, double& ce_transpiration,
 								  double& ce_interception, double& ce_condensation);
 
-		void get_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
+		void CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
 								double *iswrac, double *rswrac,
 								double *iswrbc, double *rswrbc, double *ilwrac,
 								double *rlwrac, double *ilwrbc, double *rlwrbc,
