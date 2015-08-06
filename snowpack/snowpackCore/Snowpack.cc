@@ -1234,7 +1234,6 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		}
 	}
 	free(U); free(dU); free(ddU);
-	return false;
 	return TempEqConverged;
 }
 
@@ -1802,7 +1801,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			// Compute the temperature profile in the snowpack and soil, if present
 			if (compTemperatureProfile(Xdata, Mdata, Bdata, (allow_adaptive_timestepping == true)?(false):(true))) {
 				// Entered after convergence
-			  	ii++;						// Update time step counter
+				ii++;						// Update time step counter
 				p_dt += sn_dt;					// Update progress variable
 				if (p_dt > sn_dt_bcu-Constants::eps) {		// Check if it is the last sub-time step
 					LastTimeStep = true;
