@@ -150,14 +150,14 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		double t_surf;
-		double min_snow_albedo, max_snow_albedo;
+		static const double min_snow_albedo;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;
 		bool combine_elements, reduce_n_elements, change_bc, meas_tss;
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
-		
+
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;

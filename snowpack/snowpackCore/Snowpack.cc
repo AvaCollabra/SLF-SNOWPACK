@@ -25,6 +25,7 @@
  */
 
 #include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/Meteo.h>
 #include <assert.h>
 
 using namespace mio;
@@ -42,6 +43,7 @@ const double Snowpack::snowfall_warning = 0.5;
 
 const unsigned int Snowpack::new_snow_marker = 0;
 const double Snowpack::new_snow_albedo = 0.9;
+const double Snowpack::min_snow_albedo = 0.3;
 
 /// Min volumetric ice content allowed
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
@@ -59,7 +61,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             height_new_elem(0.), thresh_rain(0.), thresh_rain_range(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), t_surf(0.), min_snow_albedo(0.), max_snow_albedo(1.),
+            minimum_l_element(0.), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
@@ -202,10 +204,6 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		bond_factor_rh = 1.0;
 		enhanced_wind_slab = false; //true; //
 	}
-
-	//Set albedo range for snow
-	min_snow_albedo=0.3;
-	max_snow_albedo=0.95;
 
 	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
 	new_snow_bond_size = 0.25 * new_snow_grain_size;
@@ -776,7 +774,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		
 		if (nE > Xdata.SoilNode) {
 			// For snow
-			Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
+			Albedo = MAX(min_snow_albedo, MIN(new_snow_albedo, Albedo));
 		} else {
 			// For soil
 			Albedo = MAX(0.05, MIN(0.95, Albedo));
@@ -1743,7 +1741,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
 		// routine and later used to compute the Meteo Heat Fluxes
-		if(!alpine3d) { //HACK: we need to set to 0 the external drift
+		if (!alpine3d) { //HACK: we need to set to 0 the external drift
 			double tmp=0.;
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, tmp);
 		} else
