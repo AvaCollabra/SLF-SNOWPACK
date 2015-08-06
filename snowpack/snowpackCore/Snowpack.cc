@@ -48,6 +48,26 @@ const double Snowpack::min_snow_albedo = 0.3;
 /// Min volumetric ice content allowed
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
 
+/// @brief Define the assembly macro
+void Snowpack::EL_INCID(const size_t &e, int Ie[]) {
+	Ie[0] = static_cast<int>( e ); 
+	Ie[1] = static_cast<int>( e+1 ); 
+}
+
+/// @brief Define the node to element temperature macro
+void Snowpack::EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] ) {
+	Te0[ 0 ] = T0[ Ie[ 0 ] ].T;
+	Te0[ 1 ] = T0[ Ie[ 1 ] ].T;
+	Tei[ 0 ] = Ti[ Ie[ 0 ] ];
+	Tei[ 1 ] = Ti[ Ie[ 1 ] ];
+}
+
+/// @brief Element right-hand side macro
+void Snowpack::EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]) {
+	F[Ie[0]] += Fe[0];
+	F[Ie[1]] += Fe[1];
+}
+
 /************************************************************
  * non-static section                                       *
  ************************************************************/
@@ -1065,7 +1085,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		if (surfaceCode == DIRICHLET_BC) {
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
-			Ie[0] = nE;
+			Ie[0] = static_cast<int>( nE );
 			ds_AssembleMatrix((MYTYPE*)Kt, 1, Ie, 1, &Big);
 		}
 		// Bottom node
@@ -1763,7 +1783,6 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			niter = int(sn_dt_bcu/sn_dt);	// Number of sub-time steps for temperature equation/phase change
 		}
 		for (int ii = 1; ii <= niter; ii++) {	// Cycle over sub-time steps
-			if (niter>1) std::cout << "On " << Mdata.date.toString(Date::ISO) << " : using adaptive timestepping\n";
 			if (ii > 1) {
 				// After the first sub-time step, update Meteo object to reflect on the new stability state
 				Meteo M(cfg);

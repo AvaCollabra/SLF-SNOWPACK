@@ -44,35 +44,8 @@
 #include <sstream>
 #include <errno.h>
 
-
-/**
- * @name Element macro definitions used in Snowpack.cc only
- * @todo to be replaced by proper functions some day
- */
-//@{
 /// @brief The number of element incidences
 #define N_OF_INCIDENCES 2
-/// @brief Defines the assembly macro
-#define EL_INCID(e, Ie) { \
-	Ie[0] = e; Ie[1] = e+1; }
-/// @brief Define the node to element temperature macro
-#define EL_TEMP( Ie, Te0, Tei, T0, Ti ) { \
-	Te0[ 0 ] = T0[ Ie[ 0 ] ].T; \
-	Te0[ 1 ] = T0[ Ie[ 1 ] ].T; \
-	Tei[ 0 ] = Ti[ Ie[ 0 ] ]; \
-	Tei[ 1 ] = Ti[ Ie[ 1 ] ]; }
-/// @brief Define the node to element coordinates macro
-#define EL_COORD( Ze, Ie, NODES ) { \
-	Ze[ 0 ] = NODES[ ( Ie[ 0 ] ) ].z; \
-	Ze[ 1 ] = NODES[ ( Ie[ 1 ] ) ].z;  }
-/// @brief Define the node to element coordinates macro
-#define EL_U( Ue, Ie, NODES ) { \
-	Ue[ 0 ] = NODES[ ( Ie[ 0 ] ) ].u; \
-	Ue[ 1 ] = NODES[ ( Ie[ 1 ] ) ].u;  }
-/// @brief Element right-hand side macro
-#define EL_RGT_ASSEM(F, Ie, Fe) { \
-	F[Ie[0]] += Fe[0]; F[Ie[1]] += Fe[1]; }
-//@}
 
 class Snowpack {
 
@@ -97,6 +70,10 @@ class Snowpack {
 			NEUMANN_BC,
 			DIRICHLET_BC
 		};
+		
+		static void EL_INCID(const size_t &e, int Ie[]);
+		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
+		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
 
 		bool compSnowForces(ElementData &Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
 		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
