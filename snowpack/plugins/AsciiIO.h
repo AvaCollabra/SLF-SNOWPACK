@@ -60,15 +60,17 @@ class AsciiIO : public SnowpackIOInterface {
 
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
+		void writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) const;
+		void writePROHeader(const SnowStation& Xdata, std::ofstream &fout) const;
 		bool checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const;
 
 		void writeProfilePro(const mio::Date& date, const SnowStation& Xdata);
-		void writeProfileProAddDefault(const SnowStation& Xdata, FILE *fout);
-		void writeProfileProAddCalibration(const SnowStation& Xdata, FILE *fout);
+		void writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream &fout);
+		void writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstream &fout);
 
 		void writeProfilePrf(const mio::Date& date, const SnowStation& Xdata, const bool& aggregate);
 
-		size_t writeTemperatures(FILE *fout, const double& z_vert, const double& T,
+		size_t writeTemperatures(std::ofstream &fout, const double& z_vert, const double& T,
 		                         const size_t& ii, const SnowStation& Xdata);
 
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
@@ -76,22 +78,22 @@ class AsciiIO : public SnowpackIOInterface {
 		double checkMeasuredTemperature(const double& T, const double& z, const double& mH);
 
 		size_t findTaggedElement(const size_t& tag, const SnowStation& Xdata);
-		size_t writeHeightTemperatureTag(FILE *fout, const size_t& tag,
+		size_t writeHeightTemperatureTag(std::ofstream &fout, const size_t& tag,
 		                                 const CurrentMeteo& Mdata, const SnowStation& Xdata);
 
 		void setNumberSensors(const CurrentMeteo& Mdata);
 		void writeTimeSeriesAddDefault(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                        const CurrentMeteo& Mdata, const double crust,
                                        const double dhs_corr, const double mass_corr,
-                                       const size_t nCalcSteps, FILE *fout);
+                                       const size_t nCalcSteps, std::ofstream &fout);
 		void writeTimeSeriesAddAntarctica(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                           const CurrentMeteo& Mdata, const double crust,
                                           const double dhs_corr, const double mass_corr,
-                                          const size_t nCalcSteps, FILE *fout);
+                                          const size_t nCalcSteps, std::ofstream &fout);
 		void writeTimeSeriesAddCalibration(const SnowStation& Xdata, const SurfaceFluxes& Sdata,
                                            const CurrentMeteo& Mdata, const double crust,
                                            const double dhs_corr, const double mass_corr,
-                                           const size_t nCalcSteps, FILE *fout);
+                                           const size_t nCalcSteps, std::ofstream &fout);
 
 		void readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata);
 

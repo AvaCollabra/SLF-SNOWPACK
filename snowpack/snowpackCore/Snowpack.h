@@ -152,7 +152,7 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		double t_surf;
-		double min_snow_albedo, max_snow_albedo;
+		static const double min_snow_albedo;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;
 		bool combine_elements, reduce_n_elements, change_bc, meas_tss;

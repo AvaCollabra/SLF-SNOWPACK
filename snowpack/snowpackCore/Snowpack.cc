@@ -43,6 +43,7 @@ const double Snowpack::snowfall_warning = 0.5;
 
 const unsigned int Snowpack::new_snow_marker = 0;
 const double Snowpack::new_snow_albedo = 0.9;
+const double Snowpack::min_snow_albedo = 0.3;
 
 /// Min volumetric ice content allowed
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
@@ -60,7 +61,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             height_new_elem(0.), thresh_rain(0.), thresh_rain_range(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), t_surf(0.), min_snow_albedo(0.), max_snow_albedo(1.),
+            minimum_l_element(0.), t_surf(0.),
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
@@ -209,10 +210,6 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		bond_factor_rh = 1.0;
 		enhanced_wind_slab = false; //true; //
 	}
-
-	//Set albedo range for snow
-	min_snow_albedo=0.3;
-	max_snow_albedo=0.95;
 
 	cfg.getValue("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", new_snow_grain_size);
 	new_snow_bond_size = 0.25 * new_snow_grain_size;
@@ -783,7 +780,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		
 		if (nE > Xdata.SoilNode) {
 			// For snow
-			Albedo = MAX(min_snow_albedo, MIN(max_snow_albedo, Albedo));
+			Albedo = MAX(min_snow_albedo, MIN(new_snow_albedo, Albedo));
 		} else {
 			// For soil
 			Albedo = MAX(0.05, MIN(0.95, Albedo));
@@ -1750,7 +1747,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
 		// routine and later used to compute the Meteo Heat Fluxes
-		if(!alpine3d) { //HACK: we need to set to 0 the external drift
+		if (!alpine3d) { //HACK: we need to set to 0 the external drift
 			double tmp=0.;
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, tmp);
 		} else
@@ -1758,15 +1755,16 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		int niter = 1;				// Default number of time steps for the temperature equation/subsequent phase changes (sub-time steps) within one snowpack time step.
 		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
-		if((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && (atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true)) {
+		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && (atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true)) {
 			// In unstable conditions, things get sensitive, so we reduce the SNOWPACK time step for the temperature equation and phase change
 			// Note: when the stability correction does not converge, neutral conditions are assumed, and psi_s==0, but still it is wise to use a reduced time step.
 			// We then also need to check if NEUTRAL_MO was not chosen, because then psi_s is also 0 without the need to reduce the time step.
 			sn_dt = 60.;			// Set to 60 seconds
 			niter = int(sn_dt_bcu/sn_dt);	// Number of sub-time steps for temperature equation/phase change
 		}
-		for(int i = 1; i <= niter; i++) {	// Cycle over sub-time steps
-			if(i > 1) {
+		for (int ii = 1; ii <= niter; ii++) {	// Cycle over sub-time steps
+			if (niter>1) std::cout << "On " << Mdata.date.toString(Date::ISO) << " : using adaptive timestepping\n";
+			if (ii > 1) {
 				// After the first sub-time step, update Meteo object to reflect on the new stability state
 				Meteo M(cfg);
 				M.compMeteo(Mdata, Xdata);
@@ -1789,19 +1787,19 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
 				compTemperatureProfile(Xdata, Mdata, Bdata);
 			}
-			if(i == niter) Sdata.compSnowSoilHeatFlux(Xdata);
+			if (ii == niter) Sdata.compSnowSoilHeatFlux(Xdata);
 
 			// Inialize PhaseChange at the first sub-time step
-			if(i == 1) phasechange.initialize(Xdata);
+			if (ii == 1) phasechange.initialize(Xdata);
 
 			// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
-			if(!alpine3d)
+			if (!alpine3d)
 				phasechange.compPhaseChange(Xdata, Mdata.date);
 			else
 				phasechange.compPhaseChange(Xdata, Mdata.date, false);
 
 			// Compute the final heat fluxes at the last sub-time step
-			if(i == niter) Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
+			if (ii == niter) Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
 							     // linearized w/ respect to Tss and thus remains unchanged
 							     // throughout the temperature iterations!!!
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);

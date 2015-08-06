@@ -27,72 +27,74 @@
 #include <snowpack/Utils.h>
 #include <snowpack/Laws_sn.h>
 
+#include <fstream>
+
 class Canopy {
 
  	public:
 		Canopy(const SnowpackConfig& i_cfg);
 
-		static void cn_DumpCanopyData(FILE *OutFile, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
+		static void DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
 		void runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,
 		                    double height_of_wind_val, const bool& alpine3d=false);
-		static void cn_writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdata);
+		static void writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata);
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
 
  	private:
-		double cn_f1(const double& ris);
-		double cn_RootFraction(const double& zupper, const double& zlower);
-		void cn_SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS);
-		double cn_f4(const double& tempC);
-		double cn_f2f4(const size_t& SoilNode, ElementData* EMS);
-		double cn_f3(const double& vpd);
-		double cn_IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
-		double cn_IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws);
-		double cn_IntUnload(const double& capacity, const double& storage);
-		double cn_IntRate(const double& capacity, const double& storage, const double& prec,
+		double get_f1(const double& ris);
+		double RootFraction(const double& zupper, const double& zlower);
+		void SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS);
+		double get_f4(const double& tempC);
+		double get_f2f4(const size_t& SoilNode, ElementData* EMS);
+		double get_f3(const double& vpd);
+		double IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
+		double IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws);
+		double IntUnload(const double& capacity, const double& storage);
+		double IntRate(const double& capacity, const double& storage, const double& prec,
 		                  const double& direct);
 
-		double cn_CanopyAlbedo(const double& tair, const double& wetfrac);
-		double cn_TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
+		double CanopyAlbedo(const double& tair, const double& wetfrac);
+		double TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
 		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
 
-		double cn_CanopyShadeSoilCover(const double& HEIGHT, const double& COVER, const double& ELEV);
-		double cn_CanopyWetFraction(const double& capacity, const double& storage);
-		double cn_CanopyTransmissivity(const double& lai, const double& elev);
+		double CanopyShadeSoilCover(const double& HEIGHT, const double& COVER, const double& ELEV);
+		double CanopyWetFraction(const double& capacity, const double& storage);
+		double CanopyTransmissivity(const double& lai, const double& elev);
 
-		void cn_LineariseNetRadiation(const CurrentMeteo& Mdata,const CanopyData& Cdata, const SnowStation& Xdata,
+		void LineariseNetRadiation(const CurrentMeteo& Mdata,const CanopyData& Cdata, const SnowStation& Xdata,
 		                              double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
 		                              const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
 		                              const double& sigfdirect, double& r1p);
-		void cn_LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
+		void LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
                                       double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, double& r2,
                                       double& rt0, double& rt1, double& rt2, const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
                                       const double& sigfdirect, const double& sigftrunkdirect, double& r1p, double& r2p);
-		void cn_TrunkEnergyBalance(double r2, double rt0, double rt1, double rt2, double ht0, double ht1, double let0, double let1,
+		void TrunkEnergyBalance(double r2, double rt0, double rt1, double rt2, double ht0, double ht1, double let0, double let1,
                                           double HMt0, double HMt1, double &TT0, double &TT1, double TCANOPY, double &Ttrunk);
-		void cn_LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1, double scalingfactor);
+		void LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1, double scalingfactor);
 
-		double cn_DSaturationPressureDT(const double& L, const double& T);
-		void cn_LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_old, const double& vpair,
+		double DSaturationPressureDT(const double& L, const double& T);
+		void LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_old, const double& vpair,
 		                                double& le0, double& le1, double scalingfactor);
-		void cn_CalculateHeatMass(const double& height, const double& BasalArea, double& lai ,double& HMLeaves,  double& HMTrunks);
+		void CalculateHeatMass(const double& height, const double& BasalArea, double& lai ,double& HMLeaves,  double& HMTrunks);
 
-		void cn_LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor);
+		void LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor);
 
-                void cn_CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
+                void CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
                                                          const double& le1, const double& HM0,  const double& HM1,
                                                          const double& ce_canopy,
                                                          const double& ce_condensation,
                                                          double& r0, double& r1, double& TCANOPY, double& RNCANOPY,
                                                          double& HCANOPY, double& LECANOPY);
 
-		void cn_CanopyEnergyBalance2L(double& h0, double& h1, double& le0,
+		void CanopyEnergyBalance2L(double& h0, double& h1, double& le0,
                                                          double& le1, double& HM0, double& HM1, double& TT0, double& TT1,
 					                 const double& ce_canopy,
                                                          const double& ce_condensation,
                                                          double& r0, double& r1, double& r2, double& TCANOPY, double& Ttrunk, double& RNCANOPY,
                                                          double& HCANOPY, double& LECANOPY);
 
-		void cn_CanopyEvaporationComponents(double& ce_canopy,
+		void CanopyEvaporationComponents(double& ce_canopy,
                                       double& ce_transpiration, double& LECANOPY,
                                       double& ta,double& I, double DT,
                                       double& CanopyEvaporation,
@@ -102,7 +104,7 @@ class Canopy {
                                       double& LECANOPYCORR,
                                       double& wetfraction, double& HM0, double& HM1);
 
-		void cn_CanopyEvaporationComponents2L(double& ce_canopy,
+		void CanopyEvaporationComponents2L(double& ce_canopy,
 							double& ce_transpiration, double& LECANOPY,
 							double& ta, double& I, double DT,
 							double& CanopyEvaporation,
@@ -113,16 +115,16 @@ class Canopy {
 							double& LECANOPYCORR,
 							double& wetfraction,
 							double& HM0, double& HM1);
-		double cn_psim(const double& xi);
-		double cn_psih(const double& xi);
-		double cn_RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
+		double get_psim(const double& xi);
+		double get_psih(const double& xi);
+		double RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
 
-		void cn_CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
+		void CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
 								  const double& wetfraction, SnowStation& Xdata, double& ch_canopy,
 								  double& ce_canopy, double& ce_transpiration,
 								  double& ce_interception, double& ce_condensation);
 
-		void cn_CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
+		void CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
 								double *iswrac, double *rswrac,
 								double *iswrbc, double *rswrbc, double *ilwrac,
 								double *rlwrac, double *ilwrbc, double *rlwrbc,
