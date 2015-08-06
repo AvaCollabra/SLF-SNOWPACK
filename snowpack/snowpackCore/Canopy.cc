@@ -343,14 +343,14 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 	fout << "," << (Cdata->transp+Cdata->intevap-(Sdata->mass[SurfaceFluxes::MS_SUBLIMATION]+Sdata->mass[SurfaceFluxes::MS_EVAPORATION]))/cos_sl;//       evapotranspiration of total surface (mm h-1)
 	fout << ",";                            // 1 empty field here
 }
-void Canopy::writeTimeSeriesAdd2LCanopy(FILE *OutFile, const CanopyData *Cdata)
+void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata)
 {
-	fprintf(OutFile, ",%f,%f,%f,%f,%f,,,",
-	K_TO_C(Cdata->Ttrunk),      // Trunk temperature (degC)
-	Cdata->CondFluxTrunks,      // Trunk biomass heat storage flux (W m-2)
-	Cdata->LWnet_Trunks,        // net LW radiations to Trunk layer (W m-2)
-	Cdata->SWnet_Trunks,        // net SW radiations to Trunk layer (W m-2)
-	-Cdata->QStrunks);           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
+	fout << "," << K_TO_C(Cdata->Ttrunk);      // Trunk temperature (degC)
+	fout << "," << Cdata->CondFluxTrunks;      // Trunk biomass heat storage flux (W m-2)
+	fout << "," << Cdata->LWnet_Trunks;        // net LW radiations to Trunk layer (W m-2)
+	fout << "," << Cdata->SWnet_Trunks;        // net SW radiations to Trunk layer (W m-2)
+	fout << "," << -Cdata->QStrunks;           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
+	fout << ",,,";
 }
 /****i*******************************************************
  * non-static section                                       *
@@ -453,7 +453,7 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 	// Loop over soil layers above rootdepth
 	double zupper = 0.;
 	size_t RootLayer = SoilNode;
-	for( size_t e = SoilNode-1; e --> 0; ) {
+	for( size_t e = SoilNode; e --> 0; ) {//e gets decremented right away -> start at SoilNode
 		// fraction of roots in layer
 		const double rootfr = RootFraction(zupper, zupper + EMS[e].L);
 		const double water = transpiration;
@@ -544,7 +544,7 @@ double Canopy::get_f2f4(const size_t& SoilNode, ElementData* EMS)
 
 	// loop over layers:
 	double zupper = 0.;
-	for( size_t e = SoilNode-1; e --> 0; ) {
+	for( size_t e = SoilNode; e --> 0; ) { //e gets decremented right away -> start at SoilNode
 		// 1) root fraction in layer
 		const double rootfr = RootFraction(zupper, zupper + EMS[e].L);
 		if( rootfr > 0.0 ){
