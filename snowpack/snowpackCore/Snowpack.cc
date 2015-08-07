@@ -1786,14 +1786,17 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
 		const double hnw_bcu = Mdata.hnw;	// Store original hnw value
+		const double hnwl_bcu = Mdata.hnwl;	// Store original hnwl value
 		int ii = 0;				// Counter for sub-timesteps to match one SNOWPACK time step
 		bool LastTimeStep = false;		// Flag to indicate if it is the last sub-time step
 		double p_dt = 0.;			// Cumulative progress of time steps
 		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true) {
 			// To reduce oscillations in TSS, reduce the time step prematurely when atmospheric stability is unstable.
-			Mdata.hnw /= sn_dt;	// hnw is precipitation per time step, so first express it as rate with the old time step ...
+			if (Mdata.hnw != mio::IOUtils::nodata) Mdata.hnw /= sn_dt;	// hnw is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
+			if (Mdata.hnwl != mio::IOUtils::nodata) Mdata.hnwl /= sn_dt;	// hnwl is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
 			sn_dt = 60.;
-			Mdata.hnw *= sn_dt;	// ... then express hnw again as precipitation per time step with the new time step
+			if (Mdata.hnw != mio::IOUtils::nodata) Mdata.hnw *= sn_dt;	// ... then express hnw again as precipitation per time step with the new time step
+			if (Mdata.hnwl != mio::IOUtils::nodata) Mdata.hnwl *= sn_dt;	// ... then express hnwl again as precipitation per time step with the new time step
 		}
 		do {
 			if (ii >= 1) {
@@ -1850,9 +1853,11 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 				// Entered after non-convergence
 				if (sn_dt == sn_dt_bcu) std::cout << "[i] [" << Mdata.date.toString(Date::ISO) << "] : using adaptive timestepping\n"; // First time warning
 
-				Mdata.hnw /= sn_dt;	// hnw is precipitation per time step, so first express it as rate with the old time step ...
-				sn_dt /= 2.;		// No convergence, half the time step
-				Mdata.hnw *= sn_dt;	// ... then express hnw again as precipitation per time step with the new time step
+				if (Mdata.hnw != mio::IOUtils::nodata) Mdata.hnw /= sn_dt;	// hnw is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
+				if (Mdata.hnwl != mio::IOUtils::nodata) Mdata.hnwl /= sn_dt;	// hnwl is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
+				sn_dt /= 2.;							// No convergence, half the time step
+				if (Mdata.hnw != mio::IOUtils::nodata) Mdata.hnw *= sn_dt;	// ... then express hnw again as precipitation per time step with the new time step
+				if (Mdata.hnwl != mio::IOUtils::nodata) Mdata.hnwl *= sn_dt;	// ... then express hnwl again as precipitation per time step with the new time step
 
 				if (sn_dt < 0.01) {	// If time step gets too small, we are lost
 					prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature equation did not converge, even after reducing time step (azi=%.0lf, slope=%.0lf).", Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
@@ -1872,6 +1877,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		sn_dt = sn_dt_bcu;	// Set back SNOWPACK time step to orginal value
 		Mdata.hnw = hnw_bcu;	// Set back hnw to original value
+		Mdata.hnwl = hnwl_bcu;	// Set back hnwl to original value
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
