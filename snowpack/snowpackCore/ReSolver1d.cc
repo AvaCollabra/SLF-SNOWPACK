@@ -776,7 +776,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	int stats_nrewinds=0;				//Number of rewinds over the SNOWPACK time step.
 	int stats_niters=0;				//Number of iterations over the SNOWPACK time step, excluding the ones before a rewind.
 	int stats_nsteps=0;				//Number of time steps in the RE solver over the SNOWPACK time step.
-	int bs_stats_totiter=0;				//Soil freezing/thawing solver: total number of iterations over all layers over the SNOWPACK time step,
+	size_t bs_stats_totiter=0;			//Soil freezing/thawing solver: total number of iterations over all layers over the SNOWPACK time step,
 	size_t bs_stats_maxiter=0;			//Soil freezing/thawing solver: maximum number of iterations in a certain layers over the SNOWPACK time step.
 	//Counters, etc.
 	int i, j, k;					//Counters for layers
