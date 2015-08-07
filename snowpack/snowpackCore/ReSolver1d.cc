@@ -123,10 +123,10 @@ double ReSolver1d::fromTHETAtoH(double theta, double theta_r, double theta_s, do
 {
 	//Inverse of Van Genuchten (1980), Equation 21:
 	double returnvalue;
-	if(theta<=theta_r) {
+	if (theta<=theta_r) {
 		returnvalue=h_d;
 	} else {
-		if(theta >= theta_s) {
+		if (theta >= theta_s) {
 			returnvalue=h_e;
 		} else {
 			returnvalue=-1.*(1./alpha)*pow( (pow(Sc*((theta-theta_r)/(theta_s-theta_r)), (-1./m)) - 1.), (1./n));
@@ -176,7 +176,7 @@ double ReSolver1d::fromHtoTHETA(double h, double theta_r, double theta_s, double
 {
 	double returnvalue=0.;
 	//Van Genuchten (1980), Equation 21:
-	if(h>h_e) {		//Saturation
+	if (h>h_e) {		//Saturation
 		returnvalue=theta_s;
 	} else {
 		returnvalue=theta_r+( (theta_s-theta_r)*(1./Sc)*pow(1.+pow((alpha*fabs(h)),n),(-1.*m)) );
@@ -217,16 +217,10 @@ double ReSolver1d::fromHtoTHETAforICE(double h, double theta_r, double theta_s, 
  */
 double ReSolver1d::AirEntryPressureHead(double MaximumPoreSize, double Temperature)
 {
-	double SurfaceTension=0.;	//Surface tension of water in N/m.
 	//Surface tension is dependent on the temperature. Most simulations will be in the temperature range of -20 - +20 degC.
 	//Source: http://en.wikipedia.org/wiki/Surface_tension
-	if(Temperature > 293.) {
-		//Value for 25 degC
-		SurfaceTension=0.07197;
-	} else {
-		//Value for 0 degC
-		SurfaceTension=0.07564;
-	}
+	//Surface tension of water in N/m.
+	const double SurfaceTension = (Temperature > 293.)? 0.07197 : 0.07564; //Value for 25 degC vs for 0 degC
 	const double delta_P=-1.*(2.*SurfaceTension)/(0.5*MaximumPoreSize);
 	const double air_entry_head=delta_P/(Constants::density_water*Constants::g);
 
@@ -263,7 +257,7 @@ int ReSolver1d::TDMASolver (int n, double *a, double *b, double *c, double *v, d
 	if (b[n-1]==0.) return -1;		// This will cause division by 0, so return with error code.
 
 	for (int i = 1; i < n; i++) {
-		if(b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
+		if (b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
 		double m = a[i-1]/b[i-1];
 		b[i] = b[i] - m * c[i - 1];
 		v[i] = v[i] - m*v[i-1];
@@ -886,13 +880,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	for (i = 0; i<toplayer; i++) {		//Cycle through all SNOWPACK layers
 		//Do the basic check if there is not too much ice.
 		if(EMS[i].theta[ICE]>1.) {
-			printf("WARNING: very strange, theta[ICE]>1 at layer %d/%d (%f)\n", i, nE, EMS[i].theta[ICE]);
+			std::cout << "WARNING: very strange, theta[ICE]>1 at layer " << i << "/" << nE << " (" << EMS[i].theta[ICE] << ")\n";
 			EMS[i].theta[ICE]=1.;
 		}
 		//Do the basic check of the sum of element contents.
 		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
 		if((sum>1.+Constants::eps || sum<1.-Constants::eps) && (boolFirstFunctionCall!=true)) {
-			printf("WARNING: very strange, sum of element contents != 1. (but %f) at layer %d/%d. Values scaled.\n", sum, i, nE);
+			std::cout << "WARNING: very strange, sum of element contents != 1. (but " << sum << ") at layer " << i << "/" << nE << ". Values scaled.\n";
 			//Note: we do not scale theta[SOIL].
 			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
 			EMS[i].theta[AIR]/=correction_factor;
@@ -906,8 +900,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 		}
 
-		if (WriteOutNumerics_Level2==true) printf("RECEIVING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f Te=%.15f\n", i, sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].Te);
-
+		if (WriteOutNumerics_Level2==true) 
+			std::cout << "RECEIVING at layer " << i << ": sum=" << sum << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
 
 		//In case we don't want to allow soil to freeze, melt all ice that is there:
 		if(AllowSoilFreezing==false && i<nsoillayers_snowpack && EMS[i].theta[ICE]>0.) {	//If we are in soil, and have ice, but don't allow soil freezing, melt all the ice.
@@ -992,12 +986,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		//Mean distance
 		//dz_[j]=0.5*(dz_down[j]+dz_up[j]);	//This is the definition of dz_ by Rathfelder (2004). However, it does not work, results in mass balance errors.
 		dz_[j]=dz[j];				//This works.
-		if(WriteOutNumerics_Level3==true) printf("DOMAIN: node %i -- z=%.15f dz=%.15f dz_up=%.15f dz_down=%.15f dz_=%.15f\n", j, z[j], dz[j], dz_up[j], dz_down[j], dz_[j]);
+		if(WriteOutNumerics_Level3==true) 
+			std::cout << "DOMAIN: node " << j << " -- z=" << z[j] << std::fixed << std::setprecision(15) << " dz=" << dz[j] << " dz_up=" << dz_up[j] << " dz_down=" << dz_down[j] << " dz_=" << dz_[j] << "\n" << std::setprecision(6);
 	}
 	dz_down[lowernode]=totalheight-tmpheight1;
 	dz_up[uppernode]=totalheight-tmpheight2;
-	if(WriteOutNumerics_Level2==true) printf("SLOPE: %.15f\n", cos_sl);
-
+	if(WriteOutNumerics_Level2==true) std::cout << "SLOPE: " << std::fixed << std::setprecision(15) << cos_sl << "\n" << std::setprecision(6);
 
 
 	//Now set van Genuchten parameter for each layer
@@ -1010,7 +1004,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
 				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-max_allowed_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
 				dT[SnowpackElement[i]]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-				printf("[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (%f): i=%d --- dT=%f T=%f  theta[WATER]=%f  theta[ICE]=%f\n", tmp_missing_theta, i, dT[SnowpackElement[i]], EMS[SnowpackElement[i]].Te, EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
+				std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[SnowpackElement[i]] << " T=" << EMS[SnowpackElement[i]].Te << " theta[WATER]=" << EMS[SnowpackElement[i]].theta[WATER] << " theta[ICE]=" << EMS[SnowpackElement[i]].theta[ICE] << "\n";
 				EMS[SnowpackElement[i]].theta[WATER]+=0.99*tmp_missing_theta;	//Here, we make a small mass balance error, but it should prevent fully saturated layers
 				EMS[SnowpackElement[i]].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
 				EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[WATER];
@@ -1026,15 +1020,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//Make ice layers inactive:
 			if(theta_s[i]<Constants::eps2) {
-				if(WriteOutNumerics_Level3==true) printf("WARNING: layer %i/%i   theta_s= %f   EMS[i].theta[ICE]=%f\n", i, nE, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
-				printf("WARNING: layer %i/%i is ice layer! (theta_s[i]=%f; EMS[i].theta[ICE]=%f)\n", i, nE, theta_s[i], EMS[SnowpackElement[i]].theta[ICE]);
+				if(WriteOutNumerics_Level3==true) 
+					std::cout << "WARNING: layer " << i << "/" << nE << "   theta_s= " << theta_s[i] << "   EMS[i].theta[ICE]=" << EMS[SnowpackElement[i]].theta[ICE] << "\n";
+				std::cout << "WARNING: layer " << i << "/" << nE << " is ice layer! (theta_s[i]=" << theta_s[i] << "; EMS[i].theta[ICE]=" << EMS[SnowpackElement[i]].theta[ICE] << ")\n";
 				activelayer[i]=false;
 			} else {
 				activelayer[i]=true;
 			}
 			//Make sure theta_r << theta_s
 			if(theta_s[i]<theta_r[i]+0.01) {
-				if(WriteOutNumerics_Level1==true) printf("WARNING: layer %i/%i   theta_s= %f   theta_r=%f\n", i, nE, theta_s[i], theta_r[i]);
+				if(WriteOutNumerics_Level1==true) std::cout << "WARNING: layer " << i << "/" << nE << "  theta_s= " << theta_s[i] << "   theta_r=" << theta_r[i] << "\n";
 				theta_r[i]=theta_s[i]/4.;
 			}
 			//Set air entry pressure
@@ -1224,9 +1219,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const double tmp_head=fromTHETAtoHforICE(theta_r[i]+(REQUIRED_ACCURACY_THETA/10.), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 		if(h_d>tmp_head) h_d=tmp_head;
 		if(i==uppernode) h_d_uppernode=tmp_head;	//We store this value in order to use it for the LIMITEDFLUXEVAPORATION
-		if (WriteOutNumerics_Level3==true) printf("H_D at %d: %E [alpha: %f; m: %f; n: %f; Sc: %f; h_e: %f\n", i, tmp_head, alpha[i], m[i], n[i], Sc[i], h_e[i]);
+		if (WriteOutNumerics_Level3==true) 
+			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << alpha[i] << "; m: " << m[i] << "; n: " << n[i] << "; Sc: " << Sc[i] << "; h_e: " << h_e[i] << "\n";
 	}
-	if (WriteOutNumerics_Level2==true) printf("MIN_HEAD: %E\n", h_d);
+	if (WriteOutNumerics_Level2==true) std::cout << "MIN_HEAD: " << std::scientific << h_d << std::fixed << "\n";
 
 
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
@@ -1302,7 +1298,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					if(EMS[SnowpackElement[i]].theta[WATER]<theta_d[i]) {
 						const double tmp_missing_theta=(theta_d[i]-EMS[SnowpackElement[i]].theta[WATER]);	//Not too dry (original)
 						dT[SnowpackElement[i]]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-						if (WriteOutNumerics_Level1==true) printf("WATER CREATED (%f): i=%d --- dT=%f T=%f  theta[WATER]=%f  theta[ICE]=%f\n", tmp_missing_theta, i, dT[SnowpackElement[i]], EMS[SnowpackElement[i]].Te, EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
+						if (WriteOutNumerics_Level1==true) 
+							std::cout << "WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[SnowpackElement[i]] << " T=" << EMS[SnowpackElement[i]].Te << "  theta[WATER]=" << EMS[SnowpackElement[i]].theta[WATER] << " theta[ICE]=" << EMS[SnowpackElement[i]].theta[ICE] << "\n";
 						EMS[SnowpackElement[i]].theta[WATER]+=tmp_missing_theta;
 						EMS[SnowpackElement[i]].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
 					}
@@ -1424,7 +1421,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		//Write out initial water content
 		if( (WriteOutNumerics_Level1==true && nsteps==1 && niter_nrewinds==0 ) || (WriteOutNumerics_Level2==true)) {
 			for (i = uppernode; i >= lowernode; i--) {
-				printf("ITER: %d i: %d active? %s; h_n: %.15f (h_np1: %.15f) theta: %.15f (%f-%f) ice: %f/%f (vg_params: %f %f %f)\n", niter, i, (activelayer[i])?"true":"false", h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], EMS[SnowpackElement[i]].theta[ICE], theta_i_n[i], alpha[i], m[i], n[i]);
+				const string is_active = (activelayer[i])? "true" : "false" ;
+				std::cout << "ITER: " << niter << " i: " << i << " active? " << is_active << std::setprecision(15) << "; h_n: " << h_n[i] << " (h_np1: " << h_np1_m[i] << ") theta: " << theta_n[i] << std::setprecision(6) << "(" << theta_r[i] << "-" << theta_s[i] << ") ice: " << EMS[SnowpackElement[i]].theta[ICE] << "/" << theta_i_n[i] << " (vg_params: " << alpha[i] << " " << m[i] << " " << n[i] << ")\n";
 			}
 		}
 
@@ -1450,7 +1448,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						Se[i] = ((theta_np1_m[i] + (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)) - theta_r[i])/(theta_s[i] - theta_r[i]));
 						if(Se[i]<0.) {
 							//The formulation of Se[i] as used here may lead to very small negative values for Se. These are corrected here.
-							if(Se[i]<-1E-12) printf("WARNING: Se[%d]=%E.\n", i, Se[i]);	//This points towards a more serious problem, so give a warning...
+							if(Se[i]<-1E-12) std::cout << "WARNING: Se[" << i << "]=" << std::scientific << Se[i] << std::fixed << ".\n";	//This points towards a more serious problem, so give a warning...
 							Se[i]=0.;
 						}
 					} else {					//In case of saturation:
@@ -1489,7 +1487,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					K[i]=0.;
 					C[i]=0.;
 				}
-				if(WriteOutNumerics_Level3==true) printf("HYDPROPS: i=%d Se=%E C=%E K=%E.\n", i, Se[i], C[i], K[i]);
+				if(WriteOutNumerics_Level3==true) std::cout << "HYDPROPS: i=" << i << std::scientific << " Se=" << Se[i] << " C=" << C[i] << " K=" << K[i] << ".\n" << std::fixed;
 			}
 
 			for (i = lowernode; i <= uppernode; i++) {
@@ -1562,7 +1560,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						k_np1_m_im12[i]=0.;
 					}
 				}
-				if(WriteOutNumerics_Level3==true) printf("HYDRCONDUCT: node %d -- K=%e k_np1_m_im12=%e k_np1_m_ip12=%e   impedance: %f\n", i, K[i], k_np1_m_im12[i], k_np1_m_ip12[i], impedance[i]);
+				if(WriteOutNumerics_Level3==true) 
+					std::cout << "HYDRCONDUCT: node " << i << std::scientific << " -- K=" << K[i] << " k_np1_m_im12=" << k_np1_m_im12[i] << " k_np1_m_ip12=" << k_np1_m_ip12[i] << std::fixed << "   impedance: " << impedance[i] << "\n";
 			}
 
 			//Determine which and how boundary conditions should be applied:
@@ -1612,16 +1611,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}
 				}
 			} else if (TopBC==WATERTABLE) {
-				printf("ERROR in ReSolver1d.cc: WATERTABLE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: WATERTABLE cannot be applied as top boundary condition (doesn't make sense)!\n";
 				throw;
 			} else if (TopBC==FREEDRAINAGE) {
-				printf("ERROR in ReSolver1d.cc: FREEDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: FREEDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n";
 				throw;
 			} else if (TopBC==SEEPAGEBOUNDARY) {
-				printf("ERROR in ReSolver1d.cc: SEEPAGEBOUNDARY cannot be applied as top boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: SEEPAGEBOUNDARY cannot be applied as top boundary condition (doesn't make sense)!\n";
 				throw;
 			} else if (TopBC==GRAVITATIONALDRAINAGE) {
-				printf("ERROR in ReSolver1d.cc: GRAVITATIONALDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: GRAVITATIONALDRAINAGE cannot be applied as top boundary condition (doesn't make sense)!\n";
 				throw;
 			}
 
@@ -1669,19 +1668,21 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				BottomFluxRate=k_np1_m_im12[lowernode];
 			} else if (BottomBC==LIMITEDFLUX) {
 				//Probably also not necessary.
-				printf("ERROR in ReSolver1d.cc: No implementation for LIMITEDFLUX lower boundary condition. Either choose a saturated DIRICHLET (lower boundary in water table), or choose GRAVITATIONAL or FREEDRAINAGE (lower boundary not in water table).\n");
+				std::cout << "ERROR in ReSolver1d.cc: No implementation for LIMITEDFLUX lower boundary condition. Either choose a saturated DIRICHLET (lower boundary in water table), or choose GRAVITATIONAL or FREEDRAINAGE (lower boundary not in water table).\n";
 				throw;
 			} else if (BottomBC==LIMITEDFLUXEVAPORATION) {
-				printf("ERROR in ReSolver1d.cc: LIMITEDFLUXEVAPORATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: LIMITEDFLUXEVAPORATION cannot be applied as bottom boundary condition (doesn't make sense)!\n";
 				throw;
 			} else if (BottomBC==LIMITEDFLUXINFILTRATION) {
-				printf("ERROR in ReSolver1d.cc: LIMITEDFLUXINFILTRATION cannot be applied as bottom boundary condition (doesn't make sense)!\n");
+				std::cout << "ERROR in ReSolver1d.cc: LIMITEDFLUXINFILTRATION cannot be applied as bottom boundary condition (doesn't make sense)!\n";
 				throw;
 			}
 
 
-			if (WriteOutNumerics_Level2==true) printf("BOUNDARYTOPFLUX: [ BC: %d ] %.15f %.15f %.15f %.15f %.15f %.15f %.15f %.15f\n", TopBC, TopFluxRate, surfacefluxrate, theta_n[lowernode], K[lowernode], ((h_np1_mp1[lowernode])+(((TopFluxRate/k_np1_m_im12[lowernode])-1.)*dz_down[lowernode])), h_np1_mp1[lowernode], k_np1_m_im12[lowernode], (TopFluxRate/k_np1_m_im12[lowernode]) );
-			if (WriteOutNumerics_Level2==true) printf("NUMERICS: BCTOP: %d  TOPFLUXRATE = %.15f SURFACEFLUXRATE = %.15f\n", TopBC, TopFluxRate, surfacefluxrate);
+			if (WriteOutNumerics_Level2==true) 
+				std::cout << "BOUNDARYTOPFLUX: [ BC: " << TopBC << "] " << std::scientific << TopFluxRate << " " << surfacefluxrate << " " << theta_n[lowernode] << " " << K[lowernode] << " " << ((h_np1_mp1[lowernode])+(((TopFluxRate/k_np1_m_im12[lowernode])-1.)*dz_down[lowernode])) << " " << h_np1_mp1[lowernode] << " " << k_np1_m_im12[lowernode] << " " << (TopFluxRate/k_np1_m_im12[lowernode]) << "\n" << std::fixed;
+			if (WriteOutNumerics_Level2==true) 
+				std::cout << "NUMERICS: BCTOP: " << TopBC << std::scientific << "  TOPFLUXRATE = " << TopFluxRate << " SURFACEFLUXRATE = " << surfacefluxrate << "\n" << std::fixed;
 
 
 			if (niter==1) {
@@ -1809,7 +1810,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 				r_mpfd2[i]=r_mpfd[i];			// We make a copy for use with DGTSV and TDMA solvers.
 				if(WriteOutNumerics_Level3==true) {
-					printf("SOLVER: i=%d - r_mpfd=%E term_up=%E term_down=%E a=%E adl=%E adu=%E [%E - %E]\n", i, r_mpfd[i], term_up[i], term_down[i], ainv[i*(uppernode+1)+i]/*a[i][i]*/, adl[i], adu[i], K[i], C[i]);
+					std::cout << "SOLVER: i=" << i << std::scientific << " - r_mpfd=" << r_mpfd[i] << " term_up=" << term_up[i] << " term_down=" << term_down[i] << " a=" << ainv[i*(uppernode+1)+i]/*a[i][i]*/ << "adl=" << adl[i] << " adu=" << adu[i] << " [" << K[i] << " - " << C[i] << "]\n" << std::fixed;
 				}
 			}
 
@@ -1848,10 +1849,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						//    has not been computed.  The factorization has not been
 						//    completed unless i = N.
 						if(AllowSwitchSolver==true) {
-							if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying DGESVD/DGESDD...\n", info);
+							if(WriteOutNumerics_Level0==true) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying DGESVD/DGESDD...\n";
 							ActiveSolver=DGESVD;
 						} else {
-							if(WriteOutNumerics_Level0==true) printf ("ERROR in ReSolver1d.cc: DGTSV failed [info = %d]. Trying with smaller time step...\n", info);
+							if(WriteOutNumerics_Level0==true) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying with smaller time step...\n";
 							solver_result=-1;
 						}
 					}
@@ -1972,7 +1973,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								// So the new liquid water content basically is the same equation, but we have to adapt EMS[SnowpackElement[i]].Te to the amount of ice we create (delta_i).
 								if((theta_i_np1_m[i] > 0. && (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > T_melt[i]) || (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) < T_melt[i]) {
 
-									if(WriteOutNumerics_Level2==true) printf("BEFORE [%d]: theta_w: %.15f theta_i_np1_m: %.15f theta_s: %.15f  T: %.3f  rho: %.8f  cp: %.8f  ColdC: %f\n", i, theta_np1_mp1[i], theta_i_np1_m[i], theta_s[i], EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i], tmp_rho, tmp_c_p, tmp_rho * tmp_c_p * (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i]) * EMS[SnowpackElement[i]].L);
+									if(WriteOutNumerics_Level2==true) {
+										const double tmp_T = EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i];
+										std::cout << "BEFORE [" << i << std::fixed << std::setprecision(15) << "]; theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_m[i] << " theta_s: " << theta_s[i] << std::setprecision(3) << "  T: " << tmp_T << std::setprecision(8) << "  rho: " << tmp_rho << "  cp: " << tmp_c_p << " ColdC: " << tmp_rho * tmp_c_p * tmp_T * EMS[SnowpackElement[i]].L << "\n" << std::setprecision(6);
+									}
 
 									//Determine maximum possible change in ice content, which should be between 0, and theta_water > theta_d (all possible water freezes). Then maximum ice content is determined based on the temperature difference between element and T_melt.
 									//const double max_delta_ice=(MIN((theta_np1_mp1[i]-theta_d[i])*(Constants::density_ice/Constants::density_water), MAX(0., T_melt[i]-(EMS[SnowpackElement[i]].Te/*+delta_Te*/)) * ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ))));
@@ -2002,7 +2006,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 										ck=-1.*theta_i_np1_m[i];
 										delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));
 										delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
-										if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d], case 2: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
+										if(WriteOutNumerics_Level3==true) {
+											const double tmp_T = EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
+											std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 2: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << T_melt[i] << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										}
 										BS_converged=true;
 									}
 									// 2) Very small temperature difference or very small possible change in ice content
@@ -2014,7 +2021,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 											ck=theta_np1_mp1[i]*(Constants::density_water/Constants::density_ice);	//Necessary change in theta[ICE]
 											delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
 										}
-										if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d], case 1: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
+										if(WriteOutNumerics_Level3==true) {
+											const double tmp_T = EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
+											std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 1: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << T_melt[i] << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										}
 										BS_converged=true;
 									}
 									while (BS_converged==false && BS_iter < BS_MAX_ITER) {
@@ -2037,7 +2047,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 											delta_Te_ck=delta_Te_ck1;
 											delta_w_ck=delta_w_ck1;
 										}
-										if(WriteOutNumerics_Level3==true) printf("BS_ITER [%d]: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
+										if(WriteOutNumerics_Level3==true) {
+											const double tmp_T = EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
+											std::cout << "BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << T_melt[i] << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										}
 										//Now check if convergence is achieved
 										if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) < SF_epsilon) {
 											delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));	//Make delta in water equal to ice, so we keep mass-balance.
@@ -2062,10 +2075,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 										}
 									}
 									if(BS_converged==false) {
-										if(WriteOutNumerics_Level0==true) printf("[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = %f.\n", dt);
+										if(WriteOutNumerics_Level0==true) std::cout << "[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = " << dt << ".\n";
 										if(WriteOutNumerics_Level1==true) {
-											printf("  -- BS_ITER [%d]: a=%G b=%G c=%G (max: %G) %G %G %G: fa: %G fb: %G fc: %G\n", BS_iter, ak, bk, ck, max_delta_ice, delta_w_ck, EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck, T_melt[i], (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)), (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)), (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)));
-											printf("  -- %.15f %.15f %.15f %.15f %.15f   %.15f %.15f\n", T_melt[i], EMS[SnowpackElement[i]].Te, delta_Te_adv[i], delta_Te_adv_i[i], delta_Te[i], EMS[SnowpackElement[i]].theta[WATER], EMS[SnowpackElement[i]].theta[ICE]);
+											const double tmp_T = EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
+											std::cout << "  -- BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << T_melt[i] << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+											std::cout << "  -- " << std::setprecision(15) << T_melt[i] << " " << EMS[SnowpackElement[i]].Te << " " << delta_Te_adv[i] << " " << delta_Te_adv_i[i] << " " << delta_Te[i] << "   " << EMS[SnowpackElement[i]].theta[WATER] << " " << EMS[SnowpackElement[i]].theta[ICE] << "\n" << std::setprecision(6);
 										}
 										max_delta_h=2.*MAX_ALLOWED_DELTA_H;
 										solver_result=-1;
@@ -2086,7 +2100,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								//Update BS-solver statistics
 								bs_stats_totiter+=BS_iter;
 								if(BS_iter>bs_stats_maxiter) bs_stats_maxiter=BS_iter;
-								if(WriteOutNumerics_Level2==true) printf("AFTER [%d]: theta_w: %.15f theta_i_np1_m: %.15f theta_s: %.15f  T: %.3f  (niter=%d)\n", i, theta_np1_mp1[i], theta_i_np1_mp1[i], theta_s[i], EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i], BS_iter);
+								if(WriteOutNumerics_Level2==true) 
+									std::cout << "AFTER [" << i << std::setprecision(15) << "]: theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_mp1[i] << " theta_s:" << theta_s[i] << std::setprecision(3) << "  T: " << EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] << " (niter=" << BS_iter << ")\n" << std::setprecision(6);
 							} //END OF REPARTITIONING ICE/WATER
 						}
 
@@ -2108,7 +2123,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				mass2+=(theta_np1_mp1[i]+(theta_i_np1_mp1[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
 
 				if(WriteOutNumerics_Level2==true) {
-					printf("ITER: %d i: %d ---  h1: %.10E d_h: %.10E h2: %.10E --- theta1: %.12f d_theta: %.12f theta2: %.12f\n", niter, i, h_np1_m[i], delta_h[memstate%nmemstates][i], h_np1_mp1[i], theta_np1_m[i], delta_theta[i], theta_np1_mp1[i]);
+					std::cout << "ITER: " << niter << " i: " << i << std::scientific << std::setprecision(10) << " ---  h1: " << h_np1_m[i] << " d_h: " << delta_h[memstate%nmemstates][i] << " h2: " << h_np1_mp1[i] << std::setprecision(12) << " --- theta1: " << theta_np1_m[i] << " d_theta: " << delta_theta[i] << " theta2: " << theta_np1_mp1[i] << "\n" << std::setprecision(6) << std::fixed;
 				}
 
 
@@ -2203,7 +2218,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//Rewind time step control: retry finding solution with smaller time step when MAX_ITER is exceeded. Also when max_delta_h is too large we do a rewind, else the model is starting to blow up.
 			if((niter>MAX_ITER || max_delta_h>MAX_ALLOWED_DELTA_H) && dt > MIN_VAL_TIMESTEP && boolConvergence==false) {
 
-				if(WriteOutNumerics_Level1==true) printf("REWIND: timestep %.20f ---> ", dt);
+				if(WriteOutNumerics_Level1==true) std::cout << "REWIND: timestep " << std::setprecision(20) << dt << std::setprecision(6) << " ---> ";
 
 				niter_seqrewinds++;				//We increase the sequential rewinds counter. For this first rewind, this will give a power of 1 for the new time step, etc.
 										//When we find a good solution again, we reset this counter to 0.
@@ -2212,7 +2227,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				dt*=pow(0.333, double(niter_seqrewinds));	//Now make the time step smaller, we use niter_seqrewinds to speed up when we encounter multiple consecutive rewinds.
 										//The value of 0.333 is taken from the HYDRUS-manual, where they do this in case a rewind is necessary.
 
-				if(WriteOutNumerics_Level1==true) printf("%.20f (trigger layer: %i  accuracy: %.10f  max_delta_h: %.10f)\n", dt, trigger_layer_blowup, accuracy, max_delta_h);
+				if(WriteOutNumerics_Level1==true) std::cout << std::setprecision(20) << dt << " (trigger layer: " << trigger_layer_blowup << "  accuracy: " << std::setprecision(10) << accuracy << " max_delta_h: " << max_delta_h << ")\n" << std::setprecision(6);
 
 				niter=0;					//Because of the rewind, we start again with the iterations.
 				niter_nrewinds++;				//Increase rewind counter
@@ -2243,17 +2258,17 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					} else {
 						printf("ERROR in Richards-Equation solver: cannot decrease time step anymore (dt = %Gs) and solver did not converge.\n", dt);
 					}
-					printf("  This numerical problem can arise when the SNOWPACK timestep is larger than 15 minutes.\n");
+					std::cout << "  This numerical problem can arise when the SNOWPACK timestep is larger than 15 minutes.\n";
 #ifndef CLAPACK
-					printf("  SNOWPACK was not compiled with BLAS and CLAPACK libraries. Try installing libraries BLAS and CLAPACK and use solver TGSV.\n");
+					std::cout << "  SNOWPACK was not compiled with BLAS and CLAPACK libraries. Try installing libraries BLAS and CLAPACK and use solver TGSV.\n";
 #endif
 					throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 				} else {
 					if(seq_safemode>3) {
-						printf("ERROR in Richards-Equation solver: SafeMode was not able to rescue simulation!\n");
+						std::cout << "ERROR in Richards-Equation solver: SafeMode was not able to rescue simulation!\n";
 						throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 					}
-					printf("WARNING in Richards-Equation solver: SafeMode was needed to rescue simulation! ");
+					std::cout << "WARNING in Richards-Equation solver: SafeMode was needed to rescue simulation! ";
 					//We rescue the simulation ...
 					double SafeMode_MBE=0.;		// Mass balance error (kg/m^2) due to SafeMode
 
@@ -2305,7 +2320,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						//Now update mass1, which may have changed due to SafeMode throwing some water away, or introducing some water:
 						mass1+=(theta_n[i]+(theta_i_n[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
 					}
-					printf("Estimated mass balance error due to SafeMode: %E kg/m^2\n", SafeMode_MBE);
+					std::cout << "Estimated mass balance error due to SafeMode: " << std::scientific << SafeMode_MBE << std::fixed << " kg/m^2\n";
 				}
 			}
 		}	//End of iteration loop
@@ -2670,23 +2685,24 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[i].freezing_tk=EMS[i].Te;
 			}
 		}
-		if(WriteOutNumerics_Level2==true) printf("EMS[%d].melting_tk = %f, EMS[%d].freezing_tk = %f (ice: %f)\n", i, EMS[i].melting_tk, i, EMS[i].freezing_tk, EMS[i].theta[ICE]);
+		if(WriteOutNumerics_Level2==true) 
+			std::cout << "EMS[" << i << "].melting_tk = " << EMS[i].melting_tk << ", EMS[" << i << "].freezing_tk = " << EMS[i].freezing_tk << " (ice: " << EMS[i].theta[ICE] << ")\n";
 	}
 
 	//print solver statistics
 	if(WriteOutNumerics_Level0==true) {
-		printf("SOLVERSTATISTICS: max_dt= %.5f   min_dt= %.20f   nsteps_total= %d   niter_total= %d   nrewinds_total= %d  Last active solver: ", stats_max_dt, stats_min_dt, stats_nsteps, stats_niters, stats_nrewinds);
+		std::cout << "SOLVERSTATISTICS: max_dt= " << std::setprecision(5) << stats_max_dt << "   min_dt= " << std::setprecision(20) << stats_min_dt << std::setprecision(6) << "   nsteps_total= " << stats_nsteps << "   niter_total= " << stats_niters << "   nrewinds_total= " << stats_nrewinds << "  Last active solver: ";
 		switch (ActiveSolver) {
 			case DGESVD:
-				printf("DGESVD/DGESDD.");
+				std::cout << "DGESVD/DGESDD.";
 				break;
 			case DGTSV:
-				printf("DGTSV.");
+				std::cout << "DGTSV.";
 				break;
 			case TDMA:
-				printf("TDMA.");
+				std::cout << "TDMA.";
 				break;
 		}
-		printf(" BS_avg_iter: %f BS_max_iter: %d\n", double(double(bs_stats_totiter)/double(stats_niters*nsoillayers_richardssolver)), bs_stats_maxiter);
+		std::cout << " BS_avg_iter: " << double(double(bs_stats_totiter)/double(stats_niters*nsoillayers_richardssolver)) << " BS_max_iter: " << bs_stats_maxiter << "\n";
 	}
 }
