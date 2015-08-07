@@ -119,8 +119,9 @@ class CurrentMeteo {
 		double tss_a12h; ///< Snow surface temperature averaged over past 12 hours (K)
 		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
 		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
-		double psum; ///< precipitation sum over the current timestep
-		double psum_ph; ///< precipitation phase for the current timestep.
+		double hnw;      ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
+		double hnws;     ///< Solid precipitation (for SnowMIP)
+		double hnwl;     ///< Liquid precipitation (for SnowMIP)
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
