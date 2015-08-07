@@ -741,13 +741,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	std::vector<int>SnowpackElement(nE,0);		//Dictionary between snowpack domain and Richards solver domain. SnowpackElement[j]=i means layer j in Richards solver is layer i in snowpack domain.
 							//Then, using EMS[SnowpackElement[j]], we can refer to the SNOWPACK domain from the Richards solver domain.
 	int toplayer;					//highest layer (top of snowpack, or top of soil in case of no soil)
-	const int nsoillayers_snowpack=Xdata.SoilNode;	//where does the soil start? Note, when toplayer is set to nsoillayers_snowpack, only soil is treated with Richards equation.
+	const int nsoillayers_snowpack=int(Xdata.SoilNode);	//where does the soil start? Note, when toplayer is set to nsoillayers_snowpack, only soil is treated with Richards equation. HACK, TODO: remove type inconstency in comparison
 							//Note here that Xdata.SoilNode denotes first element as 0, so Xdata.SoilNode=4 denotes 4 soil layers.
 	int nsoillayers_richardssolver=0;
 	if(iwatertransportmodel_snow != RICHARDSEQUATION) {	//RE only for soil
 		toplayer=nsoillayers_snowpack;			//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers_snowpack: only soil.
 	} else {						//RE for both snow and soil
-		toplayer=nE;					//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers_snowpack: only soil.
+		toplayer=int(nE);				//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers_snowpack: only soil. HACK, TODO: remove type inconstency in comparison
 	}
 	if(toplayer==0) return;				//Nothing to do here!
 
@@ -776,7 +776,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	int stats_nrewinds=0;				//Number of rewinds over the SNOWPACK time step.
 	int stats_niters=0;				//Number of iterations over the SNOWPACK time step, excluding the ones before a rewind.
 	int stats_nsteps=0;				//Number of time steps in the RE solver over the SNOWPACK time step.
-	int bs_stats_totiter=0;				//Soil freezing/thawing solver: total number of iterations over all layers over the SNOWPACK time step,
+	size_t bs_stats_totiter=0;			//Soil freezing/thawing solver: total number of iterations over all layers over the SNOWPACK time step,
 	size_t bs_stats_maxiter=0;			//Soil freezing/thawing solver: maximum number of iterations in a certain layers over the SNOWPACK time step.
 	//Counters, etc.
 	int i, j, k;					//Counters for layers
@@ -913,7 +913,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			const double deltaT=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 			EMS[i].Te+=deltaT;
 
-			if(i==nE-1 && i>=0) {
+			if(i==int(nE)-1 && i>=0) {		//HACK, TODO: remove type inconstency in comparison
 				NDS[i+1].T+=deltaT;
 				NDS[i].T+=deltaT;
 			}
@@ -2336,7 +2336,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//Prepare for next time step:
 			for (i = uppernode; i >= lowernode; i--) {				//Cycle through all Richards solver domain layers.
 				//Apply change in temperature due to soil freezing or thawing and heat advection by flowing water:
-				if(SnowpackElement[i]<Xdata.SoilNode) {
+				if(SnowpackElement[i]<int(Xdata.SoilNode)) {			//HACK, TODO: remove type inconstency in comparison
 					//Freezing and thawing
 					if(fabs(delta_Te_i[i]) > 0.) {				//Check if phase change did occur in soil
 						delta_Te[i]+=delta_Te_i[i];
@@ -2487,7 +2487,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//In case we had to melt ice to get theta_r, we have to adjust the temperature:
 			EMS[i].Te -= dT[i];
-			if(i==nE-1 && i>=0) {
+			if(i==int(nE)-1 && i>=0) {							//HACK, TODO: remove type inconstency in comparison
 				NDS[i+1].T-=dT[i];
 				NDS[i].T-=dT[i];
 			}
@@ -2539,7 +2539,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers ...
 		//Heat advection by water flow
 		double deltaN=0.;
-		if(i == nE-1) {
+		if(i == int(nE)-1) {								//HACK, TODO: remove type inconstency in comparison
 			deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
 		} else {
 			if(i==0) {
@@ -2551,7 +2551,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		NDS[i+1].T+=deltaN;
 		NDS[i].T+=deltaN;
 		if(fabs(deltaN)>0.) {
-			if(i < nE-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);
+			if(i < int(nE)-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);		//HACK, TODO: remove type inconstency in comparison
 			EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
 			if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
 		}
