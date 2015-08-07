@@ -1789,6 +1789,12 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		int ii = 0;				// Counter for sub-timesteps to match one SNOWPACK time step
 		bool LastTimeStep = false;		// Flag to indicate if it is the last sub-time step
 		double p_dt = 0.;			// Cumulative progress of time steps
+		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true) {
+			// To reduce oscillations in TSS, reduce the time step prematurely when atmospheric stability is unstable.
+			Mdata.hnw /= sn_dt;	// hnw is precipitation per time step, so first express it as rate with the old time step ...
+			sn_dt = 60.;
+			Mdata.hnw *= sn_dt;	// ... then express hnw again as precipitation per time step with the new time step
+		}
 		do {
 			if (ii >= 1) {
 				// After the first sub-time step, update Meteo object to reflect on the new stability state
@@ -1865,7 +1871,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		while (LastTimeStep == false);
 
 		sn_dt = sn_dt_bcu;	// Set back SNOWPACK time step to orginal value
-		Mdata.hnw = hnw_bcu;	// Set back hnw original value
+		Mdata.hnw = hnw_bcu;	// Set back hnw to original value
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);
