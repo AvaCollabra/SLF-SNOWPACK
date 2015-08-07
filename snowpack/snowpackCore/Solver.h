@@ -234,7 +234,7 @@ typedef struct
       GD_REALLOC( CHUNK.pChunks, char*, CHUNK.pChunksSize, "Chunk pointer Data" );             \
    }                                                                                           \
    GD_MALLOC( CHUNK.pChunks[ CHUNK.nChunks ], char, SIZE, "Chunk Data" );                      \
-   CHUNK.TotChunkSize += SIZE;                                                                 \
+   CHUNK.TotChunkSize += (int)SIZE;                                                                 \
    CHUNK.nChunks++;                                                                            \
 }
 
@@ -716,7 +716,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
    col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);                                                 \
    size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);                                                 \
    const int delta_   = ROW - pROW->Row0;                                                                \
-   OFFSET   = pROW->iFloat + DIAGONAL(pROW->nCol, delta_);                                     \
+   OFFSET   = pROW->iFloat + DIAGONAL((int)pROW->nCol, delta_);                                     \
    {  ++col_;                                                                                  \
       for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++)                 \
       {  if ( COL < col_[0] )  break;  }                                                       \
