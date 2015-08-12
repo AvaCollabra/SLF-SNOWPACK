@@ -2254,14 +2254,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 				if(SafeMode==false) {
 					if(niter>500) {
-						printf("ERROR in Richards-Equation solver: reached maximum limit for iterations (500), with a time step: %G\n", dt);
-					} else {
-						printf("ERROR in Richards-Equation solver: cannot decrease time step anymore (dt = %Gs) and solver did not converge.\n", dt);
+						prn_msg(__FILE__, __LINE__, "err", Date(), "Richards-Equation solver did not converge: reached maximum number of iterations (500), with a time step: %G\n", dt);
 					}
-					std::cout << "  This numerical problem can arise when the SNOWPACK timestep is larger than 15 minutes.\n";
+					std::cout << "  POSSIBLE SOLUTIONS:\n  =============================================================================\n";
+					if(snowpack_dt>900) std::cout << "    - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
 #ifndef CLAPACK
-					std::cout << "  SNOWPACK was not compiled with BLAS and CLAPACK libraries. Try installing libraries BLAS and CLAPACK and use solver TGSV.\n";
+					std::cout << "    - SNOWPACK was not compiled with BLAS and CLAPACK libraries.\n      Try installing libraries BLAS and CLAPACK and use solver TGSV (default).\n";
 #endif
+					std::cout << "    - Verify that the soil is not initialized in a very dry or a very\n      wet state.\n";
+					if(BottomBC!=FREEDRAINAGE) std::cout << "    - If the soil is saturated, try setting LB_COND_WATERFLUX = FREEDRAINAGE\n      in the [SnowpackAdvanced] section of the ini-file.\n";
+					if(BottomBC!=WATERTABLE) std::cout << "    - If the soil is dry, try setting LB_COND_WATERFLUX = WATERTABLE in the\n      [SnowpackAdvanced] section of the ini-file.\n";
+					std::cout << "    - Try bucket scheme, by setting WATERTRANSPORTMODEL_SNOW = BUCKET and\n      WATERTRANSPORTMODEL_SOIL = BUCKET in the [SnowpackAdvanced] section\n      of the ini-file.\n";
+					std::cout << "    - When using Canopy module, there is a known issue with transpiration.\n      Please see issue 471 (http://models.slf.ch/p/snowpack/issues/471/).\n";
 					throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 				} else {
 					if(seq_safemode>3) {
