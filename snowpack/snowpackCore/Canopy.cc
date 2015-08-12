@@ -372,6 +372,8 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 
+	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
+
 	cfg.getValue("CANOPY_HEAT_MASS", "SnowpackAdvanced", CanopyHeatMass);
         cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
 	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy);
@@ -470,11 +472,16 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 			waterresidual -= rootfr * water;
 			waterresidual_real -= d_theta_l * Constants::density_water * EMS[e].L;
 
-			// Update volumetric water content in layer
-			EMS[e].theta[WATER] -= d_theta_l;
-			assert(EMS[e].theta[WATER] >= -Constants::eps);
-			EMS[e].theta[AIR] += d_theta_l;
-			assert(EMS[e].theta[AIR] >= -Constants::eps);
+			if (watertransportmodel_soil == "RICHARDSEQUATION") {
+				// Transpiration is considered a source/sink term for Richards equation
+				EMS[e].lwc_source -= d_theta_l;
+			} else {
+				// Update volumetric water content in layer
+				EMS[e].theta[WATER] -= d_theta_l;
+				assert(EMS[e].theta[WATER] >= -Constants::eps);
+				EMS[e].theta[AIR] += d_theta_l;
+				assert(EMS[e].theta[AIR] >= -Constants::eps);
+			}
 		}
 		// Depth of the upper edge of layer below
 		zupper += EMS[e].L;
@@ -489,10 +496,15 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 	                       Canopy::wp_fraction * EMS[RootLayer].soilFieldCapacity() ) ),
 	                       waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
 
-	EMS[RootLayer].theta[WATER] -= d_theta;
-	assert(EMS[RootLayer].theta[WATER] >= -Constants::eps);
-	EMS[RootLayer].theta[AIR] += d_theta;
-	assert(EMS[RootLayer].theta[AIR] >= -Constants::eps);
+	if (watertransportmodel_soil == "RICHARDSEQUATION") {
+		// Transpiration is considered a source/sink term for Richards equation
+		EMS[RootLayer].lwc_source -= d_theta;
+	} else {
+		EMS[RootLayer].theta[WATER] -= d_theta;
+		assert(EMS[RootLayer].theta[WATER] >= -Constants::eps);
+		EMS[RootLayer].theta[AIR] += d_theta;
+		assert(EMS[RootLayer].theta[AIR] >= -Constants::eps);
+	}
 	waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
 
 	// Check if water content is below wilting point in last layer

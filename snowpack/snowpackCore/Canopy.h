@@ -139,6 +139,7 @@ class Canopy {
 		std::string hn_density, hn_density_parameterization, variant;
 		double hn_density_fixedValue, thresh_rain, calculation_step_length;
 		bool useSoilLayers;
+		std::string watertransportmodel_soil;
 		// variables for canopy heat mass and 2-layer canopy
                 bool CanopyHeatMass;
                 bool Twolayercanopy;

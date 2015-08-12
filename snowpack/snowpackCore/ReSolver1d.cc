@@ -1346,6 +1346,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			s[i]+=soilsurfacesourceflux/dz[i];				//Soilsurfacesourceflux>0. if we remove the first snow element above the soil AND there are more snow layers (else it is a surfaceflux) AND we use RE for snow.
 		}
 
+		//Add source/sink term from other parts of SNOWPACK (in particular Canopy.cc)
+		s[i]+=EMS[i].lwc_source/sn_dt;
+		EMS[i].lwc_source=0.;		// Now that we used the variable, reset it.
+
 		//To now the flux of water in/out of the model domain due to the source/sink term.
 		totalsourcetermflux+=s[i]*dz[i];
 	}
