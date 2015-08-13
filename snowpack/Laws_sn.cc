@@ -1071,7 +1071,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
-		} else if (Mdata.hnw > 0. || Mdata.hnws >0) {
+		} else if (Mdata.psum > 0. && (Mdata.psum_ph==IOUtils::nodata || Mdata.psum_ph<1.)) {
 			if (i_hn_density_fixedValue > 0. && i_hn_density_fixedValue > min_hn_density) // use density of surface snowpack
 				rho = Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
 			else

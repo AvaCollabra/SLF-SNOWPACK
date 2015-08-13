@@ -259,7 +259,7 @@ void Hazard::compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, Pr
 
 /**
  * @brief Compute the Hdata from main station data
- * - depths of snowfall hn({0.5, 3., 6., 12., 24., 72.}h) including water equivalents (hnw)
+ * - depths of snowfall hn({0.5, 3., 6., 12., 24., 72.}h) including water equivalents (psum)
  * - 3 days sum of 24h depths of snowfall
  * - surface hoar size and hoar index for 6 and 24 hours
  * - dewpoint deficit, SWE and total liquid water content, runoff,
@@ -300,11 +300,11 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.hn24 = 21.7;         Hdata_ind.hn24 = 0;
 	Hdata.hn72 = 21.7;         Hdata_ind.hn72 = 0;
 	Hdata.hn72_24 = 21.7;      Hdata_ind.hn72_24 = 0;
-	Hdata.hnw3  = 21.7;        Hdata_ind.hnw3  = 0;
-	Hdata.hnw6  = 21.7;        Hdata_ind.hnw6  = 0;
-	Hdata.hnw12 = 21.7;        Hdata_ind.hnw12 = 0;
-	Hdata.hnw24 = 21.7;        Hdata_ind.hnw24 = 0;
-	Hdata.hnw72 = 21.7;        Hdata_ind.hnw72 = 0;
+	Hdata.psum3  = 21.7;        Hdata_ind.psum3  = 0;
+	Hdata.psum6  = 21.7;        Hdata_ind.psum6  = 0;
+	Hdata.psum12 = 21.7;        Hdata_ind.psum12 = 0;
+	Hdata.psum24 = 21.7;        Hdata_ind.psum24 = 0;
+	Hdata.psum72 = 21.7;        Hdata_ind.psum72 = 0;
 
 	Hdata.stab_class1 = 0;     Hdata_ind.stab_class1 = 0;
 	Hdata.stab_class2 = 5;     Hdata_ind.stab_class2 = 0;
@@ -333,17 +333,17 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.t_top2 = 21.7;       Hdata_ind.t_top2 = 0;
 
 	// Compute depths of snowfall for given time intervals
-	double t_hn[6] ={0.5, 3., 6., 12., 24., 72.}, hn[6], hnw[6];
-	double sum_hn = 0., sum_hnw = 0.;
+	double t_hn[6] ={0.5, 3., 6., 12., 24., 72.}, hn[6], precip[6];
+	double sum_hn = 0., sum_precip = 0.;
 	int e = (signed)nE-1;
 	for (unsigned int kk = 0; kk <= 5; kk++) {
 		while ((e >= signed(Xdata.SoilNode)) && ((Mdata.date.getJulian() - EMS[e].depositionDate.getJulian()) < (H_TO_D(t_hn[kk])))) {
 				sum_hn  += EMS[e].L;
-			sum_hnw += EMS[e].L * EMS[e].Rho;
+			sum_precip += EMS[e].L * EMS[e].Rho;
 			e--;
 		}
 		hn[kk] = sum_hn;
-		hnw[kk] = sum_hnw;
+		precip[kk] = sum_precip;
 	}
 	Hdata.hn_half_hour = M_TO_CM(hn[0] / cos_sl);
 	Hdata.hn3 =  M_TO_CM(hn[1] / cos_sl);
@@ -351,12 +351,12 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.hn12 =  M_TO_CM(hn[3] / cos_sl);
 	Hdata.hn24 =  M_TO_CM(hn[4] / cos_sl);
 	Hdata.hn72 =  M_TO_CM(hn[5] / cos_sl);
-	Hdata.hnw_half_hour = hnw[0] / cos_sl;
-	Hdata.hnw3 =  hnw[1] / cos_sl;
-	Hdata.hnw6 =  hnw[2] / cos_sl;
-	Hdata.hnw12 =  hnw[3] / cos_sl;
-	Hdata.hnw24 =  hnw[4] / cos_sl;
-	Hdata.hnw72 =  hnw[5] / cos_sl;
+	Hdata.psum_half_hour = precip[0] / cos_sl;
+	Hdata.psum3 =  precip[1] / cos_sl;
+	Hdata.psum6 =  precip[2] / cos_sl;
+	Hdata.psum12 =  precip[3] / cos_sl;
+	Hdata.psum24 =  precip[4] / cos_sl;
+	Hdata.psum72 =  precip[5] / cos_sl;
 
 	// Compute 3 days sum of 24h depths of snowfall
 	actOnVector(Zdata.hn24, hn[4], pushOverwrite);

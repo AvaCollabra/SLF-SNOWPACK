@@ -358,15 +358,15 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.hn72_24 != -1)   cerr << Hdata.hn72_24 << ",";
 	else cerr << "NULL,";
 	cerr << "\t";
-	if (Hdata_ind.hnw3 != -1)        cerr << Hdata.hnw3 << ",";
+	if (Hdata_ind.psum3 != -1)        cerr << Hdata.psum3 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw6 != -1)        cerr << Hdata.hnw6 << ",";
+	if (Hdata_ind.psum6 != -1)        cerr << Hdata.psum6 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw12 != -1)       cerr << Hdata.hnw12 << ",";
+	if (Hdata_ind.psum12 != -1)       cerr << Hdata.psum12 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw24 != -1)       cerr << Hdata.hnw24 << ",";
+	if (Hdata_ind.psum24 != -1)       cerr << Hdata.psum24 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw72 != -1)       cerr << Hdata.hnw72 << ",";
+	if (Hdata_ind.psum72 != -1)       cerr << Hdata.psum72 << ",";
 	else cerr << "NULL,";
 
 	cerr << "\n[E] SDB               ";
@@ -474,15 +474,15 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		if (Hdata_ind[i].hn72_24 != -1)   stmt->setNumber(param++, Hdata[i].hn72_24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].hnw3 != -1)        stmt->setNumber(param++, Hdata[i].hnw3);
+		if (Hdata_ind[i].psum3 != -1)        stmt->setNumber(param++, Hdata[i].psum3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw6 != -1)        stmt->setNumber(param++, Hdata[i].hnw6);
+		if (Hdata_ind[i].psum6 != -1)        stmt->setNumber(param++, Hdata[i].psum6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw12 != -1)       stmt->setNumber(param++, Hdata[i].hnw12);
+		if (Hdata_ind[i].psum12 != -1)       stmt->setNumber(param++, Hdata[i].psum12);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw24 != -1)       stmt->setNumber(param++, Hdata[i].hnw24);
+		if (Hdata_ind[i].psum24 != -1)       stmt->setNumber(param++, Hdata[i].psum24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw72 != -1)       stmt->setNumber(param++, Hdata[i].hnw72);
+		if (Hdata_ind[i].psum72 != -1)       stmt->setNumber(param++, Hdata[i].psum72);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		if (Hdata_ind[i].hoar_size != -1)  stmt->setNumber(param++, Hdata[i].hoar_size);

@@ -499,8 +499,8 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take hnw_l into account?
-		hoar = MIN(hoar,0.);
+	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take psum_ph into account?
+		hoar = MIN(hoar, 0.);
 	}
 
 	Sdata.hoar += hoar;
@@ -774,10 +774,17 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	if (!useSoilLayers && nN == 1) {
 		return;
 	} else { // add rainfall to snow/soil pack
-		 // Variant for mixed precipitation in the forcing, like Snowmip2
-		if ( ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) || (Mdata.hnwl > 0.) ) {
-			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			double Store = (Mdata.hnwl > 0.) ? Mdata.hnwl / Constants::density_water : (Mdata.hnw * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
+		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		
+		if (Mdata.psum > 0. && precip_is_rain) {
+			double tmp_rainfraction;
+			if (Mdata.psum_ph==IOUtils::nodata) 
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			else 
+				tmp_rainfraction = Mdata.psum_ph;
+			
+			double Store = (Mdata.psum * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
@@ -856,7 +863,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
 			RichardsEquationSolver1d.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
-			Sdata.mass[SurfaceFluxes::MS_RAIN] += (Mdata.hnwl > 0)? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
+			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * tmp_rainfraction;
 		}
 	}
 
@@ -1229,9 +1236,17 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
-		if (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range) || Mdata.hnwl > 0.) {
-			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			double precip_rain = (Mdata.hnwl > 0.) ? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
+		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		
+		if (Mdata.psum > 0. && precip_is_rain) {
+			double tmp_rainfraction;
+			if (Mdata.psum_ph==IOUtils::nodata)
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			else
+				tmp_rainfraction = Mdata.psum_ph;
+			
+			double precip_rain = Mdata.psum * tmp_rainfraction;
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += precip_rain;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += precip_rain;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {

@@ -119,9 +119,8 @@ class CurrentMeteo {
 		double tss_a12h; ///< Snow surface temperature averaged over past 12 hours (K)
 		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
 		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
-		double hnw;      ///< The water equivalent of snowfall in mm w.e. (kg m-2) per CALCULATION_STEP_LENGTH
-		double hnws;     ///< Solid precipitation (for SnowMIP)
-		double hnwl;     ///< Liquid precipitation (for SnowMIP)
+		double psum; ///< precipitation sum over the current timestep
+		double psum_ph; ///< precipitation phase for the current timestep (between 0 and 1, 0 is fully solid while 1 is fully liquid).
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
@@ -695,7 +694,7 @@ struct ProcessDat {
 	               ch(0.), swe(0.), tot_lwc(0.), runoff(0.), dewpt_def(0.), hoar_size(0.), hoar_ind6(0.), hoar_ind24(0.),
 	               wind_trans(0.), wind_trans24(0.),
 	               hn_half_hour(0.), hn3(0.), hn6(0.), hn12(0.), hn24(0.), hn72(0.), hn72_24(0.),
-	               hnw_half_hour(0.), hnw3(0.), hnw6(0.), hnw12(0.), hnw24(0.), hnw72(0.),
+	               psum_half_hour(0.), psum3(0.), psum6(0.), psum12(0.), psum24(0.), psum72(0.),
 	               stab_class1(0), stab_class2(0),
 	               stab_index1(0.), stab_height1(0.), stab_index2(0.), stab_height2(0.), stab_index3(0.), stab_height3(0.), stab_index4(0.),stab_height4(0.), stab_index5(0.), stab_height5(0.),
 	               crust(0.), en_bal(0.), sw_net(0.), t_top1(0.), t_top2(0.), lwi_N(0.), lwi_S(0.),
@@ -725,12 +724,12 @@ struct ProcessDat {
 	double hn24;           ///< 24 depth of snowfall (cm)
 	double hn72;           ///< 72 depth of snowfall (cm)
 	double hn72_24;        ///< 3 d sum of 24 h depth of snowfall (cm)
-	double hnw_half_hour;  ///< half_hour new snow water equivalent (kg m-2)
-	double hnw3;           ///< 3 h new snow water equivalent (kg m-2)
-	double hnw6;           ///< 6 h new snow water equivalent (kg m-2)
-	double hnw12;          ///< 12 h new snow water equivalent (kg m-2)
-	double hnw24;          ///< 24 h new snow water equivalent (kg m-2)
-	double hnw72;          ///< 72 h new snow water equivalent (kg m-2)
+	double psum_half_hour;  ///< half_hour new snow water equivalent (kg m-2)
+	double psum3;           ///< 3 h new snow water equivalent (kg m-2)
+	double psum6;           ///< 6 h new snow water equivalent (kg m-2)
+	double psum12;          ///< 12 h new snow water equivalent (kg m-2)
+	double psum24;          ///< 24 h new snow water equivalent (kg m-2)
+	double psum72;          ///< 72 h new snow water equivalent (kg m-2)
 	int stab_class1;       ///< stability classes 1,3,5
 	int stab_class2;       ///< profile type 0..10
 	double stab_index1;    ///< deformation index Sdef
@@ -759,7 +758,7 @@ struct ProcessInd {
 	               ch(0), swe(0), tot_lwc(0), runoff(0), dewpt_def(0),
 	               hoar_size(0), hoar_ind6(0), hoar_ind24(0),
 	               wind_trans(0), wind_trans24(0),
-	               hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0), hnw3(0), hnw6(0), hnw12(0), hnw24(0), hnw72(0),
+	               hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0), psum3(0), psum6(0), psum12(0), psum24(0), psum72(0),
 	               stab_class1(0), stab_class2(0),
 	               stab_index1(0), stab_height1(0), stab_index2(0), stab_height2(0), stab_index3(0), stab_height3(0), stab_index4(0), stab_height4(0), stab_index5(0), stab_height5(0),
 	               crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0), lwi_N(0), lwi_S(0)
@@ -779,7 +778,7 @@ struct ProcessInd {
 	short wind_trans, wind_trans24;
 	short hn3, hn6, hn12, hn24, hn72;
 	short hn72_24;
-	short hnw3, hnw6, hnw12, hnw24, hnw72;
+	short psum3, psum6, psum12, psum24, psum72;
 	short stab_class1, stab_class2;
 	short stab_index1, stab_height1;
 	short stab_index2, stab_height2;
