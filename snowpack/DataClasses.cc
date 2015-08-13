@@ -2012,7 +2012,9 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 
 	if (merge) {
 		// Determine new element length under the condition of keeping the density of the lower element constant.
-		if(EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
+		// This is only in case we are considering the top element, to deal with the common situation where top elements are being removed due to low
+		// ice content as a result of melt. We don't want to transfer this low ice content to lower layers.
+		if (EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined && topElement==true) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
 			LNew += (EdataUpper.Rho * L_upper) / EdataLower.Rho;
 		} else {
 			LNew += L_upper;
