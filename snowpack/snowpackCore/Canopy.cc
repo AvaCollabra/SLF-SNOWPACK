@@ -69,13 +69,10 @@
 				based on parameterizations commonly used in Land-Surface models.
 				There is room for improvement !
 
-		(v) SnowMIP version:
+		(v) SnowMIP version (M. Bavay):
 			For the SnowMIP exepriment (Rutter et al., 2009) snowpack was modified (by T. Jonas ?) to take liquid
-			and solid precipitation inputs. This is now possible in the default snowpack as long as HNW_L and HNW_S
-			are provided in the meteorological input file (MyStation.met). PSUM/HNW can be provided additionally but
-			won't be read. The reading of HNW_S/HNW_L is done by application/snowpack/Main.cc. Class CurentMeteo
-			is modified to have 2 supplementary variables : hnwl and hnws. Canopy.cc is modified to deal with these
-			mixed precipitations following the original code "HACK" by T. Jonas.
+			and solid precipitation inputs. This is now possible by relying on the psum_ph variable that contains
+			the precipitation phase.
 
  * - 2013-10-23 bis (I. Gouttevin, M. Bavay): simplification of the canopy energy Balance (EB) calculation, based on
 		(i) suppression of the limitation of TC change by temp_maxchange_per_hour;
@@ -612,10 +609,10 @@ double Canopy::IntCapacity(const double& tair, const double& density_of_new_snow
 	}
 }
 
-double Canopy::IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws)
+double Canopy::IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, const double& solid_precip)
 {
         // in the future, temperature threshold might be abandoned
-        if ( (K_TO_C(tair) < thresh_rain || hnws>0.0) && density_of_mixed > 0. ) {
+        if ( (K_TO_C(tair) < thresh_rain || solid_precip>0.0) && density_of_mixed > 0. ) {
                 return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_mixed ));
         } else {
                 return (Canopy::int_cap_rain * lai);
@@ -1795,40 +1792,35 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	if ( Xdata.Cdata.height <= 0.0 ) {
 		Xdata.Cdata.height = 0.0;
 	}
-	// SnowMIP version : initialize output values
-	if (Mdata.hnw ==mio::IOUtils::nodata){
-		Xdata.Cdata.snowfac+=Mdata.hnws;
-		Xdata.Cdata.rainfac+=Mdata.hnwl;}
-	else{
-		Xdata.Cdata.snowfac+=(K_TO_C(Mdata.ta) > thresh_rain)? 0. :Mdata.hnw;
-		Xdata.Cdata.rainfac+=(K_TO_C(Mdata.ta) > thresh_rain)? Mdata.hnw:0.;
+	if (Mdata.psum_ph!=IOUtils::nodata) {
+		Xdata.Cdata.snowfac += Mdata.psum * (1. - Mdata.psum_ph);
+		Xdata.Cdata.rainfac += Mdata.psum * Mdata.psum_ph;
+	} else {
+		Xdata.Cdata.snowfac += (K_TO_C(Mdata.ta) > thresh_rain)? 0. : Mdata.psum;
+		Xdata.Cdata.rainfac += (K_TO_C(Mdata.ta) > thresh_rain)? Mdata.psum : 0.;
 	}
 	// 1.1 compute the interception capacity [mm m-2]
 	//1.1a Always new snow density as estimate of density in intercepted storage
-	const double density_of_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
+	const double rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
 			hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
-	// modifs for SnowMIP version
-        double density_of_mixed= density_of_new_snow;
-        if (Mdata.hnws+Mdata.hnwl>0.) {
-		density_of_mixed = (density_of_new_snow*Mdata.hnws+1000.0*Mdata.hnwl)/(Mdata.hnws+Mdata.hnwl);
-	}
+	const double rho_mixed = (Mdata.psum_ph==IOUtils::nodata)? rho_new_snow : rho_new_snow*(1.-Mdata.psum_ph) + 1000.*Mdata.psum_ph;
+
 	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain
-	const double intcapacity =(Mdata.hnw !=mio::IOUtils::nodata)? IntCapacity(Mdata.ta, density_of_new_snow, Xdata.Cdata.lai) : IntCapacitySnowMIP2(Mdata.ta, density_of_mixed, Xdata.Cdata.lai, Mdata.hnws);
+	const double intcapacity = (Mdata.psum_ph==mio::IOUtils::nodata)? IntCapacity(Mdata.ta, rho_new_snow, Xdata.Cdata.lai) : IntCapacitySnowMIP2(Mdata.ta, rho_mixed, Xdata.Cdata.lai, Mdata.psum*(1.-Mdata.psum_ph));
 
 	// 1.2 compute direct unload [mm timestep-1], update storage [mm]
 	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
         double oldstorage = Xdata.Cdata.storage;
         Xdata.Cdata.storage -= unload;
-        // modifs for SnowMIP version
 	double liqmm_unload=0.0;
         double icemm_unload=0.0;
-	if (Mdata.hnws+Mdata.hnwl>=0.0) {
-		const double intcaprain = IntCapacity(280., density_of_mixed, Xdata.Cdata.lai);
-			// determine liquid and frozen water unload
+	if (Mdata.psum_ph != IOUtils::nodata) { //HACK: why not do it also for parametrized precip phase?
+		const double intcaprain = IntCapacity(280., rho_mixed, Xdata.Cdata.lai);
+		// determine liquid and frozen water unload
 		liqmm_unload = MAX(0.0,MIN(unload * Xdata.Cdata.liquidfraction,
 				oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
 		icemm_unload = MAX(unload - liqmm_unload,0.0);
-			// Update liquid fraction
+		// Update liquid fraction
 		if (Xdata.Cdata.storage>0.) {
 			Xdata.Cdata.liquidfraction = MAX( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
 		} else {
@@ -1841,26 +1833,28 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	}
 
 	// 1.3 compute the interception [mm timestep-1] and update storage [mm]
-	const double precipitation =(Mdata.hnw !=mio::IOUtils::nodata)? Mdata.hnw : Mdata.hnws+Mdata.hnwl;
-	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, precipitation, Xdata.Cdata.direct_throughfall);
+	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall);
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
-	const double throughfall = precipitation - interception + unload;
+	const double throughfall = Mdata.psum - interception + unload;
 	double icemm_interception = 0.;
 	double liqmm_interception = 0.;
-	if (Mdata.hnw == mio::IOUtils::nodata) {
-		if (precipitation>0.) {
-			icemm_interception = interception * Mdata.hnws / precipitation;
-			liqmm_interception = interception * Mdata.hnwl / precipitation;
+	if (Mdata.psum_ph != mio::IOUtils::nodata) {
+		if (Mdata.psum>0.) {
+			icemm_interception = interception * (1. - Mdata.psum_ph);
+			liqmm_interception = interception * Mdata.psum_ph;
 		}
-		Mdata.hnws = Mdata.hnws-icemm_interception + icemm_unload;
-		Mdata.hnwl = Mdata.hnwl-liqmm_interception + liqmm_unload;
+		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
+		const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
+		Mdata.psum = ground_solid_precip + ground_liquid_precip;
+		Mdata.psum_ph = ground_liquid_precip / Mdata.psum;
+		
 		if (Xdata.Cdata.storage>0.) {
 			Xdata.Cdata.liquidfraction = MAX(0.0,MIN(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
 		}
 	} else {
-		Mdata.hnw = throughfall; // Please give the total amount for the time step
+		Mdata.psum = throughfall; // Please give the total amount for the time step
 	}
 
 	// 2.1 prepare for canopy energy balance
@@ -1870,7 +1864,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	// Radiation Transmissivity
 	//(could possibly be a function of interception - but is constant for the moment)
 	//First, transmissivity of diffuse (and longwave) radiation
-	const double epsilon = 1E-3;
+	const double epsilon = 1e-3;
 	double lai_frac_top = lai_frac_top_default;// fraction of the total lai attributed to the uppermost layer. If 1.,equivalent to 1-layer canopy.
 	if ((lai_frac_top < epsilon)||(1-lai_frac_top<epsilon)||Twolayercanopy==false) {
 		Twolayercanopy = false;
@@ -2101,7 +2095,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	// modifs for SnowMIP version
 	// NOTE: in the standard version (PSUM version), water do not unload since intcaprain does not evolve in time.
 	//       => all unload is therefore snow.
-	Xdata.Cdata.snowunload += (Mdata.hnw != mio::IOUtils::nodata)? unload : icemm_unload;
+	Xdata.Cdata.snowunload += (Mdata.psum_ph == mio::IOUtils::nodata)? unload : icemm_unload;
 
 	// Canopy auxiliaries
 	Xdata.Cdata.wetfraction = wetfrac;

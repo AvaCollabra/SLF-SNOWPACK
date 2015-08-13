@@ -48,7 +48,7 @@ class Canopy {
 		double get_f2f4(const size_t& SoilNode, ElementData* EMS);
 		double get_f3(const double& vpd);
 		double IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
-		double IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, double& hnws);
+		double IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, const double& hnws);
 		double IntUnload(const double& capacity, const double& storage);
 		double IntRate(const double& capacity, const double& storage, const double& prec,
 		                  const double& direct);

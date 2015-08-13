@@ -606,25 +606,22 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 			Bdata.ql = MIN (250., MAX (-250., Bdata.ql));
 		}
 	}
+	
+	const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
+	                                         || (Mdata.psum_ph==IOUtils::nodata && (Tair >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+	if (Mdata.psum>0. && precip_is_rain) {
+		double tmp_rainfraction;
+		if (Mdata.psum_ph==IOUtils::nodata)
+			tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+		else
+			tmp_rainfraction = Mdata.psum_ph;
 
-//Variant for mixed precip in the forcing (like SnowMIP2)
-if (Mdata.hnw != mio::IOUtils::nodata){
-	if (Tair >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range) {
-		const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-		const double gamma = ((Mdata.hnw * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
+		const double gamma = ((Mdata.psum * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (Tair - Tss);
 	} else {
 		Bdata.qr = 0.;
 	}
-} else {
-	if (Mdata.hnwl != mio::IOUtils::nodata) {
-		const double gamma = (Mdata.hnwl / sn_dt) * Constants::specific_heat_water;
-		Bdata.qr = gamma * (Tair - Tss);
-	} else {
-		Bdata.qr = 0.;
-	}
-}
-// end Variant
+	
 	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
 	Bdata.lw_out = Constants::emissivity_snow * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
@@ -684,23 +681,20 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		//NOTE: should it not be linearized then?
 		Fe[1] += Bdata.ql;
 		// Advected rain energy: linear dependence on snow surface temperature
-
-// Variant for mixed precip in the forcing (like SnowMIP2)
-if (Mdata.hnw != mio::IOUtils::nodata){
-		if (T_air >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range) {
-			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			const double gamma = ((Mdata.hnw * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
+		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
+		                                         || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		if (Mdata.psum > 0. && precip_is_rain) {
+			double tmp_rainfraction;
+			if (Mdata.psum_ph==IOUtils::nodata)
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			else
+				tmp_rainfraction = Mdata.psum_ph;
+			
+			const double gamma = ((Mdata.psum * tmp_rainfraction) / sn_dt) * Constants::specific_heat_water;
 			Se[1][1] += gamma;
 			Fe[1] += gamma * T_air;
 		}
-} else {
-	if (Mdata.hnwl != mio::IOUtils::nodata) {
-			const double gamma = (Mdata.hnwl / sn_dt) * Constants::specific_heat_water;
-			Se[1][1] += gamma;
-			Fe[1] += gamma * T_air;
-	}
-} // end Variant
-
+		
 		// Net longwave radiation: NON-linear dependence on snow surface temperature
 		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
@@ -1027,9 +1021,9 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
 	// are left, their temperature gets very sensitive to energy input and during the iterations, the temperature gets out of the
 	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:
-	if(nN==3) MaxItnTemp = 200;
-	if(nN==2) MaxItnTemp = 400;
-	if(nN==1) MaxItnTemp = 2000;
+	if (nN==3) MaxItnTemp = 200;
+	if (nN==2) MaxItnTemp = 400;
+	if (nN==1) MaxItnTemp = 2000;
 
 	// IMPLICIT INTEGRATION LOOP
 	do {
@@ -1386,23 +1380,25 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	double rho_hn = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization, hn_density_fixedValue,
                                                Mdata, Xdata, t_surf, variant);
-	double precip_snow, precip_rain;
 
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
 
 	if (!enforce_measured_snow_heights) { // HNW driven
-		// Variant for mixed precip in the forcing, like SnowMIP2
-		if (Mdata.ta < C_TO_K(thresh_rain) + 0.5 * thresh_rain_range||Mdata.hnws !=mio::IOUtils::nodata) {
-			if (Mdata.hnws ==mio::IOUtils::nodata){
-				const double tmp_rainfraction = (thresh_rain_range == 0.) ? 0. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-				const double tmp_snowfraction = 1. - tmp_rainfraction;
-				precip_snow=Mdata.hnw * tmp_snowfraction;
-				precip_rain=Mdata.hnw * tmp_rainfraction;
-			} else {
-				precip_snow=Mdata.hnws;
-				precip_rain=Mdata.hnwl;
-			}
+		const bool precip_is_snow = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph<1.) 
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta < C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		
+		if (Mdata.psum>0. && precip_is_snow) {
+			double tmp_rainfraction;
+			if (Mdata.psum_ph==IOUtils::nodata)
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 0. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			else
+				tmp_rainfraction = Mdata.psum_ph;
+				
+			const double tmp_snowfraction = 1. - tmp_rainfraction;
+			
+			const double precip_snow = Mdata.psum * tmp_snowfraction;
+			const double precip_rain = Mdata.psum * tmp_rainfraction;
 			if ((cumu_precip > 0.) && (rho_hn != Constants::undefined)) {
 				// This is now very important to make sure that the rain fraction will not accumulate
 				// Note that cumu_precip will always be considered snowfall, as we substract all rainfall amounts
@@ -1424,7 +1420,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				return;
 		} else {
 			// This is now very important to make sure that rain will not accumulate
-			cumu_precip -= Mdata.hnw;
+			cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
 			return;
 		}
 	} else { // HS driven

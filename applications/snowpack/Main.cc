@@ -130,11 +130,10 @@ Slope::Slope(const mio::Config& cfg)
 	cfg.getValue("NUMBER_SLOPES", "SnowpackAdvanced", nSlopes);
 	cfg.getValue("SNOW_EROSION", "SnowpackAdvanced", snow_erosion);
 	stringstream ss;
-	ss.str("");
 	ss << nSlopes;
 	cfg.getValue("SNOW_REDISTRIBUTION", "SnowpackAdvanced", snow_redistribution);
-		if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
-			throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
+	if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
+		throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
 	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
 }
@@ -307,13 +306,9 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 
 void editMeteoData(mio::MeteoData& md, const string& variant)
 { //HACK: these should be handled by DataGenerators
-	if (!md.param_exists("HNW_L")) {
-		md.addParameter("HNW_L");
-		md("HNW_L") = IOUtils::nodata;
-	}
-	if (!md.param_exists("HNW_S")) {
-		md.addParameter("HNW_S");
-		md("HNW_S") = IOUtils::nodata;
+	if (!md.param_exists("PSUM_PH")) {
+		md.addParameter("PSUM_PH");
+		md("PSUM_PH") = IOUtils::nodata;
 	}
 
 	if (md(MeteoData::VW) == mio::IOUtils::nodata)
@@ -357,7 +352,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		miss_rad=true;
 	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_hs=true;
-	if (!enforce_snow_height && ((md(MeteoData::HNW) == mio::IOUtils::nodata) && (md("HNW_L") == mio::IOUtils::nodata) && (md("HNW_S") == mio::IOUtils::nodata)) )
+	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata) )
 		miss_precip=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -413,9 +408,8 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.tss_a24h = Constants::undefined;
 	Mdata.ts0 = md(MeteoData::TSG);
 
-	Mdata.hnws = md("HNW_S");
-	Mdata.hnwl = md("HNW_L");
-	Mdata.hnw = md(MeteoData::HNW);
+	Mdata.psum_ph = md("PSUM_PH");
+	Mdata.psum = md(MeteoData::HNW);
 
 	Mdata.hs = md(MeteoData::HS);
 	if (md.param_exists("HS_A3H") && (md("HS_A3H") != mio::IOUtils::nodata))
@@ -549,13 +543,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 			&& (currentSector.meta.getSlopeAngle() > Constants::min_slope_angle)) { // Do not trust blindly measured RSWR on slopes
 			cfg.addKey("SW_MODE", "Snowpack", "INCOMING"); // as Mdata.iswr is the sum of dir_slope and diff
 		}
-		// modifs SnowMIP version
-		if (Mdata.hnw != mio::IOUtils::nodata) {
-			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnw, Mdata.hs);
-		} else {
-			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnws, Mdata.hs);
-			double dummy_hs = 0.;
-			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.hnwl, dummy_hs);
+		if (Mdata.psum != mio::IOUtils::nodata) {
+			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.psum, Mdata.hs);
 		}
 	}
 
@@ -564,10 +553,8 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 
 	if (isMainStation) {
 		// Update precipitation memory of main station
-		if (Mdata.hnw != mio::IOUtils::nodata) {
-			precip += Mdata.hnw;
-		} else {
-			precip += Mdata.hnws + Mdata.hnwl;
+		if (Mdata.psum != mio::IOUtils::nodata) {
+			precip += Mdata.psum;
 		}
 
 		if (Mdata.hs != mio::IOUtils::nodata) {
