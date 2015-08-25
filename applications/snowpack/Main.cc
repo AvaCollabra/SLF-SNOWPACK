@@ -549,7 +549,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
 	}
 
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(Mdata, currentSector);
+	meteo.compMeteo(Mdata, currentSector, true);
 
 	if (isMainStation) {
 		// Update precipitation memory of main station

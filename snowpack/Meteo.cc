@@ -278,9 +278,9 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * @param *Mdata
  * @param *Xdata
  */
-void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
+void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {
-	if (useCanopyModel)
+	if (useCanopyModel && runCanopyModel)	// The canopy model should not necessarily be called at every call to compMeteo
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
 
 	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {
