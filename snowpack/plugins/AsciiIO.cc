@@ -845,7 +845,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 		fout << "," << std::fixed << std::setprecision(1) << 100.*EMS[e].theta[WATER];
 	// *508: snow dendricity (1)
 	if (no_snow) {
-		fout << "\n0508,1,0," << nE;
+		fout << "\n0508,1,0";
 	} else {
 		fout << "\n0508," << nE-Xdata.SoilNode;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
@@ -853,7 +853,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 	// *509: snow sphericity (1)
 	if (no_snow) {
-		fout << "\n0509,1,0," << nE;
+		fout << "\n0509,1,0";
 	} else {
 		fout << "\n0509," << nE-Xdata.SoilNode;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
@@ -861,7 +861,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 	// *510: snow coordination number (1)
 	if (no_snow) {
-		fout << "\n0510,1,0," << nE;
+		fout << "\n0510,1,0";
 	} else {
 		fout << "\n0510," << nE-Xdata.SoilNode;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
@@ -869,7 +869,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 	// *511: snow bond size (mm)
 	if (no_snow) {
-		fout << "\n0511,1,0," << nE;
+		fout << "\n0511,1,0";
 	} else {
 		fout << "\n0511," << nE-Xdata.SoilNode;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
@@ -877,7 +877,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 	// 512: snow grain size (mm)
 	if (no_snow) {
-		fout << "\n0512,1,0," << nE;
+		fout << "\n0512,1,0";
 	} else {
 		fout << "\n0512," << nE-Xdata.SoilNode;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
