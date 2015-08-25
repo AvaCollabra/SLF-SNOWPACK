@@ -136,15 +136,15 @@ class Canopy {
 		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
 		static const double f3_gd, rootdepth, wp_fraction;
 
-		std::string hn_density, hn_density_parameterization, variant;
+		std::string hn_density, hn_density_parameterization, variant, watertransportmodel_soil;
 		double hn_density_fixedValue, thresh_rain, calculation_step_length;
 		bool useSoilLayers;
 		// variables for canopy heat mass and 2-layer canopy
-                bool CanopyHeatMass;
-                bool Twolayercanopy;
-                bool canopytransmission;
-                bool forestfloor_alb;
-                static const double biomass_heat_capacity, biomass_density, lai_frac_top_default, trunk_frac_height, trunkalb, et;
+		bool CanopyHeatMass;
+		bool Twolayercanopy;
+		bool canopytransmission;
+		bool forestfloor_alb;
+		static const double biomass_heat_capacity, biomass_density, lai_frac_top_default, trunk_frac_height, trunkalb, et;
 };
 
 #endif //END of Canopy.h

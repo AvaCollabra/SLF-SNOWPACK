@@ -8,6 +8,7 @@
 */
 
 #include <snowpack/snowpackCore/Solver.h>
+#include <iostream>
 
 /*
 * DEFINE STATEMENTS
@@ -382,7 +383,7 @@ int PermuteWithMult(int N, int Mult, int *Perm, double *Vector)
 	double    ValueTo[MAX_MULT], Value[MAX_MULT];
 
 	if ( Mult > MAX_MULT ) {
-		printf ( "+++++ Multiplicy factor %d to large\n", Mult );
+		std::cout <<  "+++++ Multiplicy factor " << Mult << " too large\n";
 		return 1;
 	}
 
@@ -1702,7 +1703,6 @@ int ds_DefineConnectivity(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int nEl, int
 					SD_GET_COL(pCol, pMat);
 					SD_INSERT_COL(ppC, pCol, Col_j);
 					pMat->nCol++;
-					// printf("Inserting %d %d\n", Row_i, Col_j);
 				}
 			}
 		}
