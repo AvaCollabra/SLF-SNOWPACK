@@ -658,7 +658,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const bool alpine3d=false;						//Flag for alpine3d simulations. Note: this flag is not necessary to set, but it will enforce some precautions to provide extra numerical stability (at the cost of small mass balance violations).
 
 	//Setting some program flow variables
-	const bool SafeMode=false;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
+	const bool SafeMode=true;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
 
 	const bool WriteOutNumerics_Level0=false;	//true: after time step, some summarizing numerics information is printed
 	const bool WriteOutNumerics_Level1=false;	//true: per iteration, some basic numerics information is printed (not so much output, but still is useful for debugging)
@@ -2250,33 +2250,38 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			if(niter>500) {
 				//Print latest state for debugging:
-				if(WriteOutNumerics_Level0==true) {
-					for (i = uppernode; i >= lowernode; i--) {
-						printf("ITER: %d i: %d active? %s; h_n: %.15f (h_np1: %.15f) theta: %.15f (%f-%f) ice: %f/%f (vg_params: %f %f %f)\n", niter, i, (activelayer[i])?"true":"false", h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], EMS[SnowpackElement[i]].theta[ICE], theta_i_n[i], alpha[i], m[i], n[i]);
-					}
-					printf("BOUNDARYTOPFLUX: [ BC: %d ] %.15f %.15f\n", TopBC, TopFluxRate, surfacefluxrate);
-				}
+				bool DoThrow=false;
 				if(SafeMode==false) {
-					if(niter>500) {
-						prn_msg(__FILE__, __LINE__, "err", Date(), "Richards-Equation solver did not converge: reached maximum number of iterations (500), with a time step: %G\n", dt);
-					}
-					std::cout << "  POSSIBLE SOLUTIONS:\n  =============================================================================\n";
-					if(snowpack_dt>900) std::cout << "    - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
-#ifndef CLAPACK
-					std::cout << "    - SNOWPACK was not compiled with BLAS and CLAPACK libraries.\n      Try installing libraries BLAS and CLAPACK and use solver TGSV (default).\n";
-#endif
-					std::cout << "    - Verify that the soil is not initialized in a very dry or a very\n      wet state.\n";
-					if(BottomBC!=FREEDRAINAGE) std::cout << "    - If the soil is saturated, try setting LB_COND_WATERFLUX = FREEDRAINAGE\n      in the [SnowpackAdvanced] section of the ini-file.\n";
-					if(BottomBC!=WATERTABLE) std::cout << "    - If the soil is dry, try setting LB_COND_WATERFLUX = WATERTABLE in the\n      [SnowpackAdvanced] section of the ini-file.\n";
-					std::cout << "    - Try bucket scheme, by setting WATERTRANSPORTMODEL_SNOW = BUCKET and\n      WATERTRANSPORTMODEL_SOIL = BUCKET in the [SnowpackAdvanced] section\n      of the ini-file.\n";
-					std::cout << "    - When using Canopy module, there is a known issue with transpiration.\n      Please see issue 471 (http://models.slf.ch/p/snowpack/issues/471/).\n";
-					throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
+					prn_msg(__FILE__, __LINE__, "err", Date(), "Richards-Equation solver did not converge: reached maximum number of iterations (500), with a time step: %G\n", dt);
+					DoThrow=true;
 				} else {
 					if(seq_safemode>3) {
-						std::cout << "ERROR in Richards-Equation solver: SafeMode was not able to rescue simulation!\n";
-						throw;		//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
+						std::cout << "[E] ERROR in Richards-Equation solver: no convergence! SafeMode was not able to continue simulation!\n";
+						DoThrow=true;
 					}
-					std::cout << "WARNING in Richards-Equation solver: SafeMode was needed to rescue simulation! ";
+					std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << "].\n";
+				}
+				std::cout << "    POSSIBLE SOLUTIONS:\n  =============================================================================\n";
+				if(snowpack_dt>900) std::cout << "      - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
+#ifndef CLAPACK
+				std::cout << "      - SNOWPACK was not compiled with BLAS and CLAPACK libraries.\n      Try installing libraries BLAS and CLAPACK and use solver TGSV (default).\n";
+#endif
+				std::cout << "      - Verify that the soil is not initialized in a very dry or a very\n      wet state.\n";
+				if(BottomBC!=FREEDRAINAGE) std::cout << "      - If the soil is saturated, try setting LB_COND_WATERFLUX = FREEDRAINAGE\n      in the [SnowpackAdvanced] section of the ini-file.\n";
+				if(BottomBC!=WATERTABLE) std::cout << "      - If the soil is dry, try setting LB_COND_WATERFLUX = WATERTABLE in the\n      [SnowpackAdvanced] section of the ini-file.\n";
+				std::cout << "      - Try bucket scheme, by setting WATERTRANSPORTMODEL_SNOW = BUCKET and\n      WATERTRANSPORTMODEL_SOIL = BUCKET in the [SnowpackAdvanced] section\n      of the ini-file.\n";
+				std::cout << "      - When using Canopy module, there is a known issue with transpiration.\n      Please see issue 471 (http://models.slf.ch/p/snowpack/issues/471/).\n";
+				std::cout << "\n  -----------------------------------------------------------------------------\n    SOLVER DUMP:\n";
+				for (i = uppernode; i >= lowernode; i--) {
+					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", i, h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], theta_np1_m[i], (i<nsoillayers_richardssolver)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<nsoillayers_richardssolver)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), alpha[i], m[i], n[i]);
+				}
+				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G\n", TopBC, TopFluxRate, surfacefluxrate);
+				if(DoThrow==true) {
+					//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
+					throw;
+				} else {
+					std::cout << "  -----------------------------------------------------------------------------\n    SAFE MODE:\n";
+
 					//We rescue the simulation ...
 					double SafeMode_MBE=0.;		// Mass balance error (kg/m^2) due to SafeMode
 
@@ -2292,43 +2297,67 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					DoRewindFlag=true;				//Set DoRewindFlag to true, to quit the iteration loop.
 					StopLoop=false;					//In case StopLoop was set true (last time step), we set it back to false. It might be that the smaller time step won't match the SNOWPACK time step any longer.
 					mass1=0.;					//Because we fiddle around with theta, we should update mass1 (mass at beginning of time step)
-					for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
-						// Update the SafeMode mass balance error tracking variable by "removing" all water
-						SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
-						// Make sure pressure head is in secure limits:
-						h_n[i]=MAX(h_d, MIN(h_e[i], h_n[i]));
-						theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
-						//Deal with dry layers
-						if(theta_n[i]+theta_i_n[i] < theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
-							theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
-							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+					if(seq_safemode==1 && totalsourcetermflux!=0.) {
+						for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
+							// The first time a safe mode is required, set source/sink terms to 0.
+							if(s[i]!=0) {
+								SafeMode_MBE+=s[i]*(sn_dt-TimeAdvance)*Constants::density_water*dz[i];
+								printf("    --> reset source/sink term at layer %d from %G ", i, s[i]);
+								s[i]=0.;
+								totalsourcetermflux=0.;
+								printf("    to %G.\n", s[i]);
+							}
 						}
-						//Deal with wet layers
-						if(theta_n[i]+theta_i_n[i] > theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
-							theta_i_n[i]*=0.90;
-							theta_n[i]=((theta_n[i]-theta_r[i])*0.9)+theta_r[i];
-							h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+					} else {
+						if(seq_safemode==3) {
+							for (i = uppernode; i >= lowernode; i--) {	//We have to reset the whole domain, because we do the time step for the whole domain.
+								// Update the SafeMode mass balance error tracking variable by "removing" all water
+								SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
+								// Make sure pressure head is in secure limits:
+								h_n[i]=MAX(h_d, MIN(h_e[i], h_n[i]));
+								theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
+								//Deal with dry layers
+								if(theta_n[i]+theta_i_n[i] < theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
+									theta_n[i]=theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
+									h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+								}
+								//Deal with wet layers
+								if(theta_n[i]+theta_i_n[i] > theta_s[i]-(REQUIRED_ACCURACY_THETA/1000.)) {
+									theta_i_n[i]*=0.90;
+									theta_n[i]=((theta_n[i]-theta_r[i])*0.9)+theta_r[i];
+									h_n[i]=fromTHETAtoHforICE(theta_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+								}
+								// Update the SafeMode mass balance error tracking variable by "adding" the water again
+								SafeMode_MBE+=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
+
+								h_np1_m[i]=h_n[i];			//Reset initial guess for next iteration
+								theta_np1_m[i]=theta_n[i];		//Reset initial guess for next iteration
+								theta_i_np1_m[i]=theta_i_n[i];		//Set back ice content due to soil freezing/thawing
+
+								delta_Te_i[i]=0.;			//Reset temperature change due to soil freezing/thawing
+								delta_Te_adv_i[i]=0.;			//Reset temperature change due to heat advection by water flowing
+								
+								//Now update mass1, which may have changed due to SafeMode throwing some water away, or introducing some water:
+								mass1+=(theta_n[i]+(theta_i_n[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
+							}
+							std::cout << "    --> reset dry and wet layers.\n";
+							
+							//Deal with the TopFluxRate:
+							if(surfacefluxrate!=0.) {
+								SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
+								printf("    --> set surfacefluxrate from %G ", surfacefluxrate);
+								surfacefluxrate=0.;
+								printf("to %G.\n", surfacefluxrate);
+							}
+						} else {
+							//Deal with the TopFluxRate:
+							SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
+							printf("    --> set surfacefluxrate from %G ", surfacefluxrate);
+							surfacefluxrate/=2.;
+							printf("to %G.\n", surfacefluxrate);	
 						}
-						// Update the SafeMode mass balance error tracking variable by "adding" the water again
-						SafeMode_MBE+=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
-
-						h_np1_m[i]=h_n[i];			//Reset initial guess for next iteration
-						theta_np1_m[i]=theta_n[i];		//Reset initial guess for next iteration
-						theta_i_np1_m[i]=theta_i_n[i];		//Set back ice content due to soil freezing/thawing
-
-						delta_Te_i[i]=0.;			//Reset temperature change due to soil freezing/thawing
-						delta_Te_adv_i[i]=0.;			//Reset temperature change due to heat advection by water flowing
-
-						//The real rescue is to throw away the sink/source terms:
-						SafeMode_MBE+=s[i]*(sn_dt-TimeAdvance)*Constants::density_water*dz[i];
-						s[i]=0.;
-						//And to halve the TopFluxRate:
-						SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
-						surfacefluxrate/=2.;
-						//Now update mass1, which may have changed due to SafeMode throwing some water away, or introducing some water:
-						mass1+=(theta_n[i]+(theta_i_n[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
 					}
-					std::cout << "Estimated mass balance error due to SafeMode: " << std::scientific << SafeMode_MBE << std::fixed << " kg/m^2\n";
+					std::cout << "    Estimated mass balance error due to SafeMode: " << std::scientific << SafeMode_MBE << std::fixed << " kg/m^2\n";
 				}
 			}
 		}	//End of iteration loop
