@@ -530,7 +530,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 		if (SSdata.Ldata[ll].tl < 100.) {
-			SSdata.Ldata[ll].tl = C_TO_K(SSdata.Ldata[ll].tl);
+			SSdata.Ldata[ll].tl = IOUtils::C_TO_K(SSdata.Ldata[ll].tl);
 		}
 		if ((nFields = fscanf(fin, "%lf %lf %lf", &SSdata.Ldata[ll].SoilRho, &SSdata.Ldata[ll].SoilK,
 		                      &SSdata.Ldata[ll].SoilC)) != 3) {
@@ -838,7 +838,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	//  503: element temperature (degC)
 	fout << "\n0503," << nE;
 	for (size_t e = 0; e < nE; e++)
-		fout << "," << std::fixed << std::setprecision(2) << K_TO_C(EMS[e].Te);
+		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(EMS[e].Te);
 	//  506: liquid water content by volume (%)
 	fout << "\n0506," << nE;
 	for (size_t e = 0; e < nE; e++)
@@ -1183,7 +1183,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 		const double cos_sl = Xdata.cos_sl;
 		const size_t nL = Pdata.size();
 		ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
-		ofs << Pdata[nL-1].T << "," << K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
+		ofs << Pdata[nL-1].T << "," << IOUtils::K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
 		//Minima of stability indices at their respective depths as well as stability classifications
 		ofs << "#,s_height,s_index,s_class1,s_class2\n";
 		ofs << " ,cm,1,1,1\n";
@@ -1240,8 +1240,8 @@ size_t AsciiIO::writeTemperatures(std::ofstream &fout, const double& z_vert, con
 		}
 		jj++;
 	}
-	const double temp = Xdata.getModelledTemperature(perp_pos);
-	fout << "," << std::fixed << std::setprecision(2) << temp;
+
+	fout << "," << std::fixed << std::setprecision(2) << Xdata.getModelledTemperature(perp_pos);
 	if (ii < numberMeasTemperatures) {
 		const double tmp = checkMeasuredTemperature(T, perp_pos, Xdata.mH);
 		fout << "," << std::fixed << std::setprecision(2) << tmp;
@@ -1293,7 +1293,7 @@ double AsciiIO::compPerpPosition(const double& z_vert, const double& hs_ref, con
 double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const double& mH)
 {
 	if ((T != mio::IOUtils::nodata) && (z != Constants::undefined) && (z <= (mH - min_depth_subsurf)))
-		return K_TO_C(T);
+		return IOUtils::K_TO_C(T);
 	else
 		return Constants::undefined;
 }
@@ -1332,7 +1332,7 @@ size_t AsciiIO::writeHeightTemperatureTag(std::ofstream &fout, const size_t& tag
 	if (e != static_cast<size_t>(-1)) {
 		const double perp_pos = ((Xdata.Ndata[e].z + Xdata.Ndata[e].u + Xdata.Ndata[e+1].z
 		                + Xdata.Ndata[e+1].u)/2. - Xdata.Ground);
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(perp_pos) / cos_sl << "," << K_TO_C(Xdata.Edata[e].Te);
+		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(perp_pos) / cos_sl << "," << IOUtils::K_TO_C(Xdata.Edata[e].Te);
 	} else {
 		fout << ",," << std::fixed << std::setprecision(2) << Constants::undefined;
 	}
@@ -1600,13 +1600,13 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fout << ",,,,";
 	if (out_meteo)
 		// 10-13: Air temperature, snow surface temperature (modeled and measured), temperature at bottom of snow/soil pack (degC)
-		fout << "," << K_TO_C(Mdata.ta) << "," << K_TO_C(NDS[nN-1].T) << "," << K_TO_C(Mdata.tss) << "," << K_TO_C(NDS[0].T);
+		fout << "," << IOUtils::K_TO_C(Mdata.ta) << "," << IOUtils::K_TO_C(NDS[nN-1].T) << "," << IOUtils::K_TO_C(Mdata.tss) << "," << IOUtils::K_TO_C(NDS[0].T);
 	else
 		fout << ",,,,";
 	if (out_heat)
 		// 14-17: Heat flux at lower boundary (W m-2), ground surface temperature (degC),
 		//        Heat flux at gound surface (W m-2), rain energy (W m-2)
-		fout << "," << Sdata.qg << "," << K_TO_C(NDS[Xdata.SoilNode].T) << "," << Sdata.qg0 << "," << Sdata.qr;
+		fout << "," << Sdata.qg << "," << IOUtils::K_TO_C(NDS[Xdata.SoilNode].T) << "," << Sdata.qg0 << "," << Sdata.qr;
 	else
 		fout << ",,,,";
 	if (out_sw)
@@ -1682,7 +1682,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			fout << ",";
 		// 53-64: Stability Time Series, heights in cm
 		if (out_stab) {
-			fout << "," << Xdata.S_class1 << "," << Xdata.S_class2 << std::fixed;
+			fout << "," << Xdata.S_class1 << "," << Xdata.S_class2 << std::fixed; //profile type and stability class
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata.S_d;
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << std::setprecision(2) << Xdata.S_n;
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << std::setprecision(2) << Xdata.S_s;
@@ -1873,7 +1873,7 @@ void AsciiIO::writeTimeSeriesAddCalibration(const SnowStation& Xdata, const Surf
                                             const double /*dhs_corr*/, const double /*mass_corr*/,
                                             const size_t nCalcSteps, std::ofstream &fout)
 {
-	const double t_surf = MIN(C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
+	const double t_surf = MIN(IOUtils::C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
 		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(Mdata.hs)/Xdata.cos_sl << std::setprecision(6);
 	// 94-95:

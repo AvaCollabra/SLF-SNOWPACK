@@ -221,8 +221,8 @@ double Hazard::compDewPointDeficit(double TA, double TSS, double RH)
 { //HACK: use Atmosphere::RhtoDewPoint instead
 	const double b=9.5, c=265.5;
 
-	TA = K_TO_C(TA);
-	TSS = K_TO_C(TSS);
+	TA = IOUtils::K_TO_C(TA);
+	TSS = IOUtils::K_TO_C(TSS);
 	const double log10RH = log10(RH);
 	const double Tdew = c * (log10RH + b*TA/(c+TA)) / (b - log10RH - b*TA/(c+TA));
 

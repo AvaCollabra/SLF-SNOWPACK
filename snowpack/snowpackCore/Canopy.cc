@@ -302,7 +302,7 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 {
 	// PRIMARY "STATE" VARIABLES
 	fout << "," << Cdata->storage/cos_sl;      // intercepted water (mm or kg m-2)
-	fout << "," << K_TO_C(Cdata->temp);        // temperature (degC)
+	fout << "," << IOUtils::K_TO_C(Cdata->temp);        // temperature (degC)
 
 	// SECONDARY "STATE" VARIABLES
 	fout << "," << Cdata->canopyalb;           // albedo (1)
@@ -333,7 +333,7 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 	fout << "," << Cdata->iswrac;              // downward shortwave radiation above canopy
 	fout << "," << Cdata->totalalb;            // total albedo [-]
 	fout << "," << Cdata->rlnet+Sdata->lw_net+Cdata->rsnet+Sdata->qw; // net radiation to the total surface
-	fout << "," << K_TO_C(pow(Cdata->rlwrac/Constants::stefan_boltzmann, 0.25)); // surface (ground + canopy) temperature
+	fout << "," << IOUtils::K_TO_C(pow(Cdata->rlwrac/Constants::stefan_boltzmann, 0.25)); // surface (ground + canopy) temperature
 	fout << "," << Cdata->forestfloor_alb;     // albedo of the forest floor [-]
 	fout << "," << Cdata->snowfac/cos_sl;      // snowfall rate above canopy (mm per output timestep)
 	fout << "," << Cdata->rainfac/cos_sl;      // rainfall rate above canopy (mm per output timestep)
@@ -342,7 +342,7 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 }
 void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata)
 {
-	fout << "," << K_TO_C(Cdata->Ttrunk);      // Trunk temperature (degC)
+	fout << "," << IOUtils::K_TO_C(Cdata->Ttrunk);      // Trunk temperature (degC)
 	fout << "," << Cdata->CondFluxTrunks;      // Trunk biomass heat storage flux (W m-2)
 	fout << "," << Cdata->LWnet_Trunks;        // net LW radiations to Trunk layer (W m-2)
 	fout << "," << Cdata->SWnet_Trunks;        // net SW radiations to Trunk layer (W m-2)
@@ -561,7 +561,7 @@ double Canopy::get_f2f4(const size_t& SoilNode, ElementData* EMS)
 			// 4) Inversed soilwater stress weighted by root fractin in layer
 			f2 += rootfr * (thet_act-f2_wpwp) / (f2_wcap - f2_wpwp);
 			// 5) Soil temperature stress weighted by root fraction in layer
-			f4 += get_f4(K_TO_C(EMS[e].Te)) * rootfr;
+			f4 += get_f4(IOUtils::K_TO_C(EMS[e].Te)) * rootfr;
 			// 6) Update rootresidual and depth of upper edge of next layer
 			rootresidual -= rootfr;
 		}
@@ -575,7 +575,7 @@ double Canopy::get_f2f4(const size_t& SoilNode, ElementData* EMS)
 	f2_wpwp = f2_wcap * Canopy::wp_fraction;
 	thet_act = MAX(f2_wpwp, EMS[RootLayer].theta[WATER]);
 	f2 += rootresidual * (thet_act - f2_wpwp) / (f2_wcap - f2_wpwp);
-	f4 += get_f4(K_TO_C(EMS[RootLayer].Te)) * rootresidual;
+	f4 += get_f4(IOUtils::K_TO_C(EMS[RootLayer].Te)) * rootresidual;
 
 	// Limit inverse of the f2 function between 0 and 1
 	f2 = MAX( 0.00001, MIN( 1., f2 ) );
@@ -608,7 +608,7 @@ double Canopy::get_f3(const double& vpd)
 double Canopy::IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai)
 {
 	// in the future, temperature threshold might be abandoned
-	if ( K_TO_C(tair) < thresh_rain && density_of_new_snow > 0 ) {
+	if ( IOUtils::K_TO_C(tair) < thresh_rain && density_of_new_snow > 0 ) {
 		return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_new_snow ));
 	} else {
 		return (Canopy::int_cap_rain * lai);
@@ -618,7 +618,7 @@ double Canopy::IntCapacity(const double& tair, const double& density_of_new_snow
 double Canopy::IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, const double& solid_precip)
 {
         // in the future, temperature threshold might be abandoned
-        if ( (K_TO_C(tair) < thresh_rain || solid_precip>0.0) && density_of_mixed > 0. ) {
+        if ( (IOUtils::K_TO_C(tair) < thresh_rain || solid_precip>0.0) && density_of_mixed > 0. ) {
                 return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_mixed ));
         } else {
                 return (Canopy::int_cap_rain * lai);
@@ -1071,7 +1071,7 @@ double Canopy::DSaturationPressureDT(const double& L, const double& T)
 		c3 = 272.440 ;
 	}
 
-	const double dpdt =  Atmosphere::waterSaturationPressure(T) * c2 * c3 / ((c3 + K_TO_C(T)) * (c3 + K_TO_C(T)));
+	const double dpdt =  Atmosphere::waterSaturationPressure(T) * c2 * c3 / ((c3 + IOUtils::K_TO_C(T)) * (c3 + IOUtils::K_TO_C(T)));
 
 	return(dpdt);
 }
@@ -1609,7 +1609,7 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
 		Cdata->rstransp = Canopy::rsmin * get_f1(Cdata->iswrac)*get_f2f4(Xdata.SoilNode, &Xdata.Edata[0]) *
 		                  get_f3((1. - Mdata.rh) * Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 	} else {
-		const double Temp = (nE>0)? 0. : K_TO_C(Mdata.ta);
+		const double Temp = (nE>0)? 0. : IOUtils::K_TO_C(Mdata.ta);
 		Cdata->rstransp = Canopy::rsmin * get_f1(Cdata->iswrac) * get_f4(Temp) * get_f3((1. - Mdata.rh) *
 		                  Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
 	}
@@ -1802,8 +1802,8 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		Xdata.Cdata.snowfac += Mdata.psum * (1. - Mdata.psum_ph);
 		Xdata.Cdata.rainfac += Mdata.psum * Mdata.psum_ph;
 	} else {
-		Xdata.Cdata.snowfac += (K_TO_C(Mdata.ta) > thresh_rain)? 0. : Mdata.psum;
-		Xdata.Cdata.rainfac += (K_TO_C(Mdata.ta) > thresh_rain)? Mdata.psum : 0.;
+		Xdata.Cdata.snowfac += (IOUtils::K_TO_C(Mdata.ta) > thresh_rain)? 0. : Mdata.psum;
+		Xdata.Cdata.rainfac += (IOUtils::K_TO_C(Mdata.ta) > thresh_rain)? Mdata.psum : 0.;
 	}
 	// 1.1 compute the interception capacity [mm m-2]
 	//1.1a Always new snow density as estimate of density in intercepted storage

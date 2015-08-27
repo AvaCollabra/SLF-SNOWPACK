@@ -963,8 +963,8 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 {
 	double rho_hn;
 
-	TA  = K_TO_C(TA);
-	TSS = K_TO_C(TSS);
+	TA  = IOUtils::K_TO_C(TA);
+	TSS = IOUtils::K_TO_C(TSS);
 	RH  *= 100.;
 	HH  = floor(HH);
 
@@ -1005,7 +1005,7 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		rho_hn = pow(10., arg);
 
 	} else if (i_hn_model == "PAHAUT") {
-		rho_hn = 109. + 6.*(C_TO_K(TA) - Constants::melting_tk) + 26.*sqrt(VW);
+		rho_hn = 109. + 6.*(IOUtils::C_TO_K(TA) - Constants::melting_tk) + 26.*sqrt(VW);
 
 	} else {
 		prn_msg(__FILE__, __LINE__, "err", Date(),
@@ -1109,7 +1109,7 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 		//return (0.01*pow(rho_hn, 4.7));
 		return(0.0001 * pow(rho_hn, 5.5));
 	else
-		return (0.007 * pow(rho_hn, (4.75 - K_TO_C(Edata.Te) / 40.)));
+		return (0.007 * pow(rho_hn, (4.75 - IOUtils::K_TO_C(Edata.Te) / 40.)));
 }
 
 /**

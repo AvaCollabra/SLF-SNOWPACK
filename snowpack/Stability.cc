@@ -614,7 +614,7 @@ double Stability::compPenetrationDepth(const SnowStation& Xdata)
 	size_t e_crust = Constants::stundefined;
 
 	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
-	size_t e = Xdata.getNumberOfElements();
+	size_t e = Xdata.getNumberOfElements(); //HACK is this right? It should be nNodes+1
 	while ((e-- > Xdata.SoilNode) && ((Xdata.cH - (Xdata.Ndata[e].z + Xdata.Ndata[e].u))/cos_sl < 0.3)) {
 		rho_Pk += Xdata.Edata[e].Rho*Xdata.Edata[e].L;
 		dz_Pk  += Xdata.Edata[e].L;
@@ -712,21 +712,21 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
-							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
+							0.0187*IOUtils::K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
 							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
-							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
+							0.0187*IOUtils::K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
 					Sig_c2 = 0.429 + 0.0138*(date.getJulian() - Edata.depositionDate.getJulian()) +
 							1.12*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
-							0.0202*K_TO_C(Edata.Te);
+							0.0202*IOUtils::K_TO_C(Edata.Te);
 					break;
 				default:
 					Sig_c2 = 1.0;
@@ -825,21 +825,21 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
-							0.0187*K_TO_C(Edata.Te) + 0.0204*Edata.rg;
+							0.0187*IOUtils::K_TO_C(Edata.Te) + 0.0204*Edata.rg;
 					break;
 				case 1: // original T. Chalmers & accounting for Emin as 2*rg (ml 13 Feb 2003)
 					Sig_c2 = 0.336 + 0.0139*(date.getJulian() - Edata.depositionDate.getJulian()) +
 							1.18*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.625*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0804 *
 							cH/cos_sl - 28.7*Edata.L/cos_sl +
-							0.0187*K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
+							0.0187*IOUtils::K_TO_C(Edata.Te) + 0.0204*2.*Edata.rg;
 					break;
 				case 2: // New regression by Bruce Jamieson w/o Emin (14 Feb 2003)
 					Sig_c2 = 0.429 + 0.0138*(date.getJulian() - Edata.depositionDate.getJulian()) +
 							1.12*STpar.sig_n/Optim::pow2(STpar.cos_psi_ref) - 0.596*(cH -
 							(Ndata.z + Ndata.u))/cos_sl + 0.0785 *
 							cH/cos_sl - 27.1*Edata.L/cos_sl +
-							0.0202*K_TO_C(Edata.Te);
+							0.0202*IOUtils::K_TO_C(Edata.Te);
 					break;
 				default:
 					Sig_c2 = 1.0;
