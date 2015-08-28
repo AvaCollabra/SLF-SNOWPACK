@@ -1335,6 +1335,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	// Discard Stability::minimum_slab (in m) at surface
 	e = nE;
 	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab)) {};
+	if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
+
 	if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 		// Slab must be thicker than Stability::ground_rough (m)  for an avalanche to release.
 		while ((e-- > Xdata.SoilNode) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
@@ -1365,6 +1367,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		// Discard penetration depth Pk (in m) at surface
 		e = nE;
 		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk)) {};
+		if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
 
 		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)
