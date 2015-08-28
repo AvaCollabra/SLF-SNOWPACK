@@ -329,6 +329,26 @@
  *       layers are present
  *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
  *       This parameter can be set in the SnowpackAdvanced section of the io.ini file.
+ * 
+ * @section PrecipPhase Precipitation phase
+ * If the precipitation phase is available, you can provide it along the meteorological input under the name "PSUM_PH". This phase represents
+ * the fraction of liquid precipitation; for example:
+ *      - it is set to zero for fully solid precipitation;
+ *      - it is set to one for fully liquid precipitation;
+ *      - it is set to 0.75 for mixed precipitation made of 75% liquid and 25% solid.
+ * 
+ * If no precipitation phase is provided, Snowpack will rely on a fixed threshold approach: for air temperatures above 
+ * the value given by THRESH_RAIN in the SnowpackAdvanced section of the \em "io.ini" file, liquid precipitation is 
+ * assumed while in the contrary fully solid precipitation is assumed.
+ * 
+ * It is possible to use other spliting schemes by defining a <b>data creator</b> in the \em "io.ini" file (see in MeteoIO's documentation 
+ * the section <i>"Available data generators and usage"</i> for the full list of available generators/creators):
+ * @code
+ * [Generators]
+ * PSUM_PH::create = PPHASE
+ * PSUM_PH::PPHASE = RANGE 273.35 275.35
+ * @endcode
+ * 
  */
 
 /**

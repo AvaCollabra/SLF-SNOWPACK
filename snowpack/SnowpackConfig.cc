@@ -51,6 +51,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
 	advancedConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
 	advancedConfig["HOAR_MIN_SIZE_SURF"] = "0.5";
+	advancedConfig["HOAR_THRESH_TA"] = "1.2";
 	advancedConfig["HOAR_THRESH_RH"] = "0.97";
 	advancedConfig["HOAR_THRESH_VW"] = "3.5";
 	advancedConfig["JAM"] = "false";
@@ -78,7 +79,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
 	advancedConfig["FORCE_SW_MODE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";
-	advancedConfig["THRESH_RAIN_RANGE"] = "0.0";
 	advancedConfig["THRESH_RH"] = "0.5";
 	advancedConfig["THRESH_DTEMP_AIR_SNOW"] = "3.0";
 	advancedConfig["T_CRAZY_MAX"] = "340.";
