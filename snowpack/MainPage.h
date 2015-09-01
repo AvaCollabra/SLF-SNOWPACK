@@ -341,11 +341,11 @@
  * the value given by THRESH_RAIN in the SnowpackAdvanced section of the \em "io.ini" file, liquid precipitation is 
  * assumed while in the contrary fully solid precipitation is assumed.
  * 
- * It is possible to use other spliting schemes by defining a <b>data creator</b> in the \em "io.ini" file (see in MeteoIO's documentation 
- * the section <i>"Available data generators and usage"</i> for the full list of available generators/creators):
+ * It is possible to use other spliting schemes by defining a <b>data generator</b> in the \em "io.ini" file (see in MeteoIO's documentation 
+ * the section <i>"Available data generators and usage"</i> for the full list of available generators):
  * @code
  * [Generators]
- * PSUM_PH::create = PPHASE
+ * PSUM_PH::generators = PPHASE
  * PSUM_PH::PPHASE = RANGE 273.35 275.35
  * @endcode
  * 

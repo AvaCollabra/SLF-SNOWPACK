@@ -1820,25 +1820,17 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	const double throughfall = Mdata.psum - interception + unload;
-	double icemm_interception = 0.;
-	double liqmm_interception = 0.;
-	if (Mdata.psum_ph != mio::IOUtils::nodata) {
-		if (Mdata.psum>0.) {
-			icemm_interception = interception * (1. - Mdata.psum_ph);
-			liqmm_interception = interception * Mdata.psum_ph;
-		}
-		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
-		const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
-		Mdata.psum = ground_solid_precip + ground_liquid_precip;
-		Mdata.psum_ph = ground_liquid_precip / Mdata.psum;
-		
-		if (Xdata.Cdata.storage>0.) {
-			Xdata.Cdata.liquidfraction = MAX(0.0,MIN(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
-		}
-	} else {
-		Mdata.psum = throughfall; // Please give the total amount for the time step
+	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
+	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
+	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
+	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
+	Mdata.psum = ground_solid_precip + ground_liquid_precip;
+	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
+	
+	if (Xdata.Cdata.storage>0.) {
+		Xdata.Cdata.liquidfraction = MAX(0.0,MIN(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
 	}
-
+	
 	// 2.1 prepare for canopy energy balance
 	// Wetfraction update is moved to canopy energy balance loop  - use old value first
 	double wetfrac = Xdata.Cdata.wetfraction;
@@ -2077,7 +2069,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	// modifs for SnowMIP version
 	// NOTE: in the standard version (PSUM version), water do not unload since intcaprain does not evolve in time.
 	//       => all unload is therefore snow.
-	Xdata.Cdata.snowunload += (Mdata.psum_ph == mio::IOUtils::nodata)? unload : icemm_unload;
+	Xdata.Cdata.snowunload += icemm_unload;
 
 	// Canopy auxiliaries
 	Xdata.Cdata.wetfraction = wetfrac;
