@@ -129,7 +129,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 
 	/*
 	 * Defines how the height of snow is going to be handled
-	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (HNW)
+	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (PSUM)
 	 * - 1: The measured height of snow is used to determine whether new snow has been deposited.
 	 *      This setting MUST be chosen in operational mode. \n
 	 *      This procedure has the disadvantage that if the snowpack settles too strongly
@@ -1355,7 +1355,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	if ((Sdata.cRho_hn < 0.) && (rho_hn != Constants::undefined))
 		Sdata.cRho_hn = -rho_hn;
 
-	if (!enforce_measured_snow_heights) { // HNW driven
+	if (!enforce_measured_snow_heights) { // PSUM driven
 		if (Mdata.psum>0. && Mdata.psum_ph<1.) { //there is some snow
 			const double precip_snow = Mdata.psum * (1. -  Mdata.psum_ph);
 			const double precip_rain = Mdata.psum * Mdata.psum_ph;

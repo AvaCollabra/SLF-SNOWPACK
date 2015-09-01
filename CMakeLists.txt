@@ -113,11 +113,9 @@ ELSE(MSVC)
 		ENDIF()
 		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
 			SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
-			IF(CMAKE_BUILD_TYPE STREQUAL "debug")
-				SET(LEAKS_CHECK ON CACHE BOOL "Set to ON to dynamically check for memory corruption")
-			else()
-				SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption")
-			ENDIF()
+			# if set to ON, all binaries depending on the library have to be compiled the same way. 
+			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
+			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption")
 			IF (LEAKS_CHECK)
 				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
 			ENDIF(LEAKS_CHECK)
