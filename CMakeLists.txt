@@ -364,6 +364,7 @@ ELSE(UNIX)
 		IF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"bin/inishell.jar" "SNOWPACK inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
@@ -372,6 +373,7 @@ ELSE(UNIX)
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
@@ -379,11 +381,14 @@ ELSE(UNIX)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"bin/inishell.jar" "SNOWPACK inishell"
 				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
+				SET(CPACK_NSIS_MENU_LINKS 
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
 
