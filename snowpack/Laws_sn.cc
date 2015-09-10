@@ -380,6 +380,8 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			av = 0.7832462; // Mean value for all data @ WFJ, DAV, NAP, and PAY
 		else if (i_albAverageSchmucki == "CUSTOM")
 			av = 0.74824; // mean of single averages @ WFJ, DAV, and PAY
+		else
+			throw UnknownValueException("Invalid average value chosen for the \'"+i_albedo_parameterization+"\' parametrization: \'"+i_albAverageSchmucki+"\'", AT);
 		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
 			age = 0.;
 
@@ -399,8 +401,10 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		double Alb1, av;
 		if (i_albAverageSchmucki == "ALL_DATA")
 			av = 0.7832462; // Mean value of regression @ WFJ  only
-			else if (i_albAverageSchmucki == "CUSTOM")
+		else if (i_albAverageSchmucki == "CUSTOM")
 			av = 0.74824; // Mean of single regressions @ WFJ, DAV, PAY, and NAP
+		else
+			throw UnknownValueException("Invalid average value chosen for the \'"+i_albedo_parameterization+"\' parametrization: \'"+i_albAverageSchmucki+"\'", AT);
 		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
 			age = 0.;
 
@@ -934,17 +938,17 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 		setStaticData(variant);
 
 	switch (i_event) {
-	case event_wind: {
-		if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
-            const double rho_0=361., rho_1=33.;
-			return (rho_0*log10(Mdata.vw_avg) + rho_1);
-		} else
-			return Constants::undefined;
-	}
-	default:
-		prn_msg(__FILE__, __LINE__,"err", Date(),
-		        "No new snow density parameterization for event type %d", i_event);
-		throw IOException("Event type not implemented yet!", AT);
+		case event_wind: {
+			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
+		const double rho_0=361., rho_1=33.;
+				return (rho_0*log10(Mdata.vw_avg) + rho_1);
+			} else
+				return Constants::undefined;
+		}
+		default:
+			prn_msg(__FILE__, __LINE__,"err", Date(),
+				"No new snow density parameterization for event type %d", i_event);
+			throw IOException("Event type not implemented yet!", AT);
 	}
 }
 
