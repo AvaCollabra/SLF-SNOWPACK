@@ -436,7 +436,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		prn_msg(__FILE__, __LINE__, "err", Date(), "useSoilLayers not set but 'nSoilLayerData' > 0 !!!");
 		throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 	}
-	SSdata.nLayers = dum;
+	SSdata.nLayers = static_cast<size_t>(dum); //we checked that it is >0
 	if (fscanf(fin, "\nnSnowLayerData=%d", &dum) != 1) {
 	    fclose(fin);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Missing 'nSnowLayerData'");
@@ -447,7 +447,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		prn_msg(__FILE__, __LINE__, "err", Date(), "'nSnowLayerData' < 0  !!!");
 		throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 	}
-	SSdata.nLayers += dum;
+	SSdata.nLayers += static_cast<size_t>(dum); //we checked that it is >0
 
 	if (fscanf(fin, "\nSoilAlbedo=%lf", &SSdata.SoilAlb) != 1) {
         fclose(fin);
@@ -1633,7 +1633,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		if(out_soileb) {
 			// 30-33: soil energy balance variables
 			size_t nCalcSteps = 1;
-			nCalcSteps = (int)(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
+			nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 			fout << "," << (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << Xdata.ColdContentSoil/1E6 << "," << Hdata.hn72_24;
 		} else {
 			fout << ",,,,";
@@ -1731,7 +1731,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	size_t nCalcSteps = 1;
 	double crust = 0., dhs_corr = 0., mass_corr = 0.;
 	if (!avgsum_time_series)
-		nCalcSteps = (int)(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
+		nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 	if (out_haz) {
 		crust = Hdata.crust;
 		dhs_corr = Hdata.dhs_corr;

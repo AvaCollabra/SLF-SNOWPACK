@@ -84,8 +84,8 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	*/
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
 
-	nHz = (int)floor( (duration / (hazard_steps_between * sn_dt)) ) + 2;
-	if (nHz <= 0) nHz = 1;
+	nHz = static_cast<size_t>(floor( (duration / (hazard_steps_between * sn_dt)) ) + 2);
+	if (nHz == 0) nHz = 1;
 }
 
 /**
@@ -102,9 +102,11 @@ void Hazard::actOnVector(std::vector<double>& oldVector, const double& newValue,
 			for(size_t ii=oldVector.size()-1; ii>0; ii--) {
 				oldVector[ii] = oldVector[ii-1];
 			}
+			break;
 		case overwrite: // ... overwrite oldVector[0]
 			oldVector[0] = newValue;
-		default:
+			break;
+		case noAction:
 			break;
 	}
 }

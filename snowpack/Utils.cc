@@ -335,7 +335,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		return (val*1.8+32.);
 	} else {
 		double ratio = 1.;
-		if (strlen(unitIn) > 1+isdigit(unitIn[strlen(unitIn)-1])) {
+		if (strlen(unitIn) > static_cast<size_t>(1+isdigit(unitIn[strlen(unitIn)-1]))) {
 			char unitInPrefix = unitIn[0];
 			if (unitInPrefix == 'f') {
 				ratio *= 1./1000000000000000.;
@@ -371,7 +371,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		if (val==IOUtils::nodata) {
 			return ratio;
 		}
-		if (strlen(unitOut) > 1+isdigit(unitOut[strlen(unitOut)-1])) {
+		if (strlen(unitOut) > static_cast<size_t>((1+isdigit(unitOut[strlen(unitOut)-1])))) {
 			ratio /= unitConversion(IOUtils::nodata,unitOut,unitIn);
 		}
 		return val*ratio;

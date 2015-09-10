@@ -1138,9 +1138,11 @@ double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 		return (1. / SnLaws::ArrheniusLaw(Q, Te, 263.));
 	case t_term_stk: // Master thesis, September 2009
 		return (0.35 * sqrt(274.15 - Te));
-	default: // as of revision 243, used up to revision 837 (deprecated)
+	case t_term_837: // as of revision 243, used up to revision 837 (deprecated)
 		return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
 	}
+	
+	throw UnknownValueException("Unknown viscosity temperature dependency selected!", AT);
 }
 
 /**
@@ -1176,43 +1178,20 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 	Edata.EDot = 0.;
 	switch (visc) {
 	case visc_dflt: case visc_cal: case visc_ant:  { // new calibration
-		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
 		if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 			sigReac *= 0.37 * (1. + Edata.theta[WATER]); // 0.2 ; 0.37
-// 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
-// 		              * MAX(0.1, 1. - 9.*Edata.theta[WATER]);
-// 		sigReac = 15.5 * Edata->CDot * exp(-age/101.)
-// 		              * MAX(0., 1. - pow(Edata.theta[WATER], 1./3.));
-// 		sigReac = 15.9 * Edata->CDot * exp(-age/101.);
-// 		sigReac = 17.3 * Edata->CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
 		Edata.EDot = sigReac;
-		if (false && (Edata.dd > Constants::eps)) {
-			sigMetamo = 3.7e2 * Metamorphism::ddRate(Edata);
-			if (false && Edata.dd < 0.9 ) {
-				sigMetamo *= sqrt(Edata.dd);
-			}
-		}
 		return sigReac;
-// 		return (sigReac + sigMetamo);
-// 		return 0.;
 	}
 	case visc_897: { // r897
 		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		const double sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
 		Edata.EDot = sigReac;
-		//if ( 1 && (Edata->dd > 0.2) /*((Edata.dd < 0.9) && (Edata.dd > 0.3))*/ ) {
-		if (1 && (Edata.dd > Constants::eps) /*((Edata->dd < 0.9) && (Edata->dd > 0.3))*/) {
-			//sigMetamo = 73.5 * mm_ddRate(Edata) * sigTension / MM_TO_M(Edata.rg); // ori: -3.0; -23.
-			//sigMetamo = 139.7 * mm_ddRate(Edata) * sigTension / MM_TO_M(Edata.rg); // 2010-10-22
-			//sigMetamo = 29.0 * mm_ddRate(Edata) / MM_TO_M(Edata.rg); // 2010-10-23
+		if (Edata.dd > Constants::eps /*((Edata->dd < 0.9) && (Edata->dd > 0.3))*/) {
 			sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata); // 2010-10-23
-			if (0 && Edata.dd < 0.9) {
-				//sigMetamo /= Edata.dd; // sqrt(Edata.dd);
-				sigMetamo *= sqrt(Edata.dd);
-			}
 		}
 		return (sigReac + sigMetamo);
 	}
@@ -1226,11 +1205,11 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		}
 		return sig0;
 	}
-	default:
-		prn_msg(__FILE__, __LINE__, "err", Date(),
-				"visc=%d not a valid choice for loadingRateStress!", visc);
-		throw IOException("Choice not implemented yet!", AT);
 	}
+	
+	//this should not be reached...
+	prn_msg(__FILE__, __LINE__, "err", Date(), "visc=%d not a valid choice for loadingRateStress!", visc);
+	throw IOException("Choice not implemented yet!", AT);
 }
 
 /**
@@ -1285,28 +1264,15 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 		double ice_fudge = (0.67*14.1*SnLaws::visc_ice_fudge / Edata.theta[ICE]); // 0.67; 0.59; r897: 0.51
 		ice_fudge *= (1. - logisticFunction(Edata.theta[ICE], 0.019, 0.15))
 		                  * pow(Edata.theta[ICE], 0.77);
-// 		ice_fudge *= 0.67*13.7 * (1. - lwsn_logisticFunction(Edata.theta[ICE], 0.019, 0.15))
-// 		ice_fudge *= 0.67*23.7*(1. - lwsn_logisticFunction(Edata.theta[ICE], 0.009, 0.11))
-// 		                 * Edata.theta[ICE];
 
 		sp_fudge *= 0.67*24.7;  // 0.67 ; 0.77 ; r897: 1.19 //
 		sp_fudge *= (1. - logisticFunction(Edata.sp, 0.37, 0.21))
 		                 * Edata.sp*Edata.sp*Edata.sp;
-// 		sp_fudge *= 0.67*24.7*(1. - lwsn_logisticFunction(Edata.sp, 0.35, 0.17))
-// 		                * Edata.sp*Edata.sp*Edata.sp;
-// 		sp_fudge *= 0.67*(1. - lwsn_logisticFunction(Edata.sp, 1.0, 0.077)) * sqrt(Edata.sp);
 
 		visc_fudge = ice_fudge * (1. + sp_fudge) + 0.1;
 
 		visc_fudge *= (1. + 33.*visc_water_fudge * Edata.theta[WATER]
 		                   * (1. - Edata.theta[ICE])); // 31. ; 33. ; 35.
-// 		visc_fudge *= (1. + 31.*visc_water_fudge * Edata.theta[WATER]
-// 		                   * (1. - Edata.theta[ICE]*Edata.theta[ICE])); // ori r897
-// 		                   * (0.67 - 0.29*Edata.theta[ICE]));
-// 		                   * (1.37 - Edata.theta[ICE]));
-// 		                   * (0.8 - 0.6*sqrt(Edata.theta[ICE])));
-// 		                   * MAX(0.2, MIN(0.8, 1.16 - 1.2*Edata.theta[ICE])));
-// 		                   * (MAX(0., 0.8 - Edata.theta[ICE]*Edata.theta[ICE])));
 		break;
 	}
 	case visc_897: case visc_ant: { // Calibration fall 2010 & Antarctica
@@ -1356,7 +1322,6 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
 		prn_msg(__FILE__, __LINE__, "err", Date(),
 		        "visc=%d not a valid choice for SnowViscosityFudge!", visc);
 		throw IOException("Choice not implemented yet!", AT);
-		break;
 	}
 
 	if (use_thresh) { // Default false
