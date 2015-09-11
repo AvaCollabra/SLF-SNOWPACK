@@ -945,6 +945,7 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 			} else
 				return Constants::undefined;
 		}
+		case event_none:
 		default:
 			prn_msg(__FILE__, __LINE__,"err", Date(),
 				"No new snow density parameterization for event type %d", i_event);

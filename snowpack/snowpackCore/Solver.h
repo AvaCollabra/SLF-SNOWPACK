@@ -221,10 +221,10 @@
 
 typedef struct
 {
-	int     nChunks;
-	int     pChunksSize;
+	size_t     nChunks;
+	size_t     pChunksSize;
 	char   **pChunks;
-	int     TotChunkSize;
+	size_t     TotChunkSize;
 
 } SD_CHUNK_DATA;
 
@@ -234,13 +234,13 @@ typedef struct
       GD_REALLOC( CHUNK.pChunks, char*, CHUNK.pChunksSize, "Chunk pointer Data" );             \
    }                                                                                           \
    GD_MALLOC( CHUNK.pChunks[ CHUNK.nChunks ], char, SIZE, "Chunk Data" );                      \
-   CHUNK.TotChunkSize += (int)SIZE;                                                                 \
+   CHUNK.TotChunkSize += (size_t)SIZE;                                                                 \
    CHUNK.nChunks++;                                                                            \
 }
 
 #define SD_DESTROY_CHUNK(CHUNK)                                                                \
-{  int i_;                                                                                     \
-   for(i_=0; i_<CHUNK.nChunks; i_++) GD_FREE(CHUNK.pChunks[i_]);                               \
+{                                                                                     \
+   for(size_t i_=0; i_<CHUNK.nChunks; i_++) GD_FREE(CHUNK.pChunks[i_]);                               \
    GD_FREE(CHUNK.pChunks);                                                                     \
    CHUNK.TotChunkSize = 0;                                                                     \
 }
@@ -266,7 +266,6 @@ typedef struct
 * ATTENTION: The size of the permutation vector is only Dim/(Multiplicity Factor).
 */
 
-#define  double double
 #define  SD_MARKED    (1<<30) /* An flag bit used for permutation. Use:(1<<15) on PC */
 
 typedef struct
@@ -274,7 +273,7 @@ typedef struct
 	int                Row0;
 	int                Row1;
 	size_t             nCol;
-	int                nColBlock;
+	size_t                nColBlock;
 	int                iColBlock;
 	int                iFloat;
 
@@ -286,10 +285,10 @@ typedef struct
 	int                *pPerm;
 	int                 nRowBlock;
 	SD_ROW_BLOCK_DATA  *pRowBlock;
-	int                 nColBlock;
+	size_t                 nColBlock;
 	int                *pFirstColBlock;
 	int                *pSizeColBlock;
-	int                 SizeBlockJump;
+	size_t                 SizeBlockJump;
 	int                *pBlockJump;
 	int                 SizeUpper;
 	double              *pUpper;
@@ -355,7 +354,7 @@ typedef struct
 	SD_ROW_DATA           *pRow;
 	SD_CHUNK_DATA          PoolCol;
 	SD_COL_DATA           *FreeCol;
-	int                    nFreeCol;
+	size_t                 nFreeCol;
 	size_t                 nCol;
 
 }  SD_CON_MATRIX_DATA;
@@ -448,19 +447,7 @@ typedef  SD_MATRIX_DATA MYTYPE;
 /*
 * DATA FOR COLUMN AND COLUMN BLOCK ALLOCATION
 */
-
-#define SD_ALLOC_COL(N_COL, pMAT)                                                              \
-{  SD_ALLOC_CHUNK((pMAT)->PoolCol, sizeof(SD_COL_DATA)*N_COL);                                 \
-   (pMAT)->FreeCol = ( SD_COL_DATA * ) (pMAT)->PoolCol.pChunks[ (pMAT)->PoolCol.nChunks-1 ];   \
-   (pMAT)->nFreeCol = N_COL;                                                                   \
-}
-
 #define SD_N_ALLOC_COL  500
-
-#define SD_GET_COL(pCOL, pMAT)                                                                 \
-{  if  ( !(pMAT)->nFreeCol )  SD_ALLOC_COL(SD_N_ALLOC_COL, pMAT);                              \
-   pCOL = (pMAT)->FreeCol++; (pMAT)->nFreeCol--;                                               \
-}
 
 /*
 * To little speed-up memory operations for the SD_COL_BLOCK_DATA, we only allocate chunks of

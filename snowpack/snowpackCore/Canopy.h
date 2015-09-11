@@ -68,8 +68,6 @@ class Canopy {
                                       double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, double& r2,
                                       double& rt0, double& rt1, double& rt2, const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
                                       const double& sigfdirect, const double& sigftrunkdirect, double& r1p, double& r2p);
-		void TrunkEnergyBalance(double r2, double rt0, double rt1, double rt2, double ht0, double ht1, double let0, double let1,
-                                          double HMt0, double HMt1, double &TT0, double &TT1, double TCANOPY, double &Ttrunk);
 		void LineariseSensibleHeatFlux(const double& ch_canopy, const double& tair, double& h0, double& h1, double scalingfactor);
 
 		double DSaturationPressureDT(const double& L, const double& T);
@@ -77,7 +75,7 @@ class Canopy {
 		                                double& le0, double& le1, double scalingfactor);
 		void CalculateHeatMass(const double& height, const double& BasalArea, double& lai ,double& HMLeaves,  double& HMTrunks);
 
-		void LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor);
+		void LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor);
 
                 void CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
                                                          const double& le1, const double& HM0,  const double& HM1,

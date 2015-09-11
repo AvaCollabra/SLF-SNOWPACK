@@ -991,41 +991,6 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 }
 
 /**
- * @brief Objective: Derive an analytical expression for Ttrunk = f(TC) from the Trunk Energy Balance equation,
- *         to then solve easily the Canopy Energy Balance.
- * Method:      Trunk energy balance equation : rt0 + rt1 * Ttrunk + rt2 * TC = h0t + h1t *Ttrunk + let0 + let1 * Ttrunk + HMt0 + HMt1 * Ttrunk
- *                                      =>      Ttrunk = (ht0 + let0 + HMt0 - rt0 -  r2t *TC) / (r1t - ht1 -let1 -HMt1)
- *                              rewritten as :  Ttrunk = TT0/r2 + TT1/r2 * TC
- *                              so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC.
- * @param r2
- * @param rt0
- * @param rt1
- * @param ht0
- * @param ht1
- * @param let0
- * @param let1
- * @param HMt0
- * @param HMt1
- * @param TT0
- * @param TT1
- * @param TCANOPY
- * @param Ttrunk
- */
-void Canopy:: TrunkEnergyBalance(double r2, double rt0, double rt1, double rt2, double ht0, double ht1, double let0, double let1,
-                                          double HMt0, double HMt1, double &TT0, double &TT1, double TCANOPY, double &Ttrunk)
-{
-	if (Twolayercanopy) {
-		TT0 = r2 * (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1);
-		TT1 = -r2 * rt2 /(rt1 - ht1 -let1 -HMt1);
-		Ttrunk = (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1) - rt2 /(rt1 - ht1 -let1 -HMt1) * TCANOPY ;
-	} else {
-		TT0 = 0. ;
-		TT1 = 0. ;
-	}
-}
-
-
-/**
  * @brief the sensible heat flux is already a linear function of TC(t),
  * whould be different with stability corrections.
  * @param ch_canopy
@@ -1109,7 +1074,7 @@ void Canopy::CalculateHeatMass(const double& height, const double& BasalArea, do
  * @param HM0
  * @param HM1
  */
-void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor)
+void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor)
 {
 	if (CanopyHeatMass) {
 		HM0 = -1.0 * scalingfactor * HM /H_TO_S(DT) *tc_old;
@@ -1968,26 +1933,31 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		if (Twolayercanopy) {
 			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMLeaves, HM0, HM1, M_TO_H(calculation_step_length), 1.);
 			LineariseConductiveHeatFlux(Tt_previous_tstep, Xdata.Cdata.HMTrunks, HMt0, HMt1, M_TO_H(calculation_step_length), 1.);
-		} else {
-			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMTrunks, HM0, HM1, M_TO_H(calculation_step_length),  1.);
-		}
-
-		/* final canopy energy balance */
-                TrunkEnergyBalance(r2, rt0, rt1, rt2, ht0, ht1, let0, let1, HMt0,  HMt1, TT0, TT1, Xdata.Cdata.temp,Xdata.Cdata.Ttrunk);
-
-		if (Twolayercanopy) {
+			// final canopy energy balance
+			//Objective: Derive an analytical expression for Ttrunk = f(TC) from the Trunk Energy Balance equation, then solve easily the Canopy Energy Balance.
+			//Trunk energy balance equation : rt0 + rt1 * Ttrunk + rt2 * TC = h0t + h1t *Ttrunk + let0 + let1 * Ttrunk + HMt0 + HMt1 * Ttrunk
+			// =>      Ttrunk = (ht0 + let0 + HMt0 - rt0 -  r2t *TC) / (r1t - ht1 -let1 -HMt1) rewritten as :  Ttrunk = TT0/r2 + TT1/r2 * TC
+			// so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC
+			TT0 = r2 * (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1);
+			TT1 = -r2 * rt2 /(rt1 - ht1 -let1 -HMt1);
+			Xdata.Cdata.Ttrunk = (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1) - rt2 /(rt1 - ht1 -let1 -HMt1) * Xdata.Cdata.temp ;
+			
 			CanopyEnergyBalance2L(h0, h1, le0, le1, HM0, HM1, TT0, TT1,
 					ce_canopy, ce_condensation,
 					r0, r1, r2, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, RNCANOPY, HCANOPY, LECANOPY);
 		} else {
+			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMTrunks, HM0, HM1, M_TO_H(calculation_step_length),  1.);
+			//final canopy energy balance
+			TT0 = 0. ;
+			TT1 = 0. ;
+			
 			CanopyEnergyBalance(h0, h1, le0, le1, HM0, HM1,
 					ce_canopy, ce_condensation,
 					r0, r1, Xdata.Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 		}
-		/*
-		 * Partition latent heat flux on interception and transpiration
-		 * and correct energy balance for overestimated interception evaporation
-		*/
+
+		// Partition latent heat flux on interception and transpiration
+		// and correct energy balance for overestimated interception evaporation
 		if (Twolayercanopy) {
 			CanopyEvaporationComponents2L(ce_canopy, ce_transpiration, LECANOPY, Mdata.ta,
 						Xdata.Cdata.storage,

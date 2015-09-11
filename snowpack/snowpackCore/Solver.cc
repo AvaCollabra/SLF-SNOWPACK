@@ -217,7 +217,7 @@ inline void SEARCH_COL(const int& COL, const int& ROW, const SD_BLOCK_MATRIX_DAT
 	const size_t delta_   = ROW - pROW->Row0;
 	OFFSET   = pROW->iFloat + static_cast<int>(DIAGONAL(pROW->nCol, delta_));
 	++col_;
-	for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++) {  
+	for(size_t i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++) {  
 		if ( COL < col_[0] )
 			break;
 	}
@@ -453,7 +453,7 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 
 		// Initilize some data for this new pivot block
 		SD_ROW_BLOCK_DATA *pSearchRow = pPivotRow;
-		const int nColBlock = pPivotRow->nColBlock;
+		const size_t nColBlock = pPivotRow->nColBlock;
 		const int nCol = (int)pPivotRow->nCol;
 		double *PivotUpper = Upper + pPivotRow->iFloat;
 		BLOCK_INIT(pColBlock, pC0_FIRST_COL(pPivotRow), pSIZE_FIRST_COL(pPivotRow) );
@@ -485,7 +485,7 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 					}
 				}
 
-				const int RowDelta = Row_i0 - pSearchRow->Row0;
+				const size_t RowDelta = Row_i0 - pSearchRow->Row0;
 				const int DimCol   = Row_i1 - Row_i0;
 				DimRow   = pSearchRow->Row1 - Row_i0 + 1;
 				if ( DimCol < DimRow ) {
@@ -597,8 +597,8 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
 		pPivotRow = pMat->pRowBlock + nPivotRow - 1; (nPivotRow--)>0; pPivotRow--) {
 		pBLOCK      pColBlock;
 
-		const int DimPivot = pPivotRow->Row1 - pPivotRow->Row0 + 1;
-		const int nCol = (int)pPivotRow->nCol;
+		const size_t DimPivot = pPivotRow->Row1 - pPivotRow->Row0 + 1;
+		const size_t nCol = pPivotRow->nCol;
 		double *PivotUpper  = Upper + pPivotRow->iFloat + DIAGONAL(nCol,DimPivot-1) + 1;
 		BLOCK_INIT(pColBlock, pC0_FIRST_COL(pPivotRow), pSIZE_FIRST_COL(pPivotRow) );
 
@@ -1546,12 +1546,13 @@ SkeepFirstMergeOperation:;
  * @param Mult int
  * @return int
 */
-int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat, int Mult)
+inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat, int Mult)
 {
 	SD_TMP_ROW_BLOCK_DATA *pTmpRowBlock;
 	SD_ROW_BLOCK_DATA     *pRowBlock;
 	SD_COL_BLOCK_DATA     *pColBlock;
-	int                    k, nTotCol, nTotColBlock, MaxColBlock, *pFirstColBlock, *pSizeColBlock;
+	int                    k, nTotCol, nTotColBlock, *pFirstColBlock, *pSizeColBlock;
+	size_t MaxColBlock;
 
 	memset( pMat, 0, sizeof(SD_BLOCK_MATRIX_DATA) );
 	pMat->Dim        = pTmpMat->nRow*Mult;
@@ -1572,7 +1573,8 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 	for( k = pMat->nRowBlock, pFirstColBlock = pMat->pFirstColBlock, pSizeColBlock = pMat->pSizeColBlock, nTotCol = 0,
 		nTotColBlock = 0, MaxColBlock = 0, pTmpRowBlock = pTmpMat->pRowBlock; k>0; k--, pTmpRowBlock++ )
 	{
-		int nCol, nColBlock;
+		int nCol;
+		size_t nColBlock;
 
 		for ( pColBlock = pTmpRowBlock->Data.ColBlock, nCol = 0, nColBlock = 0; pColBlock;
 				pColBlock = pColBlock->Next, nColBlock++, pFirstColBlock++, pSizeColBlock++ ) {
@@ -1673,6 +1675,20 @@ int ReleaseBlockMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 
 }  // ReleaseBlockMatrix
 
+inline void SD_ALLOC_COL(const size_t& N_COL, SD_CON_MATRIX_DATA *pMAT) 
+{
+	SD_ALLOC_CHUNK((pMAT)->PoolCol, sizeof(SD_COL_DATA)*N_COL);
+	(pMAT)->FreeCol = ( SD_COL_DATA * ) (pMAT)->PoolCol.pChunks[ (pMAT)->PoolCol.nChunks-1 ];
+	(pMAT)->nFreeCol = N_COL;
+}
+
+inline void SD_GET_COL(SD_COL_DATA *pCOL, SD_CON_MATRIX_DATA *pMAT) 
+{
+	if  ( !(pMAT)->nFreeCol )  SD_ALLOC_COL(SD_N_ALLOC_COL, pMAT);
+	pCOL = (pMAT)->FreeCol++;
+	(pMAT)->nFreeCol--;
+}
+
 /**
 * @brief This function assemble the element connnectivity for one or more elements in order to build
 * a sparse matrix format. Of course we only store the upper part of the connectivity matrix
@@ -1695,13 +1711,13 @@ int ds_DefineConnectivity(SD_MATRIX_DATA *pMat0, int nEq, int Eq[], int nEl, int
 
 	for (e = 0; e < nEl; Eq += Dim, e++) {
 		for (i = 0; i < nEq; i++) {
-			Row_i  = Eq[i];
+			Row_i  = static_cast<size_t>(Eq[i]);
 			pRow_i = &SD_ROW(Row_i, pMat);
 
 			for (j = 0; j < nEq; j++) {
 				size_t Col_j, Found;
-				SD_COL_DATA **ppC, *pCol;
-				Col_j  = Eq[j];
+				SD_COL_DATA **ppC, *pCol=NULL;
+				Col_j  = static_cast<size_t>(Eq[j]);
 				if ( Row_i == Col_j ) {
 					continue;
 				}
