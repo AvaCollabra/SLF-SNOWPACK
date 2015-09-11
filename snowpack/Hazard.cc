@@ -87,7 +87,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	*/
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
 
-	nHz = static_cast<size_t>( floor( (duration / (hazard_steps_between * sn_dt)) ) + 2 );
+	nHz = static_cast<unsigned int>( floor( (duration / (static_cast<double>(hazard_steps_between) * sn_dt)) ) + 2 );
 	if (nHz == 0) nHz = 1;
 }
 
@@ -105,6 +105,7 @@ void Hazard::actOnVector(std::vector<double>& oldVector, const double& newValue,
 			for(size_t ii=oldVector.size()-1; ii>0; ii--) {
 				oldVector[ii] = oldVector[ii-1];
 			}
+			oldVector[0] = newValue;
 			break;
 		case overwrite: // ... overwrite oldVector[0]
 			oldVector[0] = newValue;
@@ -125,11 +126,11 @@ void Hazard::actOnVector(std::vector<double>& oldVector, const double& newValue,
 void Hazard::initializeHazard(std::vector<double>& old_drift, double slope_angle,
                               std::vector<ProcessDat>& Hdata, std::vector<ProcessInd>& Hdata_ind)
 {
-	Hdata.resize((unsigned)nHz, ProcessDat());
-	Hdata_ind.resize((unsigned)nHz, ProcessInd());
+	Hdata.resize(nHz, ProcessDat());
+	Hdata_ind.resize(nHz, ProcessInd());
 
-	Hdata[0].nHz = (signed)nHz;
-	Hdata[nHz-1].nHz = (signed)nHz;
+	Hdata[0].nHz = nHz;
+	Hdata[nHz-1].nHz = nHz;
 
 	Hdata[0].wind_trans = compDriftIndex(old_drift, Constants::undefined, Hazard::wind_slab_density, 6, slope_angle, noAction);
 	Hdata[0].wind_trans24 = compDriftIndex(old_drift, Constants::undefined, Hazard::wind_slab_density, 24, slope_angle, noAction);
@@ -398,7 +399,7 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.swe = Sdata.mass[SurfaceFluxes::MS_SWE];
 	Hdata.tot_lwc = Sdata.mass[SurfaceFluxes::MS_WATER];
 	// Runoff rate (kg m-2 h-1)
-	Hdata.runoff /= S_TO_H(sn_dt * hazard_steps_between);
+	Hdata.runoff /= S_TO_H(sn_dt * static_cast<double>(hazard_steps_between));
 
 	// Profile type
 	if ((Xdata.S_class1 <= 10) && (Xdata.S_class1 >= 0))

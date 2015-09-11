@@ -690,43 +690,6 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 #endif
 
 /*
-* This macro compute for a matrix stored packed row-wise in a one dimensional array the
-* position of a diagonal element in a given row.
-*/
-
-//#define DIAGONAL(DIM,K) ( (K)*(DIM) -( (K)*((K)-1) )/2 )
-
-/*
-* A linear search is performed in the row pROW to find the column COL. This macro use the
-* column value of the next column block to determine in which column block the column is to
-* be found. In this case the dimension of the search array is set to the number of column
-* block minus one. If the column block is not found, the block can only be the last defined
-* column block. NOTE: Here we are forced to perform a linear search because we have to
-* compute the total number of column coefficients defined prior the founded column block. A
-* binary search could be used if instead of the column block size we store the sum of defined
-* column coefficients. This is of course possible and only little change in the software are
-* necessary, however, in this case we can no more pack in one integer the data for a column
-* block definition.
-*/
-
-/*#define SEARCH_COL(COL, ROW, pMAT, pROW, FOUND, OFFSET)                                        \
-{  int *col_, *size_;                                                   \
-   col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);                                                 \
-   size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);                                                 \
-   const int delta_   = ROW - pROW->Row0;                                                                \
-   OFFSET   = pROW->iFloat + DIAGONAL((int)pROW->nCol, delta_);                                     \
-   {  ++col_;                                                                                  \
-      for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++)                 \
-      {  if ( COL < col_[0] )  break;  }                                                       \
-       --col_;                                                                                 \
-      if ( COL >= col_[0]+size_[0] ) {  FOUND = 0; }                                           \
-      else                           {  FOUND = 1;  OFFSET += COL - col_[0] - delta_;  }       \
-   }                                                                                           \
-}*/
-
-
-
-/*
  * END MACRO DEFINITIONS
  */
 

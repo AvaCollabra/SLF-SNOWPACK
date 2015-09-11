@@ -215,22 +215,20 @@ inline void SEARCH_COL(const int& COL, const int& ROW, const SD_BLOCK_MATRIX_DAT
 	int *col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);
 	int *size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);
 	const size_t delta_   = ROW - pROW->Row0;
-	OFFSET   = pROW->iFloat + DIAGONAL(pROW->nCol, delta_);
-	{  ++col_;
-		for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++) {  
-			if ( COL < col_[0] )
-				break;
-		}
-		--col_;
-		if ( COL >= col_[0]+size_[0] ) FOUND = 0;
-		else {
-			FOUND = 1;
-			OFFSET += COL - col_[0] - delta_;
-		}
+	OFFSET   = pROW->iFloat + static_cast<int>(DIAGONAL(pROW->nCol, delta_));
+	++col_;
+	for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++) {  
+		if ( COL < col_[0] )
+			break;
+	}
+	--col_;
+	if ( COL >= col_[0]+size_[0] ) {
+		FOUND = 0;
+	} else {
+		FOUND = 1;
+		OFFSET += COL - col_[0] - static_cast<int>(delta_);
 	}
 }
-
-
 
 /*
  * Beginning of NumFact.c

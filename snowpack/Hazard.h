@@ -77,7 +77,7 @@ class Hazard {
 		void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
 		bool research_mode, enforce_measured_snow_heights, force_rh_water;
-		size_t nHz, hazard_steps_between;
+		unsigned int nHz, hazard_steps_between;
 		double sn_dt;
 		double hoar_density_surf, hoar_min_size_surf;
 };
