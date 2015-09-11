@@ -47,6 +47,10 @@
 using namespace std;
 using namespace mio;
 
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
 
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
@@ -2163,7 +2167,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 							track_accuracy_theta=fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water));
 						}
 						//Now check against convergence criterion:
-						if(fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water)>REQUIRED_ACCURACY_THETA)) {
+						if( fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water)) > REQUIRED_ACCURACY_THETA ) {
 							trigger_layer_accuracy=i;
 							accuracy=fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water));
 						}
@@ -2714,3 +2718,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		std::cout << " BS_avg_iter: " << double(double(bs_stats_totiter)/double(stats_niters*nsoillayers_richardssolver)) << " BS_max_iter: " << bs_stats_maxiter << "\n";
 	}
 }
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif

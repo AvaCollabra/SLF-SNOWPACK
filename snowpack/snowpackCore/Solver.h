@@ -558,8 +558,6 @@ typedef  SD_MATRIX_DATA MYTYPE;
 
 
 #define ERROR_SOLVER(MSG)      { printf("++++Errror:%s:%d:%s\n", __FILE__, __LINE__, MSG); return(1); }
-#define USER_ERROR(MSG) { printf(ErrMsg, MSG); return 1; }
-#define EXIT(MSG)  {  printf("++++Exit:%s:%d:%s\n", __FILE__, __LINE__, MSG);  exit(1);   }
 
 
 #define MAX_MULT 100 /* a very big value */
@@ -696,7 +694,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 * position of a diagonal element in a given row.
 */
 
-#define DIAGONAL(DIM,K) ( (K)*(DIM) -( (K)*((K)-1) )/2 )
+//#define DIAGONAL(DIM,K) ( (K)*(DIM) -( (K)*((K)-1) )/2 )
 
 /*
 * A linear search is performed in the row pROW to find the column COL. This macro use the
@@ -711,7 +709,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 * block definition.
 */
 
-#define SEARCH_COL(COL, ROW, pMAT, pROW, FOUND, OFFSET)                                        \
+/*#define SEARCH_COL(COL, ROW, pMAT, pROW, FOUND, OFFSET)                                        \
 {  int *col_, *size_;                                                   \
    col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);                                                 \
    size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);                                                 \
@@ -724,7 +722,7 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
       if ( COL >= col_[0]+size_[0] ) {  FOUND = 0; }                                           \
       else                           {  FOUND = 1;  OFFSET += COL - col_[0] - delta_;  }       \
    }                                                                                           \
-}
+}*/
 
 
 

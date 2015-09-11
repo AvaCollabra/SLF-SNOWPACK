@@ -54,6 +54,9 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
         hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata)
 
 {
+	if (duration<=0.)
+		throw InvalidArgumentException("Hazard duration must be >0", AT);
+	
 	/**
 	 * @brief Defines how the height of snow is going to be handled
 	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (PSUM)
@@ -84,7 +87,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	*/
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
 
-	nHz = static_cast<size_t>(floor( (duration / (hazard_steps_between * sn_dt)) ) + 2);
+	nHz = static_cast<size_t>( floor( (duration / (hazard_steps_between * sn_dt)) ) + 2 );
 	if (nHz == 0) nHz = 1;
 }
 

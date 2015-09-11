@@ -376,7 +376,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		}
 		return val*ratio;
 	}
-	throw IOException("Unable to perform unit conversion.", AT);
+	throw IOException("Unable to perform unit conversion.", AT); //if we don't missuse the method, this should never be reached
 }
 
 /**

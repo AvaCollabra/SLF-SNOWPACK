@@ -1702,47 +1702,52 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, doub
 
 	// Scaling of results with CanopyClosureDiffuse and CanopyClosureDirect
 	const double  CanopyClosureDiffuse = 1. - Xdata.Cdata.direct_throughfall;
-	double CanClosDirLeaves, CanClosDirTrunks;
-        if (Twolayercanopy) {
-		if (canopytransmission) {
-			CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev);
-			CanClosDirTrunks = 0;
-			// below (optional): if uncommented, allows direct solar insolation of the trunks
-			//      CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height*(1. - trunk_frac_height), CanopyClosureDiffuse, Mdata.elev);
-			//      CanClosDirTrunks = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev)- CanClosDirLeaves;
-		} else {
-			CanClosDirLeaves =  CanopyClosureDiffuse;
-			CanClosDirTrunks = 0.;
-		}
-	}
-
-	// Shortwave fluxes (diffuse)
-	*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-	*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-	*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-
-	// Shortwave fluxes (direct)
-	if (Twolayercanopy){
+	
+	 if (Twolayercanopy) {
+		 double CanClosDirLeaves = (canopytransmission)? CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev) : CanopyClosureDiffuse;
+		 double CanClosDirTrunks = 0;
+		 /*if (canopytransmission) { // below (optional): if uncommented, allows direct solar insolation of the trunks
+			CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height*(1. - trunk_frac_height), CanopyClosureDiffuse, Mdata.elev);
+			CanClosDirTrunks = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev)- CanClosDirLeaves;
+		}*/
+		 
+		 // Shortwave fluxes (diffuse)
+		*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		
+		// Shortwave fluxes (direct)
 		*rswrac += (rswrac_loc2 * CanClosDirLeaves + rswrac_loc3 * CanClosDirTrunks + (*iswrac) * ag * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) * RadFracDirect;
 		*iswrbc += (iswrbc_loc2 * CanClosDirLeaves + iswrbc_loc3 * CanClosDirTrunks + (*iswrac) * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) * RadFracDirect;
 		*rswrbc += (rswrbc_loc2 * CanClosDirLeaves + rswrbc_loc3 * CanClosDirTrunks + (*iswrac) * ag * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) *RadFracDirect;
-	} else{
-		*rswrac += (rswrac_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) * RadFracDirect;
-		*iswrbc += (iswrbc_loc2 * CanopyClosureDirect + (*iswrac) * (1.0 - CanopyClosureDirect)) * RadFracDirect;
-		*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
-	}
-	// Longwave fluxes (treat as diffuse)
-	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
-	*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
-	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
-
-	// For 2layercanopy : radiations to trunks
-	if(Twolayercanopy){
+		
+		// Longwave fluxes (treat as diffuse)
+		*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
+		*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		
+		// radiations to trunks
 		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * (*iswrac) * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse
 				+ CanClosDirLeaves * RadFracDirect *(*iswrac) * (1. -sigf) * (1.-trunkalb)*(1. - attfactor_SWdir)
                                 + CanClosDirTrunks *  RadFracDirect *(*iswrac) * (1.-trunkalb)*(1. - attfactor_SWdir) ;
 		Xdata.Cdata.LWnet_Trunks = RAT  * CanopyClosureDiffuse ;
-	}
+		 
+	 } else {
+		 // Shortwave fluxes (diffuse)
+		*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		
+		// Shortwave fluxes (direct)
+		*rswrac += (rswrac_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) * RadFracDirect;
+		*iswrbc += (iswrbc_loc2 * CanopyClosureDirect + (*iswrac) * (1.0 - CanopyClosureDirect)) * RadFracDirect;
+		*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
+		
+		// Longwave fluxes (treat as diffuse)
+		*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
+		*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+	 }
 }
 
 /**

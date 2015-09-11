@@ -184,7 +184,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 			if ((Pdata[l_lower].marker != 3) && (Pdata[l_upper].marker != 3)) {
 				if (joinSimilarLayers(l_upper, Pdata)) {
 					Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
-					Pdata.erase(Pdata.begin()+l_upper);
+					Pdata.erase(Pdata.begin()+static_cast<ptrdiff_t>(l_upper));
 					L0_lower += L0_upper;
 				}
 			}
@@ -211,7 +211,7 @@ size_t Aggregate::aggregate(std::vector<SnowProfileLayer>& Pdata)
 						if (mergeThinLayer(l_upper, Pdata)
 							    || (L0_lower < min_l_element) || (L0_upper < min_l_element)) {
 							Pdata[l_lower].average(L0_lower, L0_upper, Pdata[l_upper]);
-							Pdata.erase(Pdata.begin()+l_upper);
+							Pdata.erase(Pdata.begin()+static_cast<ptrdiff_t>(l_upper));
 							L0_lower += L0_upper;
 							flag = false;
 						} else {

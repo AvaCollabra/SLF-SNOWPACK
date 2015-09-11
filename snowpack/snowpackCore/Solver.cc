@@ -8,12 +8,12 @@
 */
 
 #include <snowpack/snowpackCore/Solver.h>
+#include <meteoio/MeteoIO.h>
 #include <iostream>
 
 /*
 * DEFINE STATEMENTS
 */
-static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
 static bool gd_MemErr;
 
 /*
@@ -62,7 +62,7 @@ int ds_Initialize(size_t MatDim, int Multiplicity, MYTYPE **ppMat)
 * unused. ATTENTION: This function change the value of N[0] which is first set to N_COL and then
 * is changed continously.
 */
-void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
+inline void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
                          double *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
 {
 	int n_k, k__;
@@ -87,11 +87,11 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 	// SymbolicFactorize
 	if ( Code & SymbolicFactorize ){
 		if ( Code & NumericFactorize ){
-			USER_ERROR("You cannot invert the matrix symbolically and numerically contemporary");
+			throw mio::IOException("You cannot invert the matrix symbolically and numerically contemporary", AT);
 		}
 
 		if ( pMat->State != ConMatrix ){
-			USER_ERROR("Bad Matrix Format for Symbolic Factorization");
+			throw mio::IOException("Bad Matrix Format for Symbolic Factorization", AT);
 		}
 
 		SymbolicFact(pMat);
@@ -100,7 +100,7 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 	// NumericFactoriz
 	if ( Code & NumericFactorize ){
 		if (  pMat->State != BlockMatrix ){
-			USER_ERROR("Bad Matrix Format for Numerical Factorization");
+			throw mio::IOException("Bad Matrix Format for Numerical Factorization", AT);
 		}
 		InvertMatrix( &pMat->Mat.Block );
 		// PrintNumMatrix(&pMat->Mat.Block,1);
@@ -109,7 +109,7 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 	// BackForwardSubst
 	if ( Code & BackForwardSubst ){
 		if (  pMat->State != BlockMatrix ){
-			USER_ERROR("Bad Matrix Format for Back- For-ward Substitution");
+			throw mio::IOException("Bad Matrix Format for Back- For-ward Substitution", AT);
 		}
 		const int DimTot = (int)pMat->Mat.Block.Dim + pMat->nDeletedEq;
 		const int Mult   = pMat->Multiplicity;
@@ -133,14 +133,14 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 	// ResetMatrixData
 	if ( Code & ResetMatrixData ){
 		if ( Code != ResetMatrixData ){
-			USER_ERROR("You cannot reset the matrix together with other operations");
+			throw mio::IOException("You cannot reset the matrix together with other operations", AT);
 		}
 
 		if ( pMat->State != BlockMatrix ){
-			USER_ERROR("Bad Matrix Format to reset matrix");
+			throw mio::IOException("Bad Matrix Format to reset matrix", AT);
 		}
 
-		memset( pMat->Mat.Block.pUpper, 0, pMat->Mat.Block.SizeUpper * sizeof(double) );
+		memset( pMat->Mat.Block.pUpper, 0, static_cast<size_t>(pMat->Mat.Block.SizeUpper) * sizeof(double) );
 	}
 
    	// ReleaseMatrixData
@@ -158,37 +158,7 @@ int ds_Solve( SD_MATRIX_WHAT Code, MYTYPE *pMat, double *X)
 
 }  /* ds_Solve */
 
-
-int ds_InitializeBoeing(int MatDim, int *pxConCon, double *pData, MYTYPE **ppMat)
-{
-	ds_Initialize(MatDim, 0, ppMat);
-
-	for(int Row=0; Row<MatDim; Row++){
-		int nCol, *pCol, Inc[2];
-		Inc[0] = Row;
-		nCol = pxConCon[Row+1] - pxConCon[Row];
-		pCol = pxConCon + pxConCon[Row] - 1 ;
-		for(int Col=0; Col<nCol; Col++){
-			Inc[1] = pCol[Col] - 1;
-			ds_DefineConnectivity( *ppMat, 2, Inc, 1, 0);
-		}
-	}
-
-	SymbolicFact(*ppMat);
-
-	for(int Row=0; Row<MatDim; Row++){
-		int nCol, *pCol;
-		nCol = pxConCon[Row+1] - pxConCon[Row];
-		pCol = pxConCon + pxConCon[Row] - 1 ;
-		ds_AssembleRowCoeff(*ppMat, Row, nCol, pCol, pData[Row], pData + pxConCon[Row] - 1 );
-	}
-
-	return 0;
-
-}  /* ds_InitializeBoeing */
-
-
-int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pSize)
+inline int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pSize)
 {
 	SD_CON_MATRIX_DATA   *pMat = &pMat0->Mat.Con;
 	int *pRowStart, *pColumn;
@@ -220,6 +190,45 @@ int ds_MatrixConnectivity( MYTYPE *pMat0, int *pMatDim, int **ppxConCon, int *pS
 
 }  /* ds_MatrixConnectivity */
 
+
+/*
+* This macro compute for a matrix stored packed row-wise in a one dimensional array the
+* position of a diagonal element in a given row.
+*/
+inline size_t DIAGONAL(const size_t& DIM, const size_t& K){
+	return ( (K)*(DIM) -( (K)*((K)-1) )/2 );
+}
+
+/*
+* A linear search is performed in the row pROW to find the column COL. This macro use the
+* column value of the next column block to determine in which column block the column is to
+* be found. In this case the dimension of the search array is set to the number of column
+* block minus one. If the column block is not found, the block can only be the last defined
+* column block. NOTE: Here we are forced to perform a linear search because we have to
+* compute the total number of column coefficients defined prior the founded column block. A
+* binary search could be used if instead of the column block size we store the sum of defined
+* column coefficients. This is of course possible and only little change in the software are
+* necessary, however, in this case we can no more pack in one integer the data for a column
+* block definition.
+*/
+inline void SEARCH_COL(const int& COL, const int& ROW, const SD_BLOCK_MATRIX_DATA *pMAT, const SD_ROW_BLOCK_DATA *pROW, int &FOUND, int &OFFSET) {  
+	int *col_     = SD_P_FIRST_COL_BLOCK(pMAT,pROW);
+	int *size_    = SD_P_SIZE_COL_BLOCK( pMAT,pROW);
+	const size_t delta_   = ROW - pROW->Row0;
+	OFFSET   = pROW->iFloat + DIAGONAL(pROW->nCol, delta_);
+	{  ++col_;
+		for(int i_=pROW->nColBlock-1; (i_--)>0; OFFSET += size_[0], col_++, size_++) {  
+			if ( COL < col_[0] )
+				break;
+		}
+		--col_;
+		if ( COL >= col_[0]+size_[0] ) FOUND = 0;
+		else {
+			FOUND = 1;
+			OFFSET += COL - col_[0] - delta_;
+		}
+	}
+}
 
 
 
@@ -1259,7 +1268,7 @@ n1000:
  * @param pColumn0 int
  * @return int
 */
-int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn0)
+inline int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn0)
 {
 	int i, *pRowStart, *pColumn;
 	SD_ROW_DATA *pRow;
@@ -1283,7 +1292,7 @@ int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn
  * @param pMat SD_CON_MATRIX_DATA
  * @return int
 */
-int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
+inline int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
 {
 	int *head;     /* array 0..maxN */
 	const int maxint = 32000;   /* use a better value */
@@ -1330,11 +1339,11 @@ int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
  * @param pMat SD_TMP_CON_MATRIX_DATA
  * @return int
 */
-int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
+inline int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 {
 	if ( sizeof(SD_ROW_BLOCK_DATA)     != sizeof(SD_TMP_ROW_BLOCK_DATA ) ||
 		sizeof(SD_TMP_ROW_BLOCK_DATA) >  sizeof(SD_ROW_BLOCK_DATA)         ) {
-		EXIT("DATA STRUCTURE INCOMPATIBILITY");
+		throw mio::IOException("DATA STRUCTURE INCOMPATIBILITY", AT);
 	}
 
 	// First allocate definetively the matrix row block data
@@ -1423,7 +1432,7 @@ int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 }  // ComputeTmpConMatrix
 
 
-void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TMP_CON_MATRIX_DATA *pMAT)
+inline void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TMP_CON_MATRIX_DATA *pMAT)
 {
 	SD_COL_BLOCK_DATA  *pUp_, *pLo_, **ppLo_, *pC_;
 
@@ -1476,7 +1485,7 @@ void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TM
  * @param pMat SD_TMP_CON_MATRIX_DATA
  * @return int
 */
-int  ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat)
+inline int ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat)
 {
 	#define pFIRST_COL_BLOCK(pROW_BLOCK)  ( ( (SD_TMP_ROW_BLOCK_DATA *)pROW_BLOCK)->Data.ColBlock )
 	/*
@@ -1589,7 +1598,7 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 		nTotColBlock    += nColBlock;
 	}
 	if ( nTotColBlock != pTmpMat->nColBlock ) {
-		EXIT("Wrong column block count");
+		throw mio::IOException("Wrong column block count", AT);
 	}
 
 	/*

@@ -128,7 +128,7 @@ ELSE(MSVC)
 		SET(PROFILING "-pg") #add ${PROFILING} to the CFLAGS when necessary
 		SET(EXTRA "${EXTRA} -fcolor-diagnostics") #-fapple-pragma-pack does not seems necessary; -ftrapv should be replaced by sanitize=integer
 		SET(OPTIM "${OPTIM} -flto")
-		SET(WARNINGS "${WARNINGS} -Weverything -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-global-constructors -Wno-exit-time-destructors") #obviously, we should try to fix the warnings!
+		SET(WARNINGS "${WARNINGS} -Weverything -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-global-constructors -Wno-exit-time-destructors -Wno-sign-conversion") #obviously, we should try to fix the warnings!
 		SET(DEEP_WARNINGS "${DEEP_WARNINGS} -Rpass=.*")
 		SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
 			IF (LEAKS_CHECK)
