@@ -320,7 +320,7 @@ int ds_DefineConnectivity( SD_MATRIX_DATA *const pMat0, const int& nEq, int Eq[]
  * @param Multiplicity Multiplicity factor with value >= 1
  * @param ppMat A pointer to an opaque data type storing data related to the matrix [A]
  */
-int ds_Initialize( const size_t& MatDim, int Multiplicity, SD_MATRIX_DATA **ppMat );
+void ds_Initialize( const size_t& MatDim, int Multiplicity, SD_MATRIX_DATA **ppMat );
 
 /**
 * @brief This function assemble the element square matrix [ElMat] for one element with nEq*M x nEq*M
