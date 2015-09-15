@@ -319,17 +319,24 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";*/
 	const size_t posE=sqlInsertProfile.find_last_of('(');
 	cerr << "\n[E] SDB querry       :  " << sqlInsertProfile.substr(0, posE) << "(";
+	
+	string profileDate(  "to_date('" + Pdata.profileDate.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( profileDate.begin(), profileDate.end(), 'T', ' ');
+	string depositionDate( "to_date('" + Pdata.depositionDate.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( depositionDate.begin(), depositionDate.end(), 'T', ' ');
+	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
 
-	cerr << "to_char('" << Pdata.profileDate.toString(mio::Date::ISO) << "', 'yyyy-mm-dd hh24:mi:ss')" << "," << Pdata.stationname << ",";
-	cerr << setw(12) << setprecision(8) << Pdata.height << "," << Pdata.depositionDate.toString(mio::Date::ISO) << ",";
+	cerr << profileDate << ",'" << Pdata.stationname << "'," << Pdata.loc_for_snow << ",";
+	cerr << setw(12) << setprecision(8) << Pdata.height << "," << depositionDate << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
 	cerr << Pdata.v_strain_rate << ",";
 	cerr << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
 	cerr << Pdata.grain_size << "," << Pdata.bond_size << "," << Pdata.type << ",";
-	cerr << info.version << "," << "to_char('" << info.computation_date.toString(mio::Date::ISO) << "', 'yyyy-mm-dd hh24:mi:ss')";
+	cerr << info.version << "," << compDate;
 
-	cerr << "\n";
+	cerr << ")\n";
 }
 
 void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const
@@ -340,7 +347,12 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	const size_t posE=sqlInsertHdata.find_last_of('(');
 	cerr << "\n[E] SDB querry       :  " << sqlInsertHdata.substr(0, posE) << "(";
 	
-	cerr << "to_char('" << Hdata.date.toString(mio::Date::ISO) << "', 'yyyy-mm-dd hh24:mi:ss')" << "," << Hdata.stat_abbrev << ",";
+	string profileDate( "to_date('" + Hdata.date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( profileDate.begin(), profileDate.end(), 'T', ' ');
+	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
+	
+	cerr << profileDate << "," << Hdata.stat_abbrev << ",";
 	cerr << setw(12) << setprecision(8);
 	if (Hdata_ind.dewpt_def != -1) cerr << Hdata.dewpt_def << ",";
 	else cerr << "NULL,";
@@ -423,7 +435,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.t_top2 != -1)  cerr << Hdata.t_top2 << "";
 	else cerr << "NULL,";
 	cerr << "\t";
-	cerr << info.version << "," << "to_char('" << info.computation_date.toString(mio::Date::ISO) << "', 'yyyy-mm-dd hh24:mi:ss'),";
+	cerr << info.version << "," << compDate << ",";
 	
 	if (Hdata_ind.swe != -1)      cerr << Hdata.swe << ",";
 	else cerr << "NULL,";
@@ -436,7 +448,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.lwi_S != -1)   cerr << Hdata.lwi_S << "";
 	else cerr << "NULL";
 
-	cerr << "\n";
+	cerr << ")\n";
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
