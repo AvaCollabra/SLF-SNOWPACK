@@ -33,7 +33,6 @@
 #include <snowpack/Laws_sn.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/Stability.h>
-#include <snowpack/snowpackCore/Solver.h>
 #include <snowpack/snowpackCore/WaterTransport.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/Aggregate.h>

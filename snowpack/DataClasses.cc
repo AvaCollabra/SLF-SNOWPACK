@@ -27,6 +27,7 @@
 #include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Canopy.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/Solver.h>
 #include <assert.h>
 
 using namespace mio;
@@ -1419,7 +1420,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 
 SnowStation::~SnowStation()
 {
-	MYTYPE* pMat = (MYTYPE*) Kt;
+	SD_MATRIX_DATA* pMat = (SD_MATRIX_DATA*) Kt;
 
 	if (pMat != NULL) {
 		if ( pMat->State == ConMatrix ){
