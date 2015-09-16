@@ -54,6 +54,11 @@
  * @author GUIDO SARTORIS  ETH ZUERICH
  */
 
+typedef struct SD_COL_BLOCK_DATA
+{
+	size_t Col0, Col1;
+	struct SD_COL_BLOCK_DATA  *Next;
+} SD_COL_BLOCK_DATA;
 
 /**
  * @struct SD_CHUNK_DATA
@@ -65,9 +70,8 @@ typedef struct
 {
 	int     nChunks;
 	int     pChunksSize;
-	char   **pChunks;
+	SD_COL_BLOCK_DATA   **pChunks;
 	int     TotChunkSize;
-
 } SD_CHUNK_DATA;
 
 /**
@@ -150,12 +154,6 @@ typedef struct
 * reallocation and movement of data.
 */
 
-typedef struct SD_COL_BLOCK_DATA
-{
-	size_t Col0, Col1;
-	struct SD_COL_BLOCK_DATA  *Next;
-} SD_COL_BLOCK_DATA;
-
 typedef union
 {
 	SD_ROW_BLOCK_DATA     UnusedData;
@@ -207,10 +205,6 @@ typedef  struct
 		SD_BLOCK_MATRIX_DATA    Block;
 	}  Mat;
 }  SD_MATRIX_DATA;
-
-typedef struct  {
-	int *pC0, *pSize;
-} pBLOCK;
 
 typedef enum SD_MATRIX_WHAT
 {
