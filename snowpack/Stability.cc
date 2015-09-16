@@ -326,8 +326,6 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 			throw IOException(ss.str(), AT);
 		}
 	}
-
-	return IOUtils::nodata; //we should never come here
 }
 
 /**
@@ -1111,7 +1109,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	vector<double> deltaN(nE_s, 0.0);                          // Difference in hardness between layers in N
 
 	// Absolute and reduced hardness profiles (N)
-	for (int idx = static_cast<int>(nE_s)-1; idx >= 0; idx--) {
+	for(size_t idx = nE_s; idx --> 0; ) { //because it is decremented before executing anything
 		const size_t ii = idx+Xdata.SoilNode; //true element index
 		z_el[idx] = ( (NDS[ii].z + NDS[ii].u) + (NDS[ii+1].z + NDS[ii+1].u) ) * .5 / cos_sl;
 		L_el[idx] = EMS[ii].L/cos_sl;

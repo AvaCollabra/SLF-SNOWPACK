@@ -91,15 +91,18 @@ ELSE(MSVC)
 		LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
 	ENDIF(WIN32)
 	SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-	SET(ARCH_SAFE  "")
+	IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
+	ENDIF()
 	SET(DEBUG "-g3 -O0 -D__DEBUG")
 	IF(DEBUG_ARITHM)
 		SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 	ENDIF(DEBUG_ARITHM)
 	SET(_VERSION "-D_VERSION=\\\"${_versionString}\\\"")
 	
-	IF(CMAKE_COMPILER_IS_GNUCXX)
+	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
+		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wvector-operation-performance")
 		IF(NOT ANDROID)
 			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 			IF(WIN32) #for gcc on windows
@@ -113,14 +116,26 @@ ELSE(MSVC)
 		ENDIF()
 		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
 			SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
-			# if set to ON, all binaries depending on the library have to be compiled the same way. 
+			# if set to ON, all binaries depending on the library have to be compiled the same way.
 			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
-			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption")
+			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
 			IF (LEAKS_CHECK)
 				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
 			ENDIF(LEAKS_CHECK)
 		ENDIF()
-	ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+	ENDIF()
+	IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+		SET(PROFILING "-pg") #add ${PROFILING} to the CFLAGS when necessary
+		SET(EXTRA "${EXTRA} -fcolor-diagnostics") #-fapple-pragma-pack does not seems necessary; -ftrapv should be replaced by sanitize=integer
+		SET(OPTIM "${OPTIM} -flto")
+		SET(WARNINGS "${WARNINGS} -Weverything -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-global-constructors -Wno-exit-time-destructors -Wno-sign-conversion -Wno-covered-switch-default") #obviously, we should try to fix the warnings!
+		SET(DEEP_WARNINGS "${DEEP_WARNINGS} -Rpass=.*")
+		SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
+			IF (LEAKS_CHECK)
+				SET(EXTRA "${EXTRA} -ftrapv -fno-omit-frame-pointer") #-fsanitize=address,undefined,integer,undefined-trap but this is currently not supported by Apple
+			ENDIF(LEAKS_CHECK)
+		SET(ARCH_OPTIM  "-march=native")
+	ENDIF()
 
 ENDIF(MSVC)
 
@@ -323,10 +338,23 @@ ENDIF(INSTALL_DOC)
 
 IF(UNIX)
 	IF(APPLE)
-		SET(CPACK_GENERATOR "PackageMaker;")
-		SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}")
-		SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
+		SET(CPACK_GENERATOR "DragNDrop")
+		SET(CPACK_PACKAGING_INSTALL_PREFIX "/${CPACK_PACKAGE_NAME}")
+		SET(CPACK_DMG_FORMAT "UDBZ")
+		#SET(CPACK_GENERATOR "Bundle")
+		SET(CPACK_BUNDLE_PLIST "${CMAKE_SOURCE_DIR}/tools/snowpack.plist")
+		SET(MACOSX_BUNDLE_INFO_STRING "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 		SET(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
+		SET(MACOSX_BUNDLE_ICON_FILE "${CPACK_BUNDLE_ICON}")
+		SET(MACOSX_BUNDLE_GUI_IDENTIFIER "${CPACK_PACKAGE_DESCRIPTION}")
+		SET(MACOSX_BUNDLE_LONG_VERSION_STRING "${VERSION}")
+		SET(CPACK_BUNDLE_NAME "${CPACK_PACKAGE_NAME}")
+		SET(MACOSX_BUNDLE_BUNDLE_NAME "${CPACK_PACKAGE_NAME}")
+		SET(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION}")
+		SET(MACOSX_BUNDLE_BUNDLE_VERSION "0")
+		SET(MACOSX_BUNDLE_COPYRIGHT "${CPACK_PACKAGE_VENDOR}")
+		#SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}")
+		SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
 		SET_SOURCE_FILES_PROPERTIES(${CPACK_BUNDLE_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 		INSTALL(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink bin/snowpack /usr/bin/snowpack)")
 	ELSE(APPLE)
@@ -364,6 +392,7 @@ ELSE(UNIX)
 		IF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"bin/inishell.jar" "SNOWPACK inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
@@ -372,6 +401,7 @@ ELSE(UNIX)
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
 				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
@@ -379,11 +409,14 @@ ELSE(UNIX)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"bin/inishell.jar" "SNOWPACK inishell"
 				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
+				SET(CPACK_NSIS_MENU_LINKS 
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
 

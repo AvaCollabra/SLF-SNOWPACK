@@ -365,7 +365,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 	cfg.getValue("CANOPY_HEAT_MASS", "SnowpackAdvanced", CanopyHeatMass);
-        cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
+	cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
 	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy);
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 }
@@ -991,41 +991,6 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 }
 
 /**
- * @brief Objective: Derive an analytical expression for Ttrunk = f(TC) from the Trunk Energy Balance equation,
- *         to then solve easily the Canopy Energy Balance.
- * Method:      Trunk energy balance equation : rt0 + rt1 * Ttrunk + rt2 * TC = h0t + h1t *Ttrunk + let0 + let1 * Ttrunk + HMt0 + HMt1 * Ttrunk
- *                                      =>      Ttrunk = (ht0 + let0 + HMt0 - rt0 -  r2t *TC) / (r1t - ht1 -let1 -HMt1)
- *                              rewritten as :  Ttrunk = TT0/r2 + TT1/r2 * TC
- *                              so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC.
- * @param r2
- * @param rt0
- * @param rt1
- * @param ht0
- * @param ht1
- * @param let0
- * @param let1
- * @param HMt0
- * @param HMt1
- * @param TT0
- * @param TT1
- * @param TCANOPY
- * @param Ttrunk
- */
-void Canopy:: TrunkEnergyBalance(double r2, double rt0, double rt1, double rt2, double ht0, double ht1, double let0, double let1,
-                                          double HMt0, double HMt1, double &TT0, double &TT1, double TCANOPY, double &Ttrunk)
-{
-	if (Twolayercanopy) {
-		TT0 = r2 * (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1);
-		TT1 = -r2 * rt2 /(rt1 - ht1 -let1 -HMt1);
-		Ttrunk = (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1) - rt2 /(rt1 - ht1 -let1 -HMt1) * TCANOPY ;
-	} else {
-		TT0 = 0. ;
-		TT1 = 0. ;
-	}
-}
-
-
-/**
  * @brief the sensible heat flux is already a linear function of TC(t),
  * whould be different with stability corrections.
  * @param ch_canopy
@@ -1109,7 +1074,7 @@ void Canopy::CalculateHeatMass(const double& height, const double& BasalArea, do
  * @param HM0
  * @param HM1
  */
-void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  double DT, double scalingfactor)
+void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor)
 {
 	if (CanopyHeatMass) {
 		HM0 = -1.0 * scalingfactor * HM /H_TO_S(DT) *tc_old;
@@ -1702,47 +1667,52 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, doub
 
 	// Scaling of results with CanopyClosureDiffuse and CanopyClosureDirect
 	const double  CanopyClosureDiffuse = 1. - Xdata.Cdata.direct_throughfall;
-	double CanClosDirLeaves, CanClosDirTrunks;
-        if (Twolayercanopy) {
-		if (canopytransmission) {
-			CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev);
-			CanClosDirTrunks = 0;
-			// below (optional): if uncommented, allows direct solar insolation of the trunks
-			//      CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height*(1. - trunk_frac_height), CanopyClosureDiffuse, Mdata.elev);
-			//      CanClosDirTrunks = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev)- CanClosDirLeaves;
-		} else {
-			CanClosDirLeaves =  CanopyClosureDiffuse;
-			CanClosDirTrunks = 0.;
-		}
-	}
-
-	// Shortwave fluxes (diffuse)
-	*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-	*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-	*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
-
-	// Shortwave fluxes (direct)
-	if (Twolayercanopy){
+	
+	 if (Twolayercanopy) {
+		 double CanClosDirLeaves = (canopytransmission)? CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev) : CanopyClosureDiffuse;
+		 double CanClosDirTrunks = 0;
+		 /*if (canopytransmission) { // below (optional): if uncommented, allows direct solar insolation of the trunks
+			CanClosDirLeaves = CanopyShadeSoilCover(Xdata.Cdata.height*(1. - trunk_frac_height), CanopyClosureDiffuse, Mdata.elev);
+			CanClosDirTrunks = CanopyShadeSoilCover(Xdata.Cdata.height, CanopyClosureDiffuse, Mdata.elev)- CanClosDirLeaves;
+		}*/
+		 
+		 // Shortwave fluxes (diffuse)
+		*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		
+		// Shortwave fluxes (direct)
 		*rswrac += (rswrac_loc2 * CanClosDirLeaves + rswrac_loc3 * CanClosDirTrunks + (*iswrac) * ag * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) * RadFracDirect;
 		*iswrbc += (iswrbc_loc2 * CanClosDirLeaves + iswrbc_loc3 * CanClosDirTrunks + (*iswrac) * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) * RadFracDirect;
 		*rswrbc += (rswrbc_loc2 * CanClosDirLeaves + rswrbc_loc3 * CanClosDirTrunks + (*iswrac) * ag * (1.0 - CanClosDirTrunks - CanClosDirLeaves)) *RadFracDirect;
-	} else{
-		*rswrac += (rswrac_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) * RadFracDirect;
-		*iswrbc += (iswrbc_loc2 * CanopyClosureDirect + (*iswrac) * (1.0 - CanopyClosureDirect)) * RadFracDirect;
-		*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
-	}
-	// Longwave fluxes (treat as diffuse)
-	*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
-	*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
-	*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
-
-	// For 2layercanopy : radiations to trunks
-	if(Twolayercanopy){
+		
+		// Longwave fluxes (treat as diffuse)
+		*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
+		*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		
+		// radiations to trunks
 		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * (*iswrac) * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse
 				+ CanClosDirLeaves * RadFracDirect *(*iswrac) * (1. -sigf) * (1.-trunkalb)*(1. - attfactor_SWdir)
                                 + CanClosDirTrunks *  RadFracDirect *(*iswrac) * (1.-trunkalb)*(1. - attfactor_SWdir) ;
 		Xdata.Cdata.LWnet_Trunks = RAT  * CanopyClosureDiffuse ;
-	}
+		 
+	 } else {
+		 // Shortwave fluxes (diffuse)
+		*rswrac = (rswrac_loc * CanopyClosureDiffuse + (*iswrac) * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*iswrbc = (iswrbc_loc * CanopyClosureDiffuse + (*iswrac) * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		*rswrbc = (rswrbc_loc * CanopyClosureDiffuse + *iswrac * ag * (1.0 - CanopyClosureDiffuse)) * (1.0 - RadFracDirect);
+		
+		// Shortwave fluxes (direct)
+		*rswrac += (rswrac_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) * RadFracDirect;
+		*iswrbc += (iswrbc_loc2 * CanopyClosureDirect + (*iswrac) * (1.0 - CanopyClosureDirect)) * RadFracDirect;
+		*rswrbc += (rswrbc_loc2 * CanopyClosureDirect + (*iswrac) * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
+		
+		// Longwave fluxes (treat as diffuse)
+		*rlwrac = *rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+		*ilwrbc = *ilwrbc * CanopyClosureDiffuse + *ilwrac * (1.0 - CanopyClosureDiffuse);
+		*rlwrbc = *rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
+	 }
 }
 
 /**
@@ -1963,26 +1933,31 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		if (Twolayercanopy) {
 			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMLeaves, HM0, HM1, M_TO_H(calculation_step_length), 1.);
 			LineariseConductiveHeatFlux(Tt_previous_tstep, Xdata.Cdata.HMTrunks, HMt0, HMt1, M_TO_H(calculation_step_length), 1.);
-		} else {
-			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMTrunks, HM0, HM1, M_TO_H(calculation_step_length),  1.);
-		}
-
-		/* final canopy energy balance */
-                TrunkEnergyBalance(r2, rt0, rt1, rt2, ht0, ht1, let0, let1, HMt0,  HMt1, TT0, TT1, Xdata.Cdata.temp,Xdata.Cdata.Ttrunk);
-
-		if (Twolayercanopy) {
+			// final canopy energy balance
+			//Objective: Derive an analytical expression for Ttrunk = f(TC) from the Trunk Energy Balance equation, then solve easily the Canopy Energy Balance.
+			//Trunk energy balance equation : rt0 + rt1 * Ttrunk + rt2 * TC = h0t + h1t *Ttrunk + let0 + let1 * Ttrunk + HMt0 + HMt1 * Ttrunk
+			// =>      Ttrunk = (ht0 + let0 + HMt0 - rt0 -  r2t *TC) / (r1t - ht1 -let1 -HMt1) rewritten as :  Ttrunk = TT0/r2 + TT1/r2 * TC
+			// so that :       netradcanopy = r0 + r1 * TC + TT0 + TT1 * TC, to be solved for TC
+			TT0 = r2 * (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1);
+			TT1 = -r2 * rt2 /(rt1 - ht1 -let1 -HMt1);
+			Xdata.Cdata.Ttrunk = (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1) - rt2 /(rt1 - ht1 -let1 -HMt1) * Xdata.Cdata.temp ;
+			
 			CanopyEnergyBalance2L(h0, h1, le0, le1, HM0, HM1, TT0, TT1,
 					ce_canopy, ce_condensation,
 					r0, r1, r2, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, RNCANOPY, HCANOPY, LECANOPY);
 		} else {
+			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMTrunks, HM0, HM1, M_TO_H(calculation_step_length),  1.);
+			//final canopy energy balance
+			TT0 = 0. ;
+			TT1 = 0. ;
+			
 			CanopyEnergyBalance(h0, h1, le0, le1, HM0, HM1,
 					ce_canopy, ce_condensation,
 					r0, r1, Xdata.Cdata.temp, RNCANOPY, HCANOPY, LECANOPY);
 		}
-		/*
-		 * Partition latent heat flux on interception and transpiration
-		 * and correct energy balance for overestimated interception evaporation
-		*/
+
+		// Partition latent heat flux on interception and transpiration
+		// and correct energy balance for overestimated interception evaporation
 		if (Twolayercanopy) {
 			CanopyEvaporationComponents2L(ce_canopy, ce_transpiration, LECANOPY, Mdata.ta,
 						Xdata.Cdata.storage,

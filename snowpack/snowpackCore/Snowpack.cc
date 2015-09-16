@@ -25,6 +25,7 @@
  */
 
 #include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/snowpackCore/Solver.h>
 #include <snowpack/Meteo.h>
 #include <assert.h>
 
@@ -157,10 +158,10 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * @note { If SW_MODE == "BOTH", the input must hold both fluxes! } */
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 
-	/* Defines used atmospheric stability, used for determining if dynamic time steps may be required */
+	// Defines used atmospheric stability, used for determining if dynamic time steps may be required
 	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", atm_stability_model);
 
-	/* Allow dynamic time stepping in case of unstable atmospheric stratification */
+	// Allow dynamic time stepping in case of unstable atmospheric stratification
 	cfg.getValue("ALLOW_ADAPTIVE_TIMESTEPPING", "SnowpackAdvanced", allow_adaptive_timestepping);
 
 	/* Height of new snow element (m) [NOT read from CONSTANTS_User.INI] \n
@@ -335,10 +336,8 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 	// Compute the creep forces
 	Fc[0] = -Sc;
 	Fc[1] = Sc;
-	/*
-	 * Update the element force vector (NOTE: Assembled Fe[0..5]=0.0! if elastic
-	 * istropic solution WITHOUT creep.)
-	*/
+	// Update the element force vector (NOTE: Assembled Fe[0..5]=0.0! if elastic
+	 // istropic solution WITHOUT creep.)
 	Fe[0] = Fe[0]+Fc[0];
 	Fc[0] = Fe[0]-Fi[0];
 	Fe[1] = Fe[1]+Fc[1];
@@ -888,8 +887,8 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	}
 
 	if (Kt != NULL)
-		ds_Solve(ReleaseMatrixData, (MYTYPE*)Kt, 0);
-	ds_Initialize(nN, 0, (MYTYPE**)&Kt);
+		ds_Solve(ReleaseMatrixData, (SD_MATRIX_DATA*)Kt, 0);
+	ds_Initialize(nN, 0, (SD_MATRIX_DATA**)&Kt);
 	/*
 	 * Define the structure of the matrix, i.e. its connectivity. For each element
 	 * we compute the element incidences and pass the incidences to the solver.
@@ -899,7 +898,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	*/
 	for (size_t e = 0; e < nE; e++) {
 		int Nodes[2] = {(int)e, (int)e+1};
-		ds_DefineConnectivity( (MYTYPE*)Kt, 2, Nodes , 1, 0 );
+		ds_DefineConnectivity( (SD_MATRIX_DATA*)Kt, 2, Nodes , 1, 0 );
 	}
 
 	/*
@@ -912,7 +911,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	 * memory in order to store the numerical matrix. Then reallocate all the
 	 * solution vectors.
 	*/
-	ds_Solve(SymbolicFactorize, (MYTYPE*)Kt, 0);
+	ds_Solve(SymbolicFactorize, (SD_MATRIX_DATA*)Kt, 0);
 
 	// Make sure that these vectors are always available for use ....
 	errno=0;
@@ -1009,7 +1008,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	do {
 		iteration++;
 		// Reset the matrix data and zero out all the increment vectors
-		ds_Solve(ResetMatrixData, (MYTYPE*)Kt, 0);
+		ds_Solve(ResetMatrixData, (SD_MATRIX_DATA*)Kt, 0);
 		for (size_t n = 0; n < nN; n++) {
 			ddU[n] = dU[n];
 			dU[n] = 0.0;
@@ -1031,7 +1030,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				free(U); free(dU); free(ddU);
 				throw IOException("Runtime error in compTemperatureProfile", AT);
 			}
-			ds_AssembleMatrix( (MYTYPE*)Kt, 2, Ie, 2,  (double*) Se );
+			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
 		}
 
@@ -1045,7 +1044,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			EL_INCID(nE-1, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			neumannBoundaryConditions(Mdata, Bdata, Xdata, T0[1], TN[1], Se, Fe);
-			ds_AssembleMatrix( (MYTYPE*)Kt, 2, Ie, 2,  (double*) Se );
+			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
 		}
 
@@ -1054,7 +1053,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = static_cast<int>( nE );
-			ds_AssembleMatrix((MYTYPE*)Kt, 1, Ie, 1, &Big);
+			ds_AssembleMatrix((SD_MATRIX_DATA*)Kt, 1, Ie, 1, &Big);
 		}
 		// Bottom node
 		if ((Xdata.SoilNode > 0) && soil_flux) {
@@ -1062,7 +1061,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			EL_INCID(0, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			neumannBoundaryConditionsSoil(Bdata.qg, T0[1], Se, Fe);
-			ds_AssembleMatrix((MYTYPE*)Kt, 2, Ie, 2, (double*) Se);
+			ds_AssembleMatrix((SD_MATRIX_DATA*)Kt, 2, Ie, 2, (double*) Se);
 			EL_RGT_ASSEM(dU, Ie, Fe);
 		} else if ((Xdata.getNumberOfElements() < 3) && (Xdata.Edata[0].theta[WATER] >= 0.9 * Xdata.Edata[0].res_wat_cont)) {
 			dU[0] = 0.;
@@ -1070,7 +1069,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			// Dirichlet BC at bottom: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = 0;
-			ds_AssembleMatrix((MYTYPE*)Kt, 1, Ie, 1, &Big);
+			ds_AssembleMatrix((SD_MATRIX_DATA*)Kt, 1, Ie, 1, &Big);
 		}
 
 		/*
@@ -1078,7 +1077,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		 * hand-side vector for the linear system. The solver stores in this vector
 		 * the solution of the system of equations, the new temperature.
 		*/
-		ds_Solve( ComputeSolution, (MYTYPE*)Kt, dU );
+		ds_Solve( ComputeSolution, (SD_MATRIX_DATA*)Kt, dU );
 		// Update the solution vectors and check for convergence
 		for (size_t n = 0; n < nN; n++)
 			ddU[n] = dU[n] - ddU[n];

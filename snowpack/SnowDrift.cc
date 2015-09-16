@@ -87,7 +87,6 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 	const double binding = 0.0015 * sig * Edata.N3 * Optim::pow2(Edata.rb/Edata.rg);
 	const double tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
 	//const double ustar_thresh = sqrt(tau_thresh / Constants::density_air);
-	// fprintf(stdout, "weight: %lf   binding:%lf  tau_th:%lf\n",weight, binding, tau_thresh);
 	const double tau = Constants::density_air * Optim::pow2(ustar);
 
 	// First, look whether there is any transport at all: use formulation of Schmidt

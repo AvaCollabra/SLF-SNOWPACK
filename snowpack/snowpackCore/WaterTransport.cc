@@ -186,8 +186,6 @@ double WaterTransport::Bisection(const double minval, const double maxval, doubl
  */
 void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, const double WatCnt, const double SatuK, double &Rh, double &Rk)
 {
-	const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
-
 	// This is a very ill-confined piece of code!
 	if ( fabs(ThR) < Constants::eps2 ) {
 		ThR += Constants::eps;
@@ -198,54 +196,53 @@ void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, 
 	const double ThS = (1000. - (Dens / 0.917)) / 10.0 * 0.9 / 100.0;
 	const double LTh = (WatCnt-ThR) / (ThS - ThR);
 
-	if ( 1 ) { // NIED code
-		if (WatCnt <= ThR * 1.01) {
-			double SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
-			const double hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			SEffSub = ((ThR * 1.011) - ThR) / (ThS - ThR);
-			const double hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
-			const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			const double hSlo = (hL - hN) / (ThR * 0.002);
-			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
-		} else {
-			if (LTh > 1.) {
-				Rh = 0.;
-			} else {
-				Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
-			}
-		}
-		if (LTh < 0.) {
-			Rk = 0.;
-		} else {
-			if (LTh > 1.) {
-				Rk = SatuK;
-			} else {
-				Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
-			}
-		}
-	} else { //Fz 2010-05-02
-		if (WatCnt <= ThR * 1.01) {
-			double SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
-			const double hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			SEffSub = MAX( ((ThR * 1.011) - ThR) / (ThS - ThR) , avoid_neg);
-			const double hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
-			const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			const double hSlo = (hL - hN) / (ThR * 0.002);
-			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
-		}
-		if (LTh < 0.) {
-			Rk = 0.;
-			Rh = 0.; //What else?
-		} else if (LTh > 1.) {
+	if (WatCnt <= ThR * 1.01) {
+		double SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
+		const double hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		SEffSub = ((ThR * 1.011) - ThR) / (ThS - ThR);
+		const double hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
+		const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		const double hSlo = (hL - hN) / (ThR * 0.002);
+		Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+	} else {
+		if (LTh > 1.) {
 			Rh = 0.;
+		} else {
+			Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
+		}
+	}
+	if (LTh < 0.) {
+		Rk = 0.;
+	} else {
+		if (LTh > 1.) {
 			Rk = SatuK;
 		} else {
-			Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
 			Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 		}
 	}
+	//Fz 2010-05-02
+	/*const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
+	 if (WatCnt <= ThR * 1.01) {
+		double SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
+		const double hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		SEffSub = MAX( ((ThR * 1.011) - ThR) / (ThS - ThR) , avoid_neg);
+		const double hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
+		const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		const double hSlo = (hL - hN) / (ThR * 0.002);
+		Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+	}
+	if (LTh < 0.) {
+		Rk = 0.;
+		Rh = 0.; //What else?
+	} else if (LTh > 1.) {
+		Rh = 0.;
+		Rk = SatuK;
+	} else {
+		Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
+	}*/
 }
 
 /**

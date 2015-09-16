@@ -69,7 +69,7 @@ class Slope {
 		bool snow_erosion, mainStationDriftIndex;
 		bool snow_redistribution, luvDriftIndex;
 
-		int getSectorDir(const double& dir_or_expo) const;
+		unsigned int getSectorDir(const double& dir_or_expo) const;
 		void setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
@@ -95,10 +95,10 @@ class Cumsum {
  ************************************************************/
 
 //Global variables in this file:
-string cfgfile = "io.ini";
-string mode = "RESEARCH";
-mio::Date dateEnd;
-vector<string> vecStationIDs;
+static string cfgfile = "io.ini";
+static string mode = "RESEARCH";
+static mio::Date dateEnd;
+static vector<string> vecStationIDs;
 
 /// @brief Main control parameters
 struct MainControl
@@ -139,11 +139,11 @@ Slope::Slope(const mio::Config& cfg)
 }
 
 /**
- * @brief Determine either direction of blowing wind or slope exposition\n
- *        NOTE that station slope.first always corresponds to the prevailing wind direction
+ * @brief Determine either direction of blowing wind or slope exposition.
+ * NOTE that station slope.first always corresponds to the prevailing wind direction
  * @param dir_or_expo direction of wind or exposition
  **/
-int Slope::getSectorDir(const double& dir_or_expo) const
+unsigned int Slope::getSectorDir(const double& dir_or_expo) const
 {
 	double dir = dir_or_expo;
 	if (dir > 360.) dir -= 360.;
@@ -200,34 +200,34 @@ Cumsum::Cumsum(const unsigned int nSlopes)
           erosion(nSlopes, 0.)
 {}
 
-void Version()
+inline void Version()
 {
 #ifdef _MSC_VER
-	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. " << endl
+	cout << "This version of Snowpack uses a BSD-licensed port of getopt for Visual C++. \n"
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
 #endif
-	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << endl
-		<< "\tLibsnowpack " << snowpack::getLibVersion() << endl
+	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << "\n"
+		<< "\tLibsnowpack " << snowpack::getLibVersion() << "\n"
 		<< "\tMeteoIO " << mio::getLibVersion() << endl;
 }
 
-void Usage(const string& programname)
+inline void Usage(const string& programname)
 {
 	Version();
 
 	cout << "Usage: " << programname << endl
-		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)" << endl
-		<< "\t[-c, --config=<ini file> (e.g. io.ini)]" << endl
-		<< "\t[-m, --mode=[operational or research] (default: research)]" << endl
-		<< "\t[-s, --stations=[comma delimited stationnames] (e.g. DAV2,WFJ2)] (NOTE: ONLY in operational mode)" << endl
-		<< "\t[-v, --version] Print the version number" << endl
-		<< "\t[-h, --help] Print help message and version information]" << endl << endl;
+		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)\n"
+		<< "\t[-c, --config=<ini file> (e.g. io.ini)]\n"
+		<< "\t[-m, --mode=[operational or research] (default: research)]\n"
+		<< "\t[-s, --stations=[comma delimited stationnames] (e.g. DAV2,WFJ2)] (NOTE: ONLY in operational mode)\n"
+		<< "\t[-v, --version] Print the version number\n"
+		<< "\t[-h, --help] Print help message and version information]\n\n";
 
-	cout << "Example: " << programname << " -c io.ini -m research -e 1996-06-17T00:00" << endl << endl;
+	cout << "Example: " << programname << " -c io.ini -m research -e 1996-06-17T00:00\n\n";
 }
 
-void parseCmdLine(int argc, char **argv, string& end_date_str)
+inline void parseCmdLine(int argc, char **argv, string& end_date_str)
 {
 	int longindex=0, opt=-1;
 	bool setEnd = false;
@@ -261,7 +261,7 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 			mode = string(optarg);
 			mio::IOUtils::toUpper(mode);
 			if (!(mode == "RESEARCH" || mode == "OPERATIONAL")) {
-				cerr << endl << "[E] Command line option '-" << char(opt) << "' requires 'research' or 'operational' as operand" << endl;
+				cerr << endl << "[E] Command line option '-" << char(opt) << "' requires 'research' or 'operational' as operand\n";
 				Usage(string(argv[0]));
 				exit(1);
 			}
@@ -273,38 +273,34 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 			mio::IOUtils::readLineToVec(string(optarg), vecStationIDs, ',');
 			break;
 		case ':': //operand missing
-			cerr << endl << "[E] Command line option '-" << char(opt) << "' requires an operand" << endl;
+			cerr << endl << "[E] Command line option '-" << char(opt) << "' requires an operand\n";
 			Usage(string(argv[0]));
 			exit(1);
-			break;
 		case 'v':
 			Version();
 			exit(0);
-			break;
 		case 'h':
 			Usage(string(argv[0]));
 			exit(0);
-			break;
 		case '?':
-			cerr << endl << "[E] Unknown argument detected" << endl;
+			cerr << endl << "[E] Unknown argument detected\n";
 			Usage(string(argv[0]));
 			exit(1);
-			break;
 		default:
-			cerr << endl << "[E] getopt returned character code " <<  opt << endl;
+			cerr << endl << "[E] getopt returned character code " <<  opt << "\n";
 			Usage(string(argv[0]));
 			exit(1);
 		}
 	}
 
 	if (!setEnd) {
-		cerr << endl << "[E] You must specify an enddate for the simulation!" << endl;
+		cerr << endl << "[E] You must specify an enddate for the simulation!\n";
 		Usage(string(argv[0]));
 		exit(1);
 	}
 }
 
-void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rain)
+inline void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rain)
 { //HACK: these should be handled by DataGenerators
 	if (md(MeteoData::PSUM_PH)==IOUtils::nodata) {
 		const double ta = md(MeteoData::TA);
@@ -339,7 +335,7 @@ void editMeteoData(mio::MeteoData& md, const string& variant, const double& thre
 }
 
 // Return true if snowpack can compute the next timestep, else false
-bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
+inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
 {
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
 	bool miss_rad=false, miss_ea=false;
@@ -378,7 +374,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 	return true;
 }
 
-void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
+inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
                    const double prevailing_wind_dir, const double wind_scaling_factor)
 {
 	Mdata.date   = Date::rnd(md.date, 1);
@@ -430,7 +426,7 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.adv_heat = md("ADV_HEAT");
 }
 
-double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
+inline double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
 {
 	std::vector<mio::MeteoData> MyMeteol3h;
 
@@ -454,7 +450,7 @@ double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
  * @param Xdata
  * @param slope
  */
-void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& iswr_is_net)
+inline void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& iswr_is_net)
 {
 	if ((Mdata.iswr > 5.) && (Mdata.rswr > 3.) && !iswr_is_net)
 		Mdata.mAlbedo = Mdata.rswr / Mdata.iswr;
@@ -483,7 +479,7 @@ void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& isw
 
 //for a given config (that can be altered) and original meteo data, prepare the snowpack data structures
 //This means that all tweaking of config MUST be reflected in the config object
-void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
+inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vector<SnowStation>& vecXdata,
                             const Slope& slope, SnowpackConfig& cfg,
                             SunObject &sun,
                             double& precip, const double& lw_in, const double hs_a3hl6,
@@ -612,7 +608,7 @@ void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxes, vect
  * @param sno_step current step in the sno files (current sno profile)
  */
 
-void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Date& sno_step,
+inline void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Date& sno_step,
                       const double& calculation_step_length,
                       const double& tsstart, const double& tsdaysbetween,
                       const double& profstart, const double& profdaysbetween,
@@ -647,14 +643,13 @@ void getOutputControl(MainControl& mn_ctrl, const mio::Date& step, const mio::Da
 	mn_ctrl.XdataDump = booleanTime(Dstep, backup_days_between, bool_start, calculation_step_length);
 }
 
-bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& cfg, const size_t& i_stn,
+inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& cfg, const size_t& i_stn,
                    Slope& slope, mio::Date &current_date, vector<SN_SNOWSOIL_DATA> &vecSSdata,
                    vector<SnowStation> &vecXdata, ZwischenData &sn_Zdata, CurrentMeteo& Mdata,
                    double &wind_scaling_factor, double &time_count_deltaHS)
 {
-	string snowfile("");
+	string snowfile;
 	stringstream ss;
-	ss.str("");
 	ss << "SNOWFILE" << i_stn+1;
 	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
 
@@ -662,7 +657,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
 		try {
 			if (sector == slope.mainStation) {
-				if (snowfile == "") {
+				if (snowfile.empty()) {
 					snowfile = vecStationIDs[i_stn];
 				} else {
 					const size_t pos_dot = snowfile.rfind(".");
@@ -742,7 +737,7 @@ bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackConfig& c
 	return true;
 }
 
-void addSpecialKeys(SnowpackConfig &cfg)
+inline void addSpecialKeys(SnowpackConfig &cfg)
 {
 	const string variant = cfg.get("VARIANT", "SnowpackAdvanced", mio::IOUtils::nothrow);
 
@@ -800,7 +795,7 @@ void addSpecialKeys(SnowpackConfig &cfg)
 	}
 }
 
-void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
+inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
 {
 	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
 	if (useSoilLayers) {
@@ -827,7 +822,7 @@ void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
 }
 
 // SNOWPACK MAIN **************************************************************
-void real_main (int argc, char *argv[])
+inline void real_main (int argc, char *argv[])
 {
 #ifdef DEBUG_ARITHM
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d

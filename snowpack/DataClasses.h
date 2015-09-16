@@ -30,8 +30,12 @@
 
 #include <snowpack/Constants.h>
 #include <meteoio/MeteoIO.h>
-#include <vector>
+
+#include <cstdio>
+#include <fstream>
+#include <string>
 #include <sstream>
+#include <vector>
 
 /// @brief The 3 different phases in the matrix
 enum {
@@ -61,7 +65,7 @@ struct WL_STRUCT {
  */
 class ZwischenData {
 	public:
-		ZwischenData(): hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0) {};
+		ZwischenData(): hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0) {}
 		void reset();                ///< Sets all the values in the vectors to 0.0
 
 		friend std::iostream& operator<<(std::iostream& os, const ZwischenData& data);
@@ -548,7 +552,7 @@ class SnowStation {
 class BoundCond {
 
 	public:
-		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {};
+		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {}
 		const std::string toString() const;
 
 		double lw_out;  ///< outgoing longwave radiation
@@ -572,17 +576,17 @@ class SurfaceFluxes {
 		 * Rates in kg m-2 h-1 (MS_HNW, MS_RAIN and MS_WIND)
 		 */
 		enum SN_MASS_CHANGES {
-		MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
-		MS_SWE,            ///< This too, of course, but summing rho*L
-		MS_WATER,          ///< The total amount of water in the snowpack at the present time
-		MS_HNW,            ///< Solid precipitation rate
-		MS_RAIN,           ///< Rain rate
-		MS_WIND,           ///< Mass loss rate due to wind erosion
-		MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
-		MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
-		MS_SNOWPACK_RUNOFF,///< The total mass loss of snowpack due to water transport (virtual lysimeter)
-		MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
-		N_MASS_CHANGES     ///< Total number of different mass change types
+			MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
+			MS_SWE,            ///< This too, of course, but summing rho*L
+			MS_WATER,          ///< The total amount of water in the snowpack at the present time
+			MS_HNW,            ///< Solid precipitation rate
+			MS_RAIN,           ///< Rain rate
+			MS_WIND,           ///< Mass loss rate due to wind erosion
+			MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
+			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
+			MS_SNOWPACK_RUNOFF,///< The total mass loss of snowpack due to water transport (virtual lysimeter)
+			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
+			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 
 		const std::string toString() const;
@@ -702,7 +706,7 @@ struct ProcessDat {
 	{}
 
 	mio::Date date;        ///< Process date
-	int nHz;               ///< Number of hazard steps
+	unsigned int nHz;               ///< Number of hazard steps
 	char stat_abbrev[16];
 	int  loc_for_snow;
 	int  loc_for_wind;
