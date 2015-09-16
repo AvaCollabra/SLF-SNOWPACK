@@ -22,6 +22,10 @@
 
 static bool gd_MemErr;
 
+typedef struct  {
+	int *pC0, *pSize;
+} pBLOCK;
+
 #define  GD_MEM_ERR( POINTER, MSG0, MSG )                                                      \
 {                                                                                              \
 	if ( POINTER  ) {                                                                      \
@@ -93,9 +97,9 @@ static bool gd_MemErr;
 #define SD_ALLOC_CHUNK(CHUNK,SIZE)                                                             \
 {  if ( CHUNK.nChunks >= CHUNK.pChunksSize )                                                   \
    {  CHUNK.pChunksSize += SD_CHUNK_REALLOC_SIZE;                                              \
-      GD_REALLOC( CHUNK.pChunks, char*, CHUNK.pChunksSize, "Chunk pointer Data" );             \
+      GD_REALLOC( CHUNK.pChunks, SD_COL_BLOCK_DATA*, CHUNK.pChunksSize, "Chunk pointer Data" );             \
    }                                                                                           \
-   GD_MALLOC( CHUNK.pChunks[ CHUNK.nChunks ], char, SIZE, "Chunk Data" );                      \
+   GD_MALLOC( CHUNK.pChunks[ CHUNK.nChunks ], SD_COL_BLOCK_DATA, SIZE, "Chunk Data" );                      \
    CHUNK.TotChunkSize += (int)SIZE;                                                                 \
    CHUNK.nChunks++;                                                                            \
 }
@@ -129,27 +133,35 @@ static bool gd_MemErr;
 * eccessive scattering of data in memory.
 */
 
-#define SD_FREE_COL_BLOCK_0(pCOL_BLOCK, pMAT)                                                  \
-{  (pCOL_BLOCK)->Next = (pMAT)->FreeColBlock; (pMAT)->FreeColBlock = (pCOL_BLOCK);  }
+inline void SD_FREE_COL_BLOCK_0(SD_COL_BLOCK_DATA *pCOL_BLOCK, SD_TMP_CON_MATRIX_DATA *pMAT)
+{  
+	(pCOL_BLOCK)->Next = (pMAT)->FreeColBlock; 
+	(pMAT)->FreeColBlock = (pCOL_BLOCK);
+}
 
-#define SD_FREE_COL_BLOCK(pCOL_BLOCK, pMAT)                                                    \
-{  SD_FREE_COL_BLOCK_0(pCOL_BLOCK, pMAT); pMAT->nColBlock--;  }
+inline void SD_FREE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL_BLOCK, SD_TMP_CON_MATRIX_DATA *pMAT)
+{  
+	SD_FREE_COL_BLOCK_0(pCOL_BLOCK, pMAT); 
+	pMAT->nColBlock--;
+}
 
-#define SD_ALLOC_COL_BLOCK(N_COL_BLOCK, pMAT)                                                  \
-{  SD_COL_BLOCK_DATA *pColBlock_;                                                              \
-   SD_ALLOC_CHUNK((pMAT)->PoolColBlock, sizeof(SD_COL_BLOCK_DATA)*N_COL_BLOCK);                \
-   pColBlock_ = ( SD_COL_BLOCK_DATA * )                                                        \
-                (pMAT)->PoolColBlock.pChunks[ (pMAT)->PoolColBlock.nChunks-1 ];                \
-   for(int i_=N_COL_BLOCK; 0<i_--; pColBlock_++) SD_FREE_COL_BLOCK_0(pColBlock_, pMAT);        \
+inline void SD_ALLOC_COL_BLOCK(const int& N_COL_BLOCK, SD_TMP_CON_MATRIX_DATA *pMAT)
+{  
+	SD_ALLOC_CHUNK((pMAT)->PoolColBlock, sizeof(SD_COL_BLOCK_DATA)*N_COL_BLOCK);
+	SD_COL_BLOCK_DATA *pColBlock_ = ( SD_COL_BLOCK_DATA * )(pMAT)->PoolColBlock.pChunks[ (pMAT)->PoolColBlock.nChunks-1 ];
+	for (int i_=N_COL_BLOCK; 0<i_--; pColBlock_++) 
+		SD_FREE_COL_BLOCK_0(pColBlock_, pMAT);
 }
 
 #define SD_N_ALLOC_COL_BLOCK  500
 
+//HACK if this is replecaed by a function, this leads to segfaults...
 #define SD_GET_COL_BLOCK(pCOL_BLOCK, pMAT)                                                     \
 {  if  ( !(pMAT)->FreeColBlock )  SD_ALLOC_COL_BLOCK(SD_N_ALLOC_COL_BLOCK, pMAT);              \
    pCOL_BLOCK = (pMAT)->FreeColBlock; (pMAT)->FreeColBlock = (pMAT)->FreeColBlock->Next;       \
    pMAT->nColBlock++;                                                                          \
 }
+
 
 /*
 * COLUMN DATA MANAGEMENT
@@ -242,8 +254,9 @@ inline size_t DIAGONAL(const size_t& DIM, const size_t& K){
 #define FIRST_BLOCK_ROW(pMAT) ( pMAT->pRowBlock )
 #define LAST_BLOCK_ROW(pMAT)  ( pMAT->pRowBlock + pMAT->nRowBlock - 1 )
 
-
 // This macro performs a binary search for the row: ROW. The block containing this row is returned by pROW
+//interestingly, if this is converted into a function, the compiled code crashes because pROW remains NULL. 
+//This means that something very fishy takes place and is most probably hidden by the macro having access to the full context of its "caller"
 #define SEARCH_ROW(ROW, pROW_LOW, pROW_HIGH, pROW)                                             \
 {  SD_ROW_BLOCK_DATA *low_, *high_, *mid_;                                                     \
    low_ = pROW_LOW; high_ = pROW_HIGH;                                                         \
@@ -253,7 +266,7 @@ inline size_t DIAGONAL(const size_t& DIM, const size_t& K){
       else if ( ROW > mid_->Row1 ) low_  = mid_ + 1;                                           \
       else { pROW=mid_;  break;  }                                                             \
    }                                                                                           \
- }
+   }
 
 inline void SD_SEARCH_BLOCK_ROW(const int& ROW, SD_ROW_BLOCK_DATA *pROW_LOW, SD_ROW_BLOCK_DATA *pROW_HIGH, SD_ROW_BLOCK_DATA *pROW)
 {
