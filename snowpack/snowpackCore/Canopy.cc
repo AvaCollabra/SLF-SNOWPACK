@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  SNOWPACK stand-alone
  *
  *  Copyright WSL Institute for Snow and Avalanche Research SLF, DAVOS, SWITZERLAND
@@ -354,23 +354,16 @@ void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *C
  ************************************************************/
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
-          hn_density_fixedValue(Constants::undefined), thresh_rain(0.), calculation_step_length(0.), useSoilLayers(false),
+          hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
           CanopyHeatMass(true), Twolayercanopy(true), canopytransmission(true), forestfloor_alb(true)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
-
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
-
-	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
-
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
-
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
-
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
-
 	cfg.getValue("CANOPY_HEAT_MASS", "SnowpackAdvanced", CanopyHeatMass);
         cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
 	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy);
@@ -514,7 +507,7 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 
 /**
  * @brief multiplicative increase of canopy surface resistance as
- * a function of soil temperature, based on �gren et al (1976)
+ * a function of soil temperature, based on ï¿½gren et al (1976)
  * (A=0.8 and B=0.8 implies 1/f4=1 at 10oC)
  * Last update: David Gustafsson, 2005-03-16
  * Last Update: David Gustafsson, 2006-11-22>> A=1.75,B=0.5, implies that
@@ -538,7 +531,7 @@ double Canopy::get_f4(const double& tempC)
  * @brief multiplicative increase of canopy surface resistance as
  * a function of liquid water content[1] and soil temperature [2]
  * in the root zone: [1] van den Hurk et al (2000): Offline validation
- * of the ERA40 surface scheme, ECMWF Tech.Mem.295, [2] �gren (1976)/Mellander (2005)
+ * of the ERA40 surface scheme, ECMWF Tech.Mem.295, [2] ï¿½gren (1976)/Mellander (2005)
  * @param SoilNode
  * @param *EMS
  * @return double
@@ -610,24 +603,16 @@ double Canopy::get_f3(const double& vpd)
 	return (f3);
 }
 
-
-double Canopy::IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai)
+double Canopy::IntCapacity(const CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& force_rain) const
 {
-	// in the future, temperature threshold might be abandoned
-	if ( IOUtils::K_TO_C(tair) < thresh_rain && density_of_new_snow > 0 ) {
-		return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_new_snow ));
-	} else {
-		return (Canopy::int_cap_rain * lai);
-	}
-}
+	const double rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
+	                                                   hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
 
-double Canopy::IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, const double& solid_precip)
-{
-        // in the future, temperature threshold might be abandoned
-        if ( (IOUtils::K_TO_C(tair) < thresh_rain || solid_precip>0.0) && density_of_mixed > 0. ) {
-                return (Canopy::int_cap_snow * lai * ( 0.27+46.0 / density_of_mixed ));
+	 if (!force_rain && rho_new_snow!=Constants::undefined && Mdata.psum_ph<1.) { //right conditions for snow
+		 const double density_of_mixed = rho_new_snow*(1.-Mdata.psum_ph) + 1000.*Mdata.psum_ph;
+                return (Canopy::int_cap_snow * Xdata.Cdata.lai * ( 0.27+46.0 / density_of_mixed ));
         } else {
-                return (Canopy::int_cap_rain * lai);
+                return (Canopy::int_cap_rain * Xdata.Cdata.lai);
         }
 }
 
@@ -788,11 +773,8 @@ void Canopy::LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& 
 	const double age = (snow && forestfloor_alb) ? MAX(0., Mdata.date.getJulian() - Xdata.Edata[nE-1].depositionDate.getJulian()) : 0.; // day
 	const double ag = (ag1 -.3)* exp(-age/7.) + 0.3;
 
-	/*
-	 * Canopy Closure = Canopy Soil Cover Fraction, is made a function of solar elevation for direct shortwave
-	 * First, check whether the solar elevation and splitted radiation data makes there is sense
-	 */
-
+	//Canopy Closure = Canopy Soil Cover Fraction, is made a function of solar elevation for direct shortwave
+	//First, check whether the solar elevation and splitted radiation data makes there is sense
 	const double elev = Mdata.elev;
 	const double diffuse = Mdata.diff;
 	const double direct = Mdata.iswr - diffuse;
@@ -1375,7 +1357,7 @@ double Canopy::get_psim(const double& xi)
 {
 	if ( xi <= 0.0 ) {
 		// unstable case from Paulsen et al 1970
-		const double x = pow((1. - 19. * xi), 0.25); // 19 from H�gstr�m, 1996
+		const double x = pow((1. - 19. * xi), 0.25); // 19 from Hï¿½gstrï¿½m, 1996
 		return log((1. + x) * (1. + x) * (1. + x * x) / 8.) - 2 * atan(x) + mio::Cst::PI / 2.;
 	} else {
 		// stable case from Holstlag and Bruin, following Beljaars & Holtslag 1991
@@ -1396,7 +1378,7 @@ double Canopy::get_psih(const double& xi)
 {
 	if ( xi <= 0) {
 		// Unstable case. Integrated by Paulsen, 1970 from phi-functions found by Businger et al, 1971
-		const double x = pow((1. - 11.6 * xi), 0.25);   // 11.6 from H�gstr�m, 1996
+		const double x = pow((1. - 11.6 * xi), 0.25);   // 11.6 from Hï¿½gstrï¿½m, 1996
 		return (2. * log((1. + x*x) / 2.) );
 	} else {
 		// Stable case, func=1, equation from Holtslag and De Bruin following Beljaars & Holstlag, 1991
@@ -1804,21 +1786,11 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	if ( Xdata.Cdata.height <= 0.0 ) {
 		Xdata.Cdata.height = 0.0;
 	}
-	if (Mdata.psum_ph!=IOUtils::nodata) {
-		Xdata.Cdata.snowfac += Mdata.psum * (1. - Mdata.psum_ph);
-		Xdata.Cdata.rainfac += Mdata.psum * Mdata.psum_ph;
-	} else {
-		Xdata.Cdata.snowfac += (IOUtils::K_TO_C(Mdata.ta) > thresh_rain)? 0. : Mdata.psum;
-		Xdata.Cdata.rainfac += (IOUtils::K_TO_C(Mdata.ta) > thresh_rain)? Mdata.psum : 0.;
-	}
+	Xdata.Cdata.snowfac += Mdata.psum * (1. - Mdata.psum_ph);
+	Xdata.Cdata.rainfac += Mdata.psum * Mdata.psum_ph;
+	
 	// 1.1 compute the interception capacity [mm m-2]
-	//1.1a Always new snow density as estimate of density in intercepted storage
-	const double rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
-			hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
-	const double rho_mixed = (Mdata.psum_ph==IOUtils::nodata)? rho_new_snow : rho_new_snow*(1.-Mdata.psum_ph) + 1000.*Mdata.psum_ph;
-
-	// 1.1b Determine interception capacity [mm] as function of density of intercepted snow/rain
-	const double intcapacity = (Mdata.psum_ph==mio::IOUtils::nodata)? IntCapacity(Mdata.ta, rho_new_snow, Xdata.Cdata.lai) : IntCapacitySnowMIP2(Mdata.ta, rho_mixed, Xdata.Cdata.lai, Mdata.psum*(1.-Mdata.psum_ph));
+	const double intcapacity = IntCapacity(Mdata, Xdata);
 
 	// 1.2 compute direct unload [mm timestep-1], update storage [mm]
 	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
@@ -1826,18 +1798,16 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
         Xdata.Cdata.storage -= unload;
 	double liqmm_unload=0.0;
         double icemm_unload=0.0;
-	if (Mdata.psum_ph != IOUtils::nodata) { //HACK: why not do it also for parametrized precip phase?
-		const double intcaprain = IntCapacity(280., rho_mixed, Xdata.Cdata.lai);
-		// determine liquid and frozen water unload
-		liqmm_unload = MAX(0.0,MIN(unload * Xdata.Cdata.liquidfraction,
-				oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
-		icemm_unload = MAX(unload - liqmm_unload,0.0);
-		// Update liquid fraction
-		if (Xdata.Cdata.storage>0.) {
-			Xdata.Cdata.liquidfraction = MAX( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
-		} else {
-			Xdata.Cdata.liquidfraction = 0.0;
-		}
+	const double intcaprain = IntCapacity(Mdata, Xdata, true);
+	// determine liquid and frozen water unload
+	liqmm_unload = MAX(0.0,MIN(unload * Xdata.Cdata.liquidfraction,
+			oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
+	icemm_unload = MAX(unload - liqmm_unload,0.0);
+	// Update liquid fraction
+	if (Xdata.Cdata.storage>0.) {
+		Xdata.Cdata.liquidfraction = MAX( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
+	} else {
+		Xdata.Cdata.liquidfraction = 0.0;
 	}
 	if ( unload < 0.0 ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Negative unloading!!!");

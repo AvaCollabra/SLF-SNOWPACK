@@ -47,8 +47,7 @@ class Canopy {
 		double get_f4(const double& tempC);
 		double get_f2f4(const size_t& SoilNode, ElementData* EMS);
 		double get_f3(const double& vpd);
-		double IntCapacity(const double& tair, const double& density_of_new_snow, const double& lai);
-		double IntCapacitySnowMIP2(const double& tair, const double& density_of_mixed, const double& lai, const double& hnws);
+		double IntCapacity(const CurrentMeteo& Mdata, const SnowStation& Xdata, const bool& force_rain=false) const;
 		double IntUnload(const double& capacity, const double& storage);
 		double IntRate(const double& capacity, const double& storage, const double& prec,
 		                  const double& direct);
@@ -137,7 +136,7 @@ class Canopy {
 		static const double f3_gd, rootdepth, wp_fraction;
 
 		std::string hn_density, hn_density_parameterization, variant, watertransportmodel_soil;
-		double hn_density_fixedValue, thresh_rain, calculation_step_length;
+		double hn_density_fixedValue, calculation_step_length;
 		bool useSoilLayers;
 		// variables for canopy heat mass and 2-layer canopy
                 bool CanopyHeatMass;

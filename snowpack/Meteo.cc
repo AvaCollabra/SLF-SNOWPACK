@@ -275,8 +275,9 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * 		- Mdata->ustar friction velocity
  * 		- Mdata->z0    roughness length
  * 		- psi_s        stability correction for scalar heat fluxes
- * @param *Mdata
- * @param *Xdata
+ * @param Mdata meteorological forcing
+ * @param Xdata snow profile data
+ * @param runCanopyModel should the canopy module also be called?
  */
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {

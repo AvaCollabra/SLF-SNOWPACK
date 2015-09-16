@@ -55,9 +55,7 @@ class Snowpack {
 		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
-		double getThreshRain() const;
 		void setUseSoilLayers(const bool& value);
-
 		const static double new_snow_albedo, min_ice_content;
 
 	private:
@@ -122,7 +120,7 @@ class Snowpack {
 		bool allow_adaptive_timestepping;
 		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
-		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, thresh_rain, thresh_rain_range, sn_dt;
+		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, sn_dt;
 		double t_crazy_min, t_crazy_max, thresh_rh, thresh_dtempAirSnow;
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_size, new_snow_bond_size;

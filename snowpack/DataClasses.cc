@@ -1892,6 +1892,7 @@ double SnowStation::flexibleMaxElemLength(const double& depth)
  *
  * @param Edata0 Lower element
  * @param Edata1 Upper element
+ * @param depth Distance of the element from the snow surface
  * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack, to reduce the number of elements and thus the computational load.
  * @return true if the two elements should be combined, false otherwise
  */

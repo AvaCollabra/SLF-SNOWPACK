@@ -304,11 +304,13 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 	}
 }
 
-void editMeteoData(mio::MeteoData& md, const string& variant)
+void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rain)
 { //HACK: these should be handled by DataGenerators
 	if (!md.param_exists("PSUM_PH")) {
 		md.addParameter("PSUM_PH");
-		md("PSUM_PH") = IOUtils::nodata;
+		const double ta = md(MeteoData::TA);
+		if (ta!=IOUtils::nodata)
+			md("PSUM_PH") = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
 	}
 
 	if (md(MeteoData::VW) == mio::IOUtils::nodata)
@@ -340,7 +342,7 @@ void editMeteoData(mio::MeteoData& md, const string& variant)
 // Return true if snowpack can compute the next timestep, else false
 bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
 {
-	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_hs=false;
+	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
 	bool miss_rad=false, miss_ea=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
@@ -354,20 +356,23 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		miss_hs=true;
 	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata) )
 		miss_precip=true;
+	if (!enforce_snow_height && (md("PSUM_PH") == mio::IOUtils::nodata) )
+		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
 
-	if(miss_ta || miss_rh || miss_rad || miss_precip || miss_hs || miss_ea) {
+	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
 		cerr << StationName << " missing { ";
-		if(miss_ta) cerr << "TA ";
-		if(miss_rh) cerr << "RH ";
-		if(miss_rad) cerr << "radiation ";
-		if(miss_hs) cerr << "HS ";
-		if(miss_precip) cerr << "precipitation ";
-		if(miss_ea) cerr << "ea ";
+		if (miss_ta) cerr << "TA ";
+		if (miss_rh) cerr << "RH ";
+		if (miss_rad) cerr << "radiation ";
+		if (miss_hs) cerr << "HS ";
+		if (miss_precip) cerr << "precipitation ";
+		if (miss_splitting) cerr << "precip_splitting ";
+		if (miss_ea) cerr << "ea ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
@@ -880,7 +885,8 @@ void real_main (int argc, char *argv[])
 
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
-	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
+	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);	
+	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
 
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //This means that the user provides the station IDs on the command line
@@ -993,7 +999,7 @@ void real_main (int argc, char *argv[])
 				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss2.str());
 			}
 			meteoRead_timer.stop();
-			editMeteoData(vecMyMeteo[i_stn], variant);
+			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rain);
 			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());

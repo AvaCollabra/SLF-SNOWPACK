@@ -30,8 +30,8 @@ using namespace mio;
 WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                : RichardsEquationSolver1d(cfg), variant(),
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-                 thresh_rain(IOUtils::nodata), thresh_rain_range(IOUtils::nodata), sn_dt(IOUtils::nodata),
-                 hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata),
+                 sn_dt(IOUtils::nodata),
+                 hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
                  minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)
 {
@@ -42,11 +42,6 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 
 	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
 	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", water_layer);
-
-	//Rain only for air temperatures warmer than threshold (degC)
-	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
-	//If thresh_rain_range!=0: use gradual transition between rain and snow, where thresh_rain_range specifies the temperature range, and thresh_rain specifies the 50% rain and 50% snow mark.
-	cfg.getValue("THRESH_RAIN_RANGE", "SnowpackAdvanced", thresh_rain_range);
 
 	/**
 	 * @brief No surface hoar will form for rH above threshold (1)
@@ -63,6 +58,13 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	 * - r242: HOAR_THRESH_VW set to 3.5
 	 */
 	cfg.getValue("HOAR_THRESH_VW", "SnowpackAdvanced", hoar_thresh_vw);
+	
+	/**
+	 * @brief No surface hoar will form at air temperatures above threshold (m s-1)
+	 * - Originaly, using THRESH_RAIN
+	 * - r787: HOAR_THRESH_TA set to 1.2
+	 */
+	cfg.getValue("HOAR_THRESH_TA", "SnowpackAdvanced", hoar_thresh_ta);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -499,7 +501,8 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take psum_ph into account?
+	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(hoar_thresh_ta))) {
+		//if rh is very close to 1, vw too high or ta too high, surface hoar is destroyed
 		hoar = MIN(hoar, 0.);
 	}
 
@@ -774,17 +777,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	if (!useSoilLayers && nN == 1) {
 		return;
 	} else { // add rainfall to snow/soil pack
-		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
-		
-		if (Mdata.psum > 0. && precip_is_rain) {
-			double tmp_rainfraction;
-			if (Mdata.psum_ph==IOUtils::nodata) 
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			else 
-				tmp_rainfraction = Mdata.psum_ph;
-			
-			double Store = (Mdata.psum * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
+		if (Mdata.psum > 0. && Mdata.psum_ph>0.) { //there is some rain
+			double Store = (Mdata.psum * Mdata.psum_ph) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
@@ -863,7 +857,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
 			RichardsEquationSolver1d.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
-			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * tmp_rainfraction;
+			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * Mdata.psum_ph;
 		}
 	}
 
@@ -1236,17 +1230,8 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
-		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
-		
-		if (Mdata.psum > 0. && precip_is_rain) {
-			double tmp_rainfraction;
-			if (Mdata.psum_ph==IOUtils::nodata)
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			else
-				tmp_rainfraction = Mdata.psum_ph;
-			
-			double precip_rain = Mdata.psum * tmp_rainfraction;
+		if (Mdata.psum > 0. && Mdata.psum_ph>0.) { //there is some rain
+			double precip_rain = Mdata.psum * Mdata.psum_ph;
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += precip_rain;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += precip_rain;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
