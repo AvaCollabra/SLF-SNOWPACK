@@ -351,11 +351,12 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				*          Otherwise sublimate ice matrix only.
 				*/
 				const double L0 = EMS[e].L;
+				assert(L0>0.);
 				// If there is water ...
 				if (EMS[e].theta[WATER] > ((e==nE-1)?(2.*Constants::eps):0.)) {
 					//For the top layer, it is important to keep a tiny amount of liquid water, so we are able to detect whether we need the
 					//implicit or explicit treatment of the top boundary condition when solving the heat equation.
-					const double theta_w0 = EMS[e].theta[WATER]-((e==nE-1)?(2.*Constants::eps):0.);
+					const double theta_w0 = EMS[e].theta[WATER]-( (e==nE-1)? (2.*Constants::eps) : 0. );
 					dM = ql*sn_dt/Constants::lh_vaporization;
 					M = theta_w0*Constants::density_water*L0;
 					// Check that you only take the available mass of water
@@ -420,7 +421,6 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				// Update remaining volumetric contents and density
 				EMS[e].theta[AIR] = MAX(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
 				EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + (EMS[e].theta[WATER] * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-				assert(EMS[e].Rho>=0. || EMS[e].Rho==IOUtils::nodata); //we want positive density
 			} else if (e==nE-1) {
 				//In case we use RE for snow or soil, check if we can sublimate hoar away:
 				dM = ql*sn_dt/Constants::lh_sublimation;
@@ -470,6 +470,13 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + (EMS[nE-1].theta[WATER] * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 				}
 			}
+			
+			//check that thetas and densities are consistent
+			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
+			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
+			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
 		}
 
 		// Now take care of left over solute mass.

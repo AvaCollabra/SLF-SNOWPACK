@@ -75,7 +75,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SNOW_EROSION"] = "false";
 	advancedConfig["SNOW_REDISTRIBUTION"] = "false";
 	advancedConfig["SALTATION_MODEL"] = "SORENSEN";
-	advancedConfig["STATION_NAME"] = "station"; //TODO: we should suppress this (not needed anymore)
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
 	advancedConfig["FORCE_SW_MODE"] = "false";

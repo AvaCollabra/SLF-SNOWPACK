@@ -272,7 +272,7 @@
  * - wind speed (VW)
  * - incoming short wave radiation (ISWR) or reflected short wave radiation (RSWR)
  * - incoming long wave radiation (ILWR) or surface temperature (TSS)
- * - precipitation (HNW) or snow height (HS)
+ * - precipitation (PSUM) or snow height (HS)
  * - ground temperature (TSG, if available)
  * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons, see section \ref SnowSoilTemperatures)
  *
@@ -341,11 +341,11 @@
  * the value given by THRESH_RAIN in the SnowpackAdvanced section of the \em "io.ini" file, liquid precipitation is 
  * assumed while in the contrary fully solid precipitation is assumed.
  * 
- * It is possible to use other spliting schemes by defining a <b>data creator</b> in the \em "io.ini" file (see in MeteoIO's documentation 
- * the section <i>"Available data generators and usage"</i> for the full list of available generators/creators):
+ * It is possible to use other spliting schemes by defining a <b>data generator</b> in the \em "io.ini" file (see in MeteoIO's documentation 
+ * the section <i>"Available data generators and usage"</i> for the full list of available generators):
  * @code
  * [Generators]
- * PSUM_PH::create = PPHASE
+ * PSUM_PH::generators = PPHASE
  * PSUM_PH::PPHASE = RANGE 273.35 275.35
  * @endcode
  * 

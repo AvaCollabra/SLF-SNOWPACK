@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 2 CACHE INTERNAL "")
-SET(VERSION_PATCH 2 CACHE INTERNAL "")
+SET(VERSION_MINOR 3 CACHE INTERNAL "")
+SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
 SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
@@ -85,30 +85,43 @@ ELSE(MSVC)
 		SET(EXTRA "${EXTRA} -DCLAPACK")
 	ENDIF(ENABLE_LAPACK)
 	SET(WARNINGS "-Wall")
-	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
 	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
-	IF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID) #Android does not like ansi...
-		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
-		IF(WIN32) #for gcc on windows
-			SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
-			SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
-		ENDIF(WIN32)
-	ENDIF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID)
 	IF(WIN32)
 		LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
 	ENDIF(WIN32)
 	SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-	EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	IF(CMAKE_COMPILER_IS_GNUCXX AND (GCC_VERSION VERSION_GREATER 4.2 OR GCC_VERSION VERSION_EQUAL 4.2) )
-		SET(ARCH_OPTIM  "-march=native -mtune=native")
-	ENDIF()
 	SET(ARCH_SAFE  "")
 	SET(DEBUG "-g3 -O0 -D__DEBUG")
 	IF(DEBUG_ARITHM)
 		SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 	ENDIF(DEBUG_ARITHM)
 	SET(_VERSION "-D_VERSION=\\\"${_versionString}\\\"")
+	
+	IF(CMAKE_COMPILER_IS_GNUCXX)
+		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
+		IF(NOT ANDROID)
+			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
+			IF(WIN32) #for gcc on windows
+				SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
+				SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
+			ENDIF(WIN32)
+		ENDIF(NOT ANDROID)
+		EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+		IF(GCC_VERSION VERSION_GREATER 4.2 OR GCC_VERSION VERSION_EQUAL 4.2)
+			SET(ARCH_OPTIM  "-march=native -mtune=native")
+		ENDIF()
+		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+			SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
+			# if set to ON, all binaries depending on the library have to be compiled the same way. 
+			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
+			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption")
+			IF (LEAKS_CHECK)
+				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
+			ENDIF(LEAKS_CHECK)
+		ENDIF()
+	ENDIF(CMAKE_COMPILER_IS_GNUCXX)
+
 ENDIF(MSVC)
 
 

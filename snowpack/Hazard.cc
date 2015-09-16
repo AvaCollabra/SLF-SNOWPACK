@@ -56,7 +56,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 {
 	/**
 	 * @brief Defines how the height of snow is going to be handled
-	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (HNW)
+	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (PSUM)
 	 * - 1: The measured height of snow is used to determine whether new snow has been deposited.
 	 *      This setting MUST be chosen in operational mode. \n
 	 *      This procedure has the disadvantage that if the snowpack settles too strongly

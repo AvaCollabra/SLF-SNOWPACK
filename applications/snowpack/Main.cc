@@ -306,11 +306,10 @@ void parseCmdLine(int argc, char **argv, string& end_date_str)
 
 void editMeteoData(mio::MeteoData& md, const string& variant, const double& thresh_rain)
 { //HACK: these should be handled by DataGenerators
-	if (!md.param_exists("PSUM_PH")) {
-		md.addParameter("PSUM_PH");
+	if (md(MeteoData::PSUM_PH)==IOUtils::nodata) {
 		const double ta = md(MeteoData::TA);
 		if (ta!=IOUtils::nodata)
-			md("PSUM_PH") = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
+			md(MeteoData::PSUM_PH) = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
 	}
 
 	if (md(MeteoData::VW) == mio::IOUtils::nodata)
@@ -354,7 +353,7 @@ bool validMeteoData(const mio::MeteoData& md, const string& StationName, const s
 		miss_rad=true;
 	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_hs=true;
-	if (!enforce_snow_height && (md(MeteoData::HNW) == mio::IOUtils::nodata) )
+	if (!enforce_snow_height && (md(MeteoData::PSUM) == mio::IOUtils::nodata) )
 		miss_precip=true;
 	if (!enforce_snow_height && (md("PSUM_PH") == mio::IOUtils::nodata) )
 		miss_splitting=true;
@@ -414,7 +413,7 @@ void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	Mdata.ts0 = md(MeteoData::TSG);
 
 	Mdata.psum_ph = md("PSUM_PH");
-	Mdata.psum = md(MeteoData::HNW);
+	Mdata.psum = md(MeteoData::PSUM);
 
 	Mdata.hs = md(MeteoData::HS);
 	if (md.param_exists("HS_A3H") && (md("HS_A3H") != mio::IOUtils::nodata))
