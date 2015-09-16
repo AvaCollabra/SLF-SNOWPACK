@@ -303,7 +303,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		SSdata.Ldata[ll].phiSoil = vec_data[current_index++];
 
 		if (SSdata.Ldata[ll].tl < 100.) {
-			SSdata.Ldata[ll].tl = C_TO_K(SSdata.Ldata[ll].tl);
+			SSdata.Ldata[ll].tl = IOUtils::C_TO_K(SSdata.Ldata[ll].tl);
 		}
 		SSdata.Ldata[ll].SoilRho = vec_data[current_index++];
 		SSdata.Ldata[ll].SoilK = vec_data[current_index++];

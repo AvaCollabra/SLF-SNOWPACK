@@ -262,7 +262,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
  * @return rain/snow threshold temperature (K)
  */
 double Snowpack::getThreshRain() const { //NOTE is this really needed?
-	return C_TO_K( thresh_rain );
+	return IOUtils::C_TO_K( thresh_rain );
 }
 
 void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really needed?
@@ -614,11 +614,11 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	}
 	
 	const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-	                                         || (Mdata.psum_ph==IOUtils::nodata && (Tair >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+	                                         || (Mdata.psum_ph==IOUtils::nodata && (Tair >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
 	if (Mdata.psum>0. && precip_is_rain) {
 		double tmp_rainfraction;
 		if (Mdata.psum_ph==IOUtils::nodata)
-			tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+			tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
 		else
 			tmp_rainfraction = Mdata.psum_ph;
 
@@ -688,11 +688,11 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		Fe[1] += Bdata.ql;
 		// Advected rain energy: linear dependence on snow surface temperature
 		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-		                                         || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		                                         || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
 		if (Mdata.psum > 0. && precip_is_rain) {
 			double tmp_rainfraction;
 			if (Mdata.psum_ph==IOUtils::nodata)
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
 			else
 				tmp_rainfraction = Mdata.psum_ph;
 			
@@ -784,7 +784,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		const double hs = (use_hs_meas)? Xdata.mH - Xdata.Ground : Xdata.cH - Xdata.Ground;
 		
 		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
-			const bool snow_free_ground = (hs < 0.02) || (NDS[nN-1].T > C_TO_K(3.5)) || ((hs < 0.05) && (NDS[nN-1].T > C_TO_K(1.7)));
+			const bool snow_free_ground = (hs < 0.02) || (NDS[nN-1].T > IOUtils::C_TO_K(3.5)) || ((hs < 0.05) && (NDS[nN-1].T > IOUtils::C_TO_K(1.7)));
 			if (snow_free_ground)
 				Albedo = Xdata.SoilAlb;
 		}
@@ -996,8 +996,8 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 				const double T_mean_up = (n<(nN-1))? 0.5*(NDS[n].T+NDS[n+1].T) : IOUtils::nodata;
 				if (T_mean_down>t_crazy_min && T_mean_down<t_crazy_max) U[n] = T_mean_down;
 				else if (T_mean_up>t_crazy_min && T_mean_up<t_crazy_max) U[n] = T_mean_up;
-				if (U[n] <= t_crazy_min) U[n] = .5*( C_TO_K(0.) + t_crazy_min); //too cold -> reset to avg(Tmin, 0C)
-				if (U[n] >= t_crazy_max) U[n] = .5*( C_TO_K(0.) + t_crazy_max); //too hot -> reset to avg(Tmax, 0C)
+				if (U[n] <= t_crazy_min) U[n] = .5*( IOUtils::C_TO_K(0.) + t_crazy_min); //too cold -> reset to avg(Tmin, 0C)
+				if (U[n] >= t_crazy_max) U[n] = .5*( IOUtils::C_TO_K(0.) + t_crazy_max); //too hot -> reset to avg(Tmax, 0C)
 				
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration for node %d / %d (soil node=%d)! Reset from %.2lf to %.2lf", n, nN, Xdata.SoilNode, Tnode_orig, U[n]);
 				for(size_t ii=0; ii<nE; ++ii) {
@@ -1239,7 +1239,7 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
  */
 void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &elem)
 {
-	const double TA = K_TO_C(Mdata.ta);
+	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
 	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
 	const double value = exp(logit)/(1.+exp(logit));
@@ -1403,12 +1403,12 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 	if (!enforce_measured_snow_heights) { // HNW driven
 		const bool precip_is_snow = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph<1.) 
-		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta < C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta < IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
 		
 		if (Mdata.psum>0. && precip_is_snow) {
 			double tmp_rainfraction;
 			if (Mdata.psum_ph==IOUtils::nodata)
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 0. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 0. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
 			else
 				tmp_rainfraction = Mdata.psum_ph;
 				
@@ -1452,7 +1452,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	const double melting_tk = (nOldE>0)? Xdata.Edata[nOldE-1].melting_tk : Constants::melting_tk;
 	const double dtempAirSnow = (change_bc && !meas_tss)? Mdata.ta - melting_tk : Mdata.ta - t_surf; //we use t_surf only if meas_tss & change_bc
 
-	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < C_TO_K(thresh_rain) + 0.5 * thresh_rain_range) && (dtempAirSnow < thresh_dtempAirSnow))
+	const bool snow_fall = (((Mdata.rh > thresh_rh) && (Mdata.ta < IOUtils::C_TO_K(thresh_rain) + 0.5 * thresh_rain_range) && (dtempAirSnow < thresh_dtempAirSnow))
                                || !enforce_measured_snow_heights || (Xdata.hn > 0.));
 
 	// In addition, let's check whether the ground is already snowed in or cold enough to build up a snowpack
@@ -1462,11 +1462,11 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	} else {
 		snowed_in = ((Xdata.getNumberOfNodes() > Xdata.SoilNode+1)
 		            || (detect_grass &&
-		                   (((Mdata.tss_a24h < C_TO_K(TSS_threshold24))
+		                   (((Mdata.tss_a24h < IOUtils::C_TO_K(TSS_threshold24))
 		                        && (Mdata.hs_rate > HS_threshold_smallincrease))
-		                    || ((Mdata.tss_a12h < C_TO_K(TSS_threshold12_smallHSincrease))
+		                    || ((Mdata.tss_a12h < IOUtils::C_TO_K(TSS_threshold12_smallHSincrease))
 		                        && (Mdata.hs_rate > HS_threshold_smallincrease))
-		                    || ((Mdata.tss_a12h < C_TO_K(TSS_threshold12_largeHSincrease))
+		                    || ((Mdata.tss_a12h < IOUtils::C_TO_K(TSS_threshold12_largeHSincrease))
 		                        && (Mdata.hs_rate > HS_threshold_largeincrease))
 		                   )
 		               )
@@ -1761,7 +1761,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 		t_surf = MIN(melting_tk, Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 		if (change_bc && meas_tss) {
-			if ((Mdata.tss < C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
+			if ((Mdata.tss < IOUtils::C_TO_K(thresh_change_bc)) && Mdata.tss != IOUtils::nodata){
 				surfaceCode = DIRICHLET_BC;
 				t_surf = Mdata.tss;
 				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = t_surf;
@@ -1816,7 +1816,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 				//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
 				//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
 				if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
-						&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < C_TO_K(thresh_change_bc))) {
+						&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < mio::IOUtils::C_TO_K(thresh_change_bc))) {
 					surfaceCode = DIRICHLET_BC;
 					melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 					Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/

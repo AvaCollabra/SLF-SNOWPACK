@@ -499,7 +499,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take psum_ph into account?
+	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take psum_ph into account?
 		hoar = MIN(hoar, 0.);
 	}
 
@@ -775,12 +775,12 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		return;
 	} else { // add rainfall to snow/soil pack
 		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
 		
 		if (Mdata.psum > 0. && precip_is_rain) {
 			double tmp_rainfraction;
 			if (Mdata.psum_ph==IOUtils::nodata) 
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
 			else 
 				tmp_rainfraction = Mdata.psum_ph;
 			
@@ -1237,12 +1237,12 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
 		const bool precip_is_rain = (Mdata.psum_ph!=IOUtils::nodata && Mdata.psum_ph>0.) 
-		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
+		                                           || (Mdata.psum_ph==IOUtils::nodata && (Mdata.ta >= IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range));
 		
 		if (Mdata.psum > 0. && precip_is_rain) {
 			double tmp_rainfraction;
 			if (Mdata.psum_ph==IOUtils::nodata)
-				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
+				tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (IOUtils::C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
 			else
 				tmp_rainfraction = Mdata.psum_ph;
 			

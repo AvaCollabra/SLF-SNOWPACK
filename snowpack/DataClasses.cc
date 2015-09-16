@@ -124,7 +124,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 {
 	depositionDate = Edata.depositionDate;
 	height = M_TO_CM(Ndata.z + Ndata.u);
-	T = K_TO_C(Ndata.T);
+	T = IOUtils::K_TO_C(Ndata.T);
 	gradT = Edata.gradT;
 	rho = Edata.Rho;
 	theta_i = Edata.theta[ICE];
@@ -156,7 +156,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	depositionDate = dateOfProfile;
 	height = M_TO_CM(Ndata.z + Ndata.u) + M_TO_CM(hoar_size);
 	rho = hoar_density_surf;
-	T = K_TO_C(Ndata.T + (2./3.)*hoar_size*Edata.gradT);
+	T = IOUtils::K_TO_C(Ndata.T + (2./3.)*hoar_size*Edata.gradT);
 	gradT = Edata.gradT;
 	v_strain_rate = 0.;
 	theta_i = hoar_density_surf/Constants::density_ice;
@@ -1518,7 +1518,7 @@ double SnowStation::getModelledTemperature(const double& z) const
 		const double T_low = Ndata[n_up-1].T;
 		const double T_up = Ndata[n_up].T;
 		const double T = T_low + (T_up-T_low)*(z-z_low)/(z_up-z_low);
-		return K_TO_C( T );
+		return IOUtils::K_TO_C( T );
 	}
 }
 
@@ -1805,6 +1805,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	compSnowpackMasses();
 
 	// INITIALIZE CANOPY DATA
+	//HACK: do this in Canopy!
 	Cdata.height = (SSdata.Canopy_Height > 0.0)? SSdata.Canopy_Height : 0.;
 	Cdata.storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
 	Cdata.temp = 273.15; // temperature (K)
