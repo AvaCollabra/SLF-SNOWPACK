@@ -12,6 +12,8 @@ nodata           = -999
 tz               = 1
 source           = WSL-Institute for Snow and Avalanche Research SLF; CFierz, 2011-10
 fields           = timestamp TA RH TSG TSS HS VW DW OSWR ISWR ILWR PSUM TS1 TS2 TS3
+units_offset = 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0	#this whole line could be ommitted
+units_multiplier = 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1	#this whole line could be ommitted
 [DATA]
 1995-10-30T00:30   273.15   0.958   273.05   273.35    0.000    0.8   278      0      0    300  0.000     -999     -999     -999
 1995-10-30T01:00   273.15   0.958   273.05   273.35    0.000    0.8   278      0      0    299  0.000     -999     -999     -999
