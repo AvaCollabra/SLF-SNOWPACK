@@ -295,7 +295,7 @@ IF(CPACK_BUNDLE_ALL)
 	IF("${inishell}" STREQUAL "")
 		MESSAGE("Inishell not found! Please copy inishell.jar into the tools directory")
 	ENDIF("${inishell}" STREQUAL "")
-	INSTALL(FILES "${inishell}" DESTINATION bin COMPONENT exe)
+	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
