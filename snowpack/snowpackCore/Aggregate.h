@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __AGGREGATE_H__
-#define __AGGREGATE_H__
+#ifndef AGGREGATE_H
+#define AGGREGATE_H
 
 #include <snowpack/DataClasses.h>
 #include <snowpack/Constants.h>

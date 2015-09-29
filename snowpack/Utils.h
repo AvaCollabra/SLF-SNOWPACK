@@ -24,8 +24,8 @@
  * @brief This header file contains the definition of the structures required to handle I/O
  */
 
-#ifndef __UTILS_H__
-#define __UTILS_H__
+#ifndef UTILS_H
+#define UTILS_H
 
 #include <snowpack/DataClasses.h>
 

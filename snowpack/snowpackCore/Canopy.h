@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __CANOPY_H__
-#define __CANOPY_H__
+#ifndef CANOPY_H
+#define CANOPY_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>

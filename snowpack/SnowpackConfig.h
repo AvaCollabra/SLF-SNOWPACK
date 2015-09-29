@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SNOWPACKCONFIG_H__
-#define __SNOWPACKCONFIG_H__
+#ifndef SNOWPACKCONFIG_H
+#define SNOWPACKCONFIG_H
 
 #include <snowpack/Constants.h>
 

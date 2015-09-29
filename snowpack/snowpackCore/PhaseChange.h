@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __PHASE_CHANGE_H__
-#define __PHASE_CHANGE_H__
+#ifndef PHASE_CHANGE_H
+#define PHASE_CHANGE_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>

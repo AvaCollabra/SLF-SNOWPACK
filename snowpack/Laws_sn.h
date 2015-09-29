@@ -22,8 +22,8 @@
  * @version 10.02
  */
 
-#ifndef __LAWS_SN_H__
-#define __LAWS_SN_H__
+#ifndef LAWS_SN_H
+#define LAWS_SN_H
 
 #include <string>
 #include <meteoio/MeteoIO.h>
