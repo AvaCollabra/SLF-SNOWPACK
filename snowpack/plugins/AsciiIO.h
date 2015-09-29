@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __ASCIIIO_H__
-#define __ASCIIIO_H__
+#ifndef ASCIIIO_H
+#define ASCIIIO_H
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>

@@ -23,8 +23,8 @@
  * This header file contains all the data structures needed for the 1d snowpack model
  */
 
-#ifndef __DATACLASSES_H__
-#define __DATACLASSES_H__
+#ifndef DATACLASSES_H
+#define DATACLASSES_H
 
 #include <snowpack/SnowpackConfig.h>
 

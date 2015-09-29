@@ -26,8 +26,8 @@
  * This module defines constants needed for the 1d snowpack model
  */
 
-#ifndef __CONSTANTS_H__
-#define __CONSTANTS_H__
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
 /**
  * @brief _VERSION is given as a compilation flag to tell us what is the version number \n

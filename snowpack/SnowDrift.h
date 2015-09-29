@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SNOWDRIFT_H__
-#define __SNOWDRIFT_H__
+#ifndef SNOWDRIFT_H
+#define SNOWDRIFT_H
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>
@@ -55,5 +55,5 @@ class SnowDrift {
 		static const bool msg_erosion;
 }; //End class SnowDrift
 
-#endif //#ifndef __SNOWDRIFT_H__
+#endif
 

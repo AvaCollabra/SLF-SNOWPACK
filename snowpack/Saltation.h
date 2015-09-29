@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __SALTATION_H__
-#define __SALTATION_H__
+#ifndef SALTATION_H
+#define SALTATION_H
 
 #include <snowpack/Utils.h>
 #include <meteoio/MeteoIO.h>

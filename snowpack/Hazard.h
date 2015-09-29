@@ -26,8 +26,8 @@
  * This module contains the hazard computation routines and structures
 */
 
-#ifndef __HAZARD_H__
-#define __HAZARD_H__
+#ifndef HAZARD_H
+#define HAZARD_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>

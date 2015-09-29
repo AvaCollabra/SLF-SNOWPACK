@@ -24,8 +24,8 @@
  * @date -
  */
 
-#ifndef __METEO_H__
-#define __METEO_H__
+#ifndef METEO_H
+#define METEO_H
 
 #include <meteoio/MeteoIO.h>
 

@@ -15,8 +15,8 @@
     You should have received a copy of the GNU Lesser General Public License
     along with SNOWPACK.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __MAINPAGE_H__
-#define __MAINPAGE_H__
+#ifndef MAINPAGE_H
+#define MAINPAGE_H
 
  /**
  * @mainpage Table of content

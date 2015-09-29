@@ -20,8 +20,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef  __SOLVER_H__
-#define  __SOLVER_H__
+#ifndef  SOLVER_H
+#define  SOLVER_H
 
 #include <cstdio>
 

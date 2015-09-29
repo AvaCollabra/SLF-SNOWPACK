@@ -23,8 +23,8 @@
  * This is the header file to include for projects making use of libsnowpack
  */
 
-#ifndef __LIBSNOWPACK_H__
-#define __LIBSNOWPACK_H__
+#ifndef LIBSNOWPACK_H
+#define LIBSNOWPACK_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
