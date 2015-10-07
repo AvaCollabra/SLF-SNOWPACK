@@ -15,8 +15,8 @@ GNU Lesser General Public License for more details.
 You should have received a copy of the GNU Lesser General Public License
 along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __CAAMLIO_H__
-#define __CAAMLIO_H__
+#ifndef CAAMLIO_H
+#define CAAMLIO_H
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>

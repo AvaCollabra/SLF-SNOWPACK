@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/tools/cmake/")
+LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 2 CACHE INTERNAL "")
-SET(VERSION_PATCH 2 CACHE INTERNAL "")
+SET(VERSION_MINOR 3 CACHE INTERNAL "")
+SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
 SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
@@ -46,8 +46,7 @@ SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML p
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
 IF(WIN32)
-	#otherwise the lib files are not generated
-	SET(BUILD_STATIC_LIBS ON)
+	SET(BUILD_STATIC_LIBS ON) #otherwise the lib files are not generated
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
@@ -86,30 +85,58 @@ ELSE(MSVC)
 		SET(EXTRA "${EXTRA} -DCLAPACK")
 	ENDIF(ENABLE_LAPACK)
 	SET(WARNINGS "-Wall")
-	SET(PROFILING "-pg -fprofile-arcs")
 	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
 	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
-	IF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID) #Android does not like ansi...
-		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
-		IF(WIN32) #for gcc on windows
-			SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
-			SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
-		ENDIF(WIN32)
-	ENDIF(CMAKE_COMPILER_IS_GNUCXX AND NOT ANDROID)
 	IF(WIN32)
 		LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
 	ENDIF(WIN32)
 	SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-	EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-	IF(CMAKE_COMPILER_IS_GNUCXX AND (GCC_VERSION VERSION_GREATER 4.2 OR GCC_VERSION VERSION_EQUAL 4.2) )
-		SET(ARCH_OPTIM  "-march=native -mtune=native")
+	IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
 	ENDIF()
-	SET(ARCH_SAFE  "")
 	SET(DEBUG "-g3 -O0 -D__DEBUG")
 	IF(DEBUG_ARITHM)
 		SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 	ENDIF(DEBUG_ARITHM)
 	SET(_VERSION "-D_VERSION=\\\"${_versionString}\\\"")
+	
+	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
+		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wvector-operation-performance")
+		IF(NOT ANDROID)
+			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
+			IF(WIN32) #for gcc on windows
+				SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
+				SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
+			ENDIF(WIN32)
+		ENDIF(NOT ANDROID)
+		EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
+		IF(GCC_VERSION VERSION_GREATER 4.2 OR GCC_VERSION VERSION_EQUAL 4.2)
+			SET(ARCH_OPTIM  "-march=native -mtune=native")
+		ENDIF()
+		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+			SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
+			# if set to ON, all binaries depending on the library have to be compiled the same way.
+			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
+			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
+			IF (LEAKS_CHECK)
+				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
+			ENDIF(LEAKS_CHECK)
+		ENDIF()
+	ENDIF()
+	IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+		SET(PROFILING "-pg") #add ${PROFILING} to the CFLAGS when necessary
+		SET(EXTRA "${EXTRA} -fcolor-diagnostics") #-fapple-pragma-pack does not seems necessary; -ftrapv should be replaced by sanitize=integer
+		SET(OPTIM "${OPTIM} -flto")
+		SET(WARNINGS "${WARNINGS} -Weverything -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-global-constructors -Wno-exit-time-destructors -Wno-sign-conversion -Wno-covered-switch-default") #obviously, we should try to fix the warnings!
+		SET(DEEP_WARNINGS "${DEEP_WARNINGS} -Rpass=.*")
+		SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
+			IF (LEAKS_CHECK)
+				SET(EXTRA "${EXTRA} -ftrapv -fno-omit-frame-pointer") #-fsanitize=address,undefined,integer,undefined-trap but this is currently not supported by Apple
+			ENDIF(LEAKS_CHECK)
+		SET(ARCH_OPTIM  "-march=native")
+	ENDIF()
+
 ENDIF(MSVC)
 
 
@@ -182,19 +209,9 @@ MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
 FILE(GLOB hfiles "snowpack/*.h")
 FILE(GLOB hpluginfiles "snowpack/plugins/*.h")
 FILE(GLOB hcorefiles "snowpack/snowpackCore/*.h")
-
-IF(WIN32) #handle the special case of WIN32 needing import libraries
-	FILE(GLOB_RECURSE importlibs "lib/libsnow*.lib*")
-	FILE(GLOB dlls "${PROJECT_SOURCE_DIR}/lib/libsnow*.dll")
-	INSTALL(FILES ${importlibs} ${dlls} DESTINATION lib COMPONENT libraries)
-ENDIF(WIN32)
-#FILE(GLOB_RECURSE solibs "lib/libsnow*.${DLL_EXT}")
-#FILE(GLOB_RECURSE alibs "lib/*.${STAT_EXT}")
-
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT headers)
 INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
-#INSTALL(FILES ${solibs} ${importlibs} ${alibs} DESTINATION lib COMPONENT libraries)
 
 ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
@@ -250,9 +267,12 @@ IF(CPACK_BUNDLE_ALL)
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
 	IF(BUILD_SHARED_LIBS) #consider that if STATIC, we don't need the libs
-		FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*") #this contains dynamic, static and import libs
-		INSTALL(DIRECTORY ${METEOIO_INCLUDE_DIR}/meteoio DESTINATION include COMPONENT headers)
-		INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT libraries)
+		FILE(GLOB meteoio_libs "${METEOIO_ROOT}/lib/libmeteo*.${DLL_EXT}")
+		IF(WIN32)
+			INSTALL(FILES ${meteoio_libs} DESTINATION bin COMPONENT exe)
+		ELSE(WIN32)
+			INSTALL(FILES ${meteoio_libs} DESTINATION lib COMPONENT exe)
+		ENDIF(WIN32)
 	ENDIF(BUILD_SHARED_LIBS)
 	IF(INSTALL_DOC)
 		IF(WIN32)
@@ -262,7 +282,9 @@ IF(CPACK_BUNDLE_ALL)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/share/doc/meteoio")
 			SET(METEOIO_DOC ${DOC_PATH}/../meteoio)
 		ENDIF(WIN32)
-		INSTALL(DIRECTORY "${METEOIO_INSTALLED_DOC}/examples" DESTINATION ${METEOIO_DOC} COMPONENT examples)
+		IF(NOT IS_DIRECTORY "${METEOIO_INSTALLED_DOC}") #if we detected neighboring checked out version of MeteoIO
+			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/doc")
+		ENDIF()
 		INSTALL(DIRECTORY "${METEOIO_INSTALLED_DOC}/html" DESTINATION ${METEOIO_DOC} COMPONENT documentation)
 		FILE(GLOB meteoio_docs "${METEOIO_INSTALLED_DOC}/*.*")
 		INSTALL(FILES ${meteoio_docs} DESTINATION ${METEOIO_DOC} COMPONENT documentation)
@@ -273,15 +295,15 @@ IF(CPACK_BUNDLE_ALL)
 	IF("${inishell}" STREQUAL "")
 		MESSAGE("Inishell not found! Please copy inishell.jar into the tools directory")
 	ENDIF("${inishell}" STREQUAL "")
-	INSTALL(FILES "${inishell}" DESTINATION bin COMPONENT exe)
+	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack as a library. It can therefore be integrated into other models.")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack. This consists of a library and a program calling it so it can easily be integrated into other models.")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Welcome.txt")
 SET(CPACK_PACKAGE_NAME "Snowpack")
 SET(CPACK_PACKAGE_INSTALL_DIRECTORY "Snowpack")
-SET(CPACK_PACKAGE_CONTACT "Mathias Bavay ")
+SET(CPACK_PACKAGE_CONTACT "Mathias Bavay <Mathias.Bavay@wsl.ch>")
 SET(CPACK_PACKAGE_VENDOR "WSL Institute for Snow and Avalanche Research")
 SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons\\\\icon.ico")
 SET(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/License.txt")
@@ -292,28 +314,19 @@ SET(CPACK_PACKAGE_VERSION_MAJOR "${VERSION_MAJOR}")
 SET(CPACK_PACKAGE_VERSION_MINOR "${VERSION_MINOR}")
 SET(CPACK_PACKAGE_VERSION_PATCH "${VERSION_PATCH}")
 SET(VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
-#SET(CPACK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
-SET(CPACK_ARCH "i386")
+SET(CPACK_ARCH "${CMAKE_SYSTEM_PROCESSOR}")
 SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${CPACK_ARCH}")
 
 #installation by components for formats that support it
 #SET(CPACK_COMPONENTS_ALL_GROUPS_IN_ONE_PACKAGE 1)
-SET(CPACK_COMPONENTS_ALL libraries headers documentation examples exe)
-SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack library")
-SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK library itself")
-SET(CPACK_COMPONENT_LIBRARIES_GROUP Runtime)
-SET(CPACK_COMPONENT_HEADERS_DISPLAY_NAME "Header files")
-SET(CPACK_COMPONENT_HEADERS_DESCRIPTION "Necessary C++ header files for developing applications using SNOWPACK")
-SET(CPACK_COMPONENT_HEADERS_GROUP Development)
-SET(CPACK_COMPONENT_HEADERS_DEPENDS libraries)
-SET(CPACK_COMPONENT_DEVELOPMENT_GROUP "Development")
-SET(CPACK_COMPONENT_GROUP_DEVELOPMENT_DESCRIPTION "What you need to develop an application based on SNOWPACK")
+SET(CPACK_COMPONENTS_ALL documentation examples exe)
+SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack static library")
+SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK static library")
 SET(CPACK_COMPONENT_EXE_DISPLAY_NAME "Snowpack application")
 SET(CPACK_COMPONENT_EXE_DESCRIPTION "The SNOWPACK standalone model")
 SET(CPACK_COMPONENT_EXE_GROUP Runtime)
 SET(CPACK_COMPONENT_RUNTIME_GROUP "Runtime")
 SET(CPACK_COMPONENT_GROUP_RUNTIME_DESCRIPTION "What you need to run an application based on SNOWPACK")
-SET(CPACK_COMPONENT_EXE_DEPENDS libraries)
 IF(INSTALL_DOC)
 	SET(CPACK_COMPONENT_DOCUMENTATION_DISPLAY_NAME "Documentation")
 	SET(CPACK_COMPONENT_DOCUMENTATION_DESCRIPTION "Documentation of the SNOWPACK usage and API both for the end user and the developer using SNOWPACK in his/her application")
@@ -328,10 +341,23 @@ ENDIF(INSTALL_DOC)
 
 IF(UNIX)
 	IF(APPLE)
-		SET(CPACK_GENERATOR "PackageMaker;")
-		SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}-${VERSION}")
-		SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
+		SET(CPACK_GENERATOR "DragNDrop")
+		SET(CPACK_PACKAGING_INSTALL_PREFIX "/${CPACK_PACKAGE_NAME}")
+		SET(CPACK_DMG_FORMAT "UDBZ")
+		#SET(CPACK_GENERATOR "Bundle")
+		SET(CPACK_BUNDLE_PLIST "${CMAKE_SOURCE_DIR}/tools/snowpack.plist")
+		SET(MACOSX_BUNDLE_INFO_STRING "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
 		SET(CPACK_BUNDLE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
+		SET(MACOSX_BUNDLE_ICON_FILE "${CPACK_BUNDLE_ICON}")
+		SET(MACOSX_BUNDLE_GUI_IDENTIFIER "${CPACK_PACKAGE_DESCRIPTION}")
+		SET(MACOSX_BUNDLE_LONG_VERSION_STRING "${VERSION}")
+		SET(CPACK_BUNDLE_NAME "${CPACK_PACKAGE_NAME}")
+		SET(MACOSX_BUNDLE_BUNDLE_NAME "${CPACK_PACKAGE_NAME}")
+		SET(MACOSX_BUNDLE_SHORT_VERSION_STRING "${VERSION}")
+		SET(MACOSX_BUNDLE_BUNDLE_VERSION "0")
+		SET(MACOSX_BUNDLE_COPYRIGHT "${CPACK_PACKAGE_VENDOR}")
+		#SET(CPACK_PACKAGING_INSTALL_PREFIX "/Applications/${CPACK_PACKAGE_NAME}")
+		SET(CPACK_PACKAGE_ICON "${CMAKE_SOURCE_DIR}/snowpack/icons/icon.icns")
 		SET_SOURCE_FILES_PROPERTIES(${CPACK_BUNDLE_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
 		INSTALL(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink bin/snowpack /usr/bin/snowpack)")
 	ELSE(APPLE)
@@ -340,16 +366,21 @@ IF(UNIX)
 		SET(CPACK_DEBIAN_PACKAGE_NAME "snowpack")
 		SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
 		#objdump -p lib/libmeteoio.so | grep NEEDED | tr -s ' ' | cut -d' ' -f3 | tr '\n' ','
-		IF(CPACK_BUNDLE_ALL)
-			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6")
-		ELSE(CPACK_BUNDLE_ALL)
-			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, meteoio")
-		ENDIF(CPACK_BUNDLE_ALL)
-		SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
+		IF(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++6, libc6")
+		ELSE(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+			SET(CPACK_DEBIAN_PACKAGE_DEPENDS "libstdc++, meteoio")
+		ENDIF(CPACK_BUNDLE_ALL OR BUILD_STATIC_LIBS)
+		#SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "i386") #dpkg --print-architecture
+		IF("${CPACK_ARCH}" STREQUAL "x86_64")
+			SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
+		ELSE("${CPACK_ARCH}" STREQUAL "x86_64")
+			SET(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "${CPACK_ARCH}")
+		ENDIF("${CPACK_ARCH}" STREQUAL "x86_64")
 		SET(CPACK_RPM_PACKAGE_NAME "snowpack")
 		SET(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
 		SET(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, meteoio")
-		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "i386")
+		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "${CPACK_ARCH}")
 		SET(CPACK_RPM_PACKAGE_GROUP "Applications/Science")
 	ENDIF(APPLE)
 ELSE(UNIX)
@@ -357,42 +388,48 @@ ELSE(UNIX)
 		SET(CPACK_GENERATOR "NSIS")
 		SET(CPACK_NSIS_MUI_ICON "${CPACK_PACKAGE_ICON}")
 		SET(CPACK_PACKAGE_ICON "${CPACK_PACKAGE_ICON}")
-		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}-${VERSION}")
+		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
 		SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${CPACK_PACKAGE_NAME}")
 		#SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${EnvVarUpdate} $0 \"LIB\"  \"A\" \"HKLM\" \"C:\MyLib\"")
 		SET(CPACK_NSIS_MODIFY_PATH ON)
 		IF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
-				"bin/inishell.jar" "inishell"
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
+				"bin/inishell.jar" "SNOWPACK inishell"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "Home page"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
-				"${METEOIO_DOC}/examples" "MeteoIO examples"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
 				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "Home page")
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ELSEIF(INSTALL_DOC)
 			IF(CPACK_BUNDLE_ALL)
 				SET(CPACK_NSIS_MENU_LINKS
-				"bin/inishell.jar" "inishell"
-				"https://models.slf.ch/p/snowpack/" "Home page"
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
+				"bin/inishell.jar" "SNOWPACK inishell"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
 			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS "https://models.slf.ch/p/snowpack/" "Home page")
+				SET(CPACK_NSIS_MENU_LINKS 
+				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
+				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 			ENDIF(CPACK_BUNDLE_ALL)
 		ENDIF(INSTALL_DOC)
 
 		#info for the add/uninstall software administration
+		SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}-${VERSION}")
 		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")
 		SET(CPACK_NSIS_URL_INFO_ABOUT "http://www.slf.ch")
 		SET(CPACK_NSIS_HELP_LINK "https://models.slf.ch/p/snowpack")
-		SET(CPACK_NSIS_CONTACT "Mathias.Bavay@wsl.ch")
+		SET(CPACK_NSIS_CONTACT "${CPACK_PACKAGE_CONTACT}")
+		SET(CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON")
 	ENDIF(WIN32)
 ENDIF(UNIX)
 

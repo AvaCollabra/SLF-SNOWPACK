@@ -25,6 +25,24 @@ using namespace mio;
 using namespace oracle;
 using namespace oracle::occi;
 
+/**
+ * @page profile_imis IMIS
+ * @section imis_description Description
+ * This plugin writes the profiles time series and meteorological time series and fluxes in the 
+ * <A HREF="http://www.slf.ch/ueber/organisation/warnung_praevention/warn_informationssysteme/messnetze_daten/imis/index_EN">IMIS</A>
+ * database and therefore provides the simulation data for the <A HREF="https://www.ifkis.ch/">IFKIS</A> platform.
+ * @note The profiles are simplifed (ie. aggregated) in order to reduce their number of layers in this plugin.
+ *
+ * @section imis_keywords Keywords
+ * The following keywords are used by this plugin:
+ * - DBNAME: which database to use, using the Oracle SID name as defined in tns_names, [Output] section;
+ * - DBUSER: user name, [Output] section;
+ * - DBPASS: user password, [Output] section;
+ * - HOAR_DENSITY_SURF: density of the surface hoar (kg/m3), [SnowpackAdvanced] section;
+ * - HOAR_MIN_SIZE_SURF: minimum size to show surface hoar on the surface (mm), [SnowpackAdvanced] section.
+ * 
+ */
+
 const double ImisDBIO::time_zone = 1.; //All IMIS data is in gmt+1
 
 const string ImisDBIO::sqlDeleteHdata = "DELETE FROM snowpack.ams_pmod WHERE stat_abk=:1 and stao_nr=:2 and datum>=:3 and datum<=:4";
@@ -296,120 +314,138 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 {
-	const size_t posB=sqlInsertProfile.find("height");
+	/*const size_t posB=sqlInsertProfile.find("height");
 	const size_t posE=sqlInsertProfile.find_first_of(')');
-	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";
+	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";*/
+	const size_t posE=sqlInsertProfile.find_last_of('(');
+	cerr << "\n[E] SDB querry       :  " << sqlInsertProfile.substr(0, posE) << "(";
+	
+	string profileDate(  "to_date('" + Pdata.profileDate.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( profileDate.begin(), profileDate.end(), 'T', ' ');
+	string depositionDate( "to_date('" + Pdata.depositionDate.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( depositionDate.begin(), depositionDate.end(), 'T', ' ');
+	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
 
-	cerr << setw(12) << setprecision(8) << Pdata.height << "," << Pdata.depositionDate.toString(mio::Date::ISO) << ",";
+	cerr << profileDate << ",'" << Pdata.stationname << "'," << Pdata.loc_for_snow << ",";
+	cerr << setw(12) << setprecision(8) << Pdata.height << "," << depositionDate << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
 	cerr << Pdata.v_strain_rate << ",";
 	cerr << static_cast<int>( mio::Optim::round(100.*Pdata.theta_w)) << "," << static_cast<int>( mio::Optim::round(100.*Pdata.theta_i)) << ",";
 	cerr << Pdata.dendricity << "," << Pdata.sphericity << "," << Pdata.coordin_num << ",";
 	cerr << Pdata.grain_size << "," << Pdata.bond_size << "," << Pdata.type << ",";
-	cerr << info.computation_date.toString(mio::Date::ISO) << "," << info.version;
+	cerr << info.version << "," << compDate;
 
-	cerr << "\n";
+	cerr << ")\n";
 }
 
 void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdata_ind) const
 {
-	const size_t posB=sqlInsertHdata.find("dewpt_def");
-	const size_t posE=sqlInsertHdata.find_first_of(')');
-	cerr << "\n[E] SDB inserted    : " << sqlInsertHdata.substr(posB,posE-posB) << "\n[E] SDB with values : ";
+	const size_t posE=sqlInsertHdata.find_last_of('(');
+	cerr << "\n[E] SDB querry       :  " << sqlInsertHdata.substr(0, posE) << "(";
+	
+	string profileDate( "to_date('" + Hdata.date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( profileDate.begin(), profileDate.end(), 'T', ' ');
+	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
+	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
+	
+	cerr << profileDate << "," << Hdata.stat_abbrev << ",";
 	cerr << setw(12) << setprecision(8);
-	if (Hdata_ind.dewpt_def != -1) cerr << Hdata.dewpt_def << ",";
+	if (Hdata_ind.dewpt_def) cerr << Hdata.dewpt_def << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hoar_ind6 != -1) cerr << Hdata.hoar_ind6 << ",";
+	if (Hdata_ind.hoar_ind6) cerr << Hdata.hoar_ind6 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hoar_ind24 != -1) cerr << Hdata.hoar_ind24 << ",";
+	if (Hdata_ind.hoar_ind24) cerr << Hdata.hoar_ind24 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.wind_trans != -1) cerr << Hdata.wind_trans << ",";
+	if (Hdata_ind.wind_trans) cerr << Hdata.wind_trans << ",";
 	else cerr << "NULL,";
 
 	cerr << "\n[E] SDB               ";
-	if (Hdata_ind.hn3 != -1)       cerr << Hdata.hn3 << ",";
+	if (Hdata_ind.hn3)       cerr << Hdata.hn3 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hn6 != -1)       cerr << Hdata.hn6 << ",";
+	if (Hdata_ind.hn6)       cerr << Hdata.hn6 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hn12 != -1)      cerr << Hdata.hn12 << ",";
+	if (Hdata_ind.hn12)      cerr << Hdata.hn12 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hn24 != -1)      cerr << Hdata.hn24 << ",";
+	if (Hdata_ind.hn24)      cerr << Hdata.hn24 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hn72 != -1)      cerr << Hdata.hn72 << ",";
+	if (Hdata_ind.hn72)      cerr << Hdata.hn72 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hn72_24 != -1)   cerr << Hdata.hn72_24 << ",";
+	if (Hdata_ind.hn72_24)   cerr << Hdata.hn72_24 << ",";
 	else cerr << "NULL,";
 	cerr << "\t";
-	if (Hdata_ind.hnw3 != -1)        cerr << Hdata.hnw3 << ",";
+	if (Hdata_ind.psum3)        cerr << Hdata.psum3 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw6 != -1)        cerr << Hdata.hnw6 << ",";
+	if (Hdata_ind.psum6)        cerr << Hdata.psum6 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw12 != -1)       cerr << Hdata.hnw12 << ",";
+	if (Hdata_ind.psum12)       cerr << Hdata.psum12 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw24 != -1)       cerr << Hdata.hnw24 << ",";
+	if (Hdata_ind.psum24)       cerr << Hdata.psum24 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.hnw72 != -1)       cerr << Hdata.hnw72 << ",";
-	else cerr << "NULL,";
-
-	cerr << "\n[E] SDB               ";
-	if (Hdata_ind.hoar_size != -1)  cerr << Hdata.hoar_size << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.wind_trans24 != -1) cerr << Hdata.wind_trans24 << ",";
+	if (Hdata_ind.psum72)       cerr << Hdata.psum72 << ",";
 	else cerr << "NULL,";
 
 	cerr << "\n[E] SDB               ";
-	if (Hdata_ind.stab_class1 != -1)  cerr << Hdata.stab_class1 << ",";
+	if (Hdata_ind.hoar_size)  cerr << Hdata.hoar_size << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.stab_class2 != -1)  cerr << Hdata.stab_class2 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_index1 != -1)  cerr << Hdata.stab_index1 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_height1 != -1) cerr << Hdata.stab_height1 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_index2 != -1)  cerr << Hdata.stab_index2 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_height2 != -1) cerr << Hdata.stab_height2 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_index3 != -1)  cerr << Hdata.stab_index3 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_height3 != -1) cerr << Hdata.stab_height3 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_index4 != -1)  cerr << Hdata.stab_index4 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_height4 != -1) cerr << Hdata.stab_height4 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_index5 != -1)  cerr << Hdata.stab_index5 << ",";
-	else cerr << "NULL,";
-	if (Hdata_ind.stab_height5 != -1) cerr << Hdata.stab_height5 << ",";
+	if (Hdata_ind.wind_trans24) cerr << Hdata.wind_trans24 << ",";
 	else cerr << "NULL,";
 
 	cerr << "\n[E] SDB               ";
-	if (Hdata_ind.ch != -1)     cerr << Hdata.ch << ",";
+	if (Hdata_ind.stab_class1)  cerr << Hdata.stab_class1 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.crust != -1)  cerr << Hdata.crust << ",";
+	if (Hdata_ind.stab_class2)  cerr << Hdata.stab_class2 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.en_bal != -1) cerr << Hdata.en_bal << ",";
+	if (Hdata_ind.stab_index1)  cerr << Hdata.stab_index1 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.sw_net != -1)  cerr << Hdata.sw_net << ",";
+	if (Hdata_ind.stab_height1) cerr << Hdata.stab_height1 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index2)  cerr << Hdata.stab_index2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height2) cerr << Hdata.stab_height2 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index3)  cerr << Hdata.stab_index3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height3) cerr << Hdata.stab_height3 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index4)  cerr << Hdata.stab_index4 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height4) cerr << Hdata.stab_height4 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_index5)  cerr << Hdata.stab_index5 << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.stab_height5) cerr << Hdata.stab_height5 << ",";
+	else cerr << "NULL,";
+
+	cerr << "\n[E] SDB               ";
+	if (Hdata_ind.ch)     cerr << Hdata.ch << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.crust)  cerr << Hdata.crust << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.en_bal) cerr << Hdata.en_bal << ",";
+	else cerr << "NULL,";
+	if (Hdata_ind.sw_net)  cerr << Hdata.sw_net << ",";
 	else cerr << "NULL,";
 	cerr << "\t";
-	if (Hdata_ind.t_top1 != -1)  cerr << Hdata.t_top1 << ",";
+	if (Hdata_ind.t_top1)  cerr << Hdata.t_top1 << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.t_top2 != -1)  cerr << Hdata.t_top2 << "";
+	if (Hdata_ind.t_top2)  cerr << Hdata.t_top2 << "";
 	else cerr << "NULL,";
 	cerr << "\t";
-	if (Hdata_ind.swe != -1)      cerr << Hdata.swe << ",";
+	cerr << info.version << "," << compDate << ",";
+	
+	if (Hdata_ind.swe)      cerr << Hdata.swe << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.tot_lwc != -1)  cerr << Hdata.tot_lwc << ",";
+	if (Hdata_ind.tot_lwc)  cerr << Hdata.tot_lwc << ",";
 	else cerr << "NULL,";
-	if (Hdata_ind.runoff != -1)   cerr << Hdata.runoff << ",";
+	if (Hdata_ind.runoff)   cerr << Hdata.runoff << ",";
 	else cerr << "NULL";
-	if (Hdata_ind.lwi_N != -1)   cerr << Hdata.lwi_N << ",";
+	if (Hdata_ind.lwi_N)   cerr << Hdata.lwi_N << ",";
 	else cerr << "NULL";
-	if (Hdata_ind.lwi_S != -1)   cerr << Hdata.lwi_S << "";
+	if (Hdata_ind.lwi_S)   cerr << Hdata.lwi_S << "";
 	else cerr << "NULL";
 
-	cerr << "\n";
+	cerr << ")\n";
 }
 
 void ImisDBIO::insertHdata(const std::string& stationName, const std::string& stationNumber,
@@ -434,97 +470,97 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 		stmt->setString(param++, stationName);
 		stmt->setNumber(param++, statNum);
 
-		if (Hdata_ind[i].dewpt_def != -1)  stmt->setNumber(param++, Hdata[i].dewpt_def);
+		if (Hdata_ind[i].dewpt_def)  stmt->setNumber(param++, Hdata[i].dewpt_def);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hoar_ind6 != -1)	stmt->setNumber(param++, Hdata[i].hoar_ind6);
+		if (Hdata_ind[i].hoar_ind6)	stmt->setNumber(param++, Hdata[i].hoar_ind6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hoar_ind24 != -1) stmt->setNumber(param++, Hdata[i].hoar_ind24);
+		if (Hdata_ind[i].hoar_ind24) stmt->setNumber(param++, Hdata[i].hoar_ind24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wind_trans != -1) stmt->setNumber(param++, Hdata[i].wind_trans);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-
-		if (Hdata_ind[i].hn3 != -1)       stmt->setNumber(param++, Hdata[i].hn3);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hn6 != -1)       stmt->setNumber(param++, Hdata[i].hn6);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hn12 != -1)      stmt->setNumber(param++, Hdata[i].hn12);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hn24 != -1)      stmt->setNumber(param++, Hdata[i].hn24);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hn72 != -1)      stmt->setNumber(param++, Hdata[i].hn72);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hn72_24 != -1)   stmt->setNumber(param++, Hdata[i].hn72_24);
+		if (Hdata_ind[i].wind_trans) stmt->setNumber(param++, Hdata[i].wind_trans);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].hnw3 != -1)        stmt->setNumber(param++, Hdata[i].hnw3);
+		if (Hdata_ind[i].hn3)       stmt->setNumber(param++, Hdata[i].hn3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw6 != -1)        stmt->setNumber(param++, Hdata[i].hnw6);
+		if (Hdata_ind[i].hn6)       stmt->setNumber(param++, Hdata[i].hn6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw12 != -1)       stmt->setNumber(param++, Hdata[i].hnw12);
+		if (Hdata_ind[i].hn12)      stmt->setNumber(param++, Hdata[i].hn12);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw24 != -1)       stmt->setNumber(param++, Hdata[i].hnw24);
+		if (Hdata_ind[i].hn24)      stmt->setNumber(param++, Hdata[i].hn24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].hnw72 != -1)       stmt->setNumber(param++, Hdata[i].hnw72);
+		if (Hdata_ind[i].hn72)      stmt->setNumber(param++, Hdata[i].hn72);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-
-		if (Hdata_ind[i].hoar_size != -1)  stmt->setNumber(param++, Hdata[i].hoar_size);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].wind_trans24 != -1) stmt->setNumber(param++, Hdata[i].wind_trans24);
+		if (Hdata_ind[i].hn72_24)   stmt->setNumber(param++, Hdata[i].hn72_24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].stab_class1 != -1)  stmt->setNumber(param++, Hdata[i].stab_class1);
+		if (Hdata_ind[i].psum3)        stmt->setNumber(param++, Hdata[i].psum3);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_class2 != -1)  stmt->setNumber(param++, Hdata[i].stab_class2);
+		if (Hdata_ind[i].psum6)        stmt->setNumber(param++, Hdata[i].psum6);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index1 != -1)  stmt->setNumber(param++, Hdata[i].stab_index1);
+		if (Hdata_ind[i].psum12)       stmt->setNumber(param++, Hdata[i].psum12);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height1 != -1) stmt->setNumber(param++, Hdata[i].stab_height1);
+		if (Hdata_ind[i].psum24)       stmt->setNumber(param++, Hdata[i].psum24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index2 != -1)  stmt->setNumber(param++, Hdata[i].stab_index2);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height2 != -1) stmt->setNumber(param++, Hdata[i].stab_height2);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index3 != -1)  stmt->setNumber(param++, Hdata[i].stab_index3);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height3 != -1) stmt->setNumber(param++, Hdata[i].stab_height3);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index4 != -1)  stmt->setNumber(param++, Hdata[i].stab_index4);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height4 != -1) stmt->setNumber(param++, Hdata[i].stab_height4);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_index5 != -1)  stmt->setNumber(param++, Hdata[i].stab_index5);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].stab_height5 != -1) stmt->setNumber(param++, Hdata[i].stab_height5);
+		if (Hdata_ind[i].psum72)       stmt->setNumber(param++, Hdata[i].psum72);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].ch != -1)     stmt->setNumber(param++, Hdata[i].ch);
+		if (Hdata_ind[i].hoar_size)  stmt->setNumber(param++, Hdata[i].hoar_size);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].crust != -1)  stmt->setNumber(param++, Hdata[i].crust);
-		else stmt->setNull(param++, occi::OCCINUMBER);
-
-		if (Hdata_ind[i].en_bal != -1) stmt->setNumber(param++, Hdata[i].en_bal);
+		if (Hdata_ind[i].wind_trans24) stmt->setNumber(param++, Hdata[i].wind_trans24);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].sw_net != -1)  stmt->setNumber(param++, Hdata[i].sw_net);
+		if (Hdata_ind[i].stab_class1)  stmt->setNumber(param++, Hdata[i].stab_class1);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].t_top1 != -1)  stmt->setNumber(param++, Hdata[i].t_top1);
+		if (Hdata_ind[i].stab_class2)  stmt->setNumber(param++, Hdata[i].stab_class2);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].t_top2 != -1)  stmt->setNumber(param++, Hdata[i].t_top2);
+		if (Hdata_ind[i].stab_index1)  stmt->setNumber(param++, Hdata[i].stab_index1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height1) stmt->setNumber(param++, Hdata[i].stab_height1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index2)  stmt->setNumber(param++, Hdata[i].stab_index2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height2) stmt->setNumber(param++, Hdata[i].stab_height2);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index3)  stmt->setNumber(param++, Hdata[i].stab_index3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height3) stmt->setNumber(param++, Hdata[i].stab_height3);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index4)  stmt->setNumber(param++, Hdata[i].stab_index4);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height4) stmt->setNumber(param++, Hdata[i].stab_height4);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_index5)  stmt->setNumber(param++, Hdata[i].stab_index5);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].stab_height5) stmt->setNumber(param++, Hdata[i].stab_height5);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].ch)     stmt->setNumber(param++, Hdata[i].ch);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].crust)  stmt->setNumber(param++, Hdata[i].crust);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].en_bal) stmt->setNumber(param++, Hdata[i].en_bal);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+
+		if (Hdata_ind[i].sw_net)  stmt->setNumber(param++, Hdata[i].sw_net);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].t_top1)  stmt->setNumber(param++, Hdata[i].t_top1);
+		else stmt->setNull(param++, occi::OCCINUMBER);
+		if (Hdata_ind[i].t_top2)  stmt->setNumber(param++, Hdata[i].t_top2);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		stmt->setNumber(param++, version);
 		stmt->setDate(param++, computationdate);
 
-		if (Hdata_ind[i].swe != -1)      stmt->setNumber(param++, Hdata[i].swe);
+		if (Hdata_ind[i].swe)      stmt->setNumber(param++, Hdata[i].swe);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].tot_lwc != -1)  stmt->setNumber(param++, Hdata[i].tot_lwc);
+		if (Hdata_ind[i].tot_lwc)  stmt->setNumber(param++, Hdata[i].tot_lwc);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].runoff != -1)   stmt->setNumber(param++, Hdata[i].runoff);
+		if (Hdata_ind[i].runoff)   stmt->setNumber(param++, Hdata[i].runoff);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
-		if (Hdata_ind[i].lwi_N != -1)  stmt->setNumber(param++, Hdata[i].lwi_N);
+		if (Hdata_ind[i].lwi_N)  stmt->setNumber(param++, Hdata[i].lwi_N);
 		else stmt->setNull(param++, occi::OCCINUMBER);
-		if (Hdata_ind[i].lwi_S != -1)  stmt->setNumber(param++, Hdata[i].lwi_S);
+		if (Hdata_ind[i].lwi_S)  stmt->setNumber(param++, Hdata[i].lwi_S);
 		else stmt->setNull(param++, occi::OCCINUMBER);
 
 		try {

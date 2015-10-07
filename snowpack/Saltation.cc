@@ -300,7 +300,6 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 		//    tauA = tauS - Nae*mass*(u_i*cos(angle_i_rad) - u0*cos(angle_e_rad));
 		if(tauA < tau_th) tauA = tau_th;
 		tauA = (tauA+tauA_old)/2.;
-		//     fprintf(stdout, "n_ae=%lf, tauA=%lf \n",n_ae, tauA);
 		iter++;
 	} while ( (fabs((tauA - tauA_old)/tauA) > eps) && (iter < maxit) );
 
@@ -429,7 +428,6 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 					double tauA_right = tauS, tauA_left = 0.;
 					do {
 						tauA_middle = .5 * (tauA_left + tauA_right);
-						// fprintf(stdout, "tauA=%lf \n",tauA_middle);
 						if (sa_TestSaltation(Saltation::z0_salt, tauS, tauA_middle, slope_angle,
 									      dg, tau_th, z_lower, ubar) == Saltation::strong) {
 							tauA_right = tauA_middle;

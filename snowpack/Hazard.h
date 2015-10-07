@@ -26,8 +26,8 @@
  * This module contains the hazard computation routines and structures
 */
 
-#ifndef __HAZARD_H__
-#define __HAZARD_H__
+#ifndef HAZARD_H
+#define HAZARD_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
@@ -77,7 +77,7 @@ class Hazard {
 		void compMeltFreezeCrust(const SnowStation& Xdata, ProcessDat& Hdata, ProcessInd& Hdata_ind);
 
 		bool research_mode, enforce_measured_snow_heights, force_rh_water;
-		int nHz, hazard_steps_between;
+		unsigned int nHz, hazard_steps_between;
 		double sn_dt;
 		double hoar_density_surf, hoar_min_size_surf;
 };

@@ -30,8 +30,8 @@ using namespace mio;
 WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                : RichardsEquationSolver1d(cfg), variant(),
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
-                 thresh_rain(IOUtils::nodata), thresh_rain_range(IOUtils::nodata), sn_dt(IOUtils::nodata),
-                 hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata),
+                 sn_dt(IOUtils::nodata),
+                 hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
                  minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)
 {
@@ -42,11 +42,6 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 
 	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
 	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", water_layer);
-
-	//Rain only for air temperatures warmer than threshold (degC)
-	cfg.getValue("THRESH_RAIN", "SnowpackAdvanced", thresh_rain);
-	//If thresh_rain_range!=0: use gradual transition between rain and snow, where thresh_rain_range specifies the temperature range, and thresh_rain specifies the 50% rain and 50% snow mark.
-	cfg.getValue("THRESH_RAIN_RANGE", "SnowpackAdvanced", thresh_rain_range);
 
 	/**
 	 * @brief No surface hoar will form for rH above threshold (1)
@@ -63,6 +58,13 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	 * - r242: HOAR_THRESH_VW set to 3.5
 	 */
 	cfg.getValue("HOAR_THRESH_VW", "SnowpackAdvanced", hoar_thresh_vw);
+	
+	/**
+	 * @brief No surface hoar will form at air temperatures above threshold (m s-1)
+	 * - Originaly, using THRESH_RAIN
+	 * - r787: HOAR_THRESH_TA set to 1.2
+	 */
+	cfg.getValue("HOAR_THRESH_TA", "SnowpackAdvanced", hoar_thresh_ta);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -184,8 +186,6 @@ double WaterTransport::Bisection(const double minval, const double maxval, doubl
  */
 void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, const double WatCnt, const double SatuK, double &Rh, double &Rk)
 {
-	const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
-
 	// This is a very ill-confined piece of code!
 	if ( fabs(ThR) < Constants::eps2 ) {
 		ThR += Constants::eps;
@@ -196,54 +196,53 @@ void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, 
 	const double ThS = (1000. - (Dens / 0.917)) / 10.0 * 0.9 / 100.0;
 	const double LTh = (WatCnt-ThR) / (ThS - ThR);
 
-	if ( 1 ) { // NIED code
-		if (WatCnt <= ThR * 1.01) {
-			double SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
-			const double hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			SEffSub = ((ThR * 1.011) - ThR) / (ThS - ThR);
-			const double hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
-			const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
-			const double hSlo = (hL - hN) / (ThR * 0.002);
-			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
-		} else {
-			if (LTh > 1.) {
-				Rh = 0.;
-			} else {
-				Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
-			}
-		}
-		if (LTh < 0.) {
-			Rk = 0.;
-		} else {
-			if (LTh > 1.) {
-				Rk = SatuK;
-			} else {
-				Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
-			}
-		}
-	} else { //Fz 2010-05-02
-		if (WatCnt <= ThR * 1.01) {
-			double SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
-			const double hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			SEffSub = MAX( ((ThR * 1.011) - ThR) / (ThS - ThR) , avoid_neg);
-			const double hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
-			const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
-			const double hSlo = (hL - hN) / (ThR * 0.002);
-			Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
-		}
-		if (LTh < 0.) {
-			Rk = 0.;
-			Rh = 0.; //What else?
-		} else if (LTh > 1.) {
+	if (WatCnt <= ThR * 1.01) {
+		double SEffSub = ((ThR * 1.01) - ThR) / (ThS - ThR);
+		const double hM =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		SEffSub = ((ThR * 1.011) - ThR) / (ThS - ThR);
+		const double hL =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		SEffSub = ((ThR * 1.009) - ThR) / (ThS - ThR);
+		const double hN =  pow(pow(SEffSub,(-1.0 / PM)) - 1., 1. / PN) / PA;
+		const double hSlo = (hL - hN) / (ThR * 0.002);
+		Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+	} else {
+		if (LTh > 1.) {
 			Rh = 0.;
+		} else {
+			Rh = pow(pow(LTh,(-1. / PM)) - 1., 1. / PN) / PA;
+		}
+	}
+	if (LTh < 0.) {
+		Rk = 0.;
+	} else {
+		if (LTh > 1.) {
 			Rk = SatuK;
 		} else {
-			Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
 			Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
 		}
 	}
+	//Fz 2010-05-02
+	/*const double avoid_neg=Constants::eps; // To avoid base x <= 0. for pow(x,1/y) function!
+	 if (WatCnt <= ThR * 1.01) {
+		double SEffSub = MAX( ((ThR * 1.01) - ThR) / (ThS - ThR) , avoid_neg);
+		const double hM =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		SEffSub = MAX( ((ThR * 1.011) - ThR) / (ThS - ThR) , avoid_neg);
+		const double hL =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		SEffSub = MAX( ((ThR * 1.009) - ThR) / (ThS - ThR) , Constants::eps);
+		const double hN =  pow(MAX(pow(SEffSub,(-1.0 / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		const double hSlo = (hL - hN) / (ThR * 0.002);
+		Rh = hM + (WatCnt - (ThR*1.01)) * hSlo;
+	}
+	if (LTh < 0.) {
+		Rk = 0.;
+		Rh = 0.; //What else?
+	} else if (LTh > 1.) {
+		Rh = 0.;
+		Rk = SatuK;
+	} else {
+		Rh = pow(MAX(pow(LTh,(-1. / PM)) - 1., avoid_neg), 1. / PN) / PA;
+		Rk = SatuK * sqrt(LTh) * Optim::pow2( 1.-pow(1.-pow(LTh,(1./PM)),PM) );
+	}*/
 }
 
 /**
@@ -350,11 +349,12 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				*          Otherwise sublimate ice matrix only.
 				*/
 				const double L0 = EMS[e].L;
+				assert(L0>0.);
 				// If there is water ...
 				if ((EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF]) > ((e==nE-1)?(2.*Constants::eps):0.)) {
 					//For the top layer, it is important to keep a tiny amount of liquid water, so we are able to detect whether we need the
 					//implicit or explicit treatment of the top boundary condition when solving the heat equation.
-					const double theta_w0 = (EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF])-((e==nE-1)?(2.*Constants::eps):0.);
+					const double theta_w0 = (EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF]) - ( (e==nE-1) ? (2.*Constants::eps) : 0. );
 					dM = ql*sn_dt/Constants::lh_vaporization;
 					M = theta_w0*Constants::density_water*L0;
 					// Check that you only take the available mass of water
@@ -428,14 +428,13 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 				// Update remaining volumetric contents and density
 				EMS[e].theta[AIR] = MAX(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
 				EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF]) * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-				assert(EMS[e].Rho>=0. || EMS[e].Rho==IOUtils::nodata); //we want positive density
 			} else if (e==nE-1) {
 				//In case we use RE for snow or soil, check if we can sublimate hoar away:
 				dM = ql*sn_dt/Constants::lh_sublimation;
 				if( -dM > NDS[nN-1].hoar ) dM=-NDS[nN-1].hoar;	//Limit, so that only the hoar will sublimate
 
 				if( dM < 0. ) {					//If we have actual hoar to sublimate, do it:
-	  				const double L0 = EMS[e].L;
+					const double L0 = EMS[e].L;
 					const double theta_i0 = EMS[e].theta[ICE];
 					M = theta_i0*Constants::density_ice*L0;
 					if (-dM > M) {
@@ -479,6 +478,13 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + ((EMS[nE-1].theta[WATER] + EMS[nE-1].theta[WATER_PREF]) * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 				}
 			}
+			
+			//check that thetas and densities are consistent
+			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
+			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
+			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
 		}
 
 		// Now take care of left over solute mass.
@@ -510,8 +516,9 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	}
 
 	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) { //HACK should it take hnw_l into account?
-		hoar = MIN(hoar,0.);
+	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(hoar_thresh_ta))) {
+		//if rh is very close to 1, vw too high or ta too high, surface hoar is destroyed
+		hoar = MIN(hoar, 0.);
 	}
 
 	Sdata.hoar += hoar;
@@ -788,10 +795,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	if (!useSoilLayers && nN == 1) {
 		return;
 	} else { // add rainfall to snow/soil pack
-		 // Variant for mixed precipitation in the forcing, like Snowmip2
-		if ( ((Mdata.hnw > 0.) && (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range))) || (Mdata.hnwl > 0.) ) {
-			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			double Store = (Mdata.hnwl > 0.) ? Mdata.hnwl / Constants::density_water : (Mdata.hnw * tmp_rainfraction) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
+		if (Mdata.psum > 0. && Mdata.psum_ph>0.) { //there is some rain
+			double Store = (Mdata.psum * Mdata.psum_ph) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
 			if (water_layer && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
@@ -870,7 +875,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
 			RichardsEquationSolver1d.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
-			Sdata.mass[SurfaceFluxes::MS_RAIN] += (Mdata.hnwl > 0)? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
+			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * Mdata.psum_ph;
 		}
 	}
 
@@ -1243,9 +1248,8 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
 	if (!useSoilLayers && (Xdata.getNumberOfNodes() == Xdata.SoilNode+1)) {
-		if (Mdata.ta >= C_TO_K(thresh_rain - 0.5 * thresh_rain_range) || Mdata.hnwl > 0.) {
-			const double tmp_rainfraction = (thresh_rain_range == 0.) ? 1. : MAX(0., MIN(1., (1. / thresh_rain_range) * (Mdata.ta - (C_TO_K(thresh_rain) - 0.5 * thresh_rain_range))));
-			double precip_rain = (Mdata.hnwl > 0.) ? Mdata.hnwl : Mdata.hnw * tmp_rainfraction;
+		if (Mdata.psum > 0. && Mdata.psum_ph>0.) { //there is some rain
+			double precip_rain = Mdata.psum * Mdata.psum_ph;
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += precip_rain;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += precip_rain;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {

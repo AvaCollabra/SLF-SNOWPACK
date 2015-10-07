@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SNOWPACKIOINTERFACE_H__
-#define __SNOWPACKIOINTERFACE_H__
+#ifndef SNOWPACKIOINTERFACE_H
+#define SNOWPACKIOINTERFACE_H
 
 #include <snowpack/DataClasses.h>
 #include <snowpack/Hazard.h>

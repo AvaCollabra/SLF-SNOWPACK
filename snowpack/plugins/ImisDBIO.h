@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __IMISDBIO_H__
-#define __IMISDBIO_H__
+#ifndef IMISDBIO_H
+#define IMISDBIO_H
 
 #include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/DataClasses.h>

@@ -21,8 +21,8 @@
  * @file Metamorphism.h
  */
 
-#ifndef __METAMORPHISM_H__
-#define __METAMORPHISM_H__
+#ifndef METAMORPHISM_H
+#define METAMORPHISM_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>

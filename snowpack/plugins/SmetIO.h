@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SMET_IO_H__
-#define __SMET_IO_H__
+#ifndef SMET_IO_H
+#define SMET_IO_H
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>

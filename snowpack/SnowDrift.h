@@ -18,8 +18,8 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __SNOWDRIFT_H__
-#define __SNOWDRIFT_H__
+#ifndef SNOWDRIFT_H
+#define SNOWDRIFT_H
 
 #include <meteoio/MeteoIO.h>
 #include <snowpack/Constants.h>
@@ -40,7 +40,7 @@ class SnowDrift {
 	public:
 		SnowDrift(const SnowpackConfig& i_cfg);
 
-		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_hnw);
+		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_psum);
 
 		static const double schmidt_drift_fudge;
 
@@ -55,5 +55,5 @@ class SnowDrift {
 		static const bool msg_erosion;
 }; //End class SnowDrift
 
-#endif //#ifndef __SNOWDRIFT_H__
+#endif
 

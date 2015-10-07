@@ -54,22 +54,13 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 	else
 		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 
-	/**
-	 * @brief Initial estimate of the roughness length for the site; will be adjusted iteratively. \n
-	 * Default value and operational mode: 0.002 m
-	 */
+	//Initial estimate of the roughness length for the site; will be adjusted iteratively, default value and operational mode: 0.002 m
 	cfg.getValue("ROUGHNESS_LENGTH", "Snowpack", roughness_length);
 
-	/**
-	 * @brief Defines whether the canopy model is used \n
-	 * NOTE: OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
-	 */
+	//Defines whether the canopy model is used. OUT_CANOPY must also be set to dump canopy parameters to file; see Constants_local.h
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 
-	/**
-	 * @brief Define the heights of the meteo measurements above ground (m) \n
-	 * Required for surface energy exchange computation and for drifting and blowing snow.
-	 */
+	//Define the heights of the meteo measurements above ground (m). Required for surface energy exchange computation and for drifting and blowing snow.
 	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
@@ -284,12 +275,13 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * 		- Mdata->ustar friction velocity
  * 		- Mdata->z0    roughness length
  * 		- psi_s        stability correction for scalar heat fluxes
- * @param *Mdata
- * @param *Xdata
+ * @param Mdata meteorological forcing
+ * @param Xdata snow profile data
+ * @param runCanopyModel should the canopy module also be called?
  */
-void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata)
+void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {
-	if (useCanopyModel)
+	if (useCanopyModel && runCanopyModel)	// The canopy model should not necessarily be called at every call to compMeteo
 		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
 
 	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {

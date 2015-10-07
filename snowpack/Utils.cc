@@ -161,39 +161,43 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	vecExtension.push_back("pro"); //Time series of modeled profile-type data
 	vecExtension.push_back("ini"); //Record of run configuration
 	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
+	const string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
 
-	char ftrunc[MAX_STRING_LENGTH]="\000", fname[MAX_STRING_LENGTH]="\000", exp[MAX_STRING_LENGTH]="\000";
 	unsigned int n_files;
-
-	if (experiment != "NO_EXP") {
-		snprintf(exp, MAX_STRING_LENGTH-2, "%s_%s", stationID.c_str(), experiment.c_str());
-	}
+	
 	for (size_t ii=0; ii<vecExtension.size(); ii++){
-		const string& ext = vecExtension[ii];
+		const string ext = vecExtension[ii];
 		n_files = 0;
 
-		snprintf(ftrunc, MAX_STRING_LENGTH-1, "%s/%s", outdir.c_str(), exp);
+		const string ftrunc = outdir + "/" + exp;
 		if (ext == "ini") {
 			if (stationID != "IMIS") {
-				snprintf(fname, MAX_STRING_LENGTH-2, "%s.%s", ftrunc, ext.c_str());
-				if (nSlopes > 1) {
-					snprintf(fname, MAX_STRING_LENGTH-3, "%s-%d.%s", ftrunc, nSlopes-1, ext.c_str());
-				}
-				if (remove(fname) == 0) {
-					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %s", fname);
+				string fname;
+				if (nSlopes>1) {
+					stringstream ss;
+					ss << nSlopes-1;
+					fname = ftrunc + "-" + ss.str() + "." + ext;
 				} else {
-					prn_msg(__FILE__, __LINE__, "msg-", Date(), "No file %s to erase", fname);
+					fname = ftrunc + "." + ext;
+				}
+				if (remove(fname.c_str()) == 0) {
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Erased %s", fname.c_str());
+				} else {
+					prn_msg(__FILE__, __LINE__, "msg-", Date(), "No file %s to erase", fname.c_str());
 				}
 			}
 		} else {
 			for (unsigned int jj = 0; jj < nSlopes; jj++) {
+				string fname;
 				if (jj > 0) {
-					snprintf(fname, MAX_STRING_LENGTH-1, "%s%d.%s", ftrunc, jj, ext.c_str());
+					stringstream ss;
+					ss << jj;
+					fname = ftrunc + ss.str() + "." + ext;
 				} else {
-					snprintf(fname, MAX_STRING_LENGTH-1, "%s.%s", ftrunc, ext.c_str());
+					fname = ftrunc + "." + ext;
 				}
 				if (ext == "sno") {
-					if (remove(fname) == 0) {
+					if (remove(fname.c_str()) == 0) {
 						n_files++;
 					}
 					if (jj == nSlopes-1) {
@@ -268,52 +272,10 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 {
 	const double nr_steps = static_cast<double>( n_steps );
 	// Mean energy fluxes (W m-2), including albedo
-	Sdata.lw_in   /= nr_steps;
-	Sdata.lw_out  /= nr_steps;
-	Sdata.lw_net  /= nr_steps;
-	Sdata.qs      /= nr_steps;
-	Sdata.ql      /= nr_steps;
-	Sdata.qr      /= nr_steps;
-	Sdata.qg      /= nr_steps;
-	Sdata.qg0     /= nr_steps;
-	Sdata.sw_hor  /= nr_steps;
-	Sdata.sw_in   /= nr_steps;
-	Sdata.sw_out  /= nr_steps;
-	Sdata.qw      /= nr_steps;
-	Sdata.sw_dir  /= nr_steps;
-	Sdata.sw_diff /= nr_steps;
-	Sdata.pAlbedo /= nr_steps;
-	if (Sdata.mAlbedo != Constants::undefined)
-		Sdata.mAlbedo /= nr_steps;
+	Sdata.multiplyFluxes(1./nr_steps);
 
-	if (useCanopyModel) {
-		// *radiation
-		Xdata.Cdata.rswrac /= nr_steps;
-		Xdata.Cdata.iswrac /= nr_steps;
-		Xdata.Cdata.rswrbc /= nr_steps;
-		Xdata.Cdata.iswrbc /= nr_steps;
-		Xdata.Cdata.ilwrac /= nr_steps;
-		Xdata.Cdata.rlwrac /= nr_steps;
-		Xdata.Cdata.ilwrbc /= nr_steps;
-		Xdata.Cdata.rlwrbc /= nr_steps;
-		Xdata.Cdata.rsnet /= nr_steps;
-		Xdata.Cdata.rlnet /= nr_steps;
-		// turbulent heat fluxes
-		Xdata.Cdata.sensible /= nr_steps;
-		Xdata.Cdata.latent /= nr_steps;
-		Xdata.Cdata.latentcorr /= nr_steps;
-		// 2Layer canopy model
-		Xdata.Cdata.CondFluxCanop /=n_steps;
-		Xdata.Cdata.CondFluxTrunks /=n_steps;
-		Xdata.Cdata.QStrunks /=n_steps;
-		Xdata.Cdata.LWnet_Trunks /=n_steps;
-		Xdata.Cdata.SWnet_Trunks /=n_steps;
-		Xdata.Cdata.forestfloor_alb /=n_steps;
-		// auxiliaries
-		Xdata.Cdata.canopyalb /= nr_steps;
-		Xdata.Cdata.totalalb /= nr_steps;
-		Xdata.Cdata.intcapacity /= nr_steps;
-	}
+	if (useCanopyModel) 
+		Xdata.Cdata.multiplyFluxes(1./nr_steps);
 }
 
 /**
@@ -358,7 +320,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		unitIn = (char*) "°F";
 	if (!strcmp(unitOut,"degF") || !strcmp(unitOut,"Fahrenheit"))
 		unitOut = (char*) "°F";
-	
+
 	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
 		return (val+273.15);
 	} else if (!strcmp(unitIn,"K") && !strcmp(unitOut,"°C")) {
@@ -373,7 +335,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		return (val*1.8+32.);
 	} else {
 		double ratio = 1.;
-		if (strlen(unitIn) > 1+isdigit(unitIn[strlen(unitIn)-1])) {
+		if (strlen(unitIn) > static_cast<size_t>(1+isdigit(unitIn[strlen(unitIn)-1]))) {
 			char unitInPrefix = unitIn[0];
 			if (unitInPrefix == 'f') {
 				ratio *= 1./1000000000000000.;
@@ -409,12 +371,12 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		if (val==IOUtils::nodata) {
 			return ratio;
 		}
-		if (strlen(unitOut) > 1+isdigit(unitOut[strlen(unitOut)-1])) {
+		if (strlen(unitOut) > static_cast<size_t>((1+isdigit(unitOut[strlen(unitOut)-1])))) {
 			ratio /= unitConversion(IOUtils::nodata,unitOut,unitIn);
 		}
 		return val*ratio;
 	}
-	throw IOException("Unable to perform unit conversion.", AT);
+	throw IOException("Unable to perform unit conversion.", AT); //if we don't missuse the method, this should never be reached
 }
 
 /**
@@ -431,8 +393,8 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 {
 	bool mass_error = true;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
-	const double hnw = Xdata.hn*Xdata.rho_hn;
-	double mass_change = hnw - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
+	const double psum = Xdata.hn*Xdata.rho_hn;
+	double mass_change = psum - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
 	for (size_t e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {

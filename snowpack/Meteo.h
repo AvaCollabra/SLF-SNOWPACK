@@ -24,8 +24,8 @@
  * @date -
  */
 
-#ifndef __METEO_H__
-#define __METEO_H__
+#ifndef METEO_H
+#define METEO_H
 
 #include <meteoio/MeteoIO.h>
 
@@ -42,7 +42,7 @@ class Meteo {
 	public:
 		typedef enum {
 			RICHARDSON,  ///< Simplified Richardson number stability correction
-			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns & Weidner
+			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
 			NEUTRAL_MO  ///< Assume neutral MO stratification
 		} ATM_STABILITY;
 
@@ -50,7 +50,7 @@ class Meteo {
 
 		static void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
 		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double& hs_a3hl6);
-		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata);
+		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel);
 		static void compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata);
 		static void radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes);
 		void setStability(const ATM_STABILITY& i_stability);

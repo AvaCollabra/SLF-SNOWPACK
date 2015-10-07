@@ -48,11 +48,14 @@ PhaseChange::PhaseChange(const SnowpackConfig& cfg)
              : iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
                watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                sn_dt(0.), cold_content_in(IOUtils::nodata), cold_content_soil_in(IOUtils::nodata),
-               cold_content_out(IOUtils::nodata), cold_content_soil_out(IOUtils::nodata)
+               cold_content_out(IOUtils::nodata), cold_content_soil_out(IOUtils::nodata),
+	       alpine3d(false), t_crazy_min(0.), t_crazy_max(0.)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
+
+	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 
 	//Water transport model snow
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
@@ -73,6 +76,9 @@ PhaseChange::PhaseChange(const SnowpackConfig& cfg)
 	} else if (watertransportmodel_soil=="RICHARDSEQUATION") {
 		iwatertransportmodel_soil=RICHARDSEQUATION;
 	}
+
+	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
+	cfg.getValue("T_CRAZY_MAX", "SnowpackAdvanced", t_crazy_max);
 }
 
 /**
@@ -146,7 +152,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 			Edata.Te = T_melt;
 		}
 		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
-		Edata.dth_w = dth_w; // (1)
+		Edata.dth_w += dth_w; // (1)
 		for (unsigned int ii = 0; ii < nSolutes; ii++) {
 			if( dth_w > 0. ) {
 				Edata.conc[WATER][ii] = (Edata.theta[WATER] * Edata.conc[WATER][ii]
@@ -281,7 +287,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		Edata.heatCapacity();
 		// Compute the volumetric refreezing power
 		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
-		Edata.dth_w = dth_w;
+		Edata.dth_w += dth_w;
 		Edata.Te += dT;
 	}
 }
@@ -560,7 +566,10 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 								NDS[e-1].T=MIN(NDS[e-1].T, EMS[e-1].freezing_tk);
 							}
 						}
+						
+						// Recalculate the element temperature of the affected nodes
 						EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+						if(e < nE-1) EMS[e+1].Te=0.5*(NDS[e+1].T+NDS[e+2].T);
 					}
 				}
 				// TODO If WATER_LAYER && ql_rest > 0, consider evaporating water left in the last element above soil!
@@ -612,6 +621,36 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 				NDS[nE].T=EMS[nE-1].melting_tk;
 			}
 		}
+	}
+
+	// Update element temperatures
+	e = nE;
+	while (e > 0) {
+		e--;
+		if(alpine3d) {
+			// For alpine3d simulations, be strict in the nodal temperatures
+			if(NDS[e+1].T <= t_crazy_min) {
+				prn_msg(__FILE__, __LINE__, "wrn", date_in, "Crazy node (T=%f) at %d of %d corrected.", NDS[e+1].T, e+1, nE+1);
+				NDS[e+1].T=t_crazy_min*1.001;
+			}
+			if(NDS[e+1].T >= t_crazy_max) {
+				prn_msg(__FILE__, __LINE__, "wrn", date_in, "Crazy node (T=%f) at %d of %d corrected.", NDS[e+1].T, e+1, nE+1);
+				NDS[e+1].T=t_crazy_max*0.999;
+			}
+			if(NDS[e].T <= t_crazy_min) {
+				prn_msg(__FILE__, __LINE__, "wrn", date_in, "Crazy node (T=%f) at %d of %d corrected.", NDS[e].T, e, nE+1);
+				NDS[e].T=t_crazy_min*1.001;
+			}
+			if(NDS[e].T >= t_crazy_max) {
+				prn_msg(__FILE__, __LINE__, "wrn", date_in, "Crazy node (T=%f) at %d of %d corrected.", NDS[e].T, e, nE+1);
+				NDS[e].T=t_crazy_max*0.999;
+			}
+		}
+
+		// Recalculate the element temperatures
+		EMS[e].Te=0.5*(NDS[e].T+NDS[e+1].T);
+		if(e < nE-1) EMS[e+1].Te=0.5*(NDS[e+1].T+NDS[e+2].T);
+		if(e > 0) EMS[e-1].Te=0.5*(NDS[e-1].T+NDS[e].T);
 	}
 
 	return retTopNodeT;

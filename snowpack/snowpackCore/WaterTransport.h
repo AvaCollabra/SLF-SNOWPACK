@@ -22,8 +22,8 @@
  * @version 10.02
  */
 
-#ifndef __WATERTRANSPORT_H__
-#define __WATERTRANSPORT_H__
+#ifndef WATERTRANSPORT_H
+#define WATERTRANSPORT_H
 
 #include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
@@ -42,7 +42,6 @@ class WaterTransport {
 
 	public:
 		WaterTransport(const SnowpackConfig& cfg);
-
 		void compTransportMass(const CurrentMeteo& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 	private:
@@ -69,11 +68,8 @@ class WaterTransport {
 
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
-		double thresh_rain;
-		double thresh_rain_range;
 		double sn_dt;
-		double hoar_thresh_rh;
-		double hoar_thresh_vw;
+		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element;
 		bool useSoilLayers, water_layer, jam;

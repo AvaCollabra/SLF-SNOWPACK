@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef __STABILITY_H__
-#define __STABILITY_H__
+#ifndef STABILITY_H
+#define STABILITY_H
 
 #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
 

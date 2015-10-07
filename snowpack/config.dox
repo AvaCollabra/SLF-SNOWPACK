@@ -38,7 +38,7 @@ PROJECT_NAME           = SNOWPACK
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = SNOWPACK-3.2.2
+PROJECT_NUMBER         = SNOWPACK-3.3.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -242,7 +242,7 @@ TCL_SUBST              =
 # members will be omitted, etc.
 # The default value is: NO.
 
-OPTIMIZE_OUTPUT_FOR_C  = YES
+OPTIMIZE_OUTPUT_FOR_C  = NO
 
 # Set the OPTIMIZE_OUTPUT_JAVA tag to YES if your project consists of Java or
 # Python sources only. Doxygen will then generate output that is more tailored
@@ -309,7 +309,7 @@ AUTOLINK_SUPPORT       = YES
 # diagrams that involve STL classes more complete and accurate.
 # The default value is: NO.
 
-BUILTIN_STL_SUPPORT    = NO
+BUILTIN_STL_SUPPORT    = YES
 
 # If you use Microsoft's C++/CLI language, you should set this option to YES to
 # enable parsing support.
@@ -333,7 +333,7 @@ SIP_SUPPORT            = NO
 # should set this option to NO.
 # The default value is: YES.
 
-IDL_PROPERTY_SUPPORT   = YES
+IDL_PROPERTY_SUPPORT   = NO
 
 # If member grouping is used in the documentation and the DISTRIBUTE_GROUP_DOC
 # tag is set to YES, then doxygen will reuse the documentation of the first
@@ -427,7 +427,7 @@ EXTRACT_PACKAGE        = NO
 # included in the documentation.
 # The default value is: NO.
 
-EXTRACT_STATIC         = NO
+EXTRACT_STATIC         = YES
 
 # If the EXTRACT_LOCAL_CLASSES tag is set to YES classes (and structs) defined
 # locally in source files will be included in the documentation. If set to NO
@@ -557,14 +557,14 @@ SORT_BRIEF_DOCS        = NO
 # detailed member documentation.
 # The default value is: NO.
 
-SORT_MEMBERS_CTORS_1ST = NO
+SORT_MEMBERS_CTORS_1ST = YES
 
 # If the SORT_GROUP_NAMES tag is set to YES then doxygen will sort the hierarchy
 # of group names into alphabetical order. If set to NO the group names will
 # appear in their defined order.
 # The default value is: NO.
 
-SORT_GROUP_NAMES       = NO
+SORT_GROUP_NAMES       = YES
 
 # If the SORT_BY_SCOPE_NAME tag is set to YES, the class list will be sorted by
 # fully-qualified names, including namespaces. If set to NO, the class list will
@@ -591,20 +591,20 @@ STRICT_PROTO_MATCHING  = NO
 # documentation.
 # The default value is: YES.
 
-GENERATE_TODOLIST      = YES
+GENERATE_TODOLIST      = NO
 
 # The GENERATE_TESTLIST tag can be used to enable ( YES) or disable ( NO) the
 # test list. This list is created by putting \test commands in the
 # documentation.
 # The default value is: YES.
 
-GENERATE_TESTLIST      = YES
+GENERATE_TESTLIST      = NO
 
 # The GENERATE_BUGLIST tag can be used to enable ( YES) or disable ( NO) the bug
 # list. This list is created by putting \bug commands in the documentation.
 # The default value is: YES.
 
-GENERATE_BUGLIST       = YES
+GENERATE_BUGLIST       = NO
 
 # The GENERATE_DEPRECATEDLIST tag can be used to enable ( YES) or disable ( NO)
 # the deprecated list. This list is created by putting \deprecated commands in
@@ -672,7 +672,7 @@ FILE_VERSION_FILTER    =
 # DoxygenLayout.xml, doxygen will parse it automatically even if the LAYOUT_FILE
 # tag is left empty.
 
-LAYOUT_FILE            =
+LAYOUT_FILE            = snowpack/DoxygenLayout.xml
 
 # The CITE_BIB_FILES tag can be used to specify one or more bib files containing
 # the reference definitions. This must be a list of .bib files. The .bib
@@ -726,7 +726,7 @@ WARN_IF_DOC_ERROR      = YES
 # documentation, but not about the absence of documentation.
 # The default value is: NO.
 
-WARN_NO_PARAMDOC       = NO
+WARN_NO_PARAMDOC       = YES
 
 # The WARN_FORMAT tag determines the format of the warning messages that doxygen
 # can produce. The string should contain the $file, $line, and $text tags, which
@@ -754,7 +754,9 @@ WARN_LOGFILE           =
 # spaces.
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ./snowpack
+INPUT                  = ./snowpack \
+                                ./snowpack/snowpackCore \
+                                ./snowpack/plugins
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -991,7 +993,7 @@ VERBATIM_HEADERS       = YES
 # classes, structs, unions or interfaces.
 # The default value is: YES.
 
-ALPHABETICAL_INDEX     = NO
+ALPHABETICAL_INDEX     = YES
 
 # The COLS_IN_ALPHA_INDEX tag can be used to specify the number of columns in
 # which the alphabetical index list will be split.
@@ -1351,7 +1353,7 @@ ECLIPSE_DOC_ID         = org.doxygen.Project
 # The default value is: NO.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-DISABLE_INDEX          = NO
+DISABLE_INDEX          = YES
 
 # The GENERATE_TREEVIEW tag is used to specify whether a tree-like index
 # structure should be generated to display hierarchical information. If the tag
@@ -1401,7 +1403,7 @@ EXT_LINKS_IN_WINDOW    = NO
 # Minimum value: 8, maximum value: 50, default value: 10.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-FORMULA_FONTSIZE       = 10
+FORMULA_FONTSIZE       = 12
 
 # Use the FORMULA_TRANPARENT tag to determine whether or not the images
 # generated for formulas are transparent PNGs. Transparent PNGs are not
@@ -1446,7 +1448,7 @@ MATHJAX_FORMAT         = HTML-CSS
 # The default value is: http://cdn.mathjax.org/mathjax/latest.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
-MATHJAX_RELPATH        = http://www.mathjax.org/mathjax
+MATHJAX_RELPATH        = http://cdn.mathjax.org/mathjax/latest
 
 # The MATHJAX_EXTENSIONS tag can be used to specify one or more MathJax
 # extension names that should be enabled during MathJax rendering. For example
@@ -1482,7 +1484,7 @@ MATHJAX_CODEFILE       =
 # The default value is: YES.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-SEARCHENGINE           = NO
+SEARCHENGINE           = YES
 
 # When the SERVER_BASED_SEARCH tag is enabled the search engine will be
 # implemented using a web server instead of a web client using Javascript. There
@@ -2029,7 +2031,7 @@ PERL_PATH              = /usr/bin/perl
 # powerful graphs.
 # The default value is: YES.
 
-CLASS_DIAGRAMS         = YES
+CLASS_DIAGRAMS         = NO
 
 # You can define message sequence charts within doxygen comments using the \msc
 # command. Doxygen will then run the mscgen tool (see:
@@ -2102,7 +2104,7 @@ DOT_FONTPATH           =
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-CLASS_GRAPH            = YES
+CLASS_GRAPH            = NO
 
 # If the COLLABORATION_GRAPH tag is set to YES then doxygen will generate a
 # graph for each documented class showing the direct and indirect implementation
@@ -2111,14 +2113,14 @@ CLASS_GRAPH            = YES
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-COLLABORATION_GRAPH    = YES
+COLLABORATION_GRAPH    = NO
 
 # If the GROUP_GRAPHS tag is set to YES then doxygen will generate a graph for
 # groups, showing the direct groups dependencies.
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-GROUP_GRAPHS           = YES
+GROUP_GRAPHS           = NO
 
 # If the UML_LOOK tag is set to YES doxygen will generate inheritance and
 # collaboration diagrams in a style similar to the OMG's Unified Modeling
@@ -2194,7 +2196,7 @@ CALLER_GRAPH           = NO
 # The default value is: YES.
 # This tag requires that the tag HAVE_DOT is set to YES.
 
-GRAPHICAL_HIERARCHY    = YES
+GRAPHICAL_HIERARCHY    = NO
 
 # If the DIRECTORY_GRAPH tag is set to YES then doxygen will show the
 # dependencies a directory has on other directories in a graphical way. The

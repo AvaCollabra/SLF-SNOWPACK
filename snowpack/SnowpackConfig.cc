@@ -36,6 +36,7 @@ bool SnowpackConfig::initStaticData()
 {
 	//[SnowpackAdvanced] section
 	advancedConfig["ALPINE3D"] = "false";
+	advancedConfig["ALLOW_ADAPTIVE_TIMESTEPPING"] = "true";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
@@ -51,6 +52,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
 	advancedConfig["HOAR_MIN_SIZE_BURIED"] = "2.";
 	advancedConfig["HOAR_MIN_SIZE_SURF"] = "0.5";
+	advancedConfig["HOAR_THRESH_TA"] = "1.2";
 	advancedConfig["HOAR_THRESH_RH"] = "0.97";
 	advancedConfig["HOAR_THRESH_VW"] = "3.5";
 	advancedConfig["JAM"] = "false";
@@ -73,12 +75,10 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SNOW_EROSION"] = "false";
 	advancedConfig["SNOW_REDISTRIBUTION"] = "false";
 	advancedConfig["SALTATION_MODEL"] = "SORENSEN";
-	advancedConfig["STATION_NAME"] = "station"; //TODO: we should suppress this (not needed anymore)
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
 	advancedConfig["FORCE_SW_MODE"] = "false";
 	advancedConfig["THRESH_RAIN"] = "1.2";
-	advancedConfig["THRESH_RAIN_RANGE"] = "0.0";
 	advancedConfig["THRESH_RH"] = "0.5";
 	advancedConfig["THRESH_DTEMP_AIR_SNOW"] = "3.0";
 	advancedConfig["T_CRAZY_MAX"] = "340.";
@@ -214,11 +214,11 @@ void SnowpackConfig::setDefaults()
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 
-		addKey("FIRST_BACKUP", "Output", "1500.");
-		addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
-		addKey("FIXED_RATES", "SnowpackAdvanced", "false");
-		addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
+		//addKey("FIRST_BACKUP", "Output", "1500.");
+		//addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
+		//addKey("FIXED_RATES", "SnowpackAdvanced", "false");
+		//addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
+		//addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
