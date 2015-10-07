@@ -754,6 +754,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		toplayer=int(nE);				//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers_snowpack: only soil. HACK, TODO: remove type inconstency in comparison
 	}
 	if(toplayer==0) return;				//Nothing to do here!
+	if(nsoillayers_snowpack==1) {
+		// Running Richards equation solver with only 1 layer results in a segmentation fault, because out of bound indices with heat advection.
+		// Note: resolving this issue is not planned for, but may be addressed in the future. Anyway, it shouldn't be a big issue to have two soil layers or more instead of one.
+		prn_msg( __FILE__, __LINE__, "err", Date(), "The implementation of RICHARDSEQUATION requires two or more soil layers, whereas now only one soil layer is present. Please change your initialization.");
+		throw;
+	}
 
 	//Initializations of the convergence criteria
 	int trigger_layer_accuracy=-1;			//At which layer the accuracy was not reached.
