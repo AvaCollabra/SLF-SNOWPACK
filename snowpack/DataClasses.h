@@ -758,42 +758,42 @@ struct ProcessDat {
 };
 
 struct ProcessInd {
-	ProcessInd() : stat_abbrev(0), loc_for_snow(0), loc_for_wind(0),
-	               ch(0), swe(0), tot_lwc(0), runoff(0), dewpt_def(0),
-	               hoar_size(0), hoar_ind6(0), hoar_ind24(0),
-	               wind_trans(0), wind_trans24(0),
-	               hn3(0), hn6(0), hn12(0), hn24(0), hn72(0), hn72_24(0), psum3(0), psum6(0), psum12(0), psum24(0), psum72(0),
-	               stab_class1(0), stab_class2(0),
-	               stab_index1(0), stab_height1(0), stab_index2(0), stab_height2(0), stab_index3(0), stab_height3(0), stab_index4(0), stab_height4(0), stab_index5(0), stab_height5(0),
-	               crust(0), en_bal(0), sw_net(0), t_top1(0), t_top2(0), lwi_N(0), lwi_S(0)
+	ProcessInd() : stat_abbrev(true), loc_for_snow(true), loc_for_wind(true),
+	               ch(true), swe(true), tot_lwc(true), runoff(true), dewpt_def(true),
+	               hoar_size(true), hoar_ind6(true), hoar_ind24(true),
+	               wind_trans(true), wind_trans24(true),
+	               hn3(true), hn6(true), hn12(true), hn24(true), hn72(true), hn72_24(true), psum3(true), psum6(true), psum12(true), psum24(true), psum72(true),
+	               stab_class1(true), stab_class2(true),
+	               stab_index1(true), stab_height1(true), stab_index2(true), stab_height2(true), stab_index3(true), stab_height3(true), stab_index4(true), stab_height4(true), stab_index5(true), stab_height5(true),
+	               crust(true), en_bal(true), sw_net(true), t_top1(true), t_top2(true), lwi_N(true), lwi_S(true)
 	{}
 
-	short stat_abbrev;
-	short loc_for_snow;
-	short loc_for_wind;
+	bool stat_abbrev;
+	bool loc_for_snow;
+	bool loc_for_wind;
 	// Data
-	short ch;
-	short swe;
-	short tot_lwc;
-	short runoff;
-	short dewpt_def;
-	short hoar_size;
-	short hoar_ind6, hoar_ind24;
-	short wind_trans, wind_trans24;
-	short hn3, hn6, hn12, hn24, hn72;
-	short hn72_24;
-	short psum3, psum6, psum12, psum24, psum72;
-	short stab_class1, stab_class2;
-	short stab_index1, stab_height1;
-	short stab_index2, stab_height2;
-	short stab_index3, stab_height3;
-	short stab_index4, stab_height4;
-	short stab_index5, stab_height5;
-	short crust;
-	short en_bal;
-	short sw_net;
-	short t_top1, t_top2;
-	short lwi_N, lwi_S;
+	bool ch;
+	bool swe;
+	bool tot_lwc;
+	bool runoff;
+	bool dewpt_def;
+	bool hoar_size;
+	bool hoar_ind6, hoar_ind24;
+	bool wind_trans, wind_trans24;
+	bool hn3, hn6, hn12, hn24, hn72;
+	bool hn72_24;
+	bool psum3, psum6, psum12, psum24, psum72;
+	bool stab_class1, stab_class2;
+	bool stab_index1, stab_height1;
+	bool stab_index2, stab_height2;
+	bool stab_index3, stab_height3;
+	bool stab_index4, stab_height4;
+	bool stab_index5, stab_height5;
+	bool crust;
+	bool en_bal;
+	bool sw_net;
+	bool t_top1, t_top2;
+	bool lwi_N, lwi_S;
 };
 
 /// @brief Class for recording reference properties of tagged elements

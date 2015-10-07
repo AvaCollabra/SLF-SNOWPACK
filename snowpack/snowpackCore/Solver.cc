@@ -26,26 +26,25 @@ typedef struct  {
 	int *pC0, *pSize;
 } pBLOCK;
 
-#define  GD_MEM_ERR( POINTER, MSG0, MSG )                                                      \
-{                                                                                              \
-	if ( POINTER  ) {                                                                      \
-		gd_MemErr = false;                                                             \
-	} else {                                                                               \
-		gd_MemErr = true; fprintf(stderr, "\n+++++ %s: %s\n", MSG0,MSG);               \
-	}                                                                                      \
-}                                                                                              \
-
 #define GD_MALLOC( POINTER, TYPE, N, MSG )                                                     \
 {                                                                                              \
 	POINTER = (TYPE *)malloc( sizeof(TYPE)*(N+1) );                                        \
-   	GD_MEM_ERR( POINTER, "NO SPACE TO ALLOCATE", MSG );                                    \
+	if ( POINTER  ) {                                                                      \
+		gd_MemErr = false;                                                             \
+	} else {                                                                               \
+		gd_MemErr = true; fprintf(stderr, "\n+++++ %s: %s\n", "NO SPACE TO ALLOCATE", MSG);               \
+	}                                                                                      \
 }
 
 #define GD_REALLOC( POINTER, TYPE, N, MSG )                                                    \
 {                                                                                              \
 	if ( POINTER )  {                                                                      \
   		POINTER = (TYPE *)realloc( (char*)POINTER, sizeof(TYPE)*(N+1) );               \
-                     GD_MEM_ERR( POINTER, "NO SPACE TO REALLOCATE", MSG );                     \
+                 if ( POINTER  ) {                                                                      \
+			gd_MemErr = false;                                                             \
+		} else {                                                                               \
+			gd_MemErr = true; fprintf(stderr, "\n+++++ %s: %s\n", "NO SPACE TO REALLOCATE", MSG);               \
+		}                                                                                      \
 	} else {                                                                               \
   		GD_MALLOC(  POINTER, TYPE, N, MSG );                                           \
 	}                                                                                      \
@@ -58,7 +57,6 @@ typedef struct  {
    		POINTER = NULL;                                                                \
 	}                                                                                      \
 }                                                                                              \
-
 
 /*
  * This section contains macros which are high vectorizable. On some computers they can be
@@ -155,7 +153,7 @@ inline void SD_ALLOC_COL_BLOCK(const int& N_COL_BLOCK, SD_TMP_CON_MATRIX_DATA *p
 
 #define SD_N_ALLOC_COL_BLOCK  500
 
-//HACK if this is replecaed by a function, this leads to segfaults...
+//HACK if this is replaced by a function, this leads to segfaults...
 #define SD_GET_COL_BLOCK(pCOL_BLOCK, pMAT)                                                     \
 {  if  ( !(pMAT)->FreeColBlock )  SD_ALLOC_COL_BLOCK(SD_N_ALLOC_COL_BLOCK, pMAT);              \
    pCOL_BLOCK = (pMAT)->FreeColBlock; (pMAT)->FreeColBlock = (pMAT)->FreeColBlock->Next;       \
@@ -192,9 +190,6 @@ inline void SD_ALLOC_COL_BLOCK(const int& N_COL_BLOCK, SD_TMP_CON_MATRIX_DATA *p
    pCOL->Next = *ppCOL;                                                                        \
    *ppCOL     = pCOL;                                                                          \
 }
-
-#define MAX_MULT 100 /* a very big value */
-#define FOR_MULT(X) for(m=0; m<Mult; m++) {X;}
 
 #define BLOCK_INIT(BLOCK,pCOL0,pSIZE) { BLOCK.pC0 = pCOL0; BLOCK.pSize = pSIZE; }
 #define BLOCK_NEXT(BLOCK)             ( BLOCK.pC0++,       BLOCK.pSize++ )
@@ -420,7 +415,7 @@ inline int Permute(const int& N, int * Perm, double * Vector)
  */
 inline int PermuteWithMult(const int& N, const int& Mult, int *Perm, double *Vector)
 {
-	int   m;
+	const int  MAX_MULT = 100; // a big value
 	double    ValueTo[MAX_MULT], Value[MAX_MULT];
 
 	if ( Mult > MAX_MULT ) {
@@ -429,28 +424,30 @@ inline int PermuteWithMult(const int& N, const int& Mult, int *Perm, double *Vec
 	}
 
 	for (int i = 0; i < N;  Perm[i++] &= (~SD_MARKED) ) {
-		if ( Perm[i] & SD_MARKED )  {
-			continue;
-		}
-		FOR_MULT( ValueTo[m] = Vector[Mult*i+m] );
+		if ( Perm[i] & SD_MARKED )  	continue;
+		
+		//for (int m=0; m<Mult; m++) ValueTo[m] = Vector[Mult*i+m];
+		memcpy(ValueTo, &Vector[Mult*i], Mult*sizeof(double));
 		int From    = i;
 		int To      = Perm[i];
 
 		while (1) { // follows the cycle, until we find an already permuted element
-			FOR_MULT( Value[m] = Vector[Mult*To+m] ) ;
-			FOR_MULT( Vector[Mult*To+m] = ValueTo[m] );
+			//for (int m=0; m<Mult; m++) Value[m] = Vector[Mult*To+m];
+			memcpy(Value, &Vector[Mult*To], Mult*sizeof(double));
+			//for (int m=0; m<Mult; m++) Vector[Mult*To+m] = ValueTo[m];
+			memcpy(Vector+(Mult*To), &ValueTo, Mult*sizeof(double));
 			const int ToNext = Perm[To];
 			Perm[To] = From | SD_MARKED;
 			if ( ToNext & SD_MARKED ) {
 				break;
 			}
-			FOR_MULT( ValueTo[m] = Value[m] );
+			//for (int m=0; m<Mult; m++) ValueTo[m] = Value[m];
+			memcpy(ValueTo, &Value, Mult*sizeof(double));
 			From = To;
 			To = ToNext;
 		}
 	}
 	return 0;
-
 }
 
 /*

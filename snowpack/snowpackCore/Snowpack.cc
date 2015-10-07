@@ -774,8 +774,10 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	return Albedo;
 }
 
-double Snowpack::getModelAlbedo(const double& pAlbedo, const SnowStation& Xdata, CurrentMeteo& Mdata) const
+double Snowpack::getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const
 {
+	const double pAlbedo = Xdata.pAlbedo;
+	
 	// Assign iswr and rswr correct values according to switch value
 	if (sw_mode == "INCOMING") { // use incoming SW flux only
 		Mdata.rswr = Mdata.iswr * pAlbedo;
@@ -815,13 +817,13 @@ double Snowpack::getModelAlbedo(const double& pAlbedo, const SnowStation& Xdata,
  * \n
  * Note:  The equations are solved with a fully implicit time-integration scheme and the
  * system of finite element matrices are solved using a sparse matrix solver.
- * @param Xdata
- * @param Mdata
- * @param Bdata
- * @param ThrowAtNoConvergence	If true, throw exception when temperature equation does not converge; if false, function will return false after non convergence and true otherwise.
+ * @param Xdata Snow profile data
+ * @param[in] Mdata Meteorological forcing
+ * @param Bdata Boundary conditions
+ * @param[in] ThrowAtNoConvergence	If true, throw exception when temperature equation does not converge; if false, function will return false after non convergence and true otherwise.
  * @return true when temperature equation converged, false if it did not.
  */
-bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata, const bool& ThrowAtNoConvergence)
+bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata, BoundCond& Bdata, const bool& ThrowAtNoConvergence)
 {
 	int Ie[N_OF_INCIDENCES];                     // Element incidences
 	double T0[N_OF_INCIDENCES];                  // Element nodal temperatures at t0
@@ -838,10 +840,6 @@ bool Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = Xdata.getNumberOfElements();
-	
-	// Snow albedo HACK: this could be moved outside of compTemperatureProfile so Mdata could become "const"
-	Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
-	Xdata.Albedo = getModelAlbedo(Xdata.pAlbedo, Xdata, Mdata); //either parametrized or measured
 	
 	double I0 = Mdata.iswr - Mdata.rswr; // Net irradiance perpendicular to slope
 
@@ -1765,8 +1763,12 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 			memset((&Bdata), 0, sizeof(BoundCond));
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 
+			// set the snow albedo
+			Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
+			Xdata.Albedo = getModelAlbedo(Xdata, Mdata); //either parametrized or measured
+			
 			// Compute the temperature profile in the snowpack and soil, if present
-			if (compTemperatureProfile(Xdata, Mdata, Bdata, (allow_adaptive_timestepping == true)?(false):(true))) {
+			if (compTemperatureProfile(Mdata, Xdata, Bdata, (allow_adaptive_timestepping == true)?(false):(true))) {
 				// Entered after convergence
 				ii++;						// Update time step counter
 				p_dt += sn_dt;					// Update progress variable
@@ -1783,7 +1785,10 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 					surfaceCode = DIRICHLET_BC;
 					melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
 					Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
-					compTemperatureProfile(Xdata, Mdata, Bdata, true);	// Now, throw on non-convergence
+					// update the snow albedo
+					Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
+					Xdata.Albedo = getModelAlbedo(Xdata, Mdata); //either parametrized or measured
+					compTemperatureProfile(Mdata, Xdata, Bdata, true);	// Now, throw on non-convergence
 				}
 				if (LastTimeStep) Sdata.compSnowSoilHeatFlux(Xdata);
 
