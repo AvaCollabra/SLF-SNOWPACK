@@ -197,7 +197,6 @@ typedef  struct
 {
 	int   nEq;
 	int   nDeletedEq;
-	int   Multiplicity;
 	StateType State;
 	union {
 		SD_CON_MATRIX_DATA      Con;
@@ -311,10 +310,9 @@ int ds_DefineConnectivity( SD_MATRIX_DATA *const pMat0, const int& nEq, int Eq[]
  *
  * @param MatDim dimension of the matrix [A]. The true number of equations
  * and unknowns is given by: MatDim * Multiplicity
- * @param Multiplicity Multiplicity factor with value >= 1
  * @param ppMat A pointer to an opaque data type storing data related to the matrix [A]
  */
-void ds_Initialize( const size_t& MatDim, int Multiplicity, SD_MATRIX_DATA **ppMat );
+void ds_Initialize( const size_t& MatDim, SD_MATRIX_DATA **ppMat );
 
 /**
 * @brief This function assemble the element square matrix [ElMat] for one element with nEq*M x nEq*M

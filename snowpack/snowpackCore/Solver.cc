@@ -29,6 +29,7 @@ typedef struct  {
 #define GD_MALLOC( POINTER, TYPE, N, MSG )                                                     \
 {                                                                                              \
 	POINTER = (TYPE *)malloc( sizeof(TYPE)*(N+1) );                                        \
+	/*std::cout << "Allocating " << sizeof(TYPE)*(N+1) << " bytes at " << POINTER << "\n";*/      \
 	if ( POINTER  ) {                                                                      \
 		gd_MemErr = false;                                                             \
 	} else {                                                                               \
@@ -40,6 +41,7 @@ typedef struct  {
 {                                                                                              \
 	if ( POINTER )  {                                                                      \
   		POINTER = (TYPE *)realloc( (char*)POINTER, sizeof(TYPE)*(N+1) );               \
+  		/*std::cout << "Reallocating " << sizeof(TYPE)*(N+1) << " bytes at " << POINTER << "\n";*/      \
                  if ( POINTER  ) {                                                                      \
 			gd_MemErr = false;                                                             \
 		} else {                                                                               \
@@ -52,8 +54,9 @@ typedef struct  {
 
 #define GD_FREE( POINTER )                                                                     \
 {                                                                                              \
+	/*std::cout << "Freeing " << POINTER << "\n";*/      \
 	if ( POINTER ) {                                                                       \
-   		free ( (char*) POINTER );                                                      \
+   		free ( POINTER );                                                      \
    		POINTER = NULL;                                                                \
 	}                                                                                      \
 }                                                                                              \
@@ -401,53 +404,6 @@ inline int Permute(const int& N, int * Perm, double * Vector)
 	}
 	return 0;
 
-}
-
-
-/**
- * @brief The same as before but with a multyplicity factor. We define a second function to be little
- * faster when Mult == 1. NOTE: We are limited to a maximal multiplicity factor.
- * @param N int
- * @param Mult int
- * @param Perm int
- * @param Vector double
- * @return int
- */
-inline int PermuteWithMult(const int& N, const int& Mult, int *Perm, double *Vector)
-{
-	const int  MAX_MULT = 100; // a big value
-	double    ValueTo[MAX_MULT], Value[MAX_MULT];
-
-	if ( Mult > MAX_MULT ) {
-		std::cout <<  "+++++ Multiplicy factor " << Mult << " too large\n";
-		return 1;
-	}
-
-	for (int i = 0; i < N;  Perm[i++] &= (~SD_MARKED) ) {
-		if ( Perm[i] & SD_MARKED )  	continue;
-		
-		//for (int m=0; m<Mult; m++) ValueTo[m] = Vector[Mult*i+m];
-		memcpy(ValueTo, &Vector[Mult*i], Mult*sizeof(double));
-		int From    = i;
-		int To      = Perm[i];
-
-		while (1) { // follows the cycle, until we find an already permuted element
-			//for (int m=0; m<Mult; m++) Value[m] = Vector[Mult*To+m];
-			memcpy(Value, &Vector[Mult*To], Mult*sizeof(double));
-			//for (int m=0; m<Mult; m++) Vector[Mult*To+m] = ValueTo[m];
-			memcpy(Vector+(Mult*To), &ValueTo, Mult*sizeof(double));
-			const int ToNext = Perm[To];
-			Perm[To] = From | SD_MARKED;
-			if ( ToNext & SD_MARKED ) {
-				break;
-			}
-			//for (int m=0; m<Mult; m++) ValueTo[m] = Value[m];
-			memcpy(ValueTo, &Value, Mult*sizeof(double));
-			From = To;
-			To = ToNext;
-		}
-	}
-	return 0;
 }
 
 /*
@@ -1683,10 +1639,9 @@ SkeepFirstMergeOperation:;
 * multiplicity factor is not 1 at this time we define the true row and column blocks.
  * @param pTmpMat SD_TMP_CON_MATRIX_DATA
  * @param pMat SD_BLOCK_MATRIX_DATA
- * @param Mult int
  * @return int
 */
-inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat, const int& Mult)
+inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat)
 {
 	SD_TMP_ROW_BLOCK_DATA *pTmpRowBlock;
 	SD_ROW_BLOCK_DATA     *pRowBlock;
@@ -1694,7 +1649,7 @@ inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_
 	int                    k, nTotCol, nTotColBlock, MaxColBlock, *pFirstColBlock, *pSizeColBlock;
 
 	memset( pMat, 0, sizeof(SD_BLOCK_MATRIX_DATA) );
-	pMat->Dim        = pTmpMat->nRow*Mult;
+	pMat->Dim        = pTmpMat->nRow;
 	pMat->pPerm      = pTmpMat->pPerm;
 	pMat->nRowBlock  = pTmpMat->nRowBlock;
 	pMat->nColBlock  = pTmpMat->nColBlock;
@@ -1716,8 +1671,8 @@ inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_
 
 		for ( pColBlock = pTmpRowBlock->Data.ColBlock, nCol = 0, nColBlock = 0; pColBlock;
 				pColBlock = pColBlock->Next, nColBlock++, pFirstColBlock++, pSizeColBlock++ ) {
-			pFirstColBlock[0] = Mult*(int)pColBlock->Col0;
-			pSizeColBlock [0] = Mult*( (int)pColBlock->Col1 - (int)pColBlock->Col0 + 1 );
+			pFirstColBlock[0] = (int)pColBlock->Col0;
+			pSizeColBlock [0] = ( (int)pColBlock->Col1 - (int)pColBlock->Col0 + 1 );
 			nCol             += pSizeColBlock[0];
 		}
 
@@ -1729,9 +1684,8 @@ inline int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_
 		if ( MaxColBlock < nColBlock ) {
 			MaxColBlock = nColBlock;
 		}
-		const int Delta            = Mult * ( pRowBlock->Row1 - pRowBlock->Row0 + 1 );
-		pRowBlock->Row0 *= Mult;
-		pRowBlock->Row1  = ( pRowBlock->Row1 + 1 ) * Mult - 1;
+		const int Delta            = ( pRowBlock->Row1 - pRowBlock->Row0 + 1 );
+		pRowBlock->Row1  = ( pRowBlock->Row1 + 1 ) - 1;
 		nTotCol         += Delta * nCol - ( Delta*(Delta-1) )/2;
 		nTotColBlock    += nColBlock;
 	}
@@ -1768,7 +1722,7 @@ inline int SymbolicFact(SD_MATRIX_DATA *pMat)
 	ComputePermutation( &pMat->Mat.Con);
 	ComputeTmpConMatrix(&pMat->Mat.Con, &TmpConMat);
 	ComputeFillIn(&TmpConMat);
-	ComputeBlockMatrix(&TmpConMat, &BlockMat, pMat->Multiplicity);
+	ComputeBlockMatrix(&TmpConMat, &BlockMat);
 	pMat->State     = BlockMatrix;
 	pMat->Mat.Block = BlockMat;
 
@@ -1781,15 +1735,13 @@ inline int SymbolicFact(SD_MATRIX_DATA *pMat)
 /// Functions exposed as API
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ds_Initialize(const size_t& MatDim, int Multiplicity, SD_MATRIX_DATA **ppMat)
+void ds_Initialize(const size_t& MatDim, SD_MATRIX_DATA **ppMat)
 {
 	SD_MATRIX_DATA  *pMat = NULL;
-	if ( Multiplicity<=0 ) Multiplicity=1;
 
 	GD_MALLOC( pMat, SD_MATRIX_DATA, 1, "Matrix Data");
 	memset( pMat,0,sizeof(SD_MATRIX_DATA) );
-	pMat->nEq = (int)MatDim * Multiplicity;
-	pMat->Multiplicity = Multiplicity;
+	pMat->nEq = (int)MatDim;
 	AllocateConData( MatDim, &pMat->Mat.Con );
 	pMat->State = ConMatrix;
 	*ppMat = pMat;
@@ -1816,13 +1768,12 @@ int ds_AssembleMatrix( SD_MATRIX_DATA *pMat0, const int& nEq, int Eq[], const in
 {
 	SD_BLOCK_MATRIX_DATA *pMat = &pMat0->Mat.Block;
 	SD_ROW_BLOCK_DATA *pRow=NULL;
-	const int Mult = pMat0->Multiplicity;
 
-	for (int Row = 0; Row < nEq*Mult; Row++) {
-		const int PermRow = Mult * pMat->pPerm[ Eq[Row/Mult] ] + Row%Mult;
+	for (int Row = 0; Row < nEq; Row++) {
+		const int PermRow = pMat->pPerm[ Eq[Row] ];
 		SEARCH_ROW(PermRow, FIRST_BLOCK_ROW(pMat), LAST_BLOCK_ROW(pMat), pRow);
-		for (int Col = 0; Col < nEq*Mult; Col++) {
-			const int PermCol = Mult * pMat->pPerm[ Eq[Col / Mult] ] + Col%Mult;
+		for (int Col = 0; Col < nEq; Col++) {
+			const int PermCol = pMat->pPerm[ Eq[Col] ];
 			if ( PermCol < PermRow ) {
 				continue;
 			}
@@ -1911,22 +1862,13 @@ int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 			throw mio::IOException("Bad Matrix Format for Back- For-ward Substitution", AT);
 		}
 		const int DimTot = (int)pMat->Mat.Block.Dim + pMat->nDeletedEq;
-		const int Mult   = pMat->Multiplicity;
 
-		if ( Mult==1 ){
-			Permute( DimTot, pMat->Mat.Block.pPerm, X );
-		} else{
-			PermuteWithMult( DimTot/Mult, Mult, pMat->Mat.Block.pPerm, X );
-		}
+		Permute( DimTot, pMat->Mat.Block.pPerm, X );
        		InverseMatrixVector( &pMat->Mat.Block, X );
        		for(int i=(int)pMat->Mat.Block.Dim; i<DimTot; i++){
 			X[i] = 0.;
 		}
-       		if ( Mult==1 ){
-			Permute( DimTot, pMat->Mat.Block.pPerm, X );
-		} else {
-			PermuteWithMult( DimTot/Mult, Mult, pMat->Mat.Block.pPerm, X );
-		}
+		Permute( DimTot, pMat->Mat.Block.pPerm, X );
 	}
 
 	// ResetMatrixData
@@ -1944,6 +1886,7 @@ int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 
    	// ReleaseMatrixData
    	if ( Code & ReleaseMatrixData ){
+		//matrix is either ConMatrix, BlockConMatrix or BlockMatrix
 		if ( pMat->State == ConMatrix ){
 			ReleaseConMatrix(&pMat->Mat.Con);
 		} else if ( pMat->State == BlockMatrix  ){
