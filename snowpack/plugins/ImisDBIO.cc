@@ -143,7 +143,7 @@ void ImisDBIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes
 }
 
 //delete the profile records that we will resubmit
-void ImisDBIO::deleteProfile(const std::string& stationName, const size_t& stationNumber,
+void ImisDBIO::deleteProfile(const std::string& stationName, const unsigned char& stationNumber,
                              const mio::Date& dateStart, const mio::Date& dateEnd)
 {
 	stmt->setSQL(sqlDeleteProfile);
@@ -171,7 +171,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	const occi::Date profDate = OracleDate( Pdata[0].profileDate );
 	const occi::Date calcDate = OracleDate(info.computation_date);
 	const string stat_abk = Pdata[0].stationname;
-	const size_t stao_nr = Pdata[0].loc_for_snow;
+	const unsigned char stao_nr = Pdata[0].loc_for_snow;
 	const double version = atof( info.version.c_str() );
 
 	//check that the station can really be an IMIS station
@@ -327,7 +327,7 @@ void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
 	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
 
-	cerr << profileDate << ",'" << Pdata.stationname << "'," << Pdata.loc_for_snow << ",";
+	cerr << profileDate << ",'" << Pdata.stationname << "'," << +Pdata.loc_for_snow << ",";
 	cerr << setw(12) << setprecision(8) << Pdata.height << "," << depositionDate << ",";
 	cerr << Pdata.rho << "," << Pdata.T << "," << Pdata.gradT << ",";
 	cerr << Pdata.v_strain_rate << ",";

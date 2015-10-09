@@ -938,7 +938,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 	//  530: position (cm) and minimum stability indices
 	fout << "\n0530,8";
-	fout << "," << std::fixed << Xdata.S_class1 << "," << Xdata.S_class2;
+	fout << "," << std::fixed << +Xdata.S_class1 << "," << +Xdata.S_class2; //force printing type char as numerica value
 	fout << "," <<  std::setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata.S_d;
 	fout << "," << std::fixed << std::setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << std::setprecision(2) <<  Xdata.S_n;
 	fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << std::fixed << std::setprecision(2) << Xdata.S_s;
@@ -1188,7 +1188,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 		ofs << "#,s_height,s_index,s_class1,s_class2\n";
 		ofs << " ,cm,1,1,1\n";
 		ofs << "d," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
-		ofs << Xdata.S_class1 << "," << Xdata.S_class2 << "\n";
+		ofs << +Xdata.S_class1 << "," << +Xdata.S_class2 << "\n"; //force printing type char as numerica value
 		ofs << "n," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
 		ofs << "s," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
 		ofs << "4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
@@ -1682,7 +1682,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			fout << ",";
 		// 53-64: Stability Time Series, heights in cm
 		if (out_stab) {
-			fout << "," << Xdata.S_class1 << "," << Xdata.S_class2 << std::fixed; //profile type and stability class
+			fout << "," << +Xdata.S_class1 << "," << +Xdata.S_class2 << std::fixed; //profile type and stability class, force printing type char as numerica value
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata.S_d;
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << std::setprecision(2) << Xdata.S_n;
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << std::setprecision(2) << Xdata.S_s;

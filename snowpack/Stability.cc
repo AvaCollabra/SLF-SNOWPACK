@@ -989,7 +989,7 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 	// Now make the classification for all critical transitions and keep track ....
 	double h_Slab = EMS[nE-1].L/cos_sl;
 	unsigned int count=0;
-	int S = 5;
+	signed char S = 5;
 	for (size_t e = nE-2; e > Xdata.SoilNode; e--) {
 		h_Slab += EMS[e].L/cos_sl;
 		const double delta_H = EMS[e+1].hard - EMS[e].hard;
@@ -1215,7 +1215,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	// Classify
 	// Max. Hardness at position of maximum
 	const double hard_max = red_hard_max + (min_hard + slope_hard*(cH - z_red_hard_max));
-	int prf_type=-1; // Profile type
+	signed char prf_type=-1; // Profile type
 	if ( weak_base ) {
 		// Position of extremes
 		const double pos_max = (z_red_hard_max - L_base)/(cH - L_base);

@@ -915,19 +915,19 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	errno=0;
 	U=(double *) realloc(U, nN*sizeof(double));
 	if (errno != 0 || U==NULL) {
-        free(U);
+		free(U);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector U)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	dU=(double *) realloc(dU, nN*sizeof(double));
 	if (errno != 0 || dU==NULL) {
-        free(U); free(dU);
+		free(U); free(dU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector dU)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	ddU=(double *) realloc(ddU, nN*sizeof(double));
 	if (errno != 0 || ddU==NULL) {
-	    free(U); free(dU); free(ddU);
+		free(U); free(dU); free(ddU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector ddU)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
