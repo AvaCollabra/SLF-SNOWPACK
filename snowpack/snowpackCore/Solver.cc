@@ -17,6 +17,7 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wcast-align"
 #endif
 
 #ifdef __GNUG__
@@ -608,41 +609,6 @@ int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 	return 0;
 
 }  /* ds_Solve */
-
-int ds_MatrixConnectivity( SD_MATRIX_DATA *pMat0, int *pMatDim, int **ppxConCon, int *pSize)
-{
-	SD_CON_MATRIX_DATA   *pMat;
-	size_t Row, Col;
-	int *pRowStart, *pColumn;
-	SD_ROW_DATA *pRow;
-
-	pMat   = &pMat0->Mat.Con;
-	*pMatDim  = pMat->nRow;
-	*pSize = pMat->nCol/2 + *pMatDim + 1;
-	GD_MALLOC( *ppxConCon,  int, *pSize , "connectivity vector");
-	if ( gd_MemErr ){
-		return 1;
-	}
-
-	for (Row = 0, pRow = pMat->pRow, pRowStart = *ppxConCon, pColumn = *ppxConCon + *pMatDim + 1,
-		*pRowStart = *pMatDim + 1; Row<pMat->nRow; Row++, pRow++, pRowStart++){
-		size_t nCol;
-		SD_COL_DATA *pCol;
-		nCol = 0;
-		pCol = pRow->Col;
-		while( pCol ){
-			Col =  SD_COL(pCol);
-			if ( Col > Row ){
-				*pColumn++ = Col;  nCol++;
-			}
-			pCol = pCol->Next;
-		}
-		pRowStart[1] = pRowStart[0] + nCol;
-	}
-
-	return 0;
-
-}  /* ds_MatrixConnectivity */
 
 /**
  * @brief This function assemble the element matrix for one element and must be called for each
@@ -1692,7 +1658,7 @@ int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat)
 }  // ComputeTmpConMatrix
 
 
-void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TMP_CON_MATRIX_DATA *pMAT)
+inline void MERGE_COL_BLOCK(SD_COL_BLOCK_DATA *pCOL0, SD_COL_BLOCK_DATA **ppCOL1, SD_TMP_CON_MATRIX_DATA *pMAT)
 {
 	SD_COL_BLOCK_DATA  *pUp_, *pLo_, **ppLo_, *pC_;
 
