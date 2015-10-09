@@ -25,7 +25,6 @@
 #endif
 
 static bool gd_MemErr;
-static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
 
 typedef struct  {
 	int *pC0, *pSize;
@@ -45,11 +44,6 @@ static void  RunMmd(int neqns, int *xadj, int *adjncy, int *invp, int *perm, int
 int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat);
 int  ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat);
 int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat);
-
-/*
- * START MACRO DEFINITIONS AND TYPEDEFS
- */
-#define   GD_INIT(VALUE)
 
 #define GD_MALLOC( POINTER, TYPE, N, MSG )                                                     \
 {                                                                                              \
@@ -262,7 +256,7 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 }
 
 #define ERROR_SOLVER(MSG)      { printf("++++Errror:%s:%d:%s\n", __FILE__, __LINE__, MSG); return(1); }
-#define USER_ERROR(MSG) { printf(ErrMsg, MSG); return 1; }
+#define USER_ERROR(MSG) { printf("++++Errror:gs_SolveMatrix:%s\n", MSG); return 1; }
 #define EXIT(MSG)  {  printf("++++Exit:%s:%d:%s\n", __FILE__, __LINE__, MSG);  exit(1);   }
 
 #define BLOCK_INIT(BLOCK,pCOL0,pSIZE) { BLOCK.pC0 = pCOL0; BLOCK.pSize = pSIZE; }
@@ -336,7 +330,6 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 * This macro compute the block jump offsets between two rows. The first row must be a subset
 * of the second one i.e. all coefficients of the first row must be present in the second one.
 */
-#if 1
 #define BLOCK_JUMP(nCOL0, pCOL0, pSIZE0, pCOL1, pSIZE1, JUMP)                                  \
 {  int i_, *pCol0_, *pCol1_, *pSize0_,  *pSize1_, Size_, Col1_0_, Col1_1_;                     \
    pCol0_  = pCOL0;                                                                            \
@@ -354,27 +347,6 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
       Col1_0_  = (pCol0_++)[0] + (pSize0_++)[0];                                               \
    }                                                                                           \
 }
-#else
-void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int *JUMP)
-{
-	int i_, *pCol0_, *pCol1_, *pSize0_,  *pSize1_, Size_, Col1_0_, Col1_1_;
-	pCol0_  = pCOL0;
-	pCol1_  = pCOL1;
-	pSize0_ = pSIZE0;
-	pSize1_ = pSIZE1;
-	Col1_0_ = pCol1_[0];
-	Col1_1_ = Col1_0_ + pSize1_[0];
-	for (i_=0; i_<nCOL0; i_++) {
-		Size_ = 0;
-		while ( pCol1_[0] + pSize1_[0] < pCol0_[0] ) {
-			Size_ += Col1_1_ - Col1_0_;
-			Col1_1_  = ( Col1_0_ = (++pCol1_)[0] ) + (++pSize1_)[0];
-		}
-		JUMP[i_] = Size_ + pCol0_[0] - Col1_0_;
-		Col1_0_  = (pCol0_++)[0] + (pSize0_++)[0];
-	}
-}
-#endif
 
 /*
 * This macro compute for a matrix stored packed row-wise in a one dimensional array the
@@ -511,7 +483,7 @@ inline void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, 
  * @param pMat SD_CON_MATRIX_DATA
  * @return int
 */
-int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
+inline int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
 {
 	int *head;     /* array 0..maxN */
 	int *list;     /* array 0..maxN */
