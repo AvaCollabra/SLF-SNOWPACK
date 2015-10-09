@@ -889,7 +889,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 	if (Kt != NULL)
 		ds_Solve(ReleaseMatrixData, (SD_MATRIX_DATA*)Kt, 0);
-	ds_Initialize(nN, 0, (SD_MATRIX_DATA**)&Kt);
+	ds_Initialize(nN, (SD_MATRIX_DATA**)&Kt);
 	/*
 	 * Define the structure of the matrix, i.e. its connectivity. For each element
 	 * we compute the element incidences and pass the incidences to the solver.
@@ -918,19 +918,19 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	errno=0;
 	U=(double *) realloc(U, nN*sizeof(double));
 	if (errno != 0 || U==NULL) {
-        free(U);
+		free(U);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector U)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	dU=(double *) realloc(dU, nN*sizeof(double));
 	if (errno != 0 || dU==NULL) {
-        free(U); free(dU);
+		free(U); free(dU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector dU)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}
 	ddU=(double *) realloc(ddU, nN*sizeof(double));
 	if (errno != 0 || ddU==NULL) {
-	    free(U); free(dU); free(ddU);
+		free(U); free(dU); free(ddU);
 		prn_msg(__FILE__, __LINE__, "err", Date(), "%s (allocating  solution vector ddU)", strerror(errno));
 		throw IOException("Runtime error in compTemperatureProfile", AT);
 	}

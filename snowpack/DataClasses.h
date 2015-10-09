@@ -507,8 +507,8 @@ class SnowStation {
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
 		double ErosionMass;         ///< Eroded mass either real or virtually (storage if less than one element)
-		int S_class1;               ///< Stability class based on hand hardness, grain class ...
-		int S_class2;               ///< Stability class based on hand hardness, grain class ...
+		char S_class1;               ///< Stability class based on hand hardness, grain class ...
+		char S_class2;               ///< Stability class based on hand hardness, grain class ...
 		double S_d;                 ///< Minimum Direct Action Stability Index  ...
 		double z_S_d;               ///< Depth of Minimum Direct Action Stability
 		double S_n;                 ///< Minimum Natural Stability Index
@@ -650,8 +650,8 @@ class SnowProfileLayer {
 		// Profile meta data
 		mio::Date profileDate; ///< Date of profile
 		std::string stationname;
-		size_t  loc_for_snow;
-		size_t  loc_for_wind;
+		unsigned char  loc_for_snow;
+		unsigned char  loc_for_wind;
 
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double height;         ///< 0 to 1000      (cm)
@@ -668,7 +668,7 @@ class SnowProfileLayer {
 		double sphericity;     ///< 0 to 1         (1)
 		double ogs;            ///< 0 to 100, optical equivalent grain size (mm)
 		double coordin_num;    ///< 0 to 10        (1)
-		size_t marker;         ///< 0 to 999       (1)
+		short int marker;         ///< 0 to 999       (1)
 		short unsigned int type; ///< 0 to 999     (1)
 		double hard;           ///< 0. to 5.       (1)
 
@@ -709,8 +709,8 @@ struct ProcessDat {
 	mio::Date date;        ///< Process date
 	unsigned int nHz;               ///< Number of hazard steps
 	char stat_abbrev[16];
-	int  loc_for_snow;
-	int  loc_for_wind;
+	unsigned char loc_for_snow;
+	unsigned char loc_for_wind;
 	// Data
 	double ch;             ///< height of snow HS (cm)
 	double swe;            ///< snow water equivalent SWE (kg m-2)
@@ -735,8 +735,8 @@ struct ProcessDat {
 	double psum12;          ///< 12 h new snow water equivalent (kg m-2)
 	double psum24;          ///< 24 h new snow water equivalent (kg m-2)
 	double psum72;          ///< 72 h new snow water equivalent (kg m-2)
-	int stab_class1;       ///< stability classes 1,3,5
-	int stab_class2;       ///< profile type 0..10
+	signed char stab_class1;       ///< stability classes 1,3,5
+	signed char stab_class2;       ///< profile type 0..10
 	double stab_index1;    ///< deformation index Sdef
 	double stab_height1;   ///< depth of stab_index1 (cm)
 	double stab_index2;    ///< natural stability index Sn38
