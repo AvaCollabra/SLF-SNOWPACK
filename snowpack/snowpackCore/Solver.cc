@@ -404,7 +404,7 @@ inline int AllocateConData( size_t Dim, SD_CON_MATRIX_DATA *pMat )
 
 }  // AllocateConData
 
-inline int ReleaseConMatrix( SD_CON_MATRIX_DATA *pMat )
+int ReleaseConMatrix( SD_CON_MATRIX_DATA *pMat )
 {
 	GD_FREE(pMat->pPerm);
 	GD_FREE(pMat->pSupernode);
