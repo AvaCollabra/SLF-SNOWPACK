@@ -271,7 +271,7 @@ class ElementData {
 		double neck2VolumetricStrain() const;
 
 		void snowType();
-		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const size_t& marker,
+		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const short int& marker,
                         const double& theta_w, const double& res_wat_cont);
 
 		const std::string toString() const;

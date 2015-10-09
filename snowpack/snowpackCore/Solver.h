@@ -307,7 +307,6 @@ int ds_Initialize( const size_t& MatDim, SD_MATRIX_DATA **ppMat );
  * @param [in] Dim first dimension of the 2D-array ElMat[][Dim]
  * @param [in] ElMat element square matrix to be assembled in the matrix [A]
 */
-
 int ds_AssembleMatrix( SD_MATRIX_DATA *pMat0, const int& nEq, int Eq[], const int& Dim, const double *ElMat );
 
 /**

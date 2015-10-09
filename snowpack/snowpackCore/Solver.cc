@@ -25,43 +25,26 @@
 #endif
 
 static bool gd_MemErr;
+static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
 
 typedef struct  {
 	int *pC0, *pSize;
 } pBLOCK;
 
-int Permute
-  (  int N ,
+int Permute(  int N ,
      int * Perm ,
      double * Vector
+);
+int InvertMatrix(  SD_BLOCK_MATRIX_DATA * pMat
   );
-int PermuteWithMult
-  (  int N ,
-     int Mult ,
-     int * Perm ,
-     double * Vector
-  );
-int InvertMatrix
-  (  SD_BLOCK_MATRIX_DATA * pMat
-  );
-int MatrixVector
-  (  SD_BLOCK_MATRIX_DATA * pMat ,
-     double * X ,
-     double * Y
-  );
-int InverseMatrixVector
-  (  SD_BLOCK_MATRIX_DATA * pMat ,
+int InverseMatrixVector (  SD_BLOCK_MATRIX_DATA * pMat ,
      double * X
   );
-
-//For SymFact:
-int AllocateConData
-  (  size_t Dim ,
-     SD_CON_MATRIX_DATA * pMat
-  );
-int SymbolicFact
-  ( SD_MATRIX_DATA * pMat
-  );
+int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn0);
+static void  RunMmd(int neqns, int *xadj, int *adjncy, int *invp, int *perm, int delta, int *head, int *qsize, int *nsize, int *list, int *marker, int maxint, int *ncsub);
+int ComputeTmpConMatrix(SD_CON_MATRIX_DATA *pMat0, SD_TMP_CON_MATRIX_DATA *pMat);
+int  ComputeFillIn(SD_TMP_CON_MATRIX_DATA *pMat);
+int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *pMat);
 
 /*
  * START MACRO DEFINITIONS AND TYPEDEFS
@@ -429,15 +412,36 @@ void BLOCK_JUMP(int nCOL0, int *pCOL0, int *pSIZE0, int *pCOL1, int *pSIZE1, int
 }
 
 
-
-/*
- * END MACRO DEFINITIONS
- */
-
-/*
-* DEFINE STATEMENTS
+/**
+* @brief Allocate the matrix row data in order to store the connectivity matrix data.
+ * @param Dim int
+ * @param pMat SD_CON_MATRIX_DATA
+ * @return int
 */
-static char ErrMsg[] = "++++Errror:gs_SolveMatrix:%s\n";
+inline int AllocateConData( size_t Dim, SD_CON_MATRIX_DATA *pMat )
+{
+	pMat->nRow = Dim;
+	GD_MALLOC( pMat->pRow, SD_ROW_DATA, pMat->nRow, "Row Allocation");
+	memset( pMat->pRow, 0, sizeof(SD_ROW_DATA)*pMat->nRow );
+	if ( gd_MemErr ) {
+		ERROR_SOLVER("Memory Error");
+	}
+
+	return 0;
+
+}  // AllocateConData
+
+inline int ReleaseConMatrix( SD_CON_MATRIX_DATA *pMat )
+{
+	GD_FREE(pMat->pPerm);
+	GD_FREE(pMat->pSupernode);
+	GD_FREE(pMat->pPermInv);
+	GD_FREE(pMat->pRow);
+	SD_DESTROY_CHUNK(pMat->PoolCol);
+
+	return 0;
+
+}  // ReleaseConMatrix
 
 /*
  * INTERFACE FUNCITONS TO ACCESS THE SOLVER
@@ -482,7 +486,7 @@ int ds_Initialize(const size_t& MatDim, SD_MATRIX_DATA **ppMat)
 * unused. ATTENTION: This function change the value of N[0] which is first set to N_COL and then
 * is changed continously.
 */
-void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
+inline void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double *MAT0, int DIM0,
                          double *MAT1, int DIM1, int N_BLOCK, int *N, int *JUMP)
 {
 	int n_k, i_, k__;
@@ -501,6 +505,70 @@ void FACT_SYM_MAT_BLOCK (int N_PIVOT, int TOT_ROW, int N_ROW, int N_COL, double 
 		Mat_k0  += DIM0 - k__;
 	}
 }
+
+/**
+* @brief This function compute the permutation array and thus run the mmd algorithm.
+ * @param pMat SD_CON_MATRIX_DATA
+ * @return int
+*/
+int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
+{
+	int *head;     /* array 0..maxN */
+	int *list;     /* array 0..maxN */
+	int *marker;   /* array 0..maxN */
+	int *xadj;     /* array 0..maxN */
+	int *adjncy;   /* array 0..maxCol */
+	const int maxint = 32000;   /* use a better value */
+	int ncsub;
+	int delta;
+	int nEq;
+
+	// Allocate memory requested by the mmd algorithm
+	nEq = pMat->nRow;
+
+	GD_MALLOC( pMat->pSupernode, int, nEq , "supernode size vector");
+	GD_MALLOC( pMat->pPerm,      int, nEq , "permutation vector");
+	GD_MALLOC( pMat->pPermInv,   int, nEq , "inverse permutation vector");
+	GD_MALLOC( head,             int, nEq*4 + 1 + pMat->nCol, "mmd tmp memory");
+	list   = head + 1*nEq;
+	marker = head + 2*nEq;
+	xadj   = head + 3*nEq;
+	adjncy = head + 4*nEq + 1;
+
+	/*
+	* Run the mmd algorithm. The mmd implementation is a translation of a FORTRAN version so
+	* that we pass all array pointers decremented by one.
+	*/
+	delta = 0;   // Is this a good value?
+
+	BuildSparseConFormat(pMat, xadj, adjncy);
+
+	RunMmd(pMat->nRow, xadj-1, adjncy-1, pMat->pPerm-1, pMat->pPermInv-1, delta,
+		head-1, pMat->pSupernode-1, &pMat->nSupernode, list-1, marker-1, maxint, &ncsub );
+
+	// Release temporary data used only by mmd
+	GD_FREE(head);
+
+
+	return 0;
+
+}  // ComputePermutation
+
+inline int SymbolicFact(SD_MATRIX_DATA *pMat)
+{
+	SD_TMP_CON_MATRIX_DATA  TmpConMat;
+	SD_BLOCK_MATRIX_DATA    BlockMat;
+
+	ComputePermutation( &pMat->Mat.Con);
+	ComputeTmpConMatrix(&pMat->Mat.Con, &TmpConMat);
+	ComputeFillIn(&TmpConMat);
+	ComputeBlockMatrix(&TmpConMat, &BlockMat);
+	pMat->State     = BlockMatrix;
+	pMat->Mat.Block = BlockMat;
+
+	return 0;
+
+}  // SymbolicFact
 
 int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 {
@@ -603,17 +671,6 @@ int ds_MatrixConnectivity( SD_MATRIX_DATA *pMat0, int *pMatDim, int **ppxConCon,
 	return 0;
 
 }  /* ds_MatrixConnectivity */
-
-
-
-
-/*
- * Beginning of NumFact.c
- */
-/*
-* NUMERICAL FACTORIZATION ROUTINES
-*/
-
 
 /**
  * @brief This function assemble the element matrix for one element and must be called for each
@@ -802,54 +859,6 @@ int  InvertMatrix( SD_BLOCK_MATRIX_DATA *pMat )
 
 
 /**
- * @brief Multiply the matrix with a vector. This function can be called at any time, but it makes
- * only sense before the matrix has been LU factorized.
- * @param pMat SD_BLOCK_MATRIX_DATA
- * @param X double
- * @param Y double
- * @return int
- */
-int  MatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X, double *Y )
-{
-	SD_ROW_BLOCK_DATA *pPivotRow;
-	double              *Upper;
-	int                nPivotRow, *pMatFirstColBlock, *pMatSizeColBlock, nRow;
-
-	pMatFirstColBlock = pMat->pFirstColBlock;
-	pMatSizeColBlock  = pMat->pSizeColBlock;
-	Upper             = pMat->pUpper;
-	memset(Y, 0, sizeof(double) * (pMat->Dim) ) ;
-
-	for( nRow = 0, pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
-		int         DimPivot,  nCol, dim;
-		double      *PivotUpper, VectorDot;
-		pBLOCK      pColBlock;
-
-		DimPivot    = pPivotRow->Row1 - pPivotRow->Row0 + 1;
-		nCol        = pPivotRow->nCol;
-		PivotUpper  = Upper + pPivotRow->iFloat;
-		BLOCK_INIT(pColBlock, pC0_FIRST_COL(pPivotRow), pSIZE_FIRST_COL(pPivotRow) );
-
-		for (dim = 0; dim < DimPivot; dim++, nRow++)
-		{
-			VD_DOT_POS( pPivotRow->nColBlock, pColBlock.pSize, pColBlock.pC0, PivotUpper, X, VectorDot );
-			Y[nRow] += VectorDot;
-			pColBlock.pSize[0]--;
-			pColBlock.pC0[0]++;
-			PivotUpper++;
-			VD_AXPY_POS(pPivotRow->nColBlock, pColBlock.pSize, pColBlock.pC0, X[nRow], PivotUpper, Y );
-			PivotUpper +=  nCol - dim -1;
-		}
-		pColBlock.pSize[0] += dim;
-		pColBlock.pC0[0]   -= dim;
-	}
-
-	return 0;
-
-} // MatrixVector
-
-
-/**
  * @brief This function perform the backward and forward substitution for a LU factorized block
  * matrix. Of course this operation is the same as multipying the inverse matrix with a vector
  * and inf fact the implementation does not much differs from a matrix vector multiplication.
@@ -926,14 +935,6 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
 	return 0;
 
 } // InverseMatrixVector
-
-/*
- * End of NumFact.c
- */
-
-/*
- * Beginning of SymbFact.c
- */
 
 /*
  * MMD FUNCTIONS
@@ -1607,55 +1608,6 @@ int BuildSparseConFormat(SD_CON_MATRIX_DATA *pMat, int *pRowStart0, int *pColumn
 }  // BuildSparseConFormat
 
 /**
-* @brief This function compute the permutation array and thus run the mmd algorithm.
- * @param pMat SD_CON_MATRIX_DATA
- * @return int
-*/
-int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
-{
-	int *head;     /* array 0..maxN */
-	int *list;     /* array 0..maxN */
-	int *marker;   /* array 0..maxN */
-	int *xadj;     /* array 0..maxN */
-	int *adjncy;   /* array 0..maxCol */
-	const int maxint = 32000;   /* use a better value */
-	int ncsub;
-	int delta;
-	int nEq;
-
-	// Allocate memory requested by the mmd algorithm
-	nEq = pMat->nRow;
-
-	GD_MALLOC( pMat->pSupernode, int, nEq , "supernode size vector");
-	GD_MALLOC( pMat->pPerm,      int, nEq , "permutation vector");
-	GD_MALLOC( pMat->pPermInv,   int, nEq , "inverse permutation vector");
-	GD_MALLOC( head,             int, nEq*4 + 1 + pMat->nCol, "mmd tmp memory");
-	list   = head + 1*nEq;
-	marker = head + 2*nEq;
-	xadj   = head + 3*nEq;
-	adjncy = head + 4*nEq + 1;
-
-	/*
-	* Run the mmd algorithm. The mmd implementation is a translation of a FORTRAN version so
-	* that we pass all array pointers decremented by one.
-	*/
-	delta = 0;   // Is this a good value?
-
-	BuildSparseConFormat(pMat, xadj, adjncy);
-
-	RunMmd(pMat->nRow, xadj-1, adjncy-1, pMat->pPerm-1, pMat->pPermInv-1, delta,
-		head-1, pMat->pSupernode-1, &pMat->nSupernode, list-1, marker-1, maxint, &ncsub );
-
-	// Release temporary data used only by mmd
-	GD_FREE(head);
-
-
-	return 0;
-
-}  // ComputePermutation
-
-
-/**
 * @brief This routine set up a temporary adjacency block matrix format for the purpose to speed-up
 * the symbolic factorization process and is called after the permutation vector has been
 * computed. From this step all indices for rows and columns are permuted indices. The row
@@ -1962,41 +1914,6 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 
 }  // ComputeBlockMatrix
 
-/*
-* MATRIX DEFINITON AND ELEMENT INCIDENCES ASSEMBLING FUNCTIONS
-*/
-
-/**
-* @brief Allocate the matrix row data in order to store the connectivity matrix data.
- * @param Dim int
- * @param pMat SD_CON_MATRIX_DATA
- * @return int
-*/
-int AllocateConData( size_t Dim, SD_CON_MATRIX_DATA *pMat )
-{
-	pMat->nRow = Dim;
-	GD_MALLOC( pMat->pRow, SD_ROW_DATA, pMat->nRow, "Row Allocation");
-	memset( pMat->pRow, 0, sizeof(SD_ROW_DATA)*pMat->nRow );
-	if ( gd_MemErr ) {
-		ERROR_SOLVER("Memory Error");
-	}
-
-	return 0;
-
-}  // AllocateConData
-
-int ReleaseConMatrix( SD_CON_MATRIX_DATA *pMat )
-{
-	GD_FREE(pMat->pPerm);
-	GD_FREE(pMat->pSupernode);
-	GD_FREE(pMat->pPermInv);
-	GD_FREE(pMat->pRow);
-	SD_DESTROY_CHUNK(pMat->PoolCol);
-
-	return 0;
-
-}  // ReleaseConMatrix
-
 /**
 * @brief Release all the data allocated for the numerical factorization algorithm.
  * @param pMat SD_BLOCK_MATRIX_DATA
@@ -2060,22 +1977,6 @@ int ds_DefineConnectivity(SD_MATRIX_DATA *pMat0, const int& nEq, int Eq[], const
 	return 0;
 
 }  // ds_DefineConnectivity
-
-int SymbolicFact(SD_MATRIX_DATA *pMat)
-{
-	SD_TMP_CON_MATRIX_DATA  TmpConMat;
-	SD_BLOCK_MATRIX_DATA    BlockMat;
-
-	ComputePermutation( &pMat->Mat.Con);
-	ComputeTmpConMatrix(&pMat->Mat.Con, &TmpConMat);
-	ComputeFillIn(&TmpConMat);
-	ComputeBlockMatrix(&TmpConMat, &BlockMat);
-	pMat->State     = BlockMatrix;
-	pMat->Mat.Block = BlockMat;
-
-	return 0;
-
-}  // SymbolicFact
 
 #ifdef __clang__
 #pragma clang diagnostic pop
