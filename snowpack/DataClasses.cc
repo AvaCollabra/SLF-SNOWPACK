@@ -192,10 +192,10 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	std::vector<SnowProfileLayer> Pdata(nL);
 
 	// Generate the profile data from the element data (1 layer = 1 element)
-	char snowloc = 0;
+	unsigned char snowloc = 0;
 	string mystation = Xdata.meta.getStationID();
 	if (isdigit(mystation[mystation.length()-1])) {
-		snowloc = static_cast<char>( mystation[mystation.length()-1] - '0' ); //trick to convert the number as char to a number
+		snowloc = static_cast<unsigned char>( mystation[mystation.length()-1] - '0' ); //trick to convert the number as char to a number
 		if (mystation.length() > 2)
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
@@ -1127,11 +1127,11 @@ double ElementData::neck2VolumetricStrain() const
 
 void ElementData::snowType()
 {
-	type = snowType(dd, sp, 2.*rg, mk%100, theta[WATER], res_wat_cont);
+	type = snowType(dd, sp, 2.*rg, static_cast<short int>(mk%100), theta[WATER], res_wat_cont);
 }
 
 unsigned short int ElementData::snowType(const double& dendricity, const double& sphericity,
-                          const double& grain_size, const size_t& marker, const double& theta_w, const double& res_wat_cont)
+                          const double& grain_size, const short int& marker, const double& theta_w, const double& res_wat_cont)
 {
 	int a=-1,b=-1,c=0;
 
