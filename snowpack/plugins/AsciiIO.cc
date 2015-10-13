@@ -256,8 +256,36 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
 /**
  * @page prf_format PRF profiles time series
  * @section prf_structure General structure
+ * This format should make it easier to extract data out of simulated snow profiles. Each new snow profile is <b>appended</b> to
+ * the current file. Each new data block starts with commented out metadata: first a line giving the fields names and then a
+ * line giving the units. Then the data lines follow until either an empty line (end of the profile for this date) or a new
+ * metadata block (followed by new data).
+ * 
+ * It starts with the date of the profile and location informations (station name, aspect, slope, etc). If there is a profile
+ * for this date, then the stability indexes are provided in the second block. This second block is followed by a block about
+ * the layer propreties, each starting with the layer deposition date.
  * 
  * @section prf_example Example
+ * @code
+ * #Date,JulianDate,station,aspect,slope,Nlayers,hs,swe,lwc_sum,ts,tg
+ * #-,-,-,deg,deg,1,cm,kg m-2,degC,degC
+ * 1995-11-02T00:00:00,2450023.500000,Weissfluhjoch:StudyPlot_MST,0.0,0.0,6,5.1,4.2,0.0,-3.8,-0.1
+ * #Stab,stab_height,stab_index,stab_class1,stab_class2
+ * # ,cm,1,1,1
+ * deformation,1.8,0.54,-1,-1
+ * natural,1.8,6.00
+ * ssi,5.1,6.00
+ * S4,5.1,6.00 
+ * S5,0.0,6.00 
+ * #DepositionDate,DepositionJulianDate,Hn,Tn,gradT,rho,theta_i,theta_w,ogs,gsz,bsz,dd,sp,class,mk,hardness
+ * #-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1
+ * 1995-11-01T22:45:00,2450023.447917,1.8,-1.43,-72.4,88.0,0.096,0.000,0.1,0.1,0.3,0.96,0.49,110,0,1.0
+ * 1995-11-01T23:00:00,2450023.458333,2.4,-1.89,-78.6,82.0,0.089,0.000,0.1,0.1,0.3,0.98,0.50,110,0,1.0
+ * 1995-11-01T23:15:00,2450023.468750,3.0,-2.36,-77.7,80.5,0.088,0.000,0.1,0.1,0.3,0.99,0.50,110,0,1.0
+ * 1995-11-01T23:30:00,2450023.479167,3.6,-2.81,-74.9,79.3,0.086,0.000,0.1,0.1,0.3,0.99,0.50,110,0,1.0
+ * 1995-11-01T23:45:00,2450023.489583,4.3,-3.31,-69.4,79.0,0.086,0.000,0.1,0.1,0.3,0.99,0.50,110,0,1.0
+ * 1995-11-02T00:00:00,2450023.500000,5.1,-3.77,-62.5,78.5,0.086,0.000,0.1,0.1,0.3,1.00,0.50,110,0,1.0
+ * @endcode
  * 
  * @section prf_keywords Keywords
  * This plugin uses the following keywords:
@@ -1168,15 +1196,15 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 	if(!ofs)
 		throw FileAccessException("[E] Can not open file " + Pfilename, AT);
 
-	ofs << "Date,JulianDate,station,aspect,slope,nlay,hs,swe,lwc_sum,ts,tg\n";
-	ofs << "-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
+	ofs << "#Date,JulianDate,station,aspect,slope,Nlayers,hs,swe,lwc_sum,ts,tg\n";
+	ofs << "#-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
 	ofs << fixed << dateOfProfile.toString(Date::ISO) << "," << setprecision(6) << dateOfProfile.getJulian() << ",";
 	ofs << Xdata.meta.getStationName() << "," << setprecision(1) << Xdata.meta.getAzimuth() << "," << Xdata.meta.getSlopeAngle() << ",";
 	if (Xdata.getNumberOfElements() == Xdata.SoilNode) {
-		ofs << "0,-999.,-999.,-999.,-999.\n\n";
+		ofs << "0,-999.,-999.,-999.,-999.\n\n\n";
 		ofs.close();
 	} else {
-		vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf);
+		vector<SnowProfileLayer> Pdata( SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf) );
 		if (aggregate) {
 			Aggregate::aggregate(Pdata);
 		}
@@ -1185,17 +1213,17 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 		ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
 		ofs << Pdata[nL-1].T << "," << IOUtils::K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
 		//Minima of stability indices at their respective depths as well as stability classifications
-		ofs << "#,s_height,s_index,s_class1,s_class2\n";
-		ofs << " ,cm,1,1,1\n";
-		ofs << "d," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
+		ofs << "#Stab,stab_height,stab_index,stab_class1,stab_class2\n";
+		ofs << "# ,cm,1,1,1\n";
+		ofs << "deformation," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
 		ofs << +Xdata.S_class1 << "," << +Xdata.S_class2 << "\n"; //force printing type char as numerica value
-		ofs << "n," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
-		ofs << "s," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
-		ofs << "4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
-		ofs << "5," << setprecision(1) << M_TO_CM(Xdata.z_S_5/cos_sl) << "," << setprecision(2) << Xdata.S_5 << "\n";
+		ofs << "natural," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
+		ofs << "ssi," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
+		ofs << "S4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
+		ofs << "S5," << setprecision(1) << M_TO_CM(Xdata.z_S_5/cos_sl) << "," << setprecision(2) << Xdata.S_5 << "\n";
 		//Now write all layers starting from the ground
-		ofs << "DepDate,DepJulianDate,Hn,Tn,gradT,rho,th_i,th_w,ogs,gsz,bsz,dd,sp,class,mk,hard\n";
-		ofs << "-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1\n";
+		ofs << "#DepositionDate,DepositionJulianDate,Hn,Tn,gradT,rho,theta_i,theta_w,ogs,gsz,bsz,dd,sp,class,mk,hardness\n";
+		ofs << "#-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1\n";
 		for(size_t ll=0; ll<nL; ll++) {
 			ofs << Pdata[ll].depositionDate.toString(Date::ISO) << "," << setprecision(6) << Pdata[ll].depositionDate.getJulian() << ",";
 			ofs << setprecision(1) << Pdata[ll].height << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << ",";
@@ -1204,7 +1232,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 			ofs << setprecision(2) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
 			ofs << Pdata[ll].type << "," << Pdata[ll].marker << "," << setprecision(1) << Pdata[ll].hard << "\n";
 		}
-		ofs << "\n";
+		ofs << "\n\n";
 	}
 	ofs.close();
 }
