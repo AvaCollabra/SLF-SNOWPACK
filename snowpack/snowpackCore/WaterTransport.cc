@@ -28,7 +28,7 @@ using namespace std;
 using namespace mio;
 
 WaterTransport::WaterTransport(const SnowpackConfig& cfg)
-               : RichardsEquationSolver1d(cfg), variant(),
+               : RichardsEquationSolver1d_matrix(cfg, true), RichardsEquationSolver1d_pref(cfg, false), variant(),
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
@@ -480,12 +480,12 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			}
 			
 			//check that thetas and densities are consistent
-			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
-			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
-			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
-			assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
-			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
-			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
+//			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
+//			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
+//			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
+//			assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
+//			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
+//			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
 		}
 
 		// Now take care of left over solute mass.
@@ -512,7 +512,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 
 	//Any left over energy (ql) should go to soil (surfacefluxrate). Units: ql = [W/m^2]=[J/s/m^2], surfacefluxrate=[m^3/m^2/s]
 	if(fabs(ql)>Constants::eps2) { // TODO Check that this takes correctly care of energy balance
-		RichardsEquationSolver1d.surfacefluxrate+=(ql/Constants::lh_vaporization)/Constants::density_water;
+		RichardsEquationSolver1d_matrix.surfacefluxrate+=(ql/Constants::lh_vaporization)/Constants::density_water;
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
 	}
 
@@ -595,7 +595,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
 				// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
 				if( (iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {
-					RichardsEquationSolver1d.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
+					RichardsEquationSolver1d_matrix.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
 					// We remove water from the element, which is now in surfacefluxrate
 					EMS[eUpper].theta[WATER]=0.;
 					EMS[eUpper].theta[WATER_PREF]=0.;
@@ -636,9 +636,9 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						} else {
 							// In this case, we don't need to call SnowStation::mergeElements(), as we put the mass in surfacefluxrate or soilsurfacesourceflux and just remove the element.
 							if(iwatertransportmodel_snow != RICHARDSEQUATION || (rnE-1)==Xdata.SoilNode) {	//If we use BUCKET for snow OR we remove the last snow element, we can consider it to be the surface flux
-								RichardsEquationSolver1d.surfacefluxrate+=(EMS[eUpper].M/Constants::density_water)/(sn_dt);	//surfacefluxrate=[m^3/m^2/s].
+								RichardsEquationSolver1d_matrix.surfacefluxrate+=(EMS[eUpper].M/Constants::density_water)/(sn_dt);	//surfacefluxrate=[m^3/m^2/s].
 							} else { //We are in the middle of the domain solved by the Richards Equation, so it becomes a source:
-								RichardsEquationSolver1d.soilsurfacesourceflux+=(EMS[eUpper].M/Constants::density_water)/(sn_dt);//soilsurfacesourceflux=[m^3/m^2/s].
+								RichardsEquationSolver1d_matrix.soilsurfacesourceflux+=(EMS[eUpper].M/Constants::density_water)/(sn_dt);//soilsurfacesourceflux=[m^3/m^2/s].
 							}
 						}
 					}
@@ -648,10 +648,10 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 															//Note: the second clause is necessary, because when we remove the last snow element, there is no way for the Richards Solver to figure out that this surfacefluxrate is still coming from the snowpack.
 						if (iwatertransportmodel_snow == RICHARDSEQUATION) {
 							// Special case for RE: if all snow elements disappear, soilsurfacesourceflux has no meaning, so it should become part of the surfacefluxrate:
-							RichardsEquationSolver1d.surfacefluxrate += RichardsEquationSolver1d.soilsurfacesourceflux;
-							RichardsEquationSolver1d.soilsurfacesourceflux = 0.;
+							RichardsEquationSolver1d_matrix.surfacefluxrate += RichardsEquationSolver1d_matrix.soilsurfacesourceflux;
+							RichardsEquationSolver1d_matrix.soilsurfacesourceflux = 0.;
 							// Now make sure surfacefluxrate is considered snowpack runoff:
-							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += RichardsEquationSolver1d.surfacefluxrate*Constants::density_water*sn_dt;
+							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += RichardsEquationSolver1d_matrix.surfacefluxrate*Constants::density_water*sn_dt;
 						} else {
 							// Bucket and NIED case:
 							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
@@ -875,7 +875,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			}
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
-			RichardsEquationSolver1d.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
+			RichardsEquationSolver1d_matrix.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * Mdata.psum_ph;
 		}
 	}
@@ -1096,7 +1096,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						//dThetaW_upper = MAX(0, dThetaW_upper);
 						if(eLower==Xdata.SoilNode-1 && eUpper==Xdata.SoilNode) {
 							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += L_upper * Constants::density_water * dThetaW_upper + excess_water * Constants::density_water;
-							RichardsEquationSolver1d.surfacefluxrate+=((dThetaW_upper*L_upper)+excess_water)/(sn_dt);	//surfacefluxrate is used for the Neumann BC in the Richards solver. Note: W0 is m^3/m^3
+							RichardsEquationSolver1d_matrix.surfacefluxrate+=((dThetaW_upper*L_upper)+excess_water)/(sn_dt);	//surfacefluxrate is used for the Neumann BC in the Richards solver. Note: W0 is m^3/m^3
 																//note: we devide by snowpack time-step (sn_dt), and not by (sn_dt/WatCalc), as we will spread the amount of runoff evenly over the snowpack time step.
 							excess_water=0.;
 
@@ -1126,7 +1126,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
-		RichardsEquationSolver1d.SolveRichardsEquation(Xdata, Sdata);
+		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata);
+		RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
+
 	}
 
 	// The TOP element is very important because it is always losing mass--the strain state
@@ -1218,8 +1220,12 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& ql,
                                        SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	RichardsEquationSolver1d.surfacefluxrate=0.;		//These are for the interface of snowpack with the richards solver. Initialize it to 0.
-	RichardsEquationSolver1d.soilsurfacesourceflux=0.;
+	RichardsEquationSolver1d_matrix.surfacefluxrate=0.;		//These are for the interface of snowpack with the richards solver. Initialize it to 0.
+	RichardsEquationSolver1d_matrix.soilsurfacesourceflux=0.;
+
+	RichardsEquationSolver1d_pref.surfacefluxrate=0.;		//These are for the interface of snowpack with the richards solver. Initialize it to 0.
+	RichardsEquationSolver1d_pref.soilsurfacesourceflux=0.;
+
 
 	// Do the checks for the WaterTransport model chosen:
 	if(iwatertransportmodel_snow != BUCKET && iwatertransportmodel_snow != NIED && iwatertransportmodel_snow != RICHARDSEQUATION) {

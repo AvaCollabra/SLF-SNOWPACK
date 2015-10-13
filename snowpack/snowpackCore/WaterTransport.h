@@ -58,7 +58,8 @@ class WaterTransport {
 
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
-		ReSolver1d RichardsEquationSolver1d;
+		ReSolver1d RichardsEquationSolver1d_matrix;
+		ReSolver1d RichardsEquationSolver1d_pref;
 
 		std::string variant;
 

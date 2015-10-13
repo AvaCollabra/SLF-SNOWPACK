@@ -38,7 +38,7 @@
 class ReSolver1d {
 
 	public:
-		ReSolver1d(const SnowpackConfig& cfg);	// Class constructor
+		ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part);	// Class constructor
 		void SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		double surfacefluxrate;		// Surfacefluxrate for solving RE. It is either surface of snow, in case of snowpack and solving RE for snow, or surface of soil, when no snowpack and/or solving RE only for soil.
@@ -72,7 +72,7 @@ class ReSolver1d {
 
 		double sn_dt;
 		bool useSoilLayers, water_layer;
-
+		bool matrix;		// boolean to define if water transport is calculated for matrixflow or preferential flow
 
 		// Van Genuchten functions
 		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);

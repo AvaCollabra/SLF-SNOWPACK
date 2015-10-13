@@ -908,10 +908,10 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata)
 	fout << "\n0518," << nE;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << 1.e-9*EMS[e].k[SETTLEMENT];
-	// *519: soil volume fraction (%)
+	// *519: preferential water volume fraction (%)
 	fout << "\n0519," << nE;
 	for (size_t e = 0; e < nE; e++)
-		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[SOIL];
+		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[WATER_PREF];
 	// *520: temperature gradient (K m-1)
 	fout << "\n0520," << nE;
 	for (size_t e = 0; e < nE; e++)
