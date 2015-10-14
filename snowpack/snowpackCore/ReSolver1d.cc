@@ -676,7 +676,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	const bool WriteOutNumerics_Level0=false;	//true: after time step, some summarizing numerics information is printed
 	const bool WriteOutNumerics_Level1=false;	//true: per iteration, some basic numerics information is printed (not so much output, but still is useful for debugging)
-	const bool WriteOutNumerics_Level2=false;	//true: only initial conditions and subsequent convergence infFwriteoutormation is printed during each time step (it's quite some output, but helps debugging)
+	const bool WriteOutNumerics_Level2=false;	//true: only initial conditions and subsequent convergence information is printed during each time step (it's quite some output, but helps debugging)
 	const bool WriteOutNumerics_Level3=false;	//true: per iteration, highly detailed layer and solver is printed (it's really a lot of output, but helps debugging the most difficult problems)
 
 	const bool AllowDrySnowLayers=false;		//true: snow layers can be dry (theta=0.) false: snow layers will always be at least theta=theta_r. The necessary water is created by melting ice.
@@ -1022,7 +1022,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		if ( SnowpackElement[i] >= nsoillayers_snowpack) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
-		  const double max_allowed_ice=0.95;			//An ice pore space of 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+			const double max_allowed_ice=0.95;			//An ice pore space of 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 			if(EMS[SnowpackElement[i]].theta[ICE]>max_allowed_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
 				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-max_allowed_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
@@ -1041,6 +1041,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Decrease theta_r in case of refreezing:
 				theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-(REQUIRED_ACCURACY_THETA/10.)));
 			} else {
+				//For preferential flow, we fix theta_r to 0:
 				theta_r[i]=0.;
 			}
 			    
@@ -1226,19 +1227,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				} else {
 					SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 				}
-				
-				if(matrix==false) {
-					theta_r[i]=0.;
-					//theta_s[i]-=EMS[SnowpackElement[i]].theta[WATER];
-				} else {
-					theta_s[i]-=0.025; //EMS[SnowpackElement[i]].theta[WATER_PREF];
-				}
 				break;
 			}
-			//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
-			//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].
-			//However, this will not work in the Richards, as theta[WATER] is varying per time step. So we keep free a volume as if the soil is saturated AND will freeze:
-			EMS[SnowpackElement[i]].theta[SOIL]=1.-((Constants::density_water/Constants::density_ice)*theta_s[i]);	//Determine the soil content based on the pore space
+
+			if(matrix==false) {
+				//For preferential flow, we fix theta_r to 0:
+				theta_r[i]=0.;
+				theta_s[i]-=(EMS[SnowpackElement[i]].theta[WATER]+EMS[SnowpackElement[i]].theta[ICE]);
+			} else {
+				//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
+				//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].
+				//However, this will not work in the Richards, as theta[WATER] is varying per time step. So we keep free a volume as if the soil is saturated AND will freeze:
+				EMS[SnowpackElement[i]].theta[SOIL]=1.-((Constants::density_water/Constants::density_ice)*theta_s[i]);	//Determine the soil content based on the pore space
+			}
 		}
 
 		//Calculate m:
