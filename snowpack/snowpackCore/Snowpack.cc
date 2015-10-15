@@ -77,7 +77,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
           : cfg(i_cfg), surfaceCode(),
             variant(), viscosity_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), albedo_average_schmucki(), sw_absorption_scheme(),
-           /* atm_stability_model(),*/ /*allow_adaptive_timestepping(false),*/ albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
+            atm_stability_model(), allow_adaptive_timestepping(false), albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
             meteo_step_length(0.), thresh_change_bc(-1.0), geo_heat(Constants::undefined), height_of_meteo_values(0.),
             height_new_elem(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
@@ -157,6 +157,12 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - "BOTH" downward and reflected SW radiation is used
 	 * @note { If SW_MODE == "BOTH", the input must hold both fluxes! } */
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
+
+	// Defines used atmospheric stability, used for determining if dynamic time steps may be required
+	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", atm_stability_model);
+
+	// Allow dynamic time stepping in case of unstable atmospheric stratification
+	cfg.getValue("ALLOW_ADAPTIVE_TIMESTEPPING", "SnowpackAdvanced", allow_adaptive_timestepping);
 
 	/* Height of new snow element (m) [NOT read from CONSTANTS_User.INI] \n
 	 * Controls the addition of new snow layers. Set in qr_ReadParameters() \n
@@ -330,10 +336,8 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 	// Compute the creep forces
 	Fc[0] = -Sc;
 	Fc[1] = Sc;
-	/*
-	 * Update the element force vector (NOTE: Assembled Fe[0..5]=0.0! if elastic
-	 * istropic solution WITHOUT creep.)
-	*/
+	// Update the element force vector (NOTE: Assembled Fe[0..5]=0.0! if elastic
+	 // istropic solution WITHOUT creep.)
 	Fe[0] = Fe[0]+Fc[0];
 	Fc[0] = Fe[0]-Fi[0];
 	Fe[1] = Fe[1]+Fc[1];
@@ -813,11 +817,13 @@ double Snowpack::getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) c
  * \n
  * Note:  The equations are solved with a fully implicit time-integration scheme and the
  * system of finite element matrices are solved using a sparse matrix solver.
- * @param Xdata
- * @param Mdata
- * @param Bdata
+ * @param Xdata Snow profile data
+ * @param[in] Mdata Meteorological forcing
+ * @param Bdata Boundary conditions
+ * @param[in] ThrowAtNoConvergence	If true, throw exception when temperature equation does not converge; if false, function will return false after non convergence and true otherwise.
+ * @return true when temperature equation converged, false if it did not.
  */
-void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata)
+bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata, BoundCond& Bdata, const bool& ThrowAtNoConvergence)
 {
 	int Ie[N_OF_INCIDENCES];                     // Element incidences
 	double T0[N_OF_INCIDENCES];                  // Element nodal temperatures at t0
@@ -875,7 +881,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 			NDS[0].T = (Mdata.ts0 + Mdata.ta) / 2.;
 		else
 			NDS[0].T = Mdata.ts0;
-		return;
+		return true;
 	}
 
 	if (Kt != NULL)
@@ -996,6 +1002,7 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 	if (nN==1) MaxItnTemp = 2000;
 
 	// IMPLICIT INTEGRATION LOOP
+	bool TempEqConverged = true;	// Return value of this function compTemperatureProfile(...)
 	do {
 		iteration++;
 		// Reset the matrix data and zero out all the increment vectors
@@ -1092,96 +1099,104 @@ void Snowpack::compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, B
 		}
 		NotConverged = (MaxTDiff > ControlTemp);
 		if (iteration > MaxItnTemp) {
-			prn_msg(__FILE__, __LINE__, "err", Mdata.date,
-			        "Temperature did not converge (azi=%.0lf, slope=%.0lf)!",
-			        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-			prn_msg(__FILE__, __LINE__, "msg", Date(),
-			        "%d iterations > MaxItnTemp=%d; ControlTemp=%.4lf; nN=%d",
-			        iteration, MaxItnTemp, ControlTemp, nN);
-			for (size_t n = 0; n < nN; n++) {
-				if (n > 0)
-					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					        "U[%03d]:%6.1lf K, ddU:%8.4lf K;  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
-					        n, U[n], ddU[n], NDS[n].T, EMS[n-1].theta[WATER]);
-				else
-					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					        "U[%03d]:%6.1lf K, ddU:%8.4lf K;  NDS.T(t-1)=%6.1lf K;",
-					        n, U[n], ddU[n], NDS[n].T);
+			if (ThrowAtNoConvergence) {
+				prn_msg(__FILE__, __LINE__, "err", Mdata.date,
+				        "Temperature did not converge (azi=%.0lf, slope=%.0lf)!",
+				        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+				prn_msg(__FILE__, __LINE__, "msg", Date(),
+				        "%d iterations > MaxItnTemp=%d; ControlTemp=%.4lf; nN=%d; sn_dt=%f",
+				        iteration, MaxItnTemp, ControlTemp, nN, sn_dt);
+				for (size_t n = 0; n < nN; n++) {
+					if (n > 0)
+						prn_msg(__FILE__, __LINE__, "msg-", Date(),
+						        "U[%03d]:%6.1lf K, ddU:%8.4lf K;  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
+						        n, U[n], ddU[n], NDS[n].T, EMS[n-1].theta[WATER]);
+					else
+						prn_msg(__FILE__, __LINE__, "msg-", Date(),
+						        "U[%03d]:%6.1lf K, ddU:%8.4lf K;  NDS.T(t-1)=%6.1lf K;",
+						        n, U[n], ddU[n], NDS[n].T);
+				}
+				prn_msg(__FILE__, __LINE__, "msg", Date(),
+				        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
+				        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
+				free(U); free(dU); free(ddU);
+				throw IOException("Runtime error in compTemperatureProfile", AT);
+			} else {
+				TempEqConverged = false;	// Set return value of function
+				NotConverged = false;		// Ensure we leave the do...while loop
 			}
-			prn_msg(__FILE__, __LINE__, "msg", Date(),
-			        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
-			        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
-			free(U); free(dU); free(ddU);
-			throw IOException("Runtime error in compTemperatureProfile", AT);
 		}
 		for (size_t n = 0; n < nN; n++)
 			U[n] += ddU[ n ];
 	} while ( NotConverged ); // end Convergence Loop
 
-	size_t crazy = 0;
-	bool prn_date = true;
-	for (size_t n = 0; n < nN; n++) {
-		if ((U[n] > t_crazy_min) && (U[n] < t_crazy_max)) {
-			NDS[n].T = U[n];
-		} else { // Correct for - hopefully transient - crazy temperatures!
-			NDS[n].T = 0.5*(U[n] + NDS[n].T);
-			if (!alpine3d) { //reduce number of warnings for Alpine3D
-				if (!crazy && (nN > Xdata.SoilNode + 3)) {
-					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)!");
-					prn_msg(__FILE__, __LINE__, "msg-", Date(),
-					        "T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf",
-					        t_crazy_min, t_crazy_max, nN, Xdata.cH,
-					        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-					prn_date = false;
-				}
-				if (n < Xdata.SoilNode) {
-					if (n == 0) {
-						prn_msg(__FILE__, __LINE__, "msg-", Mdata.date,
-						        "Bottom SOIL node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K", n, U[n], NDS[n].T);
+	if (TempEqConverged) {
+		size_t crazy = 0;
+		bool prn_date = true;
+		for (size_t n = 0; n < nN; n++) {
+			if ((U[n] > t_crazy_min) && (U[n] < t_crazy_max)) {
+				NDS[n].T = U[n];
+			} else { // Correct for - hopefully transient - crazy temperatures!
+				NDS[n].T = 0.5*(U[n] + NDS[n].T);
+				if (!alpine3d) { //reduce number of warnings for Alpine3D
+					if (!crazy && (nN > Xdata.SoilNode + 3)) {
+						prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Crazy temperature(s)!");
+						prn_msg(__FILE__, __LINE__, "msg-", Date(),
+						        "T <= %5.1lf OR T >= %5.1lf; nN=%d; cH=%6.3lf m; azi=%.0lf, slope=%.0lf",
+						        t_crazy_min, t_crazy_max, nN, Xdata.cH,
+						        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 						prn_date = false;
-					} else {
-						prn_msg(__FILE__, __LINE__, "msg-", Date(),
-						        "SOIL node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
-						        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
 					}
-				} else if (Xdata.SoilNode > 0) {
-						prn_msg(__FILE__, __LINE__, "msg-", Date(),
-						        "GROUND surface node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf", n, U[n], NDS[n].T);
-				} else if (nN > Xdata.SoilNode + 3) {
-					if (n == 0) {
-						prn_msg(__FILE__, __LINE__, "msg-", Mdata.date,
-						        "Bottom SNOW node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf", n, U[n], NDS[n].T);
-						prn_date = false;
-					} else {
-						prn_msg(__FILE__, __LINE__, "msg-", Date(),
-						        "SNOW node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf EMS[n-1].th_w(t-1)=%.5lf",
-						        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
+					if (n < Xdata.SoilNode) {
+						if (n == 0) {
+							prn_msg(__FILE__, __LINE__, "msg-", Mdata.date,
+							        "Bottom SOIL node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K", n, U[n], NDS[n].T);
+							prn_date = false;
+						} else {
+							prn_msg(__FILE__, __LINE__, "msg-", Date(),
+							        "SOIL node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf K; EMS[n-1].th_w(t-1)=%.5lf",
+							        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
+						}
+					} else if (Xdata.SoilNode > 0) {
+							prn_msg(__FILE__, __LINE__, "msg-", Date(),
+							        "GROUND surface node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf", n, U[n], NDS[n].T);
+					} else if (nN > Xdata.SoilNode + 3) {
+						if (n == 0) {
+							prn_msg(__FILE__, __LINE__, "msg-", Mdata.date,
+							        "Bottom SNOW node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf", n, U[n], NDS[n].T);
+							prn_date = false;
+						} else {
+							prn_msg(__FILE__, __LINE__, "msg-", Date(),
+							        "SNOW node %3d: U(t)=%6.1lf  NDS.T(t-1)=%6.1lf EMS[n-1].th_w(t-1)=%.5lf",
+							        n, U[n], NDS[n].T, EMS[n-1].theta[WATER]);
+						}
 					}
 				}
+				crazy++;
 			}
-			crazy++;
+		}
+		if (crazy > Xdata.SoilNode + 3) {
+			if (prn_date)
+				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+				        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
+				        crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+			else
+				prn_msg(__FILE__, __LINE__, "msg-", Date(),
+				        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
+				        crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+			prn_msg(__FILE__, __LINE__, "msg-", Date(),
+			        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
+			        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
+		}
+
+		for (size_t e = 0; e < nE; e++) {
+			EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
+			EMS[e].heatCapacity();
+			EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 		}
 	}
-	if (crazy > Xdata.SoilNode + 3) {
-		if (prn_date)
-			prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
-			        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
-			        crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-		else
-			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			        "%d crazy node(s) from total %d! azi=%.0lf, slope=%.0lf",
-			        crazy, nN, Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
-		prn_msg(__FILE__, __LINE__, "msg-", Date(),
-		        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
-		        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
-	}
-
-	for (size_t e = 0; e < nE; e++) {
-		EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
-		EMS[e].heatCapacity();
-		EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
-	}
 	free(U); free(dU); free(ddU);
+	return TempEqConverged;
 }
 
 /**
@@ -1726,40 +1741,103 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 		} else
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_precip);
 
-		// Reinitialize and compute the initial meteo heat fluxes
-		memset((&Bdata), 0, sizeof(BoundCond));
-		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
-
-		// Compute the temperature profile in the snowpack and soil, if present
-		compTemperatureProfile(Xdata, Mdata, Bdata);
-
-		// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
-		// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
-		//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
-		//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
-		if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
-				&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < IOUtils::C_TO_K(thresh_change_bc))) {
-			surfaceCode = DIRICHLET_BC;
-			melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-			Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*IOUtils::C_TO_K(thresh_change_bc/2.);*/
-			compTemperatureProfile(Xdata, Mdata, Bdata);
+		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
+		const double psum_bcu = Mdata.psum;	// Store original psum value
+		const double psum_ph_bcu = Mdata.psum_ph;	// Store original psum_ph value
+		int ii = 0;				// Counter for sub-timesteps to match one SNOWPACK time step
+		bool LastTimeStep = false;		// Flag to indicate if it is the last sub-time step
+		double p_dt = 0.;			// Cumulative progress of time steps
+		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true) {
+			// To reduce oscillations in TSS, reduce the time step prematurely when atmospheric stability is unstable.
+			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum /= sn_dt;	// psum is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
+			sn_dt = 60.;
+			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
 		}
-		Sdata.compSnowSoilHeatFlux(Xdata);
+		do {
+			if (ii >= 1) {
+				// After the first sub-time step, update Meteo object to reflect on the new stability state
+				Meteo M(cfg);
+				M.compMeteo(Mdata, Xdata, false);
+			}
+			// Reinitialize and compute the initial meteo heat fluxes
+			memset((&Bdata), 0, sizeof(BoundCond));
+			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 
-		// Inialize PhaseChange
-		phasechange.initialize(Xdata);
+			// set the snow albedo
+			Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
+			Xdata.Albedo = getModelAlbedo(Xdata, Mdata); //either parametrized or measured
+			
+			// Compute the temperature profile in the snowpack and soil, if present
+			if (compTemperatureProfile(Mdata, Xdata, Bdata, (allow_adaptive_timestepping == true)?(false):(true))) {
+				// Entered after convergence
+				ii++;						// Update time step counter
+				p_dt += sn_dt;					// Update progress variable
+				if (p_dt > sn_dt_bcu-Constants::eps) {		// Check if it is the last sub-time step
+					LastTimeStep = true;
+				}
 
-		// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
-		if(!alpine3d)
-			phasechange.compPhaseChange(Xdata, Mdata.date);
-		else
-			phasechange.compPhaseChange(Xdata, Mdata.date, false);
+				// Good HACK (according to Charles, qui persiste et signe;-)... like a good hunter and a bad one...
+				// If you switched from DIRICHLET to NEUMANN boundary conditions, correct
+				//   for a possibly erroneous surface energy balance. The latter can be due e.g. to a lack
+				//   of data on nebulosity leading to a clear sky assumption for incoming long wave.
+				if ((change_bc && meas_tss) && (surfaceCode == NEUMANN_BC)
+						&& (Xdata.Ndata[Xdata.getNumberOfNodes()-1].T < mio::IOUtils::C_TO_K(thresh_change_bc))) {
+					surfaceCode = DIRICHLET_BC;
+					melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+					Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = MIN(Mdata.tss, melting_tk); /*C_TO_K(thresh_change_bc/2.);*/
+					// update the snow albedo
+					Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
+					Xdata.Albedo = getModelAlbedo(Xdata, Mdata); //either parametrized or measured
+					compTemperatureProfile(Mdata, Xdata, Bdata, true);	// Now, throw on non-convergence
+				}
+				if (LastTimeStep) Sdata.compSnowSoilHeatFlux(Xdata);
 
-		// Compute the final heat fluxes
-		Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
-		                      // linearized w/ respect to Tss and thus remains unchanged
-		                      // throughout the temperature iterations!!!
-		updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+				// Inialize PhaseChange at the first sub-time step
+				if (ii == 1) phasechange.initialize(Xdata);
+
+				// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
+				if (!alpine3d)
+					phasechange.compPhaseChange(Xdata, Mdata.date);
+				else
+					phasechange.compPhaseChange(Xdata, Mdata.date, false);
+
+				// Compute the final heat fluxes at the last sub-time step
+				if (LastTimeStep) Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
+								        // linearized w/ respect to Tss and thus remains unchanged
+								        // throughout the temperature iterations!!!
+				updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+
+				// Make sure the sub-time steps match exactly one SNOWPACK time step
+				if (p_dt + sn_dt > sn_dt_bcu) {
+					sn_dt = sn_dt_bcu - p_dt;
+				}
+			} else {
+				// Entered after non-convergence
+				if (sn_dt == sn_dt_bcu) std::cout << "[i] [" << Mdata.date.toString(Date::ISO) << "] : using adaptive timestepping\n"; // First time warning
+
+				if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum /= sn_dt;	// psum is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
+				sn_dt /= 2.;							// No convergence, half the time step
+				if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
+
+				if (sn_dt < 0.01) {	// If time step gets too small, we are lost
+					prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature equation did not converge, even after reducing time step (azi=%.0lf, slope=%.0lf).", Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+					for (size_t n = 0; n < Xdata.getNumberOfNodes(); n++) {
+						prn_msg(__FILE__, __LINE__, "msg-", Date(),
+						        "N[%03d]: %8.4lf K", n, Xdata.Ndata[n].T);
+					}
+					prn_msg(__FILE__, __LINE__, "msg", Date(),
+					        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
+					        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, Mdata.iswr - Mdata.rswr);
+					throw IOException("Runtime error in runSnowpackModel", AT);
+				}
+				std::cout << "                            --> time step temporarily reduced to: " << sn_dt << "\n";
+			}
+		}
+		while (LastTimeStep == false);
+
+		sn_dt = sn_dt_bcu;	// Set back SNOWPACK time step to orginal value
+		Mdata.psum = psum_bcu;	// Set back psum to original value
+		Mdata.psum_ph = psum_ph_bcu;	// Set back psum_ph to original value
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);

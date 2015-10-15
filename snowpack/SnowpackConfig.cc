@@ -36,6 +36,7 @@ bool SnowpackConfig::initStaticData()
 {
 	//[SnowpackAdvanced] section
 	advancedConfig["ALPINE3D"] = "false";
+	advancedConfig["ALLOW_ADAPTIVE_TIMESTEPPING"] = "true";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
