@@ -95,7 +95,7 @@ class Snowpack {
 		                                   double Fe[ N_OF_INCIDENCES ]);
 
 		double getParameterizedAlbedo(const SnowStation& Xdata, const CurrentMeteo& Mdata) const;
-		double getModelAlbedo(const double& pAlbedo, const SnowStation& Xdata, CurrentMeteo& Mdata) const;
+		double getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const;
 		
 		void compTemperatureProfile(SnowStation& Xdata, CurrentMeteo& Mdata, BoundCond& Bdata);
 
