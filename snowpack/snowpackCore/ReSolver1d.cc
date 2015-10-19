@@ -1075,23 +1075,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			case YAMAGUCHI2012:
 				{
-					if(matrix == true){
-						//Calculate ratio density/grain size (see Yamaguchi (2012)):
-						double tmp_rho_d=(EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.);
-						//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
-						tmp_rho_d=MAX(2000., tmp_rho_d);
-						alpha[i]=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
-						n[i]=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
-						break;
-					} else {
-						double tmp_rho_d=(EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.);
-						//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
-						tmp_rho_d=MAX(2000., tmp_rho_d);
-						alpha[i]=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
-						n[i]=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
-	 					break;
-					}
-					  
+					//Calculate ratio density/grain size (see Yamaguchi (2012)):
+					double tmp_rho_d=(EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.);
+					//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
+					tmp_rho_d=MAX(2000., tmp_rho_d);
+					alpha[i]=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
+					n[i]=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
+					break;
 				}
 
 			case YAMAGUCHI2010:
@@ -1154,11 +1144,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			case CALONNE:
 				//See: Calonne et al., 3-D image-based numerical computations of snow permeability: links to specific surface area, density, and microstructural anisotropy, TC, 2012.
-				if(matrix == true){
-					ksat[i]=0.75 * (EMS[SnowpackElement[i]].ogs / 1000.)*(EMS[SnowpackElement[i]].ogs / 1000.) * exp(-0.013 * EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
-				} else {
-					ksat[i]= 2. * (0.75 * (EMS[SnowpackElement[i]].ogs / 1000.)*(EMS[SnowpackElement[i]].ogs / 1000.) * exp(-0.013 * EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water);
-				}
+				ksat[i]=0.75 * (EMS[SnowpackElement[i]].ogs / 1000.)*(EMS[SnowpackElement[i]].ogs / 1000.) * exp(-0.013 * EMS[SnowpackElement[i]].theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
 				break;
 			}
 
@@ -1279,7 +1265,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
         for (i = uppernode; i >= lowernode; i--) {	//Cycle over all Richards solver domain layers
-  		//Now calculate the theta that should be considered "dry soil".
+		//Now calculate the theta that should be considered "dry soil".
 		theta_d[i]=fromHtoTHETAforICE(h_d, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], 0.);
 
 		//Now check if this case is not too extreme
@@ -1375,7 +1361,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		//Now copy the EMS water content into the working arrays to solve Richards-equation (so this is the important part were this function is coupled to the rest of SNOWPACK).
 		if(activelayer[i]==true) {
 			// Now calculate initial pressure head:
-			h_n[i]=fromTHETAtoHforICE(EMS[SnowpackElement[i]].theta[WATERINDEX], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
+			const double pref_flowarea=(WATERINDEX==WATER_PREF && SnowpackElement[i] >= nsoillayers_snowpack)?(exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs))):(1.);	// Area involved in preferential flow in the current layer (fraction between 0 and 1)
+			h_n[i]=fromTHETAtoHforICE(EMS[SnowpackElement[i]].theta[WATERINDEX]/pref_flowarea, theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 			theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
 		} else {
 			theta_n[i]=EMS[SnowpackElement[i]].theta[WATERINDEX];
@@ -2562,8 +2549,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 		} else {									//We are in snow
 			if(activelayer[i]==true) {
-				//EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_d[i]);
-				EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
+				const double pref_flowarea=(WATERINDEX==WATER_PREF)?(exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs))):(1.);	// Area involved in preferential flow in the current layer (fraction between 0 and 1)
+				//EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*fromHtoTHETA(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_d[i])*pref_flowarea;
+				EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i])*pref_flowarea;
 			} else {
 				EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*theta_n[i];
 			}
@@ -2676,6 +2664,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {	// For soil
 			const double pref_threshold=0.02; //theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
 			if(EMS[i].theta[WATER_PREF]>pref_threshold) {
+				EMS[i].theta[WATER]+=(EMS[i].theta[WATER_PREF]-pref_threshold);
+				EMS[i].theta[WATER_PREF]=pref_threshold;
+			}
+			if(EMS[i].theta[WATER_PREF]<pref_threshold) {
 				EMS[i].theta[WATER]+=(EMS[i].theta[WATER_PREF]-pref_threshold);
 				EMS[i].theta[WATER_PREF]=pref_threshold;
 			}
