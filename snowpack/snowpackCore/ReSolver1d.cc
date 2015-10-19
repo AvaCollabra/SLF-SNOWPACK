@@ -700,7 +700,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Set parameterization for hydraulic conductivity
 	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
 	//Set how the hydraulic conductivity at the interface nodes should be calculated.
-	const K_AverageTypes K_AVERAGETYPE=ARITHMETICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
+	const K_AverageTypes K_AVERAGETYPE=GEOMETRICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
 
 
 
@@ -2618,46 +2618,62 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].theta[WATER_PREF]=MAX(0, MIN(1., EMS[i].theta[WATER_PREF]));
 			EMS[i].theta[ICE]=MAX(0, MIN(1., EMS[i].theta[ICE]));
 		}
-		
-		
-		// Here is a very very crucial part. Here the water wil be either transferred to matrix or preferential domain.
-		if(i>nsoillayers_snowpack-1) {
-			// For snow
-			const double matrix_threshold=MAX(0.005, fromHtoTHETA((-1.*(0.0437 * pow((2.*EMS[i].rg), -1.0) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
-			//printf("%.15f ", matrix_threshold);
-			const double pref_threshold=20.10;  // TODO currently no water is able to get back to matrix domain
-			//if(i==nsoillayers_snowpack) {
+	}
+
+	// Here is a very very crucial part. Here the water wil be either transferred to matrix or preferential domain.
+	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers
+		if(i>nsoillayers_snowpack-1) {	// For snow
+			// Some parameters we need
+			const double diameter=EMS[i].ogs;					// Grain size of the current layer (mm)
+			const double diameter_below=EMS[i-1].ogs;				// Grain size of the layer below (mm)
+			const double pref_flowarea=exp(0.09904-3.557*diameter);			// Area involved in preferential flow in the current layer (fraction between 0 and 1)
+			const double pref_flowarea_below=exp(0.09904-3.557*diameter_below);	// Area involved in preferential flow in the layer below (fraction between 0 and 1)
+			// To determine the thresholds below, we use the water entry pressure, as provided in Eq. 15 in Hirashima et al. (2014).
+			// Only when the pressure head in the preferential flow path exceeds the air entry pressure of the surrounding snow, water moves back to the matrix
+			const double pref_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
+
+			// First from matrix to preferential flow ...
+			if(i==nsoillayers_snowpack) {
 				// First snow layer should not put water in soil directly
+				const double matrix_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
 				if(EMS[i].theta[WATER]>matrix_threshold) {
-					EMS[i].theta[WATER_PREF]+=(EMS[i].theta[WATER]-matrix_threshold);
-					EMS[i].theta[WATER]=matrix_threshold;
+					const double dtheta_w=MAX(0., MIN(EMS[i].theta[WATER]-matrix_threshold, pref_flowarea*pref_threshold-EMS[i].theta[WATER_PREF]));
+					EMS[i].theta[WATER_PREF]+=dtheta_w;
+					EMS[i].theta[WATER]-=dtheta_w;
 				}
-				if(EMS[i].theta[WATER_PREF]>pref_threshold) {
-					EMS[i].theta[WATER]+=(EMS[i].theta[WATER_PREF]-pref_threshold);
-					EMS[i].theta[WATER_PREF]=pref_threshold;
+			} else {
+				// Calculate threshold in the current layer that belongs to water entry pressure of the layer below
+				const double matrix_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter_below) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
+				if(EMS[i].theta[WATER]>matrix_threshold) {
+					// Calculate threshold of water in preferential flow path in the layer below, as we do not want to "overfill" the preferential flow path in that layer.
+					const double pref_threshold_below=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter_below) + 0.01074)), theta_r[i-1], theta_s[i-1], alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
+					
+					// Determine water exchange, which is the minimum of water excess in the matrix part of the current layer and the room in the preferential flow path in the layer below
+					const double dtheta_w=MAX(0., MIN((EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L), pref_flowarea_below*pref_threshold_below-EMS[i-1].theta[WATER_PREF]));
+					EMS[i-1].theta[WATER_PREF]+=dtheta_w;
+					EMS[i].theta[WATER]-=dtheta_w*(EMS[i-1].L/EMS[i].L);
+					
+					// After moving the water, adjust the other properties
+					EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
+					EMS[i].Rho = Constants::density_ice * EMS[i].theta[ICE] +
+					(Constants::density_water * (EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF])) +
+					    (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
+					EMS[i].M=EMS[i].Rho*EMS[i].L;
+					EMS[i-1].theta[AIR]=1.-EMS[i-1].theta[WATER]-EMS[i-1].theta[WATER_PREF]-EMS[i-1].theta[ICE]-EMS[i-1].theta[SOIL];
+					EMS[i-1].Rho = Constants::density_ice * EMS[i-1].theta[ICE] +
+					(Constants::density_water * (EMS[i-1].theta[WATER] + EMS[i-1].theta[WATER_PREF])) +
+					    (EMS[i-1].theta[SOIL] * EMS[i-1].soil[SOIL_RHO]);
+					EMS[i-1].M=EMS[i-1].Rho*EMS[i-1].L;
 				}
-// 			} else {
-// 				if(EMS[i].theta[WATER]>matrix_threshold) {
-// 					EMS[i-1].theta[WATER_PREF]+=(EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L);
-// 					EMS[i].theta[WATER]=matrix_threshold;
-// 					EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
-// 					EMS[i].Rho = Constants::density_ice * EMS[i].theta[ICE] +
-// 					(Constants::density_water * (EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF])) +
-// 					    (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
-// 					EMS[i].M=EMS[i].Rho*EMS[i].L;
-// 					EMS[i-1].theta[AIR]=1.-EMS[i-1].theta[WATER]-EMS[i-1].theta[WATER_PREF]-EMS[i-1].theta[ICE]-EMS[i-1].theta[SOIL];
-// 					EMS[i-1].Rho = Constants::density_ice * EMS[i-1].theta[ICE] +
-// 					(Constants::density_water * (EMS[i-1].theta[WATER] + EMS[i-1].theta[WATER_PREF])) +
-// 					    (EMS[i-1].theta[SOIL] * EMS[i-1].soil[SOIL_RHO]);
-// 					EMS[i-1].M=EMS[i-1].Rho*EMS[i-1].L;
-// 				}
-// 				if(EMS[i].theta[WATER_PREF]>pref_threshold) {
-// 					EMS[i].theta[WATER]+=(EMS[i].theta[WATER_PREF]-pref_threshold);
-// 					EMS[i].theta[WATER_PREF]=pref_threshold;
-// 				}
-// 			}
-		} else {
-			// For soil
+				
+			}
+			// ... then from preferential flow to matrix
+			if( EMS[i].theta[WATER_PREF] > pref_threshold*pref_flowarea) {
+				const double dtheta_w=EMS[i].theta[WATER_PREF]-pref_threshold*pref_flowarea;
+				EMS[i].theta[WATER]+=dtheta_w;
+				EMS[i].theta[WATER_PREF]-=dtheta_w;
+			}
+		} else {	// For soil
 			const double pref_threshold=0.02; //theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.);
 			if(EMS[i].theta[WATER_PREF]>pref_threshold) {
 				EMS[i].theta[WATER]+=(EMS[i].theta[WATER_PREF]-pref_threshold);
