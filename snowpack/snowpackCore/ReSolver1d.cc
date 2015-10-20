@@ -1221,6 +1221,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				theta_r[i]=0.;
 				theta_s[i]-=(EMS[SnowpackElement[i]].theta[WATER]+EMS[SnowpackElement[i]].theta[ICE]);
 			} else {
+				theta_s[i]-=EMS[SnowpackElement[i]].theta[WATER_PREF];	// Leave room for preferential flow water
 				//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
 				//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].
 				//However, this will not work in the Richards, as theta[WATER] is varying per time step. So we keep free a volume as if the soil is saturated AND will freeze:
