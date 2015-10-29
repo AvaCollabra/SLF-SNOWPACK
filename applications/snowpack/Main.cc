@@ -217,14 +217,15 @@ inline void Usage(const string& programname)
 	Version();
 
 	cout << "Usage: " << programname << endl
-		<< "\t-e, --enddate=YYYY-MM-DDTHH:MM (e.g.:2008-08-11T09:00)\n"
-		<< "\t[-c, --config=<ini file> (e.g. io.ini)]\n"
-		<< "\t[-m, --mode=[operational or research] (default: research)]\n"
-		<< "\t[-s, --stations=[comma delimited stationnames] (e.g. DAV2,WFJ2)] (NOTE: ONLY in operational mode)\n"
+		<< "\t[-e, --enddate=YYYY-MM-DDTHH:MM] (e.g.:2008-08-11T09:00)\n"
+		<< "\t[-c, --config=<ini file>] (e.g. io.ini)\n"
+		<< "\t[-m, --mode=<operational or research>] (default: research)\n"
+		<< "\t[-s, --stations=<comma delimited stationnames>] (e.g. DAV2,WFJ2)\n"
 		<< "\t[-v, --version] Print the version number\n"
-		<< "\t[-h, --help] Print help message and version information]\n\n";
+		<< "\t[-h, --help] Print help message and version information\n\n";
+	cout << "\tPlease not that the operational mode should only be used within SLF\n";
 
-	cout << "Example: " << programname << " -c io.ini -m research -e 1996-06-17T00:00\n\n";
+	cout << "Example: " << programname << " -c io.ini -e 1996-06-17T00:00\n\n";
 }
 
 inline void parseCmdLine(int argc, char **argv, string& end_date_str)
