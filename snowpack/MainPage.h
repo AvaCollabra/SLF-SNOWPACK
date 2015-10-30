@@ -227,7 +227,7 @@
 /**
  * @page getopt_copyright BSD copyright notice
  * This copyright notice applies to files applications/snowpack/getopt.* and getopt_long.* as used on the MS Windows
- * platform. All other files in this product are covered by the <a href="https://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> 
+ * platform. All other files in this product are exclusively covered by the <a href="https://www.gnu.org/licenses/lgpl.txt">LGPL version 3</a> 
  * or above, or <a href="https://www.gnu.org/licenses/gpl.txt">GPL version 3</a> or above unless otherwise specified.
  *
  * Copyright (c) 1987, 1993, 1994 The Regents of the University of California.  All rights reserved.
