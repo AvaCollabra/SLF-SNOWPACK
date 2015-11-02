@@ -1743,6 +1743,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].theta[AIR]   = SSdata.Ldata[ll].phiVoids;
 			Edata[e].theta[ICE]   = SSdata.Ldata[ll].phiIce;
 			Edata[e].theta[WATER] = SSdata.Ldata[ll].phiWater;
+			Edata[e].theta[WATER_PREF] = 1. - Edata[e].theta[SOIL] - Edata[e].theta[AIR] - Edata[e].theta[ICE] - Edata[e].theta[WATER];
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[ll].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[ll].SoilC;
