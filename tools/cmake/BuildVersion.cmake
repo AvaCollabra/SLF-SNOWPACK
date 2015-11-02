@@ -22,7 +22,7 @@ ENDMACRO (GETDATE)
 MACRO(BuildVersion)
 	FIND_PACKAGE(Subversion)
 	IF(Subversion_FOUND)
-		set(VERSION_FROM_SVN OFF CACHE BOOL "Retrieve software version from Subversion")
+		SET(VERSION_FROM_SVN OFF CACHE BOOL "Retrieve software version from Subversion")
 		IF(VERSION_FROM_SVN)
 			Subversion_WC_INFO(${PROJECT_SOURCE_DIR} project) #HACK: if not an svn tree, it does not work
 			GETDATE(TODAY)

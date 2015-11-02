@@ -1517,7 +1517,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					  	//Compute the hydraulic conductivity (see Ippisch, 2006)
 						K[i]=ksat[i]*sqrt(Se[i])*pow((1.-(pow(1.-pow(Se[i]*Sc[i],(1./m[i])),m[i])))/(1.-pow(1.-pow(Sc[i],(1./m[i])), m[i])),2.);
 					} else {
-						K[i] = ksat[i];
+						K[i]=ksat[i];
 					}
 
 					//Applying ice impedance on K
@@ -2311,8 +2311,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					if(seq_safemode>3) {
 						std::cout << "[E] ERROR in Richards-Equation solver: no convergence! SafeMode was not able to continue simulation!\n";
 						DoThrow=true;
+					} else {
+						std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << "].\n";
 					}
-					std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << "].\n";
 				}
 				std::cout << "    POSSIBLE SOLUTIONS:\n  =============================================================================\n";
 				if(snowpack_dt>900) std::cout << "      - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
