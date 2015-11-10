@@ -34,8 +34,8 @@ using namespace std;
  *   ALL water in the snowpack.  This ensures that we can have DRY snow. (Perryanic comment!)
  */
 const double PhaseChange::theta_r = 0.0;
-const double PhaseChange::RE_theta_r = 1E-5/1000.;	//It is recommended that this value is REQUIRED_ACCURACY_THETA/1000. (see ReSolver1d.cc)
-const double PhaseChange::RE_theta_threshold = 1E-5; 	//It is recommended that this value is REQUIRED_ACCURACY_THETA
+const double PhaseChange::RE_theta_r = 1E-5/10;			// Minimum amount of liquid water that will remain. It is recommended that this value is at least smaller than PhaseChange::RE_theta_threshold (see ReSolver1d.cc)
+const double PhaseChange::RE_theta_threshold = 1E-5; 		// Above this threshold, the element is considered in melting of freezing state. It is recommended that this value is REQUIRED_ACCURACY_THETA (see ReSolver1d.cc)
 
 //Saturated Water Content, for now we say 1.0
 const double PhaseChange::theta_s = 1.0;
@@ -605,7 +605,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 
 	// Check surface node, in case TSS is above melting point, but the element itself is below melting point and consequently, phase changes did not occur.
 	if (nE >= 1) {	// Only check when there are elements.
-		const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+		const double cmp_theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]<Constants::eps) || (iwatertransportmodel_soil==RICHARDSEQUATION && EMS[nE-1].theta[SOIL]>Constants::eps)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 		if ((NDS[nE].T > EMS[nE-1].melting_tk && EMS[nE-1].theta[ICE] > Constants::eps) || (NDS[nE].T < EMS[nE-1].freezing_tk && EMS[nE-1].theta[WATER] > cmp_theta_r)) {
 			//In case the surface temperature is above the melting point of the upper element and it still consists of ice
 			if(nE==1) {
