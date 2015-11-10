@@ -649,10 +649,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	// define if matrix or preferential flow
 	int WATERINDEX=WATER;
-	if(matrix == true){
+	if(matrix == true) {
 		WATERINDEX=WATER;
-	}else{
-		WATERINDEX=WATER_PREF; 
+	} else {
+		WATERINDEX=WATER_PREF;
 	}
 
 	//
@@ -1029,9 +1029,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				const double tmp_missing_theta=(EMS[SnowpackElement[i]].theta[ICE]-max_allowed_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
 				dT[SnowpackElement[i]]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[SnowpackElement[i]].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 				std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[SnowpackElement[i]] << " T=" << EMS[SnowpackElement[i]].Te << " theta[WATER]=" << EMS[SnowpackElement[i]].theta[WATER] << " theta[ICE]=" << EMS[SnowpackElement[i]].theta[ICE] << "\n";
-				EMS[SnowpackElement[i]].theta[WATER]+=0.99*tmp_missing_theta;	//Here, we make a small mass balance error, but it should prevent fully saturated layers
+				EMS[SnowpackElement[i]].theta[WATERINDEX]+=0.99*tmp_missing_theta;	//Here, we make a small mass balance error, but it should prevent fully saturated layers
 				EMS[SnowpackElement[i]].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
-				EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[WATER];
+				EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[WATER]-EMS[SnowpackElement[i]].theta[WATER_PREF];
 			}
 				
 			if(matrix==true) {
@@ -1150,6 +1150,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 			pref_flowarea[i]=(WATERINDEX==WATER_PREF)?(exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs))):(1.);	// Area involved in preferential flow in the current layer (fraction between 0 and 1)
+			theta_s[i]*=pref_flowarea[i];
 
 			//Restore original grain size value from backup
 			EMS[SnowpackElement[i]].rg=tmprg;
@@ -2640,7 +2641,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					const double pref_threshold_below=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter_below) + 0.01074)), theta_r[i-1], theta_s[i-1], alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
 					
 					// Determine water exchange, which is the minimum of water excess in the matrix part of the current layer and the room in the preferential flow path in the layer below
-					const double dtheta_w=MAX(0., MIN((EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L), pref_flowarea[i-1]*pref_threshold_below-EMS[i-1].theta[WATER_PREF]));
+					const double dtheta_w=MAX(0., MIN((EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L), EMS[i-1].theta[AIR]));
 					EMS[i-1].theta[WATER_PREF]+=dtheta_w;
 					EMS[i].theta[WATER]-=dtheta_w*(EMS[i-1].L/EMS[i].L);
 					
