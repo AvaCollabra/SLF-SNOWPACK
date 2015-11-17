@@ -1481,9 +1481,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 		// Now determine whether the increase in snow depth is large enough.
 		// NOTE On virtual slopes use new snow depth and density from either flat field or luv slope
-		if ((delta_cH >= height_new_elem * cos_sl)
-		        || (Xdata.hn > 0.)
-		            || add_element) {
+		if ((delta_cH >= height_new_elem * cos_sl) || (Xdata.hn > 0.) || add_element) {
 			cumu_precip = 0.0; // we use the mass through delta_cH
 			//double hn = 0.; //new snow amount
 
