@@ -503,7 +503,7 @@ double Metamorphism::ETGrainRate(const ElementData& Edata)
  */
 double Metamorphism::PressureSintering(ElementData& Edata)
 {
-	if (Edata.theta[ICE] <= Snowpack::min_ice_content) {
+	if (Edata.theta[ICE] < Snowpack::min_ice_content) {
 		return 0.;
 	}
 	if (Edata.Te > Edata.melting_tk) {
