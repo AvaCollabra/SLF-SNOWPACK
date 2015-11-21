@@ -14,7 +14,7 @@ function compare_result {
 	if [ -z "${comp_result}" ]; then
 		printf "[OK]\n"
 	else
-		printf "[fail]\n\t${comp_result}\n"
+		printf "[fail]\n"
 	fi
 }
 
@@ -26,11 +26,11 @@ printf "*** basic checks:\n"
 #check the snow height
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 30 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 30 > ${TMP_NEW}
-compare_result "snow height (HS)" "-a .5"
+compare_result "snow height (HS)" "-a 1."
 #check the surface temperature
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 13 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 13 > ${TMP_NEW}
-compare_result "surface temperature (TSS)" "-a 0.5"
+compare_result "surface temperature (TSS)" "-a 1."
 #check the albedo
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 11 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 11 > ${TMP_NEW}
@@ -42,19 +42,19 @@ printf "\n**** check the mass balance:\n"
 #check the snow water equivalent
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 36 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 36 > ${TMP_NEW}
-compare_result "snow water eq	uiv. (SWE)" "-a 1."
+compare_result "snow water eq	uiv. (SWE)" "-a .5"
 #check the snow rate
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 29 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 29 > ${TMP_NEW}
-compare_result "snow rate" "-a .2"
+compare_result "snow rate" "-a .1"
 #check the rain rate
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 38 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 38 > ${TMP_NEW}
-compare_result "rain rate" "-a .2"
+compare_result "rain rate" "-a .1"
 #check the snowpack runoff
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 39 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 39 > ${TMP_NEW}
-compare_result "snowpack runoff" "-a .2"
+compare_result "snowpack runoff" "-a .5"
 
 
 
