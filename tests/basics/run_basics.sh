@@ -91,10 +91,6 @@ compare_result "ground flux" "-r 1e-2"
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 19 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 19 > ${TMP_NEW}
 compare_result "rain heat flux" "-r 1e-2"
-#rain heat flux
-../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 19 > ${TMP_REF}
-../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 19 > ${TMP_NEW}
-compare_result "rain heat flux" "-r 1e-2"
 #surface input heat flux
 ../../tools/SnExtract.sh ../res1exp/output_ref/MST96_res.met 97 > ${TMP_REF}
 ../../tools/SnExtract.sh ../res1exp/output/MST96_res.met 97 > ${TMP_NEW}
