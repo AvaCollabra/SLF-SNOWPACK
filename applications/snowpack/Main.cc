@@ -1141,7 +1141,7 @@ inline void real_main (int argc, char *argv[])
 						if (slope.nSlopes==1) { //only one slope, so set lwi_N and lwi_S to the same value
 							const double lwi = vecXdata[slope.mainStation].getLiquidWaterIndex();
 							if ((lwi < -Constants::eps) || (lwi >= 10.))
-								qr_Hdata_ind.at(i_hz).lwi_N = qr_Hdata_ind.at(i_hz).lwi_S = -1;
+								qr_Hdata_ind.at(i_hz).lwi_N = qr_Hdata_ind.at(i_hz).lwi_S = false;
 							qr_Hdata.at(i_hz).lwi_N = lwi;
 							qr_Hdata.at(i_hz).lwi_S = lwi;
 						}
