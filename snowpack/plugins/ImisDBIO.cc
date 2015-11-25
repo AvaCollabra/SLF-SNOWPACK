@@ -314,9 +314,6 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 {
-	/*const size_t posB=sqlInsertProfile.find("height");
-	const size_t posE=sqlInsertProfile.find_first_of(')');
-	cerr << "\n[E] SDB inserted    : " << sqlInsertProfile.substr(posB,posE-posB) << "\n[E] SDB with values : ";*/
 	const size_t posE=sqlInsertProfile.find_last_of('(');
 	cerr << "\n[E] SDB querry       :  " << sqlInsertProfile.substr(0, posE) << "(";
 	
@@ -349,7 +346,10 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	string compDate(  "to_date('" + info.computation_date.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
 	std::replace( compDate.begin(), compDate.end(), 'T', ' ');
 	
-	cerr << profileDate << "," << Hdata.stat_abbrev << ",";
+	const char stao_nr = (!Hdata.stat_abbrev.empty())? *Hdata.stat_abbrev.rbegin() : ' ';
+	const string stat_abk = (isdigit(stao_nr))? Hdata.stat_abbrev.substr(0, Hdata.stat_abbrev.size()-1) : Hdata.stat_abbrev;
+	
+	cerr << profileDate << ",'" << stat_abk << "'," << stao_nr << ",";
 	cerr << setw(12) << setprecision(8);
 	if (Hdata_ind.dewpt_def) cerr << Hdata.dewpt_def << ",";
 	else cerr << "NULL,";
@@ -360,7 +360,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.wind_trans) cerr << Hdata.wind_trans << ",";
 	else cerr << "NULL,";
 
-	cerr << "\n[E] SDB               ";
+	cerr << "\t";
 	if (Hdata_ind.hn3)       cerr << Hdata.hn3 << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.hn6)       cerr << Hdata.hn6 << ",";
@@ -385,13 +385,13 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.psum72)       cerr << Hdata.psum72 << ",";
 	else cerr << "NULL,";
 
-	cerr << "\n[E] SDB               ";
+	cerr << "\t";
 	if (Hdata_ind.hoar_size)  cerr << Hdata.hoar_size << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.wind_trans24) cerr << Hdata.wind_trans24 << ",";
 	else cerr << "NULL,";
 
-	cerr << "\n[E] SDB               ";
+	cerr << "\t";
 	if (Hdata_ind.stab_class1)  cerr << Hdata.stab_class1 << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.stab_class2)  cerr << Hdata.stab_class2 << ",";
@@ -417,7 +417,7 @@ void ImisDBIO::print_Hdata_query(const ProcessDat& Hdata, const ProcessInd& Hdat
 	if (Hdata_ind.stab_height5) cerr << Hdata.stab_height5 << ",";
 	else cerr << "NULL,";
 
-	cerr << "\n[E] SDB               ";
+	cerr << "\t";
 	if (Hdata_ind.ch)     cerr << Hdata.ch << ",";
 	else cerr << "NULL,";
 	if (Hdata_ind.crust)  cerr << Hdata.crust << ",";

@@ -86,7 +86,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), advective_heat(false), heat_begin(0.), heat_end(0.), temp_index_degree_day(0.), forestfloor_alb(false)
+            enhanced_wind_slab(false), alpine3d(false), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), temp_index_degree_day(0.), forestfloor_alb(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -247,6 +247,9 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 
+	//Indicate if the meteo values can be considered at constant height above the snow surface (e.g., Col de Porte measurement method)
+	cfg.getValue("ADJUST_HEIGHT_OF_METEO_VALUES", "SnowpackAdvanced", adjust_height_of_meteo_values);
+	
 	// Allow for the effect of a known advective heat flux
 	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat, IOUtils::nothrow);
 	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin, IOUtils::nothrow);
@@ -581,7 +584,13 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 */
 void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
-	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
+	double actual_height_of_meteo_values;
+	if(!adjust_height_of_meteo_values)
+		actual_height_of_meteo_values=height_of_meteo_values + Xdata.cH - Xdata.Ground;
+	else
+		actual_height_of_meteo_values=height_of_meteo_values;
+  
+	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values);
 	const double Tair = Mdata.ta;
 	const double Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
 
@@ -590,7 +599,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 
 	Bdata.qs = alpha * (Tair - Tss);
 
-	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, height_of_meteo_values);
+	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, actual_height_of_meteo_values);
 
 	if (Xdata.getNumberOfElements() > 0) {
 	  	// Limit fluxes in case of explicit treatment of boundary conditions
@@ -638,6 +647,12 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
                                          double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
                                          double Fe[ N_OF_INCIDENCES ])
 {
+	double actual_height_of_meteo_values;
+	if(!adjust_height_of_meteo_values)
+		actual_height_of_meteo_values=height_of_meteo_values + Xdata.cH - Xdata.Ground;
+	else
+		actual_height_of_meteo_values=height_of_meteo_values;
+
 	const double T_air = Mdata.ta;
 	const size_t nE = Xdata.getNumberOfElements();
 	const double T_s = Xdata.Edata[nE-1].Te;
@@ -661,7 +676,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		}
 	} else { // Implicit
 		// Sensible heat transfer: linear dependence on snow surface temperature
-		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
+		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values);
 		Se[1][1] += alpha;
 		Fe[1] += alpha * T_air;
 		// Latent heat transfer: NON-linear dependence on snow surface temperature
@@ -1485,9 +1500,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 		// Now determine whether the increase in snow depth is large enough.
 		// NOTE On virtual slopes use new snow depth and density from either flat field or luv slope
-		if ((delta_cH >= height_new_elem * cos_sl)
-		        || (Xdata.hn > 0.)
-		            || add_element) {
+		if ((delta_cH >= height_new_elem * cos_sl) || (Xdata.hn > 0.) || add_element) {
 			cumu_precip = 0.0; // we use the mass through delta_cH
 			//double hn = 0.; //new snow amount
 

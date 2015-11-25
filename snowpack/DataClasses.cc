@@ -148,8 +148,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
  * @param Edata
  * @param Ndata
  */
-void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& Ndata,
-                                     const mio::Date& dateOfProfile, const double hoar_density_surf)
+void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& Ndata, const mio::Date& dateOfProfile, const double hoar_density_surf)
 {
 	const double hoar_size = Ndata.hoar/hoar_density_surf; // (m)
 
@@ -1524,7 +1523,7 @@ double SnowStation::getModelledTemperature(const double& z) const
 
 /**
  * @brief Reallocate element and node data \n
- * Xdata->Edata, Xdata->Ndata and Xdata->nElems, Xdata->nNodes are reallocated or reset, respectively.
+ * Edata and Ndata as well as nElems and nNodes are reallocated or reset, respectively.
  * @param number_of_elements The new number of elements
  */
 void SnowStation::resize(const size_t& number_of_elements)
@@ -1593,6 +1592,42 @@ void SnowStation::combineElements(const size_t& i_number_top_elements, const boo
 	size_t nRemove=0;       // Number of elements to be removed
 	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
 		if (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements)) {
+			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
+			nRemove++;
+			Edata[eUpper].Rho = Constants::undefined;
+			eLower++; eUpper++;
+		}
+	}
+	if (nRemove > 0) {
+		const size_t rnE = nElems - nRemove; //Reduced number of elements
+		reduceNumberOfElements(rnE);
+	}
+}
+
+void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements, const size_t& cond)
+{
+	if (nElems - SoilNode < i_number_top_elements+1) {
+		return;
+	}
+
+	size_t nRemove=0;       // Number of elements to be removed
+	bool merge=false;
+	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
+		switch (cond) {
+			case 1:	// merging WaterTransport
+				merge = (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements));
+				break;
+			case 2:	// aggregate first round
+				merge = (Aggregate::joinSimilarLayers(Edata[eUpper], Edata[eLower]));
+				break;
+			case 3:	// aggregate second round
+				merge = (Aggregate::mergeThinLayer(Edata[eUpper], Edata[eLower]));
+				break;
+			default:
+				merge = false;
+				break;
+		}
+		if (merge) {
 			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
 			nRemove++;
 			Edata[eUpper].Rho = Constants::undefined;
@@ -1908,7 +1943,6 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
 		max_elem_l = flexibleMaxElemLength(depth);
 	}
 
-
 	if ( (Edata0.L > max_elem_l) || (Edata1.L > max_elem_l) )
 		return false;
 
@@ -2012,9 +2046,9 @@ void SnowStation::splitElements()
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& merge, const bool& topElement)
 {
-	const double L_lower = EdataLower.L; //Length of lower element
-	const double L_upper = EdataUpper.L; //Length of upper element
-	double LNew = L_lower;               //Length of "new" element
+	const double L_lower = EdataLower.L; //Thickness of lower element
+	const double L_upper = EdataUpper.L; //Thickness of upper element
+	double LNew = L_lower;               //Thickness of "new" element
 
 	if (merge) {
 		// Determine new element length under the condition of keeping the density of the lower element constant.
@@ -2027,9 +2061,9 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		}
 		EdataLower.depositionDate = EdataUpper.depositionDate;
 		if (EdataLower.theta[ICE] + EdataUpper.theta[ICE] > 0.) {
-			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.dd = ( EdataLower.theta[ICE]*L_lower*EdataLower.dd + EdataUpper.theta[ICE]*L_upper*EdataUpper.dd ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.sp = ( EdataLower.theta[ICE]*L_lower*EdataLower.sp + EdataUpper.theta[ICE]*L_upper*EdataUpper.sp ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
+			EdataLower.rg = ( EdataLower.theta[ICE]*L_lower*EdataLower.rg + EdataUpper.theta[ICE]*L_upper*EdataUpper.rg ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.rb = ( EdataLower.theta[ICE]*L_lower*EdataLower.rb + EdataUpper.theta[ICE]*L_upper*EdataUpper.rb ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 			EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		}

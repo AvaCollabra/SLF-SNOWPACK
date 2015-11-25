@@ -20,30 +20,19 @@
 /**
  * @file Metamorphism.cc
  * @brief This module contains the snow metamorphism routines of the SLF one-dimensional snowpack model \n
- * It represents a truly international research effort: Dr. Bob "Borolo" Brown of MONTANA STATE UNIVERSITY (USA)
- * provided a lot of the motivation and low temperature gradient micro-structure
- * physics; Dr. Michael "Give me a Girl" Lehning (GERMANY), when he was was not
- * busy on the telephone talking to his dentist in San Francisco, provided project
- * leadership, a sense of the practical and more importantly, the link to the
- * avalanche warning group, i.e. he told everybody what to do; Dr. Pramod Sataywali
- * "Porky" (INDIA) came up with the high temperature gradient micro-structure
- * routines, while, at the same time, missing his wife and child terribly, skiing
- * and dreaming of Indian spin bowlers. Dr. Perry Bartelt (PLANET PLUTO) was FORCED
- * to write the code and INTEGRATE it into a very sensible continuum mechanics
- * model, that works pretty well.  He does NOT accept any RESPONSIBLITY for the
- * VERY STRANGE physical contants that the Borolo Bob and Sataywali use: SNOW MICRO-
- * STRUCTURE is BULLSHIT, BULLSHIT, BULLSHIT, and more BULLSHIT.
- * Michael had written all the Metamorphism stuff up to document it and he started
- * to understand what Perry meant with his lines above and below. He started
- * cleaning the code the day he knew that Betty had received the price for the best
- * presentation and the most scientific content at the Innsbruck conference. He was
- * proud. The main task will be to get rid of all the trash in this routine such as
- * cgs thanks to Porky and use the functions that are already programmed such as
- * saturation vapor pressure. Of course, university professors can not know that
- * we need saturation vapor pressure not only for Metamorphism.......
+ * It represents a truly international research effort:
+ * Dr. Bob "Borolo" Brown of montana state university (USA) provided a lot of the motivation and
+ * low temperature gradient micro-structure physics;
+ * Dr. Michael provided project leadership, a sense of the practical and more importantly, the link to the
+ * avalanche warning group, i.e. he told everybody what to do;
+ * Dr. Pramod Sataywali (SASE, INDIA) came up with the high temperature gradient micro-structure
+ * routines;
+ * Dr. Perry Bartelt wrote the code and integrated it into a very sensible continuum mechanics
+ * model that works pretty well.
+ *
  * Definition of some of the essential variables:
  *
- * PRIMARY micro-structure parameters computed by Metamorphism routine:
+ * PRIMARY micro-structure parameters computed by the Metamorphism routine:
  *
  * - rb : bond radius in [mm]
  * - rg : grain radius in [mm]
@@ -74,41 +63,16 @@
  * These are the variables needed to compute these values of the
  * ElementData class within the snowStation class:
  * - theta[ICE]   : volumetric ice content (1)
- * - theta[WATER] : volumetric water  (1)
+ * - theta[WATER] : volumetric water (1)
  * - Te           : temperature (K)
  * - dTdZ         : temperature gradient (K m-1)
  * - dPdZ         : vapor pressure gradient (bar m-1)
  * - Rho          : bulk density (kg m-3)
  * - S            : overburden stress (Pa)
+ *
+ * The french metamorphism routines were written in November 1995 by Perry Bartelt
+ * and Martin Schneebeli.  They were first used in the 2d snowpack code haefeli.
  */
-/* The code is dedicated to Perry's heros:  General Vo Nguyen Giap, author of
-* "People's War, People's Army: The Viet Cong Insurrection Manual for
-* Underdeveloped Countries", which Perry is now using as a self-help guide to
-* to survive the SLF; the poets Allen Ginsberg and W.H. Auden and, of course,
-* Brooks Robinson, who Perry saw on a beautiful September day in 1971 hit two
-* journeyman singles to centerfield against the Cleveland Indians: I fell in love.
-* The works of these great men will be cited throughout the code. We begin with
-* the General: "Such was the essence of the strategic direction of the Dien Bien
-* Phu campaign and of the WINTER-SPRING campaign as a whole.  This direction drew
-* its inspiration from the principles of DYNAMISM, INITIATIVE, MOBILITY and
-* RAPIDITY of decision in face of NEW SITUATIONS.  Its main objective was the
-* DESTRUCTION of enemy MANPOWER.  It took full advantage of the CONTRADICTIONS in
-* which the enemy was involved and developed to the utmost the spirit of active
-* offensive of the revolutionary army. This CORRECT, CLEAR-SIGHTED and BOLD
-* strategy enabled us to deprive the enemy of all possiblility of retrieving the
-* initiative, and to create favourable conditions for us to fight a decisive battle
-* on a battlefield CHOSEN and PREPARED for by US.  This strategic direction ensured
-* the success of the whole WINTER-SPRING campaign which was CROWNED by the great
-* victory of DIEN BIEN PHU."
-                                                                                              |
-* This code is OUR Dien Bien Phu:    a victory against FRENCH imperialism,
-* JAPANESE fascism and AMERICAN interventionism, i.e bad French metamorphism
-* ideas, funny Japanese viscosity functions and, of course, bad American university
-* programmaying!!  (This guy has a serious problem, folks, criticizing the home of
-* the (DE)brave (d) and land of the free (BIE), or whatever that studpid phrase is
-* The french metamorphism routines were written in November 1995 by Perry Bartelt
-* and Martin Schneebeli.  They were first used in the 2d snowpack code haefeli.
-*/
 
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/Snowpack.h>
@@ -166,8 +130,6 @@ bool Metamorphism::initStaticData()
 
 /**
  * @brief This routine estimates the cross sectional pore area
- * @author Charles Fierz
- * @date 2009-12-23
  * @param Edata
  * @return area (mm2)
  */
@@ -436,7 +398,7 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 
 
 /**
- * @return Below  is Borolo Bob's ET bond growth rate routine.  Determines the bond or neck
+ * @return Below is Borolo Bob's ET bond growth rate routine.  Determines the bond or neck
  * growth for low temperature gradients. Called from the routine
  * mm_Metamorphism. Note that the growth rate is converted from mm s-1 to
  * mm d-1 before returning rbDot.
@@ -503,7 +465,7 @@ double Metamorphism::ETGrainRate(const ElementData& Edata)
  */
 double Metamorphism::PressureSintering(ElementData& Edata)
 {
-	if (Edata.theta[ICE] <= Snowpack::min_ice_content) {
+	if (Edata.theta[ICE] < Snowpack::min_ice_content) {
 		return 0.;
 	}
 	if (Edata.Te > Edata.melting_tk) {

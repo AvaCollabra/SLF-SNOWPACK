@@ -57,14 +57,16 @@ class AsciiIO : public SnowpackIOInterface {
 		bool appendFile(const std::string& filename, const mio::Date& startdate, const std::string& ftype);
 		bool parseMetFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 		bool parseProFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
+		bool parsePrfFile(const char& eoln, const mio::Date& start_date, std::istream& fin, std::ostream& ftmp);
 
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
 		void writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) const;
-		void writePROHeader(const SnowStation& Xdata, std::ofstream &fout) const;
+		void writeProHeader(const SnowStation& Xdata, std::ofstream &fout) const;
+		void writePrfHeader(const SnowStation& Xdata, std::ofstream &fout) const;
 		bool checkHeader(const SnowStation& Xdata, const std::string& filename, const std::string& ext, const std::string& signature) const;
 
-		void writeProfilePro(const mio::Date& date, const SnowStation& Xdata);
+		void writeProfilePro(const mio::Date& date, const SnowStation& Xdata, const bool& aggregate);
 		void writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream &fout);
 		void writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstream &fout);
 

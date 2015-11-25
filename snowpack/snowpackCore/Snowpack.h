@@ -137,6 +137,7 @@ class Snowpack {
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
+		bool adjust_height_of_meteo_values;
 		bool advective_heat;
 		double heat_begin, heat_end;
 		double temp_index_degree_day;

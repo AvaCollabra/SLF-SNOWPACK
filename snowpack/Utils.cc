@@ -157,14 +157,17 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
                           const std::string& stationID, const unsigned int& nSlopes)
 {
 	vector<string> vecExtension;
-	vecExtension.push_back("met"); //Meteo data input
-	vecExtension.push_back("pro"); //Time series of modeled profile-type data
 	vecExtension.push_back("ini"); //Record of run configuration
 	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
+	vecExtension.push_back("haz"); //Snow-cover profile file (I/O)
+	vecExtension.push_back("met"); //Meteo data input
+	vecExtension.push_back("pro"); //Time series of modeled profile-type data
+	vecExtension.push_back("prf"); //Time series of full modeled profile-type data in tabular form
+	vecExtension.push_back("aprf"); //Time series of aggregated modeled profile-type data in tabular form
 	const string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
 
 	unsigned int n_files;
-	
+
 	for (size_t ii=0; ii<vecExtension.size(); ii++){
 		const string ext = vecExtension[ii];
 		n_files = 0;
@@ -196,7 +199,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 				} else {
 					fname = ftrunc + "." + ext;
 				}
-				if (ext == "sno") {
+				if (ext == "sno" || ext == "haz") {
 					if (remove(fname.c_str()) == 0) {
 						n_files++;
 					}
@@ -274,7 +277,7 @@ void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel, Su
 	// Mean energy fluxes (W m-2), including albedo
 	Sdata.multiplyFluxes(1./nr_steps);
 
-	if (useCanopyModel) 
+	if (useCanopyModel)
 		Xdata.Cdata.multiplyFluxes(1./nr_steps);
 }
 

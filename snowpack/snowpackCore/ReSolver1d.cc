@@ -1311,6 +1311,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						EMS[SnowpackElement[i]].theta[WATER_PREF]+=theta_d[i];
 						EMS[SnowpackElement[i]].theta[WATER]-=theta_d[i];
 					}
+					EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[WATER]-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[SOIL];
 				}
 				  
 				activelayer[i]=true;
