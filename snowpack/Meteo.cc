@@ -283,13 +283,11 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {
 	if (useCanopyModel && runCanopyModel) {	// The canopy model should not necessarily be called at every call to compMeteo
-		if(alpine3d || !adjust_height_of_wind_value) canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, false); // for Alpine3D: do not adjust sensor height for snow height
-		else canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, true);
+		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, adjust_height_of_wind_value);
 	}
 
 	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {
-		if(alpine3d || !adjust_height_of_wind_value) MicroMet(Xdata, Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
-		else MicroMet(Xdata, Mdata, true);
+		MicroMet(Xdata, Mdata, adjust_height_of_wind_value);
 	}
 }
 
