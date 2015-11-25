@@ -38,7 +38,7 @@ using namespace mio;
 ************************************************************/
 
 Meteo::Meteo(const SnowpackConfig& cfg)
-       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), stability(MONIN_OBUKHOV),
+       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), adjust_height_of_wind_value(true), stability(MONIN_OBUKHOV),
          research_mode(false), useCanopyModel(false), alpine3d(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
@@ -62,6 +62,7 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 
 	//Define the heights of the meteo measurements above ground (m). Required for surface energy exchange computation and for drifting and blowing snow.
 	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
+	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 }
@@ -281,11 +282,13 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  */
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {
-	if (useCanopyModel && runCanopyModel)	// The canopy model should not necessarily be called at every call to compMeteo
-		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, alpine3d);
+	if (useCanopyModel && runCanopyModel) {	// The canopy model should not necessarily be called at every call to compMeteo
+		if(alpine3d || !adjust_height_of_wind_value) canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, false); // for Alpine3D: do not adjust sensor height for snow height
+		else canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, true);
+	}
 
 	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {
-		if(alpine3d) MicroMet(Xdata, Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
+		if(alpine3d || !adjust_height_of_wind_value) MicroMet(Xdata, Mdata, false); // for Alpine3D: do not adjust sensor height for snow height
 		else MicroMet(Xdata, Mdata, true);
 	}
 }
