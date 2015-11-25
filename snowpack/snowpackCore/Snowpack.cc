@@ -581,7 +581,6 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 */
 void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const CurrentMeteo& Mdata)
 {
-	//For Col de Porte, meteo values are adjusted so they are always about 1.5m above snow surface - Die Zeile direkt  unten auskommentieren oder beibehalten. bzw. in aktuelles SP kopieren
 	double actual_height_of_meteo_values;
 	if(!adjust_height_of_meteo_values)
 		actual_height_of_meteo_values=height_of_meteo_values + Xdata.cH - Xdata.Ground;
@@ -645,7 +644,6 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
                                          double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
                                          double Fe[ N_OF_INCIDENCES ])
 {
-	//For Col de Porte, meteo values are adjusted so they are always about 1.5m above snow surface - Die Zeile direkt  unten auskommentieren oder beibehalten. bzw. in aktuelles SP kopieren
 	double actual_height_of_meteo_values;
 	if(!adjust_height_of_meteo_values)
 		actual_height_of_meteo_values=height_of_meteo_values + Xdata.cH - Xdata.Ground;
