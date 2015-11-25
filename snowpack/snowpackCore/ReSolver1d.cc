@@ -2173,7 +2173,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								if(BS_iter>bs_stats_maxiter) bs_stats_maxiter=BS_iter;
 								if(WriteOutNumerics_Level2==true) 
 									std::cout << "AFTER [" << i << std::setprecision(15) << "]: theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_mp1[i] << " theta_s:" << theta_s[i] << std::setprecision(3) << "  T: " << EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] << " (niter=" << BS_iter << ")\n" << std::setprecision(6);
-							} //END OF REPARTITIONING ICE/WATER
+							} else { //END OF REPARTITIONING ICE/WATER
+								theta_i_np1_mp1[i]=theta_i_np1_m[i];
+							}
 						}
 
 						delta_theta[i]=theta_np1_mp1[i]-theta_np1_m[i];
