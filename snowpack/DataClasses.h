@@ -708,7 +708,7 @@ struct ProcessDat {
 
 	mio::Date date;        ///< Process date
 	unsigned int nHz;               ///< Number of hazard steps
-	char stat_abbrev[16];
+	std::string stat_abbrev;
 	unsigned char loc_for_snow;
 	unsigned char loc_for_wind;
 	// Data

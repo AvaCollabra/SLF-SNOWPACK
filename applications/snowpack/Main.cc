@@ -1126,7 +1126,8 @@ inline void real_main (int argc, char *argv[])
 						}
 					}
 					if (mn_ctrl.HzDump) { // Save hazard data ...
-						strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
+						//strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
+						qr_Hdata.at(i_hz).stat_abbrev = vecStationIDs[i_stn];
 						if (mode == "OPERATIONAL") {
 							qr_Hdata.at(i_hz).loc_for_snow = (unsigned char)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
 							//TODO: WHAT SHOULD WE SET HERE? wstat_abk (not existing yet in DB) and wstao_nr, of course;-)
@@ -1141,7 +1142,7 @@ inline void real_main (int argc, char *argv[])
 						if (slope.nSlopes==1) { //only one slope, so set lwi_N and lwi_S to the same value
 							const double lwi = vecXdata[slope.mainStation].getLiquidWaterIndex();
 							if ((lwi < -Constants::eps) || (lwi >= 10.))
-								qr_Hdata_ind.at(i_hz).lwi_N = qr_Hdata_ind.at(i_hz).lwi_S = -1;
+								qr_Hdata_ind.at(i_hz).lwi_N = qr_Hdata_ind.at(i_hz).lwi_S = false;
 							qr_Hdata.at(i_hz).lwi_N = lwi;
 							qr_Hdata.at(i_hz).lwi_S = lwi;
 						}
