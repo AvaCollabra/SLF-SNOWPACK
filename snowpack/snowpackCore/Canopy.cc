@@ -1729,10 +1729,10 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, doub
  * @param Xdata Profile
  * @param roughness_length
  * @param height_of_wind_val
- * @param alpine3d changes the computation of zref. No idea what is the reason //HACK
+ * @param adjust_VW_height if set to false, assumes a constant measurement height for wind values (default: true, ie.
+ * take into account the snow height decreasing the sensor height above the surface)
  */
- //HACK: put an explicit name instead of "alpine3d"
-void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length, double height_of_wind_val, const bool& alpine3d)
+void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length, double height_of_wind_val, const bool& adjust_VW_height)
 {
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
@@ -1826,7 +1826,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	 * 2006-03-01: introduced new definition of reference height above canopy for Alpine3D applications
 	 * 2006-06-02: this should work also without soil data, since Xdata->Ground is initialized to 0.0
 	*/
-	const double ref_height = (alpine3d)? Xdata.Cdata.height+height_of_wind_val : height_of_wind_val;
+	const double ref_height = (!adjust_VW_height)? Xdata.Cdata.height+height_of_wind_val : height_of_wind_val;
 	double zref = MAX( 2.0 + (Xdata.Cdata.height - hs), ref_height - hs );
 	const double z0m_ground = (hs>0.03)? roughness_length : Xdata.BareSoil_z0;
 	Mdata.z0 = (hs>0.03)? roughness_length : Xdata.BareSoil_z0;
