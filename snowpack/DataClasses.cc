@@ -1130,6 +1130,11 @@ void ElementData::snowType()
 	type = snowType(dd, sp, 2.*rg, static_cast<short int>(mk%100), theta[WATER], res_wat_cont);
 }
 
+unsigned short int ElementData::getSnowType() const
+{
+	return snowType(dd, sp, 2.*rg, static_cast<short int>(mk%100), theta[WATER], res_wat_cont);
+}
+
 unsigned short int ElementData::snowType(const double& dendricity, const double& sphericity,
                           const double& grain_size, const short int& marker, const double& theta_w, const double& res_wat_cont)
 {

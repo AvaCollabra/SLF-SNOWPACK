@@ -686,7 +686,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	fout.open(snofilename.c_str(), std::ios::out);
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", date,"Cannot open profile OUTPUT file: %s", snofilename.c_str());
-		throw FileAccessException("Cannot dump final Xdata to file "+snofilename, AT);
+		throw AccessException("Cannot dump final Xdata to file "+snofilename, AT);
 	}
 
 	// Header, Station Name and Julian Day
@@ -1194,7 +1194,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 	std::ofstream ofs;
 	ofs.open(Pfilename.c_str(), std::ios::out | std::fstream::app);
 	if(!ofs)
-		throw FileAccessException("[E] Can not open file " + Pfilename, AT);
+		throw AccessException("[E] Can not open file " + Pfilename, AT);
 
 	ofs << "#Date,JulianDate,station,aspect,slope,Nlayers,hs,swe,lwc_sum,ts,tg\n";
 	ofs << "#-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
@@ -1516,8 +1516,8 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	fin.open (filename.c_str());
 	fout.open(filename_tmp.c_str());
 
-	if (fin.fail()) throw FileAccessException(filename, AT);
-	if (fout.fail()) throw FileAccessException(filename_tmp, AT);
+	if (fin.fail()) throw AccessException(filename, AT);
+	if (fout.fail()) throw AccessException(filename_tmp, AT);
 
 	const char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
 
@@ -1606,7 +1606,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	fout.open(filename.c_str(),  std::ios::out | std::ofstream::app);
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Cannot open time series file: %s", filename.c_str());
-		throw FileAccessException(filename, AT);
+		throw AccessException(filename, AT);
 	}
 	// Print time stamp
 	fout << "\n0203," << Mdata.date.toString(Date::DIN);

@@ -1335,7 +1335,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		s[i]=0.;								//Reset source/sink term
 
 		//Add wateroverflow (Remember: units wateroverflow [m^3/m^3]):
-		if(alpine3d==false && (wateroverflow[i]>0 || SafeMode==false)) {	//In SafeMode, we don't allow the negative wateroverflow to be used as sink term, as a negative wateroverflow is caused by initialization of very dry snow layers, so the sink term would basically be a sink term in very dry conditions, which is numerically unstable.
+		if (alpine3d==false && (wateroverflow[i]>0 || SafeMode==false)) {	//In SafeMode, we don't allow the negative wateroverflow to be used as sink term, as a negative wateroverflow is caused by initialization of very dry snow layers, so the sink term would basically be a sink term in very dry conditions, which is numerically unstable.
 			if(i==uppernode) {
 				surfacefluxrate+=(wateroverflow[i]*dz[i])/sn_dt;
 				wateroverflow[i]=0.;
@@ -1604,7 +1604,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + cos_sl) : 0.);	// plus what could leave below
 
 					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
-					if(alpine3d==true) {
+					if (alpine3d==true) {
 						bool isPonding=false;
 						for(int jj=lowernode; jj<=uppernode; jj++) {
 							if(h_np1_m[jj]>h_e[jj]) isPonding=true;

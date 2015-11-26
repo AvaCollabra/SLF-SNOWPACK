@@ -97,7 +97,7 @@ const xmlChar* CaaMLIO::xml_ns_slf = (const xmlChar*) "http://www.slf.ch/snowpro
 const xmlChar* CaaMLIO::xml_ns_abrev_slf = (const xmlChar*) "slf";
 const xmlChar* CaaMLIO::xml_ns_snp = (const xmlChar*) "http://www.slf.ch/snowpack/1.0";
 const xmlChar* CaaMLIO::xml_ns_abrev_snp = (const xmlChar*) "snp";
-const std::string xml_schemaLocation_snp = "file:///H:/alpine3d/snowpack.xsd";
+const std::string xml_schemaLocation_snp = "http://www.slf.ch/snowpack/snowpack.xsd";
 const std::string prefix = "caaml:";
 const std::string prefix_snp = "snp:";
 //Define paths in xml-file
@@ -364,11 +364,11 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 {
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(),in_xpathCtx);
 	if (xpathObj == NULL) {
-		throw NoAvailableDataException("No data found !", AT);
+		throw NoDataException("No data found !", AT);
 	}
 	xmlNodeSetPtr &data = xpathObj->nodesetval;
  	if (data->nodeNr==0)
- 		throw NoAvailableDataException("No data found !", AT);
+ 		throw NoDataException("No data found !", AT);
 
 	return data;
 }
@@ -458,7 +458,7 @@ void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 	Xdata.Canopy_BasalArea = xmlSetVal(xpath,"CanopyBasalArea",0.);
 	Xdata.Canopy_Direct_Throughfall = xmlSetVal(xpath,"CanopyDirectThroughfall",1.);
 	Xdata.WindScalingFactor = xmlSetVal(xpath,"WindScalingFactor",1.);
-	Xdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",0.);
+	Xdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",0);
 	Xdata.TimeCountDeltaHS = xmlSetVal(xpath,"TimeCountDeltaHS",0.);
 }
 
@@ -467,20 +467,15 @@ bool CaaMLIO::getLayersDir()
 {
 	xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)SnowData_xpath.c_str(),in_xpathCtx);
 	const string direction( (const char*)xmlGetProp(xpathObj->nodesetval->nodeTab[0],(const xmlChar*)"dir") );
-
-	if (direction=="bottom up") {
-		return false; //Standard direction
-	} else {
-		return true; //Reverse direction
-	}
+	
+	return (direction!="bottom up"); //standard direction -> false, otherwise "true" for Reverse direction
 }
 
 LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 {
-	LayerData Layer;
-	double z, temp, hard;
-	double* form;
 	char* code;
+	
+	LayerData Layer;
 	if (cur->type == XML_ELEMENT_NODE) {
 		//Loop on the children
 		for (xmlNode *cur_c = cur->children; cur_c; cur_c = cur_c->next) {
@@ -497,18 +492,20 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 							unit = (const xmlChar*) "unit";
 						}
 						if (!strcmp((const char*) cur_c->name, "depthTop")) {
+							double z;
 							sscanf((const char*) xmlNodeGetContent(cur_c),"%lf",&z);
 						} else if (!strcmp((const char*) cur_c->name, "thickness")) {
+							double temp;
 							sscanf((const char*) xmlNodeGetContent(cur_c),"%lf",&temp);
 							Layer.hl = unitConversion(temp,(char*)xmlGetProp(cur_c,unit),(char*)"m");
 							Layer.ne = (size_t) ceil(Layer.hl/0.02);
 						} else if (!strcmp((const char*) cur_c->name, "hardness")) {
-							hard = hardness_codeToVal((char*) xmlNodeGetContent(cur_c));
+							//const double hard = hardness_codeToVal((char*) xmlNodeGetContent(cur_c));
 						} else if (!strcmp((const char*) cur_c->name, "lwc")) {
 							Layer.phiWater = lwc_codeToVal((char*) xmlNodeGetContent(cur_c));
 						} else if (!strcmp((const char*) cur_c->name, "grainFormPrimary")) {
 							code = (char*) xmlNodeGetContent(cur_c);
-							form = form_codeToVal(code);
+							const double *form = form_codeToVal(code);
 							Layer.sp = form[0];
 							Layer.dd = form[1];
 							Layer.mk = (unsigned short int) form[2];
@@ -840,7 +837,8 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 
 			xmlWriteElement(writer,(prefix+"thickness").c_str(),hgtStr,"uom","cm");
 
-			const unsigned int frm = ElementData::snowType(Xdata.Edata[ii].dd,Xdata.Edata[ii].sp,Xdata.Edata[ii].rg,Xdata.Edata[ii].mk,Xdata.Edata[ii].theta[WATER],Xdata.Edata[ii].res_wat_cont);
+			//const unsigned int frm = ElementData::snowType(Xdata.Edata[ii].dd, Xdata.Edata[ii].sp, Xdata.Edata[ii].rg, Xdata.Edata[ii].mk, Xdata.Edata[ii].theta[WATER],  Xdata.Edata[ii].res_wat_cont);
+			const unsigned int frm = Xdata.Edata[ii].getSnowType();
 			const unsigned int a = (int) (frm/100.);
 			const unsigned int b = (int) ((frm-100*a)/10.);
 			//const unsigned int c = (int) (frm-100*a-10*b);
