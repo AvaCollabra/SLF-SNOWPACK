@@ -898,6 +898,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	}
 #endif
 
+	if(WriteOutNumerics_Level0==true) {
+		if(matrix == true) {
+			printf("RUNNING MATRIX_FLOW...\n");
+		} else {
+			printf("RUNNING PREF_FLOW...\n");
+		}
+	}
+
 	//Backup SNOWPACK state
 	for (i = 0; i<toplayer; i++) {		//Cycle through all SNOWPACK layers
 		//Do the basic check if there is not too much ice.
@@ -1306,13 +1314,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						wateroverflow[i]+=( (EMS[SnowpackElement[i]].theta[WATERINDEX]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) - theta_d[i]);
 						EMS[SnowpackElement[i]].theta[WATERINDEX]=theta_d[i]-(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water));
 					}
-				} else {
+				} /* else {
 					if (EMS[SnowpackElement[i]].theta[WATER_PREF]<theta_d[i]) {
 						EMS[SnowpackElement[i]].theta[WATER_PREF]+=theta_d[i];
 						EMS[SnowpackElement[i]].theta[WATER]-=theta_d[i];
 					}
 					EMS[SnowpackElement[i]].theta[AIR]=1.-EMS[SnowpackElement[i]].theta[WATER]-EMS[SnowpackElement[i]].theta[ICE]-EMS[SnowpackElement[i]].theta[SOIL];
-				}
+				} */
+				// The part is blended out, as we suppress preferential flow in soil for the moment.
 				  
 				activelayer[i]=true;
 			}
@@ -1364,6 +1373,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				h_n[i]=fromTHETAtoHforICE(EMS[SnowpackElement[i]].theta[WATERINDEX], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 			} else {
 				//For soil, we take the matrix pressure head as lower boundary for the snow preferential flow
+				if(matrix == false) theta_i_n[i]=EMS[SnowpackElement[i]].theta[ICE];	// Keep ice contents in sync, as we skip soil freezing with preferential flow (in turn because we suppress preferential flow in soil)
 				h_n[i]=fromTHETAtoHforICE(EMS[SnowpackElement[i]].theta[WATER], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], h_d, theta_i_n[i]);
 			}
 			theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
@@ -2571,7 +2581,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[i].theta[ICE]+=dz[i]*theta_i_n[i];
 				/////EMS[i].theta[ICE]+=dz[i]*theta_i_n[i]*(Constants::density_water/Constants::density_ice);
 			} else {								//We are in "dry" conditions, and we just copy the initial state.
-				EMS[SnowpackElement[i]].theta[WATERINDEX]+=dz[i]*theta_n[i];
+				EMS[SnowpackElement[i]].theta[WATER]+=dz[i]*theta_n[i];
 			}
 		} else {									//We are in snow
 			if(activelayer[i]==true) {

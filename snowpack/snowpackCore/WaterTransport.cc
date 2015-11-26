@@ -1128,7 +1128,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
 		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata);
-		RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
+		if(Xdata.getNumberOfElements() > Xdata.SoilNode) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
 
 	}
 
