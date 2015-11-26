@@ -1232,7 +1232,7 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 			b = 7; c = 0;
 			if (sphericity > 0.75) {
 				a = 7;
-			} else if( sphericity > 0.4 ) {
+			} else if (sphericity > 0.4 ) {
 				if (grain_size <= 0.7) {
 					b = a; a = 7;
 				} else if (marker != 13 ) {
@@ -2095,7 +2095,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
 		for(size_t layer_index=0; layer_index<nElems; layer_index++) {
-			if( Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8))
+			if (Edata[layer_index].type==880 || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8))
 				sum_ice_depth += Edata[layer_index].L;
 		}
 

@@ -390,7 +390,7 @@ double Stability::setHandHardnessASARC(const ElementData& Edata)
 	typeToCode(&F1, &F2, &F3, Edata.type); // Decompose type in its constituents
 
 	// all types except MFcr
-	if( Edata.mk%100 < 20 ) {
+	if (Edata.mk%100 < 20 ) {
 		switch ( F1 ) {
 			case 0: { // Graupel PPgp; empirical!
 				A = 1.5;

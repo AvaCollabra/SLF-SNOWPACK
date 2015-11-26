@@ -528,7 +528,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading layer header starting with 'YYYY'");
 		throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 	}
-	if( fscanf(fin, "%*[^\n]") != 0) {
+	if (fscanf(fin, "%*[^\n]") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read header end in file "+snofilename, AT);
 	}
@@ -607,7 +607,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -618,7 +618,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -629,7 +629,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -640,7 +640,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("While reading Zdata (hns3) !!!", AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -1162,7 +1162,7 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 			double evdot = -2.778e-6*exp(-0.04*(273.15 - EMS[e].Te));
 			if (EMS[e].Rho > 150.)
 				evdot *= exp(-0.046*(EMS[e].Rho-150.));
-			if( EMS[e].theta[WATER] > 0.01 )
+			if (EMS[e].theta[WATER] > 0.01 )
 				evdot *= 2.;
 			fout << "," << std::fixed << std::setprecision(2) << -100.*H_TO_S(evdot);
 		}
