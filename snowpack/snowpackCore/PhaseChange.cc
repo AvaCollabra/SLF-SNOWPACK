@@ -154,7 +154,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
 		Edata.dth_w += dth_w; // (1)
 		for (unsigned int ii = 0; ii < nSolutes; ii++) {
-			if( dth_w > 0. ) {
+			if (dth_w > 0. ) {
 				Edata.conc[WATER][ii] = (Edata.theta[WATER] * Edata.conc[WATER][ii]
 				    + dth_w * Edata.conc[ICE][ii]) / (Edata.theta[WATER] + dth_w);
 			}
@@ -627,7 +627,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 	e = nE;
 	while (e > 0) {
 		e--;
-		if(alpine3d) {
+		if (alpine3d) {
 			// For alpine3d simulations, be strict in the nodal temperatures
 			if(NDS[e+1].T <= t_crazy_min) {
 				prn_msg(__FILE__, __LINE__, "wrn", date_in, "Crazy node (T=%f) at %d of %d corrected.", NDS[e+1].T, e+1, nE+1);

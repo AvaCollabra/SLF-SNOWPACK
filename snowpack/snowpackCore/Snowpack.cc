@@ -880,7 +880,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	// Simple treatment of constant heating rate between two depths.
 	if(advective_heat) {
 		if(Mdata.adv_heat==IOUtils::nodata) //HACK integrate within the checks done in Main?
-			throw NoAvailableDataException("[E] advective heat missing at "+Mdata.date.toString(Date::ISO), AT);
+			throw NoDataException("[E] advective heat missing at "+Mdata.date.toString(Date::ISO), AT);
 		SnLaws::compAdvectiveHeat(Xdata, Mdata.adv_heat, heat_begin, heat_end);
 	}
 
@@ -1728,7 +1728,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 	try {
 		//since precipitation phase is a little less intuitive than other, measured parameters, make sure it is provided
 		if (Mdata.psum_ph==IOUtils::nodata)
-			throw NoAvailableDataException("Missing precipitation phase", AT);
+			throw NoDataException("Missing precipitation phase", AT);
 		
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;

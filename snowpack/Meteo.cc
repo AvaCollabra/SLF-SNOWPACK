@@ -39,10 +39,8 @@ using namespace mio;
 
 Meteo::Meteo(const SnowpackConfig& cfg)
        : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), adjust_height_of_wind_value(true), stability(MONIN_OBUKHOV),
-         research_mode(false), useCanopyModel(false), alpine3d(false)
+         research_mode(false), useCanopyModel(false)
 {
-	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
-
 	std::string stability_model;
 	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", stability_model);
 	if(stability_model=="RICHARDSON")

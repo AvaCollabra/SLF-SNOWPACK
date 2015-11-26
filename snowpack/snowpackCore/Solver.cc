@@ -815,7 +815,7 @@ int  InverseMatrixVector( SD_BLOCK_MATRIX_DATA *pMat, double *X )
 	Upper             = pMat->pUpper;
 
 	// Forward substitution, solve the lower triangular system, where in the diagonal we have all ones.
-	for( nRow = 0, pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
+	for (nRow = 0, pPivotRow = pMat->pRowBlock, nPivotRow = pMat->nRowBlock; (nPivotRow--)>0; pPivotRow++) {
 		int         DimPivot, nCol, dim;
 		double      *PivotUpper, Alpha;
 		pBLOCK      pColBlock;
@@ -1802,7 +1802,7 @@ int ComputeBlockMatrix( SD_TMP_CON_MATRIX_DATA *pTmpMat, SD_BLOCK_MATRIX_DATA *p
 	if ( gd_MemErr )
 		return 1;
 
-	for( k = pMat->nRowBlock, pFirstColBlock = pMat->pFirstColBlock, pSizeColBlock = pMat->pSizeColBlock, nTotCol = 0,
+	for (k = pMat->nRowBlock, pFirstColBlock = pMat->pFirstColBlock, pSizeColBlock = pMat->pSizeColBlock, nTotCol = 0,
 		nTotColBlock = 0, MaxColBlock = 0, pTmpRowBlock = pTmpMat->pRowBlock; k>0; k--, pTmpRowBlock++ )
 	{
 		int Delta, nCol, nColBlock;
