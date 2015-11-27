@@ -72,7 +72,7 @@ IF(MSVC)
 		SET(EXTRA "${EXTRA} /EHa")
 	ENDIF(DEBUG_ARITHM)
 	LIST(APPEND CFLAGS " /D_CRT_SECURE_NO_WARNINGS /D_USE_MATH_DEFINES /EHsc") #Za: strict ansi
-	SET(_VERSION "/D_VERSION=\\\"${_versionString}\\\"")
+	SET(_VERSION "/D_VERSION=${_versionString}")
 ELSE(MSVC)
 	#we consider that all other compilers support "-" options and silently ignore what they don't know
 	IF(PLUGIN_IMISIO)
@@ -98,7 +98,7 @@ ELSE(MSVC)
 	IF(DEBUG_ARITHM)
 		SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 	ENDIF(DEBUG_ARITHM)
-	SET(_VERSION "-D_VERSION=\\\"${_versionString}\\\"")
+	SET(_VERSION "-D_VERSION=${_versionString}")
 	
 	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
