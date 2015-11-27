@@ -207,7 +207,7 @@ inline void Version()
 		<< "It therefore includes software developed by the University of "
 		<< "California, Berkeley and its contributors." << endl;
 #endif
-	cout << "Snowpack version " << _VERSION << " compiled on " << __DATE__ << " " << __TIME__ << "\n"
+	cout << "Snowpack version " << SN_VERSION << " compiled on " << __DATE__ << " " << __TIME__ << "\n"
 		<< "\tLibsnowpack " << snowpack::getLibVersion() << "\n"
 		<< "\tMeteoIO " << mio::getLibVersion() << endl;
 }
