@@ -1421,7 +1421,7 @@ double SnLaws::snowViscosityCALIBRATION(ElementData& Edata, const mio::Date& dat
 {
 	// TODO Check whether the two commented checks below are needed!
 	// If the element length is SMALLER than the grain size then the thing aint settling ....
-	//  if( Edata.L <= 2.*MM_TO_M(rg) )
+	//  if (Edata.L <= 2.*MM_TO_M(rg) )
 	//    return(Constants::big);
 	// Perry introduced this little check when the ice matrix is completely melted away -- in this case
 	// set the viscosity to a high number to give the water in the element time to percolate away

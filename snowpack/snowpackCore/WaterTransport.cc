@@ -431,9 +431,9 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			} else if (e==nE-1) {
 				//In case we use RE for snow or soil, check if we can sublimate hoar away:
 				dM = ql*sn_dt/Constants::lh_sublimation;
-				if( -dM > NDS[nN-1].hoar ) dM=-NDS[nN-1].hoar;	//Limit, so that only the hoar will sublimate
+				if (-dM > NDS[nN-1].hoar ) dM=-NDS[nN-1].hoar;	//Limit, so that only the hoar will sublimate
 
-				if( dM < 0. ) {					//If we have actual hoar to sublimate, do it:
+				if (dM < 0. ) {					//If we have actual hoar to sublimate, do it:
 					const double L0 = EMS[e].L;
 					const double theta_i0 = EMS[e].theta[ICE];
 					M = theta_i0*Constants::density_ice*L0;
@@ -595,7 +595,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			bool merged = true;		// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
 				// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
-				if( (iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {
+				if ((iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {
 					RichardsEquationSolver1d_matrix.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
 					// We remove water from the element, which is now in surfacefluxrate
 					EMS[eUpper].theta[WATER]=0.;
@@ -1120,7 +1120,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 						}
 						break;	//Don't treat other elements. They will all be soil and destroy the calculations. Leave FOR-loop.
 					} // end if water is transported into soil and richards solver is used for soil
-				}  // end if( W_upper > Wres )
+				}  // end if (W_upper > Wres )
 			}  // end FOR loop over the number of elements
 		} // end of IF statement to branch between WaterTransport model RICHARDSEQUATION and NIED/BUCKET
 	} // end FOR loop over time step iterations (loop executed only more than once in case of "NIED")

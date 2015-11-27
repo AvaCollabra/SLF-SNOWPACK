@@ -445,11 +445,11 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 	// Loop over soil layers above rootdepth
 	double zupper = 0.;
 	size_t RootLayer = SoilNode;
-	for( size_t e = SoilNode; e --> 0; ) {//e gets decremented right away -> start at SoilNode
+	for (size_t e = SoilNode; e --> 0; ) {//e gets decremented right away -> start at SoilNode
 		// fraction of roots in layer
 		const double rootfr = RootFraction(zupper, zupper + EMS[e].L);
 		const double water = transpiration;
-		if( rootfr > 0.0 ){
+		if (rootfr > 0.0 ){
 			// Index of last layer with roots
 			RootLayer = e;
 
@@ -546,10 +546,10 @@ double Canopy::get_f2f4(const size_t& SoilNode, ElementData* EMS)
 
 	// loop over layers:
 	double zupper = 0.;
-	for( size_t e = SoilNode; e --> 0; ) { //e gets decremented right away -> start at SoilNode
+	for (size_t e = SoilNode; e --> 0; ) { //e gets decremented right away -> start at SoilNode
 		// 1) root fraction in layer
 		const double rootfr = RootFraction(zupper, zupper + EMS[e].L);
-		if( rootfr > 0.0 ){
+		if (rootfr > 0.0 ){
 			RootLayer = e;
 			// 2) Field Capacity in layer
 			f2_wcap = EMS[e].soilFieldCapacity();
@@ -655,7 +655,7 @@ double Canopy::IntRate(const double& capacity, const double& storage, const doub
 double Canopy::CanopyAlbedo(const double& tair, const double& wetfrac)
 {
 	// Albedo of partly "wet" canopy = weighted average of dry and wet parts
-	if( tair > Constants::melting_tk ) {
+	if (tair > Constants::melting_tk ) {
 		return (wetfrac * Canopy::can_alb_wet + (1. - wetfrac) * Canopy::can_alb_dry);
 	} else {
 		return (wetfrac * Canopy::can_alb_snow + (1. - wetfrac) * Canopy::can_alb_dry);
@@ -1158,7 +1158,7 @@ void Canopy::CanopyEnergyBalance2L(double& h0, double& h1,  double& le0,
 	LECANOPY = le0 + le1 * TCANOPY;
 
 	// 3b. re-compute in case of condensation/sublimation on canopy
-	if( LECANOPY < 0.0 ) {
+	if (LECANOPY < 0.0 ) {
 		TCANOPY -= TC_CHANGE;
 		TC_CHANGE = (h0 + le0 * ce_condensation / ce_canopy - r0 + HM0 -TT0) /
 				(r1 - h1 - le1 * ce_condensation / ce_canopy - HM1 + TT1) - TCANOPY;

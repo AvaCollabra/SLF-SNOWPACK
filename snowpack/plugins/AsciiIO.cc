@@ -570,7 +570,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading layer header starting with 'YYYY'");
 		throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 	}
-	if( fscanf(fin, "%*[^\n]") != 0) {
+	if (fscanf(fin, "%*[^\n]") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read header end in file "+snofilename, AT);
 	}
@@ -649,7 +649,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -660,7 +660,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -671,7 +671,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -682,7 +682,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			throw InvalidFormatException("While reading Zdata (hns3) !!!", AT);
 		}
 	}
-	if( fscanf(fin,"%*s ") != 0) {
+	if (fscanf(fin,"%*s ") != 0) {
 		fclose(fin);
 		throw InvalidFormatException("Can not read spacing in file "+snofilename, AT);
 	}
@@ -728,7 +728,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	fout.open(snofilename.c_str(), std::ios::out);
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", date,"Cannot open profile OUTPUT file: %s", snofilename.c_str());
-		throw FileAccessException("Cannot dump final Xdata to file "+snofilename, AT);
+		throw AccessException("Cannot dump final Xdata to file "+snofilename, AT);
 	}
 
 	// Header, Station Name and Julian Day
@@ -1394,7 +1394,7 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 			double evdot = -2.778e-6*exp(-0.04*(273.15 - EMS[e].Te));
 			if (EMS[e].Rho > 150.)
 				evdot *= exp(-0.046*(EMS[e].Rho-150.));
-			if( EMS[e].theta[WATER] > 0.01 )
+			if (EMS[e].theta[WATER] > 0.01 )
 				evdot *= 2.;
 			fout << "," << std::fixed << std::setprecision(2) << -100.*H_TO_S(evdot);
 		}
@@ -1439,8 +1439,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& i_date, const SnowStation& Xdata,
 
 	std::ofstream ofs;
 	ofs.open(filename.c_str(), std::ios::out | std::fstream::app);
-	if(!ofs)
-		throw FileAccessException("[E] Can not open file " + filename, AT);
+	if (!ofs) throw AccessException("[E] Can not open file " + filename, AT);
 
 	ofs << "#Date,JulianDate,station,aspect,slope,Nlayers,hs,swe,lwc_sum,ts,tg\n";
 	ofs << "#-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
@@ -1823,8 +1822,8 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	fin.open (filename.c_str());
 	fout.open(filename_tmp.c_str());
 
-	if (fin.fail()) throw FileAccessException(filename, AT);
-	if (fout.fail()) throw FileAccessException(filename_tmp, AT);
+	if (fin.fail()) throw AccessException(filename, AT);
+	if (fout.fail()) throw AccessException(filename_tmp, AT);
 
 	const char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
 
@@ -1915,7 +1914,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	fout.open(filename.c_str(),  std::ios::out | std::ofstream::app);
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Cannot open time series file: %s", filename.c_str());
-		throw FileAccessException(filename, AT);
+		throw AccessException(filename, AT);
 	}
 	// Print time stamp
 	fout << "\n0203," << Mdata.date.toString(Date::DIN);
