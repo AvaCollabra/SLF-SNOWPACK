@@ -32,7 +32,7 @@ using namespace mio;
 namespace snowpack {
 std::string getLibVersion() {
 	std::stringstream ss;
-	ss << _VERSION << " compiled on " << __DATE__ << " " << __TIME__;
+	ss << SN_VERSION << " compiled on " << __DATE__ << " " << __TIME__;
 	return ss.str();
 }
 }

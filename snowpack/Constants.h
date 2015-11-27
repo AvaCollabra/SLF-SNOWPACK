@@ -34,7 +34,10 @@
  * Please only use SN_VERSION in the code
  */
 #ifndef SN_VERSION
-	#define SN_VERSION _VERSION
+	//here below, the double-expansion stringification macro trick...
+	#define STR1(x) #x
+	#define STR2(x) STR1(x)
+	#define SN_VERSION STR2( _VERSION )
 #endif
 
 #define MAX_STRING_LENGTH 256
