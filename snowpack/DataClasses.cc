@@ -1655,7 +1655,7 @@ void SnowStation::reduceNumberOfElements(const size_t& rnE)
 
 	const double cH_old = cH;
 	cH = Ndata[nNodes-1].z + Ndata[nNodes-1].u;
-	mH -= (cH_old - cH);
+	if (mH!=Constants::undefined) mH -= (cH_old - cH);
 	ErosionLevel = MAX(SoilNode, MIN(ErosionLevel, rnE-1));
 }
 
