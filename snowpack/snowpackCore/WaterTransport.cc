@@ -536,7 +536,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	// At the end also update the overall height
 	cH_old = Xdata.cH;
 	Xdata.cH = NDS[Xdata.getNumberOfNodes()-1].z + NDS[Xdata.getNumberOfNodes()-1].u;
-	Xdata.mH -= (cH_old - Xdata.cH);
+	if (Xdata.mH!=Constants::undefined) Xdata.mH -= (cH_old - Xdata.cH);
 }
 
 /**
