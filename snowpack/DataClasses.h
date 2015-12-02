@@ -500,7 +500,7 @@ class SnowStation {
 		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
 		double cH;                  ///< The CALCULATED height, including soil depth if SNP_SOIL == 1
-		double mH;                  ///< The ENFORCED height, including soil depth if SNP_SOIL == 1
+		double mH;                  ///< The MEASURED height, including soil depth if SNP_SOIL == 1
 		double mass_sum;            ///< Total mass summing mass of snow elements
 		double swe;                 ///< Total mass summing snow water equivalent of elements
 		double lwc_sum;             ///< Total liquid water in snowpack

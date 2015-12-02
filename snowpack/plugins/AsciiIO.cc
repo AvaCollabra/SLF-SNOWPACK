@@ -1560,7 +1560,7 @@ double AsciiIO::compPerpPosition(const double& z_vert, const double& hs_ref, con
  * @version 10.01
  * @param T Measured temperature (K)
  * @param z Sensor position perpendicular to slope (m)
- * @param mH Enforced snow height (m)
+ * @param mH Measured snow height (m)
  * @return Measured temperature (degC) if OK, Constants::undefined else
  */
 double AsciiIO::checkMeasuredTemperature(const double& T, const double& z, const double& mH)
@@ -1952,7 +1952,11 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		// 27: solid precipitation rate (kg m-2 h-1),
 		// 28-29: modeled and enforced vertical snow depth (cm); see also 51
 		fout  << "," << 100.*Mdata.rh << "," << Mdata.vw << "," << Mdata.vw_drift << "," << Mdata.dw << "," << Sdata.mass[SurfaceFluxes::MS_HNW];
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl) << "," << M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl) << std::setprecision(6);
+		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl) << ",";
+		if (Xdata.mH!=Constants::undefined)
+			fout << M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl) << std::setprecision(6);
+		else
+			fout << IOUtils::nodata << std::setprecision(6);
 	} else
 		fout << ",,,,,,,";
 	if (out_haz) {
