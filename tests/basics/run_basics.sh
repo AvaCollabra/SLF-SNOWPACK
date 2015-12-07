@@ -14,13 +14,43 @@ function compare_result {
 	param=$1
 	prec=$2
 	
-	comp=`numdiff ${prec} ${TMP_REF} ${TMP_NEW} | grep "+++"`
-	comp_result=`echo "${comp}" | grep -vE "are equal$"`
-	printf "Comparing %-50s" "${param}"
+	comp=`numdiff ${prec} ${TMP_REF} ${TMP_NEW}`
+	comp_result=`echo "${comp}"  | grep "+++" | grep -vE "are equal$"`
+	printf "Comparing %-36s" "${param}"
 	if [ -z "${comp_result}" ]; then
 		printf "[OK]\n"
 	else
-		printf "[fail]\n"
+		#nr_errors=`echo "${comp}" | grep -E "^@.* error " | wc -l`
+		#printf "[fail]\t${nr_errors} error(s)\n"
+		printf "[fail]   → "
+		echo "${comp}" | awk '
+			function isNumeric(str) {
+				return str ~ /^(\+|\-)*([0-9]|\.)+e*(\+|\-)*[0-9]*$/
+			}
+			/@.* error / {
+				count++
+				gsub(",","")
+				if (isNumeric($5)) {
+					count_abs++
+					sum_abs+=$5
+				}
+				if (isNumeric($9)) {
+					count_rel++
+					sum_rel+=$9
+				}
+			}
+			END {
+				if (count==1)
+					printf("%3d error ", count)
+				else
+					printf("%3d errors", count)
+				if (count_abs>0)
+					printf("  µ_abs=%-5.3g", sum_abs/count_abs)
+				if (count_rel>0)
+					printf("  µ_rel=%-5.3g", sum_rel/count_rel)
+				printf("\n")
+			}
+		'
 	fi
 }
 
