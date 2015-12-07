@@ -27,6 +27,12 @@ function compare_result {
 			function isNumeric(str) {
 				return str ~ /^(\+|\-)*([0-9]|\.)+e*(\+|\-)*[0-9]*$/
 			}
+			/^##/ {
+				if (first=="") {
+					gsub("#", "")
+					first=$1
+				}
+			}
 			/@.* error / {
 				count++
 				gsub(",","")
@@ -46,9 +52,16 @@ function compare_result {
 					printf("%3d errors", count)
 				if (count_abs>0)
 					printf("  µ_abs=%-5.3g", sum_abs/count_abs)
+				else
+					printf("             ")
 				if (count_rel>0)
-					printf("  µ_rel=%-5.3g", sum_rel/count_rel)
-				printf("\n")
+					printf("  µ_rel=%-7.3g", sum_rel/count_rel)
+				else
+					printf("               ")
+				
+				cmd=sprintf("head -n %d %s | tail -1 | cut -f1 -d\" \"", first, "'"${TMP_REF}"'")
+				cmd | getline datum
+				printf(" @ %s\n", datum)
 			}
 		'
 	fi
