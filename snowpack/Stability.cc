@@ -31,27 +31,13 @@ using namespace std;
 
 const double Stability::psi_ref = 38.0; ///< Reference slope angle
 const double Stability::max_stability = 6.0; ///< Upper stability limit
-
-///Minimum slab thickness for natural and deformation stability index (m)
-const double Stability::minimum_slab = 0.1;
-
-///The first GROUND_ROUGH m of snow will not be unstable due to ground roughness
-const double Stability::ground_rough = 0.2;
-
-///MIN_DEPTH_SSI m of snow must be left after discarding penetration depth
-const double Stability::min_depth_ssi = 0.1;
-
-///Skiers will not trigger failures SKIER_DEPTH m below penetration depth
-const double Stability::skier_depth = 1.0;
-
-///Minimum thickness for a supporting melt-freeze crust (perp to slope, in m)
-const double Stability::min_thick_crust = 0.03;
-
-///Maximum number of structural instabilities looked at ("lemons")
-const size_t Stability::nmax_lemon = 2;
-
-///Defines regression model for surface hoar shear strength
-const int Stability::sh_mod = 2;
+const double Stability::minimum_slab = 0.1; ///< Minimum slab thickness for natural and deformation stability index (m)
+const double Stability::ground_rough = 0.2; ///< The first GROUND_ROUGH m of snow will not be unstable due to ground roughness
+const double Stability::min_depth_ssi = 0.1; ///< MIN_DEPTH_SSI m of snow must be left after discarding penetration depth
+const double Stability::skier_depth = 1.0; ///< Skiers will not trigger failures SKIER_DEPTH m below penetration depth
+const double Stability::min_thick_crust = 0.03; ///< Minimum thickness for a supporting melt-freeze crust (perp to slope, in m)
+const size_t Stability::nmax_lemon = 2; ///< Maximum number of structural instabilities looked at ("lemons")
+const int Stability::sh_mod = 2; ///< Defines regression model for surface hoar shear strength
 
 /**
  * @brief Defines classification scheme for snow profiles
@@ -95,9 +81,7 @@ Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
 	const map<string, StabFnShearStrength>::const_iterator it2 = mapShearStrength.find(strength_model);
 	if (it2 == mapShearStrength.end()) throw InvalidArgumentException("Unknown strength model: "+strength_model, AT);
 
-	//To build a sandwich with a non-snow layer (plastic or wood chips) on top;
-	//originally introduced for snow farming applications
-	cfg.getValue("PLASTIC", "SnowpackAdvanced", plastic);
+	cfg.getValue("PLASTIC", "SnowpackAdvanced", plastic); //To build a sandwich with a non-snow layer (plastic or wood chips) on top;
 
 	// Density of BURIED surface hoar (kg m-3), default: 125./ Antarctica: 200.
 	cfg.getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried);
@@ -492,17 +476,15 @@ double Stability::setHandHardnessASARC(const ElementData& Edata)
 	}
 
 	double hardness = A + B*Edata.Rho + C*gsz;
-	if (F1 == 6) {
-		hardness = MIN(hardness, 2.);
-	}
+	if (F1 == 6) hardness = MIN(hardness, 2.);
+
 	// Limit to range {1, 6}
 	hardness = MAX(1., MIN(6., hardness));
 	return(hardness);
 }
 
-/*
- * START OF STABILITY SECTION
-*/
+/********************************************************************************
+ *                                 START OF STABILITY SECTION                                                                         */
 /**
  * @brief Returns the critical stress state of a layer given the temperature and plastic strain rate.
  * @param epsNeckDot Neck strain rate (s-1)
@@ -518,8 +500,7 @@ double Stability::compCriticalStress(const double& epsNeckDot, const double& Ts)
 	const double P1=70.000;      // Constant (Pa)
 
 	// Find the rate dependent friction angle phi
-	const double epsa = fabs(epsNeckDot); // Absolute value of plastic strain rate
-	const double phi = P1*pow(epsa, 0.23)*mio::Cst::to_rad; // Function of strain rate dependent failure surface
+	const double phi = P1*pow(fabs(epsNeckDot), 0.23)*mio::Cst::to_rad; // Function of strain rate dependent failure surface
 
 	// Hydrostatic melting pressure
 	// NOTE this function returns negative values for
@@ -566,32 +547,15 @@ double Stability::setDeformationRateIndex(ElementData& Edata)
 
 /**
  * @brief Initializes stability parameters
- * @param STpar
  * @param Xdata
- * @param SIdata
- * @param i_psi_ref Reference slope angle (deg)
  */
-void Stability::initStability(const double& i_psi_ref, StabilityData& STpar,
-                              SnowStation& Xdata, std::vector<InstabilityData>& SIdata)
+void Stability::initStability(SnowStation& Xdata)
 {
 	const size_t nN = Xdata.getNumberOfNodes();
-
-	STpar.Sig_c2 = Constants::undefined;
-	STpar.strength_upper = 1001.;
-	STpar.psi_ref = i_psi_ref*mio::Cst::to_rad;
-	STpar.cos_psi_ref = cos(STpar.psi_ref);
-	STpar.sin_psi_ref = sin(STpar.psi_ref);
-	STpar.sig_n = Constants::undefined;
-	STpar.sig_s = Constants::undefined;
-	STpar.alpha_max_rad = 54.3*mio::Cst::to_rad; // alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
-
 	for(size_t n=Xdata.SoilNode; n<nN; n++) {
-		SIdata[n].ssi      = Stability::max_stability;
 		Xdata.Ndata[n].S_n = Stability::max_stability;
 		Xdata.Ndata[n].S_s = Stability::max_stability;
-		if (n < nN-1) {
-			Xdata.Edata[n].S_dr = Stability::max_stability;
-		}
+		if (n < nN-1) Xdata.Edata[n].S_dr = Stability::max_stability;
 	}
 
 	Xdata.S_d = Xdata.S_n = Xdata.S_s = Xdata.S_4 = Xdata.S_5 = Stability::max_stability;
@@ -890,7 +854,7 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
  * The classic natural stability index Sn, that is, the ratio of shear stress to shear strength (static)
  * @param STpar
  */
-double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
+double Stability::getNaturalStability(const StabilityData& STpar)
 {
 	// Limit natural stability index to range {0.05, Stability::max_stability}
 	return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/STpar.sig_s), Stability::max_stability)));
@@ -903,7 +867,7 @@ double Stability::setNaturalStabilityIndex(const StabilityData& STpar)
  * @param depth_lay Depth of layer to investigate (m)
  * @param STpar
  */
-double Stability::setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar)
+double Stability::getLayerSkierStability(const double& depth_lay, const StabilityData& STpar)
 {
 	if ( depth_lay > Constants::eps ) {
 		const double Alpha_max = STpar.alpha_max_rad;
@@ -1293,13 +1257,11 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	vector<InstabilityData> SIdata = vector<InstabilityData>(nN); // Parameters for structural instabilities
-	StabilityData  STpar;        // Stability parameters
+	vector<InstabilityData> SIdata(nN); // Parameters for structural instabilities
+	StabilityData  STpar(Stability::psi_ref*mio::Cst::to_rad);        // Stability parameters
 
-	initStability(Stability::psi_ref, STpar, Xdata, SIdata);
-	if ( (nE < Xdata.SoilNode+1) || plastic ) { // Return if bare soil or PLASTIC
-		return;
-	}
+	initStability(Xdata);
+	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
 
 	const double Pk = compPenetrationDepth(Xdata); // Skier penetration depth
 	size_t e = nE; // Counter
@@ -1312,9 +1274,9 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		                                                               EMS[e], NDS[e+1], STpar))) {
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
-		NDS[e+1].S_n = setNaturalStabilityIndex(STpar);
+		NDS[e+1].S_n = getNaturalStability(STpar);
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk; // corrected for skier penetration depth Pk.
-		NDS[e+1].S_s = setSkierStabilityIndex(depth_lay, STpar);
+		NDS[e+1].S_s = getLayerSkierStability(depth_lay, STpar);
 		if (e < nE-1)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
 		else

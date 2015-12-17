@@ -30,27 +30,15 @@
 #include <string>
 
 /**
- * @class InstabilityData
- * @brief double and integer values to pinpoint structural instability
- */
-class InstabilityData {
-	public:
-		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(6.0) {} //HACK needs to be max_stability
-
-		size_t n_lemon;  ///< Number of "lemons" found
-		double dhard;    ///< Difference in hardness
-		double dgsz;     ///< Difference in grain size
-		double ssi;      ///< Sk38 + structural instabilities (dhard & dgsz)
-};
-
-/**
  * @class StabilityData
  * @brief Structure of double and integer for shear strength evaluation
  */
 class StabilityData {
 	public:
- 		StabilityData() : cH(0.0), Sig_c2(0.0), strength_upper(0.0), phi(0.0), sig_n(0.0), sig_s(0.0),
-		                  alpha_max_rad(0.0), psi_ref(0.0), cos_psi_ref(0.0), sin_psi_ref(0.0) {}
+		// alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
+		StabilityData(const double& i_psi_ref) : cH(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
+		                                                                  sig_n(Constants::undefined), sig_s(Constants::undefined),
+		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref), cos_psi_ref(cos(i_psi_ref)), sin_psi_ref(sin(i_psi_ref)) {}
 
 		double cH;             ///< Calculated height of snow (m)
 		double Sig_c2;         ///< Element shear strength (kPa)
@@ -64,6 +52,7 @@ class StabilityData {
 		double sin_psi_ref;    ///< Sine of psi_ref
 };
 
+class InstabilityData;
 class Stability;
 
 typedef double (Stability::*StabMemFn)(const ElementData&);
@@ -72,9 +61,6 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
 
 /**
  * @class Stability
- * @version -
- * @date    -
- * @bug     -
  * @brief This class contains the stability routines for the snowpack model.
  * TODO: update description 2009-10-20 \n
  * Stability is found for each LAYER (i.e. finite element) and INTERFACE (i.e. node).
@@ -99,9 +85,8 @@ class Stability {
 
 	private:
 
-		void initStability(const double& psi_ref, StabilityData& STpar,
-		                   SnowStation& Xdata, std::vector<InstabilityData>& SIdata);
-
+		void initStability(SnowStation& Xdata);
+		
 		double setHandHardnessBELLAIRE(const ElementData& Edata);
 		double setHandHardnessASARC(const ElementData& Edata);
 		double setHandHardnessMONTI(const ElementData& Edata);
@@ -121,9 +106,9 @@ class Stability {
 		bool setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
 
-		double setNaturalStabilityIndex(const StabilityData& STpar);
+		double getNaturalStability(const StabilityData& STpar);
 
-		double setSkierStabilityIndex(const double& depth_lay, const StabilityData& STpar);
+		double getLayerSkierStability(const double& depth_lay, const StabilityData& STpar);
 
 		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
 		                                   const double& Sk, InstabilityData& SIdata);
@@ -143,6 +128,18 @@ class Stability {
 		bool classify_profile;
 };
 
+/**
+ * @class InstabilityData
+ * @brief double and integer values to pinpoint structural instability
+ */
+class InstabilityData {
+	public:
+		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(Stability::max_stability) {}
 
+		size_t n_lemon;  ///< Number of "lemons" found
+		double dhard;    ///< Difference in hardness
+		double dgsz;     ///< Difference in grain size
+		double ssi;      ///< Sk38 + structural instabilities (dhard & dgsz)
+};
 
 #endif //End of Stability.h
