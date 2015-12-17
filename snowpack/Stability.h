@@ -75,7 +75,7 @@ typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, con
 class Stability {
 	public:
 		Stability (const SnowpackConfig& i_cfg, const bool& i_classify_profile=false);
-
+		
 		void checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		static const double psi_ref, max_stability, minimum_slab, ground_rough;
@@ -106,8 +106,10 @@ class Stability {
 		double hoar_density_buried;
 		bool plastic;
 		bool classify_profile;
-		
-	private:
+};
+
+class StabilityAlgorithms {
+	public:
 		static void classifyStability_SchweizerBellaire(const double& Swl_ssi, const double& Swl_Sk38, SnowStation& Xdata);
 		static void classifyStability_Bellaire(const double& Swl_ssi, SnowStation& Xdata);
 		static void classifyStability_Fierz(const double& Swl_ssi, const size_t& Swl_lemon, const double& Swl_Sk38, SnowStation& Xdata);
