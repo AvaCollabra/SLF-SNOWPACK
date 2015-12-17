@@ -54,9 +54,9 @@ const bool Stability::__init = Stability::initStaticData();
 
 bool Stability::initStaticData()
 {
-	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
-	mapHandHardness["BELLAIRE"]  = &Stability::setHandHardnessBELLAIRE;
-	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
+	mapHandHardness["MONTI"]    = &Stability::getHandHardnessMONTI;
+	mapHandHardness["BELLAIRE"]  = &Stability::getHandHardnessBELLAIRE;
+	mapHandHardness["ASARC"]    = &Stability::getHandHardnessASARC;
 
 	mapShearStrength["DEFAULT"] = &Stability::setShearStrengthDEFAULT;
 	mapShearStrength["NIED"]    = &Stability::setShearStrengthSTRENGTH_NIED;
@@ -99,7 +99,7 @@ Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
  * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
+double Stability::getHandHardnessBELLAIRE(const ElementData& Edata)
 {
 	const double gsz = 2.*Edata.rg;
 	double hardness;
@@ -200,7 +200,7 @@ double Stability::setHandHardnessBELLAIRE(const ElementData& Edata)
  * @param rho snow density
  * @return hand hardness index (1)
  */
-double Stability::getHandHardnessMONTI(const int& F, const double& rho, const double& water_content)
+double Stability::getHandHardnessMONTI(const int& F, const double& rho, const double& water_content, const double& buried_hoar_density)
 {
 	switch(F) {
 		case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
@@ -257,9 +257,9 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
 			else
 				return 3.;
 		}
-		case 6: { // Surface hoar SH; empirical: index 1 to 2 from hoar_density_buried to 250 kg m-3
-			const double A = 1. - hoar_density_buried/(250. - hoar_density_buried);
-			const double B = 1./(250. - hoar_density_buried);
+		case 6: { // Surface hoar SH; empirical: index 1 to 2 from buried_hoar_density to 250 kg m-3
+			const double A = 1. - buried_hoar_density/(250. - buried_hoar_density);
+			const double B = 1./(250. - buried_hoar_density);
 			return (A + B*rho);
 		}
 		case 7: { // Melt Forms MF
@@ -320,15 +320,15 @@ double Stability::getHandHardnessMONTI(const int& F, const double& rho, const do
  * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::setHandHardnessMONTI(const ElementData& Edata)
+double Stability::getHandHardnessMONTI(const ElementData& Edata)
 {
 	double hardness;
 
 	if ( (Edata.mk%100) < 20 ) { // all types except MFcr (hardness 5)
 		int F1, F2, F3; // grain shape
 		typeToCode(&F1, &F2, &F3, Edata.type); // Decompose type in its constituents
-		const double hardness_F1 = getHandHardnessMONTI(F1, Edata.Rho, Edata.theta[WATER]);
-		const double hardness_F2 = getHandHardnessMONTI(F2, Edata.Rho, Edata.theta[WATER]);
+		const double hardness_F1 = getHandHardnessMONTI(F1, Edata.Rho, Edata.theta[WATER], hoar_density_buried);
+		const double hardness_F2 = getHandHardnessMONTI(F2, Edata.Rho, Edata.theta[WATER], hoar_density_buried);
 		hardness = 0.5 * (hardness_F1 + hardness_F2);
 
 		if (F1 == 6) {
@@ -365,7 +365,7 @@ double Stability::setHandHardnessMONTI(const ElementData& Edata)
  * @param Edata
  * @return hand hardness index (1)
  */
-double Stability::setHandHardnessASARC(const ElementData& Edata)
+double Stability::getHandHardnessASARC(const ElementData& Edata)
 {
 	const double gsz = 2.*Edata.rg;
 	double A=0., B=0., C=0.;
@@ -747,26 +747,20 @@ bool Stability::setShearStrengthDEFAULT(const double& cH, const double& cos_sl, 
 bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
                                               ElementData& Edata, NodeData& Ndata, StabilityData& STpar)
 {
-	int    F1, F2, F3;             // Grain shape
-	double Sig_cC, Sig_c2, Sig_c3; // Critical shear stress (kPa)
-	double Sig_ET, Sig_DH;         //NIED (H. Hirashima)
-	double phi;                    // Normal load correction
-	double rho_ri;                 // Snow density relative to ice
 	bool prn_wrn = false;
-
-	// Snow density relative to ice
-	rho_ri = Edata.Rho/Constants::density_ice;
+	const double rho_ri = Edata.Rho/Constants::density_ice; // Snow density relative to ice
 	// Determine majority grain shape
+	int    F1, F2, F3;             // Grain shape
 	typeToCode(&F1, &F2, &F3, Edata.type);
 
 	// Determine critical shear stress of element (kPa)
 	// 1. Conway
-	Sig_cC = 19.5*rho_ri*rho_ri;
+	const double Sig_cC = 19.5*rho_ri*rho_ri;
 	// 2. Grain Type dependent mostly from Jamieson,
 	//    Ann. Glaciol., 26, 296-302 (2001) and Ann. Glaciol., 32, 59-69 (1998)
-	phi = 0.;
-	Sig_c2 = -1.0;
-	Sig_c3 = -1.0;
+	double phi = 0.; // Normal load correction
+	double Sig_c2 = -1.0; // Critical shear stress (kPa)
+	double Sig_c3 = -1.0; // Critical shear stress (kPa)
 	switch ( F1 ) {
 		case 0: // Graupel, from O. Abe, Ann. Glaciol. 38 (2004), size-effect corrected
 			Sig_c2 = 0.65*(82.*pow(rho_ri, 2.8));
@@ -827,8 +821,8 @@ bool Stability::setShearStrengthSTRENGTH_NIED(const double& cH, const double& co
 
 	// Final assignements
 	//NIED (H. Hirashima)
-	Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
-	Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+	const double Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
+	const double Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
@@ -924,14 +918,12 @@ double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, co
  * @param Xdata
  * @return false if error, true otherwise
  */
-bool Stability::classifyProfileStability(SnowStation& Xdata)
+bool Stability::classifyStability_SchweizerWiesinger(SnowStation& Xdata)
 {
 	// Dereference the element pointer containing micro-structure data
 	const size_t nE = Xdata.getNumberOfElements();
 	vector<ElementData>& EMS = Xdata.Edata;
 	vector<NodeData>& NDS = Xdata.Ndata;
-
-	// Initialize
 	const double cos_sl = Xdata.cos_sl;
 
 	// Classify only for Snowpacks thicker than Stability::minimum_slab (vertically)
@@ -1032,7 +1024,80 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
 	} else {
 		return true;
 	}
-}  // End classifyProfileStability
+}
+
+
+/**
+ * @brief Returns the Profile Stability Classification based on re-analysis after recalibration of settling,
+ * Nov 2007(see rev 250/251)
+ * @param Swl_ssi
+ * @param Xdata
+ */
+void Stability::classifyStability_Fierz(const double& Swl_ssi, const size_t& Swl_lemon, const double& Swl_Sk38, SnowStation& Xdata)
+{
+	if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
+		if ( Swl_lemon >= 2 ) {
+			Xdata.S_class2 = 1;
+		} else if (Swl_lemon == 1) {
+			if (Swl_Sk38 < 0.48) {
+				Xdata.S_class2 = 1;
+			} else {
+				if (Swl_Sk38 < 0.71) {
+					Xdata.S_class2 = 3;
+				} else {
+					Xdata.S_class2 = 5;
+				}
+			}
+		} else {
+			Xdata.S_class2 = 3;
+		}
+	} else {
+		Xdata.S_class2 = -1;
+	}
+}
+
+/**
+ * @brief Returns the Profile Stability Classification based on re-analysis by Schweizer/Bellaire 
+ * (paper CRST 46 (2006) 52-59)
+ * @param Swl_ssi
+ * @param Xdata
+ */
+void Stability::classifyStability_SchweizerBellaire(const double& Swl_ssi, const double& Swl_Sk38, SnowStation& Xdata)
+{
+	if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
+		if ( Swl_Sk38 >= 0.45 ) {
+			Xdata.S_class2 = 5;
+		} else if ( Swl_ssi >= 1.32 ) {
+				Xdata.S_class2 = 3;
+			} else {
+				Xdata.S_class2 = 1;
+			}
+	} else {
+		Xdata.S_class2 = -1;
+	}
+}
+
+/**
+ * @brief Returns the Profile Stability Classification based on the master thesis of S. Bellaire 
+ * (September 2005)
+ * @param Swl_ssi
+ * @param Xdata
+ */
+void Stability::classifyStability_Bellaire(const double& Swl_ssi, SnowStation& Xdata)
+{
+// Classify in poor, fair and good based on master thesis of S. Bellaire (September 2005)
+	if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
+		if (Swl_ssi >= 1.55) {
+			Xdata.S_class2 = 5;
+		} else if (Swl_ssi >= 1.25) {
+			Xdata.S_class2 = 3;
+		} else {
+			Xdata.S_class2 = 1;
+		}
+	} else {
+		Xdata.S_class2 = -1;
+	}
+}
 
 /**
  * @brief "Pattern recognition" of 10 profile types according to Schweizer, J. and M. Luetschg (2001).
@@ -1041,17 +1106,14 @@ bool Stability::classifyProfileStability(SnowStation& Xdata)
  * @param *Xdata
  * @return false on error, true otherwise
  */
-bool Stability::recognizeProfileType(SnowStation& Xdata)
+bool Stability::classifyType_SchweizerLuetschg(SnowStation& Xdata)
 {
 	const size_t n_window=5;                              // Window half-width in number of elements
 	const double L_base_0=0.2;
 	const double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
 	                                                      // (N) and (N m-1), respectively
-
-	// cos of slope angle to convert height and thickness to vertical values
 	const double cos_sl = Xdata.cos_sl;
-	// Vertical snow depth
-	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl;
+	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl; // Vertical snow depth
 
 	// Check for snow profile shallower than 1.5*L_base_0 m (not classifiable)
 	if ( cH <= 1.5*L_base_0 ) {
@@ -1227,7 +1289,7 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 	Xdata.S_class1 = prf_type;
 
 	return true;
-} // End of recognizeProfileType
+}
 
 /*
  *  END OF CLASSIFICATION SECTION
@@ -1250,7 +1312,6 @@ bool Stability::recognizeProfileType(SnowStation& Xdata)
 void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 {
 	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
-
 	// Dereference the element pointer containing micro-structure data
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
@@ -1274,8 +1335,9 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		                                                               EMS[e], NDS[e+1], STpar))) {
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
-		NDS[e+1].S_n = getNaturalStability(STpar);
+		
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk; // corrected for skier penetration depth Pk.
+		NDS[e+1].S_n = getNaturalStability(STpar);
 		NDS[e+1].S_s = getLayerSkierStability(depth_lay, STpar);
 		if (e < nE-1)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
@@ -1359,61 +1421,19 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	switch (Stability::prof_classi) {
 		case 0:
-			// Classify in poor, fair and good based on master thesis of S. Bellaire (September 2005)
-			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
-				if (Swl_ssi >= 1.55) {
-					Xdata.S_class2 = 5;
-				} else if (Swl_ssi >= 1.25) {
-					Xdata.S_class2 = 3;
-				} else {
-					Xdata.S_class2 = 1;
-				}
-			} else {
-				Xdata.S_class2 = -1;
-			}
+			classifyStability_Bellaire(Swl_ssi, Xdata);
 			break;
 		case 1:
-		// Classify in poor, fair and good based on re-analysis by Schweizer/Bellaire (paper CRST 46 (2006) 52-59)
-			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
-				if ( Swl_Sk38 >= 0.45 ) {
-					Xdata.S_class2 = 5;
-				} else if ( Swl_ssi >= 1.32 ) {
-						Xdata.S_class2 = 3;
-					} else {
-						Xdata.S_class2 = 1;
-					}
-			} else {
-				Xdata.S_class2 = -1;
-			}
+			classifyStability_SchweizerBellaire(Swl_ssi, Swl_Sk38, Xdata);
 			break;
 		case 2:
-			// Classify in poor, fair and good based on re-analysis after recalibration of settling,
-			// Nov 2007(see rev 250/251)
-			if ((Swl_ssi > 0.) && (Swl_ssi < 100.)) {
-				if ( Swl_lemon >= 2 ) {
-					Xdata.S_class2 = 1;
-				} else if (Swl_lemon == 1) {
-					if (Swl_Sk38 < 0.48) {
-						Xdata.S_class2 = 1;
-					} else {
-						if (Swl_Sk38 < 0.71) {
-							Xdata.S_class2 = 3;
-						} else {
-							Xdata.S_class2 = 5;
-						}
-					}
-				} else {
-					Xdata.S_class2 = 3;
-				}
-			} else {
-				Xdata.S_class2 = -1;
-			}
+			classifyStability_Fierz(Swl_ssi, Swl_lemon, Swl_Sk38, Xdata);
 			break;
 		case 3:
 			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
-			if (!classifyProfileStability(Xdata)) {
+			if (!classifyStability_SchweizerWiesinger(Xdata)) {
 				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
-					    "Profile classification failed! (classifyProfileStability)");
+					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
 			}
 			break;
 	}
@@ -1421,8 +1441,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	if (classify_profile) {
 		// Profile type based on "pattern recognition"; N types out of 10
 		// We assume that we don't need it in Alpine3D
-		if (!recognizeProfileType(Xdata)) {
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (recognizeProfileType)");
+		if (!classifyType_SchweizerLuetschg(Xdata)) {
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (classifyType_SchweizerLuetschg)");
 		}
 	}
 } // End checkStability

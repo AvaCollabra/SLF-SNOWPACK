@@ -84,39 +84,19 @@ class Stability {
 		static const size_t nmax_lemon;
 
 	private:
-
 		void initStability(SnowStation& Xdata);
-		
-		double setHandHardnessBELLAIRE(const ElementData& Edata);
-		double setHandHardnessASARC(const ElementData& Edata);
-		double setHandHardnessMONTI(const ElementData& Edata);
+		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
+		                                   const double& Sk, InstabilityData& SIdata);
 
-		double getHandHardnessMONTI(const int& F, const double& rho, const double& water_content);
-
-		double compCriticalStress(const double& epDotn, const double& T_s);
-
-		double setDeformationRateIndex(ElementData& Edata);
-
-		double compPenetrationDepth(const SnowStation& Xdata);
-
-		void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
-
+		//some helper methods (goal: move them to another class at some point)
+		double getHandHardnessBELLAIRE(const ElementData& Edata);
+		double getHandHardnessASARC(const ElementData& Edata);
+		double getHandHardnessMONTI(const ElementData& Edata);
 		bool setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
 		bool setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
 		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
-
-		double getNaturalStability(const StabilityData& STpar);
-
-		double getLayerSkierStability(const double& depth_lay, const StabilityData& STpar);
-
-		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
-		                                   const double& Sk, InstabilityData& SIdata);
-
-		bool classifyProfileStability(SnowStation& Xdata);
-
-		bool recognizeProfileType(SnowStation& Xdata);
-
+		
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
 		static std::map<std::string, StabMemFn> mapHandHardness;
@@ -126,6 +106,22 @@ class Stability {
 		double hoar_density_buried;
 		bool plastic;
 		bool classify_profile;
+		
+	private:
+		static void classifyStability_SchweizerBellaire(const double& Swl_ssi, const double& Swl_Sk38, SnowStation& Xdata);
+		static void classifyStability_Bellaire(const double& Swl_ssi, SnowStation& Xdata);
+		static void classifyStability_Fierz(const double& Swl_ssi, const size_t& Swl_lemon, const double& Swl_Sk38, SnowStation& Xdata);
+		static bool classifyStability_SchweizerWiesinger(SnowStation& Xdata);
+		static bool classifyType_SchweizerLuetschg(SnowStation& Xdata);
+
+		static double getHandHardnessMONTI(const int& F, const double& rho, const double& water_content, const double& buried_hoar_density);
+		static double compCriticalStress(const double& epDotn, const double& T_s);
+		static double setDeformationRateIndex(ElementData& Edata);
+		static double compPenetrationDepth(const SnowStation& Xdata);
+		static void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
+
+		static double getNaturalStability(const StabilityData& STpar);
+		static double getLayerSkierStability(const double& depth_lay, const StabilityData& STpar);
 };
 
 /**
