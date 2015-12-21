@@ -14,6 +14,7 @@ SET(snowpacklib_sources
 	Saltation.cc
 	Laws_sn.cc
 	Utils.cc
+	StabilityAlgorithms.cc
 	Stability.cc
 	Hazard.cc
 	SnowDrift.cc

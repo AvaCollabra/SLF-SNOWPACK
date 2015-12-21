@@ -20,43 +20,17 @@
 #ifndef STABILITY_H
 #define STABILITY_H
 
-#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
-
-#include <snowpack/Constants.h>
+#include <snowpack/StabilityAlgorithms.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Laws_sn.h>
-#include <vector>
+#include <snowpack/Constants.h>
+
 #include <map>
 #include <string>
 
-/**
- * @class StabilityData
- * @brief Structure of double and integer for shear strength evaluation
- */
-class StabilityData {
-	public:
-		// alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
-		StabilityData(const double& i_psi_ref) : cH(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
-		                                                                  sig_n(Constants::undefined), sig_s(Constants::undefined),
-		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref), cos_psi_ref(cos(i_psi_ref)), sin_psi_ref(sin(i_psi_ref)) {}
-
-		double cH;             ///< Calculated height of snow (m)
-		double Sig_c2;         ///< Element shear strength (kPa)
-		double strength_upper; ///< Shear strength of adjacent upper element
-		double phi;            ///< Correction to normal load
-		double sig_n;          ///< Normal load on upper element node, perpendicular to slope
-		double sig_s;          ///< Shear stress on upper element node, parallel to slope
-		double alpha_max_rad;  ///< Angle from snow surface to peak shear stress, 54.3 at 38 deg
-		double psi_ref;        ///< Reference slope angle in radian, corresponds usually to 38 deg
-		double cos_psi_ref;    ///< Cosine of psi_ref
-		double sin_psi_ref;    ///< Sine of psi_ref
-};
-
 class InstabilityData;
-class Stability;
 
-typedef double (Stability::*StabMemFn)(const ElementData&);
-typedef bool (Stability::*StabFnShearStrength)(const double&, const double&, const mio::Date&,
+typedef double (*StabMemFn)(const ElementData&, const double&);
+typedef bool (*StabFnShearStrength)(const double&, const double&, const mio::Date&,
                                                ElementData&, NodeData&, StabilityData&);
 
 /**
@@ -87,15 +61,6 @@ class Stability {
 		void initStability(SnowStation& Xdata);
 		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
 		                                   const double& Sk, InstabilityData& SIdata);
-
-		//some helper methods (goal: move them to another class at some point)
-		double getHandHardnessBELLAIRE(const ElementData& Edata);
-		double getHandHardnessASARC(const ElementData& Edata);
-		double getHandHardnessMONTI(const ElementData& Edata);
-		bool setShearStrengthDEFAULT(const double& cH, const double& cos_sl, const mio::Date& date,
-		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
-		bool setShearStrengthSTRENGTH_NIED(const double& cH, const double& cos_sl, const mio::Date& date,
-		                             ElementData& Edata, NodeData& Ndata, StabilityData& STpar);
 		
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
@@ -106,24 +71,6 @@ class Stability {
 		double hoar_density_buried;
 		bool plastic;
 		bool classify_profile;
-};
-
-class StabilityAlgorithms {
-	public:
-		static void classifyStability_SchweizerBellaire(const double& Swl_ssi, const double& Swl_Sk38, SnowStation& Xdata);
-		static void classifyStability_Bellaire(const double& Swl_ssi, SnowStation& Xdata);
-		static void classifyStability_Fierz(const double& Swl_ssi, const size_t& Swl_lemon, const double& Swl_Sk38, SnowStation& Xdata);
-		static bool classifyStability_SchweizerWiesinger(SnowStation& Xdata);
-		static bool classifyType_SchweizerLuetschg(SnowStation& Xdata);
-
-		static double getHandHardnessMONTI(const int& F, const double& rho, const double& water_content, const double& buried_hoar_density);
-		static double compCriticalStress(const double& epDotn, const double& T_s);
-		static double setDeformationRateIndex(ElementData& Edata);
-		static double compPenetrationDepth(const SnowStation& Xdata);
-		static void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
-
-		static double getNaturalStability(const StabilityData& STpar);
-		static double getLayerSkierStability(const double& depth_lay, const StabilityData& STpar);
 };
 
 /**
