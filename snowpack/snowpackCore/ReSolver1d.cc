@@ -107,7 +107,7 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
 		BottomBC=SEEPAGEBOUNDARY;
 	}
 
-	//Set lower boundary condition
+	//Set averaging method for hydraulic conductivity at the layer interfaces
 	std::string tmp_avg_method_K;
 	cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
 	if (tmp_avg_method_K=="ARITHMETICMEAN") {
@@ -120,6 +120,9 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
 		K_AverageType=MINIMUMVALUE;
 	} else if (tmp_avg_method_K=="UPSTREAM") {
 		K_AverageType=UPSTREAM;
+	} else {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY).");
+		throw;
 	}
 }
 
