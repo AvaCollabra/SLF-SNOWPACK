@@ -506,14 +506,14 @@
  * @page adding_extra_models Adding extra models
  * Various processes can already be simulated using different models as configured by the user. This result is achieved by providing a specific model of
  * the process of interest, together with the proper entry in a std::map container that links a model keyword with its implementation. In order to look at the
- * required steps, we will take as an example the hand hardness implementation in the Stability class. Please keep in mind that when adding a new model to
+ * required steps, we will take as an example the hand hardness implementation in the StabilityAlgorithms class. Please keep in mind that when adding a new model to
  * a process that already has multiple available choices, only the first and the third steps are required, the other one being already done.
  *
  * @section model_implementation Model implementation
  * A method has to be implemented in the class with the same prototype as the original method. In our example, the original method (setHandHardnessMONTI)
  * has the following prototype:
  * @code
- * double setHandHardnessMONTI(const ElementData& Edata);
+ * double setHandHardnessMONTI(const ElementData& Edata, const double& buried_hoar_density);
  * @endcode
  * so any alternative implementation must use the same prototype. If some parameters would be ignored by some implementation, simply comment out the unused variable:
  * @code
@@ -521,14 +521,14 @@
  * @endcode
  *
  * @section function_pointer Function pointer typedef
- * All these methods sharing the same prototype, a generic function pointer type (actually, a method pointer) can be defined:
+ * All these methods sharing the same prototype, a generic function pointer type can be defined in the Stability class:
  * @code
- * typedef double (Stability::*StabMemFn)(const ElementData&);
+ * typedef double (*StabMemFn)(const ElementData&, const double&);
  * @endcode
  *
  * @section model_map Model map
- * Once an alternative implementation has been written (and properly declared in the header file), it must be "registered" in the model map. In our exmaple, this map
- * is defined in the header %file:
+ * Once an alternative implementation has been written (and properly declared in the "StabilityAlgorithms.h" header %file), it must be "registered" in the model map. In our exmaple, this map
+ * is defined in the "Stability.h" header %file:
  * @code
  * static std::map<std::string, StabMemFn> mapHandHardness;
  * @endcode
@@ -536,9 +536,9 @@
  * @code
  * const bool Stability::__init = Stability::initStaticData();
  * bool Stability::initStaticData() {
- * 	mapHandHardness["MONTI"]    = &Stability::setHandHardnessMONTI;
- * 	mapHandHardness["BELLAIRE"]  = &Stability::setHandHardnessBELLAIRE;
- * 	mapHandHardness["ASARC"]    = &Stability::setHandHardnessASARC;
+ * 	mapHandHardness["MONTI"]    = &StabilityAlgorithms::setHandHardnessMONTI;
+ * 	mapHandHardness["BELLAIRE"]  = &StabilityAlgorithms::setHandHardnessBELLAIRE;
+ * 	mapHandHardness["ASARC"]    = &StabilityAlgorithms::setHandHardnessASARC;
  * 	return true;
  * }
  * @endcode
@@ -557,13 +557,9 @@
  * above (ie. either "DEFAULT" or "MONTI" or "ASARC").
  *
  * @section calling_model Model call
- * Finally, the process model has to be called where needed. A helper macro can be defined as
+ * Finally, the process model has to be called where needed, so each time the hand hardness has to be computed, the call becomes:
  * @code
- * #define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
- * @endcode
- * and in the code, each time the hand hardness has to be computed, the call becomes:
- * @code
- * hardness = CALL_MEMBER_FN(*this, mapHandHardness[hardness_parameterization])(EMS[e]);
+ * hardness = (mapHandHardness[hardness_parameterization]))(EMS[e], hoar_density_buried);
  * @endcode
  *
  */

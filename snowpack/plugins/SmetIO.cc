@@ -19,6 +19,8 @@
 */
 
 #include <snowpack/plugins/SmetIO.h>
+#include <snowpack/Utils.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
 
 using namespace std;
 using namespace mio;

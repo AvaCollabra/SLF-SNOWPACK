@@ -69,6 +69,7 @@ class ReSolver1d {
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
 		BoundaryConditions BottomBC;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
+		K_AverageTypes K_AverageType;				//Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
 
 		double sn_dt;
 		bool useSoilLayers, water_layer;
