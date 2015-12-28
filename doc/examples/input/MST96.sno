@@ -8,11 +8,11 @@ altitude         = 2540.0
 nodata           = -999
 tz               = 1
 source           = WSL-Institute for Snow and Avalanche Research SLF; CFierz, 2011-10
-ProfileDate      = 1995-11-01T00:30
+ProfileDate      = 1996-11-01T00:30
 HS_Last          = 0.0000
 SlopeAngle       = 0.0
 SlopeAzi         = 0.0
-nSoilLayerData   = 0
+nSoilLayerData   = 1
 nSnowLayerData   = 0
 SoilAlbedo       = 0.09
 BareSoil_z0      = 0.200
@@ -24,3 +24,4 @@ ErosionLevel     = 0
 TimeCountDeltaHS = 0.000000
 fields           = timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
 [DATA]
+1980-10-01T00:00 0.50 274 0.0 0.3 0.2 0.5 2800 0.9 2000.0 15 0 0 0 0 0 25 0 0
