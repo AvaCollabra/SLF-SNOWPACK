@@ -190,7 +190,7 @@ double SnLaws::event_wind_highlim = 0.0;
 double SnLaws::min_hn_density = 30.;
 double SnLaws::max_hn_density = 250.0;
 
-const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT", "BUCKET");
+const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT");
 
 /**
  * @brief This function is used to give default values to a bunch of static members of SnLaws
@@ -199,7 +199,7 @@ const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT", "BUCKET");
  *        compSnowViscosity(...)
  * @return always true
  */
-bool SnLaws::setStaticData(const std::string& variant, const std::string& watertransport_model)
+bool SnLaws::setStaticData(const std::string& variant)
 {
 	current_variant = variant;
 
@@ -233,13 +233,7 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 		visc = visc_dflt;
 		visc_ice_fudge = 9.45;
 		visc_sp_fudge = 16.5;
-		if (watertransport_model == "RICHARDSEQUATION" ) {
-			// No sophisticated calibration was performed to find this value. The only issue is that a different water transport scheme leads to different settling behaviour.
-			// This value is chosen such that the melt curves in spring more or less resemble those of simulations with BUCKET.
-			visc_water_fudge = 45.;
-		} else {
-			visc_water_fudge = 33.;
-		}
+		visc_water_fudge = 33.;
 		setfix = false;
 	}
 
@@ -941,7 +935,7 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
                                    const CurrentMeteo& Mdata)
 {
 	if (variant != SnLaws::current_variant)
-		setStaticData(variant, "BUCKET");
+		setStaticData(variant);
 
 	switch (i_event) {
 		case event_wind: {
@@ -1351,11 +1345,11 @@ double SnLaws::snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio
  * @param Edata
  * @param date current
  */
-double SnLaws::compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, const std::string& i_watertransport_model,
+double SnLaws::compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model,
                                  ElementData& Edata, const mio::Date& date)
 {
 	if (variant != SnLaws::current_variant)
-		setStaticData(variant, i_watertransport_model);
+		setStaticData(variant);
 
 	if (i_viscosity_model == "KOJIMA") {
 		return snowViscosityKOJIMA(Edata);
