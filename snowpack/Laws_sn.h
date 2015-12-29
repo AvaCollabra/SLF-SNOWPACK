@@ -103,7 +103,7 @@ class SnLaws {
 		static double loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date& date);
 		static double snowViscosityFudgeDEFAULT(const ElementData& Edata);
 		static double snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date);
-		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model,
+		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, const std::string& i_watertransport_model, 
 		                                ElementData& Edata, const mio::Date& date);
 		static double snowViscosityDEFAULT(ElementData& Edata);
 		static double snowViscosityKOJIMA(const ElementData& Edata);
@@ -118,7 +118,7 @@ class SnLaws {
 		static const bool jordy_new_snow, wind_pump, wind_pump_soil;
 
 	private:
-		static bool setStaticData(const std::string& variant);
+		static bool setStaticData(const std::string& variant, const std::string& watertransportmodel);
 
 		static double newSnowDensityPara(const std::string& i_hn_model,
 		                                 double TA, double TSS, double RH, double VW, double HH);
