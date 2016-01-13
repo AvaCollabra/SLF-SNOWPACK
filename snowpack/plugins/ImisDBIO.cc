@@ -19,6 +19,8 @@
 */
 
 #include <snowpack/plugins/ImisDBIO.h>
+#include <snowpack/Utils.h>
+#include <snowpack/snowpackCore/Aggregate.h>
 
 using namespace std;
 using namespace mio;

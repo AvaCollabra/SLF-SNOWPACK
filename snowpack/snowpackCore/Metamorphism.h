@@ -39,6 +39,8 @@
 #include <map>
 #include <string>
 
+#define CALL_MEMBER_FN(object,ptrToMember)  ((object).*(ptrToMember))
+
 class SnowStation;
 class Metamorphism;
 
