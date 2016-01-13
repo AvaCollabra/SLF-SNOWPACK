@@ -417,7 +417,8 @@
  * - the surface fluxes in a SurfaceFluxes object.
  *
  * In order to initialize some of these objects from data stored in files, a helper class has been designed: SnowpackIO. Of interest are the following calls:
- * SnowpackIO::readSnowCover, SnowpackIO::writeSnowCover, SnowpackIO::writeProfile, SnowpackIO::writeTimeSeries.
+ * SnowpackIO::readSnowCover, SnowpackIO::writeSnowCover, SnowpackIO::writeProfile, SnowpackIO::writeTimeSeries. Please keep in mind that the %Snowpack
+ * parameters are internally always given **perpendicularly to the ground**.
  *
  * In order to compute hazard relevant data, the Hazard class has been designed. The stability data is computed by the Stability class. Some information has
  * to be exchanged between the SnowpackIO object and the Hazard and/or Stability objects. This is handled by the SN_SNOWSOIL_DATA and ZwischenData classes.

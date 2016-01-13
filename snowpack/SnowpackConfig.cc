@@ -88,7 +88,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATER_LAYER"] = "false";
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
-	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";	// Only for use with RE.
+	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";			// Only for use with RE.
+	advancedConfig["AVG_METHOD_HYDRAULIC_CONDUCTIVITY"]="ARITHMETICMEAN";	// Only for use with RE.
 	advancedConfig["ADJUST_HEIGHT_OF_METEO_VALUES"] = "true";
 	advancedConfig["ADJUST_HEIGHT_OF_WIND_VALUE"] = "true";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";

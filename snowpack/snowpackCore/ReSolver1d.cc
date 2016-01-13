@@ -55,7 +55,7 @@ using namespace mio;
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE),
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
              sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -105,6 +105,24 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg)
 		BottomBC=GRAVITATIONALDRAINAGE;
 	} else if (tmp_lb_cond_waterflux=="SEEPAGE") {
 		BottomBC=SEEPAGEBOUNDARY;
+	}
+
+	//Set averaging method for hydraulic conductivity at the layer interfaces
+	std::string tmp_avg_method_K;
+	cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
+	if (tmp_avg_method_K=="ARITHMETICMEAN") {
+		K_AverageType=ARITHMETICMEAN;
+	} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
+		K_AverageType=GEOMETRICMEAN;
+	} else if (tmp_avg_method_K=="HARMONICMEAN") {
+		K_AverageType=HARMONICMEAN;
+	} else if (tmp_avg_method_K=="MINIMUMVALUE") {
+		K_AverageType=MINIMUMVALUE;
+	} else if (tmp_avg_method_K=="UPSTREAM") {
+		K_AverageType=UPSTREAM;
+	} else {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY).");
+		throw;
 	}
 }
 
@@ -690,7 +708,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	//Set parameterization for hydraulic conductivity
 	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
 	//Set how the hydraulic conductivity at the interface nodes should be calculated.
-	const K_AverageTypes K_AVERAGETYPE=ARITHMETICMEAN;	// Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
 
 
 
@@ -1510,7 +1527,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if (i!=uppernode && activelayer[i+1]==true) {
 					//For the rest of the domain, we might have heterogeneous soils, so we have to approximate the hydraulic conductivity at the interface nodes.
 
-					switch (K_AVERAGETYPE) {
+					switch (K_AverageType) {
 						case ARITHMETICMEAN:
 						{
 							k_np1_m_ip12[i]=.5*(K[i]+K[i+1]);
@@ -1526,7 +1543,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						case HARMONICMEAN:
 						{
 							if(K[i]>0. && K[i+1]>0.) {
-								k_np1_m_ip12[i]=2./(1./K[i]+1./K[i+1]);
+								k_np1_m_ip12[i]=((dz[i]+dz[i+1])/(dz[i+1]*K[i]+dz[i]*K[i+1]))*K[i]*K[i+1];
 							} else {
 								k_np1_m_ip12[i]=0.;
 							}
