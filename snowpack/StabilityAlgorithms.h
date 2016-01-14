@@ -24,16 +24,20 @@
 
 /**
  * @class StabilityData
- * @brief Structure of double and integer for shear strength evaluation
+ * @brief Layer shear strength evaluation parameters
  */
 class StabilityData {
 	public:
-		// alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
-		StabilityData(const double& i_psi_ref) : cH(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
+		/** @brief StabilityData constructor. 
+		 * This class contains layer properties useful for the shear strength evaluation.
+		 * @param i_psi_ref slope angle to use for the stability evaluation (in degrees)
+		 * @note alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
+		 */
+		StabilityData(const double& i_psi_ref) : height(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
 		                                                                  sig_n(Constants::undefined), sig_s(Constants::undefined),
-		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref), cos_psi_ref(cos(i_psi_ref)), sin_psi_ref(sin(i_psi_ref)) {}
+		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref*mio::Cst::to_rad), cos_psi_ref(cos(i_psi_ref*mio::Cst::to_rad)), sin_psi_ref(sin(i_psi_ref*mio::Cst::to_rad)) {}
 
-		double cH;             ///< Calculated height of snow (m)
+		double height;             ///< Layer height (m)
 		double Sig_c2;         ///< Element shear strength (kPa)
 		double strength_upper; ///< Shear strength of adjacent upper element
 		double phi;            ///< Correction to normal load
@@ -69,7 +73,7 @@ class StabilityAlgorithms {
 		static void compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar);
 
 		static double getNaturalStability(const StabilityData& STpar);
-		static double getLayerSkierStability(const double& depth_lay, const StabilityData& STpar);
+		static double getLayerSkierStability(const double& penetrationDepth, const double& depth_lay, const StabilityData& STpar);
 };
 
 #endif
