@@ -172,6 +172,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
+		
 		StabilityData  STpar(Stability::psi_ref);
 		STpar.strength_upper = strength_upper; //reset to previous value
 		StabilityAlgorithms::compReducedStresses(EMS[e].C, cos_sl, STpar);

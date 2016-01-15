@@ -92,7 +92,7 @@ printf "\n**** check the mass balance:\n"
 #check the snow water equivalent
 ../../tools/SnExtract.sh ${INPUT_REF} 36 > ${TMP_REF}
 ../../tools/SnExtract.sh ${INPUT_TEST} 36 > ${TMP_NEW}
-compare_result "snow water eq	uiv. (SWE)" "-a .5"
+compare_result "snow water equiv. (SWE)" "-a .5"
 #check the snow rate
 ../../tools/SnExtract.sh ${INPUT_REF} 29 > ${TMP_REF}
 ../../tools/SnExtract.sh ${INPUT_TEST} 29 > ${TMP_NEW}

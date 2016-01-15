@@ -566,16 +566,17 @@ double StabilityAlgorithms::getNaturalStability(const StabilityData& STpar)
  */
 double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const double& depth_lay, const StabilityData& STpar)
 {
-	if ( depth_lay > Constants::eps ) {
+	const double layer_depth = depth_lay - Pk;
+	if ( layer_depth > Constants::eps ) {
+		const double Alpha_max = STpar.alpha_max_rad;
 		const double skier_weight = 85.;
 		const double ski_length = 1.7;
-		const double Alpha_max = STpar.alpha_max_rad;
 		// Skier contribution to shear stress at psi_ref (in rad, corresponds usually to 38 deg)
-		// about 0.1523 kPa / depth_lay at psi_ref = 38 deg and Alpha_max = 54.3 deg
+		// about 0.1523 kPa / layer_depth at psi_ref = 38 deg and Alpha_max = 54.3 deg
 		// double delta_sig = 2. * 0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
 		const double load = skier_weight*Constants::g/ski_length;
 		double delta_sig = 2. * load * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
-		delta_sig /= Constants::pi *  (depth_lay - Pk) * STpar.cos_psi_ref; // in Pa, corrected for penetration depth
+		delta_sig /= Constants::pi *  layer_depth * STpar.cos_psi_ref; // in Pa
 		delta_sig /= 1000.; // convert to kPa
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
