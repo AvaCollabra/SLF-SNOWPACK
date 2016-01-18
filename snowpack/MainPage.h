@@ -18,6 +18,16 @@
 #ifndef MAINPAGE_H
 #define MAINPAGE_H
 
+//groups
+/*! \defgroup postprocessing Post-processing
+   Documentation for all method applied as post-processing, after the profile has been computed.
+*/
+
+/*! \defgroup data_structures Data structures
+   Documentation for the internal data structures.
+*/
+
+
  /**
  * @mainpage Table of content
  * -# External Links
