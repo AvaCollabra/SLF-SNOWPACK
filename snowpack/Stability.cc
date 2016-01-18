@@ -140,16 +140,13 @@ double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, co
 
 
 /**
- * @brief On a beautiful morning in September, with Foehn winds outside and incredibly fresh
- * colors, Michael finally started to implement the Stability thing. He is not con-
- * vinced that it is going to work but still dreams of lying in the sun at the Davos
- * lake. The stability information will be based on a very empirical principle. First
+ * @brief The stability information is based on a very empirical principle. First
  * a distinction is made between "direct action" and "slab" situations. The former
  * have to do with strain weakening during heavy snowfalls or during melt situations.
- * The original Bob intra-layer stability will be adapted for this situation and
- * complemented by the Conway approach. The latter will be handled by an adaptation
+ * The original Bob intra-layer stability has been adapted for this situation and
+ * complemented by the Conway approach. The latter is handled by an adaptation
  * of the Schweizer - Wiesinger profile classification in combination with a more
- * conventional stability index based on critical shear strength values. Halleluja.
+ * conventional stability index based on critical shear strength values.
  * @param Mdata CurrentMeteo
  * @param Xdata Profile
  */
@@ -163,26 +160,29 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	vector<InstabilityData> SIdata(nN); // Parameters for structural instabilities
-	StabilityData  STpar(Stability::psi_ref*mio::Cst::to_rad);        // Stability parameters
-
 	initStability(Xdata);
 	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
 
 	const double Pk = StabilityAlgorithms::compPenetrationDepth(Xdata); // Skier penetration depth
+	double strength_upper = 1001.; //default initial value
 	size_t e = nE; // Counter
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
+		
+		StabilityData  STpar(Stability::psi_ref);
+		STpar.strength_upper = strength_upper; //reset to previous value
 		StabilityAlgorithms::compReducedStresses(EMS[e].C, cos_sl, STpar);
 
 		if ( !(mapShearStrength[strength_model])(Xdata.cH, cos_sl, Mdata.date,
 		                                                               EMS[e], NDS[e+1], STpar)) {
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
+		strength_upper = STpar.strength_upper; //store previous value
 		
-		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl - Pk; // corrected for skier penetration depth Pk.
+		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl;
 		NDS[e+1].S_n = StabilityAlgorithms::getNaturalStability(STpar);
-		NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(depth_lay, STpar);
+		NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
 		if (e < nE-1)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
 		else
