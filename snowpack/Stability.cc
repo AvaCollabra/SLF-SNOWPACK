@@ -140,16 +140,13 @@ double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, co
 
 
 /**
- * @brief On a beautiful morning in September, with Foehn winds outside and incredibly fresh
- * colors, Michael finally started to implement the Stability thing. He is not con-
- * vinced that it is going to work but still dreams of lying in the sun at the Davos
- * lake. The stability information will be based on a very empirical principle. First
+ * @brief The stability information is based on a very empirical principle. First
  * a distinction is made between "direct action" and "slab" situations. The former
  * have to do with strain weakening during heavy snowfalls or during melt situations.
- * The original Bob intra-layer stability will be adapted for this situation and
- * complemented by the Conway approach. The latter will be handled by an adaptation
+ * The original Bob intra-layer stability has been adapted for this situation and
+ * complemented by the Conway approach. The latter is handled by an adaptation
  * of the Schweizer - Wiesinger profile classification in combination with a more
- * conventional stability index based on critical shear strength values. Halleluja.
+ * conventional stability index based on critical shear strength values.
  * @param Mdata CurrentMeteo
  * @param Xdata Profile
  */
@@ -167,8 +164,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
 
 	const double Pk = StabilityAlgorithms::compPenetrationDepth(Xdata); // Skier penetration depth
-	size_t e = nE; // Counter
 	double strength_upper = 1001.; //default initial value
+	size_t e = nE; // Counter
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);

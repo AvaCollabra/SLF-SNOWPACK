@@ -25,19 +25,8 @@
 #include <cmath>
 
 /**
- * @brief class Saltation
- * @author Michael Lehning \n Judith Doorschot
- * @version 9.x
- * @date    -
- * @bug     -
  * @brief This module contains the saltation model of Judith.
- * - 24.08.2000: The new very complicated model. Judith says that it is my fault, if it is wrong. I hope not ..... \n
- *               Make a separate routine to model saltation only.
- * - 26.04.2001: Finally, on the Friday evening before the Swiss Bike Masters event, where Michael was
- *               supposed to start, he also started to implement the last version of Judith's saltation
- *               model. The GRID man Tuan Anh (Nguyen) had arrived and smiled. \n
- * The Gaudergrat experiment GAUDEX was in good shape and almost everything was up and
- * running.
+ * @ingroup postprocessing
  */
 class Saltation {
 	public:

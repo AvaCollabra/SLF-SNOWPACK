@@ -24,20 +24,22 @@
 
 /**
  * @class StabilityData
- * @brief Layer shear strength evaluation parameters
+ * @brief Layer shear strength evaluation parameters. 
+ * This class contains layer properties useful for the shear strength evaluation.
+ * 
+ * @ingroup data_structures
  */
 class StabilityData {
 	public:
 		/** @brief StabilityData constructor. 
-		 * This class contains layer properties useful for the shear strength evaluation.
 		 * @param i_psi_ref slope angle to use for the stability evaluation (in degrees)
 		 * @note alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 		 */
-		StabilityData(const double& i_psi_ref) : height(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
+		StabilityData(const double& i_psi_ref) : thickness(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
 		                                                                  sig_n(Constants::undefined), sig_s(Constants::undefined),
 		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref*mio::Cst::to_rad), cos_psi_ref(cos(i_psi_ref*mio::Cst::to_rad)), sin_psi_ref(sin(i_psi_ref*mio::Cst::to_rad)) {}
 
-		double height;             ///< Layer height (m)
+		double thickness;             ///< Layer thickness (m)
 		double Sig_c2;         ///< Element shear strength (kPa)
 		double strength_upper; ///< Shear strength of adjacent upper element
 		double phi;            ///< Correction to normal load
@@ -49,6 +51,15 @@ class StabilityData {
 		double sin_psi_ref;    ///< Sine of psi_ref
 };
 
+/** @brief Implementations of various algorithms useful for evaluating the stability.
+ * These algorithms fall within the following categories:
+ *    + the structural stability, that selects the potential weak layer, for example the SK38, SSI or Relative Threshold;
+ *    + the stability index, based on a strength/stress relation, such as the natural stability index. This evaluates the stability of a selected layer;
+ *    + the critical crack length that also evaluates the stability of a selected layer, for example the critical cut length or the anti-crack model.
+ *
+ * These methods will then be used by the Stability class to effectively compute the stability for a given profile, according to the user's configuration.
+ * @ingroup postprocessing
+ */
 class StabilityAlgorithms {
 	public:
 		static void classifyStability_SchweizerBellaire(const double& Swl_ssi, const double& Swl_Sk38, SnowStation& Xdata);
