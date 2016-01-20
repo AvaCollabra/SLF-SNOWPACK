@@ -1189,3 +1189,27 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	}
 }
 
+
+/**
+ * @brief Critical cut length: Estimates the critical cut length
+ * @param H_slab Slab depth (m)
+ * @param rho_slab Slab density (kg/m^3)
+ * @param *Edata Xdata->Edata[e-1]
+ * @param STpar
+ * @return return critical cut length (m)
+ */
+double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const ElementData& Edata, const StabilityData& STpar)
+{
+	const double E = 1.873E5 * exp(0.0149*(rho_slab));
+	//const double E = 5.07E9 * (pow((rho_slab/Constants::density_ice), 5.13));
+	const double E_prime = E/(1.-0.2*0.2);	// 0.2 is poisson ratio
+	//const double E_wl = 1.873E5 * exp(0.0149*(Edata.Rho));
+	const double G_wl = 2E5; //E_wl/(2.*(1+0.2));
+	const double lambda = sqrt((E_prime * H_slab * (Edata.L/STpar.cos_psi_ref) * STpar.cos_psi_ref * STpar.cos_psi_ref) / (G_wl));
+	const double crit_length = lambda * ((-1.*STpar.sig_s + sqrt(STpar.sig_s*STpar.sig_s + 2.*STpar.sig_n*(STpar.Sig_c2 - STpar.sig_s)))/(STpar.sig_n));
+	//const double sig_xx = rho_slab * Constants::g * (crit_length / 1.5) * STpar.sin_psi_ref + (3. * rho_slab * Constants::g * (crit_length / 1.5) * (crit_length / 1.5))/H_slab;
+	//const double sig_t = 2.4E5 * pow((rho_slab / Constants::density_ice), 2.44);
+	//Edata.crit_length = (sig_xx > sig_t) ? 6.0 : (crit_length);
+	 
+	return (H_slab < Stability::minimum_slab || crit_length > 1.) ? (1.) : (crit_length);
+}

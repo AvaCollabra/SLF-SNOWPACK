@@ -165,7 +165,12 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	const double Pk = StabilityAlgorithms::compPenetrationDepth(Xdata); // Skier penetration depth
 	double strength_upper = 1001.; //default initial value
-	size_t e = nE; // Counter
+	size_t e = nE;		// Counter
+
+	double H_slab = 0.;	// Slab depth
+	double M_slab = 0.;	// Slab mass
+	if(nE!=0) EMS[nE-1].crit_cut_length = Constants::undefined;
+
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
@@ -187,6 +192,11 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
 		else
 			NDS[nN-1].ssi = SIdata[nN-1].ssi = Stability::max_stability;
+		
+		// Calculate critical cut length
+		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
+		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
+		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, EMS[e-1], STpar);
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices

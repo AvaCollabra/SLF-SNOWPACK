@@ -181,6 +181,7 @@ const bool AsciiIO::t_gnd = false;
  * 0603,nElems,hardness difference (1)
  * 0604,nElems,structural stability index SSI
  * 0605,nElems,inverse texture index ITI (Mg m-4)
+ * 0606,nElems,critical cut length (m)
  *
  * Full profile, labels 1nnn (nodes)
  * 1501,nNodes,height [> 0: top, < 0: bottom of elem.] (cm)
@@ -1304,8 +1305,13 @@ void AsciiIO::writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream 
 			else
 				fout << "," << std::fixed << std::setprecision(1) << 0.;
 		}
+		// 0606: critical cut length (m)
+		fout << "\n0606," << nE-Xdata.SoilNode;
+		for (size_t e = Xdata.SoilNode; e < nE; e++) {
+			fout << "," << std::fixed << std::setprecision(2) << EMS[e].crit_cut_length;
+		}
 	} else {
-		for (size_t jj = 1; jj < 6; jj++) {
+		for (size_t jj = 1; jj < 7; jj++) {
 			fout << "\n060" << jj << ",1,0";
 		}
 	}
@@ -1350,6 +1356,11 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 				fout << "," << std::fixed << std::setprecision(1) << -1.*EMS[e].Rho/(2.*MM_TO_M(EMS[e].rg));
 			else
 				fout << "," << std::fixed << std::setprecision(1) << 0.;
+		}
+		// 0606: critical cut length (m)
+		fout << "\n0606," << nE-Xdata.SoilNode;
+		for (size_t e = Xdata.SoilNode; e < nE; e++) {
+			fout << "," << std::fixed << std::setprecision(2) << EMS[e].crit_cut_length;
 		}
 
 		// 700-profile specials for settling comparison
@@ -1402,7 +1413,7 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 			fout << "," << std::fixed << std::setprecision(2) << 1.e-9*eta_sntherm;
 		}
 	} else {
-		for (size_t jj = 1; jj < 6; jj++) {
+		for (size_t jj = 1; jj < 7; jj++) {
 			fout << "\n060" << jj << ",1,0";
 		}
 		for (size_t jj = 1; jj < 7; jj++) {
@@ -2464,6 +2475,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0603,nElems,hardness difference (1)";
 	fout << "\n0604,nElems,ssi";
 	fout << "\n0605,nElems,inverse texture index ITI (Mg m-4)";
+	fout << "\n0606,nElems,critical cut length (m)";
 	if (variant == "CALIBRATION") {
 		fout << "\n0701,nElems,SNOWPACK: total settling rate (% h-1)";
 		fout << "\n0702,nElems,SNOWPACK: settling rate due to load (% h-1)";
