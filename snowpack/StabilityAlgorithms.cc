@@ -1192,6 +1192,8 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 
 /**
  * @brief Critical cut length: Estimates the critical cut length
+ * @author Johan Gaume, Nander Wever
+ * @date 2016-20-01
  * @param H_slab Slab depth (m)
  * @param rho_slab Slab density (kg/m^3)
  * @param *Edata Xdata->Edata[e-1]
