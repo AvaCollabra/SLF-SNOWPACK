@@ -319,6 +319,7 @@ class ElementData {
 		double s_strength;         ///< Parameterized snow shear strength (kPa)
 		double hard;               ///< Parameterized hand hardness (1)
 		double S_dr;               ///< Stability Index based on deformation rate (Direct Action Avalanching)
+		double crit_cut_length;    ///< Critical cut length (m)
 		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation in snow
 		double lwc_source;         ///< Source/sink term for Richards equation
 		//NIED (H. Hirashima)
