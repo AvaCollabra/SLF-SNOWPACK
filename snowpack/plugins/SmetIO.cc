@@ -228,7 +228,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
 	if (profile_date.isUndef())
-			throw ("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
+		throw ("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -254,11 +254,9 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	return profile_date;
 }
 
+//Read SNO SMET file, parse header and fill SSdata with values from the [DATA] section
 mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata)
 {
-	/*
-	 * Read SNO SMET file, parse header and fill SSdata with values from the [DATA] section
-	*/
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date = read_snosmet_header(sno_reader, stationID, SSdata);
 	if (profile_date.isUndef())
@@ -272,7 +270,6 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 
 	if (SSdata.nLayers > 0)
 		SSdata.Ldata.resize(SSdata.nLayers, LayerData());
-
 	if (vec_timestamp.size() != SSdata.nLayers)
 		throw InvalidFormatException("Xdata: Layers expected != layers read in " + sno_reader.get_filename(), AT);
 
