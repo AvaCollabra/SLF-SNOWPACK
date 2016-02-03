@@ -610,6 +610,11 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				} else {
 					merged=true;
 				}
+				// We never merge snow elements with elements containing soil inside the snowpack (e.g., for snow farming)
+				if (EMS[eUpper-1].theta[SOIL]>Constants::eps) {
+					merged=false;
+				}
+				// After dealing with all possibilities, now finally do the merge:
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
 			} else {										// We are dealing with first snow element above soil
 				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0.) {				// If at least one snow layer above AND this layer above is not marked to be removed yet.

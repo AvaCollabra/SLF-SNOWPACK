@@ -335,7 +335,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 			diff = H_diffuse;
 			Mdata.iswr = dir_h+diff;
 			if (Mdata.iswr>0. && (Mdata.rswr/Mdata.iswr) < (2.0*station.SoilAlb))
-				Mdata.rswr = Mdata.iswr*2.0 * station.SoilAlb;
+				Mdata.rswr = Mdata.iswr * 2.0*station.SoilAlb;
 			else
 				Mdata.rswr = 0.;
 			cfg.addKey("SW_MODE", "Snowpack", "BOTH");  // as both Mdata.iswr and Mdata.rswr were reset
@@ -353,7 +353,7 @@ void Meteo::radiationOnSlope(const SnowStation &sector, const mio::SunObject &su
 {
 	//diff remains the same as on flat field
 	double dir_slope;
-	if(sector.meta.getSlopeAngle() > Constants::min_slope_angle) {
+	if (sector.meta.getSlopeAngle() > Constants::min_slope_angle) {
 		dir_slope = sun.position.getHorizontalOnSlope(sector.meta.getAzimuth(), sector.meta.getSlopeAngle(), Mdata.dir_h, 9.);
 		if ( (Mdata.dir_h+Mdata.diff) > 0. ) {
 			Mdata.iswr = MIN(dir_slope + Mdata.diff, Constants::solcon);

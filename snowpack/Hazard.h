@@ -36,6 +36,10 @@
 
 #include <vector>
 
+/** @brief 
+ *
+ * @ingroup postprocessing
+ */
 class Hazard {
 	public:
 		Hazard(const SnowpackConfig& cfg, const double duration);

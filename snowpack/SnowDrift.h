@@ -33,7 +33,7 @@ class Saltation;
 /**
  * @class SnowDrift
  * @brief This class contains the computation of local snow drift and the associated erosion
- * @version 10.02
+ * @ingroup postprocessing
  */
 class SnowDrift {
 

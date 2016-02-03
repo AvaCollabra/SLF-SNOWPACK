@@ -541,8 +541,8 @@ double StabilityAlgorithms::compPenetrationDepth(const SnowStation& Xdata)
  */
 void StabilityAlgorithms::compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar)
 {
-	STpar.sig_n = -stress*mio::Optim::pow2(STpar.cos_psi_ref/cos_sl)/1000.;
-	STpar.sig_s = (STpar.sig_n)*STpar.sin_psi_ref/STpar.cos_psi_ref;
+	STpar.sig_n = -stress * mio::Optim::pow2(STpar.cos_psi_ref/cos_sl) / 1000.;
+	STpar.sig_s = (STpar.sig_n) * STpar.sin_psi_ref / STpar.cos_psi_ref;
 }
 
 /**
@@ -560,18 +560,23 @@ double StabilityAlgorithms::getNaturalStability(const StabilityData& STpar)
  * @brief Returns the skier stability index Sk reduced to psi_ref (usually 38 deg => Sk_38)
  * The classic skier stability index Sk(psi_ref), using P. Foehn's formula
  * (IAHS No162, 1987, p201) for the skier (load of 85 kg on 1.7 m long skis) induced shear stress.
+ * 
+ * This represents the skier contribution to shear stress at psi_ref and is around 0.1523 kPa / layer_depth 
+ * at psi_ref = 38 deg and Alpha_max = 54.3 deg.
+ * @param Pk Skier penetration depth (m)
  * @param depth_lay Depth of layer to investigate (m)
  * @param STpar
  */
-double StabilityAlgorithms::getLayerSkierStability(const double& depth_lay, const StabilityData& STpar)
+double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const double& depth_lay, const StabilityData& STpar)
 {
-	if ( depth_lay > Constants::eps ) {
+	const double layer_depth = depth_lay - Pk;
+	if ( layer_depth > Constants::eps ) {
 		const double Alpha_max = STpar.alpha_max_rad;
-		// Skier contribution to shear stress at psi_ref (in rad, corresponds usually to 38 deg)
-		// about 0.1523 kPa / depth_lay at psi_ref = 38 deg and Alpha_max = 54.3 deg
-		// double delta_sig = 2. * 0.5 * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
-		double delta_sig = 2. * (85.*Constants::g/1.7) * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
-		delta_sig /= Constants::pi *  depth_lay * STpar.cos_psi_ref; // in Pa
+		const double skier_weight = 85.;
+		const double ski_length = 1.7;
+		const double load = skier_weight*Constants::g/ski_length;
+		double delta_sig = 2. * load * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
+		delta_sig /= Constants::pi *  layer_depth * STpar.cos_psi_ref; // in Pa
 		delta_sig /= 1000.; // convert to kPa
 		// Limit skier stability index to range {0.05, Stability::max_stability}
 		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
@@ -1058,8 +1063,8 @@ bool StabilityAlgorithms::setShearStrengthDEFAULT(const double& cH, const double
 	}
 
 	// Final assignements
-	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	Edata.s_strength = Sig_c2;
+	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
 
@@ -1167,8 +1172,8 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
-	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	Edata.s_strength = Sig_c2;
+	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
 	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
 
@@ -1184,3 +1189,29 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	}
 }
 
+
+/**
+ * @brief Critical cut length: Estimates the critical cut length
+ * @author Johan Gaume, Nander Wever
+ * @date 2016-20-01
+ * @param H_slab Slab depth (m)
+ * @param rho_slab Slab density (kg/m^3)
+ * @param *Edata Xdata->Edata[e-1]
+ * @param STpar
+ * @return return critical cut length (m)
+ */
+double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const ElementData& Edata, const StabilityData& STpar)
+{
+	const double E = 1.873E5 * exp(0.0149*(rho_slab));
+	//const double E = 5.07E9 * (pow((rho_slab/Constants::density_ice), 5.13));
+	const double E_prime = E/(1.-0.2*0.2);	// 0.2 is poisson ratio
+	//const double E_wl = 1.873E5 * exp(0.0149*(Edata.Rho));
+	const double G_wl = 2E5; //E_wl/(2.*(1+0.2));
+	const double lambda = sqrt((E_prime * H_slab * (Edata.L/STpar.cos_psi_ref) * STpar.cos_psi_ref * STpar.cos_psi_ref) / (G_wl));
+	const double crit_length = lambda * ((-1.*STpar.sig_s + sqrt(STpar.sig_s*STpar.sig_s + 2.*STpar.sig_n*(STpar.Sig_c2 - STpar.sig_s)))/(STpar.sig_n));
+	//const double sig_xx = rho_slab * Constants::g * (crit_length / 1.5) * STpar.sin_psi_ref + (3. * rho_slab * Constants::g * (crit_length / 1.5) * (crit_length / 1.5))/H_slab;
+	//const double sig_t = 2.4E5 * pow((rho_slab / Constants::density_ice), 2.44);
+	//Edata.crit_length = (sig_xx > sig_t) ? 6.0 : (crit_length);
+	 
+	return (H_slab < Stability::minimum_slab || crit_length > 1.) ? (1.) : (crit_length);
+}
