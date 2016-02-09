@@ -84,8 +84,12 @@ class StabilityAlgorithms {
 
 		static double getNaturalStability(const StabilityData& STpar);
 		static double getLayerSkierStability(const double& penetrationDepth, const double& depth_lay, const StabilityData& STpar);
+		static bool getRelativeThresholdSum(SnowStation& Xdata);
 		
 		static double CriticalCutLength(const double& H_slab, const double& rho_slab, const double& cos_sl, const ElementData& Edata, const StabilityData& STpar);
+		
+	private:
+		static bool normalizeLemon(std::vector<double>& vecData);
 };
 
 #endif

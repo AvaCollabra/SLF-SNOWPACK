@@ -63,6 +63,8 @@ class Stability {
 		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
 		                                   const double& Sk, InstabilityData& SIdata);
 		
+		static void findWeakLayer(const double& Pk, const std::vector<InstabilityData>& SIdata, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon);
+		
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
 		static std::map<std::string, StabMemFn> mapHandHardness;
@@ -71,7 +73,7 @@ class Stability {
 		std::string strength_model, hardness_parameterization;
 		double hoar_density_buried;
 		bool plastic;
-		bool classify_profile;
+		bool classify_profile, multi_layer_sk38, RTA_ssi;
 };
 
 /**

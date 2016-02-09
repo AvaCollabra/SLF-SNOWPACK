@@ -68,10 +68,12 @@ bool Stability::initStaticData()
 
 Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
            : strength_model(), hardness_parameterization(), hoar_density_buried(IOUtils::nodata), plastic(false),
-             classify_profile(i_classify_profile)
+             classify_profile(i_classify_profile), multi_layer_sk38(false), RTA_ssi(false)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_PARAMETERIZATION", "SnowpackAdvanced", hardness_parameterization);
+	cfg.getValue("MULTI_LAYER_SK38", "SnowpackAdvanced", multi_layer_sk38); //HACK: temporary key until we decide for a permanent solution
+	cfg.getValue("SSI_IS_RTA", "SnowpackAdvanced", RTA_ssi); //HACK: temporary key until we decide for a permanent solution
 
 	const map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_parameterization);
 	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness parameterization: "+hardness_parameterization, AT);
@@ -167,7 +169,6 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	double strength_upper = 1001.; //default initial value
 	size_t e = nE;		// Counter
 
-	std::vector<double> YoungModule(nE, Constants::undefined);
 	double H_slab = 0.;	// Slab depth
 	double M_slab = 0.;	// Slab mass
 	double hi_Ei = 0.; //this is the denominator of the multi layer Young's modulus
@@ -194,7 +195,15 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl;
 		NDS[e+1].S_n = StabilityAlgorithms::getNaturalStability(STpar);
-		NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
+		if (!multi_layer_sk38) {
+			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
+		} else {		//compute the multi-layer equivalent depth
+			const double E_cbrt = pow(EMS[e].E, 1./3.);
+			hi_Ei += H_slab * E_cbrt;
+			h_tot += H_slab;
+			const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
+			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
+		}
 		if (e < nE-1)
 			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
 		else
@@ -202,26 +211,60 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		
 		// Calculate critical cut length
 		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
-		
-		//compute the multi-layer equivalent depth
-		const double E_cbrt = pow(EMS[e].E, 1./3.);
-		hi_Ei += H_slab * E_cbrt;
-		h_tot += H_slab;
-		//const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
-		//NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
+	double Swl_ssi, Swl_Sk38;
+	size_t Swl_lemon;
+	Stability::findWeakLayer(Pk, SIdata, Xdata, Swl_ssi, Swl_Sk38, Swl_lemon);
+	if (RTA_ssi) StabilityAlgorithms::getRelativeThresholdSum(Xdata); //HACK: overwrite the Ndata.ssi with the RTA
+
+	switch (Stability::prof_classi) {
+		case 0:
+			StabilityAlgorithms::classifyStability_Bellaire(Swl_ssi, Xdata);
+			break;
+		case 1:
+			StabilityAlgorithms::classifyStability_SchweizerBellaire(Swl_ssi, Swl_Sk38, Xdata);
+			break;
+		case 2:
+			StabilityAlgorithms::classifyStability_SchweizerBellaire2(Swl_ssi, Swl_lemon, Swl_Sk38, Xdata);
+			break;
+		case 3:
+			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
+			if (!StabilityAlgorithms::classifyStability_SchweizerWiesinger(Xdata)) {
+				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
+					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
+			}
+			break;
+	}
+
+	if (classify_profile) {
+		// Profile type based on "pattern recognition"; N types out of 10
+		// We assume that we don't need it in Alpine3D
+		if (!StabilityAlgorithms::classifyType_SchweizerLuetschg(Xdata)) {
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (classifyType_SchweizerLuetschg)");
+		}
+	}
+}
+
+void Stability::findWeakLayer(const double& Pk, const std::vector<InstabilityData>& SIdata, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon)
+{
+	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
+	// Dereference the element pointer containing micro-structure data
+	const size_t nN = Xdata.getNumberOfNodes();
+	const size_t nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	
 	// Initialize
-	size_t Swl_lemon = 0; // Lemon counter
-	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
-	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
+	Swl_lemon = 0; // Lemon counter
+	double Swl_d, Swl_n, zwl_d, zwl_n, zwl_ssi, zwl_Sk38; // Temporary weak layer markers
 	Swl_d = Swl_n = Swl_ssi = Swl_Sk38 = INIT_STABILITY;
 	zwl_d = zwl_n = zwl_ssi = zwl_Sk38 = Xdata.cH;
 
 	// Natural and "deformation rate" Stability Index
 	// Discard Stability::minimum_slab (in m) at surface
-	e = nE;
+	size_t e = nE;
 	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab)) {};
 	if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
 	
@@ -284,31 +327,5 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		Xdata.S_s = Stability::max_stability; Xdata.z_S_s = Xdata.cH;
 		Xdata.S_4 = SIdata[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
 	}
+}
 
-	switch (Stability::prof_classi) {
-		case 0:
-			StabilityAlgorithms::classifyStability_Bellaire(Swl_ssi, Xdata);
-			break;
-		case 1:
-			StabilityAlgorithms::classifyStability_SchweizerBellaire(Swl_ssi, Swl_Sk38, Xdata);
-			break;
-		case 2:
-			StabilityAlgorithms::classifyStability_SchweizerBellaire2(Swl_ssi, Swl_lemon, Swl_Sk38, Xdata);
-			break;
-		case 3:
-			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
-			if (!StabilityAlgorithms::classifyStability_SchweizerWiesinger(Xdata)) {
-				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
-					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
-			}
-			break;
-	}
-
-	if (classify_profile) {
-		// Profile type based on "pattern recognition"; N types out of 10
-		// We assume that we don't need it in Alpine3D
-		if (!StabilityAlgorithms::classifyType_SchweizerLuetschg(Xdata)) {
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (classifyType_SchweizerLuetschg)");
-		}
-	}
-} // End checkStability

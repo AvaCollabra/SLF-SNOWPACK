@@ -585,6 +585,123 @@ double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const doubl
 	}
 }
 
+bool StabilityAlgorithms::normalizeLemon(std::vector<double>& vecData)
+{
+	if (vecData.empty()) return false;
+	const double mean = mio::Interpol1D::arithmeticMean( vecData );
+	const double std_dev = mio::Interpol1D::std_dev( vecData );
+	if (std_dev==IOUtils::nodata || std_dev==0.) return false;
+	
+	for (size_t ii=0; ii<vecData.size(); ii++) {
+		vecData[ii] = (vecData[ii] - mean) / std_dev;
+	}
+	return true;
+}
+
+/**
+ * @brief Returns the Relative Threshold Sum approach  (RTA) weak layer. 
+ * This is according to Monti, Fabiano, and Jürg Schweizer, <i>"A relative difference 
+ * approach to detect potential weak layers within a snow profile"</i>, 2013, Proceedings ISSW.
+ * @param EMS all the element data for all the layers
+ * @return false if error, true otherwise
+ */
+bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
+{
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	const size_t nE = EMS.size();
+	size_t e = nE;
+	
+	const double cos_sl = Xdata.cos_sl;
+	const double hs_top = (NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z) / cos_sl;
+	std::vector<double> vecRG, vecRG_diff, vecHard, vecHard_diff, vecTypes;
+	std::vector<double> weibull, crust_index;
+	
+	double crust_coeff = 0.;
+	while (e-- > Xdata.SoilNode) {
+		NDS[ e ].ssi = 0.; //initialize with 0 so layers that can not get computed don't t in the way
+		
+		vecRG.push_back( EMS[e].rg );
+		vecRG_diff.push_back( fabs(EMS[e-1].rg - EMS[e].rg) );
+		vecHard.push_back( EMS[e].hard );
+		vecHard_diff.push_back( fabs(EMS[e+1].hard - EMS[e].hard) );
+		
+		//grain types receive a score depending on their primary and secondary forms
+		const unsigned short int primary = static_cast<unsigned short int>( EMS[e].type / 100 %100 );
+		const unsigned short int secondary = static_cast<unsigned short int>( EMS[e].type / 10 %10 );
+		const bool primary_is_persistent = (primary==4 || primary==5 || primary==6 || primary==9);
+		const bool secondary_is_persistent = (secondary==4 || secondary==5 || secondary==6 || secondary==9);
+		if (primary_is_persistent && secondary_is_persistent)
+			vecTypes.push_back( 1. );
+		else if (!primary_is_persistent && !secondary_is_persistent)
+			vecTypes.push_back( 0. );
+		else
+			vecTypes.push_back( .5 );
+		
+		//compute the weibull function for the depth from the top
+		const double layer_depth = hs_top - (NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z)/cos_sl;
+		const double w1 = 2.5;
+		const double w2 = 50.;
+		const double weibull_depth = (w1/w2) * pow(layer_depth, w1-1.) * exp( -1*pow(layer_depth/w2, w1) );
+		
+		//compute crust factor
+		const bool crust_cond = (EMS[e].L>=1. && EMS[e].hard>=3 );
+		const double crust_value = (crust_cond)? exp( -(hs_top -  (NDS[e+1].z+NDS[e+1].u - NDS[Xdata.SoilNode].z)/cos_sl/20. ) ) : 0.;
+		crust_coeff += crust_value;
+		weibull.push_back( weibull_depth - crust_coeff ); //store the weibull corrected for the crust coefficient
+	}
+	
+	//calculate the normalization parameters
+	if (!normalizeLemon(vecRG)) return false;
+	const double RG_min = mio::Interpol1D::min_element( vecRG );
+	const double RG_max = mio::Interpol1D::max_element( vecRG );
+	if (RG_min==RG_max) return false;
+	
+	if (!normalizeLemon(vecRG_diff)) return false;
+	const double RG_diff_min = mio::Interpol1D::min_element( vecRG_diff );
+	const double RG_diff_max = mio::Interpol1D::max_element( vecRG_diff );
+	if (RG_diff_min==RG_diff_max) return false;
+	
+	if (!normalizeLemon(vecHard)) return false;
+	const double hard_min = mio::Interpol1D::min_element( vecHard );
+	const double hard_max = mio::Interpol1D::max_element( vecHard );
+	if (hard_min==hard_max) return false;
+	
+	if (!normalizeLemon(vecHard_diff)) return false;
+	const double hard_diff_min = mio::Interpol1D::min_element( vecHard_diff );
+	const double hard_diff_max = mio::Interpol1D::max_element( vecHard_diff );
+	if (hard_diff_min==hard_diff_max) return false;
+	
+	if (!normalizeLemon(vecTypes)) return false;
+	const double type_min = mio::Interpol1D::min_element( vecTypes );
+	const double type_max = mio::Interpol1D::max_element( vecTypes );
+	if (type_min==type_max) return false;
+	
+	const double dp_min = mio::Interpol1D::min_element( weibull );
+	const double dp_max = mio::Interpol1D::max_element( weibull );
+	if (dp_min==dp_max) return false;
+	
+	vector<double> index;
+	double max_index = 0.;
+	for (size_t ii=0; ii<vecRG.size(); ii++) {
+		const double RG_norm = (vecRG[ii] - RG_min) / (RG_max - RG_min);
+		const double RG_diff_norm = (vecRG_diff[ii] - RG_diff_min) / (RG_diff_max - RG_diff_min);
+		const double hard_norm = 1. - (vecHard[ii] - hard_min) / (hard_max - hard_min);
+		const double hard_diff_norm = (vecHard_diff[ii] - hard_diff_min) / (hard_diff_max - hard_diff_min);
+		const double type_norm = (vecTypes[ii] - type_min) / (type_max - type_min);
+		const double dp_norm = (weibull[ii] - dp_min) / (dp_max - dp_min);
+		
+		index.push_back( RG_norm + RG_diff_norm + hard_norm + hard_diff_norm + type_norm + dp_norm );
+		if (index.back()>max_index) max_index = index.back();
+	}
+	
+	for (size_t ii=0; ii<vecRG.size(); ii++) {
+		NDS[ nE - ii ].ssi = index[ii] / max_index;
+	}
+	
+	return true;
+}
+
 /**
  * @brief Returns the Profile Stability Classification (Schweizer-Wiesinger Method)
  * @param Xdata
