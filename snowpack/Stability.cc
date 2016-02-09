@@ -196,7 +196,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		// Calculate critical cut length
 		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
 		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
-		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, EMS[e-1], STpar);
+		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices

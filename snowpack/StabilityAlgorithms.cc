@@ -535,14 +535,14 @@ double StabilityAlgorithms::compPenetrationDepth(const SnowStation& Xdata)
 
 /**
  * @brief Computes normal and shear stresses (kPa) reduced to psi_ref
- * @param STpar
  * @param stress Overload perpendicular to slope (Pa)
  * @param cos_sl Cosine of slope angle (1)
+ * @param STpar
  */
 void StabilityAlgorithms::compReducedStresses(const double& stress, const double& cos_sl, StabilityData& STpar)
 {
-	STpar.sig_n = -stress * mio::Optim::pow2(STpar.cos_psi_ref/cos_sl) / 1000.;
-	STpar.sig_s = (STpar.sig_n) * STpar.sin_psi_ref / STpar.cos_psi_ref;
+	STpar.sig_n = -stress * mio::Optim::pow2( STpar.cos_psi_ref/cos_sl ) / 1000.;
+	STpar.sig_s = STpar.sig_n * STpar.sin_psi_ref / STpar.cos_psi_ref;
 }
 
 /**
@@ -1197,19 +1197,30 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
  * @param H_slab Slab depth (m)
  * @param rho_slab Slab density (kg/m^3)
  * @param *Edata Xdata->Edata[e-1]
+ * @param cos_sl cosinus of the simulated slope angle
  * @param STpar
  * @return return critical cut length (m)
  */
-double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const ElementData& Edata, const StabilityData& STpar)
+double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const double& cos_sl, const ElementData& Edata, const StabilityData& STpar)
 {
-	const double E = 1.873E5 * exp(0.0149*(rho_slab));
-	//const double E = 5.07E9 * (pow((rho_slab/Constants::density_ice), 5.13));
-	const double E_prime = E/(1.-0.2*0.2);	// 0.2 is poisson ratio
-	//const double E_wl = 1.873E5 * exp(0.0149*(Edata.Rho));
-	const double G_wl = 2E5; //E_wl/(2.*(1+0.2));
-	const double lambda = sqrt((E_prime * H_slab * (Edata.L/STpar.cos_psi_ref) * STpar.cos_psi_ref * STpar.cos_psi_ref) / (G_wl));
-	const double crit_length = lambda * ((-1.*STpar.sig_s + sqrt(STpar.sig_s*STpar.sig_s + 2.*STpar.sig_n*(STpar.Sig_c2 - STpar.sig_s)))/(STpar.sig_n));
-	//const double sig_xx = rho_slab * Constants::g * (crit_length / 1.5) * STpar.sin_psi_ref + (3. * rho_slab * Constants::g * (crit_length / 1.5) * (crit_length / 1.5))/H_slab;
+	const double sin_sl = sqrt( 1. - mio::Optim::pow2(cos_sl) );
+	const double D = H_slab;
+	const double tau_p = STpar.Sig_c2;
+	const double tau_g = STpar.sig_s * sin_sl / STpar.sin_psi_ref;
+	const double sigma_n = STpar.sig_n * cos_sl / STpar.cos_psi_ref;
+	const double E = 1.873e5 * exp(0.0149*(rho_slab)); //Young's modulus
+	//const double E = 5.07e9 * (pow((rho_slab/Constants::density_ice), 5.13));
+	
+	const double E_prime = E / (1. - 0.2*0.2);	// 0.2 is poisson ratio
+	const double G_wl = 2e5;
+	const double Dwl = Edata.L * STpar.cos_psi_ref; //project the layer thickness to the slopw normal
+	const double lambda = sqrt( (E_prime * D * Dwl) / (G_wl) );
+	const double sqrt_arg = Optim::pow2(tau_g) + 2.*sigma_n*(tau_p - tau_g);
+	if (sqrt_arg<0.) return 0.;
+	const double crit_length = lambda * (-tau_g + sqrt(sqrt_arg)) / sigma_n;
+	
+	//this will be needed to compute the propagation distance
+	//const double sig_xx = rho_slab * Constants::g * (crit_length / 1.5) * STpar.sin_psi_ref + (3. * rho_slab * Constants::g * (crit_length / 1.5) * (crit_length / 1.5))/D;
 	//const double sig_t = 2.4E5 * pow((rho_slab / Constants::density_ice), 2.44);
 	//Edata.crit_length = (sig_xx > sig_t) ? 6.0 : (crit_length);
 	 
