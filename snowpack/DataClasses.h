@@ -320,7 +320,7 @@ class ElementData {
 		double QIntmf;             ///< Apparent change in internal energy due to phase change (caused by difference in heat capacity of water and ice)
 		double dEps, Eps, Eps_e, Eps_v;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION): Eps_e is elastic and Eps_v is viscous
 		double Eps_Dot, Eps_vDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, Eps/sn_dt)
-		//double E;                  ///< Young's modulus of elasticity (Pa)
+		double E;                  ///< Young's modulus of elasticity (Pa)
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress
 		double C;                  ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output
 		double CDot;               ///< Stress rate (Pa s-1), that is the overload change rate

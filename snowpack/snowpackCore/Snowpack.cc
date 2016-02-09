@@ -1331,7 +1331,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	elem.dth_w=0.0; // change of water content
 	elem.Qmf=0.0;   // change of energy due to phase changes
 	// Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-	elem.dEps = elem.Eps = elem.Eps_e = elem.Eps_v = 0.0;
+	elem.E = elem.dEps = elem.Eps = elem.Eps_e = elem.Eps_v = 0.0;
 	elem.Eps_Dot = elem.Eps_vDot=0.0; // Total Strain Rate (Simply E/sn_dt)
 	elem.S=0.0; // Total Element Stress
 	elem.CDot = 0.; // loadRate
@@ -1568,7 +1568,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				const double dL = -hoar/(EMS[nOldE-1].Rho);
 				EMS[nOldE-1].L0 = EMS[nOldE-1].L = L0 + dL;
 
-				EMS[nOldE-1].Eps = EMS[nOldE-1].dEps = EMS[nOldE-1].Eps_e = EMS[nOldE-1].Eps_v = EMS[nOldE-1].S = 0.0;
+				EMS[nOldE-1].E = EMS[nOldE-1].Eps = EMS[nOldE-1].dEps = EMS[nOldE-1].Eps_e = EMS[nOldE-1].Eps_v = EMS[nOldE-1].S = 0.0;
 				const double Theta0 = EMS[nOldE-1].theta[ICE];
 				EMS[nOldE-1].theta[ICE] *= L0/EMS[nOldE-1].L;
 				EMS[nOldE-1].theta[ICE] += -hoar/(Constants::density_ice*EMS[nOldE-1].L);

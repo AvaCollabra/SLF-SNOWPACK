@@ -559,7 +559,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			EMS[e].M += ddL * EMS[e].Rho;
 			assert(EMS[e].M>=0.); //mass must be positive
 			EMS[e].L0 = EMS[e].L += ddL;
-			EMS[e].Eps  = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
+			EMS[e].E  = EMS[e].Eps  = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
 		}
 		// Update the overall height
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;

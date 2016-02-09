@@ -177,12 +177,12 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
-		
 		StabilityData  STpar(Stability::psi_ref);
+		
 		//update slab properties
 		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
 		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
-		//EMS[e].E = ElementData::getYoungModule(M_slab/H_slab, ElementData::Sigrist);
+		EMS[e].E = ElementData::getYoungModule(M_slab/H_slab, ElementData::Sigrist);
 		STpar.strength_upper = strength_upper; //reset to previous value
 		StabilityAlgorithms::compReducedStresses(EMS[e].C, cos_sl, STpar);
 
@@ -204,11 +204,11 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
 		
 		//compute the multi-layer equivalent depth
-		/*const double E_cbrt = pow(EMS[e].E, 1./3.);
-		hi_Ei += H_slab * Ee_cbrt;
+		const double E_cbrt = pow(EMS[e].E, 1./3.);
+		hi_Ei += H_slab * E_cbrt;
 		h_tot += H_slab;
-		const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
-		NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);*/
+		//const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
+		//NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
