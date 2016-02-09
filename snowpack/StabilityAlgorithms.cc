@@ -586,6 +586,42 @@ double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const doubl
 }
 
 /**
+ * @brief Returns the multi-layer skier stability index Sk reduced to psi_ref (usually 38 deg => Sk_38)
+ * See Monti, Gaume, van Herwijnen, and Schweizer, <i>"Snow instability evaluation: calculating 
+ * the skier-induced stress in a multi-layered snowpack"</i>, Nat. Hazards Earth Syst. Sci. Discuss., 
+ * <b>3</b>, 2015, pp 4833-4869, doi:10.5194/nhessd-3-4833-2015..
+ * 
+ * @param Pk Skier penetration depth (m)
+ * @param depth_lay Depth of layer to investigate (m)
+ * @param STpar
+ */
+/*double StabilityAlgorithms::getMultiLayerSkierStability(const double& Pk, const double& depth_lay, const StabilityData& STpar) //const double rho
+{
+	//compute Young's modulus for the current layer
+	
+	
+	//compute the multi-layer equivalent Young's modulus
+	
+	
+	
+	
+	const double layer_depth = depth_lay - Pk;
+	if ( layer_depth > Constants::eps ) {
+		const double Alpha_max = STpar.alpha_max_rad;
+		const double skier_weight = 85.;
+		const double ski_length = 1.7;
+		const double load = skier_weight*Constants::g/ski_length;
+		double delta_sig = 2. * load * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
+		delta_sig /= Constants::pi *  layer_depth * STpar.cos_psi_ref; // in Pa
+		delta_sig /= 1000.; // convert to kPa
+		// Limit skier stability index to range {0.05, Stability::max_stability}
+		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
+	} else {
+		return(Stability::max_stability); // strictly speaking, Sk is not defined
+	}
+}*/
+
+/**
  * @brief Returns the Profile Stability Classification (Schweizer-Wiesinger Method)
  * @param Xdata
  * @return false if error, true otherwise
@@ -1208,8 +1244,7 @@ double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double
 	const double tau_p = STpar.Sig_c2;
 	const double tau_g = STpar.sig_s * sin_sl / STpar.sin_psi_ref;
 	const double sigma_n = STpar.sig_n * cos_sl / STpar.cos_psi_ref;
-	const double E = 1.873e5 * exp(0.0149*(rho_slab)); //Young's modulus
-	//const double E = 5.07e9 * (pow((rho_slab/Constants::density_ice), 5.13));
+	const double E = ElementData::getYoungModule(rho_slab, ElementData::Exp);
 	
 	const double E_prime = E / (1. - 0.2*0.2);	// 0.2 is poisson ratio
 	const double G_wl = 2e5;
@@ -1217,6 +1252,7 @@ double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double
 	const double lambda = sqrt( (E_prime * D * Dwl) / (G_wl) );
 	const double sqrt_arg = Optim::pow2(tau_g) + 2.*sigma_n*(tau_p - tau_g);
 	if (sqrt_arg<0.) return 0.;
+	
 	const double crit_length = lambda * (-tau_g + sqrt(sqrt_arg)) / sigma_n;
 	
 	//this will be needed to compute the propagation distance
