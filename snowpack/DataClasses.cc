@@ -138,7 +138,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	coordin_num = Edata.N3;
 	marker = static_cast<short int>(Edata.mk%100);
 	type = Edata.type;
-	v_strain_rate = fabs(Edata.EvDot);
+	v_strain_rate = fabs(Edata.Eps_vDot);
 	hard = Edata.hard;
 }
 
@@ -748,7 +748,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
-                             dE(0.), E(0.), Ee(0.), Ev(0.), EDot(0.), EvDot(0.),
+                             dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.) {}
 
@@ -795,12 +795,13 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	os.write(reinterpret_cast<const char*>(&data.Qmf), sizeof(data.Qmf));
 
-	os.write(reinterpret_cast<const char*>(&data.dE), sizeof(data.dE));
+	os.write(reinterpret_cast<const char*>(&data.dEps), sizeof(data.dEps));
+	os.write(reinterpret_cast<const char*>(&data.Eps), sizeof(data.Eps));
+	os.write(reinterpret_cast<const char*>(&data.Eps_e), sizeof(data.Eps_e));
+	os.write(reinterpret_cast<const char*>(&data.Eps_v), sizeof(data.Eps_v));
+	os.write(reinterpret_cast<const char*>(&data.Eps_Dot), sizeof(data.Eps_Dot));
+	os.write(reinterpret_cast<const char*>(&data.Eps_vDot), sizeof(data.Eps_vDot));
 	os.write(reinterpret_cast<const char*>(&data.E), sizeof(data.E));
-	os.write(reinterpret_cast<const char*>(&data.Ee), sizeof(data.Ee));
-	os.write(reinterpret_cast<const char*>(&data.Ev), sizeof(data.Ev));
-	os.write(reinterpret_cast<const char*>(&data.EDot), sizeof(data.EDot));
-	os.write(reinterpret_cast<const char*>(&data.EvDot), sizeof(data.EvDot));
 
 	os.write(reinterpret_cast<const char*>(&data.S), sizeof(data.S));
 	os.write(reinterpret_cast<const char*>(&data.C), sizeof(data.C));
@@ -862,12 +863,13 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	is.read(reinterpret_cast<char*>(&data.Qmf), sizeof(data.Qmf));
 
-	is.read(reinterpret_cast<char*>(&data.dE), sizeof(data.dE));
+	is.read(reinterpret_cast<char*>(&data.dEps), sizeof(data.dEps));
+	is.read(reinterpret_cast<char*>(&data.Eps), sizeof(data.Eps));
+	is.read(reinterpret_cast<char*>(&data.Eps_e), sizeof(data.Eps_e));
+	is.read(reinterpret_cast<char*>(&data.Eps_v), sizeof(data.Eps_v));
+	is.read(reinterpret_cast<char*>(&data.Eps_Dot), sizeof(data.Eps_Dot));
+	is.read(reinterpret_cast<char*>(&data.Eps_vDot), sizeof(data.Eps_vDot));
 	is.read(reinterpret_cast<char*>(&data.E), sizeof(data.E));
-	is.read(reinterpret_cast<char*>(&data.Ee), sizeof(data.Ee));
-	is.read(reinterpret_cast<char*>(&data.Ev), sizeof(data.Ev));
-	is.read(reinterpret_cast<char*>(&data.EDot), sizeof(data.EDot));
-	is.read(reinterpret_cast<char*>(&data.EvDot), sizeof(data.EvDot));
 
 	is.read(reinterpret_cast<char*>(&data.S), sizeof(data.S));
 	is.read(reinterpret_cast<char*>(&data.C), sizeof(data.C));
@@ -880,6 +882,28 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
 	return is;
+}
+
+double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& model)
+{
+	switch (model) {
+		case Sigrist: {//This is the parametrization by Sigrist, 2006
+			const double A = 968.e6; //in Pa
+			const double E = A * pow( rho_slab/Constants::density_ice, 2.94 ); //in Pa
+			return E;
+		}
+		case Pow: {
+			const double E = 5.07e9 * (pow((rho_slab/Constants::density_ice), 5.13));
+			return E;
+		}
+		case Exp: {
+			const double E = 1.873e5 * exp(0.0149*(rho_slab));
+			return E;
+		}
+		default:
+			throw mio::UnknownValueException("Selected Young's modulus model has not been implemented", AT);
+	}
+	return IOUtils::nodata;
 }
 
 /**
@@ -1290,8 +1314,9 @@ const std::string ElementData::toString() const
 	os << "\tSoil: density=" << soil[SOIL_RHO] << " Conductivity=" << soil[SOIL_K] << " Capacity=" << soil[SOIL_C] << "\n";
 
 	os << "\tStrains: S=" <<  S << " C=" << C << " s_strength=" << s_strength << "\n";
-	os << "\tStrains: dE=" << dE << " E=" <<  E << " Ee=" <<  Ee << " Ev=" <<  Ev << "\n";
-	os << "\tStrain rates EDot=" <<  EDot << " EvDpt=" <<  EvDot << " CDot=" <<  CDot << "\n";
+	os << "\tStrains: dEps=" << dEps << " Eps=" <<  Eps << " Eps_e=" <<  Eps_e << " Eps_v=" <<  Eps_v << "\n";
+	os << "\tYoung's modulus of elasticity=" << E << "\n";
+	os << "\tStrain rates Eps_Dot=" <<  Eps_Dot << " Eps_vDpt=" <<  Eps_vDot << " CDot=" <<  CDot << "\n";
 	os << "\tStability: S_dr=" << S_dr << " hard=" << hard << " dhf=" << dhf << "\n";
 	os << "</ElementData>\n";
 	return os.str();
@@ -1774,10 +1799,10 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
 			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T) / Edata[e].L;
 			// Creep data
-			Edata[e].E = Edata[e].S = Edata[e].EDot=0.0;
-			Edata[e].Ev = Edata[e].Ee = Edata[e].EvDot=0.0;
+			Edata[e].E = Edata[e].Eps = Edata[e].S = Edata[e].Eps_Dot=0.0;
+			Edata[e].Eps_v = Edata[e].Eps_e = Edata[e].Eps_vDot=0.0;
 			// Very important to initialize the increments in length and strain
-			Edata[e].dE = 0.0;
+			Edata[e].dEps = 0.0;
 			// Volumetric Components
 			Edata[e].theta[SOIL]  = SSdata.Ldata[ll].phiSoil;
 			Edata[e].theta[AIR]   = SSdata.Ldata[ll].phiVoids;
@@ -2072,11 +2097,11 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 			EdataLower.CDot = ( EdataLower.theta[ICE]*L_lower*EdataLower.CDot + EdataUpper.theta[ICE]*L_upper*EdataUpper.CDot ) / (EdataLower.theta[ICE]*L_lower + EdataUpper.theta[ICE]*L_upper);
 		}
 		EdataLower.opticalEquivalentGrainSize();
-		EdataLower.E = EdataLower.Ev;
-		EdataLower.Ee = 0.0; // TODO (very old) Check whether not simply add the elastic
-		                     //                 and viscous strains of the elements and average the stress?
+		EdataLower.Eps = EdataLower.Eps_v; //HACK: why?
+		EdataLower.Eps_e = 0.0; // TODO (very old) Check whether not simply add the elastic
+		                     //                 and viscous strains of the elements and average the stress? E is kept from Lower
 	} else {
-		EdataLower.Ee = EdataLower.E = EdataLower.Ev = EdataLower.dE = 0.0;
+		EdataLower.E = EdataLower.Eps_e = EdataLower.Eps = EdataLower.Eps_v = EdataLower.dEps = 0.0;
 	}
 
 	EdataLower.L0 = EdataLower.L = LNew;

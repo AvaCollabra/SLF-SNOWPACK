@@ -1013,7 +1013,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	} else {
 		fout << "\n0523," << nE-SoilNode;
 		for (size_t e = SoilNode; e < nE; e++)
-			fout << "," << std::fixed << std::setprecision(1) << 1.e6*EMS[e].EvDot;
+			fout << "," << std::fixed << std::setprecision(1) << 1.e6*EMS[e].Eps_vDot;
 	}
 	// 0530: position (cm) and minimum stability indices
 	fout << "\n0530,8";
@@ -1371,7 +1371,7 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 		// 0702: SNOWPACK: reaction to overload (% h-1) //ratio -Sig0 to load EMS[e].C (1)
 		fout << "\n0702," << nE-Xdata.SoilNode;
 		for(size_t e=Xdata.SoilNode; e<nE; e++)
-			fout << "," << std::fixed << std::setprecision(2) << -100.*H_TO_S(EMS[e].EDot);
+			fout << "," << std::fixed << std::setprecision(2) << -100.*H_TO_S(EMS[e].Eps_Dot);
 		// 0703: SNOWPACK: settling rate due to load (% h-1)
 		fout << "\n0703," << nE-Xdata.SoilNode;
 		for (size_t e=Xdata.SoilNode; e<nE; e++)
@@ -1379,7 +1379,7 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 		// 0704: SNOWPACK: total settling rate (% h-1)
 		fout << "\n0704," << nE-Xdata.SoilNode;
 		for (size_t e=Xdata.SoilNode; e<nE; e++)
-			fout << "," << std::fixed << std::setprecision(2) <<  -100.*H_TO_S(EMS[e].EvDot);
+			fout << "," << std::fixed << std::setprecision(2) <<  -100.*H_TO_S(EMS[e].Eps_vDot);
 		// 0705: SNOWPACK: bond to grain ratio (1)
 		fout << "\n0705," << nE-Xdata.SoilNode;
 		for (size_t e=Xdata.SoilNode; e<nE; e++)

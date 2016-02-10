@@ -35,11 +35,10 @@ class StabilityData {
 		 * @param i_psi_ref slope angle to use for the stability evaluation (in degrees)
 		 * @note alpha_max(38.) = 54.3 deg (J. Schweizer, IB 712, SLF)
 		 */
-		StabilityData(const double& i_psi_ref) : thickness(0.0), Sig_c2( Constants::undefined), strength_upper(1001.), phi(0.0), 
+		StabilityData(const double& i_psi_ref) :  Sig_c2(Constants::undefined), strength_upper(1001.), phi(0.0), 
 		                                                                  sig_n(Constants::undefined), sig_s(Constants::undefined),
 		                                                                  alpha_max_rad(54.3*mio::Cst::to_rad), psi_ref(i_psi_ref*mio::Cst::to_rad), cos_psi_ref(cos(i_psi_ref*mio::Cst::to_rad)), sin_psi_ref(sin(i_psi_ref*mio::Cst::to_rad)) {}
 
-		double thickness;             ///< Layer thickness (m)
 		double Sig_c2;         ///< Element shear strength (kPa)
 		double strength_upper; ///< Shear strength of adjacent upper element
 		double phi;            ///< Correction to normal load
@@ -85,8 +84,12 @@ class StabilityAlgorithms {
 
 		static double getNaturalStability(const StabilityData& STpar);
 		static double getLayerSkierStability(const double& penetrationDepth, const double& depth_lay, const StabilityData& STpar);
+		static bool getRelativeThresholdSum(SnowStation& Xdata);
 		
 		static double CriticalCutLength(const double& H_slab, const double& rho_slab, const double& cos_sl, const ElementData& Edata, const StabilityData& STpar);
+		
+	private:
+		static bool normalizeLemon(std::vector<double>& vecData);
 };
 
 #endif

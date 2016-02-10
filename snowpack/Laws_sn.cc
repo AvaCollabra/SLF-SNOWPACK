@@ -1182,21 +1182,21 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 {
 	const double sigTension = 0.11;  // Ice surface tension (N m-2)
 
-	Edata.EDot = 0.;
+	Edata.Eps_Dot = 0.;
 	switch (visc) {
 	case visc_dflt: case visc_cal: case visc_ant:  { // new calibration
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		double sigReac = 15.5 * Edata.CDot * exp(-age/101.);
 		if (Edata.theta[WATER] > SnowStation::thresh_moist_snow)
 			sigReac *= 0.37 * (1. + Edata.theta[WATER]); // 0.2 ; 0.37
-		Edata.EDot = sigReac;
+		Edata.Eps_Dot = sigReac;
 		return sigReac;
 	}
 	case visc_897: { // r897
 		double sigMetamo = 0.;
 		const double age = MAX(0., date.getJulian() - Edata.depositionDate.getJulian());
 		const double sigReac = 15.9 * Edata.CDot * exp(-age/101.); //tst2: 553. //tst1: 735. //
-		Edata.EDot = sigReac;
+		Edata.Eps_Dot = sigReac;
 		if (Edata.dd > Constants::eps /*((Edata->dd < 0.9) && (Edata->dd > 0.3))*/) {
 			sigMetamo = 37.0e3 * Metamorphism::ddRate(Edata); // 2010-10-23
 		}
