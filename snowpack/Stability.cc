@@ -68,10 +68,12 @@ bool Stability::initStaticData()
 
 Stability::Stability(const SnowpackConfig& cfg, const bool& i_classify_profile)
            : strength_model(), hardness_parameterization(), hoar_density_buried(IOUtils::nodata), plastic(false),
-             classify_profile(i_classify_profile)
+             classify_profile(i_classify_profile), multi_layer_sk38(false), RTA_ssi(false)
 {
 	cfg.getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model);
 	cfg.getValue("HARDNESS_PARAMETERIZATION", "SnowpackAdvanced", hardness_parameterization);
+	cfg.getValue("MULTI_LAYER_SK38", "SnowpackAdvanced", multi_layer_sk38); //HACK: temporary key until we decide for a permanent solution
+	cfg.getValue("SSI_IS_RTA", "SnowpackAdvanced", RTA_ssi); //HACK: temporary key until we decide for a permanent solution
 
 	const map<string, StabMemFn>::const_iterator it1 = mapHandHardness.find(hardness_parameterization);
 	if (it1 == mapHandHardness.end()) throw InvalidArgumentException("Unknown hardness parameterization: "+hardness_parameterization, AT);
@@ -110,32 +112,25 @@ void Stability::initStability(SnowStation& Xdata)
  * @param Edata_lower Xdata->Edata[e]
  * @param Edata_upper Xdata->Edata[e+1]
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
- * @param SIdata [e+1]
- * @return SIdata.ssi [e+1]
+ * @param[out] n_lemon 
+ * @return ssi
  */
-double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
-                                              const double& Sk, InstabilityData& SIdata)
+double Stability::initStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
+                                              const double& Sk, unsigned short &n_lemon)
 {
 	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
-	//const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
 
-	SIdata.n_lemon = 0;
-	SIdata.dhard = fabs(Edata_lower.hard - Edata_upper.hard);
-	if ( SIdata.dhard > thresh_dhard ) {
-		SIdata.n_lemon++;
-	}
-	SIdata.dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
-	//double ref_gs= MIN (Edata_lower.rg,Edata_upper.rg);
-	//SIdata.dgsz = (fabs(Edata_lower.rg - Edata_upper.rg))/(ref_gs);
-	if ( SIdata.dgsz > thresh_dgsz ) {
-		SIdata.n_lemon++;
-	}
-	// Skier Stability Index (SSI)
-	SIdata.ssi = static_cast<double>(Stability::nmax_lemon - SIdata.n_lemon) + Sk;
-	// Limit stability index to range {0.05, Stability::max_stability}
-	SIdata.ssi = MAX(0.05, MIN (SIdata.ssi, Stability::max_stability));
-
-	return SIdata.ssi;
+	n_lemon = 0;
+	const double dhard = fabs(Edata_lower.hard - Edata_upper.hard);
+	if ( dhard > thresh_dhard ) n_lemon++;
+	
+	const double dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
+	if ( dgsz > thresh_dgsz ) n_lemon++;
+	
+	// Skier Stability Index (SSI), limit stability index to range {0.05, Stability::max_stability}
+	const double ssi = std::max( 0.05, std::min( Stability::max_stability, static_cast<double>(Stability::nmax_lemon - n_lemon) + Sk ) );
+	
+	return ssi;
 }
 
 
@@ -159,7 +154,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	vector<InstabilityData> SIdata(nN); // Parameters for structural instabilities
+	std::vector<unsigned short> n_lemon(nN, 0.);
 	initStability(Xdata);
 	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
 
@@ -169,13 +164,19 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 
 	double H_slab = 0.;	// Slab depth
 	double M_slab = 0.;	// Slab mass
+	double hi_Ei = 0.; //this is the denominator of the multi layer Young's modulus
+	double h_tot = 0.;
 	if(nE!=0) EMS[nE-1].crit_cut_length = Constants::undefined;
 
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
-		
 		StabilityData  STpar(Stability::psi_ref);
+		
+		//update slab properties
+		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
+		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
+		EMS[e].E = ElementData::getYoungModule(M_slab/H_slab, ElementData::Sigrist);
 		STpar.strength_upper = strength_upper; //reset to previous value
 		StabilityAlgorithms::compReducedStresses(EMS[e].C, cos_sl, STpar);
 
@@ -187,29 +188,76 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl;
 		NDS[e+1].S_n = StabilityAlgorithms::getNaturalStability(STpar);
-		NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
+		if (!multi_layer_sk38) {
+			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
+		} else {		//compute the multi-layer equivalent depth
+			const double E_cbrt = pow(EMS[e].E, 1./3.);
+			hi_Ei += H_slab * E_cbrt;
+			h_tot += H_slab;
+			const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
+			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
+		}
 		if (e < nE-1)
-			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
+			NDS[e+1].ssi = initStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, n_lemon[e+1]);
 		else
-			NDS[nN-1].ssi = SIdata[nN-1].ssi = Stability::max_stability;
+			NDS[nN-1].ssi = Stability::max_stability;
 		
 		// Calculate critical cut length
-		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
-		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
 		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
 	}
 
 	// Now find the weakest point in the stability profiles for natural and skier indices
+	double Swl_ssi, Swl_Sk38;
+	size_t Swl_lemon;
+	Stability::findWeakLayer(Pk, n_lemon, Xdata, Swl_ssi, Swl_Sk38, Swl_lemon);
+	if (RTA_ssi) StabilityAlgorithms::getRelativeThresholdSum(Xdata); //HACK: overwrite the Ndata.ssi with the RTA
+
+	switch (Stability::prof_classi) {
+		case 0:
+			StabilityAlgorithms::classifyStability_Bellaire(Swl_ssi, Xdata);
+			break;
+		case 1:
+			StabilityAlgorithms::classifyStability_SchweizerBellaire(Swl_ssi, Swl_Sk38, Xdata);
+			break;
+		case 2:
+			StabilityAlgorithms::classifyStability_SchweizerBellaire2(Swl_ssi, Swl_lemon, Swl_Sk38, Xdata);
+			break;
+		case 3:
+			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
+			if (!StabilityAlgorithms::classifyStability_SchweizerWiesinger(Xdata)) {
+				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
+					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
+			}
+			break;
+	}
+
+	if (classify_profile) {
+		// Profile type based on "pattern recognition"; N types out of 10
+		// We assume that we don't need it in Alpine3D
+		if (!StabilityAlgorithms::classifyType_SchweizerLuetschg(Xdata)) {
+			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (classifyType_SchweizerLuetschg)");
+		}
+	}
+}
+
+void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_lemon, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon)
+{
+	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
+	// Dereference the element pointer containing micro-structure data
+	const size_t nN = Xdata.getNumberOfNodes();
+	const size_t nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	
 	// Initialize
-	size_t Swl_lemon = 0; // Lemon counter
-	double Swl_d, Swl_n, Swl_ssi, zwl_d, zwl_n, zwl_ssi; // Temporary weak layer markers
-	double Swl_Sk38, zwl_Sk38;       // Temporary weak layer markers
+	Swl_lemon = 0; // Lemon counter
+	double Swl_d, Swl_n, zwl_d, zwl_n, zwl_ssi, zwl_Sk38; // Temporary weak layer markers
 	Swl_d = Swl_n = Swl_ssi = Swl_Sk38 = INIT_STABILITY;
 	zwl_d = zwl_n = zwl_ssi = zwl_Sk38 = Xdata.cH;
 
 	// Natural and "deformation rate" Stability Index
 	// Discard Stability::minimum_slab (in m) at surface
-	e = nE;
+	size_t e = nE;
 	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab)) {};
 	if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
 	
@@ -251,10 +299,10 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
 
-				if ( (Swl_ssi > SIdata[e+1].ssi) || ((fabs(Swl_ssi - SIdata[e+1].ssi) < 0.09) && (SIdata[e+1].n_lemon > Swl_lemon)) ) {
-					Swl_ssi = SIdata[e+1].ssi;
+				if ( (Swl_ssi > NDS[e+1].ssi) || ((fabs(Swl_ssi - NDS[e+1].ssi) < 0.09) && (n_lemon[e+1] > Swl_lemon)) ) {
+					Swl_ssi = NDS[e+1].ssi;
 					zwl_ssi = NDS[e+1].z + NDS[e+1].u ;
-					Swl_lemon = SIdata[e+1].n_lemon;
+					Swl_lemon = n_lemon[e+1];
 					Swl_Sk38 = NDS[e+1].S_s;
 					zwl_Sk38 = NDS[e+1].z + NDS[e+1].u;
 				}
@@ -265,38 +313,12 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		} else {
 			// Assign bottom values to stability indices
 			Xdata.S_s = NDS[Xdata.SoilNode+1].S_s; Xdata.z_S_s = EMS[Xdata.SoilNode].L;
-			Xdata.S_4 = SIdata[Xdata.SoilNode+1].ssi; Xdata.z_S_4 = EMS[Xdata.SoilNode].L;
+			Xdata.S_4 = NDS[Xdata.SoilNode+1].ssi; Xdata.z_S_4 = EMS[Xdata.SoilNode].L;
 		}
 	} else {
 		// Assign top values to stability indices
 		Xdata.S_s = Stability::max_stability; Xdata.z_S_s = Xdata.cH;
-		Xdata.S_4 = SIdata[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
+		Xdata.S_4 = NDS[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
 	}
+}
 
-	switch (Stability::prof_classi) {
-		case 0:
-			StabilityAlgorithms::classifyStability_Bellaire(Swl_ssi, Xdata);
-			break;
-		case 1:
-			StabilityAlgorithms::classifyStability_SchweizerBellaire(Swl_ssi, Swl_Sk38, Xdata);
-			break;
-		case 2:
-			StabilityAlgorithms::classifyStability_SchweizerBellaire2(Swl_ssi, Swl_lemon, Swl_Sk38, Xdata);
-			break;
-		case 3:
-			// Classify in 5 classes based on ideas from Schweizer & Wiesinger
-			if (!StabilityAlgorithms::classifyStability_SchweizerWiesinger(Xdata)) {
-				prn_msg( __FILE__, __LINE__, "wrn", Mdata.date,
-					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
-			}
-			break;
-	}
-
-	if (classify_profile) {
-		// Profile type based on "pattern recognition"; N types out of 10
-		// We assume that we don't need it in Alpine3D
-		if (!StabilityAlgorithms::classifyType_SchweizerLuetschg(Xdata)) {
-			prn_msg( __FILE__, __LINE__, "wrn", Mdata.date, "Profile not classifiable! (classifyType_SchweizerLuetschg)");
-		}
-	}
-} // End checkStability

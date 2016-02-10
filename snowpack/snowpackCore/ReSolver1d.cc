@@ -2847,7 +2847,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
 			NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
 
-			EMS[e].E = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
+			EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
 			EMS[e].theta[ICE] *= L0/EMS[e].L;
 			EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
 			EMS[e].theta[WATER] *= L0/EMS[e].L;

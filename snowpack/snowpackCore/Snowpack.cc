@@ -291,9 +291,9 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 		return false;
 	}
 	// Compute the Natural Strain // Green Lagrange Strain
-	const double E = log(L / L0); // Strain
-	Edata.E = E;
-	if (!(E >= -100. && E <= 1.e-5)) {
+	const double Eps = log(L / L0); // Strain
+	Edata.Eps = Eps;
+	if (!(Eps >= -100. && Eps <= 1.e-5)) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "In strain E (Memory?)");
 		return false;
 	}
@@ -304,10 +304,10 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 	 * in volume change. Otherwise cannot update the volumetric components (which
 	 * might be changed elsewhere) correctly. Update density.
 	*/
-	double ddE = (E - Edata.dE); // Change in axial strain, volumetric strain
-	Edata.dE = E;
-	if (ddE <= -1.5) {
-		ddE = -1.5;
+	double ddEps = (Eps - Edata.dEps); // Change in axial strain, volumetric strain
+	Edata.dEps = Eps;
+	if (ddEps <= -1.5) {
+		ddEps = -1.5;
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Time step is too Large!!!");
 	}
 
@@ -318,7 +318,7 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 	Edata.theta[AIR] = 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL];
 	Edata.checkVolContent();
 	if (!(Edata.theta[AIR] <= 1.0 && Edata.theta[AIR] >= -0.05)) {
-		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata.theta[AIR], ddE);
+		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata.theta[AIR], ddEps);
 		prn_msg(__FILE__, __LINE__, "msg", Date(), "ELEMENT SIZE: L0=%e L=%e", Edata.L0, Edata.L);
 		prn_msg(__FILE__, __LINE__, "msg", Date(), "DENSITY: rho=%e", Edata.Rho);
 		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaICE: ti=%e", Edata.theta[ICE]);
@@ -329,15 +329,15 @@ bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, dou
 	// Compute the self weight of the element (with the present mass)
 	Fe[0] = Fe[1] = -(Edata.M * Constants::g * cos_sl) / 2.;
 	// Compute the elastic strain and stress
-	Edata.Ee = Edata.E - Edata.Ev;
+	Edata.Eps_e = Edata.Eps - Edata.Eps_v;
 	const double D = Edata.snowElasticity(); // Modulus of elasticity
-	const double S = D * Edata.Ee; // Stress
+	const double S = D * Edata.Eps_e; // Stress
 	Edata.S = S;
 	// Compute the internal forces
 	Fi[0] = -S;
 	Fi[1] = S;
 	// Compute the pseudo increment in creep stress
-	const double Sc = D * Edata.EvDot * dt; // Pseudo Creep Stress
+	const double Sc = D * Edata.Eps_vDot * dt; // Pseudo Creep Stress
 	// Compute the creep forces
 	Fc[0] = -Sc;
 	Fc[1] = Sc;
@@ -437,8 +437,8 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 					wind_slab += Metamorphism::wind_slab_enhance * dv;
 				}
 			}
-			EMS[e].EvDot = wind_slab * (EMS[e].C + Sig0) / eta;
-			dL = L0 * sn_dt * EMS[e].EvDot;
+			EMS[e].Eps_vDot = wind_slab * (EMS[e].C + Sig0) / eta;
+			dL = L0 * sn_dt * EMS[e].Eps_vDot;
 
 			// Make sure settling is not larger than the space that is available (basically settling can at most reduce theta[AIR] to 0).
 			// We also leave some room in case all liquid water freezes and thereby expands.
@@ -458,14 +458,14 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			} else {
 				dL = MM_TO_M(-0.1107 * S_TO_D(sn_dt));
 			}
-			EMS[e].EvDot = dL / (L0 * sn_dt);
+			EMS[e].Eps_vDot = dL / (L0 * sn_dt);
 			if ((L0 + dL) < 0. )
 				dL = 0.;
 		}
 
 		if (variant == "CALIBRATION") {
-			NDS[e].f = (Sig0 - EMS[e].EDot) / eta; // sigMetamo
-			EMS[e].EDot /= eta;                    // sigReac
+			NDS[e].f = (Sig0 - EMS[e].Eps_Dot) / eta; // sigMetamo
+			EMS[e].Eps_Dot /= eta;                    // sigReac
 			NDS[e].udot = EMS[e].C / eta;          // Deformation due to load alone
 			EMS[e].S = EMS[e].CDot / EMS[e].C;     // ratio loadrate to load addLoad to load
 		}
@@ -1335,8 +1335,8 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	elem.dth_w=0.0; // change of water content
 	elem.Qmf=0.0;   // change of energy due to phase changes
 	// Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-	elem.dE = elem.E = elem.Ee = elem.Ev = 0.0;
-	elem.EDot = elem.EvDot=0.0; // Total Strain Rate (Simply E/sn_dt)
+	elem.E = elem.dEps = elem.Eps = elem.Eps_e = elem.Eps_v = 0.0;
+	elem.Eps_Dot = elem.Eps_vDot=0.0; // Total Strain Rate (Simply E/sn_dt)
 	elem.S=0.0; // Total Element Stress
 	elem.CDot = 0.; // loadRate
 
@@ -1572,7 +1572,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				const double dL = -hoar/(EMS[nOldE-1].Rho);
 				EMS[nOldE-1].L0 = EMS[nOldE-1].L = L0 + dL;
 
-				EMS[nOldE-1].E = EMS[nOldE-1].dE = EMS[nOldE-1].Ee = EMS[nOldE-1].Ev = EMS[nOldE-1].S = 0.0;
+				EMS[nOldE-1].E = EMS[nOldE-1].Eps = EMS[nOldE-1].dEps = EMS[nOldE-1].Eps_e = EMS[nOldE-1].Eps_v = EMS[nOldE-1].S = 0.0;
 				const double Theta0 = EMS[nOldE-1].theta[ICE];
 				EMS[nOldE-1].theta[ICE] *= L0/EMS[nOldE-1].L;
 				EMS[nOldE-1].theta[ICE] += -hoar/(Constants::density_ice*EMS[nOldE-1].L);

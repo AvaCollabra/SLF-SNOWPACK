@@ -254,6 +254,13 @@ class SN_SNOWSOIL_DATA {
  */
 class ElementData {
 	public:
+		/// This enum provides names for possible Young's modulus calculations
+		typedef enum YOUNG_MODULUS {
+		            Sigrist, ///< Sigrist, 2006
+			    Pow, ///< another power law
+		            Exp ///< exponential law
+		} Young_Modulus;
+		
 		ElementData();
 
 		bool checkVolContent() const;
@@ -275,6 +282,7 @@ class ElementData {
 		unsigned short int getSnowType() const;
 		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const short int& marker,
                         const double& theta_w, const double& res_wat_cont);
+		static double getYoungModule(const double& rho_slab, const Young_Modulus& model);
 
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const ElementData& data);
@@ -311,8 +319,9 @@ class ElementData {
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
 		double QIntmf;             ///< Apparent change in internal energy due to phase change (caused by difference in heat capacity of water and ice)
-		double dE, E, Ee, Ev;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
-		double EDot, EvDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, E/sn_dt)
+		double dEps, Eps, Eps_e, Eps_v;      ///< Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION): Eps_e is elastic and Eps_v is viscous
+		double Eps_Dot, Eps_vDot;        ///< Total Strain Rate, elastic and viscous, respectively (s-1) (Simply, Eps/sn_dt)
+		double E;                  ///< Young's modulus of elasticity (Pa)
 		double S;                  ///< Total Element Stress (Pa), S being the energy conjugate stress
 		double C;                  ///< Total Element Stress (Pa), C being the real or the Cauchy stress, which is output
 		double CDot;               ///< Stress rate (Pa s-1), that is the overload change rate

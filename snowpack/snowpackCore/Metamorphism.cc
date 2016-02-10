@@ -473,7 +473,7 @@ double Metamorphism::PressureSintering(ElementData& Edata)
 	}
 
 	// Bond radius growth rate (mm s-1)
-	const double rbdot = -0.1 * Edata.rb * Edata.EvDot / Edata.neck2VolumetricStrain();
+	const double rbdot = -0.1 * Edata.rb * Edata.Eps_vDot / Edata.neck2VolumetricStrain();
 	// Convert from (mm s-1) to (mm d-1)
 	return D_TO_S(rbdot);
 }

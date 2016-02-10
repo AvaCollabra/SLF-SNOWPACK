@@ -301,7 +301,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			}
 			NDS[nE].z += dL + NDS[nE].u; NDS[nE].u = 0.0;
 			EMS[nE-1].L0 = EMS[nE-1].L = L_top + dL;
-			EMS[nE-1].E = EMS[nE-1].dE = EMS[nE-1].Ee = EMS[nE-1].Ev = EMS[nE-1].S = 0.0;
+			EMS[nE-1].E = EMS[nE-1].Eps = EMS[nE-1].dEps = EMS[nE-1].Eps_e = EMS[nE-1].Eps_v = EMS[nE-1].S = 0.0;
 			EMS[nE-1].theta[ICE] *= L_top/EMS[nE-1].L;
 			EMS[nE-1].theta[ICE] += dM/(Constants::density_ice*EMS[nE-1].L);
 			EMS[nE-1].theta[WATER] *= L_top/EMS[nE-1].L;
@@ -404,7 +404,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 						NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
 						NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
 
-						EMS[e].E = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
+						EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
 						EMS[e].theta[ICE] *= L0/EMS[e].L;
 						EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
 						EMS[e].theta[WATER] *= L0/EMS[e].L;
@@ -452,7 +452,7 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 						NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
 						NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
 
-						EMS[e].E = EMS[e].dE = EMS[e].Ee = EMS[e].Ev = EMS[e].S = 0.0;
+						EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
 						EMS[e].theta[ICE] *= L0/EMS[e].L;
 						EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
 						EMS[e].theta[WATER] *= L0/EMS[e].L;
@@ -756,7 +756,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
 		for (size_t eAbove = e; eAbove < nE; eAbove++) {
 			NDS[eAbove+1].z += dL + NDS[eAbove+1].u;
 			NDS[eAbove+1].u = 0.0;
-			EMS[eAbove].E = EMS[eAbove].dE= EMS[eAbove].Ee=EMS[eAbove].Ev=0.0;
+			EMS[eAbove].E = EMS[eAbove].Eps = EMS[eAbove].dEps= EMS[eAbove].Eps_e=EMS[eAbove].Eps_v=0.0;
 		}
 		EMS[e].L0 = EMS[e].L = L + dL;
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE];
@@ -1143,7 +1143,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	EMS[eTop].L0 = EMS[eTop].L;
 	NDS[nN-1].z += NDS[nN-1].u; NDS[nN-1].u = 0.0;
 	NDS[nN-2].z += NDS[nN-2].u; NDS[nN-2].u = 0.0;
-	EMS[eTop].E = EMS[eTop].dE = EMS[eTop].Ee = EMS[eTop].Ev = EMS[eTop].S = 0.0;
+	EMS[eTop].E = EMS[eTop].Eps = EMS[eTop].dEps = EMS[eTop].Eps_e = EMS[eTop].Eps_v = EMS[eTop].S = 0.0;
 
 	// RUNOFF at bottom of either snowpack or soil
 	if(!useSoilLayers || iwatertransportmodel_soil != RICHARDSEQUATION) {	//Only if lowest element is snow or we do not use RE for soil.
