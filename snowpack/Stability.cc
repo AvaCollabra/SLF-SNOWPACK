@@ -112,32 +112,25 @@ void Stability::initStability(SnowStation& Xdata)
  * @param Edata_lower Xdata->Edata[e]
  * @param Edata_upper Xdata->Edata[e+1]
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
- * @param SIdata [e+1]
- * @return SIdata.ssi [e+1]
+ * @param[out] n_lemon 
+ * @return ssi
  */
-double Stability::setStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
-                                              const double& Sk, InstabilityData& SIdata)
+double Stability::initStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
+                                              const double& Sk, unsigned short &n_lemon)
 {
 	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
-	//const int nmax_lemon = 2; //Maximum number of structural instabilities looked at ("lemons")
 
-	SIdata.n_lemon = 0;
-	SIdata.dhard = fabs(Edata_lower.hard - Edata_upper.hard);
-	if ( SIdata.dhard > thresh_dhard ) {
-		SIdata.n_lemon++;
-	}
-	SIdata.dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
-	//double ref_gs= MIN (Edata_lower.rg,Edata_upper.rg);
-	//SIdata.dgsz = (fabs(Edata_lower.rg - Edata_upper.rg))/(ref_gs);
-	if ( SIdata.dgsz > thresh_dgsz ) {
-		SIdata.n_lemon++;
-	}
-	// Skier Stability Index (SSI)
-	SIdata.ssi = static_cast<double>(Stability::nmax_lemon - SIdata.n_lemon) + Sk;
-	// Limit stability index to range {0.05, Stability::max_stability}
-	SIdata.ssi = MAX(0.05, MIN (SIdata.ssi, Stability::max_stability));
-
-	return SIdata.ssi;
+	n_lemon = 0;
+	const double dhard = fabs(Edata_lower.hard - Edata_upper.hard);
+	if ( dhard > thresh_dhard ) n_lemon++;
+	
+	const double dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
+	if ( dgsz > thresh_dgsz ) n_lemon++;
+	
+	// Skier Stability Index (SSI), limit stability index to range {0.05, Stability::max_stability}
+	const double ssi = std::max( 0.05, std::min( Stability::max_stability, static_cast<double>(Stability::nmax_lemon - n_lemon) + Sk ) );
+	
+	return ssi;
 }
 
 
@@ -161,7 +154,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	vector<InstabilityData> SIdata(nN); // Parameters for structural instabilities
+	std::vector<unsigned short> n_lemon(nN, 0.);
 	initStability(Xdata);
 	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
 
@@ -205,9 +198,9 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
 		}
 		if (e < nE-1)
-			NDS[e+1].ssi = setStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, SIdata[e+1]);
+			NDS[e+1].ssi = initStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, n_lemon[e+1]);
 		else
-			NDS[nN-1].ssi = SIdata[nN-1].ssi = Stability::max_stability;
+			NDS[nN-1].ssi = Stability::max_stability;
 		
 		// Calculate critical cut length
 		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
@@ -216,7 +209,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	// Now find the weakest point in the stability profiles for natural and skier indices
 	double Swl_ssi, Swl_Sk38;
 	size_t Swl_lemon;
-	Stability::findWeakLayer(Pk, SIdata, Xdata, Swl_ssi, Swl_Sk38, Swl_lemon);
+	Stability::findWeakLayer(Pk, n_lemon, Xdata, Swl_ssi, Swl_Sk38, Swl_lemon);
 	if (RTA_ssi) StabilityAlgorithms::getRelativeThresholdSum(Xdata); //HACK: overwrite the Ndata.ssi with the RTA
 
 	switch (Stability::prof_classi) {
@@ -247,7 +240,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	}
 }
 
-void Stability::findWeakLayer(const double& Pk, const std::vector<InstabilityData>& SIdata, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon)
+void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_lemon, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon)
 {
 	const double cos_sl = Xdata.cos_sl; // Cosine of slope angle
 	// Dereference the element pointer containing micro-structure data
@@ -306,10 +299,10 @@ void Stability::findWeakLayer(const double& Pk, const std::vector<InstabilityDat
 			while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < (Pk + Stability::skier_depth)) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
 				// Skier Stability Index: find minimum OR consider number of structural instabilities in case of near equalities
 
-				if ( (Swl_ssi > SIdata[e+1].ssi) || ((fabs(Swl_ssi - SIdata[e+1].ssi) < 0.09) && (SIdata[e+1].n_lemon > Swl_lemon)) ) {
-					Swl_ssi = SIdata[e+1].ssi;
+				if ( (Swl_ssi > NDS[e+1].ssi) || ((fabs(Swl_ssi - NDS[e+1].ssi) < 0.09) && (n_lemon[e+1] > Swl_lemon)) ) {
+					Swl_ssi = NDS[e+1].ssi;
 					zwl_ssi = NDS[e+1].z + NDS[e+1].u ;
-					Swl_lemon = SIdata[e+1].n_lemon;
+					Swl_lemon = n_lemon[e+1];
 					Swl_Sk38 = NDS[e+1].S_s;
 					zwl_Sk38 = NDS[e+1].z + NDS[e+1].u;
 				}
@@ -320,12 +313,12 @@ void Stability::findWeakLayer(const double& Pk, const std::vector<InstabilityDat
 		} else {
 			// Assign bottom values to stability indices
 			Xdata.S_s = NDS[Xdata.SoilNode+1].S_s; Xdata.z_S_s = EMS[Xdata.SoilNode].L;
-			Xdata.S_4 = SIdata[Xdata.SoilNode+1].ssi; Xdata.z_S_4 = EMS[Xdata.SoilNode].L;
+			Xdata.S_4 = NDS[Xdata.SoilNode+1].ssi; Xdata.z_S_4 = EMS[Xdata.SoilNode].L;
 		}
 	} else {
 		// Assign top values to stability indices
 		Xdata.S_s = Stability::max_stability; Xdata.z_S_s = Xdata.cH;
-		Xdata.S_4 = SIdata[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
+		Xdata.S_4 = NDS[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
 	}
 }
 

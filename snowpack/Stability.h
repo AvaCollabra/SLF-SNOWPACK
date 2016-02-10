@@ -60,10 +60,10 @@ class Stability {
 
 	private:
 		void initStability(SnowStation& Xdata);
-		double setStructuralStabilityIndex(const ElementData& Edata_low, const ElementData& Edata_up,
-		                                   const double& Sk, InstabilityData& SIdata);
+		static double initStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
+                                              const double& Sk, unsigned short &n_lemon);
 		
-		static void findWeakLayer(const double& Pk, const std::vector<InstabilityData>& SIdata, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon);
+		static void findWeakLayer(const double& Pk, std::vector<unsigned short>& n_lemon, SnowStation& Xdata, double &Swl_ssi, double &Swl_Sk38, size_t &Swl_lemon);
 		
 		static const bool __init;    ///<helper variable to enable the init of static collection data
 		static bool initStaticData();///<initialize the static containers
@@ -74,20 +74,6 @@ class Stability {
 		double hoar_density_buried;
 		bool plastic;
 		bool classify_profile, multi_layer_sk38, RTA_ssi;
-};
-
-/**
- * @class InstabilityData
- * @brief double and integer values to pinpoint structural instability
- */
-class InstabilityData {
-	public:
-		InstabilityData() : n_lemon(0), dhard(0.0), dgsz(0.0), ssi(Stability::max_stability) {}
-
-		size_t n_lemon;  ///< Number of "lemons" found
-		double dhard;    ///< Difference in hardness
-		double dgsz;     ///< Difference in grain size
-		double ssi;      ///< Sk38 + structural instabilities (dhard & dgsz)
 };
 
 #endif //End of Stability.h
