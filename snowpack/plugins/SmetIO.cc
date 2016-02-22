@@ -66,11 +66,11 @@ using namespace mio;
  * <tr><th>rb</th><td>bond radius [mm]</td></tr>
  * <tr><th>dd</th><td>dendricity [0-1]</td></tr>
  * <tr><th>sp</th><td>spericity [0-1]</td></tr>
- * <tr><th>mk</th><td>marker</td></tr>
+ * <tr><th>mk</th><td>marker, see Metamorphism.cc</td></tr>
  * <tr><th>mass_hoar</th><td>mass of surface hoar []</td></tr>
  * <tr><th>ne</th><td>number of elements</td></tr>
- * <tr><th>CDot</th><td> </td></tr>
- * <tr><th>metamo</th><td> </td></tr>
+ * <tr><th>CDot</th><td>stress change rate (initialize with 0.)</td></tr>
+ * <tr><th>metamo</th><td>currently unused</td></tr>
  * <tr><th> <br></th><td> </td></tr>
  * </table></td></tr>
  * </table></center>
