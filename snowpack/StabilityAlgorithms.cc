@@ -602,7 +602,7 @@ bool StabilityAlgorithms::normalizeLemon(std::vector<double>& vecData)
  * @brief Returns the Relative Threshold Sum approach  (RTA) weak layer. 
  * This is according to Monti, Fabiano, and Jürg Schweizer, <i>"A relative difference 
  * approach to detect potential weak layers within a snow profile"</i>, 2013, Proceedings ISSW.
- * @param EMS all the element data for all the layers
+ * @param Xdata all the element and node data for all the layers
  * @return false if error, true otherwise
  */
 bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
