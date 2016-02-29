@@ -150,20 +150,12 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
-	if (!snowpath.empty()) {
-		o_snowpath = snowpath;
-	} else {
-		o_snowpath = outpath;
-	}
+	o_snowpath = (!snowpath.empty())? snowpath : outpath;
 
 	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
 	snowpath = string();
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
-	if (!snowpath.empty()) {
-		i_snowpath = snowpath;
-	} else {
-		i_snowpath = inpath;
-	}
+	i_snowpath = (!snowpath.empty())? snowpath : inpath;
 }
 
 /**
