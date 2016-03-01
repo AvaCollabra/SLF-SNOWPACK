@@ -541,8 +541,14 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		// Since we need temperature gradients above and below the element we have to consider various cases for the kinetic grain growth
 		if ( e > 0 && e < nE-1 ) { // inner element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e+1].gradT);
-		} else if ( e == 0 ) {// bottom element: use twice EMS[e].gradT to avoid troubles if nE=1
-			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e].gradT);
+		} else if ( e == 0 ) { // bottom element
+			if ( nE == 1 ) {
+				// bottom element: use EMS[e].gradT twice in case nE=1
+				rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e].gradT);
+			} else {
+				// bottom element in other cases
+				rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e+1].gradT);
+			}
 		} else {// top element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT);
 		}
@@ -758,9 +764,15 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		// Since we need temperature gradients above and below the element we have to consider various cases for the kinetic grain growth
 		if ( e > 0 && e < nE-1 ) { // inner element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e+1].gradT);
-		} else if ( e == 0 ) { // bottom element: use twice EMS[e].gradT to avoid troubles if nE=1
-			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e].gradT);
-		} else { // top element
+		} else if ( e == 0 ) { // bottom element
+			if ( nE == 1 ) {
+				// bottom element: use EMS[e].gradT twice in case nE=1
+				rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e].gradT);
+			} else {
+				// bottom element in other cases
+				rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e+1].gradT);
+			}
+		} else {// top element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT);
 		}
 		rgDotMax = MAX (0.0, rgDotMax);
@@ -847,12 +859,18 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					if ( dPdZ > Metamorphism::mm_tg_dpdz ) {
 						rbDot = TGBondRate( EMS[e] );
 						// Since we need temperature gradients above and below the element we have to be careful for the grain growth
-						if (e > 0 && e < nE-1) {
-							rgDot = TGGrainRate( EMS[e], T1, T2, EMS[e-1].gradT, EMS[e+1].gradT );
-						} else if ( e == 0 ) {
-							rgDot = TGGrainRate( EMS[e], T1, T2, EMS[e].gradT, EMS[e+1].gradT );
-						}	else {
-							rgDot = TGGrainRate( EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT );
+						if (e > 0 && e < nE-1) { // inner element
+							rgDot = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e+1].gradT);
+						} else if ( e == 0 ) { // bottom element
+							if ( nE == 1 ) {
+								// bottom element: use EMS[e].gradT twice in case nE=1
+								rgDot = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e].gradT);
+							} else {
+								// bottom element in other cases
+								rgDot = TGGrainRate(EMS[e], T1, T2, EMS[e].gradT, EMS[e+1].gradT);
+							}
+						} else {
+							rgDot = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT);
 							// rgDot = mm_TGGrainRate( &EMS[e] );  Thorstens Formulation
 						}
 						if ( rgDot < 0.0 ) {

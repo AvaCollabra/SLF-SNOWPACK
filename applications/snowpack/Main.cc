@@ -460,7 +460,7 @@ inline void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bo
 
 	const double cAlbedo = Xdata.Albedo;
 
-	if(iswr_is_net) {
+	if (iswr_is_net) {
 		const double netSW = Mdata.iswr;
 		if(netSW==0.) { //this should only happen at night
 			Mdata.iswr = 0.;
@@ -747,10 +747,10 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("VW_AVG::COPY", "Input", "VW");
 		cfg.addKey("RH_AVG::COPY", "Input", "RH");
 
-		cfg.addKey("VW_AVG::filter1", "Filters", "mean_avg");
-		cfg.addKey("VW_AVG::arg1", "Filters", "soft 101 360000");
-		cfg.addKey("RH_AVG::filter1", "Filters", "mean_avg");
-		cfg.addKey("RH_AVG::arg1", "Filters", "soft 101 360000");
+		cfg.addKey("VW_AVG::filter1", "Filters", "AGGREGATE");
+		cfg.addKey("VW_AVG::arg1", "Filters", "MEAN soft 101 360000");
+		cfg.addKey("RH_AVG::filter1", "Filters", "AGGREGATE");
+		cfg.addKey("RH_AVG::arg1", "Filters", "MEAN soft 101 360000");
 	}
 
 	const std::string tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
@@ -783,16 +783,16 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		// we need various average values of tss and hs, all for "past" windows (left)
 		// Require at least one value per 3 hours
 		cfg.addKey("TSS_A24H::COPY", "Input", "TSS");
-		cfg.addKey("TSS_A24H::filter1", "Filters", "mean_avg");
-		cfg.addKey("TSS_A24H::arg1", "Filters", "left 48 86340"); //TODO change # data required to 4
+		cfg.addKey("TSS_A24H::filter1", "Filters", "AGGREGATE");
+		cfg.addKey("TSS_A24H::arg1", "Filters", "MEAN left 48 86340"); //TODO change # data required to 4
 
 		cfg.addKey("TSS_A12H::COPY", "Input", "TSS");
-		cfg.addKey("TSS_A12H::filter1", "Filters", "mean_avg");
-		cfg.addKey("TSS_A12H::arg1", "Filters", "left 24 43140"); //TODO change # data required to 2
+		cfg.addKey("TSS_A12H::filter1", "Filters", "AGGREGATE");
+		cfg.addKey("TSS_A12H::arg1", "Filters", "MEAN left 24 43140"); //TODO change # data required to 2
 
 		cfg.addKey("HS_A3H::COPY", "Input", "HS");
-		cfg.addKey("HS_A3H::filter1", "Filters", "mean_avg");
-		cfg.addKey("HS_A3H::arg1", "Filters", "left 6 10740"); //TODO change # data required to 1
+		cfg.addKey("HS_A3H::filter1", "Filters", "AGGREGATE");
+		cfg.addKey("HS_A3H::arg1", "Filters", "MEAN left 6 10740"); //TODO change # data required to 1
 	}
 }
 
@@ -944,7 +944,7 @@ inline void real_main (int argc, char *argv[])
 			cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "false");
 		const bool read_slope_status = readSlopeMeta(io, snowpackio, cfg, i_stn, slope, current_date, vecSSdata, vecXdata, sn_Zdata, Mdata, wind_scaling_factor, time_count_deltaHS);
 		meteoRead_timer.stop();
-		if(!read_slope_status) continue; //something went wrong, move to the next station
+		if (!read_slope_status) continue; //something went wrong, move to the next station
 
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
@@ -1309,7 +1309,7 @@ int main(int argc, char *argv[]) {
 		real_main(argc, argv);
 	} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
-		return EXIT_FAILURE;
+		throw;
 	}
 
 	return EXIT_SUCCESS;
