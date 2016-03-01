@@ -66,11 +66,11 @@ using namespace mio;
  * <tr><th>rb</th><td>bond radius [mm]</td></tr>
  * <tr><th>dd</th><td>dendricity [0-1]</td></tr>
  * <tr><th>sp</th><td>spericity [0-1]</td></tr>
- * <tr><th>mk</th><td>marker</td></tr>
+ * <tr><th>mk</th><td>marker, see Metamorphism.cc</td></tr>
  * <tr><th>mass_hoar</th><td>mass of surface hoar []</td></tr>
  * <tr><th>ne</th><td>number of elements</td></tr>
- * <tr><th>CDot</th><td> </td></tr>
- * <tr><th>metamo</th><td> </td></tr>
+ * <tr><th>CDot</th><td>stress change rate (initialize with 0.)</td></tr>
+ * <tr><th>metamo</th><td>currently unused</td></tr>
  * <tr><th> <br></th><td> </td></tr>
  * </table></td></tr>
  * </table></center>
@@ -150,20 +150,12 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
-	if (!snowpath.empty()) {
-		o_snowpath = snowpath;
-	} else {
-		o_snowpath = outpath;
-	}
+	o_snowpath = (!snowpath.empty())? snowpath : outpath;
 
 	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
 	snowpath = string();
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
-	if (!snowpath.empty()) {
-		i_snowpath = snowpath;
-	} else {
-		i_snowpath = inpath;
-	}
+	i_snowpath = (!snowpath.empty())? snowpath : inpath;
 }
 
 /**
