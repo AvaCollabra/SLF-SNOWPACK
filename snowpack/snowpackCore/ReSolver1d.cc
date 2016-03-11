@@ -723,7 +723,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 
 
-
 	//
 	// END OF SETTINGS
 	// WARNING: Below this line, changes to initializations are likely to break the code!
