@@ -258,7 +258,7 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 	//num is incremented after each new data is added. It is therefore the index of the next element to write
 	//Hdata has been allocated nr_timesteps elements, but it might be that only num<nr_timesteps have been filled
 	if ((num == 0) || (num > Hdata.size())){
-		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "No hazard data either deleted from or inserted into %s: %d steps while Hdata.size=%d", oracleDB.c_str(), num, Hdata.size());
+		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "%s: No hazard data either deleted from or inserted into %s: %d steps while Hdata.size=%d", stationID.c_str(), oracleDB.c_str(), num, Hdata.size());
 		return false; //nothing to do
 	}
 

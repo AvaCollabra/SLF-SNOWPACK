@@ -58,8 +58,8 @@ using namespace mio;
  * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
  * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
- * <tr><th>Conduc_S</th><td>soil thermal conductivity [w/(mK)]</td></tr>
- * <tr><th>HeatCapac_S</th><td>soil thermal capacity [J/K]</td></tr>
+ * <tr><th>Conduc_S</th><td>mineral phase soil thermal conductivity [w/(mK)]</td></tr>
+ * <tr><th>HeatCapac_S</th><td>mineral phase soil thermal capacity [J/K]</td></tr>
  * </table></td><td><table border="1">
  * <tr><th>Field</th><th>Description</th></tr>
  * <tr><th>rg</th><td>grain radius [mm]</td></tr>
@@ -599,6 +599,7 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
+	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
@@ -611,15 +612,13 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 	stringstream ss; //we use the stringstream to produce strings in desired format
 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
+	smet_writer.set_header_value("tz", date.getTimeZone());
 
 	// Last checked calculated snow depth used for albedo control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
 
-	// Latitude, Longitude, Altitude NOTE:redundant?, Slope Angle, Slope Azimut
-	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
-	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
-	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
+	// Slope metadata
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getSlopeAngle();
 	smet_writer.set_header_value("SlopeAngle", ss.str());
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getAzimuth();

@@ -1069,7 +1069,7 @@ double ElementData::soilFieldCapacity() const
 			}
 		}
 	}
-	return fc;
+	return MIN(1. - theta[SOIL], fc);		// Ensure that the field capacity does not exceed the pore space.
 }
 
 /**
