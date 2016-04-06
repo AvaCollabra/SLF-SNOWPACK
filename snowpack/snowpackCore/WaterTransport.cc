@@ -586,7 +586,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
 					merged=false;
 					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
-					if ((iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {
+					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
 						RichardsEquationSolver1d.surfacefluxrate+=(EMS[eUpper].theta[WATER]*EMS[eUpper].L)/(sn_dt);
 						// We remove water from the element, which is now in surfacefluxrate
 						EMS[eUpper].theta[WATER]=0.;
