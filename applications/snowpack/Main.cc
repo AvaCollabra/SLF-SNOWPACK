@@ -719,7 +719,7 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 	for (size_t sector=slope.first; sector<slope.nSlopes; sector++) {
 		if (vecSSdata[sector].profileDate != vecSSdata[slope.mainStation].profileDate) {
 			prn_msg(__FILE__, __LINE__, "err", mio::Date(),
-				"Date of profile on virtual slope %d inconsistent with flat field %s", sector, vecStationIDs[i_stn].c_str());
+				"%s : Date of profile on virtual slope %d inconsistent with flat field", vecStationIDs[i_stn].c_str(), sector);
 			dates_consistent = false;
 
 		}
@@ -729,9 +729,8 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 	// Do not go ahead if starting time is larger than maxtime!
 	if (vecSSdata[slope.mainStation].profileDate > dateEnd) {
 		prn_msg(__FILE__, __LINE__, "err", mio::Date(),
-			"Starting time (%.5lf) larger than end time(%.5lf), station %s!",
-			vecSSdata[slope.mainStation].profileDate.getJulian(), dateEnd.getJulian(),
-			vecStationIDs[i_stn].c_str());
+			"%s : Starting time (%.5lf) larger than end time(%.5lf)",
+			vecStationIDs[i_stn].c_str(), vecSSdata[slope.mainStation].profileDate.getJulian(), dateEnd.getJulian());
 		return false; //goto next station
 	}
 
