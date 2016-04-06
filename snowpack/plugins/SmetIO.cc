@@ -599,6 +599,7 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
+	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
@@ -611,15 +612,13 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 	stringstream ss; //we use the stringstream to produce strings in desired format
 
 	smet_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
+	smet_writer.set_header_value("tz", date.getTimeZone());
 
 	// Last checked calculated snow depth used for albedo control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
 
-	// Latitude, Longitude, Altitude NOTE:redundant?, Slope Angle, Slope Azimut
-	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
-	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
-	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
+	// Slope metadata
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getSlopeAngle();
 	smet_writer.set_header_value("SlopeAngle", ss.str());
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getAzimuth();
