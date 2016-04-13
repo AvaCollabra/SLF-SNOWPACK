@@ -2729,17 +2729,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				EMS[i].theta[WATER]+=dtheta_w;
 				EMS[i].theta[WATER_PREF]-=dtheta_w;
 			}
-			
+
 			// ... then from preferential flow to matrix to simulate refreezing in [WATER_PREF] according to cold content of the current layer. 
 			const double CC_calc	= ((EMS[i].Rho * 2.106 * (EMS[i].Te - Constants::melting_tk) * EMS[i].L)/334000.)*-1.;  // Calculation of ColdContent 
-			const double CC_fract	=  1.;											// Define the fraction of water which shall be moved. This could be determined by pref_flowarea[i] and/or an additional constant.
-			const double CC_move	= ((CC_calc*CC_fract)/(EMS[i].L*1000.));  						// Calculate the amount of water moved to matrix in % vol.
-			
+			const double CC_fract	=  MAX(MIN((0.0001111*sn_dt*(EMS[i].k[TEMPERATURE])*pref_flowarea[i]),1.),0.);		// 0.01111% of cold content shall be transferred to matrix part per timestep (per second)
+			const double CC_move	= ((CC_calc*CC_fract)/(EMS[i].L*1000.))-(theta_d[i]);  					// Calculate the amount of water moved to matrix in % vol. minus theta_d[i] which is supposed to stay in WATER_PREF
+
 			// Make sure that theta[WATER_PREF] is not negative and do the actual transfer!
 			const double dtheta_w  = MAX(0., MIN(EMS[i].theta[WATER_PREF], CC_move));
 			EMS[i].theta[WATER]+=dtheta_w;
 			EMS[i].theta[WATER_PREF]-=dtheta_w;
-			
 			
 		} else {	// For soil
 			const double pref_threshold=0.;
