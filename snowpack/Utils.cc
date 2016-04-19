@@ -207,7 +207,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 							prn_msg(__FILE__, __LINE__, "msg-", Date(), "No *.%s file(s) to erase", ext.c_str());
 						}
 					}
-				} else if ((jj == 0) && IOUtils::fileExists(fname)) {
+				} else if ((jj == 0) && FileUtils::fileExists(fname)) {
 					prn_msg(__FILE__, __LINE__, "msg-", Date(), "Data in *.%s file(s) may be overwritten", ext.c_str());
 				}
 			}
