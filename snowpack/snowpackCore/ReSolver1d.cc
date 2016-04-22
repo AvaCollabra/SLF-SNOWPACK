@@ -2690,7 +2690,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				// First snow layer should not put water in soil directly
 				const double matrix_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
 				if(EMS[i].theta[WATER]>matrix_threshold) {
-					const double dtheta_w=MAX(0., (EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L));
+					const double dtheta_w=MAX(0., (EMS[i].theta[WATER]-matrix_threshold));
 					EMS[i].theta[WATER_PREF]+=dtheta_w;
 					EMS[i].theta[WATER]-=dtheta_w;
 				}
