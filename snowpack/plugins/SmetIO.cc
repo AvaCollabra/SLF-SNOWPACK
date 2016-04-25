@@ -172,7 +172,7 @@ bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /
 		snofilename += ".sno";
 	}
 
-	return IOUtils::fileExists(snofilename);
+	return FileUtils::fileExists(snofilename);
 }
 
 /**
@@ -197,7 +197,7 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 	}
 
 	const Date sno_date = read_snosmet(snofilename, stationID, SSdata);
-	if (IOUtils::fileExists(hazfilename)) {
+	if (FileUtils::fileExists(hazfilename)) {
 		const Date haz_date = read_hazsmet(hazfilename, Zdata);
 		if (haz_date != sno_date)
 			throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
