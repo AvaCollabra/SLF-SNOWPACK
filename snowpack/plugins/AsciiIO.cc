@@ -406,7 +406,7 @@ bool AsciiIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
 		snofilename += ".snoold";
 	}
 
-	return IOUtils::fileExists(snofilename);
+	return FileUtils::fileExists(snofilename);
 }
 
 /**
@@ -863,7 +863,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 
 	//Check whether file exists, if so check whether data can be appended
 	//or file needs to be deleted
-	if (IOUtils::fileExists(filename)) {
+	if (FileUtils::fileExists(filename)) {
 		const bool append = appendFile(filename, i_date, "pro");
 		if (!append && remove(filename.c_str()) != 0)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
@@ -1437,7 +1437,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& i_date, const SnowStation& Xdata,
 
 	//Check whether file exists, if so check whether data can be appended
 	//or file needs to be deleted
-	if (IOUtils::fileExists(filename)) {
+	if (FileUtils::fileExists(filename)) {
 		const bool append = appendFile(filename, i_date, "prf");
 		if (!append && remove(filename.c_str()) != 0)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());
@@ -1836,7 +1836,7 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	if (fin.fail()) throw AccessException(filename, AT);
 	if (fout.fail()) throw AccessException(filename_tmp, AT);
 
-	const char eoln = IOUtils::getEoln(fin); //get the end of line character for the file
+	const char eoln = FileUtils::getEoln(fin); //get the end of line character for the file
 
 	try {
 		bool append_possible = false; //the temporary file will be copied
@@ -1853,7 +1853,7 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 		fout.close();
 
 		if (append_possible)
-			IOUtils::copy_file(filename_tmp, filename);
+			FileUtils::copy_file(filename_tmp, filename);
 
 		remove(filename_tmp.c_str()); //delete temporary file
 
@@ -1906,7 +1906,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	const double cos_sl = Xdata.cos_sl;
 
 	//Check whether file exists, if so check whether data can be appended or file needs to be deleted
-	if (IOUtils::fileExists(filename)) {
+	if (FileUtils::fileExists(filename)) {
 		const bool append = appendFile(filename, Mdata.date, "met");
 		if (!append && remove(filename.c_str()) != 0)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Could not work on file %s", filename.c_str());

@@ -247,7 +247,7 @@ bool CaaMLIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
 		snofilename += ".caaml";
 	}
 
-	return IOUtils::fileExists(snofilename);
+	return FileUtils::fileExists(snofilename);
 }
 
 /**
