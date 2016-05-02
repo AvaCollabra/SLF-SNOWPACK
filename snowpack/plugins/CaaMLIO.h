@@ -68,11 +68,6 @@ class CaaMLIO : public SnowpackIOInterface {
 		void init(const SnowpackConfig& cfg);
 		void openIn_CAAML(const std::string& in_snowfile);
 		void closeIn_CAAML() throw();
-// 		bool parseStationData(const std::string& station_id, const xmlXPathContextPtr& xpathCtx, mio::StationData &sd);
-
-// 		bool parseCaamlData(const mio::Date& dateStart, const mio::Date& dateEnd, const std::string& station_id,
-// 		                    const mio::StationData& sd, const xmlXPathContextPtr& xpathCtx, std::vector<CaamlData> &vecCaaml) const;
-
 		void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const;
 		void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date, smet::SMETWriter& smet_writer) const;
 		void setFormatting(const size_t& nr_solutes, std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
@@ -124,8 +119,8 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string lwc_valToCode(const double val);
 		double hardness_codeToVal(char* code);
 		std::string hardness_valToCode(const double code);
-		double* form_codeToVal(const char* code);
-		std::string form_valToCode(const int var);
+		void form_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
+		std::string form_valToCode(const unsigned int var);
 		std::string form_valToCode_old(const double* var);
 
 };

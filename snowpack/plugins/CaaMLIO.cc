@@ -477,7 +477,7 @@ bool CaaMLIO::getLayersDir()
 
 LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 {
-	char* code;
+	std::string code;
 	
 	LayerData Layer;
 	if (cur->type == XML_ELEMENT_NODE) {
@@ -508,11 +508,9 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 						} else if (!strcmp((const char*) cur_c->name, "lwc")) {
 							Layer.phiWater = lwc_codeToVal((char*) xmlNodeGetContent(cur_c));
 						} else if (!strcmp((const char*) cur_c->name, "grainFormPrimary")) {
-							code = (char*) xmlNodeGetContent(cur_c);
-							const double *form = form_codeToVal(code);
-							Layer.sp = form[0];
-							Layer.dd = form[1];
-							Layer.mk = (unsigned short int) form[2];
+							//code = (char*) xmlNodeGetContent(cur_c);
+							code = string( (char*)xmlNodeGetContent(cur_c) );
+							form_codeToVal(code, Layer.sp, Layer.dd, Layer.mk);
 						}
 					//Treating "grainSize" field
 					} else {
@@ -538,7 +536,7 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 	}
 
 	if (Layer.rg == 0.) {
-	    if (!strcmp(code,"IF")) {
+	    if (code=="IF") {
 		Layer.rg = 3./2.;
 		Layer.rb = 3./8.;
 	    } else {
@@ -669,7 +667,7 @@ void CaaMLIO::setDepositionDates(std::vector<LayerData> &Layers, const Date prof
 			Layers[ii].depositionDate = date;
 		} else {
 			const unsigned int frm = ElementData::snowType(Layers[ii].dd,Layers[ii].sp,Layers[ii].rg,Layers[ii].mk,Layers[ii].phiWater,ElementData::snowResidualWaterContent(Layers[ii].phiIce));
-			const unsigned int a = (int) (frm/100.);
+			const unsigned int a = (unsigned int) (frm/100.);
 			if (ii==0) {
 				if (a==6) {
 					Layers[ii].depositionDate = profileDate;
@@ -843,8 +841,8 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 
 			//const unsigned int frm = ElementData::snowType(Xdata.Edata[ii].dd, Xdata.Edata[ii].sp, Xdata.Edata[ii].rg, Xdata.Edata[ii].mk, Xdata.Edata[ii].theta[WATER],  Xdata.Edata[ii].res_wat_cont);
 			const unsigned int frm = Xdata.Edata[ii].getSnowType();
-			const unsigned int a = (int) (frm/100.);
-			const unsigned int b = (int) ((frm-100*a)/10.);
+			const unsigned int a = (unsigned int) (frm/100.);
+			const unsigned int b = (unsigned int) ((frm-100*a)/10.);
 			//const unsigned int c = (int) (frm-100*a-10*b);
 			xmlWriteElement(writer,(prefix+"grainFormPrimary").c_str(),form_valToCode(a).c_str(),"","");
 			xmlWriteElement(writer,(prefix+"grainFormSecondary").c_str(),form_valToCode(b).c_str(),"","");
@@ -1129,49 +1127,32 @@ std::string CaaMLIO::hardness_valToCode(const double val)
 /**
  * @brief Convert from grain form code to values (sphericity, dendricity, marker)
  * @author Adrien Gaudard
- * @param code Grain form code
- * return Grain form values (sphericity, dendricity, marker)
+ * @param[in] code Grain form code
+ * @param[out] sp sphericity
+ * @param[out] dd dendricity
+ * @param[out] mk micro-structure marker
  */
-double* CaaMLIO::form_codeToVal(const char* code)
+void CaaMLIO::form_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk)
 {
-	double* var = new double[3]; //sp, dd, mk
-
-	if (!strncmp(code,"PP",2)) {
-		var[0] = 0.5;
-		var[1] = 1.;
-		var[2] = 0.;
-	} else if (!strncmp(code,"DF",2)) {
-		var[0] = 0.5;
-		var[1] = 0.5;
-		var[2] = 0.;
-	} else if (!strncmp(code,"RG",2)) {
-		var[0] = 1.;
-		var[1] = 0.;
-		var[2] = 2.;
-	} else if (!strncmp(code,"FC",2)) {
-		var[0] = 0.;
-		var[1] = 0.;
-		var[2] = 1.;
-	} else if (!strncmp(code,"DH",2)) {
-		var[0] = 0.;
-		var[1] = 0.;
-		var[2] = 1.;
-	} else if (!strncmp(code,"SH",2)) {
-		var[0] = 0.;
-		var[1] = 0.;
-		var[2] = 1.;
-	} else if (!strncmp(code,"MF",2)) {
-		var[0] = 1.;
-		var[1] = 0.;
-		var[2] = 2.;
-	} else if (!strncmp(code,"IF",2)) {
-		var[0] = 1.;
-		var[1] = 0.;
-		var[2] = 2.;
+	if (code=="PP") {
+		sp = 0.5; dd = 1.; mk = 0;
+	} else if (code=="DF") {
+		sp = 0.5; dd = 0.5; mk = 0;
+	} else if (code=="RG") {
+		sp = 1.; dd = 0.; mk = 2;
+	} else if (code=="FC") {
+		sp = 0.; dd = 0.; mk = 1;
+	} else if (code=="DH") {
+		sp = 0.; dd = 0.; mk = 1;
+	} else if (code=="SH") {
+		sp = 0.; dd = 0.; mk = 1;
+	} else if (code=="MF") {
+		sp = 1.; dd = 0.; mk = 2;
+	} else if (code=="IF") {
+		sp = 1.; dd = 0.; mk = 2;
 	} else {
 		throw IOException("Unrecognized grain form code.", AT);
 	}
-	return var;
 }
 
 /**
@@ -1180,7 +1161,7 @@ double* CaaMLIO::form_codeToVal(const char* code)
  * @param var Grain form value
  * return Grain form code
  */
-std::string CaaMLIO::form_valToCode(const int var)
+std::string CaaMLIO::form_valToCode(const unsigned int var)
 {
 	if (var == 0) return "PPgp";
 	if (var == 1) return "PP";
