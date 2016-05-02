@@ -317,20 +317,22 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 		getProfiles(*path,len[jj],depths[jj],val[jj]);
 	}
 
-	//Read profile direction
-	const bool reverse = getLayersDir();
-
 	//Read layers
 	xmlNodeSetPtr data = xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer");
 
-	SSdata.nLayers = data->nodeNr;
+	SSdata.nLayers = static_cast<size_t>( data->nodeNr );
 	SSdata.Ldata.resize(SSdata.nLayers, LayerData());
 
 	//Loop on the layer nodes to set their properties
 	jj = 0;
 	if (SSdata.nLayers>0) {
-		for (size_t ii = (reverse?SSdata.nLayers-1:0); ii != (reverse?-1:SSdata.nLayers); ii += (reverse?-1:1), jj++) {
-			SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
+		const bool reverse = getLayersDir(); //Read profile direction
+		if (!reverse) {
+			for (size_t ii = 0; ii < SSdata.nLayers; ii++, jj++)
+				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
+		} else {
+			for (size_t ii = SSdata.nLayers; ii-- > 0; jj++)
+				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
 		}
 	}
 
@@ -386,7 +388,8 @@ Date CaaMLIO::xmlGetDate()
 
 StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 {
-	double x, y, z, slopeAngle, azimuth;
+	double x=IOUtils::nodata, y=IOUtils::nodata, z=IOUtils::nodata;
+	double slopeAngle=IOUtils::nodata, azimuth=IOUtils::nodata;
 	std::string stationName;
 
 	xmlNodeSetPtr data = xmlGetData(StationMetaData_xpath);
@@ -437,7 +440,7 @@ int CaaMLIO::xmlSetVal(const string& xpath, const std::string& property, const i
 {
 	const string path = SnowData_xpath+xpath+":"+property;
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx);
-	int val = IOUtils::nodata;
+	int val = IOUtils::inodata;
 
 	if (xpathObj->nodesetval->nodeNr > 0)
 		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%d", &val);
