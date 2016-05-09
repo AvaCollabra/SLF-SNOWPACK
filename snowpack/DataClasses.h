@@ -279,7 +279,7 @@ class ElementData {
 
 		void snowType();
 		unsigned short int getSnowType() const;
-		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const short int& marker,
+		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const unsigned short int& marker,
                         const double& theta_w, const double& res_wat_cont);
 		static double getYoungModule(const double& rho_slab, const Young_Modulus& model);
 
@@ -679,7 +679,7 @@ class SnowProfileLayer {
 		double sphericity;     ///< 0 to 1         (1)
 		double ogs;            ///< 0 to 100, optical equivalent grain size (mm)
 		double coordin_num;    ///< 0 to 10        (1)
-		short int marker;         ///< 0 to 999       (1)
+		unsigned short int marker;         ///< 0 to 999       (1)
 		short unsigned int type; ///< 0 to 999     (1)
 		double hard;           ///< 0. to 5.       (1)
 
