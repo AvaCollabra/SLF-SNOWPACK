@@ -332,6 +332,7 @@ class ElementData {
 		double crit_cut_length;    ///< Critical cut length (m)
 		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation in snow
 		double lwc_source;         ///< Source/sink term for Richards equation
+		double PrefFlowArea;       ///< Preferential flow path relative area (-)
 		//NIED (H. Hirashima)
 		double dhf;
 };
