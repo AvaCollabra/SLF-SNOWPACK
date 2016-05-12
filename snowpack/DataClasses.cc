@@ -136,7 +136,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	sphericity = Edata.sp;
 	ogs = Edata.ogs; // in mm
 	coordin_num = Edata.N3;
-	marker = static_cast<short int>(Edata.mk%100);
+	marker = static_cast<unsigned short int>( Edata.mk%100 );
 	type = Edata.type;
 	v_strain_rate = fabs(Edata.Eps_vDot);
 	hard = Edata.hard;
@@ -903,7 +903,6 @@ double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& 
 		default:
 			throw mio::UnknownValueException("Selected Young's modulus model has not been implemented", AT);
 	}
-	return IOUtils::nodata;
 }
 
 /**
@@ -1150,16 +1149,16 @@ double ElementData::neck2VolumetricStrain() const
 
 void ElementData::snowType()
 {
-	type = snowType(dd, sp, 2.*rg, static_cast<short int>(mk%100), theta[WATER], res_wat_cont);
+	type = snowType(dd, sp, 2.*rg, static_cast<unsigned short int>(mk%100), theta[WATER], res_wat_cont);
 }
 
 unsigned short int ElementData::getSnowType() const
 {
-	return snowType(dd, sp, 2.*rg, static_cast<short int>(mk%100), theta[WATER], res_wat_cont);
+	return snowType(dd, sp, 2.*rg, static_cast<unsigned short int>(mk%100), theta[WATER], res_wat_cont);
 }
 
 unsigned short int ElementData::snowType(const double& dendricity, const double& sphericity,
-                          const double& grain_size, const short int& marker, const double& theta_w, const double& res_wat_cont)
+                          const double& grain_size, const unsigned short int& marker, const double& theta_w, const double& res_wat_cont)
 {
 	int a=-1,b=-1,c=0;
 

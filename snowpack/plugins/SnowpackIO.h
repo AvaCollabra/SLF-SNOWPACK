@@ -27,12 +27,6 @@
 #include <snowpack/plugins/SnowpackIOInterface.h>
 #include <snowpack/plugins/SmetIO.h>
 #include <snowpack/plugins/AsciiIO.h>
-#ifdef CAAMLIO
-	#include <snowpack/plugins/CaaMLIO.h>
-#endif
-#ifdef IMISDBIO
-	#include <snowpack/plugins/ImisDBIO.h>
-#endif
 
 /**
  * @page snowpackio Snowpack data formats
@@ -116,13 +110,13 @@ class SnowpackIO : public SnowpackIOInterface {
 
 	private:
 #ifdef IMISDBIO
-		ImisDBIO *imisdbio;
+		SnowpackIOInterface *imisdbio;
 #endif
 #ifdef CAAMLIO
-		CaaMLIO *caamlio;
+		SnowpackIOInterface *caamlio;
 #endif
-		SmetIO *smetio;
-		AsciiIO *asciiio;
+		SnowpackIOInterface *smetio;
+		SnowpackIOInterface *asciiio;
 		bool input_snow_as_smet, output_snow_as_smet;
 		bool input_snow_as_caaml, output_snow_as_caaml;
 		bool input_snow_as_ascii, output_snow_as_ascii;

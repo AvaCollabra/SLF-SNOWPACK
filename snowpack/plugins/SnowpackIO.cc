@@ -20,6 +20,13 @@
 
 #include <snowpack/plugins/SnowpackIO.h>
 
+#ifdef CAAMLIO
+	#include <snowpack/plugins/CaaMLIO.h>
+#endif
+#ifdef IMISDBIO
+	#include <snowpack/plugins/ImisDBIO.h>
+#endif
+
 using namespace std;
 using namespace mio;
 

@@ -70,7 +70,7 @@ std::vector<double> SnLaws::swa_fb; ///< fudge_bohren
  * - -1 ==> none, assume saturation pressure and no extra resistance
  */
 //@{
-const bool SnLaws::soil_evaporation = true;
+const int SnLaws::soil_evaporation = 1;
 
 /// @brief Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
 const double SnLaws::rsoilmin = 50.0;
@@ -830,7 +830,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 			 * function is defined in compLatentHeat, and the Switch SnLaws::soil_evaporation is found
 			 * in Laws_sn.h
 			*/
-			if (SnLaws::soil_evaporation && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
+			if (SnLaws::soil_evaporation == 0 && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
 				eS = Vp2 * 0.5 * ( 1. - cos (MIN (Constants::pi, th_w_ss * Constants::pi
 				         / (Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity() * 1.6))));
 			} else {

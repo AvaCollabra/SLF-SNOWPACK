@@ -138,7 +138,7 @@ class SnLaws {
 		static bool ageAlbedo;
 		static size_t swa_nBands;
 		static std::vector<double> swa_k, swa_pc, swa_fb;
-		static const bool soil_evaporation;
+		static const int soil_evaporation;
 		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil;
 		static const double montana_c_fudge, montana_vapor_fudge, montana_v_water_fudge;
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
