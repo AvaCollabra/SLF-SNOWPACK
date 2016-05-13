@@ -28,4 +28,7 @@ make distclean
 make distclean
 /usr/bin/ctest -S ${SN_ROOT}/tests/startScriptNightly.cmake -V > ${SN_ROOT}/tests/startScriptNightly.log 2>&1
 
+#so the up-to-date documentation can be available on the server
+make doc
+
 log_echo "SNOWPACK testing done!"

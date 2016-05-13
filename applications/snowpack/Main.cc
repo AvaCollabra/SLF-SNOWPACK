@@ -364,11 +364,11 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		cerr << StationName << " missing { ";
 		if (miss_ta) cerr << "TA ";
 		if (miss_rh) cerr << "RH ";
-		if (miss_rad) cerr << "radiation ";
+		if (miss_rad) cerr << "sw_radiation ";
 		if (miss_hs) cerr << "HS ";
 		if (miss_precip) cerr << "precipitation ";
 		if (miss_splitting) cerr << "precip_splitting ";
-		if (miss_ea) cerr << "ea ";
+		if (miss_ea) cerr << "lw_radiation ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
