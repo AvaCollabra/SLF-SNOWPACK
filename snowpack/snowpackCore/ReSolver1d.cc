@@ -2706,8 +2706,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			const double diameter_below=EMS[i-1].ogs;				// Grain size of the layer below (mm)
 			// To determine the thresholds below, we use the water entry pressure, as provided in Eq. 15 in Hirashima et al. (2014).
 			// Only when the pressure head in the preferential flow path exceeds the air entry pressure of the surrounding snow, water moves back to the matrix
-			const double pref_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
-			const double pref_threshold_below=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter_below) + 0.01074)), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i]));
+			const double pref_threshold=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter) + 0.01074)), 0., (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[SnowpackElement[i]].PrefFlowArea, alpha[i], m[i], n[i], Sc[i], h_e[i]));
+			const double pref_threshold_below=MAX(0.005, fromHtoTHETA((-1.*((0.0437 / diameter_below) + 0.01074)), 0., (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[SnowpackElement[i-1]].PrefFlowArea, alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
 
 			// First from matrix to preferential flow ...
 			if(matrix) {
@@ -2732,7 +2732,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						const double dtheta_w=MAX(0.,											//No negative change!
 									  MIN((EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L)			//The amount that is ideally transferred
 									  , 0.999*(										//Keep a bit of room
-									    MIN(pref_threshold_below*EMS[SnowpackElement[i-1]].PrefFlowArea-EMS[i-1].theta[WATER_PREF], ((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)-EMS[i-1].theta[WATER])*EMS[SnowpackElement[i-1]].PrefFlowArea-EMS[i-1].theta[WATER_PREF])		//Take MIN of: (i) Don't transfer so much from matrix to preferential, that it is transferred back to matrix directly and (ii) don't oversaturate the lower layer
+									  MIN(pref_threshold_below-EMS[i-1].theta[WATER_PREF], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)-EMS[i-1].theta[WATER]-EMS[i-1].theta[WATER_PREF])		//Take MIN of: (i) Don't transfer so much from matrix to preferential, that it is transferred back to matrix directly and (ii) don't oversaturate the lower layer
 									  )));
 						if(WriteOutNumerics_Level1) printf("WATER->PREF [%d]: %f %f %f %f %f\n", i, EMS[i].theta[WATER], dtheta_w, pref_threshold, pref_flowarea[i-1], EMS[i].theta[WATER_PREF]); 
 						EMS[i-1].theta[WATER_PREF]+=dtheta_w;
@@ -2752,8 +2752,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 			} else {
 				// ... then from preferential flow to matrix
-				if( EMS[i].theta[WATER_PREF] > pref_threshold*EMS[SnowpackElement[i]].PrefFlowArea) {
-					const double dtheta_w=EMS[i].theta[WATER_PREF]-pref_threshold*EMS[SnowpackElement[i]].PrefFlowArea;
+				if(EMS[i].theta[WATER_PREF] > pref_threshold) {
+					const double dtheta_w=MAX(0.,											//No negative change!
+								MIN(EMS[i].theta[WATER_PREF]-pref_threshold						//The amount that is ideally transferred
+								, 0.999*(										//Keep a bit of room
+								(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea)-EMS[i].theta[WATER])		//Don't over-saturate matrix part
+								));
 					if(WriteOutNumerics_Level1) printf("PREF->WATER [%d]: %f %f %f %f\n", i, EMS[i].theta[WATER_PREF], dtheta_w, pref_threshold, EMS[SnowpackElement[i-1]].PrefFlowArea); 
 					EMS[i].theta[WATER]+=dtheta_w;
 					EMS[i].theta[WATER_PREF]-=dtheta_w;
