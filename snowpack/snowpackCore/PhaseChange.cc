@@ -340,10 +340,10 @@ void PhaseChange::finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const
 			//Restructure temperature arrays
                         EMS[e].gradT = (NDS[e+1].T - NDS[e].T) / EMS[e].L;
 		        EMS[e].Te = (NDS[e].T + NDS[e+1].T) / 2.0;
-			if (((EMS[e].Te - EMS[e].melting_tk) > 0.2) && (e > Xdata.SoilNode))
+			if (((EMS[e].Te - EMS[e].melting_tk) > 0.2) && EMS[e].theta[ICE]>0.) //handle the case of soil layers above ice/snow layers
 				prn_msg(__FILE__, __LINE__, "wrn", date_in,
-				        "Snow temperature Te=%f K is above melting point in element %d (nE=%d; T0=%f K, T1=%f K)",
-				        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T);
+				        "Snow temperature Te=%f K is above melting point in element %d (nE=%d; T0=%f K, T1=%f K, theta_ice=%f)",
+				        EMS[e].Te, e, nE, NDS[e].T, NDS[e+1].T, EMS[e].theta[ICE]);
 			if (EMS[e].theta[SOIL] < Constants::eps2) {
 				if (!(EMS[e].Rho > Constants::eps && EMS[e].Rho <= Constants::max_rho)) {
 					prn_msg(__FILE__, __LINE__, "err", date_in, "Phase Change End: rho_snow[%d]=%f", e, EMS[e].Rho);
