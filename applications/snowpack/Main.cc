@@ -364,11 +364,11 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		cerr << StationName << " missing { ";
 		if (miss_ta) cerr << "TA ";
 		if (miss_rh) cerr << "RH ";
-		if (miss_rad) cerr << "radiation ";
+		if (miss_rad) cerr << "sw_radiation ";
 		if (miss_hs) cerr << "HS ";
 		if (miss_precip) cerr << "precipitation ";
 		if (miss_splitting) cerr << "precip_splitting ";
-		if (miss_ea) cerr << "ea ";
+		if (miss_ea) cerr << "lw_radiation ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
@@ -900,7 +900,7 @@ inline void real_main (int argc, char *argv[])
 	io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
 	if (vecStationIDs.empty()) {
 		for (size_t ii=0; ii<accessible_stations.size(); ii++) {
-			vecStationIDs.push_back(accessible_stations[ii].getStationID()); //HACK: accessible_stations should be directly used
+			vecStationIDs.push_back( accessible_stations[ii].getStationID() ); //HACK: accessible_stations should be directly used
 		}
 	}
 
@@ -910,7 +910,7 @@ inline void real_main (int argc, char *argv[])
 	// START LOOP OVER ALL STATIONS
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
-		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on station %s", vecStationIDs[i_stn].c_str());
+		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on meteo station %s", vecStationIDs[i_stn].c_str());
 		run_timer.reset();
 		meteoRead_timer.reset();
 
