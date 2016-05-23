@@ -42,7 +42,7 @@ const double SnowStation::thresh_moist_snow = 0.003;
 const double SnowStation::thresh_moist_soil = 0.0001;
 
 /// Both elements must be smaller than COMB_THRESH_L (m) for an action to be taken
-const double SnowStation::comb_thresh_l = 0.015;
+const double SnowStation::comb_thresh_l = 0.005;
 /// Volumetric ice content (1), i.e., about 46 kg m-3
 const double SnowStation::comb_thresh_ice = 0.05;
 const double SnowStation::comb_thresh_water = 0.01; ///< Water content (1)
