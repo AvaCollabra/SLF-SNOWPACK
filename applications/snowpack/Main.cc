@@ -793,6 +793,21 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("HS_A3H::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("HS_A3H::arg1", "Filters", "MEAN left 6 10740"); //TODO change # data required to 1
 	}
+	
+	//warn the user if the precipitation miss proper re-accumulation
+	const bool HS_driven = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
+	if (mode != "OPERATIONAL" && !HS_driven) {
+		const bool psum_key_exists = cfg.keyExists("PSUM::resample", "Interpolations1D");
+		const std::string psum_resampling = (psum_key_exists)? IOUtils::strToUpper( cfg.get("PSUM::resample", "Interpolations1D") ) : "LINEAR";
+		if (psum_resampling!="ACCUMULATE") {
+			std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH, not doing it is most probably an error!\n";
+		} else {
+			const double psum_accumulate = cfg.get("PSUM::accumulate", "Interpolations1D");
+			const double sn_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+			if (sn_step_length*60. != psum_accumulate)
+				std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH (currently, over " <<  psum_accumulate << "s)\n";
+		}
+	}
 }
 
 inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
