@@ -97,7 +97,7 @@ class Cumsum {
 //Global variables in this file:
 static string cfgfile = "io.ini";
 static string mode = "RESEARCH";
-static mio::Date dateEnd;
+static mio::Date dateBegin, dateEnd;
 static vector<string> vecStationIDs;
 
 /// @brief Main control parameters
@@ -217,6 +217,7 @@ inline void Usage(const string& programname)
 	Version();
 
 	cout << "Usage: " << programname << endl
+		<< "\t[-b, --begindate=YYYY-MM-DDTHH:MM] (e.g.:2007-08-11T09:00)\n"
 		<< "\t[-e, --enddate=YYYY-MM-DDTHH:MM] (e.g.:2008-08-11T09:00)\n"
 		<< "\t[-c, --config=<ini file>] (e.g. io.ini)\n"
 		<< "\t[-m, --mode=<operational or research>] (default: research)\n"
@@ -228,13 +229,14 @@ inline void Usage(const string& programname)
 	cout << "Example: " << programname << " -c io.ini -e 1996-06-17T00:00\n\n";
 }
 
-inline void parseCmdLine(int argc, char **argv, string& end_date_str)
+inline void parseCmdLine(int argc, char **argv, string& begin_date_str, string& end_date_str)
 {
 	int longindex=0, opt=-1;
 	bool setEnd = false;
 
 	struct option long_options[] =
 	{
+		{"begindate", required_argument, 0, 'b'},
 		{"enddate", required_argument, 0, 'e'},
 		{"mode", required_argument, 0, 'm'},
 		{"config", required_argument, 0, 'c'},
@@ -249,10 +251,14 @@ inline void parseCmdLine(int argc, char **argv, string& end_date_str)
 		exit(1);
 	}
 
-	while ((opt=getopt_long( argc, argv, ":e:m:c:s:v:h", long_options, &longindex)) != -1) {
+	while ((opt=getopt_long( argc, argv, ":b:e:m:c:s:v:h", long_options, &longindex)) != -1) {
 		switch (opt) {
 		case 0:
 			break;
+		case 'b': {
+			begin_date_str=string(optarg); //we don't know yet the time zone, conversion will be done later
+			break;
+		}
 		case 'e': {
 			end_date_str=string(optarg); //we don't know yet the time zone, conversion will be done later
 			setEnd = true;
@@ -672,7 +678,10 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				        vecStationIDs[i_stn].c_str());
 				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
 				vector<mio::MeteoData> vectmpmd;
-				current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
+				if (current_date.isUndef()) //either force the start date or take it from the sno file
+					current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
+				else 
+					vecSSdata[sector].profileDate = current_date;
 				io.getMeteoData(current_date, vectmpmd);
 				if (vectmpmd.empty())
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
@@ -843,8 +852,8 @@ inline void real_main (int argc, char *argv[])
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
 #endif
 	//parse the command line arguments
-	string end_date_str;
-	parseCmdLine(argc, argv, end_date_str);
+	string begin_date_str, end_date_str;
+	parseCmdLine(argc, argv, begin_date_str, end_date_str);
 
 	const bool prn_check = false;
 	mio::Timer meteoRead_timer;
@@ -857,6 +866,9 @@ inline void real_main (int argc, char *argv[])
 	addSpecialKeys(cfg);
 
 	const double i_time_zone = cfg.get("TIME_ZONE", "Input"); //get user provided input time_zone
+	if (!begin_date_str.empty()) {
+		mio::IOUtils::convertString(dateBegin, begin_date_str, i_time_zone);
+	}
 	if (end_date_str == "NOW") { //interpret user provided end date
 		dateEnd.setFromSys();
 		dateEnd.setTimeZone(i_time_zone);
@@ -952,7 +964,7 @@ inline void real_main (int argc, char *argv[])
 		// Boundary condition (fluxes)
 		BoundCond sn_Bdata;
 
-		mio::Date current_date;
+		mio::Date current_date( dateBegin );
 		meteoRead_timer.start();
 		if (mode == "OPERATIONAL")
 			cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "false");
@@ -974,14 +986,14 @@ inline void real_main (int argc, char *argv[])
 
 		SunObject sun(vecSSdata[slope.mainStation].meta.position.getLat(), vecSSdata[slope.mainStation].meta.position.getLon(), vecSSdata[slope.mainStation].meta.position.getAltitude());
 		sun.setElevationThresh(0.6);
-		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.mainStation].profileDate.getJulian() + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
-			vecStationIDs[i_stn].c_str(), vecSSdata[slope.mainStation].profileDate.toString(mio::Date::ISO_TZ).c_str());
+			vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
