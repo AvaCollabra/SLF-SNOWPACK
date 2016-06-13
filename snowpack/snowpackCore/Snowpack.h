@@ -51,7 +51,7 @@ class Snowpack {
 	public:
 		Snowpack(const SnowpackConfig& i_cfg);
 
-		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		void setUseSoilLayers(const bool& value);

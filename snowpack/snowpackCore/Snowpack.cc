@@ -1710,13 +1710,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
  * -# In the next step the CREEPING deformations and 1d state of stress within the snowpack
  * at each exposition are found.  If SNOWFALL and SNOWDRIFT has occured then the finite
  * element matrices (connectivities) must be rebuilt.  >>>>CREEP MODULE<<<<<
- * @param Mdata
+ * @param Mdata The Meteorological forcing is now passed by copy so changes won't propagate to the caller
  * @param Xdata
  * @param cumu_precip Variable to store amount of precipitation (kg m-2)
  * @param Bdata
  * @param Sdata
  */
-void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
                                 BoundCond& Bdata, SurfaceFluxes& Sdata)
 {
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
