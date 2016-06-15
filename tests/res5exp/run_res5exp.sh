@@ -1,5 +1,6 @@
 #!/bin/bash
 ../../bin/snowpack -c io_res5exp.ini -e 1996-06-17T00:00
+#exit #uncomment to simply regenerate the reference files
 
 PREC="1e-3"
 #north slopes
