@@ -2,6 +2,9 @@
 #This test assumes that run_res1exp has sucfcessfully completed, so it can analyze its results
 #it takes as first argument the reference MET file to use for the test
 
+# Print a special line to prevent CTest from truncating the test output
+printf "CTEST_FULL_OUTPUT (line required by CTest to avoid output truncation)\n\n"
+
 RUN_NAME=`basename $1 .bz2`
 DIRNAME=`dirname $1`
 INPUT_REF="${DIRNAME}/${RUN_NAME}"
