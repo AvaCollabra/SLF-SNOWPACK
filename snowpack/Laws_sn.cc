@@ -65,12 +65,12 @@ std::vector<double> SnLaws::swa_fb; ///< fudge_bohren
  *
  * @brief Define Method and Coefficents for the computation of the influence of soil water
  * content on Evaporation from Bare Soil Layers:
- * - 1 ==> Resistance Approach, see Laws_sn.c
- * - 0 ==> Relative Humidity Approach, see Snowpack.cc
- * - -1 ==> none, assume saturation pressure and no extra resistance
+ *  - Resistance Approach, see Laws_sn.c
+ *  - Relative Humidity Approach, see Snowpack.cc
+ *  - none, assume saturation pressure and no extra resistance
  */
 //@{
-const bool SnLaws::soil_evaporation = true;
+const SnLaws::soil_evap_model SnLaws::soil_evaporation = EVAP_RESISTANCE;
 
 /// @brief Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
 const double SnLaws::rsoilmin = 50.0;
@@ -829,7 +829,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 			 * function is defined in compLatentHeat, and the Switch SnLaws::soil_evaporation is found
 			 * in Laws_sn.h
 			*/
-			if (SnLaws::soil_evaporation && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
+			if (SnLaws::soil_evaporation==EVAP_RELATIVE_HUMIDITY && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
 				eS = Vp2 * 0.5 * ( 1. - cos (MIN (Constants::pi, th_w_ss * Constants::pi
 				         / (Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity() * 1.6))));
 			} else {
@@ -896,7 +896,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 	*/
 	if ((Xdata.getNumberOfNodes() == Xdata.SoilNode + 1) && (nElems > 0)
 		    && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
-		    && (SnLaws::soil_evaporation == 1)) {
+		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
 		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure(Mdata.ta);
 		const double eS = Atmosphere::waterSaturationPressure(Xdata.Ndata[nElems].T);
 		if (eS >= eA) {
