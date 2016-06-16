@@ -707,8 +707,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	//Set parameterization for hydraulic conductivity
 	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
-	//Set how the hydraulic conductivity at the interface nodes should be calculated.
-
 
 
 

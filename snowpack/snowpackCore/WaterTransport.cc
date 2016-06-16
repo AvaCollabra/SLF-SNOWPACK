@@ -582,18 +582,18 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			bool UpperJoin=false;			// Default is joining with elements below
 			bool merged = true;		// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
-				// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
-				if ((iwatertransportmodel_snow == RICHARDSEQUATION) && (eUpper==rnE-1) ) {
-					RichardsEquationSolver1d.surfacefluxrate+=(EMS[eUpper].theta[WATER]*EMS[eUpper].L)/(sn_dt);
-					// We remove water from the element, which is now in surfacefluxrate
-					EMS[eUpper].theta[WATER]=0.;
-					// Adjust density and mass accordingly
-					EMS[eUpper].Rho = (EMS[eUpper].theta[ICE]*Constants::density_ice) + (EMS[eUpper].theta[WATER]*Constants::density_water) + (EMS[eUpper].theta[SOIL]*EMS[eUpper].soil[SOIL_RHO]);
-					EMS[eUpper].M = EMS[eUpper].Rho*EMS[eUpper].L;
-				}
 				// We always merge snow elements, except if it is the top element, which is removed when the ice contents is below the threshold.
 				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
 					merged=false;
+					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
+					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
+						RichardsEquationSolver1d.surfacefluxrate+=(EMS[eUpper].theta[WATER]*EMS[eUpper].L)/(sn_dt);
+						// We remove water from the element, which is now in surfacefluxrate
+						EMS[eUpper].theta[WATER]=0.;
+						// Adjust density and mass accordingly
+						EMS[eUpper].Rho = (EMS[eUpper].theta[ICE]*Constants::density_ice) + (EMS[eUpper].theta[WATER]*Constants::density_water) + (EMS[eUpper].theta[SOIL]*EMS[eUpper].soil[SOIL_RHO]);
+						EMS[eUpper].M = EMS[eUpper].Rho*EMS[eUpper].L;
+					}
 				} else {
 					merged=true;
 				}

@@ -505,12 +505,11 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 }
 
 /**
- * @brief Michi's Advective Heat Flux Implementation (mimicking heat advection by infiltrating water?)
- * @version 0.1
+ * @brief Advective Heat Flux injection (mimicking heat advection by infiltrating water?)
  * @param Xdata The advective heat flux will be added to Xdata.sw_abs
- * @param advective_heat heat flux (positive or negative) to add (W m-3)
- * @param depth_begin depth where to begin injecting the heat flux (in m from the surface)
- * @param depth_end depth where to stop injecting the heat flux (in m from the surface)
+ * @param advective_heat heat flux (positive or negative) to add (W m-3) //HACK: input as W/m2 is more logical
+ * @param depth_begin depth where to begin injecting the heat flux (in m from the soil surface)
+ * @param depth_end depth where to stop injecting the heat flux (in m from the soil surface)
  */
 void SnLaws::compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat, const double& depth_begin, const double& depth_end)
 {
