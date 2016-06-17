@@ -118,6 +118,12 @@ class SnLaws {
 		static const bool jordy_new_snow, wind_pump, wind_pump_soil;
 
 	private:
+		typedef enum SOIL_EVAP_MODEL {
+			EVAP_RESISTANCE,
+			EVAP_RELATIVE_HUMIDITY,
+			EVAP_NONE
+		} soil_evap_model;
+		
 		static bool setStaticData(const std::string& variant, const std::string& watertransportmodel);
 
 		static double newSnowDensityPara(const std::string& i_hn_model,
@@ -138,7 +144,7 @@ class SnLaws {
 		static bool ageAlbedo;
 		static size_t swa_nBands;
 		static std::vector<double> swa_k, swa_pc, swa_fb;
-		static const int soil_evaporation;
+		static const soil_evap_model soil_evaporation;
 		static const double rsoilmin, relsatmin, alpha_por_tor_soil, pore_length_soil;
 		static const double montana_c_fudge, montana_vapor_fudge, montana_v_water_fudge;
 		static const double wind_ext_coef, displacement_coef, alpha_por_tor;
