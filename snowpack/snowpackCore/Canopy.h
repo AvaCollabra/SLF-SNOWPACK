@@ -170,7 +170,7 @@ class Canopy {
 								  double& ce_canopy, double& ce_transpiration,
 								  double& ce_interception, double& ce_condensation);
 
-		void CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
+		void CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata, double ac,
 								double &iswrac, double &rswrac,
 								double &iswrbc, double &rswrbc, double &ilwrac,
 								double &rlwrac, double &ilwrbc, double &rlwrbc,

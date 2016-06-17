@@ -622,7 +622,7 @@ bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
 		NDS[ e ].ssi = 0.; //initialize with 0 so layers that can not get computed don't t in the way
 		
 		vecRG.push_back( EMS[e].rg );
-		vecRG_diff.push_back( fabs(EMS[e-1].rg - EMS[e].rg) );
+		vecRG_diff.push_back( fabs(EMS[e+1].rg - EMS[e].rg) );
 		vecHard.push_back( EMS[e].hard );
 		vecHard_diff.push_back( fabs(EMS[e+1].hard - EMS[e].hard) );
 		

@@ -44,8 +44,11 @@
  * -# the intial state of the various soil and snow layers
  *
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
- * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation, in the 
- * <i>"Available plugins and usage"</i> section for the relevant formats.
+ * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation (for the last official release, it is available 
+ * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats. 
+ * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
+ * 
+ * Please also check the \ref requirements "Data requirements" page.
  * 
  * @subsection Snowpack_outputs Snowpack outputs
  * %Snowpack creates various output files:
