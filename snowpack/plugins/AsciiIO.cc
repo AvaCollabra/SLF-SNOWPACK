@@ -991,8 +991,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	// 0519: soil volume fraction (%)
 	fout << "\n0519," << nE;
 	for (size_t e = 0; e < nE; e++) {
-		const double pref_flowarea=EMS[e].PrefFlowArea;
-		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[WATER_PREF]/pref_flowarea;
+		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[WATER_PREF];
 	}
 	// 0520: temperature gradient (K m-1)
 	fout << "\n0520," << nE;
