@@ -112,13 +112,8 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 	cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
 	if (tmp_avg_method_K=="ARITHMETICMEAN") {
 		K_AverageType=ARITHMETICMEAN;
-	} else if (tmp_avg_method_K=="GEOMETRICMEAN" || tmp_avg_method_K=="GEOMETRICMEAN_2") {
+	} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
 		K_AverageType=GEOMETRICMEAN;
-		if (tmp_avg_method_K=="GEOMETRICMEAN") {
-			PrefFlowPathAreaMethod=KATSUSHIMA;
-		} else {
-			PrefFlowPathAreaMethod=GLASS;
-		}
 	} else if (tmp_avg_method_K=="HARMONICMEAN") {
 		K_AverageType=HARMONICMEAN;
 	} else if (tmp_avg_method_K=="MINIMUMVALUE") {
@@ -2681,26 +2676,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if(max_flux<flux_compare) max_flux=flux_compare;
 			if(i>nsoillayers_richardssolver-1) {	//For snow only
 				// Volumetric area:
-				double vol_area=0.;
+				//vol_area = exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs));		// As presented at EGU 2016.
+				const double vol_area = 0.0584 * pow((0.5*EMS[SnowpackElement[i]].ogs), -1.1090277);
 
-				if(PrefFlowPathAreaMethod==KATSUSHIMA) {
-					vol_area = exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs));		// As presented at EGU 2016.
-				}
-
-				if(PrefFlowPathAreaMethod==GLASS) {
-					// Glass et al. (1989)
-					vol_area = 0.0765 + 0.9018 * sqrt(max_flux/ksat[i]);			// Based on Table 1, Fig 12 in Glass et al. (1989), WRR. See also Wang et al. (1998), WRR.
-				}
-
-				// Hirashima et al. (2014) data:
-				//const double beta = exp(1.872750 -0.041950 * (max_flux/ksat[i]));		// Fit to Hirashima et al. (2014) data.
-				//const double vol_area = MAX(0., MIN(1., 1./beta));				// Make sure the area is physical
-
-    
-
-				// Translate volumetric area to area of pore space:
-				//const double area = MAX(0.001, MIN(0.999, vol_area/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))));
-				const double area = MAX(0.001, MIN(0.999, vol_area));
+				const double area = MAX(0.01, MIN(0.90, vol_area));
 
 				// Max is to ensure the pref flow area doesn't decrease below saturation of the pref flow path.
 				EMS[SnowpackElement[i]].PrefFlowArea = MIN(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), MAX(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), area));
@@ -2730,15 +2709,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}*/
 				} else {
 					// Calculate threshold in the current layer that belongs to water entry pressure of the layer below
-					const double matrix_threshold=MAX(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i-1].ogs) + 0.01074)), theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
+					const double matrix_threshold=MAX(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i-1].ogs) + 0.01074))-dz_up[i-1], theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
 					if(EMS[i].theta[WATER]>matrix_threshold) {
-						// Determine water exchange, which is the minimum of water excess in the matrix part of the current layer and the room in the preferential flow path in the layer below
-						const double dtheta_w=MAX(0.,											//No negative change!
-									  MIN((EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L)			//The amount that is ideally transferred
-									  , 0.999*(										//Keep a bit of room
-									  MIN((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[SnowpackElement[i-1]].PrefFlowArea-EMS[i-1].theta[WATER_PREF], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)-EMS[i-1].theta[WATER]-EMS[i-1].theta[WATER_PREF])		//Take MIN of: (i) Don't transfer so much from matrix to preferential, that it is transferred back to matrix directly and (ii) don't oversaturate the lower layer
+						// Enforcing equal saturation between matrix part at [i] and preferential part at [i-1]
+						const double tmp_theta_water_tot = EMS[i].theta[WATER]*EMS[i].L + EMS[i-1].theta[WATER_PREF]*EMS[i-1].L;
+						const double s1=(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i].PrefFlowArea);	// theta_s matrix flow
+						const double s2=(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i-1].PrefFlowArea);	// theta_s pref flow
+						const double dtheta_w_ideal = MAX(0., (-1.*(EMS[i].theta_r*s2*EMS[i].L - tmp_theta_water_tot*s2) / (s2*EMS[i-1].L + (s1-EMS[i].theta_r)*EMS[i].L) - EMS[i-1].theta[WATER_PREF]));
+
+						const double dtheta_w=MAX(0.,												//No negative change!
+									  MIN(MAX(dtheta_w_ideal, (EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L))		//The amount that is ideally transferred
+									  , 0.999*(											//Keep a bit of room
+									  MIN((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[i-1].PrefFlowArea-EMS[i-1].theta[WATER_PREF], ((EMS[i].theta[WATER]-theta_d[i])*(EMS[i].L/EMS[i-1].L)))	//Take MIN of: (i) Don't oversaturate preferential part, and (ii) don't take too much from the matrix part (TODO: actually, this should never happen.... remove it?)
 									  )));
-						if(WriteOutNumerics_Level1) printf("MATRIX->PREF [%d]: %f %f %f %f\n", i, EMS[i].theta[WATER], dtheta_w, pref_flowarea[i-1], EMS[i].theta[WATER_PREF]); 
+						if(WriteOutNumerics_Level1) printf("MATRIX->PREF [%d]: %f %f %f %f %f\n", i, EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i-1].theta[WATER], EMS[i-1].theta[WATER_PREF], dtheta_w);
 						EMS[i-1].theta[WATER_PREF]+=dtheta_w;
 						EMS[i].theta[WATER]-=dtheta_w*(EMS[i-1].L/EMS[i].L);
 						// After moving the water, adjust the other properties
@@ -2754,56 +2738,58 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						EMS[i-1].M=EMS[i-1].Rho*EMS[i-1].L;
 					}
 
-					// If the matrix pressure head is larger than the water entry pressure, we may want to equalize both domains.
+					// If the matrix pressure head is larger than the preferential flow pressure head (ensured by MAX(0., ....)), we equalize both domains in terms of saturation.
 					// This is because in wet snow, the preferential flow part is also wet. Moreover, it enables a smaller capillary suction in the preferential flow domain, and allows the water to flow downwards
-					// Calculate pressure head in matrix part
-					const double matrix_h=fromTHETAtoH(EMS[i].theta[WATER], theta_r[i], (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea), alpha[i], m[i], n[i], Sc[i], h_e[i], h_d);
-					if(matrix_h>(-1.*((0.0437 / EMS[i].ogs) + 0.01074))) {
-						if(EMS[i].theta[WATER]>EMS[i].theta[WATER_PREF]) {
-							//Only if the amount of water in matrix is larger, we equalize theta (else it is not a transfer from matrix to pref flow):
-							EMS[i].theta[WATER_PREF]=EMS[i].theta[WATER]=(EMS[i].theta[WATER_PREF]+EMS[i].theta[WATER])/2.;
-							EMS[i].PrefFlowArea=0.5;
-						}
-					}
+					const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
+					const double dtheta_w = MAX(0., (-1. * ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r)) - EMS[i].theta[WATER_PREF]);
+					EMS[i].theta[WATER_PREF] += dtheta_w;
+					EMS[i].theta[WATER] -= dtheta_w;
 				}
 			} else {
-				// ... then from preferential flow to matrix
-				const double air_entry_pressure_matrix=(-1.*((0.0437 / EMS[i].ogs) + 0.01074));
-				// Only when the pressure head in the preferential flow path exceeds the air entry pressure of the surrounding snow (i.e., matrix part), water moves back to the matrix
-				//const double pref_threshold=MAX(EMS[i].theta[WATER_PREF]+0.5*(EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]), fromHtoTHETA(air_entry_pressure_matrix, 0., (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[SnowpackElement[i]].PrefFlowArea, alpha[i], m[i], n[i], Sc[i], h_e[i]));
-				const double pref_threshold=0.02; //MAX(0.001, fromHtoTHETA(air_entry_pressure_matrix, 0., (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[SnowpackElement[i]].PrefFlowArea, alpha[i], m[i], n[i], Sc[i], h_e[i]));
-				const double matrix_h=fromTHETAtoH(EMS[i].theta[WATER], theta_r[i], (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea), alpha[i], m[i], n[i], Sc[i], h_e[i], h_d);
-				if(matrix_h>(-1.*((0.0437 / EMS[i].ogs) + 0.01074))) {
-					if(EMS[i].theta[WATER_PREF]>EMS[i].theta[WATER]) {
-						//Only if the amount of water in pref flow is larger, we equalize theta (else it is not from pref flow to matrix):
-						EMS[i].theta[WATER_PREF]=EMS[i].theta[WATER]=(EMS[i].theta[WATER_PREF]+EMS[i].theta[WATER])/2.;
-						EMS[i].PrefFlowArea=0.5;
+				// Now from preferential to matrix flow
+				const double pref_threshold=0.04;		// Saturation threshold in preferential flow (rather a tuning parameter)
+				if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea)) > pref_threshold) {
+					// Using the code from PhaseChange.cc, we estimate the refreezing capacity
+					const double dT = EMS[i].freezing_tk - EMS[i].Te;
+					// Adapt A to compute mass changes
+					double A = (EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion );
+					// Compute the change in volumetric ice and water contents
+					const double dth_i = - A * dT;
+					const double dth_w = MIN(EMS[i].theta[WATER_PREF]-theta_d[i], - (Constants::density_ice / Constants::density_water) * dth_i);
+					const double dtheta_w1 = MAX(0.,										//No negative change!
+								MIN((dth_w)										//The amount that is ideally transferred
+								, 0.999*(										//Keep a bit of room
+								(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea)-EMS[i].theta[WATER])		//Don't over-saturate matrix part
+								));
+
+					EMS[i].theta[WATER]+=dtheta_w1;
+					EMS[i].theta[WATER_PREF]-=dtheta_w1;
+
+					if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea)) > pref_threshold) {
+						// This approach is equalizing both domains in case we still exceed the threshold:
+						const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
+						const double dtheta_w2 = MAX(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r));
+						EMS[i].theta[WATER_PREF] -= dtheta_w2;
+						EMS[i].theta[WATER] += dtheta_w2;
 					}
-				} else {
-					if(EMS[i].theta[WATER_PREF] > pref_threshold) {
-						EMS[i].theta[WATER_PREF]=EMS[i].theta[WATER]=(EMS[i].theta[WATER_PREF]+EMS[i].theta[WATER])/2.;
-						EMS[i].PrefFlowArea=0.5;
-/*
-						const double dtheta_w=MAX(0.,											//No negative change!
-									MIN(EMS[i].theta[WATER_PREF]-pref_threshold						//The amount that is ideally transferred
-									, 0.999*(										//Keep a bit of room
-									(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea)-EMS[i].theta[WATER])		//Don't over-saturate matrix part
-									));
-						if(WriteOutNumerics_Level1) printf("PREF->MATRIX [%d]: %f %f %f %f\n", i, EMS[i].theta[WATER_PREF], dtheta_w, pref_threshold, EMS[SnowpackElement[i-1]].PrefFlowArea);
-						EMS[i].theta[WATER]+=dtheta_w;
-						EMS[i].theta[WATER_PREF]-=dtheta_w;
-*/					}
 				}
 
-				// ... then from preferential flow to matrix to simulate refreezing in [WATER_PREF] according to cold content of the current layer. 
-				const double CC_calc = -1. * ((EMS[i].Rho * Constants::specific_heat_ice * (EMS[i].Te - Constants::melting_tk) * EMS[i].L) / Constants::lh_fusion);  	// Calculation of ColdContent 
-				const double CC_fract = MAX(MIN((0.0001111*sn_dt*(EMS[i].k[TEMPERATURE])*pref_flowarea[i]),1.),0.);							// 0.01111% of cold content shall be transferred to matrix part per timestep (per second)
-				const double CC_move = ((CC_calc * CC_fract) / EMS[i].L) - theta_d[i];  										// Calculate the amount of water moved to matrix in % vol. minus theta_d[i] which is supposed to stay in WATER_PREF
 
+				const double dx = (0.5 - 0.5*sqrt(EMS[i].PrefFlowArea));	// Estimate of the typical length scale that determines the gradients
+				const double N = 0.25;						// Number of preferential flow paths for heat exchange (rather a tuning parameter)
+
+				// Now consider refreeze due to temperature difference (mimicked by transferring water from preferential flow to matrix domain)
+				const double heat_flux=N*2.*sqrt(EMS[i].PrefFlowArea*Constants::pi)*(((Constants::melting_tk - EMS[i].Te)/dx)*EMS[i].k[TEMPERATURE]*sn_dt);
+				const double CC_move = ((heat_flux / Constants::lh_fusion)) / Constants::density_water; // Units: [kg]
 				// Make sure that theta[WATER_PREF] is not negative and do the actual transfer!
-				const double dtheta_w  = MAX(0., MIN(EMS[i].theta[WATER_PREF], CC_move));
-				EMS[i].theta[WATER]+=dtheta_w;
-				EMS[i].theta[WATER_PREF]-=dtheta_w;
+				const double dtheta_w3 = MAX(0., MIN(MIN(EMS[i].theta[WATER_PREF]-theta_d[i], 0.999*(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea)-EMS[i].theta[WATER]), CC_move));
+				EMS[i].theta[WATER]+=dtheta_w3;
+				EMS[i].theta[WATER_PREF]-=dtheta_w3;
+
+				// Check for first wetting
+				if ((EMS[i].theta[WATER] > 5E-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
+					EMS[i].mk += 10;
+				}
 			}
 		} else {	// For soil, we suppress preferential flow
 			const double pref_threshold=0.;

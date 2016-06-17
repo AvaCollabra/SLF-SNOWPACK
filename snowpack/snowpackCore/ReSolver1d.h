@@ -62,16 +62,14 @@ class ReSolver1d {
 		enum SOLVERS{DGESVD, DGTSV, TDMA};
 		//Boundary conditions
 		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, WATERTABLE, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY};
-		//Pref flow area methods
-		enum PrefFlowPathAreaMethods{KATSUSHIMA, GLASS};
-
+		
+		
 		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
 
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
 		BoundaryConditions BottomBC;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 		K_AverageTypes K_AverageType;				//Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
-		PrefFlowPathAreaMethods PrefFlowPathAreaMethod;
 
 		double sn_dt;
 		bool useSoilLayers, water_layer;
