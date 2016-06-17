@@ -86,7 +86,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), temp_index_degree_day(0.), forestfloor_alb(false)
+            enhanced_wind_slab(false), alpine3d(false), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), 
+            temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -94,6 +95,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	//Define keys for new snow density computation
 	cfg.getValue("HN_DENSITY", "SnowpackAdvanced", hn_density);
 	cfg.getValue("TEMP_INDEX_DEGREE_DAY", "SnowpackAdvanced", temp_index_degree_day, IOUtils::nothrow);
+	cfg.getValue("TEMP_INDEX_SWR_FACTOR", "SnowpackAdvanced", temp_index_swr_factor, IOUtils::nothrow);
 	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
 
@@ -667,7 +669,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		// Explicit
 		// Now allow a temperature index method if desired by the user
 		if ( (temp_index_degree_day > 0.) && (T_air > T_s)) {
-			Fe[1] += temp_index_degree_day*(T_air - T_s);
+			Fe[1] += temp_index_degree_day*(T_air - T_s) + temp_index_swr_factor*(1. - Xdata.Albedo)*Mdata.iswr;
 		} else {
 			Fe[1] += Bdata.ql + Bdata.lw_net + Bdata.qs + Bdata.qr;
 		}

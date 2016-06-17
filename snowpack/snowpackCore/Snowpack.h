@@ -140,7 +140,7 @@ class Snowpack {
 		bool adjust_height_of_meteo_values;
 		bool advective_heat;
 		double heat_begin, heat_end;
-		double temp_index_degree_day;
+		double temp_index_degree_day, temp_index_swr_factor;
 		bool forestfloor_alb;
 }; //end class Snowpack
 
