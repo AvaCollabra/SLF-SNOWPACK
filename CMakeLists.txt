@@ -3,7 +3,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 3 CACHE INTERNAL "")
+SET(VERSION_MINOR 4 CACHE INTERNAL "")
 SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
@@ -46,7 +46,7 @@ SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML p
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
 IF(WIN32)
-	SET(BUILD_STATIC_LIBS ON) #otherwise the lib files are not generated
+	SET(BUILD_STATIC_LIBS ON CACHE INTERNAL "Set to ON to build static libraries") #otherwise the lib files are not generated
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
@@ -430,7 +430,7 @@ ELSE(UNIX)
 			ENDIF(INSTALL_DOC)
 		ENDIF(CPACK_BUNDLE_ALL)
 		
-		SET(CPACK_NSIS_MENU_LINKS "${MENU_LINKS_SNOWPACK} ${MENU_LINKS_INISHELL} ${MENU_LINKS_SNOPVIZ} ${MENU_LINKS_METEOIO}")
+		SET(CPACK_NSIS_MENU_LINKS ${MENU_LINKS_SNOWPACK} ${MENU_LINKS_INISHELL} ${MENU_LINKS_SNOPVIZ} ${MENU_LINKS_METEOIO})
 		
 		#info for the add/uninstall software administration
 		SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}-${VERSION}")

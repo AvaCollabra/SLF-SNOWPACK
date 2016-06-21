@@ -25,7 +25,7 @@ IF(WIN32)
 			)
 	ELSE(MSVC)
 		FIND_LIBRARY(METEOIO_LIBRARY
-			NAMES libmeteoio.dll.a
+			NAMES libmeteoio.dll.a libmeteoio.a
 			PATHS ${SEARCH_PATH}
 			DOC "Location of the libmeteoio, like c:/Program Files/MeteoIO-2.4.0/lib/libmeteoio.dll.a"
 			)
