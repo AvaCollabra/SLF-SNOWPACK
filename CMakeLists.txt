@@ -296,6 +296,18 @@ IF(CPACK_BUNDLE_ALL)
 		MESSAGE("Inishell not found! Please copy inishell.jar into the tools directory")
 	ENDIF("${inishell}" STREQUAL "")
 	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
+	
+	#bundle SnopViz
+	SET(CPACK_BUNDLE_SNOPVIZ ON CACHE BOOL "Should SnopViz also be bundled?")
+	if(CPACK_BUNDLE_SNOPVIZ)
+		SET(SNOPVIZ_PATH "../snopviz" CACHE PATH "Path to SNOPVIZ main source directory")
+		FILE(GLOB snopviz_html "${SNOPVIZ_PATH}/dist/*.html")
+		IF("${snopviz_html}" STREQUAL "")
+			MESSAGE("SnopViz not found! Please provide a proper path to SnopViz and don't forget to run \"make dist\"")
+		ENDIF("${snopviz_html}" STREQUAL "")
+		INSTALL(DIRECTORY "${SNOPVIZ_PATH}/dist/assets" DESTINATION bin/snopviz COMPONENT exe)
+		INSTALL(FILES ${snopviz_html} DESTINATION bin/snopviz COMPONENT exe)
+	ENDIF(CPACK_BUNDLE_SNOPVIZ)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
