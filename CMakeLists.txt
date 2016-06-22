@@ -50,7 +50,6 @@ IF(WIN32)
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
-
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 

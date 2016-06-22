@@ -822,7 +822,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
 {
 	std::vector< std::vector<MeteoData> > vecMeteo;
-	std::cout << "[I] Reading and writing out forcing data...\n";
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
 
 	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
 	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
@@ -841,7 +841,7 @@ void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
 	}
 	io.writeMeteoData(vecMeteo);
 
-	std::cout << "[I] Forcing data written out" << std::endl;
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Forcing data written out");
 }
 
 inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
