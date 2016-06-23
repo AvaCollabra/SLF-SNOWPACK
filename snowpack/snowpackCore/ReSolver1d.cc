@@ -2747,7 +2747,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 			} else {
 				// Now from preferential to matrix flow
-				const double pref_threshold=0.04;		// Saturation threshold in preferential flow (rather a tuning parameter)
+				const double pref_threshold=0.1;		// Saturation threshold in preferential flow (rather a tuning parameter)
 				if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea)) > pref_threshold) {
 					// Using the code from PhaseChange.cc, we estimate the refreezing capacity
 					const double dT = EMS[i].freezing_tk - EMS[i].Te;
@@ -2775,8 +2775,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 
 
-				const double dx = (0.5 - 0.5*sqrt(EMS[i].PrefFlowArea));	// Estimate of the typical length scale that determines the gradients
-				const double N = 0.25;						// Number of preferential flow paths for heat exchange (rather a tuning parameter)
+				const double dx = sqrt((1. + EMS[i].PrefFlowArea)/(2. * Constants::pi)) - sqrt(EMS[i].PrefFlowArea/Constants::pi);	// Estimate of the typical length scale that determines the gradients
+				const double N = 0;													// Number of preferential flow paths for heat exchange (rather a tuning parameter)
 
 				// Now consider refreeze due to temperature difference (mimicked by transferring water from preferential flow to matrix domain)
 				const double heat_flux=N*2.*sqrt(EMS[i].PrefFlowArea*Constants::pi)*(((Constants::melting_tk - EMS[i].Te)/dx)*EMS[i].k[TEMPERATURE]*sn_dt);
