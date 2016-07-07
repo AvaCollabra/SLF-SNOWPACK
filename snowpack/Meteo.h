@@ -43,6 +43,7 @@ class Meteo {
 		typedef enum {
 			RICHARDSON,  ///< Simplified Richardson number stability correction
 			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
+			SCHLOEGL_MO, ///< MO stability correction improvements by S. Schloegel
 			NEUTRAL_MO  ///< Assume neutral MO stratification
 		} ATM_STABILITY;
 
@@ -63,6 +64,9 @@ class Meteo {
 		static void RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref,
 		                                const double& vw, const double& z_ratio, double &ustar, double &psi_s);
 		static void MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf,
+		                        const double& zref, const double& vw, const double& z_ratio, double &ustar,
+		                        double &psi_s, double &psi_m);
+		static void Schloegl_MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf,
 		                        const double& zref, const double& vw, const double& z_ratio, double &ustar,
 		                        double &psi_s, double &psi_m);
 

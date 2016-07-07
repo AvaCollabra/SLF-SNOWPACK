@@ -49,6 +49,8 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 		stability = NEUTRAL_MO; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
 	else if(stability_model=="MONIN_OBUKHOV")
 		stability = MONIN_OBUKHOV; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
+	else if(stability_model=="SCHLOEGL_MO")
+		stability = SCHLOEGL_MO;
 	else
 		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 
@@ -155,6 +157,29 @@ void Meteo::MOStability(const double& ta_v, const double& t_surf_v, const double
 		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
 		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 	}
+
+}
+
+void Meteo::Schloegl_MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
+{
+	ustar = 0.4 * vw / (z_ratio - psi_m);
+	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
+	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
+
+	if (stab_ratio > 0.) { // stable
+		// All multivariate 2/3
+		psi_m = -0.65 - 12.15 * (ta_v - t_surf_v)/(0.5*(ta_v + t_surf_v)) + 0.11 * 1./pow(vw,2);
+		psi_s = 6.66 - 684.99 * (ta_v - t_surf_v)/(0.5*(ta_v + t_surf_v)) - 0.09 * 1./pow(vw,2);
+	} else {
+		// Paulson - the original
+		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
+		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
+		              - 2. * atan(dummy1) + 0.5 * Constants::pi;
+		
+		// Stearns & Weidner, 1993, for scalars
+		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
+		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
+	}
 }
 
 /**
@@ -205,6 +230,8 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		} else if (stability==MONIN_OBUKHOV || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) {
 			//compute ustar, psi_s & psi_m
 			MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
+		} else if (stability==SCHLOEGL_MO) { 
+			Schloegl_MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		} else { // NEUTRAL
 			psi_m = 0.;
 			psi_s = 0.;
