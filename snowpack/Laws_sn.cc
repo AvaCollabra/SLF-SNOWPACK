@@ -157,20 +157,6 @@ bool   SnLaws::setfix = false;
 //@}
 
 /**
- * @name Snow albedo
- * @note {
- * @par
- * These static variables are only defined below, if you want to change them
- * for your purposes you need to do so in the function SnLaws::setStaticData
- * where these parameters are set according to the VARIANT used
- * }
- * - ageAlbedo : Empirical constant related to age of snow, set to zero in Antarctic variant
- */
-//@{
-	bool SnLaws::ageAlbedo = true;
-//@}
-
-/**
  * @name Event driven density of new snow
  * @note {
  * @par
@@ -243,11 +229,6 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 		setfix = false;
 	}
 
-	if (current_variant == "ANTARCTICA")
-		SnLaws::ageAlbedo = false;
-	else
-		SnLaws::ageAlbedo = true;
-
 	// snow extinction coefficients; values in use since r140
 	double k_init[5]  = {0.059, 0.180, 0.525, 4.75, 85.23};
 	double fb_init[5] = {29., 15., 5., 9., 35.};
@@ -313,15 +294,15 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @param Mdata
  */
 double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki,
-                                       const double& i_albedo_fixedValue, const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata)
+                                       const double& i_albedo_fixedValue, const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata, const bool& ageAlbedo)
 {
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
-	double age = Mdata.date.getJulian() - Edata.depositionDate.getJulian();
+	double age = (ageAlbedo)? Mdata.date.getJulian() - Edata.depositionDate.getJulian() : 0.;
 
 	if (i_snow_albedo == "FIXED") {
 		Alb = i_albedo_fixedValue;
-	} else if ((SnLaws::ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
+	} else if ((ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
 		Alb = Constants::glacier_albedo;
 	}
 	else if (i_albedo_parameterization == "LEHNING_0") {
@@ -358,8 +339,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		//TODO: this perfoms very badly (if not completly wrong) for (very?) wet snowpack
 		//for example, February 2007 in Davos with very warm weather resulting in (measured?) albedos of 0.3 ...
 		double av = 0.8042; // Value of original regression
-		if (!SnLaws::ageAlbedo) { // NOTE clean antarctic snow
-			age = 0.;
+		if (!ageAlbedo) { // NOTE clean antarctic snow
 			av = 0.7542; // estimated from comparison with measurements at Dome C
 		} else {
 			age = MIN(30., age);
@@ -388,8 +368,6 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			av = 0.74824; // mean of single averages @ WFJ, DAV, and PAY
 		else
 			throw UnknownValueException("Invalid average value chosen for the \'"+i_albedo_parameterization+"\' parametrization: \'"+i_albAverageSchmucki+"\'", AT);
-		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
-			age = 0.;
 
 		const double inter = 1.178904;
 		const double Cms = -5.691804e-02, Cage = -2.840603e-04, Crg = -1.029158e-01, Crho = -5.030213e-04, Cswin = -6.780479e-5;
@@ -411,8 +389,6 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 			av = 0.74824; // Mean of single regressions @ WFJ, DAV, PAY, and NAP
 		else
 			throw UnknownValueException("Invalid average value chosen for the \'"+i_albedo_parameterization+"\' parametrization: \'"+i_albAverageSchmucki+"\'", AT);
-		if (!SnLaws::ageAlbedo) // NOTE clean antarctic snow
-			age = 0.;
 
 		const double inter = 1.148088;
 		const double Cms = -4.412422e-02, Cage = -1.523871e-03, Cogs = -1.099020e-01, Crho = -3.638010e-04, Cswin = -7.140708e-05;

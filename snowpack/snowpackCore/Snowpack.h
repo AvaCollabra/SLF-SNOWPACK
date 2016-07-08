@@ -72,11 +72,6 @@ class Snowpack {
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
 
-		bool compSnowForces(ElementData &Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ],
-		                    double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
-		                    double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ],
-		                    double Fe[ N_OF_INCIDENCES ]);
-
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		bool sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
@@ -133,6 +128,7 @@ class Snowpack {
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
+		bool ageAlbedo; ///< use the age of snow in the albedo parametrizations? default: true
 
 		const static bool hydrometeor;
 		const static double snowfall_warning;

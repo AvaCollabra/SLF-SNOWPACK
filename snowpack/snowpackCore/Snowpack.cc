@@ -86,7 +86,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), 
+            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), 
             temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
@@ -104,6 +104,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ALBEDO_PARAMETERIZATION", "SnowpackAdvanced", albedo_parameterization);
 	cfg.getValue("ALBEDO_AVERAGE_SCHMUCKI", "SnowpackAdvanced", albedo_average_schmucki);
 	cfg.getValue("ALBEDO_FIXEDVALUE", "SnowpackAdvanced", albedo_fixedValue);
+	cfg.getValue("ALBEDO_AGING", "SnowpackAdvanced", ageAlbedo);
 
 	//Defines whether a multiband model is used for short wave radiation absorption
 	cfg.getValue("SW_ABSORPTION_SCHEME", "SnowpackAdvanced", sw_absorption_scheme);
@@ -218,6 +219,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		rh_lowlim = 0.7;
 		bond_factor_rh = 3.0;
 		enhanced_wind_slab = true;
+		ageAlbedo = false;
 	} else {
 		new_snow_dd = 1.0;
 		new_snow_sp = 0.5;
@@ -260,98 +262,6 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 
 void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really needed?
 	useSoilLayers = value;
-}
-
-/**
- * @brief This routine evaluates the element stiffness matrix and right hand side vector for the
- * creep solution process. That is, the routine evaluates [Ke], {Fc} (which are later placed
- * on the right hand side), {Fi}, the internal forces and finally the external forces {Fe}
- * meaning, the self-weight of the snowpack.
- * NOTE: For now we are assuming that the density remains CONSTANT over the time step. At the
- * end of the time step the density is updated. This improves both STABILITY and ACCURACY
- * @param Edata
- * @param dt time step (s)
- * @param cos_sl Cosine of slope angle
- * @param Zn Height of element nodes (m)
- * @param Un Temperature of Nodes (K)
- * @param Se Element stiffness matrix
- * @param Fc Creep forces
- * @param Fi Internal forces
- * @param Fe Element right hand side vector
- * @return false on error, true if no error occurred
- */
-bool Snowpack::compSnowForces(ElementData &Edata,  double dt, double cos_sl, double Zn[ N_OF_INCIDENCES ], double Un[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fc[ N_OF_INCIDENCES ], double Fi[ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ])
-{
-	// First compute the new length and from the new length the total strain
-	const double L = Zn[1] + Un[1] - Zn[0] - Un[0]; //Length
-	const double L0 = Edata.L0; //Initial length
-	const double dVol = Edata.L / L; //Volume change
-	Edata.L = L;
-
-	if (L <= 0.) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "Element length < 0.0!\n L0=%lf L=%lf Zn[0]=%lf Zn[1]=%lf Un[0]=%lf Un[1]=%lf,", L0, L, Zn[0], Zn[1], Un[0], Un[1]);
-		return false;
-	}
-	// Compute the Natural Strain // Green Lagrange Strain
-	const double Eps = log(L / L0); // Strain
-	Edata.Eps = Eps;
-	if (!(Eps >= -100. && Eps <= 1.e-5)) {
-		prn_msg(__FILE__, __LINE__, "err", Date(), "In strain E (Memory?)");
-		return false;
-	}
-	/*
-	 * The volume change conserves ice mass, i.e. the volumetric air content is
-	 * changed and the volumetric ice and water contents remain the same.
-	 * What is required is not the total volume change -- rather the increment
-	 * in volume change. Otherwise cannot update the volumetric components (which
-	 * might be changed elsewhere) correctly. Update density.
-	*/
-	double ddEps = (Eps - Edata.dEps); // Change in axial strain, volumetric strain
-	Edata.dEps = Eps;
-	if (ddEps <= -1.5) {
-		ddEps = -1.5;
-		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Time step is too Large!!!");
-	}
-
-	// Compute the volumetric components
-	Edata.theta[ICE] = MIN (0.999999, Edata.theta[ICE] * dVol);
-	Edata.theta[WATER] = MIN (0.999999, Edata.theta[WATER] * dVol);
-	Edata.theta[AIR] = 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[SOIL];
-	Edata.checkVolContent();
-	if (!(Edata.theta[AIR] <= 1.0 && Edata.theta[AIR] >= -0.05)) {
-		prn_msg(__FILE__, __LINE__, "msg+", Date(), "ERROR AIR: %e (ddE=%e)", Edata.theta[AIR], ddEps);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ELEMENT SIZE: L0=%e L=%e", Edata.L0, Edata.L);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "DENSITY: rho=%e", Edata.Rho);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaICE: ti=%e", Edata.theta[ICE]);
-		prn_msg(__FILE__, __LINE__, "msg", Date(), "ThetaWATER: ti=%e", Edata.theta[WATER]);
-		return false;
-	}
-	// Compute the self weight of the element (with the present mass)
-	Fe[0] = Fe[1] = -(Edata.M * Constants::g * cos_sl) / 2.;
-	// Compute the elastic strain and stress
-	Edata.Eps_e = Edata.Eps - Edata.Eps_v;
-	const double D = Edata.snowElasticity(); // Modulus of elasticity
-	const double S = D * Edata.Eps_e; // Stress
-	Edata.S = S;
-	// Compute the internal forces
-	Fi[0] = -S;
-	Fi[1] = S;
-	// Compute the pseudo increment in creep stress
-	const double Sc = D * Edata.Eps_vDot * dt; // Pseudo Creep Stress
-	// Compute the creep forces
-	Fc[0] = -Sc;
-	Fc[1] = Sc;
-	// Update the element force vector (NOTE: Assembled Fe[0..5]=0.0! if elastic
-	 // istropic solution WITHOUT creep.)
-	Fe[0] = Fe[0]+Fc[0];
-	Fc[0] = Fe[0]-Fi[0];
-	Fe[1] = Fe[1]+Fc[1];
-	Fc[1] = Fe[1]-Fi[1];
-	// Compute the stiffness matrix
-	Se[0][0] = D/L ;  Se[0][1] = -D/L ;
-	Se[1][0] =-D/L ;  Se[1][1] = D/L ;
-
-	return true;
 }
 
 /**
@@ -752,7 +662,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 				
 			default: // Snow, glacier ice, PLASTIC, or soil
 				if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
-					Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata);
+					Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata, ageAlbedo);
 					if (useCanopyModel && (Xdata.Cdata.height > 3.5)) { //forest floor albedo
 						const double age = (forestfloor_alb) ? MAX(0., Mdata.date.getJulian() - Xdata.Edata[eAlbedo].depositionDate.getJulian()) : 0.; // day
 						Albedo = (Albedo -.3)* exp(-age/7.) + 0.3;
