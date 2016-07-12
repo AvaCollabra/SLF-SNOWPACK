@@ -819,7 +819,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	}
 }
 
-void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
+inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
 {
 	std::vector< std::vector<MeteoData> > vecMeteo;
 	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
