@@ -468,8 +468,8 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                             const ZwischenData& Zdata, const bool& forbackup)
 {
-	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno";
-	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz";
+	string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno" );
+	string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
 
 	if (forbackup){
 		stringstream ss;
@@ -694,10 +694,41 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 }
 
 
-void SmetIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
-                               const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
+void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
+                               const ProcessDat& Hdata, const double wind_trans24)
 {
 	throw IOException("Nothing implemented here!", AT);
+	const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
+	if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
+			throw InvalidNameException(filename, AT);
+	
+	smet::SMETWriter *smet_writer = NULL;
+	
+	if (FileUtils::fileExists(filename)) {
+		std::cerr << "Append mode not supported yet\n";
+		throw IOException(filename, AT);
+	} else {
+		smet_writer = new smet::SMETWriter(filename);
+		
+		const string fields_header( "Date,Sensible heat,Latent heat,Outgoing longwave radiation" );
+		setBasicHeader(Xdata, fields_header, *smet_writer);
+		smet_writer->set_header_value("comments", "header_comments");
+		smet_writer->set_header_value("units", "header_units");
+	}
+	
+	/*vector<int> vec_width, vec_precision;
+	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision);
+	sno_writer.set_width(vec_width);
+	sno_writer.set_precision(vec_precision);*/
+	
+	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
+	vector<double> data;
+	data.push_back( Sdata.qs );
+	data.push_back( Sdata.ql );
+	data.push_back( Sdata.lw_out );
+	
+	
+	smet_writer->write(timestamp, data);
 }
 
 void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)
@@ -715,7 +746,7 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
 std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
-	string filename_prefix = path + "/" + fnam;
+	string filename_prefix( path + "/" + fnam );
 
 	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
 		filename_prefix += "_" + experiment;
