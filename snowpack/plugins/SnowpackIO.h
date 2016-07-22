@@ -127,7 +127,7 @@ class SnowpackIO : public SnowpackIOInterface {
 		bool input_snow_as_caaml, output_snow_as_caaml;
 		bool input_snow_as_ascii, output_snow_as_ascii;
 		bool output_prf_as_ascii, output_prf_as_caaml, output_prf_as_imis;
-		bool output_ts_as_ascii, output_haz_as_imis;
+		bool output_ts_as_ascii, output_ts_as_smet, output_haz_as_imis;
 };
 
 #endif //End of SnowpackIO.h

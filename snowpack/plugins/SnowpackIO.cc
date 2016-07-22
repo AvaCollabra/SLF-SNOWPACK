@@ -42,7 +42,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	input_snow_as_caaml(false), output_snow_as_caaml(false),
 	input_snow_as_ascii(false), output_snow_as_ascii(false),
 	output_prf_as_ascii(false), output_prf_as_caaml(false), output_prf_as_imis(false),
-	output_ts_as_ascii(false), output_haz_as_imis(false)
+	output_ts_as_ascii(false), output_ts_as_smet(false), output_haz_as_imis(false)
 
 {
 	//Format of initial snow profile:
@@ -86,16 +86,26 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 			} else if (vecProfileFmt[ii] == "IMIS") {
 				output_prf_as_imis  = true;
 			} else {
-				throw InvalidArgumentException("Key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS values", AT);
+				throw InvalidArgumentException("The key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS values", AT);
 			}
 		}
 	}
+	
 	//Format of meteo time series:
-	output_ts_as_ascii = cfg.get("TS_WRITE", "Output", IOUtils::nothrow);
+	const bool ts_out = cfg.get("TS_WRITE", "Output");
+	if (ts_out==true) {
+		const std::string ts_format = cfg.get("TS_FORMAT", "Output", IOUtils::nothrow);
+		if (ts_format=="SMET")
+			output_ts_as_smet = true;
+		else if (ts_format=="MET")
+			output_ts_as_ascii = true;
+		else
+			throw InvalidArgumentException("The key TS_FORMAT in section [Output] takes only SMET or MET values", AT);
+	}
 
 	//set the "plugins" pointers
 	RunInfo run_info;
-	if (input_snow_as_smet || output_snow_as_smet) smetio = new SmetIO(cfg, run_info);
+	if (input_snow_as_smet || output_snow_as_smet || output_ts_as_smet) smetio = new SmetIO(cfg, run_info);
 	if (input_snow_as_ascii || output_snow_as_ascii || output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
 #ifdef CAAMLIO
 	if (input_snow_as_caaml || output_snow_as_caaml) caamlio = new CaaMLIO(cfg, run_info);
@@ -118,7 +128,7 @@ SnowpackIO::SnowpackIO(const SnowpackIO& source) :
 	input_snow_as_caaml(source.input_snow_as_caaml), output_snow_as_caaml(source.output_snow_as_caaml),
 	input_snow_as_ascii(source.input_snow_as_ascii), output_snow_as_ascii(source.output_snow_as_ascii),
 	output_prf_as_ascii(source.output_prf_as_ascii), output_prf_as_caaml(source.output_prf_as_caaml), output_prf_as_imis(source.output_prf_as_imis),
-	output_ts_as_ascii(source.output_ts_as_ascii), output_haz_as_imis(source.output_haz_as_imis)
+	output_ts_as_ascii(source.output_ts_as_ascii), output_ts_as_smet(source.output_ts_as_smet), output_haz_as_imis(source.output_haz_as_imis)
 {}
 
 SnowpackIO::~SnowpackIO()
@@ -179,6 +189,8 @@ void SnowpackIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& 
 {
 	if (output_ts_as_ascii)
 		asciiio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
+	else if (output_ts_as_smet)
+		smetio->writeTimeSeries(Xdata, Sdata, Mdata, Hdata, wind_trans24);
 }
 
 void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)

@@ -763,7 +763,7 @@ double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const Snow
 
 	const double c = karman * Mdata.ustar / (0.74 * MAX (0.7, lrat-Mdata.psi_s));
 
-	return(c * Constants::density_air * Constants::specific_heat_air);
+	return c * Constants::density_air * Constants::specific_heat_air;
 	//return(2.77e-3*Mdata.vw*DENSITY_AIR*Constants::specific_heat_air);
 }
 

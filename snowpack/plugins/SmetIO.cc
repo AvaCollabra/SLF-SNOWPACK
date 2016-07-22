@@ -587,9 +587,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 
 void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
 {
-	/*
-	 * Set the basic, mandatory header key/value pairs for a SMET file
-	 */
+	// Set the basic, mandatory header key/value pairs for a SMET file
 	smet_writer.set_header_value("station_id", Xdata.meta.getStationID());
 	smet_writer.set_header_value("station_name", Xdata.meta.getStationName());
 	smet_writer.set_header_value("nodata", IOUtils::nodata);
@@ -695,22 +693,20 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 
 
 void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
-                               const ProcessDat& Hdata, const double wind_trans24)
+                               const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
 	throw IOException("Nothing implemented here!", AT);
+	const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
+	
 	const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
 	if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
 			throw InvalidNameException(filename, AT);
 	
 	smet::SMETWriter *smet_writer = NULL;
-	
 	if (FileUtils::fileExists(filename)) {
-		std::cerr << "Append mode not supported yet\n";
-		throw IOException(filename, AT);
+		smet_writer = new smet::SMETWriter(filename, fields_header, IOUtils::nodata); //set to append mode
 	} else {
 		smet_writer = new smet::SMETWriter(filename);
-		
-		const string fields_header( "Date,Sensible heat,Latent heat,Outgoing longwave radiation" );
 		setBasicHeader(Xdata, fields_header, *smet_writer);
 		smet_writer->set_header_value("comments", "header_comments");
 		smet_writer->set_header_value("units", "header_units");
@@ -726,7 +722,6 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 	data.push_back( Sdata.qs );
 	data.push_back( Sdata.ql );
 	data.push_back( Sdata.lw_out );
-	
 	
 	smet_writer->write(timestamp, data);
 }
