@@ -125,7 +125,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["METEO"] = "SMET";
 	outputConfig["METEOPATH"] = "./output";
-	outputConfig["TS_FORMAT"] = "SMET";
+	outputConfig["TS_FORMAT"] = "MET";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
 	outputConfig["OUT_HEAT"] = "true";

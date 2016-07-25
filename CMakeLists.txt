@@ -50,94 +50,11 @@ IF(WIN32)
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
-INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
-BuildVersion()
 
-IF(MSVC)
-	IF(PLUGIN_IMISIO)
-		SET(EXTRA "${EXTRA} /DIMISDBIO")
-	ENDIF(PLUGIN_IMISIO)
-	IF(PLUGIN_CAAMLIO)
-		SET(EXTRA "${EXTRA} /DCAAMLIO")
-	ENDIF(PLUGIN_CAAMLIO)
-	#SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs"  FORCE)
-	SET(WARNINGS "/W4")
-	#SET(EXTRA_WARNINGS "/Wp64") #/Wall
-	SET(OPTIM "/O2 /DNDEBUG /MD /DNOSAFECHECKS")
-	SET(ARCH_OPTIM "/arch:SSE2")
-	SET(ARCH_SAFE "")
-	SET(DEBUG "/Z7 /Od /D__DEBUG /MDd")
-	IF(DEBUG_ARITHM)
-		SET(EXTRA "${EXTRA} /EHa")
-	ENDIF(DEBUG_ARITHM)
-	LIST(APPEND CFLAGS " /D_CRT_SECURE_NO_WARNINGS /D_USE_MATH_DEFINES /EHsc") #Za: strict ansi
-	SET(_VERSION "/D_VERSION=${_versionString}")
-ELSE(MSVC)
-	#we consider that all other compilers support "-" options and silently ignore what they don't know
-	IF(PLUGIN_IMISIO)
-		SET(EXTRA "${EXTRA} -DIMISDBIO")
-	ENDIF(PLUGIN_IMISIO)
-	IF(PLUGIN_CAAMLIO)
-		SET(EXTRA "${EXTRA} -DCAAMLIO")
-	ENDIF(PLUGIN_CAAMLIO)
-	IF(ENABLE_LAPACK)
-		SET(EXTRA "${EXTRA} -DCLAPACK")
-	ENDIF(ENABLE_LAPACK)
-	SET(WARNINGS "-Wall")
-	SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
-	SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}") #-Weffc++
-	IF(WIN32)
-		LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
-	ENDIF(WIN32)
-	SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-	IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
-		SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
-	ENDIF()
-	SET(DEBUG "-g3 -O0 -D__DEBUG")
-	IF(DEBUG_ARITHM)
-		SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
-	ENDIF(DEBUG_ARITHM)
-	SET(_VERSION "-D_VERSION=${_versionString}")
-	
-	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
-		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wvector-operation-performance")
-		IF(NOT ANDROID)
-			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
-			IF(WIN32) #for gcc on windows
-				SET(CMAKE_SHARED_LINKER_FLAGS "--enable-auto-import")
-				SET(CMAKE_EXE_LINKER_FLAGS "--enable-auto-import")
-			ENDIF(WIN32)
-		ENDIF(NOT ANDROID)
-		EXECUTE_PROCESS(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-		IF(GCC_VERSION VERSION_GREATER 4.2 OR GCC_VERSION VERSION_EQUAL 4.2)
-			SET(ARCH_OPTIM  "-march=native -mtune=native")
-		ENDIF()
-		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
-			SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
-			# if set to ON, all binaries depending on the library have to be compiled the same way.
-			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
-			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
-			IF (LEAKS_CHECK)
-				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
-			ENDIF(LEAKS_CHECK)
-		ENDIF()
-	ENDIF()
-	IF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-		SET(PROFILING "-pg") #add ${PROFILING} to the CFLAGS when necessary
-		SET(EXTRA "${EXTRA} -fcolor-diagnostics") #-fapple-pragma-pack does not seems necessary; -ftrapv should be replaced by sanitize=integer
-		SET(OPTIM "${OPTIM} -flto")
-		SET(WARNINGS "${WARNINGS} -Weverything -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-global-constructors -Wno-exit-time-destructors -Wno-sign-conversion -Wno-covered-switch-default") #obviously, we should try to fix the warnings!
-		SET(DEEP_WARNINGS "${DEEP_WARNINGS} -Rpass=.*")
-		SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
-			IF (LEAKS_CHECK)
-				SET(EXTRA "${EXTRA} -ftrapv -fno-omit-frame-pointer") #-fsanitize=address,undefined,integer,undefined-trap but this is currently not supported by Apple
-			ENDIF(LEAKS_CHECK)
-		SET(ARCH_OPTIM  "-march=native")
-	ENDIF()
-
-ENDIF(MSVC)
-
+###########################################################
+#set compiler flags according to the detected compiler and user options
+INCLUDE("${CMAKE_SOURCE_DIR}/tools/cmake/SetCompilerOptions.cmake")
+SET_COMPILER_OPTIONS()
 
 #The following pre-processor variables are automatically defined:
 # __linux, __GNUC__, __CYGWIN__, _WIN32, __MINGW32__, __APPLE__
