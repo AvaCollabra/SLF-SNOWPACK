@@ -20,9 +20,6 @@
 /**
  * @file Meteo.cc
  * @author Michael Lehning and others
- * @version 9.x
- * @date -
- * @bug -
  * @brief Computes missing meteorological information such as friction velocity and roughness length
  * - 29.10.2002: Michael Lehning implements Micromet()
  * - 15.03.2005: Andy and Michi implement stability correction for turbulent fluxes in the hope
@@ -38,19 +35,29 @@ using namespace mio;
 ************************************************************/
 
 Meteo::Meteo(const SnowpackConfig& cfg)
-       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), adjust_height_of_wind_value(true), stability(MONIN_OBUKHOV),
+       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), adjust_height_of_wind_value(true), stability(MO_MICHLMAYR),
          research_mode(false), useCanopyModel(false)
 {
 	std::string stability_model;
 	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", stability_model);
-	if(stability_model=="RICHARDSON")
+	if (stability_model=="RICHARDSON")
 		stability = RICHARDSON; //Simplified Richardson number stability correction
-	else if(stability_model=="NEUTRAL_MO")
-		stability = NEUTRAL_MO; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
-	else if(stability_model=="MONIN_OBUKHOV")
-		stability = MONIN_OBUKHOV; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
-	else if(stability_model=="SCHLOEGL_MO")
-		stability = SCHLOEGL_MO;
+	else if (stability_model=="NEUTRAL")
+		stability = NEUTRAL; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
+	else if (stability_model=="MO_MICHLMAYR")
+		stability = MO_MICHLMAYR; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
+	else if (stability_model=="MO_STEARNS")
+		stability = MO_STEARNS;
+	else if (stability_model=="MO_HOLTSLAG")
+		stability = MO_HOLTSLAG; //should be much better during melt periods than MICHLMAYR_MO
+	else if (stability_model=="LOG_LINEAR")
+		stability = LOG_LINEAR;
+	else if (stability_model=="MO_SCHLOEGL_UNI")
+		stability = MO_SCHLOEGL_UNI;
+	else if (stability_model=="MONIN_OBUKHOV") //HACK: temporary
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'MO_MICHLMAYR'", AT);
+	else if (stability_model=="NEUTRAL_MO") //HACK: temporary
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'NEUTRAL'", AT);
 	else
 		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 
@@ -120,66 +127,71 @@ void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, cons
 	ustar = 0.4 * vw / (z_ratio - psi_m);
 }
 
-void Meteo::MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
+void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
 {
 	ustar = 0.4 * vw / (z_ratio - psi_m);
 	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
 	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
-
+	
+	if (use_stability==NEUTRAL) {
+		psi_m = psi_s = 0.;
+		return;
+	}
+	
 	if (stab_ratio > 0.) { // stable
-		// Stearns & Weidner, 1993
-		const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
-		psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
-				- 1. * atan(dummy1) - 0.5 * Optim::pow3(dummy1) + 0.8247; // Original 2.*atan(dummy1) - 1.3333
-		// Launiainen and Vihma, 1990
-		//psi_m = -17. * (1. - exp(-0.29 * stab_ratio));
-
-		// Holtslag and DeBruin (1988) prepared from Ed Andreas
-		//psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
-		//                    * exp(-0.35 * stab_ratio) + 10.71);
-
-		// Stearns & Weidner, 1993, for scalars
-		const double dummy2 = Optim::pow2(dummy1);
-		psi_s = log(1. + dummy2) * log(1. + dummy2)
-				- 1. * dummy2 - 0.3 * Optim::pow3(dummy2) + 1.2804; // Ori: 2. * dummy2 - 0.66667 * ...
-	} else {
-		// Stearns & Weidner, 1993 - Must be an ERROR somewhere NOTE maybe - -1. below ;-)
-		//const double dummy0 = pow((1.-15. * stab_ratio),0.25);
-		//psi_m = log(1. - dummy0) * log(1. - dummy0) + log(1. + dummy0*dummy0)
-		//            - 2.*atan(dummy0) - -1. + dummy0 - 0.5086;
-
+		if (use_stability==MO_HOLTSLAG) {
+			// Holtslag and DeBruin (1988) prepared from Ed Andreas
+			psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
+			                           * exp(-0.35 * stab_ratio) + 10.71);
+			return;
+		}
+		
+		if (use_stability==MO_STEARNS) {
+			// Stearns & Weidner, 1993
+			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
+			psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
+					- 2. * atan(dummy1) - 1.3333;
+			const double dummy2 = Optim::pow2(dummy1);
+			psi_s = log(1. + dummy2) * log(1. + dummy2)
+					- 2. * dummy2 - 0.66667 * Optim::pow3(dummy2) + 1.2804;
+			return;
+		}
+		
+		if (use_stability==MO_MICHLMAYR) { //default, old MO
+			// Stearns & Weidner, 1993 modified by Michlmayr, 2008
+			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
+			psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
+					- 1. * atan(dummy1) - 0.5 * Optim::pow3(dummy1) + 0.8247;
+			const double dummy2 = Optim::pow2(dummy1);
+			psi_s = log(1. + dummy2) * log(1. + dummy2)
+					- 1. * dummy2 - 0.3 * Optim::pow3(dummy2) + 1.2804;
+			return;
+		}
+		
+		if (use_stability==LOG_LINEAR) {
+			//log_linear
+			psi_m = psi_s = -5.* stab_ratio;
+			return;
+		}
+		
+		if (use_stability==MO_SCHLOEGL_UNI) {
+			//schloegl univariate: bin univariate 2/3 datasets
+			psi_m = -1.62 * stab_ratio;
+			psi_s = -2.96 * stab_ratio;
+			return;
+		}
+		
+		throw InvalidArgumentException("Unsupported atmospheric stability parametrization", AT);
+	} else { //unstable
 		// Paulson - the original
 		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
 		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
 				- 2. * atan(dummy1) + 0.5 * Constants::pi;
-
 		// Stearns & Weidner, 1993, for scalars
 		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
 		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 	}
-
-}
-
-void Meteo::Schloegl_MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
-{
-	ustar = 0.4 * vw / (z_ratio - psi_m);
-	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
-	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
-
-	if (stab_ratio > 0.) { // stable
-		// All multivariate 2/3
-		psi_m = -0.65 - 12.15 * (ta_v - t_surf_v)/(0.5*(ta_v + t_surf_v)) + 0.11 * 1./pow(vw,2);
-		psi_s = 6.66 - 684.99 * (ta_v - t_surf_v)/(0.5*(ta_v + t_surf_v)) - 0.09 * 1./pow(vw,2);
-	} else {
-		// Paulson - the original
-		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
-		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
-		              - 2. * atan(dummy1) + 0.5 * Constants::pi;
-		
-		// Stearns & Weidner, 1993, for scalars
-		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
-		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
-	}
+	
 }
 
 /**
@@ -223,18 +235,14 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		z0 = 0.9 * z0_old + 0.1 * (a2 * Optim::pow2(ustar) / 2. / Constants::g); //update z0
 		const double z_ratio = log((zref - d_pump) / z0);
 
-		// Stability corrections
+		// Stability corrections: compute ustar, psi_s & potentially psi_m
 		if (stability==RICHARDSON) {
-			//compute ustar & psi_s
-			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s);
-		} else if (stability==MONIN_OBUKHOV || (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.))) {
-			//compute ustar, psi_s & psi_m
-			MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
-		} else if (stability==SCHLOEGL_MO) { 
-			Schloegl_MOStability(ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
-		} else { // NEUTRAL
-			psi_m = 0.;
-			psi_s = 0.;
+			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s); //compute ustar & psi_s
+		} else if (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.)) {
+			//force MICHLMAYR for operational mode when temperatures are high enough
+			MOStability(Meteo::MO_MICHLMAYR, ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
+		} else {
+			MOStability(stability, ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		}
 	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
 

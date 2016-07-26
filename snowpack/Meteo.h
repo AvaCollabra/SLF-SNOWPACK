@@ -40,11 +40,15 @@
 class Meteo {
 
 	public:
+		//except Richardson and Neutral, all are standard MO iterations with the specified stability correction. In unstable conditions, they use Paulson and Stearns & Weidner, 1993, for scalars
 		typedef enum {
 			RICHARDSON,  ///< Simplified Richardson number stability correction
-			MONIN_OBUKHOV, ///< Standard MO iteration with Paulson and Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
-			SCHLOEGL_MO, ///< MO stability correction improvements by S. Schloegel
-			NEUTRAL_MO  ///< Assume neutral MO stratification
+			NEUTRAL,  ///< Assume neutral MO stratification
+			MO_HOLTSLAG, ///< Holtslag and DeBruin (1988) prepared from Ed Andreas
+			MO_STEARNS, ///< Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
+			MO_MICHLMAYR, ///< Stearns & Weidner, 1993 modified by Michlmayr, 2008
+			LOG_LINEAR, ///< Simple log-linear model
+			MO_SCHLOEGL_UNI ///< Schloegl univariate
 		} ATM_STABILITY;
 
 		Meteo(const SnowpackConfig& i_cfg);
@@ -63,12 +67,8 @@ class Meteo {
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 		static void RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref,
 		                                const double& vw, const double& z_ratio, double &ustar, double &psi_s);
-		static void MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf,
-		                        const double& zref, const double& vw, const double& z_ratio, double &ustar,
-		                        double &psi_s, double &psi_m);
-		static void Schloegl_MOStability(const double& ta_v, const double& t_surf_v, const double& t_surf,
-		                        const double& zref, const double& vw, const double& z_ratio, double &ustar,
-		                        double &psi_s, double &psi_m);
+		static void MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, 
+		                                       const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m);
 
 		Canopy canopy;
 		double roughness_length, height_of_wind_value;
