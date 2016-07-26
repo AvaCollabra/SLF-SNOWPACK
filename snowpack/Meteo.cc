@@ -129,14 +129,14 @@ void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, cons
 
 void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
 {
-	ustar = 0.4 * vw / (z_ratio - psi_m);
-	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
-	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
-	
-	if (use_stability==NEUTRAL) {
+	if (use_stability==NEUTRAL) { //prevent recomputing ustar, for consistency
 		psi_m = psi_s = 0.;
 		return;
 	}
+	
+	ustar = 0.4 * vw / (z_ratio - psi_m);
+	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
+	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
 	
 	if (stab_ratio > 0.) { // stable
 		if (use_stability==MO_HOLTSLAG) {
