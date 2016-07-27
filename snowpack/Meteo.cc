@@ -29,6 +29,9 @@
 using namespace mio;
 
 #include <snowpack/Meteo.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Laws_sn.h>
+#include <snowpack/Utils.h>
 
 /************************************************************
 * non-static section                                       *
@@ -38,29 +41,9 @@ Meteo::Meteo(const SnowpackConfig& cfg)
        : canopy(cfg), roughness_length(0.), height_of_wind_value(0.), adjust_height_of_wind_value(true), stability(MO_MICHLMAYR),
          research_mode(false), useCanopyModel(false)
 {
-	std::string stability_model;
-	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", stability_model);
-	if (stability_model=="RICHARDSON")
-		stability = RICHARDSON; //Simplified Richardson number stability correction
-	else if (stability_model=="NEUTRAL")
-		stability = NEUTRAL; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
-	else if (stability_model=="MO_MICHLMAYR")
-		stability = MO_MICHLMAYR; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
-	else if (stability_model=="MO_STEARNS")
-		stability = MO_STEARNS;
-	else if (stability_model=="MO_HOLTSLAG")
-		stability = MO_HOLTSLAG; //should be much better during melt periods than MICHLMAYR_MO
-	else if (stability_model=="LOG_LINEAR")
-		stability = LOG_LINEAR;
-	else if (stability_model=="MO_SCHLOEGL_UNI")
-		stability = MO_SCHLOEGL_UNI;
-	else if (stability_model=="MONIN_OBUKHOV") //HACK: temporary
-		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'MO_MICHLMAYR'", AT);
-	else if (stability_model=="NEUTRAL_MO") //HACK: temporary
-		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'NEUTRAL'", AT);
-	else
-		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
-
+	const std::string stability_model = cfg.get("ATMOSPHERIC_STABILITY", "Snowpack");
+	stability = getStability(stability_model);
+	
 	//Initial estimate of the roughness length for the site; will be adjusted iteratively, default value and operational mode: 0.002 m
 	cfg.getValue("ROUGHNESS_LENGTH", "Snowpack", roughness_length);
 
@@ -72,6 +55,35 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
+}
+
+/**
+ * @brief Parse the given string an return the matching atmospheric stability algorithm
+ * @param[in] stability_model atmospheric stability model specification
+ * @return stability model
+ */
+Meteo::ATM_STABILITY Meteo::getStability(const std::string& stability_model)
+{
+	if (stability_model=="RICHARDSON")
+		return RICHARDSON; //Simplified Richardson number stability correction
+	else if (stability_model=="NEUTRAL")
+		return NEUTRAL; //Assume neutral stratification. Should be used with BC_CHANGE=1, i.e., Dirichlet bc but also recommended with Neumann b.c., i.e., BC_CHANGE=0
+	else if (stability_model=="MO_MICHLMAYR")
+		return MO_MICHLMAYR; //Standard MO iteration with Paulson and Stearns & Weidner (can be used with BC_CHANGE=0)
+	else if (stability_model=="MO_STEARNS")
+		return MO_STEARNS;
+	else if (stability_model=="MO_HOLTSLAG")
+		return MO_HOLTSLAG; //should be much better during melt periods than MICHLMAYR_MO
+	else if (stability_model=="LOG_LINEAR")
+		return LOG_LINEAR;
+	else if (stability_model=="MO_SCHLOEGL_UNI")
+		return MO_SCHLOEGL_UNI;
+	else if (stability_model=="MONIN_OBUKHOV") //HACK: temporary
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'MO_MICHLMAYR'", AT);
+	else if (stability_model=="NEUTRAL_MO") //HACK: temporary
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'NEUTRAL'", AT);
+	else
+		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is not supported!", AT);
 }
 
 /**
@@ -191,7 +203,6 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
 		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 	}
-	
 }
 
 /**
@@ -234,7 +245,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		z0_old = z0;
 		z0 = 0.9 * z0_old + 0.1 * (a2 * Optim::pow2(ustar) / 2. / Constants::g); //update z0
 		const double z_ratio = log((zref - d_pump) / z0);
-
+		
 		// Stability corrections: compute ustar, psi_s & potentially psi_m
 		if (stability==RICHARDSON) {
 			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s); //compute ustar & psi_s

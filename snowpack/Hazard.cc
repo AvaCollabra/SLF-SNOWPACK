@@ -22,8 +22,10 @@
  * @version 10.02
  * This module contains the hazard computation routines
  */
+#include <stdio.h>
 
 #include <snowpack/Hazard.h>
+#include <snowpack/Stability.h>
 
 using namespace mio;
 using namespace std;

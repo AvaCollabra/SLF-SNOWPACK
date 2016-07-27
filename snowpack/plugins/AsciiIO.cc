@@ -19,7 +19,13 @@
 */
 
 #include <snowpack/plugins/AsciiIO.h>
+#include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Canopy.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Hazard.h>
+#include <snowpack/Laws_sn.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/Aggregate.h>
 
 using namespace std;
 using namespace mio;

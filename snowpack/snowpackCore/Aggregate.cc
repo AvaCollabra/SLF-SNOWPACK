@@ -19,6 +19,7 @@
 */
 
 #include <snowpack/snowpackCore/Aggregate.h>
+#include <snowpack/Constants.h>
 
 /************************************************************
  * static section                                           *

@@ -18,8 +18,6 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-
 /**
  * @file Constants.h
  * @version 10.02
@@ -28,6 +26,8 @@
 
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
+
+#include <stdio.h>
 
 /**
  * @brief _VERSION is given as a compilation flag to tell us what is the version number \n

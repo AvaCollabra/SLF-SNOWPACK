@@ -21,6 +21,8 @@
 #include <snowpack/StabilityAlgorithms.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
+#include <snowpack/Stability.h>
 
 #include <assert.h>
 

@@ -73,8 +73,17 @@
  * The french metamorphism routines were written in November 1995 by Perry Bartelt
  * and Martin Schneebeli.  They were first used in the 2d snowpack code haefeli.
  */
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cmath>
+#include <ctime>
+#include <fcntl.h>
 
 #include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
+#include <snowpack/Laws_sn.h>
 #include <snowpack/snowpackCore/Snowpack.h>
 
 using namespace std;

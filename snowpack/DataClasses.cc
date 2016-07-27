@@ -28,6 +28,11 @@
 #include <snowpack/snowpackCore/Canopy.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/Solver.h>
+#include <snowpack/Laws_sn.h>
+
+#include <cstdio>
+#include <fstream>
+#include <sstream>
 #include <assert.h>
 
 using namespace mio;

@@ -22,7 +22,6 @@
 
 #include <snowpack/StabilityAlgorithms.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Constants.h>
 
 #include <map>
 #include <string>

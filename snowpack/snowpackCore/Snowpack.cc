@@ -162,7 +162,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 
 	// Defines used atmospheric stability, used for determining if dynamic time steps may be required
-	cfg.getValue("ATMOSPHERIC_STABILITY", "Snowpack", atm_stability_model);
+	const std::string atm_stability_string = cfg.get("ATMOSPHERIC_STABILITY", "Snowpack");
+	atm_stability_model = Meteo::getStability(atm_stability_string);
 
 	// Allow dynamic time stepping in case of unstable atmospheric stratification
 	cfg.getValue("ALLOW_ADAPTIVE_TIMESTEPPING", "SnowpackAdvanced", allow_adaptive_timestepping);
@@ -1672,7 +1673,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		int ii = 0;				// Counter for sub-timesteps to match one SNOWPACK time step
 		bool LastTimeStep = false;		// Flag to indicate if it is the last sub-time step
 		double p_dt = 0.;			// Cumulative progress of time steps
-		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && atm_stability_model != "NEUTRAL_MO" && allow_adaptive_timestepping == true) {
+		if ((Mdata.psi_s >= 0. || t_surf > Mdata.ta) && atm_stability_model != Meteo::NEUTRAL && allow_adaptive_timestepping == true) {
 			// To reduce oscillations in TSS, reduce the time step prematurely when atmospheric stability is unstable.
 			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum /= sn_dt;	// psum is precipitation per time step, so first express it as rate with the old time step (necessary for rain only)...
 			sn_dt = 60.;

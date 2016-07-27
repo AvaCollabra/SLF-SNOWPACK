@@ -29,9 +29,7 @@
 #include <meteoio/MeteoIO.h>
 
 #include <snowpack/DataClasses.h>
-#include <snowpack/Constants.h>
-#include <snowpack/snowpackCore/Snowpack.h> //some constants are necessary
-#include <snowpack/snowpackCore/Metamorphism.h>
+
 
 class SnLaws {
 

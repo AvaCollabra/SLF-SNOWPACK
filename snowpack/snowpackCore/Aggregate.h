@@ -22,8 +22,6 @@
 #define AGGREGATE_H
 
 #include <snowpack/DataClasses.h>
-#include <snowpack/Constants.h>
-#include <snowpack/Utils.h>
 #include <vector>
 
 /**

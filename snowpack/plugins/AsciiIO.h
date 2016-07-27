@@ -22,9 +22,7 @@
 #define ASCIIIO_H
 
 #include <meteoio/MeteoIO.h>
-#include <snowpack/Constants.h>
 #include <snowpack/plugins/SnowpackIOInterface.h>
-#include <snowpack/Hazard.h>
 
 class AsciiIO : public SnowpackIOInterface {
 

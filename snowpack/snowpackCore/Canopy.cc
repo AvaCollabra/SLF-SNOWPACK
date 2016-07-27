@@ -20,9 +20,15 @@
 
 #include <snowpack/snowpackCore/Canopy.h>
 #include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Hazard.h>
+#include <snowpack/Utils.h>
+#include <snowpack/Laws_sn.h>
+
 #include <meteoio/MeteoIO.h>
 
 #include <assert.h>
+#include <fstream>
 
 using namespace std;
 using namespace mio;

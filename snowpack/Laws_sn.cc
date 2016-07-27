@@ -38,6 +38,10 @@
 
 #include <snowpack/Laws_sn.h>
 
+#include <snowpack/Constants.h>
+#include <snowpack/snowpackCore/Snowpack.h> //some constants are necessary
+#include <snowpack/snowpackCore/Metamorphism.h>
+
 using namespace std;
 using namespace mio;
 
