@@ -23,7 +23,7 @@
 #ifndef  SOLVER_H
 #define  SOLVER_H
 
-#include <cstdio>
+#include <cstddef> //needed for size_t
 
 /**
  * @file Solver.h

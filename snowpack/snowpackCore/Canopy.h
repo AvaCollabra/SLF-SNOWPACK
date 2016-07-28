@@ -23,6 +23,9 @@
 
 #include <snowpack/DataClasses.h>
 
+#include <string>
+#include <fstream>
+
 /**
  * @brief Computes interception of precipitation and radiation, and reduction of windspeed
  * in a canopy layer above thesnow or soil surface.

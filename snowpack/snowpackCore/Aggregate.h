@@ -24,6 +24,8 @@
 #include <snowpack/DataClasses.h>
 #include <vector>
 
+#include <cstddef> //needed for size_t
+
 /**
  * @class Aggregate
  * @version 7.03

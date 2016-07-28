@@ -38,11 +38,11 @@ class Meteo {
 		//except Richardson and Neutral, all are standard MO iterations with the specified stability correction. In unstable conditions, they use Paulson and Stearns & Weidner, 1993, for scalars
 		typedef enum {
 			RICHARDSON,  ///< Simplified Richardson number stability correction
-			NEUTRAL,  ///< Assume neutral MO stratification
+			NEUTRAL,  ///< Assume neutral stratification
+			LOG_LINEAR, ///< Simple log-linear model
 			MO_HOLTSLAG, ///< Holtslag and DeBruin (1988) prepared from Ed Andreas
 			MO_STEARNS, ///< Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
 			MO_MICHLMAYR, ///< Stearns & Weidner, 1993 modified by Michlmayr, 2008
-			LOG_LINEAR, ///< Simple log-linear model
 			MO_SCHLOEGL_UNI ///< Schloegl univariate
 		} ATM_STABILITY;
 

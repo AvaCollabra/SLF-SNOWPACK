@@ -27,6 +27,8 @@
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/Aggregate.h>
 
+#define MAX_STRING_LENGTH 256
+
 using namespace std;
 using namespace mio;
 
@@ -1697,7 +1699,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	}
 	// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 	if (out_t && (fixedPositions.size() || Mdata.getNumberFixedRates())) {
-		const size_t nrFixedPositions = MIN(5, fixedPositions.size());
+		const size_t nrFixedPositions = std::min((size_t)5, fixedPositions.size());
 		if (Mdata.zv_ts.size()!=nrFixedPositions || Mdata.ts.size()!=nrFixedPositions) {
 			std::ostringstream ss;
 			ss << "Configured " << nrFixedPositions << " fixed positions but found " << Mdata.zv_ts.size() << " snow temperatures depths and ";
@@ -1749,7 +1751,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	} else if (out_t) {
 		// 50-93 (44 columns)
 		size_t ii, jj = 0;
-		for (ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+		for (ii = std::min((size_t)5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
 			if ((jj += writeTemperatures(fout, Mdata.zv_ts.at(ii), Mdata.ts.at(ii), ii, Xdata)) > 44) {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date,
 				        "There is not enough space to accomodate your temperature sensors: j=%u > 44!", jj);
@@ -1922,7 +1924,7 @@ void AsciiIO::writeTimeSeriesAddCalibration(const SnowStation& Xdata, const Surf
                                             const double /*dhs_corr*/, const double /*mass_corr*/,
                                             const size_t nCalcSteps, std::ofstream &fout)
 {
-	const double t_surf = MIN(IOUtils::C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
+	const double t_surf = std::min(IOUtils::C_TO_K(-0.1), Xdata.Ndata[Xdata.getNumberOfNodes()-1].T);
 	if (maxNumberMeasTemperatures == 5) // then there is room for the measured HS at pos 93
 		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(Mdata.hs)/Xdata.cos_sl << std::setprecision(6);
 	// 94-95:
@@ -1997,7 +1999,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		}
 	} else if (out_t) {
 		size_t jj = 0;
-		for (size_t ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+		for (size_t ii = std::min((size_t)5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
 			size_t i_prn;
 			if (ii < fixedPositions.size()) {
 				i_prn = ii + 1;
@@ -2071,7 +2073,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		}
 	} else if (out_t) {
 		size_t jj = 0;
-		for (size_t ii = MIN(5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
+		for (size_t ii = std::min((size_t)5, fixedPositions.size()); ii < numberFixedSensors; ii++) {
 			if (ii >= fixedPositions.size()) {
 				fout << ",cm";
 				jj++;
@@ -2268,10 +2270,10 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 
 	totNumberSensors += numberTags;
 
-	TAGdata.tag_low = MAX(1, MIN(TAGdata.tag_low, numberTags));
-	TAGdata.tag_top = MIN(TAGdata.tag_top, numberTags);
-	TAGdata.repos_low = MAX(1, TAGdata.repos_low);
-	TAGdata.repos_top = MIN(TAGdata.repos_top, numberTags);
+	TAGdata.tag_low = std::max((long unsigned)1, std::min(TAGdata.tag_low, numberTags));
+	TAGdata.tag_top = std::min(TAGdata.tag_top, numberTags);
+	TAGdata.repos_low = std::max((long unsigned)1, TAGdata.repos_low);
+	TAGdata.repos_top = std::min(TAGdata.repos_top, numberTags);
 
 	TAGdata.resize(numberTags + 1);
 	TAGdata.useSoilLayers = useSoilLayers;

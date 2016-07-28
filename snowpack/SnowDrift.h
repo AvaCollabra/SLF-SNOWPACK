@@ -22,11 +22,10 @@
 #define SNOWDRIFT_H
 
 #include <meteoio/MeteoIO.h>
-#include <snowpack/Constants.h>
-#include <cmath>
+
 #include <snowpack/Saltation.h>
-#include <snowpack/snowpackCore/Snowpack.h>
-#include <vector>
+#include <snowpack/DataClasses.h>
+#include <snowpack/SnowpackConfig.h>
 
 class Saltation;
 

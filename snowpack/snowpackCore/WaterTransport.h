@@ -25,9 +25,7 @@
 #ifndef WATERTRANSPORT_H
 #define WATERTRANSPORT_H
 
-#include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Laws_sn.h>
 #include <snowpack/snowpackCore/ReSolver1d.h>
 
 #include <meteoio/MeteoIO.h>

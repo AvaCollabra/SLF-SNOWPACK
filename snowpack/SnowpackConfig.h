@@ -23,6 +23,7 @@
 
 #include <meteoio/MeteoIO.h>
 #include <map>
+#include <string>
 
 class SnowpackConfig : public mio::Config {
 

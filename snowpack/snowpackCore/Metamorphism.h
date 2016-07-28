@@ -34,12 +34,10 @@
 
 class SnowStation;
 class Metamorphism;
-
 typedef void (Metamorphism::*MetaModelFn)(const CurrentMeteo&, SnowStation&);
 typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 
 class Metamorphism {
-
 	public:
 		Metamorphism(const SnowpackConfig& i_cfg);
 

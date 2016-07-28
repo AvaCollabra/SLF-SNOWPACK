@@ -496,7 +496,7 @@ class SnowStation {
 
 		mio::StationData meta;      ///< Station meta data
 		double cos_sl;              ///< Cosinus of slope angle, initialized once!
-		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		size_t sector;              ///< current slope sector of width 360./std::max(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
 		double pAlbedo;             ///< Parameterized snow albedo

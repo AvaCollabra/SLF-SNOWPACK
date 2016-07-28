@@ -73,7 +73,7 @@ class Slope {
 		void setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
-		double sector_width;       ///< width of slope sector: 360./MAX(1, nSlopes-1) deg
+		double sector_width;       ///< width of slope sector: 360./std::max((unsigned)1, nSlopes-1) deg
 };
 
 /**
@@ -135,7 +135,7 @@ Slope::Slope(const mio::Config& cfg)
 	if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
 		throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
-	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
+	sector_width = 360. / static_cast<double>(std::max((unsigned)1, nSlopes-1));
 }
 
 /**

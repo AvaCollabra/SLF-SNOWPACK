@@ -254,7 +254,7 @@ double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, co
 	if (z_vert == IOUtils::nodata) {
 		return IOUtils::nodata;
 	} else if (!useSoilLayers && (z_vert < 0.)) {
-		return (MAX(Ground, hs_ref + z_vert * cos(SlopeAngle)));
+		return (std::max(Ground, hs_ref + z_vert * cos(SlopeAngle)));
 	} else {
 		return (Ground + z_vert * cos(SlopeAngle));
 	}
@@ -394,7 +394,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 	bool mass_error = true;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
 	const double psum = Xdata.hn*Xdata.rho_hn;
-	double mass_change = psum - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - MAX(0., Xdata.ErosionMass);
+	double mass_change = psum - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - std::max(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
 	for (size_t e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
@@ -450,7 +450,7 @@ double forcedErosion(const double hs, SnowStation& Xdata)
 		Xdata.resize(Xdata.getNumberOfElements() - 1);
 		nErode++;
 	}
-	Xdata.ErosionLevel = MIN(Xdata.getNumberOfElements()-1, Xdata.ErosionLevel);
+	Xdata.ErosionLevel = std::min(Xdata.getNumberOfElements()-1, Xdata.ErosionLevel);
 
 	return(massErode);
 }
@@ -547,8 +547,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 					age_fraction = 0.;
 				}
 				ddL = EMS[e].L
-				        * MAX(-0.9,
-			                 MIN(0.9, factor_corr * (1. - sqrt(age_fraction))));
+				        * std::max(-0.9,
+			                 std::min(0.9, factor_corr * (1. - sqrt(age_fraction))));
 			} else {
 				ddL = 0.;
 			}

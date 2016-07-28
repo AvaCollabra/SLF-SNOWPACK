@@ -26,23 +26,12 @@
 #ifndef SNOWPACK_H
 #define SNOWPACK_H
 
-#include <snowpack/DataClasses.h>
-#include <snowpack/Constants.h>
-#include <snowpack/Hazard.h>
-#include <snowpack/Utils.h>
-#include <snowpack/Laws_sn.h>
-#include <snowpack/SnowDrift.h>
-#include <snowpack/Stability.h>
-#include <snowpack/snowpackCore/WaterTransport.h>
-#include <snowpack/snowpackCore/Metamorphism.h>
-#include <snowpack/snowpackCore/Aggregate.h>
-#include <snowpack/snowpackCore/PhaseChange.h>
 #include <snowpack/Meteo.h>
+#include <snowpack/DataClasses.h>
 
 #include <meteoio/MeteoIO.h>
+#include <vector>
 #include <string>
-#include <sstream>
-#include <errno.h>
 
 /// @brief The number of element incidences
 #define N_OF_INCIDENCES 2

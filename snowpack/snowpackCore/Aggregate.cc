@@ -97,7 +97,7 @@ bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfile
 		if ( fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
 			return false;
 
-		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) > MAX(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
+		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) > std::max(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
 			return false;
 	} else {
 		if (fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)

@@ -20,9 +20,10 @@
 #ifndef SALTATION_H
 #define SALTATION_H
 
-#include <snowpack/Utils.h>
 #include <meteoio/MeteoIO.h>
-#include <cmath>
+#include <string.h>
+
+#include <snowpack/SnowpackConfig.h>
 
 /**
  * @brief This module contains the saltation model of Judith.
@@ -61,8 +62,6 @@ class Saltation {
 		static const double hs_frac, elas, angle_ej, ratio_ve_ustar, salt_height;
 		static const int strong, weak;
 };
-
-#include <snowpack/Constants.h>
 
 #endif
 

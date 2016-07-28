@@ -220,7 +220,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	// Ideal approximation of pressure and vapor pressure
 	const double p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
 	const double sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
-	const double vw = MAX(0.3, Mdata.vw);
+	const double vw = std::max(0.3, Mdata.vw);
 
 	// Initialize snow surface temperature as well as virtual temperatures for stability
 	const double t_surf = Xdata.Ndata[Xdata.getNumberOfElements()].T;
@@ -228,7 +228,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	const double t_surf_v = t_surf * (1. + 0.377 * sat_vap / p0);
 
 	// Adjust for snow height if fixed_height_of_wind=false
-	const double zref = (adjust_VW_height)? MAX(0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground)) : height_of_wind_value ;
+	const double zref = (adjust_VW_height)? std::max(0.5, height_of_wind_value - (Xdata.cH - Xdata.Ground)) : height_of_wind_value ;
 	// In case of ventilation ... Wind pumping displacement depth (m)
 	const double d_pump = (SnLaws::wind_pump)? SnLaws::compWindPumpingDisplacement(Xdata) : 0.;
 
@@ -353,7 +353,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 	} else {
 		if (iswr_ref > 0.) {
 			dir_h = 0.;
-			diff = MAX(Md*iswr_ref, H_diffuse);
+			diff = std::max(Md*iswr_ref, H_diffuse);
 		} else {
 			dir_h = 0.;
 			diff = 0.;
@@ -402,7 +402,7 @@ void Meteo::radiationOnSlope(const SnowStation &sector, const mio::SunObject &su
 	if (sector.meta.getSlopeAngle() > Constants::min_slope_angle) {
 		dir_slope = sun.position.getHorizontalOnSlope(sector.meta.getAzimuth(), sector.meta.getSlopeAngle(), Mdata.dir_h, 9.);
 		if ( (Mdata.dir_h+Mdata.diff) > 0. ) {
-			Mdata.iswr = MIN(dir_slope + Mdata.diff, Constants::solcon);
+			Mdata.iswr = std::min(dir_slope + Mdata.diff, Constants::solcon);
 			Mdata.rswr = sector.Albedo*Mdata.iswr;
 		} else {
 			Mdata.iswr = 0.;
