@@ -2270,9 +2270,9 @@ void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, 
 
 	totNumberSensors += numberTags;
 
-	TAGdata.tag_low = std::max((long unsigned)1, std::min(TAGdata.tag_low, numberTags));
+	TAGdata.tag_low = std::max((size_t)1, std::min(TAGdata.tag_low, numberTags));
 	TAGdata.tag_top = std::min(TAGdata.tag_top, numberTags);
-	TAGdata.repos_low = std::max((long unsigned)1, TAGdata.repos_low);
+	TAGdata.repos_low = std::max((size_t)1, TAGdata.repos_low);
 	TAGdata.repos_top = std::min(TAGdata.repos_top, numberTags);
 
 	TAGdata.resize(numberTags + 1);

@@ -20,6 +20,8 @@
 
 #include <snowpack/plugins/SnowpackIO.h>
 
+#include <snowpack/plugins/SmetIO.h>
+#include <snowpack/plugins/AsciiIO.h>
 #ifdef CAAMLIO
 	#include <snowpack/plugins/CaaMLIO.h>
 #endif
@@ -31,13 +33,7 @@ using namespace std;
 using namespace mio;
 
 SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
-#ifdef IMISDBIO
-	imisdbio(NULL),
-#endif
-#ifdef CAAMLIO
-	caamlio(NULL),
-#endif
-	smetio(NULL), asciiio(NULL),
+	imisdbio(NULL), caamlio(NULL), smetio(NULL), asciiio(NULL),
 	input_snow_as_smet(false), output_snow_as_smet(false),
 	input_snow_as_caaml(false), output_snow_as_caaml(false),
 	input_snow_as_ascii(false), output_snow_as_ascii(false),
@@ -117,13 +113,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 }
 
 SnowpackIO::SnowpackIO(const SnowpackIO& source) :
-#ifdef IMISDBIO
-	imisdbio(source.imisdbio),
-#endif
-#ifdef CAAMLIO
-	caamlio(source.caamlio),
-#endif
-	smetio(source.smetio), asciiio(source.asciiio),
+	imisdbio(source.imisdbio), caamlio(source.caamlio), smetio(source.smetio), asciiio(source.asciiio),
 	input_snow_as_smet(source.input_snow_as_smet), output_snow_as_smet(source.input_snow_as_smet),
 	input_snow_as_caaml(source.input_snow_as_caaml), output_snow_as_caaml(source.output_snow_as_caaml),
 	input_snow_as_ascii(source.input_snow_as_ascii), output_snow_as_ascii(source.output_snow_as_ascii),
@@ -135,12 +125,8 @@ SnowpackIO::~SnowpackIO()
 {
 	if (smetio != NULL) delete smetio;
 	if (asciiio != NULL) delete asciiio;
-#ifdef CAAMLIO
 	if (caamlio != NULL) delete caamlio;
-#endif
-#ifdef IMISDBIO
 	if (imisdbio != NULL) delete imisdbio;
-#endif
 }
 
 bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const
@@ -228,12 +214,8 @@ bool SnowpackIO::writeHazardData(const std::string& /*stationID*/, const std::ve
 SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
 {
 	if(this != &source) {
-#ifdef IMISDBIO
 		imisdbio = source.imisdbio;
-#endif
-#ifdef CAAMLIO
 		caamlio = source.caamlio;
-#endif
 		asciiio = source.asciiio;
 		smetio = source.smetio;
 		output_prf_as_ascii = source.output_prf_as_ascii;

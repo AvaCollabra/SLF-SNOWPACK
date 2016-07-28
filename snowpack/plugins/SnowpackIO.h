@@ -24,9 +24,8 @@
 #include <meteoio/MeteoIO.h>
 
 #include <snowpack/DataClasses.h>
+#include <snowpack/SnowpackConfig.h>
 #include <snowpack/plugins/SnowpackIOInterface.h>
-#include <snowpack/plugins/SmetIO.h>
-#include <snowpack/plugins/AsciiIO.h>
 
 /**
  * @page snowpackio Snowpack data formats
@@ -115,12 +114,8 @@ class SnowpackIO : public SnowpackIOInterface {
 		SnowpackIO& operator=(const SnowpackIO& source);
 
 	private:
-#ifdef IMISDBIO
 		SnowpackIOInterface *imisdbio;
-#endif
-#ifdef CAAMLIO
 		SnowpackIOInterface *caamlio;
-#endif
 		SnowpackIOInterface *smetio;
 		SnowpackIOInterface *asciiio;
 		bool input_snow_as_smet, output_snow_as_smet;
