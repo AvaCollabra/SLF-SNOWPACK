@@ -765,10 +765,7 @@ double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const Snow
 		lrat = log(z / Xdata.BareSoil_z0);
 	}
 
-	const double c = karman * Mdata.ustar / (0.74 * std::max(0.7, lrat-Mdata.psi_s));
-
-	return c * Constants::density_air * Constants::specific_heat_air;
-	//return(2.77e-3*Mdata.vw*DENSITY_AIR*Constants::specific_heat_air);
+	return karman * Mdata.ustar / (0.74 * std::max(0.7, lrat-Mdata.psi_s));
 }
 
 /**
@@ -832,53 +829,40 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 
 /**
  * @brief LATENT HEAT EXCHANGE (Surface Energy Exchange)
- * @version 9Y.mm
- * @param Mdata
- * @param Xdata
- * @param height_of_meteo_values Height at which meteo parameters are measured
+ * David Gustafsson (davidg@kth.se) has introduced a resistance approach for latent
+ * heat exchange from bare soil as alternative to the relative hyumidity (RH) approach
+ * implemented in Snowpack.c (line 473): \n
+ * An additional resistance, dependent on the relative saturation of the top soil layer,
+ * is used to reduce the heat exchange coefficient in the case of evaporation:
+ * c = 1/(Ra + Rsoil), where Ra = 1/c as computed above, and
+ * Rsoil = 50 [s/m] * field_capacity_soil / theta_soil. \n
+ * A new switch SnLaws::soil_evaporation is defined in Constants.h to select method.
+ * The resistance formulation originates from van den Hurk et al.(2000) "Offline validation
+ * of the ERA40 surface scheme": ECMWF Tech.Memo 295. \n
+ * A difference from the RH method is that the surface vapour pressure is always assumed
+ * to be at saturation at the surface. Thus, some unrealistic effects of the RH method in
+ * present form are avoided -> the RH approach tend to estimate negative vapour gradient
+ * between the surface and the atmosphere, causing large condensation, even if the top soil
+ * layer is saturated, and even if the soil surface is warmer than the atmosphere! If a RH
+ * method should work in a discretized model, it is important to consider the difference
+ * between vapour pressure at the surface and the average of the top soil layer. \n
+ * The soil resistance is only used for bare soil layers, when TSS >= 0C and eSurf >= eAtm
+ * @param[in] Mdata
+ * @param[in] Xdata
+ * @param[in] height_of_meteo_values Height at which meteo parameters are measured
  * @return Latent heat flux (W m-2)
  */
 double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	const size_t nElems = Xdata.getNumberOfElements();
-	const double karman = 0.4;
-	double lrat;
-
-	const double z = std::max(0.5, height_of_meteo_values - Xdata.cH + Xdata.Ground);
-	if ((Xdata.cH - Xdata.Ground) > 0.03) {
-		//assert(Mdata.z0>0);
-		lrat = log(z/Mdata.z0);
-	} else {
-		//assert(Xdata.BareSoil_z0>0);
-		lrat = log(z / Xdata.BareSoil_z0);
-	}
-	double c = karman * Mdata.ustar / (0.74 * std::max(0.7, lrat-Mdata.psi_s));
-
-	/*
-	 * Below, David Gustafsson (davidg@kth.se) has introduced a resistance approach for latent
-	 * heat exchange from bare soil as alternative to the relative hyumidity (RH) approach
-	 * implemented in Snowpack.c (line 473): \n
-	 * An additional resistance, dependent on the relative saturation of the top soil layer,
-	 * is used to reduce the heat exchange coefficient in the case of evaporation:
-	 * c = 1/(Ra + Rsoil), where Ra = 1/c as computed above, and
-	 * Rsoil = 50 [s/m] * field_capacity_soil / theta_soil. \n
-	 * A new switch SnLaws::soil_evaporation is defined in Constants.h to select method.
-	 * The resistance formulation originates from van den Hurk et al.(2000) "Offline validation
-	 * of the ERA40 surface scheme": ECMWF Tech.Memo 295. \n
-	 * A difference from the RH method is that the surface vapour pressure is always assumed
-	 * to be at saturation at the surface. Thus, some unrealistic effects of the RH method in
-	 * present form are avoided -> the RH approach tend to estimate negative vapour gradient
-	 * between the surface and the atmosphere, causing large condensation, even if the top soil
-	 * layer is saturated, and even if the soil surface is warmer than the atmosphere! If a RH
-	 * method should work in a discretized model, it is important to consider the difference
-	 * between vapour pressure at the surface and the average of the top soil layer. \n
-	 * The soil resistance is only used for bare soil layers, when TSS >= 0C and eSurf >= eAtm
-	*/
+	
+	double c = compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
+	
 	if ((Xdata.getNumberOfNodes() == Xdata.SoilNode + 1) && (nElems > 0)
 		    && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
 		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
-		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure(Mdata.ta);
-		const double eS = Atmosphere::waterSaturationPressure(Xdata.Ndata[nElems].T);
+		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure( Mdata.ta );
+		const double eS = Atmosphere::waterSaturationPressure( Xdata.Ndata[nElems].T );
 		if (eS >= eA) {
 			c = 1. / c + SnLaws::rsoilmin / std::max(SnLaws::relsatmin, std::min(1.,
 			                                    Xdata.Edata[nElems-1].theta[WATER]

@@ -510,7 +510,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	else
 		actual_height_of_meteo_values=height_of_meteo_values;
   
-	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values);
+	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values) * Constants::density_air * Constants::specific_heat_air;
 	const double Tair = Mdata.ta;
 	const double Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
 
@@ -596,7 +596,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		}
 	} else { // Implicit
 		// Sensible heat transfer: linear dependence on snow surface temperature
-		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values);
+		const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values) * Constants::density_air * Constants::specific_heat_air;
 		Se[1][1] += alpha;
 		Fe[1] += alpha * T_air;
 		// Latent heat transfer: NON-linear dependence on snow surface temperature

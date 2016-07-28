@@ -58,6 +58,7 @@ namespace Constants {
 	const double gas_constant = 461.9; ///< (J mol-1 K-1)
 	const double gas_constant_air = 287.0; ///< for air (J kg-1 K-1)
 	const double gas_constant_mol = 8.31;  ///< (J mol-1 K-1)
+	const double karman = 0.4; ///< Karman constant
 
 	/// @name Albedo (1)
 	//@{
