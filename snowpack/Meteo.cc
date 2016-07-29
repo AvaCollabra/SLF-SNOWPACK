@@ -74,8 +74,8 @@ Meteo::ATM_STABILITY Meteo::getStability(const std::string& stability_model)
 		return MO_STEARNS;
 	else if (stability_model=="MO_HOLTSLAG")
 		return MO_HOLTSLAG; //should be much better during melt periods than MICHLMAYR_MO
-	else if (stability_model=="LOG_LINEAR")
-		return LOG_LINEAR;
+	else if (stability_model=="MO_LOG_LINEAR")
+		return MO_LOG_LINEAR;
 	else if (stability_model=="MO_SCHLOEGL_UNI")
 		return MO_SCHLOEGL_UNI;
 	else if (stability_model=="MONIN_OBUKHOV") //HACK: temporary
@@ -181,7 +181,7 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			return;
 			}
 		
-			case LOG_LINEAR: {
+			case MO_LOG_LINEAR: {
 			//log_linear
 			psi_m = psi_s = -5.* stab_ratio;
 			return;
@@ -235,7 +235,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	// In case of ventilation ... Wind pumping displacement depth (m)
 	const double d_pump = (SnLaws::wind_pump)? SnLaws::compWindPumpingDisplacement(Xdata) : 0.;
 
-	// Iterate to find atmospheric stability, possibly adjusting z0 to drifting snow and ventilation
+	// Iterate to find atmospheric stability
 	// initial guess (neutral)
 	const double eps1 = 1.e-3;
 	double psi_m = 0., psi_s = 0.;
@@ -250,7 +250,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		if (stability==RICHARDSON) {
 			RichardsonStability(ta_v, t_surf_v, zref, vw, z_ratio, ustar, psi_s); //compute ustar & psi_s
 		} else if (!research_mode && (Mdata.tss > 273.) && (Mdata.ta > 277.)) {
-			//force MICHLMAYR for operational mode when temperatures are high enough
+			//force MO_MICHLMAYR for operational mode when temperatures are high enough
 			MOStability(Meteo::MO_MICHLMAYR, ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		} else {
 			MOStability(stability, ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
