@@ -136,7 +136,7 @@ void Meteo::RichardsonStability(const double& ta_v, const double& t_surf_v, cons
 		psi_m = psi_s = -5. * stab_ratio;
 	}
 
-	ustar = 0.4 * vw / (z_ratio - psi_m);
+	ustar = Constants::karman * vw / (z_ratio - psi_m);
 }
 
 void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m)
@@ -146,9 +146,9 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 		return;
 	}
 	
-	ustar = 0.4 * vw / (z_ratio - psi_m);
-	const double Tstar = 0.4 * (t_surf_v - ta_v) / (z_ratio - psi_s);
-	const double stab_ratio = -0.4 * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
+	ustar = Constants::karman * vw / (z_ratio - psi_m);
+	const double Tstar = Constants::karman * (t_surf_v - ta_v) / (z_ratio - psi_s);
+	const double stab_ratio = -Constants::karman * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
 	
 	if (stab_ratio > 0.) { // stable
 		if (use_stability==MO_HOLTSLAG) {
@@ -234,17 +234,14 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 
 	// Iterate to find atmospheric stability, possibly adjusting z0 to drifting snow and ventilation
 	// initial guess (neutral)
-	const double eps1 = 1.e-3, eps2 = 1.e-5, a2 = 0.16;
-	double z0_old, z0 = roughness_length;
-	double ustar_old, ustar = 0.4 * vw / log((zref - d_pump) / z0);
+	const double eps1 = 1.e-3;
 	double psi_m = 0., psi_s = 0.;
+	const double z_ratio = log((zref - d_pump) / roughness_length);
+	double ustar_old, ustar = Constants::karman * vw / (z_ratio - psi_m); //at first, psi_m=0
 	unsigned int iter = 0;
 	do {
 		iter++;
 		ustar_old = ustar;
-		z0_old = z0;
-		z0 = 0.9 * z0_old + 0.1 * (a2 * Optim::pow2(ustar) / 2. / Constants::g); //update z0
-		const double z_ratio = log((zref - d_pump) / z0);
 		
 		// Stability corrections: compute ustar, psi_s & potentially psi_m
 		if (stability==RICHARDSON) {
@@ -255,21 +252,21 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 		} else {
 			MOStability(stability, ta_v, t_surf_v, t_surf, zref, vw, z_ratio, ustar, psi_s, psi_m);
 		}
-	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) && (fabs(z0_old - z0) > eps2) );
+	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) );
 
 	if(iter==max_iter) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
 		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 		Mdata.z0 = roughness_length;
-		Mdata.ustar = 0.4 * vw / log((zref - d_pump) / z0);
+		Mdata.ustar = Constants::karman * vw / z_ratio;
 		Mdata.psi_s = 0.;
 		return;
 	}
 
 	// Save the values in the global Mdata data structure to use it later
 	Mdata.ustar = ustar;
-	Mdata.z0 = z0;
+	Mdata.z0 = roughness_length;
 	Mdata.psi_s = psi_s;
 }
 

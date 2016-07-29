@@ -765,7 +765,7 @@ double SnLaws::compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const Snow
 		lrat = log(z / Xdata.BareSoil_z0);
 	}
 
-	return karman * Mdata.ustar / (0.74 * std::max(0.7, lrat-Mdata.psi_s));
+	return karman * Mdata.ustar / std::max(0.7, lrat-Mdata.psi_s);
 }
 
 /**
