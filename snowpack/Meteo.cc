@@ -151,14 +151,15 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 	const double stab_ratio = -Constants::karman * zref * Tstar * Constants::g / (t_surf * Optim::pow2(ustar));
 	
 	if (stab_ratio > 0.) { // stable
-		if (use_stability==MO_HOLTSLAG) {
+		switch(use_stability) {
+			case MO_HOLTSLAG: {
 			// Holtslag and DeBruin (1988) prepared from Ed Andreas
 			psi_m = psi_s = -(0.7 * stab_ratio + 0.75 * (stab_ratio - 14.28)
 			                           * exp(-0.35 * stab_ratio) + 10.71);
 			return;
-		}
+			}
 		
-		if (use_stability==MO_STEARNS) {
+			case MO_STEARNS: {
 			// Stearns & Weidner, 1993
 			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
 			psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
@@ -167,9 +168,9 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			psi_s = log(1. + dummy2) * log(1. + dummy2)
 					- 2. * dummy2 - 0.66667 * Optim::pow3(dummy2) + 1.2804;
 			return;
-		}
+			}
 		
-		if (use_stability==MO_MICHLMAYR) { //default, old MO
+			case MO_MICHLMAYR: { //default, old MO
 			// Stearns & Weidner, 1993 modified by Michlmayr, 2008
 			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
 			psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
@@ -178,22 +179,24 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			psi_s = log(1. + dummy2) * log(1. + dummy2)
 					- 1. * dummy2 - 0.3 * Optim::pow3(dummy2) + 1.2804;
 			return;
-		}
+			}
 		
-		if (use_stability==LOG_LINEAR) {
+			case LOG_LINEAR: {
 			//log_linear
 			psi_m = psi_s = -5.* stab_ratio;
 			return;
-		}
+			}
 		
-		if (use_stability==MO_SCHLOEGL_UNI) {
+			case MO_SCHLOEGL_UNI: {
 			//schloegl univariate: bin univariate 2/3 datasets
 			psi_m = -1.62 * stab_ratio;
 			psi_s = -2.96 * stab_ratio;
 			return;
-		}
+			}
 		
-		throw InvalidArgumentException("Unsupported atmospheric stability parametrization", AT);
+			default:
+			throw InvalidArgumentException("Unsupported atmospheric stability parametrization", AT);
+		}
 	} else { //unstable
 		// Paulson - the original
 		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);

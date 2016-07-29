@@ -689,6 +689,8 @@ class SnowProfileLayer {
 class RunInfo {
 	public:
 		RunInfo();
+		RunInfo(const RunInfo& orig);
+		RunInfo& operator=(const RunInfo&) {return *this;}; //everything is static, so we can not change anything
 
 		const std::string version;   ///< SNOWPACK version
 		const mio::Date computation_date; ///< Date of computation

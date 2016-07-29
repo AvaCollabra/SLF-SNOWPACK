@@ -59,6 +59,10 @@ RunInfo::RunInfo()
             : version(SN_VERSION), computation_date(getRunDate()),
               compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
 
+RunInfo::RunInfo(const RunInfo& orig)
+            : version(orig.version), computation_date(orig.computation_date),
+              compilation_date(orig.compilation_date), user(orig.user) {}
+
 mio::Date RunInfo::getRunDate()
 {
 	Date localdate;
