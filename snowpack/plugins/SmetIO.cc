@@ -139,7 +139,7 @@ using namespace mio;
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info),
+          info(run_info), ts_smet_writer(NULL), 
           in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
@@ -156,6 +156,12 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	snowpath = string();
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	i_snowpath = (!snowpath.empty())? snowpath : inpath;
+}
+
+SmetIO::~SmetIO() 
+{
+	if (ts_smet_writer!=NULL) delete ts_smet_writer;
+	ts_smet_writer = NULL;
 }
 
 /**
@@ -695,27 +701,25 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
-	throw IOException("Nothing implemented here!", AT);
-	const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
-	
-	const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
-	if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
-			throw InvalidNameException(filename, AT);
-	
-	smet::SMETWriter *smet_writer = NULL;
-	if (FileUtils::fileExists(filename)) {
-		smet_writer = new smet::SMETWriter(filename, fields_header, IOUtils::nodata); //set to append mode
-	} else {
-		smet_writer = new smet::SMETWriter(filename);
-		setBasicHeader(Xdata, fields_header, *smet_writer);
-		smet_writer->set_header_value("comments", "header_comments");
-		smet_writer->set_header_value("units", "header_units");
+	if (ts_smet_writer==NULL) {
+		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
+		
+		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
+		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
+				throw InvalidNameException(filename, AT);
+		
+		if (FileUtils::fileExists(filename)) {
+			ts_smet_writer = new smet::SMETWriter(filename, fields_header, IOUtils::nodata); //set to append mode
+		} else {
+			ts_smet_writer = new smet::SMETWriter(filename);
+			setBasicHeader(Xdata, fields_header, *ts_smet_writer);
+			ts_smet_writer->set_header_value("comments", "header_comments");
+			ts_smet_writer->set_header_value("units", "header_units");
+			/*vector<int> vec_width, vec_precision;
+			ts_smet_writer.set_width(vec_width);
+			ts_smet_writer.set_precision(vec_precision);*/
+		}
 	}
-	
-	/*vector<int> vec_width, vec_precision;
-	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision);
-	sno_writer.set_width(vec_width);
-	sno_writer.set_precision(vec_precision);*/
 	
 	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
 	vector<double> data;
@@ -723,7 +727,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 	data.push_back( Sdata.ql );
 	data.push_back( Sdata.lw_out );
 	
-	smet_writer->write(timestamp, data);
+	ts_smet_writer->write(timestamp, data);
 }
 
 void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)

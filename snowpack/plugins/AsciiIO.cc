@@ -1484,7 +1484,7 @@ bool AsciiIO::parseProFile(const char& eoln, const mio::Date& start_date, std::i
 						                 + "T" + vecTmp[1].substr(11,2) + ":" + vecTmp[1].substr(14,2);
 						IOUtils::convertString(current_date, tmpdate, time_zone);
 
-						if (current_date.getJulian() < (start_date.getJulian()-0.00001)){
+						if (current_date.getJulian() < (start_date.getJulian()-1.e-5)){
 							append=true;
 						} else {
 							break; //the start date of the simulation is newer/equal than current_date
