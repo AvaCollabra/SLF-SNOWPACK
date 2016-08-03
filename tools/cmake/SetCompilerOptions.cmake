@@ -9,6 +9,10 @@ BuildVersion()
 MACRO (SET_COMPILER_OPTIONS)
 	###########################################################
 	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+		IF(DEBUG_ARITHM)
+			SET(EXTRA "${EXTRA} /EHa")
+		ENDIF(DEBUG_ARITHM)
+		
 		#SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs"  FORCE)
 		SET(WARNINGS "/W4 /D_CRT_SECURE_NO_WARNINGS /EHsc") #Za: strict ansi EHsc: handle c++ exceptions
 		#SET(EXTRA_WARNINGS "/Wp64") #/Wall
@@ -20,12 +24,16 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(BUILD_SHARED_LIBS)
 			ADD_DEFINITIONS(/DMIO_DLL)
 		ENDIF(BUILD_SHARED_LIBS)
-		IF(GUI_EXCEPTIONS)
-			SET(MSG_BOX "/DMESG_BOX")
-		ENDIF(GUI_EXCEPTIONS)
 		
 	###########################################################
 	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+		IF(ENABLE_LAPACK)
+			SET(EXTRA "${EXTRA} -DCLAPACK")
+		ENDIF(ENABLE_LAPACK)
+		IF(DEBUG_ARITHM)
+			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
+		ENDIF(DEBUG_ARITHM)
+		
 		SET(WARNINGS "-Wall -Wno-long-long  -Wswitch")
 		SET(DEEP_WARNINGS "-Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic ${DEEP_WARNINGS}")
@@ -38,6 +46,13 @@ MACRO (SET_COMPILER_OPTIONS)
 		
 	###########################################################
 	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Cray")
+		IF(ENABLE_LAPACK)
+			SET(EXTRA "${EXTRA} -DCLAPACK")
+		ENDIF(ENABLE_LAPACK)
+		IF(DEBUG_ARITHM)
+			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
+		ENDIF(DEBUG_ARITHM)
+		
 		SET(WARNINGS "-hlist=m -h negmsgs -h msglevel_3 -h nomessage=870") #870: accept multibyte chars
 		#SET(EXTRA_WARNINGS "-h msglevel_2")
 		SET(OPTIM "-O3 -hfp3 -h msglevel_4 -DNDEBUG -DNOSAFECHECKS")
@@ -55,6 +70,16 @@ MACRO (SET_COMPILER_OPTIONS)
 	###########################################################
 	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 		#we consider that all other compilers support "-" options and silently ignore what they don't know
+		IF(ENABLE_LAPACK)
+			SET(EXTRA "${EXTRA} -DCLAPACK")
+		ENDIF(ENABLE_LAPACK)
+		IF(WIN32)
+			LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
+		ENDIF(WIN32)
+		IF(DEBUG_ARITHM)
+			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
+		ENDIF(DEBUG_ARITHM)
+		
 		SET(WARNINGS "-Wall -Wno-long-long  -Wswitch")
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
@@ -95,6 +120,16 @@ MACRO (SET_COMPILER_OPTIONS)
 	
 	###########################################################
 	ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+		IF(ENABLE_LAPACK)
+			SET(EXTRA "${EXTRA} -DCLAPACK")
+		ENDIF(ENABLE_LAPACK)
+		IF(WIN32)
+			LIST(APPEND CFLAGS " -D_USE_MATH_DEFINES") #USE_MATH_DEFINES needed for Win32
+		ENDIF(WIN32)
+		IF(DEBUG_ARITHM)
+			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
+		ENDIF(DEBUG_ARITHM)
+		
 		SET(WARNINGS_OFF "-Wno-long-long -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-switch-enum -Wno-covered-switch-default -Wno-global-constructors -Wno-exit-time-destructors -Wno-unknown-pragmas")
 		SET(WARNINGS "-Wall -Wswitch -Weverything ${WARNINGS_OFF}") #obviously, we should try to fix the warnings! Keeping in mind that some of these W are half buggy...
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Rpass=.* for static analysis

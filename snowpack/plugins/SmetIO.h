@@ -32,7 +32,11 @@ class SmetIO : public SnowpackIOInterface {
 
 	public:
 		SmetIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
+		SmetIO(const SmetIO&);
+		
 		~SmetIO();
+		
+		SmetIO& operator=(const SmetIO&); ///<Assignement operator, required because of pointer member
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -71,8 +75,8 @@ class SmetIO : public SnowpackIOInterface {
 
 	private:
 		std::string outpath, o_snowpath, snowpath, experiment, inpath, i_snowpath, sw_mode;
-		smet::SMETWriter *ts_smet_writer;
 		const RunInfo info;
+		smet::SMETWriter *ts_smet_writer;
 		double in_dflt_TZ;
 		bool useSoilLayers, perp_to_slope;
 };

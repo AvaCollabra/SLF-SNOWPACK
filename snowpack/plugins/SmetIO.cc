@@ -164,6 +164,26 @@ SmetIO::~SmetIO()
 	ts_smet_writer = NULL;
 }
 
+SmetIO& SmetIO::operator=(const SmetIO& source) {
+	if (this != &source) {
+		outpath = source.outpath;
+		o_snowpath = source.o_snowpath;
+		snowpath = source.snowpath;
+		experiment = source.experiment;
+		experiment = source.experiment;
+		inpath = source.inpath;
+		i_snowpath = source.i_snowpath;
+		sw_mode = source.sw_mode;
+		ts_smet_writer = NULL; //it will have to be re-allocated for thread safety
+		
+		in_dflt_TZ = source.in_dflt_TZ;
+		useSoilLayers = source.useSoilLayers;
+		perp_to_slope = source.perp_to_slope;
+	}
+	return *this;
+}
+
+
 /**
  * @brief This routine checks if the specified snow cover data exists
  * @param i_snowfile file containing the initial state of the snowpack
