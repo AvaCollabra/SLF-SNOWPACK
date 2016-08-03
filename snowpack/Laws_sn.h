@@ -30,7 +30,6 @@
 
 #include <snowpack/DataClasses.h>
 
-
 class SnLaws {
 
 	public:

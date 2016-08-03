@@ -358,7 +358,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_hs=true;
 	if (!enforce_snow_height && (md(MeteoData::PSUM) == mio::IOUtils::nodata) )
 		miss_precip=true;
-	if (!enforce_snow_height && (md("PSUM_PH") == mio::IOUtils::nodata) )
+	if (!enforce_snow_height && (md(MeteoData::PSUM_PH) == mio::IOUtils::nodata) )
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -415,7 +415,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.tss_a24h = Constants::undefined;
 	Mdata.ts0 = md(MeteoData::TSG);
 
-	Mdata.psum_ph = md("PSUM_PH");
+	Mdata.psum_ph = md(MeteoData::PSUM_PH);
 	Mdata.psum = md(MeteoData::PSUM);
 
 	Mdata.hs = md(MeteoData::HS);

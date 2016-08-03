@@ -22,10 +22,14 @@
 
 #include <snowpack/plugins/SmetIO.h>
 #include <snowpack/plugins/AsciiIO.h>
-#ifdef CAAMLIO
+
+#cmakedefine PLUGIN_IMISIO
+#cmakedefine PLUGIN_CAAMLIO
+
+#ifdef PLUGIN_CAAMLIO
 	#include <snowpack/plugins/CaaMLIO.h>
 #endif
-#ifdef IMISDBIO
+#ifdef PLUGIN_IMISIO
 	#include <snowpack/plugins/ImisDBIO.h>
 #endif
 
@@ -103,10 +107,10 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	RunInfo run_info;
 	if (input_snow_as_smet || output_snow_as_smet || output_ts_as_smet) smetio = new SmetIO(cfg, run_info);
 	if (input_snow_as_ascii || output_snow_as_ascii || output_prf_as_ascii || output_ts_as_ascii) asciiio = new AsciiIO(cfg, run_info);
-#ifdef CAAMLIO
+#ifdef PLUGIN_CAAMLIO
 	if (input_snow_as_caaml || output_snow_as_caaml) caamlio = new CaaMLIO(cfg, run_info);
 #endif
-#ifdef IMISDBIO
+#ifdef PLUGIN_IMISIO
 	output_haz_as_imis = output_prf_as_imis;
 	if (output_prf_as_imis || output_haz_as_imis) imisdbio = new ImisDBIO(cfg, run_info);
 #endif
@@ -133,7 +137,7 @@ bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::strin
 {
 	if (input_snow_as_ascii) {
 		return asciiio->snowCoverExists(i_snowfile, stationID);
-#ifdef CAAMLIO
+#ifdef PLUGIN_CAAMLIO
 	} else if (input_snow_as_caaml){
 		return caamlio->snowCoverExists(i_snowfile, stationID);
 #endif
@@ -147,7 +151,7 @@ void SnowpackIO::readSnowCover(const std::string& i_snowfile, const std::string&
 {
 	if (input_snow_as_ascii) {
 		asciiio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
-#ifdef CAAMLIO
+#ifdef PLUGIN_CAAMLIO
 	} else if (input_snow_as_caaml) {
 		caamlio->readSnowCover(i_snowfile, stationID, SSdata, Zdata);
 #endif
@@ -161,7 +165,7 @@ void SnowpackIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 {
 	if (output_snow_as_ascii) {
 		asciiio->writeSnowCover(date, Xdata, Zdata, forbackup);
-#ifdef CAAMLIO
+#ifdef PLUGIN_CAAMLIO
 	} else if (output_snow_as_caaml) {
 		caamlio->writeSnowCover(date, Xdata, Zdata, forbackup);
 #endif
@@ -184,18 +188,18 @@ void SnowpackIO::writeProfile(const mio::Date& date, const SnowStation& Xdata)
 	if (output_prf_as_ascii)
 		asciiio->writeProfile(date, Xdata);
 
-#ifdef CAAMLIO
+#ifdef PLUGIN_CAAMLIO
 	if (output_prf_as_caaml)
 		caamlio->writeProfile(date, Xdata);
 #endif
 
-#ifdef IMISDBIO
+#ifdef PLUGIN_IMISIO
 	if (output_prf_as_imis)
 		imisdbio->writeProfile(date, Xdata);
 #endif
 }
 
-#ifdef IMISDBIO
+#ifdef PLUGIN_IMISIO
 bool SnowpackIO::writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                  const std::vector<ProcessInd>& Hdata_ind, const size_t& num)
 {

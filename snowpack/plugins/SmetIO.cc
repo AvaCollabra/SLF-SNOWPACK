@@ -226,7 +226,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
 	if (profile_date.isUndef())
-		throw ("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
+		throw InvalidFormatException("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -258,7 +258,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date = read_snosmet_header(sno_reader, stationID, SSdata);
 	if (profile_date.isUndef())
-		throw ("Invalid ProfileDate in file \""+snofilename+"\"", AT);
+		throw InvalidFormatException("Invalid ProfileDate in file \""+snofilename+"\"", AT);
 	profile_date.rnd(1.);
 
 	//Read actual data
