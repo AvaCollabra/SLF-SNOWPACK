@@ -196,10 +196,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
 	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
-
-	const size_t nL = surf_hoar? nE+1 : nE;
-	std::vector<SnowProfileLayer> Pdata(nL);
-
+	
 	// Generate the profile data from the element data (1 layer = 1 element)
 	unsigned char snowloc = 0;
 	string mystation = Xdata.meta.getStationID();
@@ -209,13 +206,16 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
 
-	for(size_t ll=0, e=Xdata.SoilNode; ll<nL; ll++, e++) { // We dump only snow layers
+	const size_t nL = surf_hoar? (nE+1 - Xdata.SoilNode) : (nE - Xdata.SoilNode);
+	std::vector<SnowProfileLayer> Pdata(nL);
+
+	for(size_t ll=0, e=0; ll<nL; ll++, e++) { // We dump only snow layers
 		// Write profile meta data
 		Pdata[ll].profileDate = dateOfProfile;
 		Pdata[ll].stationname = mystation;
 		Pdata[ll].loc_for_snow = snowloc;
 		Pdata[ll].loc_for_wind = 1;
-
+		
 		// Write snow layer data
 		if (ll < nE) {
 			Pdata[ll].generateLayer(EMS[e], NDS[e+1]);

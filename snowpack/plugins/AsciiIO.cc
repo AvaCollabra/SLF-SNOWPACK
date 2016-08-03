@@ -1206,7 +1206,10 @@ void AsciiIO::writeProfileProAddCalibration(const SnowStation& Xdata, std::ofstr
 
 void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation& Xdata, const bool& aggregate)
 {
-
+	if (Xdata.getNumberOfElements() == Xdata.SoilNode) { //only, so nothing to write
+		return;
+	}
+	
 	//open profile filestream
 	const std::string ext = (aggregate)? "-aggr.prf" : "-full.prf";
 	const std::string Pfilename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ext;
@@ -1219,40 +1222,36 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 	ofs << "#-,-,-,deg,deg,1,cm,kg m-2,degC,degC\n";
 	ofs << fixed << dateOfProfile.toString(Date::ISO) << "," << setprecision(6) << dateOfProfile.getJulian() << ",";
 	ofs << Xdata.meta.getStationName() << "," << setprecision(1) << Xdata.meta.getAzimuth() << "," << Xdata.meta.getSlopeAngle() << ",";
-	if (Xdata.getNumberOfElements() == Xdata.SoilNode) {
-		ofs << "0,-999.,-999.,-999.,-999.\n\n\n";
-		ofs.close();
-	} else {
-		vector<SnowProfileLayer> Pdata( SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf) );
-		if (aggregate) {
-			Aggregate::aggregate(Pdata);
-		}
-		const double cos_sl = Xdata.cos_sl;
-		const size_t nL = Pdata.size();
-		ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
-		ofs << Pdata[nL-1].T << "," << IOUtils::K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
-		//Minima of stability indices at their respective depths as well as stability classifications
-		ofs << "#Stab,stab_height,stab_index,stab_class1,stab_class2\n";
-		ofs << "# ,cm,1,1,1\n";
-		ofs << "deformation," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
-		ofs << +Xdata.S_class1 << "," << +Xdata.S_class2 << "\n"; //force printing type char as numerica value
-		ofs << "natural," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
-		ofs << "ssi," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
-		ofs << "S4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
-		ofs << "S5," << setprecision(1) << M_TO_CM(Xdata.z_S_5/cos_sl) << "," << setprecision(2) << Xdata.S_5 << "\n";
-		//Now write all layers starting from the ground
-		ofs << "#DepositionDate,DepositionJulianDate,Hn,Tn,gradT,rho,theta_i,theta_w,ogs,gsz,bsz,dd,sp,class,mk,hardness\n";
-		ofs << "#-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1\n";
-		for(size_t ll=0; ll<nL; ll++) {
-			ofs << Pdata[ll].depositionDate.toString(Date::ISO) << "," << setprecision(6) << Pdata[ll].depositionDate.getJulian() << ",";
-			ofs << setprecision(1) << Pdata[ll].height << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << ",";
-			ofs << setprecision(1) << Pdata[ll].rho << "," << setprecision(3) << Pdata[ll].theta_i << "," << Pdata[ll].theta_w << ",";
-			ofs << setprecision(1) << Pdata[ll].ogs << "," << Pdata[ll].bond_size << "," << Pdata[ll].grain_size << ",";
-			ofs << setprecision(2) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
-			ofs << Pdata[ll].type << "," << Pdata[ll].marker << "," << setprecision(1) << Pdata[ll].hard << "\n";
-		}
-		ofs << "\n\n";
+	
+	vector<SnowProfileLayer> Pdata( SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf) );
+	if (aggregate) {
+		Aggregate::aggregate(Pdata);
 	}
+	const double cos_sl = Xdata.cos_sl;
+	const size_t nL = Pdata.size();
+	ofs << nL << "," << setprecision(1) << Pdata[nL-1].height << "," << Xdata.swe << "," << Xdata.lwc_sum << ",";
+	ofs << Pdata[nL-1].T << "," << IOUtils::K_TO_C(Xdata.Ndata[Xdata.SoilNode].T) << "\n";
+	//Minima of stability indices at their respective depths as well as stability classifications
+	ofs << "#Stab,stab_height,stab_index,stab_class1,stab_class2\n";
+	ofs << "# ,cm,1,1,1\n";
+	ofs << "deformation," << setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << setprecision(2) << Xdata.S_d << ",";
+	ofs << +Xdata.S_class1 << "," << +Xdata.S_class2 << "\n"; //force printing type char as numerica value
+	ofs << "natural," << setprecision(1) << M_TO_CM(Xdata.z_S_n/cos_sl) << "," << setprecision(2) << Xdata.S_n << "\n";
+	ofs << "ssi," << setprecision(1) << M_TO_CM(Xdata.z_S_s/cos_sl) << "," << setprecision(2) << Xdata.S_s << "\n";
+	ofs << "S4," << setprecision(1) << M_TO_CM(Xdata.z_S_4/cos_sl) << "," << setprecision(2) << Xdata.S_4 << "\n";
+	ofs << "S5," << setprecision(1) << M_TO_CM(Xdata.z_S_5/cos_sl) << "," << setprecision(2) << Xdata.S_5 << "\n";
+	//Now write all layers starting from the ground
+	ofs << "#DepositionDate,DepositionJulianDate,Hn,Tn,gradT,rho,theta_i,theta_w,ogs,gsz,bsz,dd,sp,class,mk,hardness\n";
+	ofs << "#-,-,cm,degC,K m-1,kg m-3,1,mm,mm,mm,1,1,1,1,1\n";
+	for(size_t ll=0; ll<nL; ll++) {
+		ofs << Pdata[ll].depositionDate.toString(Date::ISO) << "," << setprecision(6) << Pdata[ll].depositionDate.getJulian() << ",";
+		ofs << setprecision(1) << Pdata[ll].height << "," << setprecision(2) << Pdata[ll].T << "," << setprecision(1) << Pdata[ll].gradT << ",";
+		ofs << setprecision(1) << Pdata[ll].rho << "," << setprecision(3) << Pdata[ll].theta_i << "," << Pdata[ll].theta_w << ",";
+		ofs << setprecision(1) << Pdata[ll].ogs << "," << Pdata[ll].bond_size << "," << Pdata[ll].grain_size << ",";
+		ofs << setprecision(2) << Pdata[ll].dendricity << "," << Pdata[ll].sphericity << ",";
+		ofs << Pdata[ll].type << "," << Pdata[ll].marker << "," << setprecision(1) << Pdata[ll].hard << "\n";
+	}
+	ofs << "\n\n";
 	ofs.close();
 }
 
