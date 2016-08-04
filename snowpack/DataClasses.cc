@@ -2382,10 +2382,10 @@ const std::string SnowStation::toString() const
 	else
 		os << "Kt= " << hex << Kt << dec << "\n";
 	/*for (unsigned int ii=1; ii<Ndata.size(); ii++) {
-		os << Ndata[ii];
+		os << Ndata[ii].toString();
 	}
 	for (unsigned int ii=1; ii<Edata.size(); ii++) {
-		os << Edata[ii];
+		os << Edata[ii].toString();
 	}*/
 	//os << "Canopy=" << Cdata;
 
