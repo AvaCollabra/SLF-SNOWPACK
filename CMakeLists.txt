@@ -3,7 +3,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 3 CACHE INTERNAL "")
+SET(VERSION_MINOR 4 CACHE INTERNAL "")
 SET(VERSION_PATCH 0 CACHE INTERNAL "")
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
@@ -46,11 +46,10 @@ SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML p
 #platform specific. First, compiler specific flags, then system specific flags
 SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
 IF(WIN32)
-	SET(BUILD_STATIC_LIBS ON) #otherwise the lib files are not generated
+	SET(BUILD_STATIC_LIBS ON CACHE INTERNAL "Set to ON to build static libraries") #otherwise the lib files are not generated
 ELSE(WIN32)
 	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
 ENDIF(WIN32)
-
 INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
 BuildVersion()
 
@@ -296,6 +295,18 @@ IF(CPACK_BUNDLE_ALL)
 		MESSAGE("Inishell not found! Please copy inishell.jar into the tools directory")
 	ENDIF("${inishell}" STREQUAL "")
 	INSTALL(FILES ${inishell} DESTINATION bin COMPONENT exe)
+	
+	#bundle SnopViz
+	SET(CPACK_BUNDLE_SNOPVIZ ON CACHE BOOL "Should SnopViz also be bundled?")
+	IF(CPACK_BUNDLE_SNOPVIZ)
+		SET(SNOPVIZ_DIST_PATH "../snopviz" CACHE PATH "Path to SNOPVIZ 'dist' subdirectory")
+		FILE(GLOB snopviz_html "${SNOPVIZ_DIST_PATH}/*.html")
+		IF("${snopviz_html}" STREQUAL "")
+			MESSAGE("SnopViz not found! Please provide a proper path to SnopViz 'dist' and don't forget to run 'make dist'")
+		ENDIF("${snopviz_html}" STREQUAL "")
+		INSTALL(DIRECTORY "${SNOPVIZ_DIST_PATH}/assets" DESTINATION bin/snopviz COMPONENT exe)
+		INSTALL(FILES ${snopviz_html} DESTINATION bin/snopviz COMPONENT exe)
+	ENDIF(CPACK_BUNDLE_SNOPVIZ)
 ENDIF(CPACK_BUNDLE_ALL)
 
 SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
@@ -392,37 +403,34 @@ ELSE(UNIX)
 		SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${CPACK_PACKAGE_NAME}")
 		#SET(CPACK_NSIS_EXTRA_INSTALL_COMMANDS "${EnvVarUpdate} $0 \"LIB\"  \"A\" \"HKLM\" \"C:\MyLib\"")
 		SET(CPACK_NSIS_MODIFY_PATH ON)
+		
+		#Main links (they can get overwritten later)
+		SET(MENU_LINKS_SNOPVIZ "http://snopviz.org" "SNOPVIZ online visualization" )
+		SET(MENU_LINKS_SNOWPACK "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 		IF(INSTALL_DOC)
-			IF(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS
-				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
-				"bin/inishell.jar" "SNOWPACK inishell"
-				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
-				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
-				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
-				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
-			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS
-				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
-				"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
-				"${DOC_PATH}/examples" "SNOWPACK examples"
-				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
-			ENDIF(CPACK_BUNDLE_ALL)
-		ELSEIF(INSTALL_DOC)
-			IF(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS
-				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
-				"bin/inishell.jar" "SNOWPACK inishell"
-				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
-				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
-			ELSE(CPACK_BUNDLE_ALL)
-				SET(CPACK_NSIS_MENU_LINKS 
-				"https://models.slf.ch/snopviz/" "SNOPVIZ visualization"
-				"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
-			ENDIF(CPACK_BUNDLE_ALL)
+			LIST(APPEND MENU_LINKS_SNOWPACK
+			"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
+			"${DOC_PATH}/examples" "SNOWPACK examples"
+			)
 		ENDIF(INSTALL_DOC)
-
+		
+		#all other links: inishell, local snopviz, meteoio
+		IF(CPACK_BUNDLE_ALL)
+			SET(MENU_LINKS_INISHELL "bin/inishell.jar" "SNOWPACK inishell")
+			IF(CPACK_BUNDLE_SNOPVIZ)
+				SET(MENU_LINKS_SNOPVIZ "bin/snopviz/index.html" "SNOPVIZ visualization")
+			ENDIF(CPACK_BUNDLE_SNOPVIZ)
+			SET(MENU_LINKS_METEOIO "https://models.slf.ch/p/meteoio/" "MeteoIO Home page")
+			IF(INSTALL_DOC)
+				SET(MENU_LINKS_METEOIO
+				"${METEOIO_DOC}/MeteoIO_doc.html" "MeteoIO documentation"
+				"https://models.slf.ch/p/meteoio/" "MeteoIO Home page"
+				)
+			ENDIF(INSTALL_DOC)
+		ENDIF(CPACK_BUNDLE_ALL)
+		
+		SET(CPACK_NSIS_MENU_LINKS ${MENU_LINKS_SNOWPACK} ${MENU_LINKS_INISHELL} ${MENU_LINKS_SNOPVIZ} ${MENU_LINKS_METEOIO})
+		
 		#info for the add/uninstall software administration
 		SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}-${VERSION}")
 		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")

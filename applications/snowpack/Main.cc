@@ -819,6 +819,31 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	}
 }
 
+void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
+{
+	std::vector< std::vector<MeteoData> > vecMeteo;
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
+
+	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
+	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
+	io.getMeteoData(d1, Meteo); //we need to know how many stations will be available
+	
+	vecMeteo.insert(vecMeteo.begin(), Meteo.size(), std::vector<MeteoData>()); //allocation for the vectors
+	for(; d1<=d2; d1+=Tstep) { //time loop
+		io.getMeteoData(d1, Meteo); //read 1 timestep at once, forcing resampling to the timestep
+		for(size_t ii=0; ii<Meteo.size(); ii++) {
+			const std::string stationID( Meteo[ii].meta.stationID );
+			if (mapIDs.count( stationID )==0) { //if this is the first time we encounter this station, save where it should be inserted
+				mapIDs[ stationID ] = ii;
+			}
+			vecMeteo[ mapIDs[stationID] ].push_back(Meteo[ii]); //fill the data manually into the vector of vectors
+		}
+	}
+	io.writeMeteoData(vecMeteo);
+
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Forcing data written out");
+}
+
 inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
 {
 	const bool useSoilLayers = cfg.get("SNP_SOIL", "Snowpack");
@@ -935,6 +960,7 @@ inline void real_main (int argc, char *argv[])
 	printStartInfo(cfg, string(argv[0]));
 
 	// START LOOP OVER ALL STATIONS
+	bool write_forcing = cfg.get("WRITE_PROCESSED_METEO", "Output"); //it will be set to false once it has been done
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on meteo station %s", vecStationIDs[i_stn].c_str());
@@ -1003,6 +1029,12 @@ inline void real_main (int argc, char *argv[])
 		double meteo_step_length = -1.;
 		const bool enforce_snow_height = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 
+		//from current_date to dateEnd, if necessary write out meteo forcing
+		if (write_forcing==true) {
+			writeForcing(current_date, dateEnd, calculation_step_length/1440, io);
+			write_forcing = false; //no need to call it again for the other stations
+		}
+		
 		// START TIME INTEGRATION LOOP
 		do {
 			current_date += calculation_step_length/1440;

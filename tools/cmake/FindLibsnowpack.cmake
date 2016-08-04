@@ -10,11 +10,11 @@ IF(WIN32)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\Snowpack]" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
-		${LIBSNOWPACK_ROOT1}/bin
-		${LIBSNOWPACK_ROOT2}/bin
-		${LIBSNOWPACK_ROOT3}/bin
-		${SRC_DIR}/snowpack/bin
-		"C:/Program Files/Snowpack/bin" )
+		${LIBSNOWPACK_ROOT1}/bin ${LIBSNOWPACK_ROOT1}/lib
+		${LIBSNOWPACK_ROOT2}/bin ${LIBSNOWPACK_ROOT2}/lib
+		${LIBSNOWPACK_ROOT3}/bin ${LIBSNOWPACK_ROOT3}/lib
+		${SRC_DIR}/snowpack/bin ${SRC_DIR}/snowpack/lib
+		"C:/Program Files/Snowpack/bin" "C:/Program Files/Snowpack/lib"	)
 
 	IF(MSVC)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
@@ -24,7 +24,7 @@ IF(WIN32)
 			)
 	ELSE(MSVC)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
-			NAMES libsnowpack.dll.a
+			NAMES libsnowpack.dll.a libsnowpack.a
 			PATHS ${SEARCH_PATH}
 			DOC "Location of the libsnowpack, like c:/Program Files/Snowpack-2.0.0/lib/libsnowpack.dll.a"
 			)

@@ -122,6 +122,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["EXPERIMENT"] = "NO_EXP";
 	outputConfig["FIRST_BACKUP"] = "400.";
 	outputConfig["HARDNESS_IN_NEWTON"] = "false";
+	outputConfig["METEO"] = "SMET";
 	outputConfig["METEOPATH"] = "./output";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
@@ -137,6 +138,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["PRECIP_RATES"] = "true";
 	outputConfig["PROFILE_FORMAT"] = "PRO";
 	outputConfig["SNOW"] = "SMET";
+	outputConfig["WRITE_PROCESSED_METEO"] = "false";
 
 	return true;
 }

@@ -946,7 +946,7 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 	switch (i_event) {
 		case event_wind: {
 			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
-		const double rho_0=361., rho_1=33.;
+				const double rho_0=361., rho_1=33.;
 				return (rho_0*log10(Mdata.vw_avg) + rho_1);
 			} else
 				return Constants::undefined;
