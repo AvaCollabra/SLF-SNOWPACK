@@ -29,13 +29,13 @@
 
 /**
  * @page snowpackio Snowpack data formats
- * 
+ *
  * @section snowpack_inputs_outputs Snowpack inputs versus outputs
  * %Snowpack needs several kind of information to be provided for a simulation and then writes out
  * several kind of information. Some formats can be used for both the inputs and the outputs while some
- * others are restricted to either one or the other (simply because %Snowpack does not read or write 
+ * others are restricted to either one or the other (simply because %Snowpack does not read or write
  * out the parameters contained in the said format).
- * 
+ *
  * @subsection Snowpack_inputs Snowpack required inputs
  *  Several kind of information need to be given to %Snowpack for a simulation:
  * -# the description of the place where the snow pack has to be simulated: latitutde, longitude, elevation, slope, ...
@@ -43,12 +43,12 @@
  * -# the intial state of the various soil and snow layers
  *
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
- * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation (for the last official release, it is available 
- * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats. 
+ * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation (for the last official release, it is available
+ * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats.
  * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
- * 
+ *
  * Please also check the \ref requirements "Data requirements" page.
- * 
+ *
  * @subsection Snowpack_outputs Snowpack outputs
  * %Snowpack creates various output files:
  * - the current state of its soil and snow layers in <i>".sno"</i> files;
@@ -62,19 +62,19 @@
  * pre-processed meteorological data by setting the key WRITE_PROCESSED_METEO to TRUE in the [Output] section.
  *
  * @section available_single_profile_plugins Single snow profiles
- * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below 
- * are available, both for input and output of snow profiles with the <b>"SNOW"</b> keyword. 
+ * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below
+ * are available, both for input and output of snow profiles with the <b>"SNOW"</b> keyword.
  * Please read the documentation for each plugin in order to know the plugin-specific keywords!
  * <center><table border="1">
  * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
- * <tr><td>\subpage snoold_format "SNOOLD"</td><td>legacy %Snowpack profile (including the hazard data)</td><td></td></tr>
  * <tr><td>\subpage smet "SMET"</td><td>SMET based profile (including the hazard data), recommended</td><td></td></tr>
  * <tr><td>\subpage caaml "CAAML"</td><td>CAAML profile</td><td><A HREF="http://xmlsoft.org/">libxml</A></td></tr>
+ * <tr><td>\subpage snoold_format "SNOOLD"</td><td>legacy %Snowpack profile (including the hazard data)</td><td></td></tr>
  * </table></center>
- * 
+ *
  * @section available_profile_ts_plugins Snow profiles time series
- * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below 
- * are available for output of snow profiles time series with the <b>"PROFILE_FORMAT"</b> keyword. 
+ * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below
+ * are available for output of snow profiles time series with the <b>"PROF_FORMAT"</b> keyword. 
  * Please read the documentation for each plugin in order to know the plugin-specific keywords!
  * <center><table border="1">
  * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
@@ -82,7 +82,7 @@
  * <tr><td>\subpage prf_format "PRF"</td><td>easier to parse profile time series</td><td></td></tr>
  * <tr><td>\subpage profile_imis "IMIS"</td><td>write profile time series to the IMIS database</td><td><A HREF="http://docs.oracle.com/cd/B12037_01/appdev.101/b10778/introduction.htm">Oracle's OCCI library</A></td></tr>
  * </table></center>
- * 
+ *
  * @section available_met_ts Fluxes time series
  * %Snowpack computes various meteorological parameters as well as fluxes and can write them out as time series.
  * Currently, only the \subpage met_format "MET format" is supported.

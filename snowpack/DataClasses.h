@@ -213,7 +213,7 @@ class SN_SNOWSOIL_DATA {
 	public:
 		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
                      nLayers(0), Ldata(), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
-                     Canopy_Height(0.), Canopy_LAI(0.),Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
+                     Canopy_Height(0.), Canopy_LAI(0.), Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
                      WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
 		{
 			Ldata.clear();
@@ -256,7 +256,7 @@ class ElementData {
 			    Pow, ///< another power law
 		            Exp ///< exponential law
 		} Young_Modulus;
-		
+
 		ElementData();
 
 		bool checkVolContent() const;

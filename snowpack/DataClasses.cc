@@ -209,7 +209,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const size_t nL = surf_hoar? (nE+1 - Xdata.SoilNode) : (nE - Xdata.SoilNode);
 	std::vector<SnowProfileLayer> Pdata(nL);
 
-	for(size_t ll=0, e=0; ll<nL; ll++, e++) { // We dump only snow layers
+	for(size_t ll=0, e=Xdata.SoilNode; ll<nL; ll++, e++) { // We dump only snow layers
 		// Write profile meta data
 		Pdata[ll].profileDate = dateOfProfile;
 		Pdata[ll].stationname = mystation;

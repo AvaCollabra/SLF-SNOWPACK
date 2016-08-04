@@ -61,8 +61,8 @@ const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::den
 
 /// @brief Define the assembly macro
 void Snowpack::EL_INCID(const size_t &e, int Ie[]) {
-	Ie[0] = static_cast<int>( e ); 
-	Ie[1] = static_cast<int>( e+1 ); 
+	Ie[0] = static_cast<int>( e );
+	Ie[1] = static_cast<int>( e+1 );
 }
 
 /// @brief Define the node to element temperature macro
@@ -96,7 +96,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.), 
+            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.),
             temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
@@ -264,7 +264,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 
 	//Indicate if the meteo values can be considered at constant height above the snow surface (e.g., Col de Porte measurement method)
 	cfg.getValue("ADJUST_HEIGHT_OF_METEO_VALUES", "SnowpackAdvanced", adjust_height_of_meteo_values);
-	
+
 	// Allow for the effect of a known advective heat flux
 	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat, IOUtils::nothrow);
 	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin, IOUtils::nothrow);
@@ -509,7 +509,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 		actual_height_of_meteo_values=height_of_meteo_values + Xdata.cH - Xdata.Ground;
 	else
 		actual_height_of_meteo_values=height_of_meteo_values;
-  
+
 	const double alpha = SnLaws::compSensibleHeatCoefficient(Mdata, Xdata, actual_height_of_meteo_values) * Constants::density_air * Constants::specific_heat_air;
 	const double Tair = Mdata.ta;
 	const double Tss = Xdata.Ndata[Xdata.getNumberOfNodes()-1].T;
@@ -530,14 +530,14 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 			Bdata.ql = std::min(250., std::max(-250., Bdata.ql));
 		}
 	}
-	
+
 	if (Mdata.psum>0. && Mdata.psum_ph>0.) { //there is some rain
 		const double gamma = ((Mdata.psum * Mdata.psum_ph) / sn_dt) * Constants::specific_heat_water;
 		Bdata.qr = gamma * (Tair - Tss);
 	} else {
 		Bdata.qr = 0.;
 	}
-	
+
 	const double lw_in  = Constants::emissivity_snow * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
 	Bdata.lw_out = Constants::emissivity_snow * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
@@ -608,7 +608,7 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 			Se[1][1] += gamma;
 			Fe[1] += gamma * T_air;
 		}
-		
+
 		// Net longwave radiation: NON-linear dependence on snow surface temperature
 		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
 		Se[1][1] += delta;
@@ -654,23 +654,23 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = Xdata.getNumberOfElements();
-	
+
 	double Albedo = Xdata.SoilAlb; //pure soil profile will remain with soil albedo
 
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if (nE > Xdata.SoilNode) { //there are some non-soil layers
 		size_t eAlbedo = nE-1;
 		const size_t marker = EMS[eAlbedo].mk % 10;
-		
+
 		switch (marker) {
 			case 9: // WATER_LAYER
 				if (eAlbedo > Xdata.SoilNode)
 					eAlbedo--;
-				
+
 			case 8: // Ice layer within the snowpack
 				while ((eAlbedo > Xdata.SoilNode) && (marker == 8))
 					eAlbedo--;
-				
+
 			default: // Snow, glacier ice, PLASTIC, or soil
 				if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
 					Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata, ageAlbedo);
@@ -690,16 +690,16 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	} else {
 		const bool use_hs_meas = enforce_measured_snow_heights && (Xdata.meta.getSlopeAngle() <= Constants::min_slope_angle);
 		const double hs = (use_hs_meas)? Xdata.mH - Xdata.Ground : Xdata.cH - Xdata.Ground;
-		
+
 		if (research_mode) { // Treatment of "No Snow" on the ground in research mode
 			const bool snow_free_ground = (hs < 0.02) || (NDS[nN-1].T > IOUtils::C_TO_K(3.5)) || ((hs < 0.05) && (NDS[nN-1].T > IOUtils::C_TO_K(1.7)));
 			if (snow_free_ground)
 				Albedo = Xdata.SoilAlb;
 		}
-		
+
 		if (!alpine3d) //for Alpine3D, the radiation has been differently computed
 			Albedo = std::max(Albedo, Mdata.rswr / Constants::solcon);
-		
+
 		if (nE > Xdata.SoilNode) {
 			// For snow
 			Albedo = std::max(min_snow_albedo, std::min(new_snow_albedo, Albedo));
@@ -708,14 +708,14 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 			Albedo = std::max(0.05, std::min(0.95, Albedo));
 		}
 	}
-	
+
 	return Albedo;
 }
 
 double Snowpack::getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const
 {
 	const double pAlbedo = Xdata.pAlbedo;
-	
+
 	// Assign iswr and rswr correct values according to switch value
 	if (sw_mode == "INCOMING") { // use incoming SW flux only
 		Mdata.rswr = Mdata.iswr * pAlbedo;
@@ -737,7 +737,7 @@ double Snowpack::getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) c
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "sw_mode = %s not implemented yet!", sw_mode.c_str());
 		exit(EXIT_FAILURE);
 	}
-	
+
 	return pAlbedo; //we do not have a measured labedo -> use parametrized
 }
 
@@ -778,12 +778,12 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = Xdata.getNumberOfElements();
-	
+
 	double I0 = Mdata.iswr - Mdata.rswr; // Net irradiance perpendicular to slope
 
 	const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
 	if ( (temp_index_degree_day > 0.) && (nE > 0) && (EMS[nE-1].theta[WATER] > theta_r + Constants::eps)		// Water and ice ...
-	   && (EMS[nE-1].theta[ICE] > Constants::eps) && (Mdata.ta > EMS[nE-1].Te)) 
+	   && (EMS[nE-1].theta[ICE] > Constants::eps) && (Mdata.ta > EMS[nE-1].Te))
 		I0 = 0.;
 	if (I0 < 0.) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, " iswr:%lf  rswr:%lf  Albedo:%lf", Mdata.iswr, Mdata.rswr, Xdata.Albedo);
@@ -889,7 +889,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			NDS[0].T = Mdata.ts0;
 		}
 	}
-	
+
 	// Copy Temperature at time0 into First Iteration
 	for (size_t n = 0; n < nN; n++) {
 		U[n] = NDS[n].T;
@@ -904,7 +904,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 				else if (T_mean_up>t_crazy_min && T_mean_up<t_crazy_max) U[n] = T_mean_up;
 				if (U[n] <= t_crazy_min) U[n] = .5*( IOUtils::C_TO_K(0.) + t_crazy_min); //too cold -> reset to avg(Tmin, 0C)
 				if (U[n] >= t_crazy_max) U[n] = .5*( IOUtils::C_TO_K(0.) + t_crazy_max); //too hot -> reset to avg(Tmax, 0C)
-				
+
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration for node %d / %d (soil node=%d)! Reset from %.2lf to %.2lf", n, nN, Xdata.SoilNode, Tnode_orig, U[n]);
 				for(size_t ii=0; ii<nE; ++ii) {
 					std::cout << "   " << ii << "\t" << U[ii] << " " << EMS[ii].Te << " " << U[ii+1] << " " << " " << EMS[ii].L << " " << EMS[ii].Rho << "\n";
@@ -914,13 +914,13 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			} else {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Temperature out of bound at beginning of iteration!");
 				prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
-				
+
 				free(U); free(dU); free(ddU);
 				throw IOException("Runtime error in compTemperatureProfile", AT);
 			}
 		}
 	}
-	
+
 	// Set the iteration counters, as well as the phase change boolean values
 	unsigned int iteration = 0;   // iteration counter (not really required)
 	bool NotConverged = true;     // true if iteration did not converge
@@ -1652,7 +1652,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		//since precipitation phase is a little less intuitive than other, measured parameters, make sure it is provided
 		if (Mdata.psum_ph==IOUtils::nodata)
 			throw NoDataException("Missing precipitation phase", AT);
-		
+
 		// Set and adjust boundary conditions
 		surfaceCode = NEUMANN_BC;
 		double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
@@ -1702,7 +1702,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			// set the snow albedo
 			Xdata.pAlbedo = getParameterizedAlbedo(Xdata, Mdata);
 			Xdata.Albedo = getModelAlbedo(Xdata, Mdata); //either parametrized or measured
-			
+
 			// Compute the temperature profile in the snowpack and soil, if present
 			if (compTemperatureProfile(Mdata, Xdata, Bdata, (allow_adaptive_timestepping == true)?(false):(true))) {
 				// Entered after convergence
@@ -1810,7 +1810,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 	if (combine_elements) {
 		// Check for combining elements
-		Xdata.combineElements(SnowStation::number_top_elements, reduce_n_elements);
+		Xdata.combineElements(SnowStation::number_top_elements, reduce_n_elements, 1);
 		// Check for splitting elements
 		if (reduce_n_elements) {
 			Xdata.splitElements();

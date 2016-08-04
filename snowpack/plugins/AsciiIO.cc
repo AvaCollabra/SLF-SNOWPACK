@@ -386,7 +386,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("HARDNESS_IN_NEWTON", "Output", r_in_n, IOUtils::nothrow);
 	const string out_snowpath = cfg.get("SNOWPATH", "Output", IOUtils::nothrow);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
-	cfg.getValue("PROFILE_FORMAT", "Output", vecProfileFmt);
+	cfg.getValue("PROF_FORMAT", "Output", vecProfileFmt);
 	cfg.getValue("AGGREGATE_PRF", "Output", aggregate_prf);
 
 	// SnowpackAdvanced section
@@ -859,7 +859,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 		} else if (vecProfileFmt[ii] == "IMIS") {
 			;
 		} else {
-			throw InvalidArgumentException("Key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS formats", AT);
+			throw InvalidArgumentException("Key PROF_FORMAT in section [Output] takes only PRO, PRF or IMIS formats", AT);
 		}
 	}
 }

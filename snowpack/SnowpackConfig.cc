@@ -115,8 +115,9 @@ bool SnowpackConfig::initStaticData()
 	inputConfig["ISWR_IS_NET"] = "false";
 
 	//[Output] section
-	outputConfig["AVGSUM_TIME_SERIES"] = "true";
+	outputConfig["AGGREGATE_PRO"] = "false";
 	outputConfig["AGGREGATE_PRF"] = "false";
+	outputConfig["AVGSUM_TIME_SERIES"] = "true";
 	outputConfig["BACKUP_DAYS_BETWEEN"] = "365.";
 	outputConfig["CLASSIFY_PROFILE"] = "false";
 	outputConfig["CUMSUM_MASS"] = "false";
@@ -125,7 +126,6 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["METEO"] = "SMET";
 	outputConfig["METEOPATH"] = "./output";
-	outputConfig["TS_FORMAT"] = "MET";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
 	outputConfig["OUT_HEAT"] = "true";
@@ -138,8 +138,9 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_SW"] = "true";
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
-	outputConfig["PROFILE_FORMAT"] = "PRO";
+	outputConfig["PROF_FORMAT"] = "PRO";
 	outputConfig["SNOW"] = "SMET";
+	outputConfig["TS_FORMAT"] = "SMET";
 	outputConfig["WRITE_PROCESSED_METEO"] = "false";
 
 	return true;

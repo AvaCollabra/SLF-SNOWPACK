@@ -75,11 +75,11 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                   const ZwischenData& Zdata);
+		                   const bool aggregate);
 
 		const RunInfo info;
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
-		bool useSoilLayers, perp_to_slope;
+		bool useSoilLayers, perp_to_slope, aggregate_caaml;
 		/*static const*/ double in_tz; //plugin specific time zones
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 		double caaml_nodata; //plugin specific no data value
@@ -108,7 +108,8 @@ class CaaMLIO : public SnowpackIOInterface {
 		void setDepositionDates(std::vector<LayerData> &Layers, const mio::Date);
 
 		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
-		void writeDate(const xmlTextWriterPtr writer, const mio::Date date);
+		// void writeDate(const xmlTextWriterPtr writer, const mio::Date date);
+		void writeDate(const xmlTextWriterPtr writer, const char* att_name, const char* att_val);
 		void writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStation& Xdata);
 		void writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdata);
 		void writeCustomLayerData(const xmlTextWriterPtr writer, const ElementData& Edata, const NodeData& Ndata);
@@ -119,9 +120,11 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string lwc_valToCode(const double val);
 		double hardness_codeToVal(char* code);
 		std::string hardness_valToCode(const double code);
-		void form_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
-		std::string form_valToCode(const unsigned int var);
-		std::string form_valToCode_old(const double* var);
+		void grainShape_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
+		std::string grainShape_valToAbbrev(const unsigned int var);
+		std::string grainShape_valToAbbrev_old(const double* var);
+
+		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10], dateStr[30];
 
 };
 
