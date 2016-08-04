@@ -487,7 +487,7 @@ void SnLaws::compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, 
 /**
  * @brief Advective Heat Flux injection (mimicking heat advection by infiltrating water?)
  * @param Xdata The advective heat flux will be added to Xdata.sw_abs
- * @param advective_heat heat flux (positive or negative) to add (W m-3) //HACK: input as W/m2 is more logical
+ * @param advective_heat heat flux (positive or negative) to add (W m-3) //NO_HACK: input as W/m2 seems more logical but wrong! It is a source term!
  * @param depth_begin depth where to begin injecting the heat flux (in m from the soil surface)
  * @param depth_end depth where to stop injecting the heat flux (in m from the soil surface)
  */
@@ -855,9 +855,9 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	const size_t nElems = Xdata.getNumberOfElements();
-	
+
 	double c = compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
-	
+
 	if ((Xdata.getNumberOfNodes() == Xdata.SoilNode + 1) && (nElems > 0)
 		    && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
 		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
@@ -1111,7 +1111,7 @@ double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 	case t_term_837: // as of revision 243, used up to revision 837 (deprecated)
 		return (9. - 8.7 * exp(0.015 * (Te - Constants::melting_tk)));
 	}
-	
+
 	throw UnknownValueException("Unknown viscosity temperature dependency selected!", AT);
 }
 
@@ -1176,7 +1176,7 @@ double SnLaws::loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date&
 		return sig0;
 	}
 	}
-	
+
 	//this should not be reached...
 	prn_msg(__FILE__, __LINE__, "err", Date(), "visc=%d not a valid choice for loadingRateStress!", visc);
 	throw IOException("Choice not implemented yet!", AT);
@@ -1592,4 +1592,3 @@ double SnLaws::SnowViscosityMSU(const ElementData& Edata)
 
 	return(Vis);
 }
-

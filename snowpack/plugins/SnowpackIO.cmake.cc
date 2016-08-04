@@ -69,14 +69,15 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	} else
 		throw InvalidArgumentException("Invalid output snow profile format '"+out_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
 
-	/* Profiles may also be dumped in up to 4 formats specified by the key PROFILE_FORMAT in section [Output]:
-	 * PRO   : ASCII-format for visulization with SN_GUI, includes soil elements
-	 * PRF   : Snow profiles in tabular ASCII-format, aggregated if AGGREGATE_PRF is set
-	 * IMIS  : aggregated profiles for upload to the SLF database sdbo
+	/* Profiles may be dumped in up to 3 formats specified by the key PROF_FORMAT in [Output].
+	 * Note that the keys AGGREGATE_PRO and AGGREGATE_PRF will allow to aggregate model layers to a smaller number.
+	 * PRO   : Full profiles in ASCII-format, including soil elements if available, for visualization with both SnopViz and SN_GUI
+	 * PRF   : Snow profiles in tabular ASCII-format
+	 * IMIS  : aggregated snow profiles for upload to the SLF database sdbo
 	 */
-	std::vector<string> vecProfileFmt = cfg.get("PROFILE_FORMAT", "Output", IOUtils::nothrow);
-	if (vecProfileFmt.size() > 4) {
-		throw InvalidArgumentException("The key PROFILE_FORMAT in section [Output] can have three values at most", AT);
+	std::vector<string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output", IOUtils::nothrow);
+	if (vecProfileFmt.size() > 3) {
+		throw InvalidArgumentException("The key PROF_FORMAT in [Output] can take three values at most", AT);
 	} else {
 		for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
 			if (vecProfileFmt[ii] == "PRO") {
@@ -86,11 +87,11 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 			} else if (vecProfileFmt[ii] == "IMIS") {
 				output_prf_as_imis  = true;
 			} else {
-				throw InvalidArgumentException("The key PROFILE_FORMAT in section [Output] takes only PRO, PRF or IMIS values", AT);
+				throw InvalidArgumentException("The key PROF_FORMAT in [Output] takes only PRO, PRF or IMIS as value", AT);
 			}
 		}
 	}
-	
+
 	//Format of meteo time series:
 	const bool ts_out = cfg.get("TS_WRITE", "Output");
 	if (ts_out==true) {
@@ -100,7 +101,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 		else if (ts_format=="MET")
 			output_ts_as_ascii = true;
 		else
-			throw InvalidArgumentException("The key TS_FORMAT in section [Output] takes only SMET or MET values", AT);
+			throw InvalidArgumentException("The key TS_FORMAT in [Output] takes only SMET or MET as value", AT);
 	}
 
 	//set the "plugins" pointers
@@ -234,4 +235,3 @@ SnowpackIO& SnowpackIO::operator=(const SnowpackIO& source)
 	}
 	return *this;
 }
-
