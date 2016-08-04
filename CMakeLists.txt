@@ -130,8 +130,9 @@ INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT hea
 INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
 
 ADD_CUSTOM_TARGET(distclean make clean
-	COMMAND cmake -E remove *~ snowpack/*~ applications/snowpack/*~
-	COMMAND cmake -E remove CMakeCache.txt cmake_install.cmake snowpack/cmake_install.cmake applications/snowpack/cmake_install.cmake tests/cmake_install.cmake tests/CTestTestfile.cmake
+	COMMAND cmake -E remove snowpack/*~ snowpack/cmake_install.cmake
+	COMMAND cmake -E remove applications/snowpack/*~ applications/snowpack/cmake_install.cmake applications/snowpack/Makefile  applications/snowpack/cmake_*.cmake
+	COMMAND cmake -E remove tests/*~ tests/res1exp/*~ tests/res5exp/*~ tests/cmake_install.cmake tests/CTestTestfile.cmake
 	COMMAND cmake -E remove_directory CMakeFiles
 	COMMAND cmake -E remove_directory snowpack/CMakeFiles
 	COMMAND cmake -E remove_directory applications/snowpack/CMakeFiles
@@ -139,6 +140,7 @@ ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove tests/res1exp/*.cmake tests/res1exp/output/*
 	COMMAND cmake -E remove_directory tests/res1exp/CMakeFiles
 	COMMAND cmake -E remove_directory tests/res1exp/Testing
+	COMMAND cmake -E remove *~ CMakeCache.txt cmake_install.cmake CPack*.cmake cmake_*.cmake Makefile
 	)
 
 ###########################################################

@@ -225,9 +225,9 @@ class SN_SNOWSOIL_DATA {
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
-		size_t nN;                        ///< Total number of FE nodes
-		double Height;                    ///< Total height of snowpack in m (sum of the layer heights)
-		size_t nLayers;                   ///< Total number of snowpack layers at loading
+		size_t nN;                        ///< Total number of FE nodes after loading
+		double Height;                    ///< Total height of soil-snow column in m (sum of the layer heights)
+		size_t nLayers;                   ///< Total number of soil and snow layers at loading
 		std::vector<LayerData> Ldata;     ///< contains all the information required to construct the Xdata
 		double HS_last;                   ///< Last checked calculated snow depth used for albedo control
 		double Albedo;                    ///< Snow albedo
@@ -473,6 +473,7 @@ class SnowStation {
 
 		void reduceNumberOfElements(const size_t& rnE);
 		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements);
+		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements, const size_t& cond);
 		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
 		void splitElements();
@@ -505,8 +506,8 @@ class SnowStation {
 		double BareSoil_z0;         ///< Bare soil roughness in m
 		size_t SoilNode;            ///< The top soil node, 0 in case of SNP_SOIL == 0
 		double Ground;              ///< The ground height -- meaning the height of the top soil node
-		double cH;                  ///< The CALCULATED snowpack height, including soil depth if SNP_SOIL == 1
-		double mH;                  ///< The MEASURED snowpack height, including soil depth if SNP_SOIL == 1
+		double cH;                  ///< The CALCULATED height, including soil depth if SNP_SOIL == 1
+		double mH;                  ///< The MEASURED height, including soil depth if SNP_SOIL == 1
 		double mass_sum;            ///< Total mass summing mass of snow elements
 		double swe;                 ///< Total mass summing snow water equivalent of elements
 		double lwc_sum;             ///< Total liquid water in snowpack
@@ -661,7 +662,7 @@ class SnowProfileLayer {
 		unsigned char  loc_for_wind;
 
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
-		double height;         ///< 0 to 1000      (cm)
+		double height;         ///< Height of snow or snow depth; 0 to 1000      (cm)
 		double rho;            ///< 0 to 1000      (kg m-3)
 		double T;              ///< -50 to 50, snow temperature at top of layer (degC)
 		double gradT;          ///< -1000 to 1000, temperature gradient across layer (K m-1)
@@ -682,7 +683,7 @@ class SnowProfileLayer {
 	private:
 		void generateLayer(const ElementData& Edata, const NodeData& Ndata);
 		void generateLayer(const ElementData& Edata, const NodeData& Ndata,
-                           const mio::Date& dateOfProfile, const double hoar_density_surf);
+		                   const mio::Date& dateOfProfile, const double hoar_density_surf);
 };
 
 /// @brief class to collect the information about the current simulation (version, date)
