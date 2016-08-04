@@ -56,7 +56,7 @@
  * - a time serie of snow profiles;
  * - a time serie of the meteorological data and fluxes as used in the model.
  * 
- * Depending on the chosen output format, 1) and 2) might be provided as one file or two files. Moreover, since Snowpack pre-processes all the 
+ * Depending on the chosen output format, 1) and 2) might be provided as one file or two files. Moreover, since %Snowpack pre-processes all the 
  * meteorological input data with <A HREF="https://models.slf.ch/p/meteoio">MeteoIO</A>, the forcing data that is seen in the core of the model might be different than 
  * the provided input data. In order to better fine tune the parameters of this pre-processing, it is possible to request a copy of the
  * pre-processed meteorological data by setting the key WRITE_PROCESSED_METEO to TRUE in the [Output] section.
