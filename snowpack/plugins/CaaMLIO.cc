@@ -306,15 +306,14 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	xpaths.push_back("/caaml:tempProfile/caaml:Obs");
 	xpaths.push_back("/caaml:densityProfile/caaml:Layer");
 	xpaths.push_back("/caaml:hardnessProfile/caaml:Layer");
-	std::vector<size_t> len(xpaths.size());
-	std::vector<std::vector<double> > depths(xpaths.size());
+	std::vector<std::vector<double> > depths(xpaths.size()); //store 3 profiles: obs, density and hardness
 	std::vector<std::vector<double> > val(xpaths.size());
 
 	//Loop on the paths to read corresponding profile
 	std::list<string>::iterator path;
 	size_t jj = 0;
 	for (path=xpaths.begin(); path!=xpaths.end(); path++, jj++) {
-		getProfiles(*path,len[jj],depths[jj],val[jj]);
+		getProfiles(*path, depths[jj], val[jj]);
 	}
 
 	//Read layers
@@ -337,7 +336,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	}
 
 	//Set temperature, density and hardness from the profiles
-	setProfileVal(SSdata.Ldata,len,depths,val);
+	setProfileVal(SSdata.Ldata, depths,val);
 
 	//Layer default values
  	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
@@ -547,16 +546,16 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 	return Layer;
 }
 
-void CaaMLIO::getProfiles(const std::string path, size_t &len, std::vector<double> &depths, std::vector<double> &val)
+void CaaMLIO::getProfiles(const std::string path, std::vector<double> &depths, std::vector<double> &val)
 {
 	xmlNodeSetPtr data = xmlGetData(SnowData_xpath+path);
-	len = data->nodeNr; //HACK: no necessary, a depth.size() would later do the job
-	depths.resize(len);
-	val.resize(len);
+	const size_t nrElem = data->nodeNr;
+	depths.resize(nrElem);
+	val.resize(nrElem);
 
 	//double l;
 	//Loop on the nodes
- 	for (size_t ii=0; ii<len; ++ii) {
+ 	for (size_t ii=0; ii<nrElem; ++ii) {
 		if (data->nodeTab[ii]->type == XML_ELEMENT_NODE) {
 			//Loop on the children
 			for (xmlNode *cur_c = data->nodeTab[ii]->children; cur_c; cur_c = cur_c->next) {
@@ -594,55 +593,51 @@ void CaaMLIO::getProfiles(const std::string path, size_t &len, std::vector<doubl
 	//If necessary, reverse order
 	if (depths.size()>=2 && depths[0]<depths[1]) {
 		double temp;
-		for (size_t ii=0; ii<floor(len/2); ++ii) {
+		for (size_t ii=0; ii<floor(nrElem/2); ++ii) {
 			temp = depths[ii];
-			depths[ii] = depths[len-ii-1];
-			depths[len-ii-1] = temp;
+			depths[ii] = depths[nrElem-ii-1];
+			depths[nrElem-ii-1] = temp;
 			temp = val[ii];
-			val[ii] = val[len-ii-1];
-			val[len-ii-1] = temp;
+			val[ii] = val[nrElem-ii-1];
+			val[nrElem-ii-1] = temp;
 		}
 	}
 }
 
-void CaaMLIO::setProfileVal(std::vector<LayerData> &Layers, std::vector<size_t> len, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val)
+void CaaMLIO::setProfileVal(std::vector<LayerData> &Layers, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val)
 {
 	double z = 0.;
-	//cout << endl << "Depth\tTemp\tDensity\tHardness" << endl;
-	for (size_t ii=0; ii<Layers.size(); ii++) {
+	for (size_t ii=0; ii<Layers.size(); ii++) { //loop over the number of layers
+		//profile 0 is the obs profile, 1 is the density and 2 is the hardness
 		z += Layers[ii].hl;
 		//Compute temperature at the top of the layer
 		size_t ind = 0;
-		while (z<depths[0][ind] && ind<len[0])
+		while (ind<depths[0].size() && z<depths[0][ind])
 			ind++;
 
 		Layers[ii].tl = val[0][ind];
 		if (ind>0 && z>depths[0][ind])
 			Layers[ii].tl += (val[0][ind]-val[0][ind-1])*(z-depths[0][ind])/(depths[0][ind]-depths[0][ind-1]);
 
-		//cout << z << "\t" << Layers[ii].tl;
 		//Compute average density and hardness in the layer
 		for (size_t k=1; k<3; k++) {
 			ind = 0;
-			double zprev=z, cumsum=0, wghts=0;
-			while (depths[k][ind]>z-Layers[ii].hl && ind<len[k]) { // HACK: there is no garantee that depth[k] exists!
+			double zprev=z, cumsum=0, weights=0;
+			while (ind<depths[k].size() &&  depths[k][ind]>z-Layers[ii].hl) {
 				ind++;
 				if (depths[k][ind]-z < 1e-12) {
 					if (depths[k][ind]<=z-Layers[ii].hl) {
 						cumsum += val[k][ind-1]*(zprev-(z-Layers[ii].hl));
-						wghts += (zprev-(z-Layers[ii].hl));
+						weights += (zprev-(z-Layers[ii].hl));
 					} else {
 						cumsum += val[k][ind-1]*(zprev-depths[k][ind]);
-						wghts += (zprev-depths[k][ind]);
+						weights += (zprev-depths[k][ind]);
 						zprev = depths[k][ind];
 					}
 				}
 			}
 			if (k==1) {
-				Layers[ii].phiIce = (cumsum/wghts)/Constants::density_ice;
-				//cout << "\t" << Layers[ii].phiIce;
-			} else {
-				//cout << "\t" << cumsum/wghts << endl;
+				Layers[ii].phiIce = (cumsum/weights)/Constants::density_ice;
 			}
 		}
 	}

@@ -31,10 +31,7 @@
 #include <snowpack/Constants.h>
 #include <meteoio/MeteoIO.h>
 
-#include <cstdio>
-#include <fstream>
 #include <string>
-#include <sstream>
 #include <vector>
 
 /// @brief The 3 different phases in the matrix
@@ -500,7 +497,7 @@ class SnowStation {
 
 		mio::StationData meta;      ///< Station meta data
 		double cos_sl;              ///< Cosinus of slope angle, initialized once!
-		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		size_t sector;              ///< current slope sector of width 360./std::max(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
 		double pAlbedo;             ///< Parameterized snow albedo
@@ -693,6 +690,8 @@ class SnowProfileLayer {
 class RunInfo {
 	public:
 		RunInfo();
+		RunInfo(const RunInfo& orig);
+		RunInfo& operator=(const RunInfo&) {return *this;} //everything is static, so we can not change anything
 
 		const std::string version;   ///< SNOWPACK version
 		const mio::Date computation_date; ///< Date of computation

@@ -21,12 +21,9 @@
 #ifndef CANOPY_H
 #define CANOPY_H
 
-#include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Hazard.h>
-#include <snowpack/Utils.h>
-#include <snowpack/Laws_sn.h>
 
+#include <string>
 #include <fstream>
 
 /**

@@ -41,6 +41,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
 	advancedConfig["ALBEDO_AVERAGE_SCHMUCKI"] = "ALL_DATA";
+	advancedConfig["ALBEDO_AGING"] = "true";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_PARAMETERIZATION"] = "MONTI";
@@ -124,6 +125,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["HARDNESS_IN_NEWTON"] = "false";
 	outputConfig["METEO"] = "SMET";
 	outputConfig["METEOPATH"] = "./output";
+	outputConfig["TS_FORMAT"] = "MET";
 	outputConfig["OUT_CANOPY"] = "false";
 	outputConfig["OUT_HAZ"] = "true";
 	outputConfig["OUT_HEAT"] = "true";
@@ -160,7 +162,8 @@ SnowpackConfig::SnowpackConfig(const std::string& i_filename) : Config(i_filenam
 }
 
 void SnowpackConfig::setDefaults()
-{
+{ //BUG we have a problem here: we try to keep the user settings if present. But we can not anymore make the difference between
+// default values and user set values... The whole "if xxx.empty()" does not work anymore!
 	string variant; getValue("VARIANT", "SnowpackAdvanced", variant, IOUtils::nothrow);
 
 	getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
@@ -207,8 +210,7 @@ void SnowpackConfig::setDefaults()
 		addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
 		minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
-		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced",
-		                                     hoar_density_buried, IOUtils::nothrow);
+		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried, IOUtils::nothrow);
 		if (hoar_density_buried.empty()) addKey("HOAR_DENSITY_BURIED", "SnowpackAdvanced", "200.0");
 
 		string force_rh_water; getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water, IOUtils::nothrow);
@@ -224,11 +226,6 @@ void SnowpackConfig::setDefaults()
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 
-		//addKey("FIRST_BACKUP", "Output", "1500.");
-		//addKey("FIXED_POSITIONS", "SnowpackAdvanced", "7");
-		//addKey("FIXED_RATES", "SnowpackAdvanced", "false");
-		//addKey("NUMBER_FIXED_RATES", "SnowpackAdvanced", "0");
-		//addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "7");
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");

@@ -29,11 +29,8 @@
 #ifndef HAZARD_H
 #define HAZARD_H
 
-#include <snowpack/Constants.h>
-#include <snowpack/DataClasses.h>
-#include <snowpack/Stability.h>
 #include <meteoio/MeteoIO.h>
-
+#include <snowpack/DataClasses.h>
 #include <vector>
 
 /** @brief 

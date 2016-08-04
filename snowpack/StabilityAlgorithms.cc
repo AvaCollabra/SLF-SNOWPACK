@@ -21,6 +21,8 @@
 #include <snowpack/StabilityAlgorithms.h>
 #include <snowpack/Laws_sn.h>
 #include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
+#include <snowpack/Stability.h>
 
 #include <assert.h>
 
@@ -234,7 +236,7 @@ double StabilityAlgorithms::getHandHardnessBELLAIRE(const ElementData& Edata, co
 		if ((F1 == 6) && (gsz >= 5.)) {
 			hardness = 1;
 		} else if ((F1 == 6 ) && (gsz < 5.)) {
-			hardness = MIN(hardness, 2.);
+			hardness = std::min(hardness, 2.);
 		}
 	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
 		if (Edata.theta[WATER] < 0.3 * Edata.res_wat_cont) {
@@ -250,7 +252,7 @@ double StabilityAlgorithms::getHandHardnessBELLAIRE(const ElementData& Edata, co
 		hardness = 6.;
 	}
 	// Limit to range {1, 6}
-	hardness = MAX(1., MIN(6., hardness));
+	hardness = std::max(1., std::min(6., hardness));
 	return hardness;
 }
 
@@ -280,7 +282,7 @@ double StabilityAlgorithms::getHandHardnessMONTI(const ElementData& Edata, const
 			if (grain_size >= 5.) {
 				hardness = 1.;
 			} else {
-				hardness = MIN(hardness, 2.);
+				hardness = std::min(hardness, 2.);
 			}
 		}
 	} else if (Edata.theta[ICE] <= 0.7) { // Melt-freeze crust MFcr
@@ -298,7 +300,7 @@ double StabilityAlgorithms::getHandHardnessMONTI(const ElementData& Edata, const
 		hardness = 6.;
 	}
 	// Limit to range {1, 6}
-	hardness = MAX(1., MIN(6., hardness));
+	hardness = std::max(1., std::min(6., hardness));
 	return hardness;
 }
 
@@ -420,10 +422,10 @@ double StabilityAlgorithms::getHandHardnessASARC(const ElementData& Edata, const
 	}
 
 	double hardness = A + B*Edata.Rho + C*gsz;
-	if (F1 == 6) hardness = MIN(hardness, 2.);
+	if (F1 == 6) hardness = std::min(hardness, 2.);
 
 	// Limit to range {1, 6}
-	hardness = MAX(1., MIN(6., hardness));
+	hardness = std::max(1., std::min(6., hardness));
 	return(hardness);
 }
 
@@ -477,14 +479,14 @@ double StabilityAlgorithms::setDeformationRateIndex(ElementData& Edata)
 	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
 	const double sig = -Edata.C;   // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	const double Te = MIN(Edata.Te, Edata.melting_tk); // Element temperature (K)
+	const double Te = std::min(Edata.Te, Edata.melting_tk); // Element temperature (K)
 
 	// First find the absolute neck stress
 	const double sigNeck = Edata.neckStressEnhancement() * (sig); // Neck stress (Pa)
 	// Now find the strain rate in the neck
 	const double epsNeckDot =  eps1Dot * SnLaws::snowViscosityTemperatureTerm(Te) * mio::Optim::pow3(sigNeck/sig1); // Total strain rate in the neck (s-1) NOTE is it used here only?
 	// Return the stability index
-	return (MAX(0.1, MIN(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
+	return (std::max(0.1, std::min(compCriticalStress(epsNeckDot, Te) / sigNeck, 6.)));
 }
 
 /**
@@ -530,7 +532,7 @@ double StabilityAlgorithms::compPenetrationDepth(const SnowStation& Xdata)
 	rho_Pk /= dz_Pk; //weighted average density of the snow slab penetrated by the skier
 
 	// NOTE Pre-factor 0.8 introduced May 2006 by S. Bellaire
-	return MIN(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust));
+	return std::min(0.8 * 43.3 / rho_Pk, ((Xdata.cH / cos_sl) - top_crust));
 }
 
 /**
@@ -553,7 +555,7 @@ void StabilityAlgorithms::compReducedStresses(const double& stress, const double
 double StabilityAlgorithms::getNaturalStability(const StabilityData& STpar)
 {
 	// Limit natural stability index to range {0.05, Stability::max_stability}
-	return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/STpar.sig_s), Stability::max_stability)));
+	return(std::max(0.05, std::min(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/STpar.sig_s), Stability::max_stability)));
 }
 
 /**
@@ -579,7 +581,7 @@ double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const doubl
 		delta_sig /= Constants::pi *  layer_depth * STpar.cos_psi_ref; // in Pa
 		delta_sig /= 1000.; // convert to kPa
 		// Limit skier stability index to range {0.05, Stability::max_stability}
-		return(MAX(0.05, MIN(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
+		return(std::max(0.05, std::min(((STpar.Sig_c2 + STpar.phi*STpar.sig_n)/(STpar.sig_s + delta_sig)), Stability::max_stability)));
 	} else {
 		return(Stability::max_stability); // strictly speaking, Sk is not defined
 	}
@@ -724,12 +726,12 @@ bool StabilityAlgorithms::classifyStability_SchweizerWiesinger(SnowStation& Xdat
 	// First, find mean, maximum and minimum hardness
 	double mH = 0., maxH = 0., minH = 7.; // Mean Hardness and Threshold
 	for (size_t e = Xdata.SoilNode; e < nE; e++) {
-		maxH = MAX (maxH, EMS[e].hard);
-		minH = MIN (minH, EMS[e].hard);
+		maxH = std::max(maxH, EMS[e].hard);
+		minH = std::min(minH, EMS[e].hard);
 		mH += EMS[e].hard;
 	}
 	mH /= (double)nE; //mean hardness of profile
-	const double thH = MIN (0.5*mH, 1.); //threshold for critical transitions
+	const double thH = std::min(0.5*mH, 1.); //threshold for critical transitions
 
 	// Now make the classification for all critical transitions and keep track ....
 	double h_Slab = EMS[nE-1].L/cos_sl;
@@ -763,15 +765,15 @@ bool StabilityAlgorithms::classifyStability_SchweizerWiesinger(SnowStation& Xdat
 						// Proposal Fz; (see original in version 7.4
 						if ( (mH_u < 2.5) || (h_Slab < 0.7) ) {
 							if ( (mH_u > 2.) && (h_Slab > 0.5) ) {
-								S = MIN(S,4);
+								S = std::min(S, (signed char)4);
 							} else {
-								S = MIN(S,3);
+								S = std::min(S, (signed char)3);
 							}
 						} else {
 							if ( minH > 2. ) {
-								S = MIN(S,4);
+								S = std::min(S, (signed char)4);
 							} else {
-								S = MIN(S,3);
+								S = std::min(S, (signed char)3);
 							}
 						}
 					}
@@ -780,13 +782,13 @@ bool StabilityAlgorithms::classifyStability_SchweizerWiesinger(SnowStation& Xdat
 						if ( (EMS[e_weak].rg > 0.75) && ((mH_u < 1.5) && (maxH < 2.5)) ) {
 							S = 1;
 						} else {
-							S = MIN (S, 2);
+							S = std::min(S, (signed char)2);
 						}
 					} else {
-						S = MIN (S, 3);
+						S = std::min(S, (signed char)3);
 					}
 				} else {
-					S = MIN (S, 3);
+					S = std::min(S, (signed char)3);
 				}
 			} // end dry snow
 		} // if weak layer found; also end of loop over elements
@@ -794,15 +796,15 @@ bool StabilityAlgorithms::classifyStability_SchweizerWiesinger(SnowStation& Xdat
 
 	if ( count == 0 ) {
 		if ( mH > 2. ) {
-			S = MIN (S, 4);
+			S = std::min(S, (signed char)4);
 		} else if ( mH < 1.5) {
 			if ( maxH > 2.3 ) {
-				S = MIN (S, 2);
+				S = std::min(S, (signed char)2);
 			} else {
 				S = 1;
 			}
 		} else {
-			S = MIN (S, 3);
+			S = std::min(S, (signed char)3);
 		}
 	}
 
@@ -971,9 +973,9 @@ bool StabilityAlgorithms::classifyType_SchweizerLuetschg(SnowStation& Xdata)
 
 	// Seek extremes over profile depth
 	// Initialise
-	size_t e_min = MIN(e, nE_s - 1); //e is >=0
+	size_t e_min = std::min(e, nE_s - 1); //e is >=0
 	size_t e_el = e_min;
-	size_t e_max = MIN(e_el + n_window, nE_s - 1);
+	size_t e_max = std::min(e_el + n_window, nE_s - 1);
 	// Extremes and extremes' absolute heights
 	double sum_red_hard = 0.;
 	double red_hard_max = -9999.;
@@ -1157,7 +1159,7 @@ bool StabilityAlgorithms::setShearStrengthDEFAULT(const double& cH, const double
 					Sig_c2 = 1.0;
 					break;
 			}
-			Sig_c2 = MAX(0.1, Sig_c2);
+			Sig_c2 = std::max(0.1, Sig_c2);
 			Sig_c3 = 84.*exp(2.55*log(rho_ri));
 			break;
 		case 7: // MF
@@ -1181,7 +1183,7 @@ bool StabilityAlgorithms::setShearStrengthDEFAULT(const double& cH, const double
 
 	// Final assignements
 	Edata.s_strength = Sig_c2;
-	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
+	STpar.Sig_c2 = std::min(Sig_c2, STpar.strength_upper);
 	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
 
@@ -1264,7 +1266,7 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 					Sig_c2 = 1.0;
 					break;
 			}
-			Sig_c2 = MAX (0.1, Sig_c2);
+			Sig_c2 = std::max(0.1, Sig_c2);
 			Sig_c3 = 84.*exp(2.55*log(rho_ri));
 			break;
 		case 7: // MF //NIED (H. Hirashima)
@@ -1290,7 +1292,7 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
 	Edata.s_strength = Sig_c2;
-	STpar.Sig_c2 = MIN(Sig_c2, STpar.strength_upper);
+	STpar.Sig_c2 = std::min(Sig_c2, STpar.strength_upper);
 	STpar.strength_upper = Sig_c2;
 	STpar.phi = phi;
 

@@ -139,7 +139,7 @@ using namespace mio;
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info),
+          info(run_info), ts_smet_writer(NULL), 
           in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
@@ -157,6 +157,32 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	i_snowpath = (!snowpath.empty())? snowpath : inpath;
 }
+
+SmetIO::~SmetIO() 
+{
+	if (ts_smet_writer!=NULL) delete ts_smet_writer;
+	ts_smet_writer = NULL;
+}
+
+SmetIO& SmetIO::operator=(const SmetIO& source) {
+	if (this != &source) {
+		outpath = source.outpath;
+		o_snowpath = source.o_snowpath;
+		snowpath = source.snowpath;
+		experiment = source.experiment;
+		experiment = source.experiment;
+		inpath = source.inpath;
+		i_snowpath = source.i_snowpath;
+		sw_mode = source.sw_mode;
+		ts_smet_writer = NULL; //it will have to be re-allocated for thread safety
+		
+		in_dflt_TZ = source.in_dflt_TZ;
+		useSoilLayers = source.useSoilLayers;
+		perp_to_slope = source.perp_to_slope;
+	}
+	return *this;
+}
+
 
 /**
  * @brief This routine checks if the specified snow cover data exists
@@ -220,7 +246,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
 	if (profile_date.isUndef())
-		throw ("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
+		throw InvalidFormatException("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
 
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
@@ -252,7 +278,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date = read_snosmet_header(sno_reader, stationID, SSdata);
 	if (profile_date.isUndef())
-		throw ("Invalid ProfileDate in file \""+snofilename+"\"", AT);
+		throw InvalidFormatException("Invalid ProfileDate in file \""+snofilename+"\"", AT);
 	profile_date.rnd(1.);
 
 	//Read actual data
@@ -468,8 +494,8 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                             const ZwischenData& Zdata, const bool& forbackup)
 {
-	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno";
-	string hazfilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz";
+	string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno" );
+	string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
 
 	if (forbackup){
 		stringstream ss;
@@ -587,9 +613,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 
 void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
 {
-	/*
-	 * Set the basic, mandatory header key/value pairs for a SMET file
-	 */
+	// Set the basic, mandatory header key/value pairs for a SMET file
 	smet_writer.set_header_value("station_id", Xdata.meta.getStationID());
 	smet_writer.set_header_value("station_name", Xdata.meta.getStationName());
 	smet_writer.set_header_value("nodata", IOUtils::nodata);
@@ -694,10 +718,36 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 }
 
 
-void SmetIO::writeTimeSeries(const SnowStation& /*Xdata*/, const SurfaceFluxes& /*Sdata*/, const CurrentMeteo& /*Mdata*/,
+void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
-	throw IOException("Nothing implemented here!", AT);
+	if (ts_smet_writer==NULL) {
+		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
+		
+		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
+		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
+				throw InvalidNameException(filename, AT);
+		
+		if (FileUtils::fileExists(filename)) {
+			ts_smet_writer = new smet::SMETWriter(filename, fields_header, IOUtils::nodata); //set to append mode
+		} else {
+			ts_smet_writer = new smet::SMETWriter(filename);
+			setBasicHeader(Xdata, fields_header, *ts_smet_writer);
+			ts_smet_writer->set_header_value("comments", "header_comments");
+			ts_smet_writer->set_header_value("units", "header_units");
+			/*vector<int> vec_width, vec_precision;
+			ts_smet_writer.set_width(vec_width);
+			ts_smet_writer.set_precision(vec_precision);*/
+		}
+	}
+	
+	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
+	vector<double> data;
+	data.push_back( Sdata.qs );
+	data.push_back( Sdata.ql );
+	data.push_back( Sdata.lw_out );
+	
+	ts_smet_writer->write(timestamp, data);
 }
 
 void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)
@@ -715,7 +765,7 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
 std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
 	//TODO: read only once (in constructor)
-	string filename_prefix = path + "/" + fnam;
+	string filename_prefix( path + "/" + fnam );
 
 	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
 		filename_prefix += "_" + experiment;

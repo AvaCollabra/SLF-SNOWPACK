@@ -28,6 +28,12 @@
 #include <snowpack/snowpackCore/Canopy.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/Solver.h>
+#include <snowpack/Laws_sn.h>
+#include <snowpack/snowpackCore/Aggregate.h>
+
+#include <cstdio>
+#include <fstream>
+#include <sstream>
 #include <assert.h>
 
 using namespace mio;
@@ -53,6 +59,10 @@ const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 RunInfo::RunInfo()
             : version(SN_VERSION), computation_date(getRunDate()),
               compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
+
+RunInfo::RunInfo(const RunInfo& orig)
+            : version(orig.version), computation_date(orig.computation_date),
+              compilation_date(orig.compilation_date), user(orig.user) {}
 
 mio::Date RunInfo::getRunDate()
 {
@@ -165,7 +175,7 @@ void SnowProfileLayer::generateLayer(const ElementData& Edata, const NodeData& N
 	bond_size = grain_size/3.;
 	dendricity = 0.;
 	sphericity = 0.;
-	ogs = MIN(4.e-1, grain_size); // in mm, see opticalEquivalentGrainSize();
+	ogs = std::min(4.e-1, grain_size); // in mm, see opticalEquivalentGrainSize();
 	coordin_num = 2.;
 	marker = 3;
 	type = 660;
@@ -186,10 +196,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
 	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
-
-	const size_t nL = surf_hoar? nE+1 : nE;
-	std::vector<SnowProfileLayer> Pdata(nL);
-
+	
 	// Generate the profile data from the element data (1 layer = 1 element)
 	unsigned char snowloc = 0;
 	string mystation = Xdata.meta.getStationID();
@@ -199,13 +206,16 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 			mystation = mystation.substr(0, mystation.length()-1);
 	}
 
-	for(size_t ll=0, e=Xdata.SoilNode; ll<nL; ll++, e++) { // We dump only snow layers
+	const size_t nL = surf_hoar? (nE+1 - Xdata.SoilNode) : (nE - Xdata.SoilNode);
+	std::vector<SnowProfileLayer> Pdata(nL);
+
+	for(size_t ll=0, e=0; ll<nL; ll++, e++) { // We dump only snow layers
 		// Write profile meta data
 		Pdata[ll].profileDate = dateOfProfile;
 		Pdata[ll].stationname = mystation;
 		Pdata[ll].loc_for_snow = snowloc;
 		Pdata[ll].loc_for_wind = 1;
-
+		
 		// Write snow layer data
 		if (ll < nE) {
 			Pdata[ll].generateLayer(EMS[e], NDS[e+1]);
@@ -245,7 +255,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 	ogs         = (Lp1*profile_layer.ogs + Lp0*ogs) / layerThickness;
 	bond_size   = (Lp1*profile_layer.bond_size + Lp0*bond_size) / layerThickness;
 	hard        = (Lp1*profile_layer.hard + Lp0*hard) / layerThickness;
-	marker      = MAX(profile_layer.marker, marker);
+	marker      = std::max(profile_layer.marker, marker);
 }
 
 const std::string BoundCond::toString() const
@@ -984,7 +994,7 @@ void ElementData::opticalEquivalentGrainSize()
 	if (dd > Constants::eps2)
 		ogs = 2. * (1.e-1 * (0.5 * (dd + (1. - dd) * (4. - sp)))); // (mm)
 	else
-		ogs = 2. * (0.5 * ((2. * rg * sp) + (1. - sp) * MAX(4.e-1, rg))); // rg in mm
+		ogs = 2. * (0.5 * ((2. * rg * sp) + (1. - sp) * std::max(4.e-1, rg))); // rg in mm
 }
 
 /**
@@ -1035,7 +1045,7 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
 			resWatCont = 0.08 - 0.1023 * (theta_i - 0.03);
 		}
 	}
-	return MIN(resWatCont, 0.08); //NOTE: MIN() only needed in case of theta_i < 0.03
+	return std::min(resWatCont, 0.08); //NOTE: std::min() only needed in case of theta_i < 0.03
 }
 
 /**
@@ -1053,13 +1063,13 @@ double ElementData::soilFieldCapacity() const
 {
 	double fc;
 	if (!(rg > 0.)) {
-		fc = MIN(SnLaws::field_capacity_soil, (1. - theta[SOIL]) * 0.1);
+		fc = std::min(SnLaws::field_capacity_soil, (1. - theta[SOIL]) * 0.1);
 	} else {
 		//Follow implementation by Tobias Hipp master thesis.
 		//Note that the value of 0.0976114 is more precise and the value of 60.8057 is
 		//slightly different from what is mentioned in thesis, to make the function continuous over rg.
 		if(rg<17.0) {
-			fc = MIN(0.95, 0.32 / sqrt(rg) + 0.02);
+			fc = std::min(0.95, 0.32 / sqrt(rg) + 0.02);
 		} else {
 			if(rg<60.8057) {
 				fc=0.0976114-0.002*(rg-17.0);
@@ -1068,7 +1078,7 @@ double ElementData::soilFieldCapacity() const
 			}
 		}
 	}
-	return MIN(1. - theta[SOIL], fc);		// Ensure that the field capacity does not exceed the pore space.
+	return std::min(1. - theta[SOIL], fc);		// Ensure that the field capacity does not exceed the pore space.
 }
 
 /**
@@ -1715,7 +1725,7 @@ void SnowStation::reduceNumberOfElements(const size_t& rnE)
 	const double cH_old = cH;
 	cH = Ndata[nNodes-1].z + Ndata[nNodes-1].u;
 	if (mH!=Constants::undefined) mH -= (cH_old - cH);
-	ErosionLevel = MAX(SoilNode, MIN(ErosionLevel, rnE-1));
+	ErosionLevel = std::max(SoilNode, std::min(ErosionLevel, rnE-1));
 }
 
 /**
@@ -1850,7 +1860,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 		} // end of element layer for
 	} // end of layer for
 
-	ErosionLevel = (SSdata.ErosionLevel > 0)? static_cast<size_t>(SSdata.ErosionLevel) : MAX(SoilNode, nElems-1);
+	ErosionLevel = (SSdata.ErosionLevel > 0)? static_cast<size_t>(SSdata.ErosionLevel) : std::max(SoilNode, nElems-1);
 
 	// Find the real Cauchy stresses
 	double SigC = 0.0;
@@ -1941,7 +1951,7 @@ double SnowStation::flexibleMaxElemLength(const double& depth)
 {
 	const double upper_limit_length=1.0;
 	const double calc_length = static_cast<double>( int( int(depth * 100.) / 10) + 1) * comb_thresh_l;
-	return MIN(calc_length, upper_limit_length);
+	return std::min(calc_length, upper_limit_length);
 }
 
 /**
@@ -2460,7 +2470,7 @@ void CurrentMeteo::setMeasTempParameters(const mio::MeteoData& md)
 		        maxNumberMeasTemperatures);
 	}
 
-	const size_t number_ts = MAX(numberMeasTemperatures, fixedPositions.size());
+	const size_t number_ts = std::max(numberMeasTemperatures, fixedPositions.size());
 	ts.resize(number_ts, mio::IOUtils::nodata);
 	zv_ts.resize(number_ts, mio::IOUtils::nodata);
 }

@@ -102,8 +102,8 @@ class CaaMLIO : public SnowpackIOInterface {
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		bool getLayersDir();
 		LayerData xmlGetLayer(xmlNodePtr cur);
-		void getProfiles(const std::string path, size_t &len, std::vector<double> &depths, std::vector<double> &val);
-		void setProfileVal(std::vector<LayerData> &Layers, std::vector<size_t> len, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val);
+		void getProfiles(const std::string path, std::vector<double> &depths, std::vector<double> &val);
+		void setProfileVal(std::vector<LayerData> &Layers, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val);
 		void setCustomLayerData(LayerData &Layer);
 		void setDepositionDates(std::vector<LayerData> &Layers, const mio::Date);
 

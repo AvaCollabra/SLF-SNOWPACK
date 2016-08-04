@@ -22,8 +22,11 @@
  * @version 10.02
  * This module contains the hazard computation routines
  */
+#include <stdio.h>
 
 #include <snowpack/Hazard.h>
+#include <snowpack/Stability.h>
+#include <snowpack/Utils.h>
 
 using namespace mio;
 using namespace std;
@@ -165,9 +168,9 @@ double Hazard::compDriftIndex(std::vector<double>& vecDrift, const double& newDr
 	if (nValues <= (unsigned int)(floor(Constants::min_percent_values * 2. * nHours))) {
 		return Constants::undefined;
 	} else {
-		const double flux = H_TO_S(MAX(0.,(sumVec - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
+		const double flux = H_TO_S(std::max(0.,(sumVec - Hazard::minimum_drift)) / (2. * nHours)); // kg m-1 h-1
 		double ero_depo = M_TO_CM(flux * nHours / (Hazard::typical_slope_length * rho));
-		ero_depo = MIN(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle*mio::Cst::to_rad));
+		ero_depo = std::min(ero_depo, nHours * Hazard::maximum_drift * cos(slope_angle*mio::Cst::to_rad));
 		ero_depo /= cos(slope_angle*mio::Cst::to_rad);
 		return ero_depo;
 	}

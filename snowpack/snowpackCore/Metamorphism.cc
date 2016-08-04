@@ -17,6 +17,17 @@
     You should have received a copy of the GNU General Public License
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+#include <cstddef> //needed for size_t
+
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
+#include <snowpack/snowpackCore/Snowpack.h>
+
+using namespace std;
+using namespace mio;
+
 /**
  * @file Metamorphism.cc
  * @brief This module contains the snow metamorphism routines of the SLF one-dimensional snowpack model \n
@@ -73,12 +84,6 @@
  * The french metamorphism routines were written in November 1995 by Perry Bartelt
  * and Martin Schneebeli.  They were first used in the 2d snowpack code haefeli.
  */
-
-#include <snowpack/snowpackCore/Metamorphism.h>
-#include <snowpack/snowpackCore/Snowpack.h>
-
-using namespace std;
-using namespace mio;
 
 /************************************************************
  * static section                                           *
@@ -212,7 +217,7 @@ double Metamorphism::ddRate(const ElementData& Edata)
 	//dTdz >= 5.0:Ml: ori -4.0; set to -1.5e8 by Bellaire 2004, then to -3.5e8 2007;
 	const double ddDot = (dTdz < 5.0)? -3.0e8 * c :  -1.5e8 * f ;
 
-	return MAX(-1., ddDot);
+	return std::max(-1., ddDot);
 }
 
 /************************************************************
@@ -377,7 +382,7 @@ double Metamorphism::TGGrainRate(const ElementData& Edata, const double& Tbot, c
 		const double a1 = reg0 + reg1*(th_i * Constants::density_ice);
 		a  = a0 + a1*(gsz - new_snow_grain_size);
 	}
-	a  = MIN (a, hElem);
+	a  = std::min(a, hElem);
 
 	// Intra layer flux, where the direction of flow does not matter! Units: kg/(sm2)
 	double intraFlux =  fabs(Constants::diffusion_coefficient_in_snow / (Constants::gas_constant * Te*Te) * (Constants::lh_sublimation / (Constants::gas_constant * Te) - 1.) * gradT);
@@ -552,7 +557,7 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		} else {// top element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT);
 		}
-		rgDotMax = MAX(0.0, rgDotMax);
+		rgDotMax = std::max(0.0, rgDotMax);
 		rbDotMax = TGBondRate(EMS[e]);
 
 		if ( (EMS[e].theta[WATER] < 0.01) && (Mdata.vw > Metamorphism::wind_slab_vw) && ((NDS[nE].z - NDS[e].z < Metamorphism::wind_slab_depth) || e == nE-1) ) {
@@ -639,29 +644,29 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		const double dDay = S_TO_D(sn_dt);
 		// Update dendricity
 		EMS[e].dd += ddDot * dDay;
-		EMS[e].dd = MAX(0.0, MIN (1.0, EMS[e].dd));
+		EMS[e].dd = std::max(0.0, std::min(1.0, EMS[e].dd));
 		// Update sphericity
 		EMS[e].sp += spDot * dDay;
 		if ( (marker == 1) && (EMS[e].rg >= 0.4) ) {
-			EMS[e].sp = MAX(0.0, MIN(0.5, EMS[e].sp)); // Limit effect of rounding on dry faceted grains
+			EMS[e].sp = std::max(0.0, std::min(0.5, EMS[e].sp)); // Limit effect of rounding on dry faceted grains
 		} else {
-			EMS[e].sp = MAX(0.0, MIN(1.0, EMS[e].sp));
+			EMS[e].sp = std::max(0.0, std::min(1.0, EMS[e].sp));
 		}
 		// Update grain sizes ...
-		rgDot = MIN(rgDot, Metamorphism::max_grain_growth);
+		rgDot = std::min(rgDot, Metamorphism::max_grain_growth);
 		if ( marker != 3 ) {
 			EMS[e].rg += rgDot*dDay;
 		} else {
 			//HACK ... but do not allow surface hoar to grow and limit its size to layer thickness.
-			EMS[e].rg = MIN(EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
+			EMS[e].rg = std::min(EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
 		}
 		EMS[e].opticalEquivalentGrainSize();
 		// Update bond size and limit its growth to Metamorphism::bond_size_stop * EMS[e].rg
 		rbDotMax = (Metamorphism::bond_size_stop * EMS[e].rg - EMS[e].rb) / dDay;
-		rbDot = MAX(0., MIN(rbDot, rbDotMax));
+		rbDot = std::max(0., std::min(rbDot, rbDotMax));
 		EMS[e].rb += rbDot * dDay;
 		if ( marker == 3 ) { //HACK SH is only grain allowed to decrease its grain size!
-			EMS[e].rb = MIN(EMS[e].rb, Metamorphism::max_grain_bond_ratio * EMS[e].rg);
+			EMS[e].rb = std::min(EMS[e].rb, Metamorphism::max_grain_bond_ratio * EMS[e].rg);
 		}
 
 		// Compute proportion of grain bond growth due to pressure sintering
@@ -775,7 +780,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		} else {// top element
 			rgDotMax = TGGrainRate(EMS[e], T1, T2, EMS[e-1].gradT, EMS[e].gradT);
 		}
-		rgDotMax = MAX (0.0, rgDotMax);
+		rgDotMax = std::max(0.0, rgDotMax);
 		rbDotMax = TGBondRate(EMS[e]);
 
 		if ( (EMS[e].theta[WATER] < 0.01) && (Mdata.vw > Metamorphism::wind_slab_vw) && ((NDS[nE].z - NDS[e].z < Metamorphism::wind_slab_depth) || e == nE-1) ) {
@@ -817,7 +822,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					}
 					const double gradV=dPdZ*7.93E-4;  //NIED (H. Hirashima) hPa/m��kg/m2�ɕϊ�
 					const double DenFact = -0.136*EMS[e].Rho+4.56;
-					const double Diffus = MAX((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
+					const double Diffus = std::max((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
 					dhfDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dhf));
 					if (fabs(EMS[e].gradT)<5.0) {
 						dhfDot=-60000000.*exp(-6000./EMS[e].Te)/86400.;  //NIED (H. Hirashima)
@@ -851,7 +856,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					spDot = CALL_MEMBER_FN(*this, mapSpRate[metamorphism_model])(EMS[e]);
 					const double gradV=dPdZ*7.93E-4; //NIED (H. Hirashima) //hPa/m��kg/m2�ɕϊ�
 					const double DenFact = -0.136*EMS[e].Rho+4.56;  //NIED (H. Hirashima)
-					const double Diffus = MAX((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
+					const double Diffus = std::max((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
 					dhfDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dhf));
 					if ( fabs(EMS[e].gradT)<5.0 ) {
 						dhfDot=-500000000.0*exp(-6000.0/EMS[e].Te)*(5.-fabs(EMS[e].gradT))/86400.; //NIED (H. Hirashima)
@@ -904,30 +909,30 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 			}
 		}
 		EMS[e].dhf += dhfDot * sn_dt; //NIED (H. Hirashima) HACK //Fz use consistent units dDay instead of sn_dt
-		EMS[e].dhf = MAX(0.0, MIN(1.0, EMS[e].dhf)); //NIED (H. Hirashima)
+		EMS[e].dhf = std::max(0.0, std::min(1.0, EMS[e].dhf)); //NIED (H. Hirashima)
 		// Update dendricity
 		EMS[e].dd += ddDot * dDay;
-		EMS[e].dd = MAX (0.0, MIN (1.0, EMS[e].dd));
+		EMS[e].dd = std::max(0.0, std::min(1.0, EMS[e].dd));
 		// Update sphericity
 		EMS[e].sp += spDot * dDay;
 		if ( (marker == 1) && (EMS[e].rg >= 2.) ) { //NIED (H. Hirashima)
-			EMS[e].sp = MAX(0.0, MIN(0.5, EMS[e].sp)); // Limit effect of rounding on dry faceted grains
+			EMS[e].sp = std::max(0.0, std::min(0.5, EMS[e].sp)); // Limit effect of rounding on dry faceted grains
 		} else {
-			EMS[e].sp = MAX(0.0, MIN(1.0, EMS[e].sp));
+			EMS[e].sp = std::max(0.0, std::min(1.0, EMS[e].sp));
 		}
 		// Update grain sizes ...
 		//rgDotMax = Metamorphism::max_grain_growth;
-		rgDot = MIN(rgDot, Metamorphism::max_grain_growth);
+		rgDot = std::min(rgDot, Metamorphism::max_grain_growth);
 		if ( marker != 3 ) {
 			EMS[e].rg += rgDot*dDay;
 		} else {
 			// ... but do not allow surface hoar to grow and limit its size to layer thickness.
-			EMS[e].rg = MIN (EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
+			EMS[e].rg = std::min(EMS[e].rg, 0.5 * M_TO_MM(EMS[e].L));
 		}
 		EMS[e].opticalEquivalentGrainSize();
 		// Update bond size
 		rbDotMax = (Metamorphism::bond_size_stop * EMS[e].rg - EMS[e].rb) / dDay;
-		rbDot = MAX (0., MIN (rbDot, rbDotMax));
+		rbDot = std::max(0., std::min(rbDot, rbDotMax));
 		EMS[e].rb += rbDot * dDay;
 		// Compute proportion of grain bond growth due to pressure sintering
 		if ( (EMS[e].dd < 0.005) && (rbDot > 0.) ) {

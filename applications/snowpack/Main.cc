@@ -73,7 +73,7 @@ class Slope {
 		void setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
-		double sector_width;       ///< width of slope sector: 360./MAX(1, nSlopes-1) deg
+		double sector_width;       ///< width of slope sector: 360./std::max((unsigned)1, nSlopes-1) deg
 };
 
 /**
@@ -135,7 +135,7 @@ Slope::Slope(const mio::Config& cfg)
 	if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
 		throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
-	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
+	sector_width = 360. / static_cast<double>(std::max((unsigned)1, nSlopes-1));
 }
 
 /**
@@ -358,7 +358,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_hs=true;
 	if (!enforce_snow_height && (md(MeteoData::PSUM) == mio::IOUtils::nodata) )
 		miss_precip=true;
-	if (!enforce_snow_height && (md("PSUM_PH") == mio::IOUtils::nodata) )
+	if (!enforce_snow_height && (md(MeteoData::PSUM_PH) == mio::IOUtils::nodata) )
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -415,7 +415,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.tss_a24h = Constants::undefined;
 	Mdata.ts0 = md(MeteoData::TSG);
 
-	Mdata.psum_ph = md("PSUM_PH");
+	Mdata.psum_ph = md(MeteoData::PSUM_PH);
 	Mdata.psum = md(MeteoData::PSUM);
 
 	Mdata.hs = md(MeteoData::HS);
@@ -819,7 +819,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	}
 }
 
-void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
+inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
 {
 	std::vector< std::vector<MeteoData> > vecMeteo;
 	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
