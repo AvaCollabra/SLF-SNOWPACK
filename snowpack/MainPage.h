@@ -351,7 +351,7 @@
  *      - it is set to one for fully liquid precipitation;
  *      - it is set to 0.75 for mixed precipitation made of 75% liquid and 25% solid.
  * 
- * If no precipitation phase is provided, Snowpack will rely on a fixed threshold approach: for air temperatures above 
+ * If no precipitation phase is provided, %Snowpack will rely on a fixed threshold approach: for air temperatures above 
  * the value given by THRESH_RAIN in the SnowpackAdvanced section of the \em "io.ini" file, liquid precipitation is 
  * assumed while in the contrary fully solid precipitation is assumed.
  * 
@@ -398,19 +398,19 @@
  * (see section \subpage snowpackio "Snowpack file formats"). These files can be processed with some scripts, relying on GNU plot or R for generating graphs
  * but are usually viewed with a graphical application. Two such applications are currently available: the legacy SnGUI Java tool and the newly developed 
  * SnopViz javascript tool.
- * 
- * @section sngui_config The sngui tool
- * This java application can be  <a href="https://models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site.
- * \image html sngui_overview_small.png "sngui overview"
- * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
  *
  * @section snopviz The SnopViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
- * Chrome >= 38). You can either use it <a href="https://models.slf.ch/snopviz">online</a> and then open your profile to visualize or you can 
+ * Chrome >= 38). You can either use it <a href="http://snopviz.org">online</a> and then open your profile to visualize or you can 
  * <a href="https://models.slf.ch/snopviz">download</a> a pre-packaged version that can be installed for offline use on your computer.
  * \image html snopviz_small.png "SnopViz overview"
  * \image latex snopviz.eps "SnopVizi overview" width=0.9\textwidth
  * 
+ * @section sngui_config The sngui tool
+ * This java application can be  <a href="https://models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site. Please note
+ * that it will be deprecated in order to be replaced by <a href="http://snopviz.org">snopviz</a>.
+ * \image html sngui_overview_small.png "sngui overview"
+ * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
  */
 
 /**
