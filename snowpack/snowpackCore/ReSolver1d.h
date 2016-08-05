@@ -26,8 +26,10 @@
 #define RESOLVER1D_H
 
 #include <snowpack/DataClasses.h>
+#include <snowpack/SnowpackConfig.h>
 #include <meteoio/MeteoIO.h>
 
+#include <string.h>
 /**
  * @class ReSolver1d
  * @version 10.02

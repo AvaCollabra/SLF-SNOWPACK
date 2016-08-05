@@ -21,12 +21,9 @@
 #ifndef CANOPY_H
 #define CANOPY_H
 
-#include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Hazard.h>
-#include <snowpack/Utils.h>
-#include <snowpack/Laws_sn.h>
 
+#include <string>
 #include <fstream>
 
 /**
@@ -170,7 +167,7 @@ class Canopy {
 								  double& ce_canopy, double& ce_transpiration,
 								  double& ce_interception, double& ce_condensation);
 
-		void CanopyRadiationOutput(SnowStation& Xdata, CurrentMeteo& Mdata, double ac,
+		void CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata, double ac,
 								double &iswrac, double &rswrac,
 								double &iswrbc, double &rswrbc, double &ilwrac,
 								double &rlwrac, double &ilwrbc, double &rlwrbc,

@@ -2,22 +2,22 @@
 #This script extracts a given column out of a met or pro file
 
 if [ $# -lt 1 ]; then
-	echo "Extract parameters out of .pro or .met files, even if they are compressed with bzip2."
-	echo "$0 <filename> \t to get the list of available parameters with their number"
-	echo "$0 <filename> <param_number>\t to extract a given parameter"
+	printf "Extract parameters out of .pro or .met files (even if they are compressed with bzip2).\n"
+	printf "  $0 <filename> \t\t to get the list of available parameters with their number\n"
+	printf "  $0 <filename> <param_number>\t to extract a given parameter\n"
 	exit
 fi
 
 #determine if we are dealing with a pro or met file
 ext=`echo ${1##*.}`
 if [  "${ext}" = "bz2"  ]; then
-	is_compressed=1
+	is_bz_compressed=1
 	base=`basename $1 .${ext}`
 	ext=`echo ${base##*.}`
 fi
 
 cat_head() {
-	if [ "${is_compressed}" ]; then
+	if [ "${is_bz_compressed}" ]; then
 		bzcat $1 | head -50
 	else
 		head -50 $1
@@ -30,7 +30,7 @@ list_met() {
 }
 
 cat_all() {
-	if [ "${is_compressed}" ]; then
+	if [ "${is_bz_compressed}" ]; then
 		bzcat $1
 	else
 		cat $1

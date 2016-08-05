@@ -19,7 +19,8 @@
 */
 
 #include <snowpack/snowpackCore/PhaseChange.h>
-#include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
 
 using namespace mio;
 using namespace std;
@@ -161,7 +162,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		}
 		Edata.theta[ICE] += dth_i;
 		Edata.theta[WATER] += dth_w;
-		Edata.theta[AIR] = MAX (0.0, 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
+		Edata.theta[AIR] = std::max(0.0, 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
 		// State when you have solid element
 		if ( Edata.theta[AIR] <= 0.0 ) {
 			Edata.theta[AIR] = 0.0;
@@ -266,7 +267,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 			}
 			Edata.theta[ICE] += dth_i;
 			Edata.theta[WATER] += dth_w;
-			Edata.theta[AIR] = MAX(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
+			Edata.theta[AIR] = std::max(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
 		}
 		// State when the element is wet (PERMAFROST)
 		if (Edata.theta[WATER] >= 1.0) {
@@ -480,13 +481,13 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 						// Now check the nodal temperatures against the state of the element
 						if(EMS[e].theta[WATER] > cmp_theta + Constants::eps) {
 							// If there is water, nodal temperatures cannot exceed melting temperature
-							NDS[e].T=MAX(NDS[e].T, EMS[e].melting_tk);
-							NDS[e+1].T=MAX(NDS[e+1].T, EMS[e].melting_tk);
+							NDS[e].T=std::max(NDS[e].T, EMS[e].melting_tk);
+							NDS[e+1].T=std::max(NDS[e+1].T, EMS[e].melting_tk);
 						}
 						if(EMS[e].theta[ICE] > Constants::eps) {
 							// If there is ice, nodal temperatures cannot exceed freezing temperature
-							NDS[e].T=MIN(NDS[e].T, EMS[e].freezing_tk);
-							NDS[e+1].T=MIN(NDS[e+1].T, EMS[e].freezing_tk);
+							NDS[e].T=std::min(NDS[e].T, EMS[e].freezing_tk);
+							NDS[e+1].T=std::min(NDS[e+1].T, EMS[e].freezing_tk);
 						}
 
 						// We now bring the nodal temperatures in agreement with the element temperature
@@ -552,18 +553,18 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 						// Check the new nodal temperatures to make sure
 						if(e<nE-1) {
 							if(EMS[e+1].theta[WATER] > cmp_theta + Constants::eps) {
-								NDS[e+2].T=MAX(NDS[e+2].T, EMS[e+1].melting_tk);
+								NDS[e+2].T=std::max(NDS[e+2].T, EMS[e+1].melting_tk);
 							}
 							if(EMS[e+1].theta[ICE] > Constants::eps) {
-								NDS[e+2].T=MIN(NDS[e+2].T, EMS[e+1].freezing_tk);
+								NDS[e+2].T=std::min(NDS[e+2].T, EMS[e+1].freezing_tk);
 							}
 						}
 						if(e>0) {
 							if(EMS[e-1].theta[WATER] > cmp_theta + Constants::eps) {
-								NDS[e-1].T=MAX(NDS[e-1].T, EMS[e-1].melting_tk);
+								NDS[e-1].T=std::max(NDS[e-1].T, EMS[e-1].melting_tk);
 							}
 							if(EMS[e-1].theta[ICE] > Constants::eps) {
-								NDS[e-1].T=MIN(NDS[e-1].T, EMS[e-1].freezing_tk);
+								NDS[e-1].T=std::min(NDS[e-1].T, EMS[e-1].freezing_tk);
 							}
 						}
 						

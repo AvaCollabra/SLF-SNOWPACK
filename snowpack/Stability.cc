@@ -21,6 +21,8 @@
 #include <snowpack/Stability.h>
 #include <snowpack/StabilityAlgorithms.h>
 #include <snowpack/Laws_sn.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Utils.h>
 
 #include <assert.h>
 
@@ -112,7 +114,7 @@ void Stability::initStability(SnowStation& Xdata)
  * @param Edata_lower Xdata->Edata[e]
  * @param Edata_upper Xdata->Edata[e+1]
  * @param Sk Skier stability index Sk (Xdata->Ndata[e+1].S_s)
- * @param[out] n_lemon 
+ * @param[out] n_lemon
  * @return ssi
  */
 double Stability::initStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
@@ -123,13 +125,13 @@ double Stability::initStructuralStabilityIndex(const ElementData& Edata_lower, c
 	n_lemon = 0;
 	const double dhard = fabs(Edata_lower.hard - Edata_upper.hard);
 	if ( dhard > thresh_dhard ) n_lemon++;
-	
+
 	const double dgsz = 2.*fabs(Edata_lower.rg - Edata_upper.rg);
 	if ( dgsz > thresh_dgsz ) n_lemon++;
-	
+
 	// Skier Stability Index (SSI), limit stability index to range {0.05, Stability::max_stability}
 	const double ssi = std::max( 0.05, std::min( Stability::max_stability, static_cast<double>(Stability::nmax_lemon - n_lemon) + Sk ) );
-	
+
 	return ssi;
 }
 
@@ -172,7 +174,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
 		StabilityData  STpar(Stability::psi_ref);
-		
+
 		//update slab properties
 		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
 		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
@@ -185,7 +187,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Node %03d of %03d", e+1, nN);
 		}
 		strength_upper = STpar.strength_upper; //store previous value
-		
+
 		const double depth_lay = (Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl;
 		NDS[e+1].S_n = StabilityAlgorithms::getNaturalStability(STpar);
 		if (!multi_layer_sk38) {
@@ -201,7 +203,7 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			NDS[e+1].ssi = initStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, n_lemon[e+1]);
 		else
 			NDS[nN-1].ssi = Stability::max_stability;
-		
+
 		// Calculate critical cut length
 		if(e>Xdata.SoilNode+1) EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
 	}
@@ -248,7 +250,7 @@ void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_l
 	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	
+
 	// Initialize
 	Swl_lemon = 0; // Lemon counter
 	double Swl_d, Swl_n, zwl_d, zwl_n, zwl_ssi, zwl_Sk38; // Temporary weak layer markers
@@ -260,7 +262,7 @@ void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_l
 	size_t e = nE;
 	while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Stability::minimum_slab)) {};
 	if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
-	
+
 	if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 		// Slab must be thicker than Stability::ground_rough (m)  for an avalanche to release.
 		while ((e-- > Xdata.SoilNode) && ((NDS[e+1].z + NDS[e+1].u)/cos_sl > Stability::ground_rough)) {
@@ -292,7 +294,7 @@ void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_l
 		e = nE;
 		while ((e-- > Xdata.SoilNode) && (((Xdata.cH - (NDS[e+1].z + NDS[e+1].u))/cos_sl) < Pk)) {};
 		if (e==static_cast<size_t>(-1)) e=0; //HACK: this is ugly: e got corrupted if SoilNode==0
-		
+
 		if ((e > Xdata.SoilNode) && (e != IOUtils::unodata)) {
 			// Only down to Pk + Stability::skier_depth (m)
 
@@ -321,4 +323,3 @@ void Stability::findWeakLayer(const double& Pk, std::vector<unsigned short>& n_l
 		Xdata.S_4 = NDS[nN-1].ssi; Xdata.z_S_4 = Xdata.cH;
 	}
 }
-

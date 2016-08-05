@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Print a special line to prevent CTest from truncating the test output
+printf "CTEST_FULL_OUTPUT (line required by CTest to avoid output truncation)\n\n"
+
 testvalue_sum=0.001
 testvalue_abssum=1.0
 #Do mass balance check

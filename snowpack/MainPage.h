@@ -275,18 +275,28 @@
 /**
  * @page requirements Data requirements
  * %Snowpack performs physical modeling of the various processes taking place between the soil, snow cover and atmosphere in order to
- * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters (please check the 
- * required units in the plugin documentation):
+ * simulate the evolution of the snow cover based on meteorological input data. It requires the following meteorological parameters:
  * - air temperature (TA)
  * - relative humidity (RH)
  * - wind speed (VW)
- * - incoming short wave radiation (ISWR) or reflected short wave radiation (RSWR)
- * - incoming long wave radiation (ILWR) or surface temperature (TSS)
- * - precipitation (PSUM) or snow height (HS)
+ * - incoming short wave radiation (ISWR) <i>and/or</i> reflected short wave radiation (RSWR)
+ * - incoming long wave radiation (ILWR) <i>and/or</i> surface temperature (TSS)
+ * - precipitation (PSUM) <i>and/or</i> snow height (HS)
  * - ground temperature (TSG, if available)
  * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons, see section \ref SnowSoilTemperatures)
  *
- * These parameters \b must be available at least at a hourly time step.
+ * These parameters <b>should best</b> be available at a hourly time step and preferably in MKSA units 
+ * (please check the MeteoIO plugins documentation for specific cases, like GRIB, NetCDF... that are automatically handled).
+ *
+ * @section data_preparation Data preparation
+ * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://models.slf.ch/p/meteoio">MeteoIO library</a> is used.
+ * This enables %Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
+ * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation (available 
+ * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A> for the last official release) to learn about
+ * the supported file formats, the available filters and resampling/re-accumulation strategies. 
+ * 
+ * It is recommended to prepare the data in the
+ * <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
  *
  * @section data_recomendations Data recommendations
  * In case incoming and reflected short wave radiation as well as incoming long wave radiation are all
@@ -303,12 +313,6 @@
  * CHANGE_BC = true
  * @endcode
  * For energy balance interpretation the change of internal energy is for that case better than the sum of fluxes.
- *
- * @section data_preparation Data preparation
- * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://models.slf.ch/p/meteoio">MeteoIO library</a> is used.
- * This enables %Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
- * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation to learn about
- * the supported file formats, the available filters and resampling/re-accumulation strategies.
  *
  * @section data_checks Data checks
  * Please keep in mind that any inaccuracy on the input parameters will have an impact on

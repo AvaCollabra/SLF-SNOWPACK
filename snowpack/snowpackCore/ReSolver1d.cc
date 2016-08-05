@@ -18,6 +18,7 @@
     along with Snowpack.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <snowpack/snowpackCore/ReSolver1d.h>
+#include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Snowpack.h>
 #ifdef CLAPACK
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
@@ -1064,9 +1065,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Scaling theta_r between 0 and 0.02:
 				const double TuningFactor=0.75;				//Tuning factor for scaling
 				//Increase theta_r in case of wetting:
-				theta_r[i]=MAX(0., MIN(0.02, MAX(EMS[SnowpackElement[i]].theta_r, TuningFactor*EMS[SnowpackElement[i]].theta[WATER])));
+				theta_r[i]=std::max(0., std::min(0.02, std::max(EMS[SnowpackElement[i]].theta_r, TuningFactor*EMS[SnowpackElement[i]].theta[WATER])));
 				//Decrease theta_r in case of refreezing:
-				theta_r[i]=MAX(0., MIN(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-(REQUIRED_ACCURACY_THETA/10.)));
+				theta_r[i]=std::max(0., std::min(theta_r[i], EMS[SnowpackElement[i]].theta[WATER]-(REQUIRED_ACCURACY_THETA/10.)));
 			} else {
 				//For preferential flow, we fix theta_r to 0:
 				theta_r[i]=0.;
@@ -1101,7 +1102,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					//Calculate ratio density/grain size (see Yamaguchi (2012)):
 					double tmp_rho_d=(EMS[SnowpackElement[i]].theta[ICE]*Constants::density_ice)/( (2.*EMS[SnowpackElement[i]].rg) / 1000.);
 					//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
-					tmp_rho_d=MAX(2000., tmp_rho_d);
+					tmp_rho_d=std::max(2000., tmp_rho_d);
 					alpha[i]=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
 					n[i]=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
 					break;
@@ -1695,7 +1696,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}
 
 					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
-						TopFluxRate=MAX(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
+						TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers_snowpack)==int(nE) || toplayer==nsoillayers_snowpack)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers_snowpack)<int(nE)))) {
@@ -1703,7 +1704,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					const double head_compare=h_d_uppernode;
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
 					if(0.999*flux_compare > TopFluxRate) {
-						TopFluxRate=MIN(0., 0.999*flux_compare);
+						TopFluxRate=std::min(0., 0.999*flux_compare);
 					}
 				}
 			} else if (TopBC==WATERTABLE) {
@@ -1978,7 +1979,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						delta_h[memstate%nmemstates][i]=0.;
 						//Note: after inverting, ainv is non tridiagonal, so we have to loop over all elements.
 						for (k = uppernode; k >= lowernode; k--) {
-						//for (k = MIN(uppernode, i+1); k >= MAX(lowernode, i-1); k--) {
+						//for (k = std::min(uppernode, i+1); k >= std::max(lowernode, i-1); k--) {
 							delta_h[memstate%nmemstates][i]+=ainv[i*(uppernode+1)+k]*r_mpfd[k];
 						}
 					} else {	//In case of DGTSV, solution is returned in r_mpfd2, overwriting original content.
@@ -2075,7 +2076,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 									}
 
 									//Determine maximum possible change in ice content, which should be between 0, and theta_water > theta_d (all possible water freezes). Then maximum ice content is determined based on the temperature difference between element and T_melt.
-									//const double max_delta_ice=(MIN((theta_np1_mp1[i]-theta_d[i])*(Constants::density_ice/Constants::density_water), MAX(0., T_melt[i]-(EMS[SnowpackElement[i]].Te/*+delta_Te*/)) * ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ))));
+									//const double max_delta_ice=(std::min((theta_np1_mp1[i]-theta_d[i])*(Constants::density_ice/Constants::density_water), std::max(0., T_melt[i]-(EMS[SnowpackElement[i]].Te/*+delta_Te*/)) * ((EMS[SnowpackElement[i]].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ))));
 									double max_delta_ice;
 									if((EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > T_melt[i]) {
 										// Melt: either all ice will disappear, or a fraction based on available energy
@@ -2127,16 +2128,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 										BS_iter++;
 										delta_Te_ak=((theta_i_np1_m[i] - theta_i_n[i]) + ak) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
 										delta_Te_bk=((theta_i_np1_m[i] - theta_i_n[i]) + bk) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-										delta_w_ak=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ak)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
-										delta_w_bk=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_bk)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
+										delta_w_ak=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*std::min(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ak)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
+										delta_w_bk=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*std::min(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_bk)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 										//Now calculate bisect
 										ck1=(ak+bk)/2.;
 										delta_Te_ck1=((theta_i_np1_m[i] - theta_i_n[i]) + ck1) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-										delta_w_ck1=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck1)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
+										delta_w_ck1=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*std::min(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck1)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 										//Now check secant
 										ck=((delta_w_bk + bk*(Constants::density_ice/Constants::density_water))*ak  -  (delta_w_ak + ak*(Constants::density_ice/Constants::density_water))*bk)  /  ((delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) - (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)));
 										delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-										delta_w_ck=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*MIN(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
+										delta_w_ck=(fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*T_melt[i]))*std::min(0., (EMS[SnowpackElement[i]].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck)-T_melt[i]), theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i])) - theta_np1_mp1[i];
 										//Now check if bisect or secant is a better approximation
 										if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water))>fabs(delta_w_ck1+ck1*(Constants::density_ice/Constants::density_water))) {
 											ck=ck1;
@@ -2411,7 +2412,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 								// Update the SafeMode mass balance error tracking variable by "removing" all water
 								SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
 								// Make sure pressure head is in secure limits:
-								h_n[i]=MAX(h_d, MIN(h_e[i], h_n[i]));
+								h_n[i]=std::max(h_d, std::min(h_e[i], h_n[i]));
 								theta_n[i]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
 								//Deal with dry layers
 								if(theta_n[i]+theta_i_n[i] < theta_r[i]+(REQUIRED_ACCURACY_THETA/1000.)) {
@@ -2637,10 +2638,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//And adjust all the properties accordingly
 			EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
 			//Now we have checked everything, we make it fit between [0, 1]: to get rid off all round-off errors
-			EMS[i].theta[AIR]=MAX(0, MIN(1., EMS[i].theta[AIR]));
-			EMS[i].theta[WATER]=MAX(0, MIN(1., EMS[i].theta[WATER]));
-			EMS[i].theta[WATER_PREF]=MAX(0, MIN(1., EMS[i].theta[WATER_PREF]));
-			EMS[i].theta[ICE]=MAX(0, MIN(1., EMS[i].theta[ICE]));
+			EMS[i].theta[AIR]=std::max(0., std::min(1., EMS[i].theta[AIR]));
+			EMS[i].theta[WATER]=std::max(0., std::min(1., EMS[i].theta[WATER]));
+			EMS[i].theta[WATER_PREF]=std::max(0., std::min(1., EMS[i].theta[WATER_PREF]));
+			EMS[i].theta[ICE]=std::max(0., std::min(1., EMS[i].theta[ICE]));
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
 			EMS[i].M=EMS[i].L*EMS[i].Rho;
 			EMS[i].heatCapacity();
@@ -2657,10 +2658,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			EMS[i].theta[WATER]=snowpackBACKUPTHETAWATER[i];
 			EMS[i].theta[WATER_PREF]=snowpackBACKUPTHETAWATER_PREF[i];
 			//Now we have checked everything, we make it fit between [0, 1]: to get rid off all round-off errors
-			EMS[i].theta[AIR]=MAX(0, MIN(1., EMS[i].theta[AIR]));
-			EMS[i].theta[WATER]=MAX(0, MIN(1., EMS[i].theta[WATER]));
-			EMS[i].theta[WATER_PREF]=MAX(0, MIN(1., EMS[i].theta[WATER_PREF]));
-			EMS[i].theta[ICE]=MAX(0, MIN(1., EMS[i].theta[ICE]));
+			EMS[i].theta[AIR]=std::max(0., std::min(1., EMS[i].theta[AIR]));
+			EMS[i].theta[WATER]=std::max(0., std::min(1., EMS[i].theta[WATER]));
+			EMS[i].theta[WATER_PREF]=std::max(0., std::min(1., EMS[i].theta[WATER_PREF]));
+			EMS[i].theta[ICE]=std::max(0., std::min(1., EMS[i].theta[ICE]));
 		}
 	}
 
@@ -2675,10 +2676,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//vol_area = exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs));		// As presented at EGU 2016.
 				const double vol_area = 0.0584 * pow((0.5*EMS[SnowpackElement[i]].ogs), -1.1090277);
 
-				const double area = MAX(0.01, MIN(0.90, vol_area));
+				const double area = std::max(0.01, std::min(0.90, vol_area));
 
 				// Max is to ensure the pref flow area doesn't decrease below saturation of the pref flow path.
-				EMS[SnowpackElement[i]].PrefFlowArea = MIN(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), MAX(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), area));
+				EMS[SnowpackElement[i]].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), std::max(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), area));
 			}
 		}
 	}
@@ -2692,9 +2693,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if(i==nsoillayers_snowpack) {
 					// First snow layer should not put water in soil directly
 					// Calculate threshold in the current layer that belongs to water entry pressure of the layer
-					const double matrix_threshold=MAX(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i].ogs) + 0.01074)), theta_r[i], (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea), alpha[i], m[i], n[i], Sc[i], h_e[i]));
+					const double matrix_threshold=std::max(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i].ogs) + 0.01074)), theta_r[i], (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea), alpha[i], m[i], n[i], Sc[i], h_e[i]));
 					if(EMS[i].theta[WATER]>matrix_threshold) {
-						const double dtheta_w=MAX(0., (EMS[i].theta[WATER]-matrix_threshold));
+						const double dtheta_w=std::max(0., (EMS[i].theta[WATER]-matrix_threshold));
 						EMS[i].theta[WATER_PREF]+=dtheta_w;
 						EMS[i].theta[WATER]-=dtheta_w;
 					}
@@ -2705,18 +2706,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					}*/
 				} else {
 					// Calculate threshold in the current layer that belongs to water entry pressure of the layer below
-					const double matrix_threshold=MAX(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i-1].ogs) + 0.01074))-dz_up[i-1], theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
+					const double matrix_threshold=std::max(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i-1].ogs) + 0.01074))-dz_up[i-1], theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
 					if(EMS[i].theta[WATER]>matrix_threshold) {
 						// Enforcing equal saturation between matrix part at [i] and preferential part at [i-1]
 						const double tmp_theta_water_tot = EMS[i].theta[WATER]*EMS[i].L + EMS[i-1].theta[WATER_PREF]*EMS[i-1].L;
 						const double s1=(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i].PrefFlowArea);	// theta_s matrix flow
 						const double s2=(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i-1].PrefFlowArea);	// theta_s pref flow
-						const double dtheta_w_ideal = MAX(0., (-1.*(EMS[i].theta_r*s2*EMS[i].L - tmp_theta_water_tot*s2) / (s2*EMS[i-1].L + (s1-EMS[i].theta_r)*EMS[i].L) - EMS[i-1].theta[WATER_PREF]));
+						const double dtheta_w_ideal = std::max(0., (-1.*(EMS[i].theta_r*s2*EMS[i].L - tmp_theta_water_tot*s2) / (s2*EMS[i-1].L + (s1-EMS[i].theta_r)*EMS[i].L) - EMS[i-1].theta[WATER_PREF]));
 
-						const double dtheta_w=MAX(0.,												//No negative change!
-									  MIN(MAX(dtheta_w_ideal, (EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L))		//The amount that is ideally transferred
+						const double dtheta_w=std::max(0.,												//No negative change!
+									  std::min(std::max(dtheta_w_ideal, (EMS[i].theta[WATER]-matrix_threshold)*(EMS[i].L/EMS[i-1].L))		//The amount that is ideally transferred
 									  , 0.999*(											//Keep a bit of room
-									  MIN((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[i-1].PrefFlowArea-EMS[i-1].theta[WATER_PREF], ((EMS[i].theta[WATER]-theta_d[i])*(EMS[i].L/EMS[i-1].L)))	//Take MIN of: (i) Don't oversaturate preferential part, and (ii) don't take too much from the matrix part (TODO: actually, this should never happen.... remove it?)
+									  std::min((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[i-1].PrefFlowArea-EMS[i-1].theta[WATER_PREF], ((EMS[i].theta[WATER]-theta_d[i])*(EMS[i].L/EMS[i-1].L)))	//Take MIN of: (i) Don't oversaturate preferential part, and (ii) don't take too much from the matrix part (TODO: actually, this should never happen.... remove it?)
 									  )));
 						if(WriteOutNumerics_Level1) printf("MATRIX->PREF [%d]: %f %f %f %f %f\n", i, EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i-1].theta[WATER], EMS[i-1].theta[WATER_PREF], dtheta_w);
 						EMS[i-1].theta[WATER_PREF]+=dtheta_w;
@@ -2734,10 +2735,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						EMS[i-1].M=EMS[i-1].Rho*EMS[i-1].L;
 					}
 
-					// If the matrix pressure head is larger than the preferential flow pressure head (ensured by MAX(0., ....)), we equalize both domains in terms of saturation.
+					// If the matrix pressure head is larger than the preferential flow pressure head (ensured by std::max(0., ....)), we equalize both domains in terms of saturation.
 					// This is because in wet snow, the preferential flow part is also wet. Moreover, it enables a smaller capillary suction in the preferential flow domain, and allows the water to flow downwards
 					const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
-					const double dtheta_w = MAX(0., (-1. * ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r)) - EMS[i].theta[WATER_PREF]);
+					const double dtheta_w = std::max(0., (-1. * ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r)) - EMS[i].theta[WATER_PREF]);
 					EMS[i].theta[WATER_PREF] += dtheta_w;
 					EMS[i].theta[WATER] -= dtheta_w;
 				}
@@ -2747,8 +2748,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					//For the snow layer just above the soil, we equalize the saturation in the matrix and preferential flow domain
 					//This leads to more realistic snowpack runoff behavior, as with the approach for the other snow layers, spiky behavior arises from whether or not pref_threshold is exceeded
 					const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
-					//Note that the MAX(0., ...) ensures that the water flow is from preferential flow to matrix flow domain
-					const double dtheta_w2 = MAX(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r));
+					//Note that the std::max(0., ...) ensures that the water flow is from preferential flow to matrix flow domain
+					const double dtheta_w2 = std::max(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r));
 					EMS[i].theta[WATER_PREF] -= dtheta_w2;
 					EMS[i].theta[WATER] += dtheta_w2;
 				} else {
@@ -2761,9 +2762,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						double A = (EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion );
 						// Compute the change in volumetric ice and water contents
 						const double dth_i = - A * dT;
-						const double dth_w = MIN(EMS[i].theta[WATER_PREF]-theta_d[i], - (Constants::density_ice / Constants::density_water) * dth_i);
-						const double dtheta_w1 = MAX(0.,										//No negative change!
-									MIN((dth_w)										//The amount that is ideally transferred
+						const double dth_w = std::min(EMS[i].theta[WATER_PREF]-theta_d[i], - (Constants::density_ice / Constants::density_water) * dth_i);
+						const double dtheta_w1 = std::max(0.,										//No negative change!
+									std::min((dth_w)										//The amount that is ideally transferred
 									, 0.999*(										//Keep a bit of room
 									(1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i]].PrefFlowArea)-EMS[i].theta[WATER])		//Don't over-saturate matrix part
 									));
@@ -2774,7 +2775,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea)) > pref_threshold) {
 							// This approach is equalizing both domains in case we still exceed the threshold:
 							const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
-							const double dtheta_w2 = MAX(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r));
+							const double dtheta_w2 = std::max(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[SnowpackElement[i]].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].theta_r));
 							EMS[i].theta[WATER_PREF] -= dtheta_w2;
 							EMS[i].theta[WATER] += dtheta_w2;
 						}
@@ -2786,7 +2787,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					const double heat_flux=N*2.*sqrt(EMS[i].PrefFlowArea*Constants::pi)*(((Constants::melting_tk - EMS[i].Te)/dx)*EMS[i].k[TEMPERATURE]*sn_dt);
 					const double CC_move = ((heat_flux / Constants::lh_fusion)) / Constants::density_water; // Units: [kg]
 					// Make sure that theta[WATER_PREF] is not negative and do the actual transfer!
-					const double dtheta_w3 = MAX(0., MIN(MIN(EMS[i].theta[WATER_PREF]-theta_d[i], 0.999*(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea)-EMS[i].theta[WATER]), CC_move));
+					const double dtheta_w3 = std::max(0., std::min(std::min(EMS[i].theta[WATER_PREF]-theta_d[i], 0.999*(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[SnowpackElement[i-1]].PrefFlowArea)-EMS[i].theta[WATER]), CC_move));
 					EMS[i].theta[WATER]+=dtheta_w3;
 					EMS[i].theta[WATER_PREF]-=dtheta_w3;
 				}
@@ -2888,7 +2889,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			// If there is no water or if there was not enough water ...
 			// Note: as we do not pass through mergeElements anymore, we must assure that elements do not disappear here.
 			// By specifying a minimum value just below the Snowpack::min_ice_content, we make sure the element gets removed the next time it passes mergeElements.
-			const double theta_i0 = MAX(0., EMS[e].theta[ICE] - (0.99*Snowpack::min_ice_content));
+			const double theta_i0 = std::max(0., EMS[e].theta[ICE] - (0.99*Snowpack::min_ice_content));
 			double M = theta_i0*Constants::density_ice*L0;
 			double dM = ql*sn_dt/Constants::lh_sublimation;
 			if (-dM > M) dM = -M;
@@ -2924,7 +2925,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		}
 		//Remaining energy should go back again into refusedtopflux and also should not be counted as evaporation
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION]-=ql*sn_dt/Constants::lh_vaporization;
-		refusedtopflux=MIN(0., (ql*sn_dt)/(Constants::density_water*Constants::lh_vaporization));
+		refusedtopflux=std::min(0., (ql*sn_dt)/(Constants::density_water*Constants::lh_vaporization));
 	}
 	if(refusedtopflux<0. && toplayer==nsoillayers_snowpack) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
@@ -2970,9 +2971,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
 					//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
 					//in CompTemperatures, the element temperature will not be adjusted to freezing temperature just because there is water in it!
-					EMS[i].Te=MAX(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
-					NDS[i].T=MAX(NDS[i].T, T_0);
-					NDS[i+1].T=MAX(NDS[i+1].T, T_0);
+					EMS[i].Te=std::max(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
+					NDS[i].T=std::max(NDS[i].T, T_0);
+					NDS[i+1].T=std::max(NDS[i+1].T, T_0);
 					EMS[i].melting_tk=EMS[i].Te;
 					EMS[i].freezing_tk=EMS[i].Te;
 				}

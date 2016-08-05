@@ -19,6 +19,7 @@
 */
 
 #include <snowpack/snowpackCore/Aggregate.h>
+#include <snowpack/Constants.h>
 
 /************************************************************
  * static section                                           *
@@ -96,7 +97,7 @@ bool Aggregate::joinSimilarLayers(const size_t& l_upper, std::vector<SnowProfile
 		if ( fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
 			return false;
 
-		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) > MAX(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
+		if (fabs(Pdata[l_upper].grain_size - Pdata[l_lower].grain_size) > std::max(diff_dg, diff_dg_rel * Pdata[l_upper].grain_size))
 			return false;
 	} else {
 		if (fabs(Pdata[l_upper].sphericity - Pdata[l_lower].sphericity) > diff_sp)
@@ -133,7 +134,7 @@ bool Aggregate::joinSimilarLayers(ElementData& Edata_upper, ElementData& Edata_l
 		if ( fabs(Edata_upper.sp - Edata_lower.sp) > diff_sp)
 			return false;
 
-		if (fabs(Edata_upper.rg - Edata_lower.rg) > MAX(diff_dg, diff_dg_rel * Edata_upper.rg))
+		if (fabs(Edata_upper.rg - Edata_lower.rg) > std::max(diff_dg, diff_dg_rel * Edata_upper.rg))
 			return false;
 	} else {
 		if (fabs(Edata_upper.sp - Edata_lower.sp) > diff_sp)

@@ -1,5 +1,9 @@
 #!/bin/bash
 #thresholds given as a fraction of the total energy input
+
+# Print a special line to prevent CTest from truncating the test output
+printf "CTEST_FULL_OUTPUT (line required by CTest to avoid output truncation)\n\n"
+
 testvalue_sum=0.001
 testvalue_abssum=0.002
 #Do mass balance check

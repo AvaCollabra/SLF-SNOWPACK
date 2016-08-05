@@ -24,17 +24,8 @@
 #ifndef METAMORPHISM_H
 #define METAMORPHISM_H
 
-#include <snowpack/Constants.h>
 #include <snowpack/DataClasses.h>
-#include <snowpack/Utils.h>
-#include <snowpack/Laws_sn.h>
 
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <cmath>
-#include <ctime>
-#include <fcntl.h>
 #include <meteoio/MeteoIO.h>
 #include <map>
 #include <string>
@@ -43,12 +34,10 @@
 
 class SnowStation;
 class Metamorphism;
-
 typedef void (Metamorphism::*MetaModelFn)(const CurrentMeteo&, SnowStation&);
 typedef double (Metamorphism::*MetaSpRateFn)(const ElementData&);
 
 class Metamorphism {
-
 	public:
 		Metamorphism(const SnowpackConfig& i_cfg);
 

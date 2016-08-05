@@ -73,7 +73,7 @@ class Slope {
 		void setSlope(const unsigned int slope_sequence, vector<SnowStation>& vecXdata, double& wind_dir);
 
 	private:
-		double sector_width;       ///< width of slope sector: 360./MAX(1, nSlopes-1) deg
+		double sector_width;       ///< width of slope sector: 360./std::max((unsigned)1, nSlopes-1) deg
 };
 
 /**
@@ -97,7 +97,7 @@ class Cumsum {
 //Global variables in this file:
 static string cfgfile = "io.ini";
 static string mode = "RESEARCH";
-static mio::Date dateEnd;
+static mio::Date dateBegin, dateEnd;
 static vector<string> vecStationIDs;
 
 /// @brief Main control parameters
@@ -135,7 +135,7 @@ Slope::Slope(const mio::Config& cfg)
 	if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
 		throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
 	cfg.getValue("PREVAILING_WIND_DIR", "SnowpackAdvanced", prevailing_wind_dir, mio::IOUtils::nothrow);
-	sector_width = 360. / static_cast<double>(MAX(1, nSlopes-1));
+	sector_width = 360. / static_cast<double>(std::max((unsigned)1, nSlopes-1));
 }
 
 /**
@@ -217,6 +217,7 @@ inline void Usage(const string& programname)
 	Version();
 
 	cout << "Usage: " << programname << endl
+		<< "\t[-b, --begindate=YYYY-MM-DDTHH:MM] (e.g.:2007-08-11T09:00)\n"
 		<< "\t[-e, --enddate=YYYY-MM-DDTHH:MM] (e.g.:2008-08-11T09:00)\n"
 		<< "\t[-c, --config=<ini file>] (e.g. io.ini)\n"
 		<< "\t[-m, --mode=<operational or research>] (default: research)\n"
@@ -228,13 +229,14 @@ inline void Usage(const string& programname)
 	cout << "Example: " << programname << " -c io.ini -e 1996-06-17T00:00\n\n";
 }
 
-inline void parseCmdLine(int argc, char **argv, string& end_date_str)
+inline void parseCmdLine(int argc, char **argv, string& begin_date_str, string& end_date_str)
 {
 	int longindex=0, opt=-1;
 	bool setEnd = false;
 
 	struct option long_options[] =
 	{
+		{"begindate", required_argument, 0, 'b'},
 		{"enddate", required_argument, 0, 'e'},
 		{"mode", required_argument, 0, 'm'},
 		{"config", required_argument, 0, 'c'},
@@ -249,10 +251,14 @@ inline void parseCmdLine(int argc, char **argv, string& end_date_str)
 		exit(1);
 	}
 
-	while ((opt=getopt_long( argc, argv, ":e:m:c:s:v:h", long_options, &longindex)) != -1) {
+	while ((opt=getopt_long( argc, argv, ":b:e:m:c:s:v:h", long_options, &longindex)) != -1) {
 		switch (opt) {
 		case 0:
 			break;
+		case 'b': {
+			begin_date_str=string(optarg); //we don't know yet the time zone, conversion will be done later
+			break;
+		}
 		case 'e': {
 			end_date_str=string(optarg); //we don't know yet the time zone, conversion will be done later
 			setEnd = true;
@@ -352,7 +358,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_hs=true;
 	if (!enforce_snow_height && (md(MeteoData::PSUM) == mio::IOUtils::nodata) )
 		miss_precip=true;
-	if (!enforce_snow_height && (md("PSUM_PH") == mio::IOUtils::nodata) )
+	if (!enforce_snow_height && (md(MeteoData::PSUM_PH) == mio::IOUtils::nodata) )
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
@@ -409,7 +415,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.tss_a24h = Constants::undefined;
 	Mdata.ts0 = md(MeteoData::TSG);
 
-	Mdata.psum_ph = md("PSUM_PH");
+	Mdata.psum_ph = md(MeteoData::PSUM_PH);
 	Mdata.psum = md(MeteoData::PSUM);
 
 	Mdata.hs = md(MeteoData::HS);
@@ -672,7 +678,10 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				        vecStationIDs[i_stn].c_str());
 				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
 				vector<mio::MeteoData> vectmpmd;
-				current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
+				if (current_date.isUndef()) //either force the start date or take it from the sno file
+					current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
+				else 
+					vecSSdata[sector].profileDate = current_date;
 				io.getMeteoData(current_date, vectmpmd);
 				if (vectmpmd.empty())
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
@@ -793,6 +802,46 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("HS_A3H::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("HS_A3H::arg1", "Filters", "MEAN left 6 10740"); //TODO change # data required to 1
 	}
+	
+	//warn the user if the precipitation miss proper re-accumulation
+	const bool HS_driven = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
+	if (mode != "OPERATIONAL" && !HS_driven) {
+		const bool psum_key_exists = cfg.keyExists("PSUM::resample", "Interpolations1D");
+		const std::string psum_resampling = (psum_key_exists)? IOUtils::strToUpper( cfg.get("PSUM::resample", "Interpolations1D") ) : "LINEAR";
+		if (psum_resampling!="ACCUMULATE") {
+			std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH, not doing it is most probably an error!\n";
+		} else {
+			const double psum_accumulate = cfg.get("PSUM::accumulate", "Interpolations1D");
+			const double sn_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
+			if (sn_step_length*60. != psum_accumulate)
+				std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH (currently, over " <<  psum_accumulate << "s)\n";
+		}
+	}
+}
+
+inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager &io)
+{
+	std::vector< std::vector<MeteoData> > vecMeteo;
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
+
+	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
+	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
+	io.getMeteoData(d1, Meteo); //we need to know how many stations will be available
+	
+	vecMeteo.insert(vecMeteo.begin(), Meteo.size(), std::vector<MeteoData>()); //allocation for the vectors
+	for(; d1<=d2; d1+=Tstep) { //time loop
+		io.getMeteoData(d1, Meteo); //read 1 timestep at once, forcing resampling to the timestep
+		for(size_t ii=0; ii<Meteo.size(); ii++) {
+			const std::string stationID( Meteo[ii].meta.stationID );
+			if (mapIDs.count( stationID )==0) { //if this is the first time we encounter this station, save where it should be inserted
+				mapIDs[ stationID ] = ii;
+			}
+			vecMeteo[ mapIDs[stationID] ].push_back(Meteo[ii]); //fill the data manually into the vector of vectors
+		}
+	}
+	io.writeMeteoData(vecMeteo);
+
+	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Forcing data written out");
 }
 
 inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
@@ -828,8 +877,8 @@ inline void real_main (int argc, char *argv[])
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
 #endif
 	//parse the command line arguments
-	string end_date_str;
-	parseCmdLine(argc, argv, end_date_str);
+	string begin_date_str, end_date_str;
+	parseCmdLine(argc, argv, begin_date_str, end_date_str);
 
 	const bool prn_check = false;
 	mio::Timer meteoRead_timer;
@@ -842,6 +891,9 @@ inline void real_main (int argc, char *argv[])
 	addSpecialKeys(cfg);
 
 	const double i_time_zone = cfg.get("TIME_ZONE", "Input"); //get user provided input time_zone
+	if (!begin_date_str.empty()) {
+		mio::IOUtils::convertString(dateBegin, begin_date_str, i_time_zone);
+	}
 	if (end_date_str == "NOW") { //interpret user provided end date
 		dateEnd.setFromSys();
 		dateEnd.setTimeZone(i_time_zone);
@@ -908,6 +960,7 @@ inline void real_main (int argc, char *argv[])
 	printStartInfo(cfg, string(argv[0]));
 
 	// START LOOP OVER ALL STATIONS
+	bool write_forcing = cfg.get("WRITE_PROCESSED_METEO", "Output"); //it will be set to false once it has been done
 	for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 		cout << endl;
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Run on meteo station %s", vecStationIDs[i_stn].c_str());
@@ -937,7 +990,7 @@ inline void real_main (int argc, char *argv[])
 		// Boundary condition (fluxes)
 		BoundCond sn_Bdata;
 
-		mio::Date current_date;
+		mio::Date current_date( dateBegin );
 		meteoRead_timer.start();
 		if (mode == "OPERATIONAL")
 			cfg.addKey("PERP_TO_SLOPE", "SnowpackAdvanced", "false");
@@ -959,14 +1012,14 @@ inline void real_main (int argc, char *argv[])
 
 		SunObject sun(vecSSdata[slope.mainStation].meta.position.getLat(), vecSSdata[slope.mainStation].meta.position.getLon(), vecSSdata[slope.mainStation].meta.position.getAltitude());
 		sun.setElevationThresh(0.6);
-		mn_ctrl.Duration = (dateEnd.getJulian() - vecSSdata[slope.mainStation].profileDate.getJulian() + 0.5/24)*24*3600;
+		mn_ctrl.Duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
 		Hazard hazard(cfg, mn_ctrl.Duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
-			vecStationIDs[i_stn].c_str(), vecSSdata[slope.mainStation].profileDate.toString(mio::Date::ISO_TZ).c_str());
+			vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "End date specified by user: %s",
 		        dateEnd.toString(mio::Date::ISO_TZ).c_str());
 		prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Integration step length: %f min",
@@ -976,6 +1029,12 @@ inline void real_main (int argc, char *argv[])
 		double meteo_step_length = -1.;
 		const bool enforce_snow_height = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 
+		//from current_date to dateEnd, if necessary write out meteo forcing
+		if (write_forcing==true) {
+			writeForcing(current_date, dateEnd, calculation_step_length/1440, io);
+			write_forcing = false; //no need to call it again for the other stations
+		}
+		
 		// START TIME INTEGRATION LOOP
 		do {
 			current_date += calculation_step_length/1440;

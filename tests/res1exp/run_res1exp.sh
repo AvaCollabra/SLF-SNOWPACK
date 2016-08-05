@@ -1,6 +1,11 @@
 #!/bin/bash
+
+# Print a special line to prevent CTest from truncating the test output
+printf "CTEST_FULL_OUTPUT (line required by CTest to avoid output truncation)\n\n"
+
 rm -f output/*
 ../../bin/snowpack -c io_res1exp.ini -e 1996-06-17T00:00
+#exit #uncomment to simply regenerate the reference files
 
 PREC="1e-3"
 numdiff -r ${PREC} output_ref/MST96_res.haz output/MST96_res.haz | grep "+++"

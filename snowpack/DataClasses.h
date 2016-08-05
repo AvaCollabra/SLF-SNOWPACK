@@ -31,10 +31,7 @@
 #include <snowpack/Constants.h>
 #include <meteoio/MeteoIO.h>
 
-#include <cstdio>
-#include <fstream>
 #include <string>
-#include <sstream>
 #include <vector>
 
 /// @brief The 3 different phases in the matrix
@@ -217,7 +214,7 @@ class SN_SNOWSOIL_DATA {
 	public:
 		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
                      nLayers(0), Ldata(), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
-                     Canopy_Height(0.), Canopy_LAI(0.),Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
+                     Canopy_Height(0.), Canopy_LAI(0.), Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
                      WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
 		{
 			Ldata.clear();
@@ -260,7 +257,7 @@ class ElementData {
 			    Pow, ///< another power law
 		            Exp ///< exponential law
 		} Young_Modulus;
-		
+
 		ElementData();
 
 		bool checkVolContent() const;
@@ -502,7 +499,7 @@ class SnowStation {
 
 		mio::StationData meta;      ///< Station meta data
 		double cos_sl;              ///< Cosinus of slope angle, initialized once!
-		size_t sector;              ///< current slope sector of width 360./MAX(1, nSlopes-1)
+		size_t sector;              ///< current slope sector of width 360./max(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
 		double pAlbedo;             ///< Parameterized snow albedo
@@ -695,6 +692,8 @@ class SnowProfileLayer {
 class RunInfo {
 	public:
 		RunInfo();
+		RunInfo(const RunInfo& orig);
+		RunInfo& operator=(const RunInfo&) {return *this;} //everything is static, so we can not change anything
 
 		const std::string version;   ///< SNOWPACK version
 		const mio::Date computation_date; ///< Date of computation
