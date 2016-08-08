@@ -187,6 +187,7 @@ class LayerData {
 		double phiSoil;             ///< Volumetric soil content in %
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
+		double phiWaterPref;        ///< Volumetric preferential water content in %
 		double phiVoids;            ///< Volumetric void content in %
 		std::vector<double> cSoil;  ///< Solute concentrations in Soil
 		std::vector<double> cIce;   ///< Solute concentrations in Ice

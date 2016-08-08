@@ -92,7 +92,10 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
 	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";			// Only for use with RE.
-	advancedConfig["AVG_METHOD_HYDRAULIC_CONDUCTIVITY"]="GEOMETRICMEAN";	// Only for use with RE.
+	advancedConfig["AVG_METHOD_HYDRAULIC_CONDUCTIVITY"]="ARITHMETICMEAN";	// Only for use with RE.
+	advancedConfig["PREF_FLOW" ] = "false";					// Only for use with RE.
+	advancedConfig["PREF_FLOW_PARAM_TH"] = "0.1";				// Only for use with RE and preferential flow.
+	advancedConfig["PREF_FLOW_PARAM_N"] = "0.0";				// Only for use with RE and preferential flow.
 	advancedConfig["ADJUST_HEIGHT_OF_METEO_VALUES"] = "true";
 	advancedConfig["ADJUST_HEIGHT_OF_WIND_VALUE"] = "true";
 	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";

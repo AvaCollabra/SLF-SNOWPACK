@@ -75,6 +75,7 @@ const bool AsciiIO::t_gnd = false;
  * <tr><th>T</th><td>layer temperature [K]</td></tr>
  * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_WP</th><td>fractional preferential flow water volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
  * <tr><th> <br></th><td> </td></tr>
@@ -161,6 +162,7 @@ const bool AsciiIO::t_gnd = false;
  * 0502,nElems,element density (kg m-3)
  * 0503,nElems,element temperature (degC)
  * 0506,nElems,liquid water content by volume (%)
+ * 0507,nElems,liquid preferential flow water content by volume (%)
  * 0508,nElems,dendricity (1)
  * 0509,nElems,sphericity (1)
  * 0510,nElems,coordination number (1)
@@ -205,6 +207,7 @@ const bool AsciiIO::t_gnd = false;
  * 2502,anElems,element density (kg m-3)
  * 2503,anElems,element temperature (degC)
  * 2506,anElems,liquid water content by volume (%)
+ * 2507,anElems,liquid preferential flow water content by volume (%)
  * 2508,anElems,dendricity (1)
  * 2509,anElems,sphericity (1)
  * 2512,anElems,grain size (mm)
@@ -350,7 +353,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
-           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.),
+           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), enable_pref_flow(false),
            avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
            out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false)
@@ -396,6 +399,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
+	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 
 	i_snowpath = (in_snowpath.empty())? inpath : in_snowpath;
 	o_snowpath = (out_snowpath.empty())? outpath : out_snowpath;
@@ -608,6 +612,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 			prn_msg(__FILE__, __LINE__, "err", Date(), "Failed reading hl etc: read %d of 6 fields", nFields);
 			throw InvalidFormatException("Cannot generate Xdata from file "+snofilename, AT);
 		}
+		SSdata.Ldata[ll].phiWaterPref = 0.;
 		if (SSdata.Ldata[ll].tl < 100.) {
 			SSdata.Ldata[ll].tl = IOUtils::C_TO_K(SSdata.Ldata[ll].tl);
 		}
@@ -921,6 +926,12 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	fout << "\n0506," << nE;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(1) << 100.*EMS[e].theta[WATER];
+	// 0507: liquid preferential flow water content by volume (%)
+	if(enable_pref_flow) {
+		fout << "\n0507," << nE;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::fixed << std::setprecision(1) << 100.*EMS[e].theta[WATER_PREF];
+	}
 	// 0508: snow dendricity (1)
 	if (no_snow) {
 		fout << "\n0508,1,0";
@@ -992,12 +1003,10 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	fout << "\n0518," << nE;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << 1.e-9*EMS[e].k[SETTLEMENT];
-	// 0519: preferential water volume fraction (%)
 	// 0519: soil volume fraction (%)
 	fout << "\n0519," << nE;
-	for (size_t e = 0; e < nE; e++) {
-		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[WATER_PREF];
-	}
+	for (size_t e = 0; e < nE; e++)
+		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[SOIL];
 	// 0520: temperature gradient (K m-1)
 	fout << "\n0520," << nE;
 	for (size_t e = 0; e < nE; e++)
@@ -1145,6 +1154,12 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout << "\n2506," << anE;
 		for (size_t e = 0; e < anE; e++)
 			fout << "," << std::fixed << std::setprecision(1) << 100.*aEMS[e].theta[WATER];
+		// 2507: liquid preferential flow water content by volume (%)
+		if(enable_pref_flow) {
+			fout << "\n2506," << anE;
+			for (size_t e = 0; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(1) << 100.*aEMS[e].theta[WATER_PREF];
+		}
 		// 2508: snow dendricity (1)
 		if (no_snow) {
 			fout << "\n2508,1,0";
@@ -2456,6 +2471,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0502,nElems,element density (kg m-3)";
 	fout << "\n0503,nElems,element temperature (degC)";
 	fout << "\n0506,nElems,liquid water content by volume (%)";
+	if(enable_pref_flow) fout << "\n0507,nElems,liquid preferential flow water content by volume (%)";
 	fout << "\n0508,nElems,dendricity (1)";
 	fout << "\n0509,nElems,sphericity (1)";
 	fout << "\n0510,nElems,coordination number (1)";

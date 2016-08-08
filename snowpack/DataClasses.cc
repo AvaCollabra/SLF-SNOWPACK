@@ -1819,7 +1819,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].theta[AIR]   = SSdata.Ldata[ll].phiVoids;
 			Edata[e].theta[ICE]   = SSdata.Ldata[ll].phiIce;
 			Edata[e].theta[WATER] = SSdata.Ldata[ll].phiWater;
-			Edata[e].theta[WATER_PREF] = 1. - Edata[e].theta[SOIL] - Edata[e].theta[AIR] - Edata[e].theta[ICE] - Edata[e].theta[WATER];
+			Edata[e].theta[WATER_PREF] = SSdata.Ldata[ll].phiWaterPref;
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[ll].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[ll].SoilC;
@@ -2817,7 +2817,7 @@ const std::string SurfaceFluxes::toString() const
 }
 
 LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
-                     phiSoil(0.), phiIce(0.), phiWater(0.), phiVoids(0.),
+                     phiSoil(0.), phiIce(0.), phiWater(0.), phiWaterPref(0.), phiVoids(0.),
                      cSoil(SnowStation::number_of_solutes), cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
                      rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
@@ -2833,6 +2833,7 @@ std::iostream& operator<<(std::iostream& os, const LayerData& data)
 	os.write(reinterpret_cast<const char*>(&data.phiSoil), sizeof(data.phiSoil));
 	os.write(reinterpret_cast<const char*>(&data.phiIce), sizeof(data.phiIce));
 	os.write(reinterpret_cast<const char*>(&data.phiWater), sizeof(data.phiWater));
+	os.write(reinterpret_cast<const char*>(&data.phiWaterPref), sizeof(data.phiWaterPref));
 	os.write(reinterpret_cast<const char*>(&data.phiVoids), sizeof(data.phiVoids));
 
 	const size_t s_csoil = data.cSoil.size();
@@ -2875,6 +2876,7 @@ std::iostream& operator>>(std::iostream& is, LayerData& data)
 	is.read(reinterpret_cast<char*>(&data.phiSoil), sizeof(data.phiSoil));
 	is.read(reinterpret_cast<char*>(&data.phiIce), sizeof(data.phiIce));
 	is.read(reinterpret_cast<char*>(&data.phiWater), sizeof(data.phiWater));
+	is.read(reinterpret_cast<char*>(&data.phiWaterPref), sizeof(data.phiWaterPref));
 	is.read(reinterpret_cast<char*>(&data.phiVoids), sizeof(data.phiVoids));
 
 	size_t s_csoil;
@@ -2919,8 +2921,8 @@ const std::string LayerData::toString() const
 
 	os << depositionDate.toString(mio::Date::ISO) << "\n";
 	os << "\theight:" << hl << " (" << ne << "elements) at " << tl << "K\n";
-	os << "\tvolumetric contents: " << phiIce << " ice, " << phiWater << " water, " << phiVoids << " voids, ";
-	os << phiSoil << " soil, total = " << phiIce+phiWater+phiVoids+phiSoil << "%\n";
+	os << "\tvolumetric contents: " << phiIce << " ice, " << phiWater << " water, " << phiWaterPref << " water_pref, " << phiVoids << " voids, ";
+	os << phiSoil << " soil, total = " << phiIce+phiWater+phiWaterPref+phiVoids+phiSoil << "%\n";
 	os << "\tSoil properties: " << SoilRho << " kg/m^3, " << SoilK << " W/(m*K), " << SoilC << " J/K\n";
 	os << "\tSoil microstructure: rg=" << rg << " sp=" << sp << " dd=" << dd << " rb=" << rb << " mk=" << mk << "\n";
 	os << "\tStability: surface hoar=" << hr << " kg/m^2, stress rate=" << CDot << " Pa/s, metamo=" << metamo << "\n";

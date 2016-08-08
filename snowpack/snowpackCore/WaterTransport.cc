@@ -32,7 +32,7 @@ using namespace mio;
 
 WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                : RichardsEquationSolver1d_matrix(cfg, true), RichardsEquationSolver1d_pref(cfg, false), variant(),
-                 iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
+                 iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), enable_pref_flow(false),
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
@@ -91,12 +91,18 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	//Water transport model snow
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	iwatertransportmodel_snow=UNDEFINED;
+	enable_pref_flow=false;
 	if (watertransportmodel_snow=="BUCKET") {
 		iwatertransportmodel_snow=BUCKET;
 	} else if (watertransportmodel_snow=="NIED") {
 		iwatertransportmodel_snow=NIED;
 	} else if (watertransportmodel_snow=="RICHARDSEQUATION") {
 		iwatertransportmodel_snow=RICHARDSEQUATION;
+	}
+	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
+	if (enable_pref_flow && watertransportmodel_snow!="RICHARDSEQUATION") {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "PREF_FLOW = TRUE requires WATERTRANSPORTMODEL_SNOW = RICHARDSEQUATION. Preferential flow is only implemented as an extension of Richards equation.");
+		throw;
 	}
 
 	//Water transport model soil
@@ -110,7 +116,6 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 		iwatertransportmodel_soil=RICHARDSEQUATION;
 	}
 }
-
 
 
 /**
@@ -1136,7 +1141,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
 		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata);
-		if(Xdata.getNumberOfElements() > Xdata.SoilNode) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
+		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
 
 	}
 

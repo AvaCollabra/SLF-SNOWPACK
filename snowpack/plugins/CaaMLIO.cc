@@ -343,7 +343,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
  	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
 		//Layer properties: set to default if not available in file
 		setCustomLayerData(SSdata.Ldata[ii]);
-		SSdata.Ldata[ii].phiVoids = 1. - SSdata.Ldata[ii].phiSoil - SSdata.Ldata[ii].phiWater - SSdata.Ldata[ii].phiIce;
+		SSdata.Ldata[ii].phiVoids = 1. - SSdata.Ldata[ii].phiSoil - SSdata.Ldata[ii].phiWater - SSdata.Ldata[ii].phiWaterPref - SSdata.Ldata[ii].phiIce;
 	}
 
 	//Set deposition date from the layers
@@ -507,6 +507,7 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 							//const double hard = hardness_codeToVal((char*) xmlNodeGetContent(cur_c));
 						} else if (!strcmp((const char*) cur_c->name, "lwc")) {
 							Layer.phiWater = lwc_codeToVal((char*) xmlNodeGetContent(cur_c));
+							Layer.phiWaterPref = 0.;
 						} else if (!strcmp((const char*) cur_c->name, "grainFormPrimary")) {
 							//code = (char*) xmlNodeGetContent(cur_c);
 							code = string( (char*)xmlNodeGetContent(cur_c) );

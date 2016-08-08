@@ -63,9 +63,9 @@ class SmetIO : public SnowpackIOInterface {
 		static void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer);
 		static void setSnoSmetHeader(const SnowStation& Xdata, const mio::Date& date, smet::SMETWriter& smet_writer);
 		static void setFormatting(const size_t& nr_solutes,
-		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision);
+		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision, const bool& write_pref_flow);
 		static void writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                         const ZwischenData& Zdata);
+		                         const ZwischenData& Zdata, const bool& write_pref_flow);
 		bool keyExists(const smet::SMETReader& reader, const std::string& key) const;
 		double get_doubleval(const smet::SMETReader& reader, const std::string& keyname) const;
 		int get_intval(const smet::SMETReader& reader, const std::string& keyname) const;
@@ -79,6 +79,7 @@ class SmetIO : public SnowpackIOInterface {
 		smet::SMETWriter *ts_smet_writer;
 		double in_dflt_TZ;
 		bool useSoilLayers, perp_to_slope;
+		bool enable_pref_flow;
 };
 
 #endif
