@@ -508,14 +508,14 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
+/*
+* Create a SMETWriter object, sets its header and copies all required
+* data and timestamps into vec_timestamp and vec_data (copied from Zdata).
+* The SMETWriter object finally writes out the HAZ SMET file
+*/
 void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
                           const ZwischenData& Zdata)
 {
-	/*
-	 * This procedure creates a SMETWriter object, sets its header and copies all required
-	 * data and timestamps into vec_timestamp and vec_data (copied from Zdata).
-	 * The SMETWriter object finally writes out the HAZ SMET file
-	 */
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
 
@@ -549,14 +549,14 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 	haz_writer.write(vec_timestamp, vec_data);
 }
 
+/*
+* Create a SMETWriter object, sets its header and copies all required
+* data and timestamps into vec_timestamp and vec_data (from Xdata).
+* The SMETWriter object finally writes out the SNO SMET file
+*/
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
                           const ZwischenData& /*Zdata*/)
 {
-	/*
-	 * This procedure creates a SMETWriter object, sets its header and copies all required
-	 * data and timestamps into vec_timestamp and vec_data (from Xdata).
-	 * The SMETWriter object finally writes out the SNO SMET file
-	 */
 	smet::SMETWriter sno_writer(snofilename);
 	stringstream ss;
 	ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S " //8
@@ -607,7 +607,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 			vec_data.push_back(EMS[e].conc(SOIL,ii));
 		}
 	}
-
+	
 	sno_writer.write(vec_timestamp, vec_data);
 }
 

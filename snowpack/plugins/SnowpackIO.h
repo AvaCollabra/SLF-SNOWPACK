@@ -74,12 +74,13 @@
  *
  * @section available_profile_ts_plugins Snow profiles time series
  * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below
- * are available for output of snow profiles time series with the <b>"PROF_FORMAT"</b> keyword. 
+ * are available for output of snow profiles time series with the <b>"PROF_FORMAT"</b> keyword. Note that the 
+ * keys AGGREGATE_PRO and AGGREGATE_PRF will allow to aggregate model layers to a smaller number.
  * Please read the documentation for each plugin in order to know the plugin-specific keywords!
  * <center><table border="1">
  * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
- * <tr><td>\subpage pro_format "PRO"</td><td>legacy %Snowpack profile time series</td><td></td></tr>
- * <tr><td>\subpage prf_format "PRF"</td><td>easier to parse profile time series</td><td></td></tr>
+ * <tr><td>\subpage pro_format "PRO"</td><td>legacy %Snowpack profile time series for visualization with <A HREF="snopviz.org">SnopViz</A> and sngui</td><td></td></tr>
+ * <tr><td>\subpage prf_format "PRF"</td><td>tabular profile time series</td><td></td></tr>
  * <tr><td>\subpage profile_imis "IMIS"</td><td>write profile time series to the IMIS database</td><td><A HREF="http://docs.oracle.com/cd/B12037_01/appdev.101/b10778/introduction.htm">Oracle's OCCI library</A></td></tr>
  * </table></center>
  *
