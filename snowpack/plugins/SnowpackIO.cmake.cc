@@ -46,7 +46,6 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 
 {
 	//Format of initial snow profile:
-	//TODO: document Input::SNOW = SMET, CAAML, or SNOOLD
 	const string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
 	if (in_snow == "SNOOLD") {
 		input_snow_as_ascii = true;
@@ -58,7 +57,6 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 		throw InvalidArgumentException("Invalid input snow profile format '"+in_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
 
 	//Format of transitional and final snow profile(s):
-	//TODO: document ouput::SNOW = SMET, CAAML, or SNOOLD
 	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
 	if (out_snow == "SNOOLD") {
 		output_snow_as_ascii = true;
@@ -69,12 +67,6 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	} else
 		throw InvalidArgumentException("Invalid output snow profile format '"+out_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
 
-	/* Profiles may be dumped in up to 3 formats specified by the key PROF_FORMAT in [Output].
-	 * Note that the keys AGGREGATE_PRO and AGGREGATE_PRF will allow to aggregate model layers to a smaller number.
-	 * PRO   : Full profiles in ASCII-format, including soil elements if available, for visualization with both SnopViz and SN_GUI
-	 * PRF   : Snow profiles in tabular ASCII-format
-	 * IMIS  : aggregated snow profiles for upload to the SLF database sdbo
-	 */
 	std::vector<string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output", IOUtils::nothrow);
 	if (vecProfileFmt.size() > 3) {
 		throw InvalidArgumentException("The key PROF_FORMAT in [Output] can take three values at most", AT);

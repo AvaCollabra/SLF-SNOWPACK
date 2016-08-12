@@ -708,7 +708,7 @@ void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
 }
 
 void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, const SnowStation& Xdata,
-                            const bool aggregate)
+                            const bool /*aggregate*/)
 {
 	xmlTextWriterPtr writer = xmlNewTextWriterFilename(snofilename.c_str(), 0);
 	xmlTextWriterSetIndent(writer,3);

@@ -26,7 +26,7 @@ cat_head() {
  
 list_met() {
 	char_width=`tput cols`
-	cat_head $1 | grep -E "^ID," | tr "," "\n" | nl | pr --columns=2 --omit-pagination --width=${char_width}
+	cat_head $1 | grep -E "^ID," | tr "," "\n" | nl | pr -2 -t -w ${char_width}
 }
 
 cat_all() {
