@@ -315,12 +315,6 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 			md(MeteoData::PSUM_PH) = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
 	}
 
-	if (md(MeteoData::VW) == mio::IOUtils::nodata)
-		md(MeteoData::VW) = 1.0; // if no wind measurement exists assume 1 m/s; ori: 3 m/s
-
-	if (md(MeteoData::DW) == mio::IOUtils::nodata)
-		md(MeteoData::DW) = 0.;
-
 	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
 		md(MeteoData::TSG) = 273.15;
 
@@ -345,7 +339,7 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
 {
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
-	bool miss_rad=false, miss_ea=false;
+	bool miss_rad=false, miss_ea=false, miss_wind=false;;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
@@ -362,8 +356,10 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
+        if (md(MeteoData::VW) ==mio::IOUtils::nodata || md(MeteoData::DW) ==mio::IOUtils::nodata)
+                miss_wind=true;
 
-	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea) {
+	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
@@ -375,6 +371,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		if (miss_precip) cerr << "precipitation ";
 		if (miss_splitting) cerr << "precip_splitting ";
 		if (miss_ea) cerr << "lw_radiation ";
+		if (miss_wind) cerr << "wind ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
