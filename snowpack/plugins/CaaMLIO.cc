@@ -337,7 +337,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	}
 
 	//Set temperature, density and hardness from the profiles
-	setProfileVal(SSdata.Ldata, depths,val);
+	setProfileVal(SSdata.Ldata, depths, val);
 
 	//Layer default values
  	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
@@ -882,7 +882,7 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 				xmlWriteElement(writer,(namespaceCAAML+":hardness").c_str(),hardness_valToCode(Xdata.Edata[ii].hard).c_str(),"uom",""); //HACK: check values... seem always the same!
 			}
 			xmlWriteElement(writer,(namespaceCAAML+":lwc").c_str(),lwc_valToCode(Xdata.Edata[ii].theta[WATER]).c_str(),"uom","");
-			sprintf(layerValStr,"%.2f",Xdata.Edata[ii].theta[ICE]*Constants::density_ice);
+			sprintf(layerValStr,"%.2f",Xdata.Edata[ii].Rho);
 			xmlWriteElement(writer,(namespaceCAAML+":density").c_str(),layerValStr,"uom","kgm-3");
 			// snow properties only
 			if (snowLayer) {
@@ -957,20 +957,15 @@ void CaaMLIO::writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xd
 		xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uomThickness",(const xmlChar*)"cm");
 		xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uomDensity",(const xmlChar*)"kgm-3");
 		if (!Xdata.Edata.empty()) {
-			//double layerDepthTop = 0.0;
 			for (size_t ii = Xdata.Edata.size(); ii-->0;) {
-				// printf("%4lu  %.4f\n",ii,100.*(Xdata.cH - Xdata.Ndata[ii+1].z));
 				xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":Layer").c_str());
-				//sprintf(layerDepthTopStr,"%.4f",100*layerDepthTop);
 				sprintf(layerDepthTopStr,"%.4f",100*(Xdata.cH - Xdata.Ndata[ii+1].z));
 				xmlWriteElement(writer,(namespaceCAAML+":depthTop").c_str(),layerDepthTopStr,"","");
 				sprintf(layerThicknessStr,"%.4f",100*Xdata.Edata[ii].L);
 				xmlWriteElement(writer,(namespaceCAAML+":thickness").c_str(),layerThicknessStr,"","");
-
-				sprintf(valueStr,"%.2f",Xdata.Edata[ii].theta[ICE]*Constants::density_ice);
+				sprintf(valueStr,"%.2f",Xdata.Edata[ii].Rho);
 				xmlWriteElement(writer,(namespaceCAAML+":density").c_str(),valueStr,"","");
 				xmlTextWriterEndElement(writer);
-				//layerDepthTop += Xdata.Edata[ii].L;
 			}
 		}
 	xmlTextWriterEndElement(writer);	//end densityProfile
