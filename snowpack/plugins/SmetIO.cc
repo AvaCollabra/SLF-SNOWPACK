@@ -28,8 +28,8 @@ using namespace mio;
 /**
  * @page smet SMET
  * @section smet_format Format
- * This plugin reads the SMET files as specified in the 
- * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library documentation (under 
+ * This plugin reads the SMET files as specified in the
+ * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library documentation (under
  * <i>"Available plugins and usage"</i>, then <i>"smet"</i>).
  *
  * @section layers_data Layers data
@@ -133,13 +133,13 @@ using namespace mio;
  * ...
  * 2010-06-11T17:30       -999       -999   0.000000   0.000000
  * @endcode
- * 
+ *
  * As can be seen in this example, the various indices as well as the snow statistics are given every half an hour in reverse chronological order until
- * the profile date. 
+ * the profile date.
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info), ts_smet_writer(NULL), 
+          info(run_info), ts_smet_writer(NULL),
           in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
@@ -158,7 +158,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	i_snowpath = (!snowpath.empty())? snowpath : inpath;
 }
 
-SmetIO::~SmetIO() 
+SmetIO::~SmetIO()
 {
 	if (ts_smet_writer!=NULL) delete ts_smet_writer;
 	ts_smet_writer = NULL;
@@ -175,7 +175,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		i_snowpath = source.i_snowpath;
 		sw_mode = source.sw_mode;
 		ts_smet_writer = NULL; //it will have to be re-allocated for thread safety
-		
+
 		in_dflt_TZ = source.in_dflt_TZ;
 		useSoilLayers = source.useSoilLayers;
 		perp_to_slope = source.perp_to_slope;
@@ -607,7 +607,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 			vec_data.push_back(EMS[e].conc(SOIL,ii));
 		}
 	}
-	
+
 	sno_writer.write(vec_timestamp, vec_data);
 }
 
@@ -723,11 +723,11 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 {
 	if (ts_smet_writer==NULL) {
 		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
-		
-		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".met" );
+
+		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
 		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
 				throw InvalidNameException(filename, AT);
-		
+
 		if (FileUtils::fileExists(filename)) {
 			ts_smet_writer = new smet::SMETWriter(filename, fields_header, IOUtils::nodata); //set to append mode
 		} else {
@@ -740,13 +740,13 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 			ts_smet_writer.set_precision(vec_precision);*/
 		}
 	}
-	
+
 	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
 	vector<double> data;
 	data.push_back( Sdata.qs );
 	data.push_back( Sdata.ql );
 	data.push_back( Sdata.lw_out );
-	
+
 	ts_smet_writer->write(timestamp, data);
 }
 
