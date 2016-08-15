@@ -367,11 +367,14 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 {
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(),in_xpathCtx);
 	if (xpathObj == NULL) {
-		throw NoDataException("No data found !", AT);
+		throw NoDataException("Invalid xpath expression: '"+path+"'", AT);
 	}
+	
 	xmlNodeSetPtr &data = xpathObj->nodesetval;
- 	if (data->nodeNr==0)
- 		throw NoDataException("No data found !", AT);
+ 	if (xmlXPathNodeSetIsEmpty(data) || data->nodeNr==0) {
+		xmlXPathFreeObject(xpathObj);
+ 		throw NoDataException("No data found for '"+path+"'", AT);
+	}
 
 	return data;
 }
@@ -379,6 +382,15 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 Date CaaMLIO::xmlGetDate()
 {
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)TimeData_xpath.c_str(),in_xpathCtx);
+	if (xpathObj == NULL) {
+		throw NoDataException("Invalid xpath expression: '"+TimeData_xpath+"'", AT);
+	}
+	
+ 	if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
+		xmlXPathFreeObject(xpathObj);
+ 		throw NoDataException("No data found for '"+TimeData_xpath+"'", AT);
+	}
+	
 	const string date_str( (char*) xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]) );
 
 	Date date;
