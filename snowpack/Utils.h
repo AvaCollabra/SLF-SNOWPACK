@@ -60,7 +60,8 @@ bool booleanTime(const double& JulianDate, double days_between,
                  const double& start, const double& calculation_step_length);
 
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
-                          const std::string& stationID, const unsigned int& nSlopes);
+                          const std::string& stationID, const unsigned int& nSlopes,
+                          const std::vector<std::string>& vecExtensions);
 
 void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel,
                            SurfaceFluxes& Sdata, SnowStation& Xdata);
@@ -80,8 +81,6 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 double logisticFunction(const double input, const double threshold, const double width);
 
 void cumulate(double& accu, const double value);
-
-void checkOldOutputFiles(const mio::Date& i_date, const std::string& stationID);
 
 double getPerpSensorPosition(const bool& useSoilLayers, const double& z_vert, const double& hs_ref, const double& Ground, const double& SlopeAngle);
 
