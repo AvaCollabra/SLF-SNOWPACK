@@ -78,6 +78,10 @@ Meteo::ATM_STABILITY Meteo::getStability(const std::string& stability_model)
 		return MO_LOG_LINEAR;
 	else if (stability_model=="MO_SCHLOEGL_UNI")
 		return MO_SCHLOEGL_UNI;
+	else if (stability_model=="MO_SCHLOEGL_MULTI")
+		return MO_SCHLOEGL_MULTI;
+	else if (stability_model=="MO_SCHLOEGL_MULTI_OFFSET")
+		return MO_SCHLOEGL_MULTI_OFFSET;
 	else if (stability_model=="MONIN_OBUKHOV") //HACK: temporary
 		throw InvalidArgumentException("Atmospheric stability model \""+stability_model+"\" is now called 'MO_MICHLMAYR'", AT);
 	else if (stability_model=="NEUTRAL_MO") //HACK: temporary
@@ -191,6 +195,20 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			//schloegl univariate: bin univariate 2/3 datasets
 			psi_m = -1.62 * stab_ratio;
 			psi_s = -2.96 * stab_ratio;
+			return;
+			}
+			
+			case MO_SCHLOEGL_MULTI: {
+			//All multivariate 2/3 without offset
+			psi_m = - 65.35 *(ta_v - t_surf_v)/(0.5 * (ta_v + t_surf_v)) + 0.0017 * zref * Constants::g/pow(vw,2);
+			psi_s = - 813.21 *(ta_v - t_surf_v)/(0.5 *(ta_v + t_surf_v)) - 0.0014 * zref * Constants::g/pow(vw,2);
+			return;
+			}
+			
+			case MO_SCHLOEGL_MULTI_OFFSET: {
+			//All multivariate 2/3 with offset
+			psi_m = -0.69 - 15.47 * (ta_v - t_surf_v)/(0.5 * (ta_v + t_surf_v)) + 0.0059 * zref * Constants::g/pow(vw,2);
+			psi_s = 6.73 -688.18 * (ta_v - t_surf_v)/(0.5 * (ta_v + t_surf_v)) - 0.0023 * zref * Constants::g/pow(vw,2);
 			return;
 			}
 		
