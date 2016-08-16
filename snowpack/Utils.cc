@@ -147,23 +147,27 @@ bool booleanTime(const double& JulianDate, double days_between,
 
 /**
  * @brief Delete old output files (*.sno, *.ini) from outdir
- * @version 11.03
  * @param outdir Output dir
  * @param experiment Name of ongoing experiment
  * @param stationID
  * @param nSlopes Number of slopes treated
  */
 void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
-                          const std::string& stationID, const unsigned int& nSlopes)
+                          const std::string& stationID, const unsigned int& nSlopes,
+                          const std::vector<std::string>& vecExtension)
 {
-	vector<string> vecExtension;
-	vecExtension.push_back("ini"); //Record of run configuration
-	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
-	vecExtension.push_back("haz"); //Snow-cover profile file (I/O)
-	vecExtension.push_back("met"); //Meteo data input
-	vecExtension.push_back("pro"); //Time series of modeled profile-type data
-	vecExtension.push_back("prf"); //Time series of full modeled profile-type data in tabular form
-	vecExtension.push_back("aprf"); //Time series of aggregated modeled profile-type data in tabular form
+	// std::vector<std::string> vecExtension;
+	// vecExtension.push_back("ini");		//Record of run configuration
+	// vecExtension.push_back("sno");		//Snow-cover profile file (I/O)
+	// vecExtension.push_back("caaml");	//Snow-cover profile file (I/O & SnopViz)
+	// vecExtension.push_back("acaaml");	//Aggregated snow-cover profile file (I/O & SnopViz)
+	// vecExtension.push_back("haz");		//Snow-cover profile file (I/O)
+	// vecExtension.push_back("met");		//Classical time series (meteo, snow temperatures, etc.)
+	// vecExtension.push_back("smet");		//Classical time series (meteo, snow temperatures, etc.)
+	// vecExtension.push_back("pro");		//Time series of full modeled snow-profile data for SnopViz [and SN_GUI]
+	// vecExtension.push_back("apro");		//Time series of aggregated modeled snow-profile data for SnopViz [and SN_GUI]
+	// vecExtension.push_back("prf");		//Time series of full modeled snow-profile data in tabular form
+	// vecExtension.push_back("aprf");		//Time series of aggregated modeled snow-profile data in tabular form
 	const string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
 
 	unsigned int n_files;
@@ -171,7 +175,6 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	for (size_t ii=0; ii<vecExtension.size(); ii++){
 		const string ext = vecExtension[ii];
 		n_files = 0;
-
 		const string ftrunc = outdir + "/" + exp;
 		if (ext == "ini") {
 			if (stationID != "IMIS") {
@@ -199,7 +202,7 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 				} else {
 					fname = ftrunc + "." + ext;
 				}
-				if (ext == "sno" || ext == "haz") {
+				if (ext == "sno" || ext == "caaml" || ext == "haz") {
 					if (remove(fname.c_str()) == 0) {
 						n_files++;
 					}

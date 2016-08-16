@@ -337,7 +337,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	}
 
 	//Set temperature, density and hardness from the profiles
-	setProfileVal(SSdata.Ldata, depths,val);
+	setProfileVal(SSdata.Ldata, depths, val);
 
 	//Layer default values
  	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
@@ -367,11 +367,14 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 {
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)path.c_str(),in_xpathCtx);
 	if (xpathObj == NULL) {
-		throw NoDataException("No data found !", AT);
+		throw NoDataException("Invalid xpath expression: '"+path+"'", AT);
 	}
+	
 	xmlNodeSetPtr &data = xpathObj->nodesetval;
- 	if (data->nodeNr==0)
- 		throw NoDataException("No data found !", AT);
+ 	if (xmlXPathNodeSetIsEmpty(data) || data->nodeNr==0) {
+		xmlXPathFreeObject(xpathObj);
+ 		throw NoDataException("No data found for '"+path+"'", AT);
+	}
 
 	return data;
 }
@@ -379,6 +382,15 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 Date CaaMLIO::xmlGetDate()
 {
 	const xmlXPathObjectPtr xpathObj = xmlXPathEvalExpression((const xmlChar*)TimeData_xpath.c_str(),in_xpathCtx);
+	if (xpathObj == NULL) {
+		throw NoDataException("Invalid xpath expression: '"+TimeData_xpath+"'", AT);
+	}
+	
+ 	if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
+		xmlXPathFreeObject(xpathObj);
+ 		throw NoDataException("No data found for '"+TimeData_xpath+"'", AT);
+	}
+	
 	const string date_str( (char*) xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]) );
 
 	Date date;
@@ -709,7 +721,7 @@ void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
 }
 
 void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, const SnowStation& Xdata,
-                            const bool aggregate)
+                            const bool /*aggregate*/)
 {
 	xmlTextWriterPtr writer = xmlNewTextWriterFilename(snofilename.c_str(), 0);
 	xmlTextWriterSetIndent(writer,3);
@@ -883,7 +895,7 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 				xmlWriteElement(writer,(namespaceCAAML+":hardness").c_str(),hardness_valToCode(Xdata.Edata[ii].hard).c_str(),"uom",""); //HACK: check values... seem always the same!
 			}
 			xmlWriteElement(writer,(namespaceCAAML+":lwc").c_str(),lwc_valToCode(Xdata.Edata[ii].theta[WATER]).c_str(),"uom","");
-			sprintf(layerValStr,"%.2f",Xdata.Edata[ii].theta[ICE]*Constants::density_ice);
+			sprintf(layerValStr,"%.2f",Xdata.Edata[ii].Rho);
 			xmlWriteElement(writer,(namespaceCAAML+":density").c_str(),layerValStr,"uom","kgm-3");
 			// snow properties only
 			if (snowLayer) {
@@ -958,20 +970,15 @@ void CaaMLIO::writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xd
 		xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uomThickness",(const xmlChar*)"cm");
 		xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uomDensity",(const xmlChar*)"kgm-3");
 		if (!Xdata.Edata.empty()) {
-			//double layerDepthTop = 0.0;
 			for (size_t ii = Xdata.Edata.size(); ii-->0;) {
-				// printf("%4lu  %.4f\n",ii,100.*(Xdata.cH - Xdata.Ndata[ii+1].z));
 				xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":Layer").c_str());
-				//sprintf(layerDepthTopStr,"%.4f",100*layerDepthTop);
 				sprintf(layerDepthTopStr,"%.4f",100*(Xdata.cH - Xdata.Ndata[ii+1].z));
 				xmlWriteElement(writer,(namespaceCAAML+":depthTop").c_str(),layerDepthTopStr,"","");
 				sprintf(layerThicknessStr,"%.4f",100*Xdata.Edata[ii].L);
 				xmlWriteElement(writer,(namespaceCAAML+":thickness").c_str(),layerThicknessStr,"","");
-
-				sprintf(valueStr,"%.2f",Xdata.Edata[ii].theta[ICE]*Constants::density_ice);
+				sprintf(valueStr,"%.2f",Xdata.Edata[ii].Rho);
 				xmlWriteElement(writer,(namespaceCAAML+":density").c_str(),valueStr,"","");
 				xmlTextWriterEndElement(writer);
-				//layerDepthTop += Xdata.Edata[ii].L;
 			}
 		}
 	xmlTextWriterEndElement(writer);	//end densityProfile

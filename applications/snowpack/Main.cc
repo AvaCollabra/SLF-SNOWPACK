@@ -218,7 +218,7 @@ inline void Usage(const string& programname)
 
 	cout << "Usage: " << programname << endl
 		<< "\t[-b, --begindate=YYYY-MM-DDTHH:MM] (e.g.:2007-08-11T09:00)\n"
-		<< "\t[-e, --enddate=YYYY-MM-DDTHH:MM] (e.g.:2008-08-11T09:00)\n"
+		<< "\t[-e, --enddate=YYYY-MM-DDTHH:MM] (e.g.:2008-08-11T09:00 or NOW)\n"
 		<< "\t[-c, --config=<ini file>] (e.g. io.ini)\n"
 		<< "\t[-m, --mode=<operational or research>] (default: research)\n"
 		<< "\t[-s, --stations=<comma delimited stationnames>] (e.g. DAV2,WFJ2)\n"
@@ -315,12 +315,6 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 			md(MeteoData::PSUM_PH) = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
 	}
 
-	if (md(MeteoData::VW) == mio::IOUtils::nodata)
-		md(MeteoData::VW) = 1.0; // if no wind measurement exists assume 1 m/s; ori: 3 m/s
-
-	if (md(MeteoData::DW) == mio::IOUtils::nodata)
-		md(MeteoData::DW) = 0.;
-
 	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
 		md(MeteoData::TSG) = 273.15;
 
@@ -345,7 +339,7 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
 {
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
-	bool miss_rad=false, miss_ea=false;
+	bool miss_rad=false, miss_ea=false, miss_wind=false;;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
@@ -362,8 +356,10 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
+        if (md(MeteoData::VW) ==mio::IOUtils::nodata || md(MeteoData::DW) ==mio::IOUtils::nodata)
+                miss_wind=true;
 
-	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea) {
+	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
@@ -375,6 +371,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		if (miss_precip) cerr << "precipitation ";
 		if (miss_splitting) cerr << "precip_splitting ";
 		if (miss_ea) cerr << "lw_radiation ";
+		if (miss_wind) cerr << "wind ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
@@ -721,7 +718,7 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 			time_count_deltaHS = vecSSdata[slope.mainStation].TimeCountDeltaHS;
 		}
 	}
-	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished Initializing station %s", vecStationIDs[i_stn].c_str());
+	prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Finished initializing station %s", vecStationIDs[i_stn].c_str());
 
 	//CHECK date inconsistencies between sno files
 	bool dates_consistent(true);
@@ -922,16 +919,27 @@ inline void real_main (int argc, char *argv[])
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
 
 	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::IOUtils::nothrow);
+	double profstart = 0.0, profdaysbetween = 1.0;
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
-	const double profstart = cfg.get("PROF_START", "Output");
-	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
+	if (profwrite) {
+		/*const double*/ profstart = cfg.get("PROF_START", "Output");
+		/*const double*/ profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
+	} else {
+		cfg.addKey("PROF_START", "Output", "0.0");
+		cfg.addKey("PROF_DAYS_BETWEEN", "Output", "1.0");
+	}
 	const bool tswrite = cfg.get("TS_WRITE", "Output");
-	const double tsstart = cfg.get("TS_START", "Output");
-	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
-
+	double tsstart = 0.0, tsdaysbetween = 1.0;
+	if (tswrite) {
+		/*const double*/ tsstart = cfg.get("TS_START", "Output");
+		/*const double*/ tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
+	} else {
+		cfg.addKey("TS_START", "Output", "0.0");
+		cfg.addKey("TS_DAYS_BETWEEN", "Output", "1.0");
+	}
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
-	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);	
+	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
 	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
 
 	//If the user provides the stationIDs - operational use case
@@ -1001,7 +1009,49 @@ inline void real_main (int argc, char *argv[])
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
-			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes);
+			std::vector<string> vecExtension;
+			vecExtension.push_back("ini");	//Record of run configuration
+			const std::string snoFmt = cfg.get("SNOW", "Output", mio::IOUtils::nothrow);
+			if (snoFmt == "SNOOLD") {
+				vecExtension.push_back("snoold");	//Snow-cover profile file (I/O)
+			} else {
+				vecExtension.push_back("haz");	//Snow-cover profile file (I/O)
+				if (snoFmt == "SMET") {
+					vecExtension.push_back("sno");	//Snow-cover profile file (I/O)
+				} else if (snoFmt == "CAAML") {
+					vecExtension.push_back("caaml");	//Snow-cover profile file (I/O & SnopViz)
+					vecExtension.push_back("acaaml");	//Aggregated snow-cover profile file (I/O & SnopViz)
+				} else {
+					throw InvalidArgumentException("The key SNOW in [Output] takes only SMET, CAAML, or SNOOLD as value.", AT);
+				}
+			}
+			const std::string tsFmt = cfg.get("TS_FORMAT", "Output", mio::IOUtils::nothrow);
+			if (tswrite & !tsFmt.empty()) {
+				if (tsFmt == "SMET") {
+					vecExtension.push_back("smet");	//Classical time series (meteo, snow temperatures, etc.)
+				} else if (tsFmt == "MET") {
+					vecExtension.push_back("met");	//Classical time series (meteo, snow temperatures, etc.)
+				} else {
+					throw InvalidArgumentException("The key TS_FORMAT in [Output] takes only SMET or MET as value.", AT);
+				}
+			}
+			const std::vector<std::string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output", mio::IOUtils::nothrow);
+			if (profwrite & !vecProfileFmt.empty()) {
+				for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
+					if (vecProfileFmt[ii] == "PRO") {
+						vecExtension.push_back("pro");	//Time series of full modeled snow-profile data for SnopViz [and SN_GUI]
+						vecExtension.push_back("apro");	//Time series of aggregated modeled snow-profile data for SnopViz [and SN_GUI]
+					} else if (vecProfileFmt[ii] == "PRF") {
+						vecExtension.push_back("prf");	//Time series of full modeled snow-profile data in tabular form
+						vecExtension.push_back("aprf");	//Time series of aggregated modeled snow-profile data in tabular form
+					} else if (vecProfileFmt[ii] == "IMIS") {
+						;
+					} else {
+						throw InvalidArgumentException("The key PROF_FORMAT in [Output] takes only PRO, PRF or IMIS as value", AT);
+					}
+				}
+			}
+			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, vecExtension);
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
 		} else {
