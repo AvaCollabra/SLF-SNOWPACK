@@ -152,10 +152,11 @@ enum SN_FIELD{
 
 /// @brief The 4 different components of the porous matrix
 enum {
-	SOIL,  ///< Soil
-	ICE,   ///< Ice
-	WATER, ///< Water
-	AIR,   ///< Air
+	SOIL,       ///< Soil
+	ICE,        ///< Ice
+	WATER,      ///< Water
+	WATER_PREF, ///< Water in preferential flow
+	AIR,        ///< Air
 	N_COMPONENTS
 };
 
@@ -186,6 +187,7 @@ class LayerData {
 		double phiSoil;             ///< Volumetric soil content in %
 		double phiIce;              ///< Volumetric ice content in %
 		double phiWater;            ///< Volumetric water content in %
+		double phiWaterPref;        ///< Volumetric preferential water content in %
 		double phiVoids;            ///< Volumetric void content in %
 		std::vector<double> cSoil;  ///< Solute concentrations in Soil
 		std::vector<double> cIce;   ///< Solute concentrations in Ice
@@ -290,7 +292,7 @@ class ElementData {
 		double gradT;              ///< temperature gradient over element (K m-1)
 		double melting_tk;	   ///< melt temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		double freezing_tk;	   ///< freezing temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
-		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, AIR (1)
+		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, WATER_PREF, AIR (1)
 		mio::Array2D<double> conc; ///< Concentration for chemical constituents in (kg m-3)
 		std::vector<double> k;     ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
 		//   Stored in order to visualize constitutive laws
@@ -328,6 +330,7 @@ class ElementData {
 		double crit_cut_length;    ///< Critical cut length (m)
 		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation in snow
 		double lwc_source;         ///< Source/sink term for Richards equation
+		double PrefFlowArea;       ///< Preferential flow path relative area (-)
 		//NIED (H. Hirashima)
 		double dhf;
 };

@@ -55,6 +55,7 @@ using namespace mio;
  * <tr><th>T</th><td>layer temperature [K]</td></tr>
  * <tr><th>Vol_Frac_I</th><td>fractional ice volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_W</th><td>fractional water volume [0-1]</td></tr>
+ * <tr><th>Vol_Frac_WP</th><td>fractional preferential water volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_V</th><td>fractional voids volume [0-1]</td></tr>
  * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
  * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
@@ -140,7 +141,7 @@ using namespace mio;
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info), ts_smet_writer(NULL),
-          in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false)
+          in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false), enable_pref_flow(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -156,6 +157,8 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	snowpath = string();
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	i_snowpath = (!snowpath.empty())? snowpath : inpath;
+
+	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 }
 
 SmetIO::~SmetIO()
@@ -179,6 +182,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		in_dflt_TZ = source.in_dflt_TZ;
 		useSoilLayers = source.useSoilLayers;
 		perp_to_slope = source.perp_to_slope;
+		enable_pref_flow = source.enable_pref_flow;
 	}
 	return *this;
 }
@@ -316,6 +320,11 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		SSdata.Ldata[ll].tl = vec_data[current_index++];
 		SSdata.Ldata[ll].phiIce = vec_data[current_index++];
 		SSdata.Ldata[ll].phiWater = vec_data[current_index++];
+		if (enable_pref_flow) {
+			SSdata.Ldata[ll].phiWaterPref = vec_data[current_index++];
+		} else {
+			SSdata.Ldata[ll].phiWaterPref = 0.;
+		}
 		SSdata.Ldata[ll].phiVoids = vec_data[current_index++];
 		SSdata.Ldata[ll].phiSoil = vec_data[current_index++];
 
@@ -504,7 +513,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 		hazfilename += ss.str();
 	}
 
-	writeSnoFile(snofilename, date, Xdata, Zdata);
+	writeSnoFile(snofilename, date, Xdata, Zdata, enable_pref_flow);
 	writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
@@ -555,12 +564,19 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 * The SMETWriter object finally writes out the SNO SMET file
 */
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const ZwischenData& /*Zdata*/)
+                          const ZwischenData& /*Zdata*/, const bool& write_pref_flow)
 {
 	smet::SMETWriter sno_writer(snofilename);
 	stringstream ss;
-	ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S " //8
-	   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+	if (write_pref_flow) {
+		// Header in case preferential flow is used
+		ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_WP  Vol_Frac_V  Vol_Frac_S Rho_S " //8
+		   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+	} else {
+		// Default header
+		ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S " //8
+		   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+	}
 	for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 		ss << " cIce cWater cAir  cSoil";
 	}
@@ -571,7 +587,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
 	vector<int> vec_width, vec_precision;
-	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision);
+	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision, write_pref_flow);
 	sno_writer.set_width(vec_width);
 	sno_writer.set_precision(vec_precision);
 
@@ -584,6 +600,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		vec_data.push_back(Xdata.Ndata[e+1].T);
 		vec_data.push_back(EMS[e].theta[ICE]);
 		vec_data.push_back(EMS[e].theta[WATER]);
+		if (write_pref_flow) vec_data.push_back(EMS[e].theta[WATER_PREF]);
 		vec_data.push_back(EMS[e].theta[AIR]);
 		vec_data.push_back(EMS[e].theta[SOIL]);
 		vec_data.push_back(EMS[e].soil[SOIL_RHO]);
@@ -676,7 +693,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 }
 
 void SmetIO::setFormatting(const size_t& nr_solutes,
-                           std::vector<int>& vec_width, std::vector<int>&  vec_precision)
+                           std::vector<int>& vec_width, std::vector<int>&  vec_precision, const bool& write_pref_flow)
 {
 	/*
 	 * When writing a SNOW SMET file each written parameter may have a different
@@ -693,6 +710,9 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	vec_width.push_back(12); vec_precision.push_back(6); //Xdata.Ndata[e+1].T
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[ICE]
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[WATER]
+	if (write_pref_flow) {
+		vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[WATER_PREF]
+	}
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[AIR]
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[SOIL]
 	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_RHO]

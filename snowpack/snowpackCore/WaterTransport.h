@@ -56,7 +56,8 @@ class WaterTransport {
 
 		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
-		ReSolver1d RichardsEquationSolver1d;
+		ReSolver1d RichardsEquationSolver1d_matrix;
+		ReSolver1d RichardsEquationSolver1d_pref;
 
 		std::string variant;
 
@@ -66,6 +67,8 @@ class WaterTransport {
 
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
+		bool enable_pref_flow;
+
 		double sn_dt;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;

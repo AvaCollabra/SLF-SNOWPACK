@@ -40,7 +40,7 @@
 class ReSolver1d {
 
 	public:
-		ReSolver1d(const SnowpackConfig& cfg);	// Class constructor
+		ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part);	// Class constructor
 		void SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		double surfacefluxrate;		// Surfacefluxrate for solving RE. It is either surface of snow, in case of snowpack and solving RE for snow, or surface of soil, when no snowpack and/or solving RE only for soil.
@@ -72,10 +72,13 @@ class ReSolver1d {
 		std::string watertransportmodel_soil;
 		BoundaryConditions BottomBC;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
 		K_AverageTypes K_AverageType;				//Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
+		bool enable_pref_flow;					//true: dual domain approach, false: classic Richards equation.
+		double pref_flow_param_th;				//Tuning parameter: saturation threshold in preferential flow
+		double pref_flow_param_N;				//Tuning parameter: number of preferential flow paths for heat exchange
 
 		double sn_dt;
 		bool useSoilLayers, water_layer;
-
+		bool matrix;		// boolean to define if water transport is calculated for matrixflow or preferential flow
 
 		// Van Genuchten functions
 		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
