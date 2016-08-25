@@ -422,7 +422,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (verbose && !EMS[e].checkVolContent()) {
 				prn_msg(__FILE__, __LINE__, "msg+", date_in,
-				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Water_pref %Air %f Soil %f",
+				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Water_pref %f, Air %f, Soil %f",
 				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
