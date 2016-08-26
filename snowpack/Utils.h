@@ -59,8 +59,7 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
 bool booleanTime(const double& JulianDate, double days_between,
                  const double& start, const double& calculation_step_length);
 
-void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
-                          const std::string& stationID, const unsigned int& nSlopes);
+void deleteOldOutputFiles(const mio::Config& cfg, const std::string& stationID, const unsigned int& nSlopes);
 
 void averageFluxTimeSeries(const size_t& n_steps, const bool& useCanopyModel,
                            SurfaceFluxes& Sdata, SnowStation& Xdata);

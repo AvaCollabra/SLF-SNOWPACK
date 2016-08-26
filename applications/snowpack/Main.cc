@@ -821,18 +821,19 @@ inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager
 	std::vector< std::vector<MeteoData> > vecMeteo;
 	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
 
+	const std::string experiment = io.getConfig().get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
 	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
 	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
-	io.getMeteoData(d1, Meteo); //we need to know how many stations will be available
 	
-	vecMeteo.insert(vecMeteo.begin(), Meteo.size(), std::vector<MeteoData>()); //allocation for the vectors
 	for(; d1<=d2; d1+=Tstep) { //time loop
 		io.getMeteoData(d1, Meteo); //read 1 timestep at once, forcing resampling to the timestep
 		for(size_t ii=0; ii<Meteo.size(); ii++) {
 			const std::string stationID( Meteo[ii].meta.stationID );
 			if (mapIDs.count( stationID )==0) { //if this is the first time we encounter this station, save where it should be inserted
 				mapIDs[ stationID ] = ii;
+				if (ii>=vecMeteo.size()) vecMeteo.push_back( std::vector<MeteoData>() ); //allocate a new station
 			}
+			Meteo[ii].meta.stationID = Meteo[ii].meta.stationID + "_" + experiment + "_forcing";
 			vecMeteo[ mapIDs[stationID] ].push_back(Meteo[ii]); //fill the data manually into the vector of vectors
 		}
 	}
@@ -920,11 +921,11 @@ inline void real_main (int argc, char *argv[])
 
 	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::IOUtils::nothrow);
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
-	const double profstart = cfg.get("PROF_START", "Output");
-	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
+	const double profstart = cfg.get("PROF_START", "Output", (profwrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
+	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output", (profwrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
 	const bool tswrite = cfg.get("TS_WRITE", "Output");
-	const double tsstart = cfg.get("TS_START", "Output");
-	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
+	const double tsstart = cfg.get("TS_START", "Output", (tswrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
+	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output", (tswrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
 
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
@@ -997,7 +998,7 @@ inline void real_main (int argc, char *argv[])
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
-			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes);
+			deleteOldOutputFiles(cfg, vecStationIDs[i_stn], slope.nSlopes);
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
 		} else {

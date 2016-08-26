@@ -148,14 +148,16 @@ bool booleanTime(const double& JulianDate, double days_between,
 /**
  * @brief Delete old output files (*.sno, *.ini) from outdir
  * @version 11.03
- * @param outdir Output dir
- * @param experiment Name of ongoing experiment
- * @param stationID
+ * @param cfg Config object containing all the config information
+ * @param stationID station IDs as used by Snowpack
  * @param nSlopes Number of slopes treated
  */
-void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
-                          const std::string& stationID, const unsigned int& nSlopes)
+void deleteOldOutputFiles(const mio::Config& cfg, const std::string& stationID, const unsigned int& nSlopes)
 {
+	const std::string experiment = cfg.get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
+	const std::string outdir = cfg.get("METEOPATH", "Output", mio::IOUtils::nothrow);
+	const std::string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
+	
 	vector<string> vecExtension;
 	vecExtension.push_back("ini"); //Record of run configuration
 	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
@@ -164,7 +166,6 @@ void deleteOldOutputFiles(const std::string& outdir, const std::string& experime
 	vecExtension.push_back("pro"); //Time series of modeled profile-type data
 	vecExtension.push_back("prf"); //Time series of full modeled profile-type data in tabular form
 	vecExtension.push_back("aprf"); //Time series of aggregated modeled profile-type data in tabular form
-	const string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
 
 	unsigned int n_files;
 

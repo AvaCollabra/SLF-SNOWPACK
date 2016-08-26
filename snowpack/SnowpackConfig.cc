@@ -139,8 +139,12 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["OUT_T"] = "true";
 	outputConfig["PRECIP_RATES"] = "true";
 	outputConfig["PROF_FORMAT"] = "PRO";
+	outputConfig["PROF_DAYS_BETWEEN"] = "1";
+	outputConfig["PROF_START"] = "0";
 	outputConfig["SNOW"] = "SMET";
 	outputConfig["TS_FORMAT"] = "SMET";
+	outputConfig["TS_DAYS_BETWEEN"] = "1";
+	outputConfig["TS_START"] = "0";
 	outputConfig["WRITE_PROCESSED_METEO"] = "false";
 
 	return true;
