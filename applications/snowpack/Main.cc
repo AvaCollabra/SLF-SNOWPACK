@@ -998,12 +998,12 @@ inline void real_main (int argc, char *argv[])
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
-			deleteOldOutputFiles(cfg, vecStationIDs[i_stn], slope.nSlopes);
+			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, snowpackio.getExtensions());
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
 		} else {
 			const string db_name = cfg.get("DBNAME", "Output", mio::IOUtils::nothrow);
-			if (!db_name.empty() && (db_name == "sdbo" || db_name == "sdbt"))
+			if (db_name == "sdbo" || db_name == "sdbt")
 				mn_ctrl.sdbDump = true;
 		}
 

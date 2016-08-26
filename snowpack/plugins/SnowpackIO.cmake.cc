@@ -37,7 +37,7 @@ using namespace std;
 using namespace mio;
 
 SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
-	imisdbio(NULL), caamlio(NULL), smetio(NULL), asciiio(NULL),
+	vecExtension(), imisdbio(NULL), caamlio(NULL), smetio(NULL), asciiio(NULL),
 	input_snow_as_smet(false), output_snow_as_smet(false),
 	input_snow_as_caaml(false), output_snow_as_caaml(false),
 	input_snow_as_ascii(false), output_snow_as_ascii(false),
@@ -60,10 +60,16 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	const string out_snow = cfg.get("SNOW", "Output", IOUtils::nothrow);
 	if (out_snow == "SNOOLD") {
 		output_snow_as_ascii = true;
+		vecExtension.push_back("snoold");	//Snow-cover profile file (I/O)
 	} else if (out_snow == "CAAML") {
 		output_snow_as_caaml = true;
+		vecExtension.push_back("haz");	//Snow-cover profile file (I/O)
+		vecExtension.push_back("caaml");	//Snow-cover profile file (I/O & SnopViz)
+		vecExtension.push_back("acaaml");	//Aggregated snow-cover profile file (I/O & SnopViz)
 	} else if (out_snow == "SMET") {
 		output_snow_as_smet = true;
+		vecExtension.push_back("haz");	//Snow-cover profile file (I/O)
+		vecExtension.push_back("sno");	//Snow-cover profile file (I/O)
 	} else
 		throw InvalidArgumentException("Invalid output snow profile format '"+out_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
 
@@ -74,8 +80,12 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 		for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
 			if (vecProfileFmt[ii] == "PRO") {
 				output_prf_as_ascii = true;
+				vecExtension.push_back("pro");	//Time series of full modeled snow-profile data for SnopViz [and SN_GUI]
+				vecExtension.push_back("apro");	//Time series of aggregated modeled snow-profile data for SnopViz [and SN_GUI]
 			} else if (vecProfileFmt[ii] == "PRF") {
 				output_prf_as_ascii  = true;
+				vecExtension.push_back("prf");	//Time series of full modeled snow-profile data in tabular form
+				vecExtension.push_back("aprf");	//Time series of aggregated modeled snow-profile data in tabular form
 			} else if (vecProfileFmt[ii] == "IMIS") {
 				output_prf_as_imis  = true;
 			} else {
@@ -88,13 +98,17 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	const bool ts_out = cfg.get("TS_WRITE", "Output");
 	if (ts_out==true) {
 		const std::string ts_format = cfg.get("TS_FORMAT", "Output", IOUtils::nothrow);
-		if (ts_format=="SMET")
+		if (ts_format=="SMET") {
 			output_ts_as_smet = true;
-		else if (ts_format=="MET")
+			vecExtension.push_back("smet");	//Classical time series (meteo, snow temperatures, etc.)
+		} else if (ts_format=="MET") {
 			output_ts_as_ascii = true;
-		else
+			vecExtension.push_back("met");	//Classical time series (meteo, snow temperatures, etc.)
+		} else
 			throw InvalidArgumentException("The key TS_FORMAT in [Output] takes only SMET or MET as value", AT);
 	}
+	
+	vecExtension.push_back("ini");	//Record of run configuration
 
 	//set the "plugins" pointers
 	RunInfo run_info;
@@ -110,7 +124,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 }
 
 SnowpackIO::SnowpackIO(const SnowpackIO& source) :
-	imisdbio(source.imisdbio), caamlio(source.caamlio), smetio(source.smetio), asciiio(source.asciiio),
+	vecExtension(source.vecExtension), imisdbio(source.imisdbio), caamlio(source.caamlio), smetio(source.smetio), asciiio(source.asciiio),
 	input_snow_as_smet(source.input_snow_as_smet), output_snow_as_smet(source.input_snow_as_smet),
 	input_snow_as_caaml(source.input_snow_as_caaml), output_snow_as_caaml(source.output_snow_as_caaml),
 	input_snow_as_ascii(source.input_snow_as_ascii), output_snow_as_ascii(source.output_snow_as_ascii),
@@ -124,6 +138,11 @@ SnowpackIO::~SnowpackIO()
 	if (asciiio != NULL) delete asciiio;
 	if (caamlio != NULL) delete caamlio;
 	if (imisdbio != NULL) delete imisdbio;
+}
+
+std::vector<std::string> SnowpackIO::getExtensions()
+{
+	return vecExtension;
 }
 
 bool SnowpackIO::snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const

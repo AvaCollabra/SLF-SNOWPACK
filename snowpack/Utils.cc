@@ -147,33 +147,23 @@ bool booleanTime(const double& JulianDate, double days_between,
 
 /**
  * @brief Delete old output files (*.sno, *.ini) from outdir
- * @version 11.03
- * @param cfg Config object containing all the config information
- * @param stationID station IDs as used by Snowpack
+ * @param outdir Output dir
+ * @param experiment Name of ongoing experiment
+ * @param stationID
  * @param nSlopes Number of slopes treated
+ * @param vecExtension file extensions that have to be removed
  */
-void deleteOldOutputFiles(const mio::Config& cfg, const std::string& stationID, const unsigned int& nSlopes)
+void deleteOldOutputFiles(const std::string& outdir, const std::string& experiment,
+                          const std::string& stationID, const unsigned int& nSlopes,
+                          const std::vector<std::string>& vecExtension)
 {
-	const std::string experiment = cfg.get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
-	const std::string outdir = cfg.get("METEOPATH", "Output", mio::IOUtils::nothrow);
 	const std::string exp = (experiment != "NO_EXP")? stationID + "_" + experiment : "";
-	
-	vector<string> vecExtension;
-	vecExtension.push_back("ini"); //Record of run configuration
-	vecExtension.push_back("sno"); //Snow-cover profile file (I/O)
-	vecExtension.push_back("haz"); //Snow-cover profile file (I/O)
-	vecExtension.push_back("met"); //Meteo data input
-	vecExtension.push_back("pro"); //Time series of modeled profile-type data
-	vecExtension.push_back("prf"); //Time series of full modeled profile-type data in tabular form
-	vecExtension.push_back("aprf"); //Time series of aggregated modeled profile-type data in tabular form
-
 	unsigned int n_files;
 
 	for (size_t ii=0; ii<vecExtension.size(); ii++){
-		const string ext = vecExtension[ii];
+		const std::string ext( vecExtension[ii] );
 		n_files = 0;
-
-		const string ftrunc = outdir + "/" + exp;
+		const std::string ftrunc( outdir + "/" + exp );
 		if (ext == "ini") {
 			if (stationID != "IMIS") {
 				string fname;
@@ -200,7 +190,7 @@ void deleteOldOutputFiles(const mio::Config& cfg, const std::string& stationID, 
 				} else {
 					fname = ftrunc + "." + ext;
 				}
-				if (ext == "sno" || ext == "haz") {
+				if (ext == "sno" || ext == "caaml" || ext == "haz") {
 					if (remove(fname.c_str()) == 0) {
 						n_files++;
 					}

@@ -27,6 +27,9 @@
 #include <snowpack/SnowpackConfig.h>
 #include <snowpack/plugins/SnowpackIOInterface.h>
 
+#include <string>
+#include <vector>
+
 /**
  * @page snowpackio Snowpack data formats
  *
@@ -112,9 +115,12 @@ class SnowpackIO : public SnowpackIOInterface {
 		virtual bool writeHazardData(const std::string& stationID, const std::vector<ProcessDat>& Hdata,
                                      const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
+		std::vector<std::string> getExtensions();
+		
 		SnowpackIO& operator=(const SnowpackIO& source);
 
 	private:
+		std::vector< std::string > vecExtension; ///< file extensions for the user selected plugins
 		SnowpackIOInterface *imisdbio;
 		SnowpackIOInterface *caamlio;
 		SnowpackIOInterface *smetio;
