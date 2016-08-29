@@ -2092,10 +2092,10 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	double LNew = L_lower;               //Thickness of "new" element
 
 	if (merge) {
-		// Determine new element length under the condition of keeping the density of the lower element constant.
+		// Determine new element length under the condition of keeping the density of the lower element constant, if the density of the lower element is larger than the upper element.
 		// This is only in case we are considering the top element, to deal with the common situation where top elements are being removed due to low
 		// ice content as a result of melt. We don't want to transfer this low ice content to lower layers.
-		if (EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined && topElement==true) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
+		if (EdataUpper.Rho != Constants::undefined && EdataLower.Rho != Constants::undefined && EdataUpper.Rho < EdataLower.Rho && topElement==true) {	// Check if densities are defined, which may not be the case if elements are already marked for removal (may happen when removing multiple adjacent elements).
 			LNew += (EdataUpper.Rho * L_upper) / EdataLower.Rho;
 		} else {
 			LNew += L_upper;
@@ -2128,7 +2128,8 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		// If there is not enough space, adjust element length:
 		EdataLower.theta[AIR] = (EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF])*((Constants::density_water/Constants::density_ice)-1.);
 		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF];
-		LNew *= tmpsum;
+		// Ensure that the element does not become larger than the sum of lengths of the original ones (no absolute element "growth")!
+		LNew = std::min(LNew * tmpsum, L_lower + L_upper);
 		EdataLower.L0 = EdataLower.L = LNew;
 		EdataLower.theta[AIR] /= tmpsum;
 		EdataLower.theta[ICE] /= tmpsum;
