@@ -2675,8 +2675,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if(matrix==true) {
 			// We calculate the pref_flow area now
 			for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers
-				const double flux_compare = (i==uppernode)?(surfacefluxrate):(((((h_n[i]-h_n[i-1])/dz_up[i-1])+cos_sl)*sqrt(K[i]*K[i-1])*dt));
-				if(max_flux<flux_compare) max_flux=flux_compare;
+				// These commented lines may become useful for a criterion where the "system influx rate" is used, as is typical for preferential flow area
+				//const double flux_compare = (i==0) ? (0.) : (
+				//(i==uppernode)?(surfacefluxrate):(((((h_n[i]-h_n[i-1])/dz_up[i-1])+cos_sl)*sqrt(K[i]*K[i-1])*dt))
+				//);
+				//if(max_flux<flux_compare) max_flux=flux_compare;
 				if(i>nsoillayers_richardssolver-1) {	//For snow only
 					// Volumetric area:
 					//vol_area = exp(0.09904-3.557*(EMS[SnowpackElement[i]].ogs));		// As presented at EGU 2016.
@@ -2686,6 +2689,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 					// Max is to ensure the pref flow area doesn't decrease below saturation of the pref flow path.
 					EMS[SnowpackElement[i]].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), std::max(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), area));
+				} else {
+					EMS[SnowpackElement[i]].PrefFlowArea = 0.;
 				}
 			}
 		}
