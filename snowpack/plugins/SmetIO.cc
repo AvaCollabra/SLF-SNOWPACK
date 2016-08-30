@@ -76,7 +76,7 @@ using namespace mio;
  * </table></td></tr>
  * </table></center>
  *
- * Usually, simulations are started at a point in time when no snow is on the ground, therefore not requiring the definition of snow layers. An example is given below with one snow layer:
+ * Usually, simulations are started at a point in time when no snow is on the ground, therefore not requiring the definition of snow layers. An example is given below with one snow layer (and some comments to explain the different keys in the header):
  * @code
  * SMET 1.1 ASCII
  * [HEADER]
@@ -85,23 +85,23 @@ using namespace mio;
  * latitude         = 46.701
  * longitude        = 9.82
  * altitude         = 2560
- * nodata           = -999
- * tz               = 1
- * source           = WSL-Institute for Snow and Avalanche Research SLF; CFierz, 2011-10
- * ProfileDate      = 2009-10-01T00:00
- * HS_Last          = 0.0000
- * SlopeAngle       = 38.0
- * SlopeAzi         = 0.0
- * nSoilLayerData   = 0
- * nSnowLayerData   = 1
- * SoilAlbedo       = 0.20
- * BareSoil_z0      = 0.200
- * CanopyHeight     = 0.00
- * CanopyLeafAreaIndex     = 0.00
- * CanopyDirectThroughfall = 1.00
- * WindScalingFactor       = 1.19
- * ErosionLevel     = 0
- * TimeCountDeltaHS = 0.000000
+ * nodata           = -999				;code indicating a missing value
+ * tz               = 1				;time zone in hours
+ * source           = WSL-SLF			;optional key
+ * ProfileDate      = 2009-10-01T00:00		;when was the profile made, see explanations above
+ * HS_Last          = 0.0000			;last measured snow height
+ * SlopeAngle       = 38.0			
+ * SlopeAzi         = 0.0			
+ * nSoilLayerData   = 0				;number of soil layers
+ * nSnowLayerData   = 1				;number of snow layers
+ * SoilAlbedo       = 0.20				;albedo of the exposed soil
+ * BareSoil_z0      = 0.200			;roughtness length of the exposed soil
+ * CanopyHeight     = 0.00				;height (in m) of the canopy
+ * CanopyLeafAreaIndex     = 0.00		
+ * CanopyDirectThroughfall = 1.00		
+ * WindScalingFactor       = 1.00			;some stations consistently measure a wind that is too low
+ * ErosionLevel     = 0				
+ * TimeCountDeltaHS = 0.000000			
  * fields           = timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
  * [DATA]
  * 2009-09-19T02:30 0.003399 273.15 0.579671 0.068490 0.351839 0.000000 0.0 0.0 0.0 1.432384 1.028390 0.000000 1.000000 22 0.000000 1 0.000000 0.000000

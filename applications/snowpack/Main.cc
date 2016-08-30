@@ -821,18 +821,19 @@ inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager
 	std::vector< std::vector<MeteoData> > vecMeteo;
 	prn_msg(__FILE__, __LINE__, "msg",  mio::Date(), "Reading and writing out forcing data...");
 
+	const std::string experiment = io.getConfig().get("EXPERIMENT", "Output", mio::IOUtils::nothrow);
 	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
 	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
-	io.getMeteoData(d1, Meteo); //we need to know how many stations will be available
 	
-	vecMeteo.insert(vecMeteo.begin(), Meteo.size(), std::vector<MeteoData>()); //allocation for the vectors
 	for(; d1<=d2; d1+=Tstep) { //time loop
 		io.getMeteoData(d1, Meteo); //read 1 timestep at once, forcing resampling to the timestep
 		for(size_t ii=0; ii<Meteo.size(); ii++) {
 			const std::string stationID( Meteo[ii].meta.stationID );
 			if (mapIDs.count( stationID )==0) { //if this is the first time we encounter this station, save where it should be inserted
 				mapIDs[ stationID ] = ii;
+				if (ii>=vecMeteo.size()) vecMeteo.push_back( std::vector<MeteoData>() ); //allocate a new station
 			}
+			Meteo[ii].meta.stationID = Meteo[ii].meta.stationID + "_" + experiment + "_forcing";
 			vecMeteo[ mapIDs[stationID] ].push_back(Meteo[ii]); //fill the data manually into the vector of vectors
 		}
 	}
@@ -919,24 +920,13 @@ inline void real_main (int argc, char *argv[])
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
 
 	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output", mio::IOUtils::nothrow);
-	double profstart = 0.0, profdaysbetween = 1.0;
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
-	if (profwrite) {
-		/*const double*/ profstart = cfg.get("PROF_START", "Output");
-		/*const double*/ profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output");
-	} else {
-		cfg.addKey("PROF_START", "Output", "0.0");
-		cfg.addKey("PROF_DAYS_BETWEEN", "Output", "1.0");
-	}
+	const double profstart = cfg.get("PROF_START", "Output", (profwrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
+	const double profdaysbetween = cfg.get("PROF_DAYS_BETWEEN", "Output", (profwrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
 	const bool tswrite = cfg.get("TS_WRITE", "Output");
-	double tsstart = 0.0, tsdaysbetween = 1.0;
-	if (tswrite) {
-		/*const double*/ tsstart = cfg.get("TS_START", "Output");
-		/*const double*/ tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output");
-	} else {
-		cfg.addKey("TS_START", "Output", "0.0");
-		cfg.addKey("TS_DAYS_BETWEEN", "Output", "1.0");
-	}
+	const double tsstart = cfg.get("TS_START", "Output", (tswrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
+	const double tsdaysbetween = cfg.get("TS_DAYS_BETWEEN", "Output", (tswrite)? mio::IOUtils::dothrow : mio::IOUtils::nothrow);
+
 	const bool precip_rates = cfg.get("PRECIP_RATES", "Output", mio::IOUtils::nothrow);
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
@@ -1008,54 +998,12 @@ inline void real_main (int argc, char *argv[])
 		memset(&mn_ctrl, 0, sizeof(MainControl));
 		if (mode == "RESEARCH") {
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
-			std::vector<string> vecExtension;
-			vecExtension.push_back("ini");	//Record of run configuration
-			const std::string snoFmt = cfg.get("SNOW", "Output", mio::IOUtils::nothrow);
-			if (snoFmt == "SNOOLD") {
-				vecExtension.push_back("snoold");	//Snow-cover profile file (I/O)
-			} else {
-				vecExtension.push_back("haz");	//Snow-cover profile file (I/O)
-				if (snoFmt == "SMET") {
-					vecExtension.push_back("sno");	//Snow-cover profile file (I/O)
-				} else if (snoFmt == "CAAML") {
-					vecExtension.push_back("caaml");	//Snow-cover profile file (I/O & SnopViz)
-					vecExtension.push_back("acaaml");	//Aggregated snow-cover profile file (I/O & SnopViz)
-				} else {
-					throw InvalidArgumentException("The key SNOW in [Output] takes only SMET, CAAML, or SNOOLD as value.", AT);
-				}
-			}
-			const std::string tsFmt = cfg.get("TS_FORMAT", "Output", mio::IOUtils::nothrow);
-			if (tswrite & !tsFmt.empty()) {
-				if (tsFmt == "SMET") {
-					vecExtension.push_back("smet");	//Classical time series (meteo, snow temperatures, etc.)
-				} else if (tsFmt == "MET") {
-					vecExtension.push_back("met");	//Classical time series (meteo, snow temperatures, etc.)
-				} else {
-					throw InvalidArgumentException("The key TS_FORMAT in [Output] takes only SMET or MET as value.", AT);
-				}
-			}
-			const std::vector<std::string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output", mio::IOUtils::nothrow);
-			if (profwrite & !vecProfileFmt.empty()) {
-				for (size_t ii=0; ii<vecProfileFmt.size(); ii++) {
-					if (vecProfileFmt[ii] == "PRO") {
-						vecExtension.push_back("pro");	//Time series of full modeled snow-profile data for SnopViz [and SN_GUI]
-						vecExtension.push_back("apro");	//Time series of aggregated modeled snow-profile data for SnopViz [and SN_GUI]
-					} else if (vecProfileFmt[ii] == "PRF") {
-						vecExtension.push_back("prf");	//Time series of full modeled snow-profile data in tabular form
-						vecExtension.push_back("aprf");	//Time series of aggregated modeled snow-profile data in tabular form
-					} else if (vecProfileFmt[ii] == "IMIS") {
-						;
-					} else {
-						throw InvalidArgumentException("The key PROF_FORMAT in [Output] takes only PRO, PRF or IMIS as value", AT);
-					}
-				}
-			}
-			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, vecExtension);
+			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, snowpackio.getExtensions());
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
 			current_date -= calculation_step_length/1440;
 		} else {
 			const string db_name = cfg.get("DBNAME", "Output", mio::IOUtils::nothrow);
-			if (!db_name.empty() && (db_name == "sdbo" || db_name == "sdbt"))
+			if (db_name == "sdbo" || db_name == "sdbt")
 				mn_ctrl.sdbDump = true;
 		}
 
