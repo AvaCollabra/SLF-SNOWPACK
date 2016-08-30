@@ -336,7 +336,7 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 }
 
 // Return true if snowpack can compute the next timestep, else false
-inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height)
+inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const unsigned int& nslopes)
 {
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
 	bool miss_rad=false, miss_ea=false, miss_wind=false;;
@@ -356,7 +356,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
-        if (md(MeteoData::VW) ==mio::IOUtils::nodata || md(MeteoData::DW) ==mio::IOUtils::nodata)
+        if (md(MeteoData::VW) ==mio::IOUtils::nodata || (nslopes>1 && md(MeteoData::DW) ==mio::IOUtils::nodata))
                 miss_wind=true;
 
 	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind) {
@@ -943,22 +943,21 @@ inline void real_main (int argc, char *argv[])
 	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
 
 	//If the user provides the stationIDs - operational use case
-	if (!vecStationIDs.empty()) { //This means that the user provides the station IDs on the command line
+	if (!vecStationIDs.empty()) { //operational use case: stationIDs provided on the command line
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 			stringstream ss;
-			ss << "STATION" << i_stn+1; //For the IMIS plugin of MeteoIO, this key denotes the station id
+			ss << "STATION" << i_stn+1;
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
 
 	SnowpackIO snowpackio(cfg);
-
 	mio::IOManager io(cfg);
 	io.setMinBufferRequirements(IOUtils::nodata, 1.1); //we require the buffer to contain at least 1.1 day before the current point
 
-	vector<StationData> accessible_stations;
-	io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
-	if (vecStationIDs.empty()) {
+	if (vecStationIDs.empty()) { //research use case: stationIDs provided by the available input files
+		vector<StationData> accessible_stations;
+		io.getStationData(dateEnd, accessible_stations); //we are retrieving meta information from MeteoIO
 		for (size_t ii=0; ii<accessible_stations.size(); ii++) {
 			vecStationIDs.push_back( accessible_stations[ii].getStationID() ); //HACK: accessible_stations should be directly used
 		}
@@ -1103,7 +1102,7 @@ inline void real_main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rain);
-			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height)) {
+			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, slope.nSlopes)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				current_date -= calculation_step_length/1440;

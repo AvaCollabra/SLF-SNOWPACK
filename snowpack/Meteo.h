@@ -43,7 +43,9 @@ class Meteo {
 			MO_HOLTSLAG, ///< Holtslag and DeBruin (1988) prepared from Ed Andreas
 			MO_STEARNS, ///< Stearns C. and Weidner G., <i>"sensible and latent heat flux estimates in antarctica"</i>, Antarctic meteorology and climatology: studies based on automatic weather stations, Antarctic Research Series, <b>61</b>, pp 190--138, 1993
 			MO_MICHLMAYR, ///< Stearns & Weidner, 1993 modified by Michlmayr, 2008
-			MO_SCHLOEGL_UNI ///< Schloegl univariate
+			MO_SCHLOEGL_UNI, ///< Schloegl univariate, see Schlögl et al. <i>"How do stability corrections perfom over snow in the stable boundary layer?"</i>, Boundary-Layer Meteorol., in review, 2016
+			MO_SCHLOEGL_MULTI, ///< Schloegl multivariate without offset
+			MO_SCHLOEGL_MULTI_OFFSET ///<Schloegl multivariate with offset
 		} ATM_STABILITY;
 
 		Meteo(const SnowpackConfig& i_cfg);
