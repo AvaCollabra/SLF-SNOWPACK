@@ -356,8 +356,8 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
-        if (md(MeteoData::VW) ==mio::IOUtils::nodata || (nslopes>1 && md(MeteoData::DW) ==mio::IOUtils::nodata))
-                miss_wind=true;
+	if (md(MeteoData::VW) ==mio::IOUtils::nodata || (nslopes>1 && md(MeteoData::DW) ==mio::IOUtils::nodata))
+		miss_wind=true;
 
 	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind) {
 		mio::Date now;
@@ -677,7 +677,7 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				vector<mio::MeteoData> vectmpmd;
 				if (current_date.isUndef()) //either force the start date or take it from the sno file
 					current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
-				else 
+				else
 					vecSSdata[sector].profileDate = current_date;
 				io.getMeteoData(current_date, vectmpmd);
 				if (vectmpmd.empty())
