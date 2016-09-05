@@ -724,7 +724,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 	if (ts_smet_writer==NULL) {
 		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
 
-		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
+		const std::string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
 		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
 				throw InvalidNameException(filename, AT);
 
