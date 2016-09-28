@@ -47,7 +47,7 @@ double StabilityAlgorithms::getHandHardnessMONTI(const int& F, const double& rho
 		case 0: { // Graupel PPgp; introduced by Yamaguchi & Fierz, Feb 2004
 			const double A = 0.0078;
 			const double B = 0.0105;
-			return (A + B*rho);
+			return std::max(1., std::min(6., A + B*rho));
 		}
 		case 1: { // Precipitation Particles PP; obtained from median value for hand_hardness_1 (110 kg/m3) + standard dev (33.9397 kg/m3)
 		          // if not the median value for hand_hardness_2 is 129.5 kg/m3 but it comes from only 6 observations;
@@ -101,7 +101,7 @@ double StabilityAlgorithms::getHandHardnessMONTI(const int& F, const double& rho
 		case 6: { // Surface hoar SH; empirical: index 1 to 2 from buried_hoar_density to 250 kg m-3
 			const double A = 1. - buried_hoar_density/(250. - buried_hoar_density);
 			const double B = 1./(250. - buried_hoar_density);
-			return (A + B*rho);
+			return std::max(1., std::min(6., A + B*rho));
 		}
 		case 7: { // Melt Forms MF
 			if (water_content < SnowStation::thresh_moist_snow) { //dry melt forms
@@ -129,9 +129,7 @@ double StabilityAlgorithms::getHandHardnessMONTI(const int& F, const double& rho
 			}
 		}
 		case 8: { // Ice layer IFil
-			const double A = 6.;
-			const double B = 0.;
-			return (A + B*rho);
+			return 6.;
 		}
 		case 9: { // Rounding faceted particles FCxr
 			if ((rho >= 0.) && (rho <= 259.7887))
