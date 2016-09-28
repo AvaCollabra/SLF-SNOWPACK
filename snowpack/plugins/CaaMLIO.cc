@@ -369,7 +369,7 @@ xmlNodeSetPtr CaaMLIO::xmlGetData(const std::string& path)
 	if (xpathObj == NULL) {
 		throw NoDataException("Invalid xpath expression: '"+path+"'", AT);
 	}
-	
+
 	xmlNodeSetPtr &data = xpathObj->nodesetval;
  	if (xmlXPathNodeSetIsEmpty(data) || data->nodeNr==0) {
 		xmlXPathFreeObject(xpathObj);
@@ -385,12 +385,12 @@ Date CaaMLIO::xmlGetDate()
 	if (xpathObj == NULL) {
 		throw NoDataException("Invalid xpath expression: '"+TimeData_xpath+"'", AT);
 	}
-	
+
  	if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
 		xmlXPathFreeObject(xpathObj);
  		throw NoDataException("No data found for '"+TimeData_xpath+"'", AT);
 	}
-	
+
 	const string date_str( (char*) xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]) );
 
 	Date date;
@@ -562,7 +562,7 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 void CaaMLIO::getProfiles(const std::string path, std::vector<double> &depths, std::vector<double> &val)
 {
 	xmlNodeSetPtr data = xmlGetData(SnowData_xpath+path);
-	const size_t nrElem = data->nodeNr;
+	const size_t nrElem = static_cast<size_t>(data->nodeNr);
 	depths.resize(nrElem);
 	val.resize(nrElem);
 

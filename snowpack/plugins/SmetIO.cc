@@ -722,7 +722,11 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
                                const ProcessDat& /*Hdata*/, const double /*wind_trans24*/)
 {
 	if (ts_smet_writer==NULL) {
-		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation" );
+		const std::string fields_header( "timestamp Sensible_heat Latent_heat Outgoing_longwave_radiation Modelled_snow_depth_(vertical) Enforced_snow_depth_(vertical)" );
+		const std::string fields_abbrev( "t Q_s Q_l OLWR HS_c HS_e)" );
+		const std::string   units_label( "- W/m2 W/m2 W/m2 cm cm" );
+		const std::string   units_offset( "0 0 0 0 0 0" );
+		const std::string   units_multiplier( "1 1 1 1 1 1" );
 
 		const std::string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
 		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
@@ -734,18 +738,31 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 			ts_smet_writer = new smet::SMETWriter(filename);
 			setBasicHeader(Xdata, fields_header, *ts_smet_writer);
 			ts_smet_writer->set_header_value("comments", "header_comments");
-			ts_smet_writer->set_header_value("units", "header_units");
-			/*vector<int> vec_width, vec_precision;
-			ts_smet_writer.set_width(vec_width);
-			ts_smet_writer.set_precision(vec_precision);*/
+			ts_smet_writer->set_header_value("units", units_label);
+			ts_smet_writer->set_header_value("units_offset", units_offset);
+			ts_smet_writer->set_header_value("units_multiplier", units_multiplier);
+			vector<int> vec_width, vec_precision;
+			vec_width.push_back(8); vec_precision.push_back(1);
+			vec_width.push_back(8); vec_precision.push_back(1);
+			vec_width.push_back(8); vec_precision.push_back(1);
+			vec_width.push_back(13); vec_precision.push_back(6);
+			vec_width.push_back(13); vec_precision.push_back(6);
+			ts_smet_writer->set_width(vec_width);
+			ts_smet_writer->set_precision(vec_precision);
 		}
 	}
 
 	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
 	vector<double> data;
+	const double cos_sl = Xdata.cos_sl;
 	data.push_back( Sdata.qs );
 	data.push_back( Sdata.ql );
 	data.push_back( Sdata.lw_out );
+	data.push_back( M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl) );
+	if (Xdata.mH!=Constants::undefined)
+		data.push_back( M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl) );
+	else
+		data.push_back( IOUtils::nodata );
 
 	ts_smet_writer->write(timestamp, data);
 }
