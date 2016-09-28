@@ -748,7 +748,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 		const std::string   units_offset( "0 0 0 0 0 0" );
 		const std::string   units_multiplier( "1 1 1 1 1 1" );
 
-		const string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
+		const std::string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
 		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
 				throw InvalidNameException(filename, AT);
 

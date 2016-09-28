@@ -23,6 +23,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <ctime>
 
 #ifdef _MSC_VER
 	/*

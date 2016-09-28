@@ -174,9 +174,10 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
 		StabilityData  STpar(Stability::psi_ref);
-
+		
 		//update slab properties
-		H_slab += EMS[e].L / STpar.cos_psi_ref;		// Add to slab depth
+		const double hi = EMS[e].L / STpar.cos_psi_ref;
+		H_slab += hi;		// Add to slab depth
 		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
 		EMS[e].E = ElementData::getYoungModule(M_slab/H_slab, ElementData::Sigrist);
 		STpar.strength_upper = strength_upper; //reset to previous value
@@ -193,10 +194,10 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		if (!multi_layer_sk38) {
 			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, depth_lay, STpar);
 		} else {		//compute the multi-layer equivalent depth
-			const double E_cbrt = pow(EMS[e].E, 1./3.);
-			hi_Ei += H_slab * E_cbrt;
-			h_tot += H_slab;
-			const double h_e = h_tot * (hi_Ei / h_tot) / E_cbrt; //avoid computing cbrt, cube, cbrt again
+			//current layer properties
+			const double Ei_cbrt = pow(ElementData::getYoungModule(EMS[e].Rho, ElementData::Sigrist), 1./3.);
+			hi_Ei +=  hi * Ei_cbrt;
+			const double h_e = hi_Ei / Ei_cbrt; //avoid computing cbrt, cube, cbrt again*/
 			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
 		}
 		if (e < nE-1)

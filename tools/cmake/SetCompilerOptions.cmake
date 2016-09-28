@@ -117,7 +117,13 @@ MACRO (SET_COMPILER_OPTIONS)
 				SET(EXTRA "${EXTRA} -fsanitize=address -fno-omit-frame-pointer")
 			ENDIF(LEAKS_CHECK)
 		ENDIF()
-	
+
+		IF(GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
+			IF (PLUGIN_IMISIO) #HACK: current OCCI does not support the short strings optimizations of gcc>=5
+				SET(EXTRA "-D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA}")
+			ENDIF(PLUGIN_IMISIO)
+		ENDIF()
+
 	###########################################################
 	ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 		IF(ENABLE_LAPACK)
