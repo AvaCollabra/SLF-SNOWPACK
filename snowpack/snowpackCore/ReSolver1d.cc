@@ -2670,7 +2670,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		}
 	}
 
-	double max_flux=0.;
+	//double max_flux=0.;
 	if(enable_pref_flow) {
 		if(matrix==true) {
 			// We calculate the pref_flow area now

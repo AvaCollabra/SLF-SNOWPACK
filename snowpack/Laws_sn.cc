@@ -784,6 +784,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	const size_t nElems = Xdata.getNumberOfElements();
 	const double T_air = Mdata.ta;
 	const double Tss = Xdata.Ndata[nElems].T;
+	const double Tse = (nElems>0)? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
 	double eS;
 
 	// Vapor Pressures
@@ -793,7 +794,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	//      In particular, look closely at the condition within compLatentHeat()
 	const double eA = Mdata.rh * Atmosphere::waterSaturationPressure(T_air);
 	const double Vp1 = Atmosphere::waterSaturationPressure(Tss);
-	const double Vp2 = Atmosphere::waterSaturationPressure(Tss); //HACK something got lost here...
+	const double Vp2 = Atmosphere::waterSaturationPressure(Tse);
 
 	// First, the case of no snow
 	if (Xdata.getNumberOfNodes() == Xdata.SoilNode + 1 && nElems > 0) {
@@ -855,14 +856,15 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	const size_t nElems = Xdata.getNumberOfElements();
+	const bool SurfSoil = (nElems>0)? (Xdata.Edata[nElems-1].theta[SOIL]>0.) : false;
 
 	double c = compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
 
-	if ((Xdata.getNumberOfNodes() == Xdata.SoilNode + 1) && (nElems > 0)
-		    && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
+	if (SurfSoil && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
 		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
+		const double Tse = (nElems>0)? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
 		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure( Mdata.ta );
-		const double eS = Atmosphere::waterSaturationPressure( Xdata.Ndata[nElems].T );
+		const double eS = Atmosphere::waterSaturationPressure( Tse );
 		if (eS >= eA) {
 			c = 1. / c + SnLaws::rsoilmin / std::max(SnLaws::relsatmin, std::min(1.,
 			                                    (Xdata.Edata[nElems-1].theta[WATER]+Xdata.Edata[nElems-1].theta[WATER_PREF])
