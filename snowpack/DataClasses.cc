@@ -1468,7 +1468,7 @@ SnowStation::~SnowStation()
 		} else if ( pMat->State == BlockMatrix  ){
 			ReleaseBlockMatrix(&pMat->Mat.Block);
 		}
-		//free(pMat);
+		free(pMat);
 	}
 }
 
