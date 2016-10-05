@@ -167,7 +167,6 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	double H_slab = 0.;	// Slab depth
 	double M_slab = 0.;	// Slab mass
 	double hi_Ei = 0.; //this is the denominator of the multi layer Young's modulus
-	double h_tot = 0.;
 	if(nE!=0) EMS[nE-1].crit_cut_length = Constants::undefined;
 
 	while (e-- > Xdata.SoilNode) {

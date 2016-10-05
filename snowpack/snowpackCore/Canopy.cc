@@ -846,7 +846,7 @@ double Canopy::DSaturationPressureDT(const double& L, const double& T)
 		c3 = 272.440 ;
 	}
 
-	const double dpdt =  Atmosphere::waterSaturationPressure(T) * c2 * c3 / ((c3 + IOUtils::K_TO_C(T)) * (c3 + IOUtils::K_TO_C(T)));
+	const double dpdt =  Atmosphere::vaporSaturationPressure(T) * c2 * c3 / ((c3 + IOUtils::K_TO_C(T)) * (c3 + IOUtils::K_TO_C(T)));
 
 	return(dpdt);
 }
@@ -865,10 +865,10 @@ void Canopy::LineariseLatentHeatFlux(const double& ce_canopy, const double& tc_o
 {
 	if (tc_old > 273.15) {
 		le1 = scalingfactor*ce_canopy * DSaturationPressureDT(Constants::lh_vaporization, tc_old);
-		le0 = scalingfactor*ce_canopy * (Atmosphere::waterSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
+		le0 = scalingfactor*ce_canopy * (Atmosphere::vaporSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	} else {
 		le1 = scalingfactor*ce_canopy * DSaturationPressureDT(Constants::lh_sublimation, tc_old);
-		le0 = scalingfactor*ce_canopy * (Atmosphere::waterSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
+		le0 = scalingfactor*ce_canopy * (Atmosphere::vaporSaturationPressure(tc_old) - vpair) - (le1) * tc_old;
 	}
 }
 
@@ -1382,11 +1382,11 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
 	  */
 	if ( useSoilLayers ) {
 		Cdata->rstransp = Canopy::rsmin * get_f1(Cdata->iswrac)*get_f2f4(Xdata.SoilNode, &Xdata.Edata[0]) *
-		                  get_f3((1. - Mdata.rh) * Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
+		                  get_f3((1. - Mdata.rh) * Atmosphere::vaporSaturationPressure(Mdata.ta)) / Cdata->lai;
 	} else {
 		const double Temp = (nE>0)? 0. : IOUtils::K_TO_C(Mdata.ta);
 		Cdata->rstransp = Canopy::rsmin * get_f1(Cdata->iswrac) * get_f4(Temp) * get_f3((1. - Mdata.rh) *
-		                  Atmosphere::waterSaturationPressure(Mdata.ta)) / Cdata->lai;
+		                  Atmosphere::vaporSaturationPressure(Mdata.ta)) / Cdata->lai;
 	}
 	// Exchange coefficients sensible heat
 	ch_canopy = Constants::density_air * Constants::specific_heat_air / (Cdata->ra + Cdata->rc);
@@ -1748,7 +1748,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 		}
 
 		// compute properties le0 and le1 in eq (4)
-		LineariseLatentHeatFlux(ce_canopy, Xdata.Cdata.temp, Mdata.rh*Atmosphere::waterSaturationPressure(Mdata.ta), le0, le1, Xdata.Cdata.sigf*(1. - Xdata.Cdata.direct_throughfall));
+		LineariseLatentHeatFlux(ce_canopy, Xdata.Cdata.temp, Mdata.rh*Atmosphere::vaporSaturationPressure(Mdata.ta), le0, le1, Xdata.Cdata.sigf*(1. - Xdata.Cdata.direct_throughfall));
 		// NOTE: for the moment trunks do not exchange latent heat (no interception, no transpiration)
 		let1= 0. ; let0 = 0. ;
 
