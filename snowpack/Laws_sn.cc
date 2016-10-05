@@ -676,8 +676,8 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 	// Important are the conductivities and cross sectional areas.
 	// The conductivity including latent heat transfer (W K-1 m-1)
 	const double kap = Constants::conductivity_air + ((Lh*Lh* Constants::diffusion_coefficient_in_air * P
-		 * Atmosphere::waterSaturationPressure(Te))
-		 / (Constants::gas_constant*Constants::gas_constant * Optim::pow3(Te) * (P - Atmosphere::waterSaturationPressure(Te))));
+		 * Atmosphere::vaporSaturationPressure(Te))
+		 / (Constants::gas_constant*Constants::gas_constant * Optim::pow3(Te) * (P - Atmosphere::vaporSaturationPressure(Te))));
 
 	/*
 	* Determine C1 = nca/ncl (nca:=number of grains per unit area; ncl:=number
@@ -792,9 +792,9 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 
 	// TODO The part below needs to be rewritten in a more consistent way !!!
 	//      In particular, look closely at the condition within compLatentHeat()
-	const double eA = Mdata.rh * Atmosphere::waterSaturationPressure(T_air);
-	const double Vp1 = Atmosphere::waterSaturationPressure(Tss);
-	const double Vp2 = Atmosphere::waterSaturationPressure(Tse);
+	const double eA = Mdata.rh * Atmosphere::vaporSaturationPressure(T_air);
+	const double Vp1 = Atmosphere::vaporSaturationPressure(Tss);
+	const double Vp2 = Atmosphere::vaporSaturationPressure(Tse);
 
 	// First, the case of no snow
 	if (Xdata.getNumberOfNodes() == Xdata.SoilNode + 1 && nElems > 0) {
@@ -863,8 +863,8 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 	if (SurfSoil && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
 		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
 		const double Tse = (nElems>0)? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
-		const double eA = Mdata.rh * Atmosphere::waterSaturationPressure( Mdata.ta );
-		const double eS = Atmosphere::waterSaturationPressure( Tse );
+		const double eA = Mdata.rh * Atmosphere::vaporSaturationPressure( Mdata.ta );
+		const double eS = Atmosphere::vaporSaturationPressure( Tse );
 		if (eS >= eA) {
 			c = 1. / c + SnLaws::rsoilmin / std::max(SnLaws::relsatmin, std::min(1.,
 			                                    (Xdata.Edata[nElems-1].theta[WATER]+Xdata.Edata[nElems-1].theta[WATER_PREF])

@@ -240,7 +240,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 
 	// Ideal approximation of pressure and vapor pressure
 	const double p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
-	const double sat_vap = Atmosphere::waterSaturationPressure(Mdata.ta);
+	const double sat_vap = Atmosphere::vaporSaturationPressure(Mdata.ta);
 	const double vw = std::max(0.3, Mdata.vw);
 
 	// Initialize snow surface temperature as well as virtual temperatures for stability
