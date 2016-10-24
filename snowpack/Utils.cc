@@ -25,6 +25,7 @@
 
 #include <snowpack/Utils.h>
 #include <assert.h>
+#include <cstdio>
 
 using namespace std;
 using namespace mio;
