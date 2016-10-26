@@ -830,7 +830,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 }
 
-void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata, const bool& /*aggregate*/)
+void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata, const bool& aggregate)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
