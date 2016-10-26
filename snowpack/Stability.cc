@@ -156,19 +156,19 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	std::vector<unsigned short> n_lemon(nN, 0.);
 	initStability(Xdata);
-	if ( (nE < Xdata.SoilNode+1) || plastic ) return; // Return if bare soil or PLASTIC
+	if ( (nE <= Xdata.SoilNode) || plastic ) return; // Return if bare soil or PLASTIC or nE==0
 
 	const double Pk = StabilityAlgorithms::compPenetrationDepth(Xdata); // Skier penetration depth
 	double strength_upper = 1001.; //default initial value
-	size_t e = nE;		// Counter
 
 	double H_slab = 0.;	// Slab depth
 	double M_slab = 0.;	// Slab mass
-	double hi_Ei = 0.; //this is the denominator of the multi layer Young's modulus
-	if(nE!=0) EMS[nE-1].crit_cut_length = Constants::undefined;
+	double hi_Ei = 0.;		//this is the denominator of the multi layer Young's modulus
+	EMS[nE-1].crit_cut_length = Constants::undefined;
+	size_t e = nE-1;		// the top element has already been handled
 
+	std::vector<unsigned short> n_lemon(nN, 0.);
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
