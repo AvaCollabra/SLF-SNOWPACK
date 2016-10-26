@@ -1101,7 +1101,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout << "\n1533," << nN-Xdata.SoilNode << ",-999.";
 		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
 			fout << "," << std::fixed << std::setprecision(2) << NDS[n].S_s;
-			fout << ",-999.";
+		fout << ",-999.";
 	}
 	// 1604: ssi index
 	if (no_snow) {
@@ -1110,7 +1110,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout << "\n1604," << nN-Xdata.SoilNode << ",-999.";
 		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
 			fout << "," << std::fixed << std::setprecision(2) << NDS[n].ssi;
-			fout << ",-999.";
+		fout << ",-999.";
 	}
 
 	if (aggregate) {
@@ -1234,7 +1234,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 			fout << "\n3532," << anN-Xdata.SoilNode;
 			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
 				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_n;
-				fout << ",-999.";
+			fout << ",-999.";
 		}
 		// 3533: stability index Sk38
 		if (no_snow) {
@@ -1243,7 +1243,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 			fout << "\n3533," << anN-Xdata.SoilNode;
 			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
 				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_s;
-				fout << ",-999.";
+			fout << ",-999.";
 		}
 		// 3604: ssi index
 		if (no_snow) {
@@ -1252,7 +1252,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 			fout << "\n3604," << anN-Xdata.SoilNode;
 			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
 				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].ssi;
-				fout << ",-999.";
+			fout << ",-999.";
 		}
 	} //end aggregated profile
 
