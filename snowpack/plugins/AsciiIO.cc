@@ -1048,6 +1048,186 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	else
 		writeProfileProAddDefault(Xdata, fout);
 
+	// Full profile, labels 1nnn (node properties)
+	// 1501 Node position [> 0: upper, < 0: lower] (cm)
+	fout << "\n1501," << nN;
+	for (size_t n = 0; n < nN; n++)
+		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z)/cos_sl);
+	// 1504: node temperature (degC)
+	fout << "\n1504," << nN;
+	for (size_t n = 0; n < nN; n++)
+		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(NDS[n].T);
+	// 1532: natural stability index Sn38
+	if (no_snow) {
+		fout << "\n1532,-999.";
+	} else {
+		fout << "\n1532," << nN-Xdata.SoilNode << ",-999.";
+		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
+			fout << "," << std::fixed << std::setprecision(2) << NDS[n].S_n;
+		fout << ",-999.";
+	}
+	// 1533: stability index Sk38
+	if (no_snow) {
+		fout << "\n1533,-999";
+	} else {
+		fout << "\n1533," << nN-Xdata.SoilNode << ",-999.";
+		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
+			fout << "," << std::fixed << std::setprecision(2) << NDS[n].S_s;
+		fout << ",-999.";
+	}
+	// 1604: ssi index
+	if (no_snow) {
+		fout << "\n1604,-999";
+	} else {
+		fout << "\n1604," << nN-Xdata.SoilNode << ",-999.";
+		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
+			fout << "," << std::fixed << std::setprecision(2) << NDS[n].ssi;
+		fout << ",-999.";
+	}
+
+	if (aggregate) {
+		SnowStation Xdata_aggr(Xdata);
+		// First Run - aggregate similar layers; see Aggregate.cc:252
+		Xdata_aggr.combineElements(SnowStation::number_top_elements, false, 2);
+		// Second Run - aggregate remaining very thin layers; see Aggregate.cc:275
+		Xdata_aggr.combineElements(SnowStation::number_top_elements, false, 3);
+
+		const vector<ElementData>& aEMS = Xdata_aggr.Edata;
+		const vector<NodeData>& aNDS = Xdata_aggr.Ndata;
+		size_t anN = Xdata_aggr.getNumberOfNodes();
+		size_t anE = anN-1;
+		const size_t anz = (useSoilLayers)? anN : anE;
+
+		// Aggregated profile, labels 2nnn (element properties)
+		// 2501: height [> 0: top, < 0: bottom of elem.] (cm)
+		fout << "\n2501," << anz;
+		for (size_t n = anN-anz; n < anN; n++)
+		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((aNDS[n].z+aNDS[n].u - aNDS[Xdata.SoilNode].z)/cos_sl);
+		// 2502: element density (kg m-3)
+		fout << "\n2502," << anE;
+		for (size_t e = 0; e < anE; e++)
+			fout << "," << std::fixed << std::setprecision(1) << aEMS[e].Rho;
+		// 2503: element temperature (degC)
+		fout << "\n2503," << anE;
+		for (size_t e = 0; e < anE; e++)
+			fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(aEMS[e].Te);
+		// 2506: liquid water content by volume (%)
+		fout << "\n2506," << anE;
+		for (size_t e = 0; e < anE; e++)
+			fout << "," << std::fixed << std::setprecision(1) << 100.*aEMS[e].theta[WATER];
+		// 2508: snow dendricity (1)
+		if (no_snow) {
+			fout << "\n2508,1,0";
+		} else {
+			fout << "\n2508," << anE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].dd;
+		}
+		// 2509: snow sphericity (1)
+		if (no_snow) {
+			fout << "\n2509,1,0";
+		} else {
+			fout << "\n2509," << anE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].sp;
+		}
+		// 2512: snow grain size (mm)
+		if (no_snow) {
+			fout << "\n2512,1,0";
+		} else {
+			fout << "\n2512," << anE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(2) << 2.*aEMS[e].rg;
+		}
+		// 2513: snow grain type (Swiss code F1F2F3), dumps either 1,0 or 1,660 if no snow on the ground!
+		fout << "\n2513," << anE+1-Xdata.SoilNode;
+		for (size_t e = Xdata.SoilNode; e < anE; e++)
+			fout << "," << std::fixed << std::setfill ('0') << std::setw (3) << aEMS[e].type;
+		// surface hoar at surface? (depending on boundary conditions)
+		if (M_TO_MM(NDS[nN-1].hoar/hoar_density_surf) > hoar_min_size_surf) {
+			fout << ",660";
+			// 2514: grain type, grain size (mm), and density (kg m-3) of SH at surface
+			fout << "\n2514,3";
+			fout << ",660," << std::fixed << std::setprecision(1) << M_TO_MM(NDS[nN-1].hoar/hoar_density_surf);
+			fout << "," << std::fixed << std::setprecision(0) << hoar_density_surf;
+		} else {
+			fout << ",0";
+			fout << "\n2514,3,-999,-999.0,-999.0";
+		}
+		// 2530: position (cm) and minimum stability indices
+		fout << "\n2530,8";
+		fout << "," << std::fixed << +Xdata_aggr.S_class1 << "," << +Xdata_aggr.S_class2; //force printing type char as numerica value
+		fout << "," <<  std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata_aggr.S_d;
+		fout << "," << std::fixed << std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_n/cos_sl) << "," << std::setprecision(2) <<  Xdata_aggr.S_n;
+		fout << "," << std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_s/cos_sl) << "," << std::fixed << std::setprecision(2) << Xdata_aggr.S_s;
+		// 2531: deformation rate stability index Sdef
+		if (no_snow) {
+			fout << "\n2531,1,0";
+		} else {
+			fout << "\n2531," << anE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].S_dr;
+		}
+		//  2534: hand hardness ...
+		if (no_snow) {
+			fout << "\n2534,1,0";
+		} else {
+			fout << "\n2534," << anE-Xdata.SoilNode;
+			if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
+				for (size_t e = Xdata.SoilNode; e < anE; e++)
+					fout << "," << std::fixed << std::setprecision(1) << -1.*(19.3*pow(aEMS[e].hard, 2.4));
+			} else { // ... or in index steps (1)
+				for (size_t e = Xdata.SoilNode; e < anE; e++)
+					fout << "," << std::fixed << std::setprecision(1) << -aEMS[e].hard;
+			}
+		}
+		// 2535: optical equivalent grain size OGS (mm)
+		if (no_snow) {
+			fout << "\n2535,1,0";
+		} else {
+			fout << "\n2535," << anE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < anE; e++)
+				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].ogs;
+		}
+
+		// Aggregated profile, labels 3nnn (node properties)
+		// 3501 Node position [> 0: upper, < 0: lower] (cm)
+		fout << "\n3501," << anN;
+		for (size_t n = 0; n < anN; n++)
+			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((aNDS[n].z+aNDS[n].u - aNDS[Xdata.SoilNode].z)/cos_sl);
+		// 3504: node temperature (degC)
+		fout << "\n3504," << anN;
+		for (size_t n = 0; n < anN; n++)
+			fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(aNDS[n].T);
+		// 3532: natural stability index Sn38
+		if (no_snow) {
+			fout << "\n3532,-999.";
+		} else {
+			fout << "\n3532," << anN-Xdata.SoilNode;
+			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
+				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_n;
+			fout << ",-999.";
+		}
+		// 3533: stability index Sk38
+		if (no_snow) {
+			fout << "\n3533,-999.";
+		} else {
+			fout << "\n3533," << anN-Xdata.SoilNode;
+			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
+				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_s;
+			fout << ",-999.";
+		}
+		// 3604: ssi index
+		if (no_snow) {
+			fout << "\n3604,-999.";
+		} else {
+			fout << "\n3604," << anN-Xdata.SoilNode;
+			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
+				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].ssi;
+			fout << ",-999.";
+		}
+	} //end aggregated profile
+
 	fout.close();
 }
 

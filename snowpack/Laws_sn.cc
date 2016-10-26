@@ -588,9 +588,10 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 		if ((Edata.theta[WATER]+Edata.theta[WATER_PREF]) > SnowStation::thresh_moist_soil) {
 			const double alpha1 = 0.389, alpha2 = 0.3567, alpha3 = 61.61;
 			C_eff_soil += std::max( 0.27, (alpha1 + alpha2 * weight) * log(alpha3 * (Edata.theta[WATER]+Edata.theta[WATER_PREF])) );
-		} else
+		} else {
 			C_eff_soil += 0.27;
-			C_eff_soil = std::min(C_eff_soil_max, C_eff_soil);
+		}
+		C_eff_soil = std::min(C_eff_soil_max, C_eff_soil);
 	} else {
 		C_eff_soil = Edata.soil[SOIL_K] + (Edata.theta[WATER]+Edata.theta[WATER_PREF]) * SnLaws::conductivity_water(Edata.Te)
                        + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te);

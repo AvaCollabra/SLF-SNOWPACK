@@ -632,7 +632,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					UpperJoin=true;
 				} else {									// Else we remove element
 					merged=false;
-					if(Xdata.SoilNode>0.) {							// Case of soil present
+					if(Xdata.SoilNode>0) {							// Case of soil present
 						// In case of soil and removal of first snow element above soil:
 						// First, make sure there is no ice anymore, as we do not want to transfer ice over soil-snow interface:
 						EMS[eUpper].theta[WATER]+=EMS[eUpper].theta[ICE]*(Constants::density_ice/Constants::density_water);
@@ -860,7 +860,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 			//Put rain water in the layers, starting from the top element.
 			size_t e = nE;
-			while (Store > 0.0 && e > 0.) {
+			while (Store > 0.0 && e > 0) {
 				e--;	//This construct with e=nE and e-- is to circumvent troubles with the unsigned ints.
 				if ((iwatertransportmodel_snow != RICHARDSEQUATION && e>=Xdata.SoilNode) || (iwatertransportmodel_soil != RICHARDSEQUATION && e<Xdata.SoilNode)) {
 					const double L = EMS[e].L;
