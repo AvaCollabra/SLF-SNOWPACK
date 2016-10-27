@@ -191,44 +191,6 @@ const bool AsciiIO::t_gnd = false;
  * 0605,nElems,inverse texture index ITI (Mg m-4)
  * 0606,nElems,critical cut length (m)
  *
- * Full profile, labels 1nnn (nodes)
- * 1501,nNodes,height [> 0: top, < 0: bottom of elem.] (cm)
- * 1504,nNodes,nodal temperature (degC)
- * 1532,nNodes-2,natural stability index Sn38
- * 1533,nNodes-2,stability index Sk38
- * 1602,nNodes-2,grain size difference (mm)
- * 1603,nNodes-2,hardness difference (1)
- * 1604,nNodes-2,structural stability index SSI
- *
- * Aggregated profile, labels 2nnn (elements)
- * 2501,anElems,height [> 0: top, < 0: bottom of elem.] (cm)
- * 2502,anElems,element density (kg m-3)
- * 2503,anElems,element temperature (degC)
- * 2506,anElems,liquid water content by volume (%)
- * 2508,anElems,dendricity (1)
- * 2509,anElems,sphericity (1)
- * 2512,anElems,grain size (mm)
- * 2513,anElems+1,grain type (Swiss Code F1F2F3), including SH on surface
- * 2514,3:
- *		grain type, grain size, and density of SH at surface
- * 2521,anElems,thermal conductivity (W K-1 m-1)
- * 2522,anElems,absorbed shortwave radiation (W m-2)
- * 2530,8,position (cm) and minimum stability indices:
- *		profile type, stability class, z_Sdef, Sdef, z_Sn38, Sn38, z_Sk38, Sk38
- * 2531,anElems,deformation rate stability index Sdef
- * 2534,anElems,hand hardness either (N) or index steps (1)
- * 2535,anElems,optical equivalent grain size (mm)
- * 2601,anElems,snow shear strength (kPa)
- *
- * Aggregated profile, labels 3nnn (nodes)
- * 3501,anNodes,height [> 0: top, < 0: bottom of elem.] (cm)
- * 3504,anNodes,nodal temperature (degC)
- * 2532,anNodes-2,natural stability index Sn38
- * 2533,anNodes-2,stability index Sk38
- * 3602,anNodes-2,grain size difference (mm)
- * 3603,anNodes-2,hardness difference (1)
- * 3604,anNodes-2,structural stability index SSI
- *
  * [DATA]
  * @endcode
  * The each data line starts with a code as described in the header followed by the number of elements (except for the date line) and
@@ -864,7 +826,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 	}
 }
 
-void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata, const bool& aggregate)
+void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata, const bool& /*aggregate*/)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
 	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
@@ -1075,186 +1037,6 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		writeProfileProAddCalibration(Xdata, fout);
 	else
 		writeProfileProAddDefault(Xdata, fout);
-
-	// Full profile, labels 1nnn (node properties)
-	// 1501 Node position [> 0: upper, < 0: lower] (cm)
-	fout << "\n1501," << nN;
-	for (size_t n = 0; n < nN; n++)
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z)/cos_sl);
-	// 1504: node temperature (degC)
-	fout << "\n1504," << nN;
-	for (size_t n = 0; n < nN; n++)
-		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(NDS[n].T);
-	// 1532: natural stability index Sn38
-	if (no_snow) {
-		fout << "\n1532,-999.";
-	} else {
-		fout << "\n1532," << nN-Xdata.SoilNode << ",-999.";
-		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
-			fout << "," << std::fixed << std::setprecision(2) << NDS[n].S_n;
-		fout << ",-999.";
-	}
-	// 1533: stability index Sk38
-	if (no_snow) {
-		fout << "\n1533,-999";
-	} else {
-		fout << "\n1533," << nN-Xdata.SoilNode << ",-999.";
-		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
-			fout << "," << std::fixed << std::setprecision(2) << NDS[n].S_s;
-		fout << ",-999.";
-	}
-	// 1604: ssi index
-	if (no_snow) {
-		fout << "\n1604,-999";
-	} else {
-		fout << "\n1604," << nN-Xdata.SoilNode << ",-999.";
-		for (size_t n = Xdata.SoilNode+1;  n < nN-1; n++)
-			fout << "," << std::fixed << std::setprecision(2) << NDS[n].ssi;
-		fout << ",-999.";
-	}
-
-	if (aggregate) {
-		SnowStation Xdata_aggr(Xdata);
-		// First Run - aggregate similar layers; see Aggregate.cc:252
-		Xdata_aggr.combineElements(SnowStation::number_top_elements, false, 2);
-		// Second Run - aggregate remaining very thin layers; see Aggregate.cc:275
-		Xdata_aggr.combineElements(SnowStation::number_top_elements, false, 3);
-
-		const vector<ElementData>& aEMS = Xdata_aggr.Edata;
-		const vector<NodeData>& aNDS = Xdata_aggr.Ndata;
-		size_t anN = Xdata_aggr.getNumberOfNodes();
-		size_t anE = anN-1;
-		const size_t anz = (useSoilLayers)? anN : anE;
-
-		// Aggregated profile, labels 2nnn (element properties)
-		// 2501: height [> 0: top, < 0: bottom of elem.] (cm)
-		fout << "\n2501," << anz;
-		for (size_t n = anN-anz; n < anN; n++)
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((aNDS[n].z+aNDS[n].u - aNDS[Xdata.SoilNode].z)/cos_sl);
-		// 2502: element density (kg m-3)
-		fout << "\n2502," << anE;
-		for (size_t e = 0; e < anE; e++)
-			fout << "," << std::fixed << std::setprecision(1) << aEMS[e].Rho;
-		// 2503: element temperature (degC)
-		fout << "\n2503," << anE;
-		for (size_t e = 0; e < anE; e++)
-			fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(aEMS[e].Te);
-		// 2506: liquid water content by volume (%)
-		fout << "\n2506," << anE;
-		for (size_t e = 0; e < anE; e++)
-			fout << "," << std::fixed << std::setprecision(1) << 100.*aEMS[e].theta[WATER];
-		// 2508: snow dendricity (1)
-		if (no_snow) {
-			fout << "\n2508,1,0";
-		} else {
-			fout << "\n2508," << anE-Xdata.SoilNode;
-			for (size_t e = Xdata.SoilNode; e < anE; e++)
-				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].dd;
-		}
-		// 2509: snow sphericity (1)
-		if (no_snow) {
-			fout << "\n2509,1,0";
-		} else {
-			fout << "\n2509," << anE-Xdata.SoilNode;
-			for (size_t e = Xdata.SoilNode; e < anE; e++)
-				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].sp;
-		}
-		// 2512: snow grain size (mm)
-		if (no_snow) {
-			fout << "\n2512,1,0";
-		} else {
-			fout << "\n2512," << anE-Xdata.SoilNode;
-			for (size_t e = Xdata.SoilNode; e < anE; e++)
-				fout << "," << std::fixed << std::setprecision(2) << 2.*aEMS[e].rg;
-		}
-		// 2513: snow grain type (Swiss code F1F2F3), dumps either 1,0 or 1,660 if no snow on the ground!
-		fout << "\n2513," << anE+1-Xdata.SoilNode;
-		for (size_t e = Xdata.SoilNode; e < anE; e++)
-			fout << "," << std::fixed << std::setfill ('0') << std::setw (3) << aEMS[e].type;
-		// surface hoar at surface? (depending on boundary conditions)
-		if (M_TO_MM(NDS[nN-1].hoar/hoar_density_surf) > hoar_min_size_surf) {
-			fout << ",660";
-			// 2514: grain type, grain size (mm), and density (kg m-3) of SH at surface
-			fout << "\n2514,3";
-			fout << ",660," << std::fixed << std::setprecision(1) << M_TO_MM(NDS[nN-1].hoar/hoar_density_surf);
-			fout << "," << std::fixed << std::setprecision(0) << hoar_density_surf;
-		} else {
-			fout << ",0";
-			fout << "\n2514,3,-999,-999.0,-999.0";
-		}
-		// 2530: position (cm) and minimum stability indices
-		fout << "\n2530,8";
-		fout << "," << std::fixed << +Xdata_aggr.S_class1 << "," << +Xdata_aggr.S_class2; //force printing type char as numerica value
-		fout << "," <<  std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata_aggr.S_d;
-		fout << "," << std::fixed << std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_n/cos_sl) << "," << std::setprecision(2) <<  Xdata_aggr.S_n;
-		fout << "," << std::setprecision(1) << M_TO_CM(Xdata_aggr.z_S_s/cos_sl) << "," << std::fixed << std::setprecision(2) << Xdata_aggr.S_s;
-		// 2531: deformation rate stability index Sdef
-		if (no_snow) {
-			fout << "\n2531,1,0";
-		} else {
-			fout << "\n2531," << anE-Xdata.SoilNode;
-			for (size_t e = Xdata.SoilNode; e < anE; e++)
-				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].S_dr;
-		}
-		//  2534: hand hardness ...
-		if (no_snow) {
-			fout << "\n2534,1,0";
-		} else {
-			fout << "\n2534," << anE-Xdata.SoilNode;
-			if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
-				for (size_t e = Xdata.SoilNode; e < anE; e++)
-					fout << "," << std::fixed << std::setprecision(1) << -1.*(19.3*pow(aEMS[e].hard, 2.4));
-			} else { // ... or in index steps (1)
-				for (size_t e = Xdata.SoilNode; e < anE; e++)
-					fout << "," << std::fixed << std::setprecision(1) << -aEMS[e].hard;
-			}
-		}
-		// 2535: optical equivalent grain size OGS (mm)
-		if (no_snow) {
-			fout << "\n2535,1,0";
-		} else {
-			fout << "\n2535," << anE-Xdata.SoilNode;
-			for (size_t e = Xdata.SoilNode; e < anE; e++)
-				fout << "," << std::fixed << std::setprecision(2) << aEMS[e].ogs;
-		}
-
-		// Aggregated profile, labels 3nnn (node properties)
-		// 3501 Node position [> 0: upper, < 0: lower] (cm)
-		fout << "\n3501," << anN;
-		for (size_t n = 0; n < anN; n++)
-			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((aNDS[n].z+aNDS[n].u - aNDS[Xdata.SoilNode].z)/cos_sl);
-		// 3504: node temperature (degC)
-		fout << "\n3504," << anN;
-		for (size_t n = 0; n < anN; n++)
-			fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(aNDS[n].T);
-		// 3532: natural stability index Sn38
-		if (no_snow) {
-			fout << "\n3532,-999.";
-		} else {
-			fout << "\n3532," << anN-Xdata.SoilNode;
-			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
-				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_n;
-			fout << ",-999.";
-		}
-		// 3533: stability index Sk38
-		if (no_snow) {
-			fout << "\n3533,-999.";
-		} else {
-			fout << "\n3533," << anN-Xdata.SoilNode;
-			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
-				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].S_s;
-			fout << ",-999.";
-		}
-		// 3604: ssi index
-		if (no_snow) {
-			fout << "\n3604,-999.";
-		} else {
-			fout << "\n3604," << anN-Xdata.SoilNode;
-			for (size_t n = Xdata.SoilNode+1; n < anN-1; n++)
-				fout << "," << std::fixed << std::setprecision(2) << aNDS[n].ssi;
-			fout << ",-999.";
-		}
-	} //end aggregated profile
 
 	fout.close();
 }
@@ -2492,39 +2274,6 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0891,nElems,SNTHERM: settling rate due to load (% h-1)";
 		fout << "\n0892,nElems,SNTHERM: settling rate due to metamorphism (% h-1)";
 		fout << "\n0893,nElems,SNTHERM: viscosity (GPa s)";
-	}
-    fout << "\n1501,nNodes,height [> 0: top, < 0: bottom of elem.] (cm)";
-    fout << "\n1504,nNodes,nodal temperature (degC)";
-    fout << "\n1532,nNodes-2,natural stability index Sn38";
-    fout << "\n1533,nNodes-2,stability index Sk38";
-    fout << "\n1602,nNodes-2,grain size difference (mm)";
-    fout << "\n1603,nNodes-2,hardness difference (1)";
-    fout << "\n1604,nNodes-2,structural stability index SSI";
-	if (aggregate_prf) {
-		fout << "\n2501,anElems,height [> 0: top, < 0: bottom of elem.] (cm)";
-		fout << "\n2502,anElems,element density (kg m-3)";
-		fout << "\n2503,anElems,element temperature (degC)";
-		fout << "\n2506,anElems,liquid water content by volume (%)";
-		fout << "\n2508,anElems,dendricity (1)";
-		fout << "\n2509,anElems,sphericity (1)";
-		fout << "\n2512,anElems,grain size (mm)";
-		fout << "\n2513,anElems+1,grain type (Swiss Code F1F2F3), including SH on surface";
-		fout << "\n2514,3,grain type, grain size (mm), and density (kg m-3) of SH at surface";
-		fout << "\n2521,anElems,thermal conductivity (W K-1 m-1)";
-		fout << "\n2522,anElems,absorbed shortwave radiation (W m-2)";
-		fout << "\n2530,8,position (cm) and minimum stability indices:";
-		fout << "\n		  profile type, stability class, z_Sdef, Sdef, z_Sn38, Sn38, z_Sk38, Sk38";
-		fout << "\n2531,anElems,deformation rate stability index Sdef";
-		fout << "\n2534,anElems,hand hardness either (N) or index steps (1)";
-		fout << "\n2535,anElems,optical equivalent grain size (mm)";
-		fout << "\n2601,anElems,snow shear strength (kPa)";
-		fout << "\n3501,anNodes,height [> 0: top, < 0: bottom of elem.] (cm)";
-		fout << "\n3504,anNodes,nodal temperature (degC)";
-		fout << "\n2532,anNodes-2,natural stability index Sn38";
-		fout << "\n2533,anNodes-2,stability index Sk38";
-		fout << "\n3602,anNodes-2,grain size difference (mm)";
-		fout << "\n3603,anNodes-2,hardness difference (1)";
-		fout << "\n3604,anNodes-2,structural stability index SSI";
 	}
 	fout << "\n\n[DATA]";
 }
