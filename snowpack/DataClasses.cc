@@ -1857,7 +1857,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].CDot = SSdata.Ldata[ll].CDot;
 			Edata[e].metamo = SSdata.Ldata[ll].metamo;
 			Edata[e].S_dr = INIT_STABILITY;
-			Edata[e].hard = 0.;
+			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
 			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive
 		} // end of element layer for
