@@ -122,7 +122,7 @@ SnowProfileLayer::SnowProfileLayer()
                     depositionDate(), height(0.), rho(0.), T(0.), gradT(0.), v_strain_rate(0.),
                     theta_i(0.), theta_w(0.), theta_a(0.),
                     grain_size(0.), bond_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
-                    coordin_num(0.), marker(0), type(0), hard(0.) {}
+                    coordin_num(0.), marker(0), type(0), hard(IOUtils::nodata) {}
 
 /**
  * @brief Generates a snow profile layer from element and upper node data
@@ -760,7 +760,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.) {}
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.) {}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
