@@ -122,7 +122,7 @@ SnowProfileLayer::SnowProfileLayer()
                     depositionDate(), height(0.), rho(0.), T(0.), gradT(0.), v_strain_rate(0.),
                     theta_i(0.), theta_w(0.), theta_a(0.),
                     grain_size(0.), bond_size(0.), dendricity(0.), sphericity(0.), ogs(0.),
-                    coordin_num(0.), marker(0), type(0), hard(0.) {}
+                    coordin_num(0.), marker(0), type(0), hard(IOUtils::nodata) {}
 
 /**
  * @brief Generates a snow profile layer from element and upper node data
