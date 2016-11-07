@@ -603,7 +603,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			bool merged = true;		// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
 				// We always merge snow elements, except if it is the top element, which is removed when the ice contents is below the threshold.
-				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
+				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] <= Snowpack::min_ice_content) ) {
 					merged=false;
 					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
 					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
