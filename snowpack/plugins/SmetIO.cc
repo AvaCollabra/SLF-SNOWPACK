@@ -140,7 +140,7 @@ using namespace mio;
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info), ts_smet_writer(NULL),
-          in_dflt_TZ(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
+          in_dflt_TZ(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
           out_load(false), out_stab(false), out_canopy(false), out_soileb(false)
@@ -149,6 +149,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
+	cfg.getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf);
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, IOUtils::nothrow);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
@@ -744,6 +745,34 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	}
 }
 
+/**
+ * @brief Returns sensor position perpendicular to slope (m) \n
+ * Negative vertical height indicates depth from either snow or ground surface \n
+ * NOTE: Depth from snow surface cannot be used with SNP_SOIL set
+ * @author Charles Fierz
+ * @version 10.02
+ * @param z_vert Vertical position of the sensor (m)
+ * @param hs_ref Height of snow to refer to (m)
+ * @param Ground Ground level (m)
+ * @param slope_angle (deg)
+ */
+double SmetIO::compPerpPosition(const double& z_vert, const double& hs_ref, const double& ground, const double& cos_sl)
+{
+	double pos=0.;
+	if (z_vert == mio::IOUtils::nodata) {
+		pos = Constants::undefined;
+	} else if (!useSoilLayers && (z_vert < 0.)) {
+		pos = hs_ref + z_vert * cos_sl;
+		if (pos < 0.)
+			pos = Constants::undefined;
+	} else {
+		pos = ground + z_vert * cos_sl;
+		if (pos < -ground)
+			pos = Constants::undefined;
+	}
+	return pos;
+}
+
 std::string SmetIO::getFieldsHeader()
 {
 	std::ostringstream os;
@@ -874,7 +903,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 	if (out_t && !fixedPositions.empty()) {
 		// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 		for (size_t ii = 0; ii < fixedPositions.size(); ii++) {
-			plot_description << "temperature_at_position_" << ii << " ";
+			plot_description << "temperature@" << fixedPositions[ii] << "m ";
 			plot_units << "°C ";
 			units_offset << "273.15 ";
 			units_multiplier << "1 ";
@@ -970,7 +999,7 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		const size_t nCalcSteps = static_cast<size_t>( ts_days_between / M_TO_D(calculation_step_length) + 0.5 );
 		data.push_back( (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. );
 		data.push_back( (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. );
-		data.push_back( Xdata.ColdContentSoil/1E6 );
+		data.push_back( Xdata.ColdContentSoil/1e6 );
 	}
 
 	if (out_mass) {
@@ -988,11 +1017,18 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back( Sdata.load[0] );
 	}
 
-	/*if (out_t && !fixedPositions.empty()) {
-		// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
-		for (size_t ii = 0; ii < fixedPositions.size(); ii++)
-			os << "TS" << ii << " ";
-	}*/
+	if (out_t && !fixedPositions.empty()) {
+		for (size_t ii = 0; ii < fixedPositions.size(); ii++) {
+			const double z = compPerpPosition(Mdata.zv_ts.at(ii), Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
+			const double T = Mdata.ts.at(ii);
+			const bool valid = (z!=Constants::undefined && (T != mio::IOUtils::nodata) && (z <= (Xdata.mH - min_depth_subsurf)));
+			if (valid)
+				data.push_back( IOUtils::K_TO_C(T) );
+			else
+				data.push_back( Constants::undefined );
+		}
+	}
+
 	if (out_stab) {
 		data.push_back( Xdata.S_class1 );
 		data.push_back( Xdata.S_class2 );
