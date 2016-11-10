@@ -2695,7 +2695,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 		}
 	} else {
-		EMS[SnowpackElement[i]].PrefFlowArea = 0.;
+		for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers
+			EMS[SnowpackElement[i]].PrefFlowArea = 0.;
+		}
 	}
 
 	// Here is a very very crucial part. Here the water wil be either transferred to matrix or preferential domain.
