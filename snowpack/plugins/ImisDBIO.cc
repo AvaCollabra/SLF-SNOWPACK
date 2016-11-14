@@ -22,6 +22,8 @@
 #include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Aggregate.h>
 
+#include <algorithm>
+
 using namespace std;
 using namespace mio;
 using namespace oracle;
