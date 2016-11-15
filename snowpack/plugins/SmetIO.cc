@@ -536,10 +536,10 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 * The SMETWriter object finally writes out the HAZ SMET file
 */
 void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
-                          const ZwischenData& Zdata) const
+                          const ZwischenData& Zdata)
 {
-	vector<string> vec_timestamp;
-	vector<double> vec_data;
+	std::vector<std::string> vec_timestamp;
+	std::vector<double> vec_data;
 
 	smet::SMETWriter haz_writer(hazfilename);
 	setBasicHeader(Xdata, "timestamp SurfaceHoarIndex DriftIndex ThreeHourNewSnow TwentyFourHourNewSnow", haz_writer);
@@ -633,7 +633,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 	sno_writer.write(vec_timestamp, vec_data);
 }
 
-void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const
+void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
 {
 	// Set the basic, mandatory header key/value pairs for a SMET file
 	smet_writer.set_header_value("station_id", Xdata.meta.getStationID());
@@ -646,12 +646,6 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
 	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
-
-	if (out_haz) { // HACK To avoid troubles in A3D
-		ostringstream ss;
-		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
-		smet_writer.set_header_value("creator", ss.str());
-	}
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
@@ -813,6 +807,11 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 {
 	const std::string fields( getFieldsHeader() );
 	setBasicHeader(Xdata, fields, *ts_smet_writer);
+	if (out_haz) { // HACK To avoid troubles in A3D
+		ostringstream ss;
+		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
+		ts_smet_writer->set_header_value("creator", ss.str());
+	}
 
 	std::ostringstream units_offset, units_multiplier;
 	units_offset << "0 "; units_multiplier << "1 ";

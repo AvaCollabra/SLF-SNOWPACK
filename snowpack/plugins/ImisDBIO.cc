@@ -172,9 +172,9 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	if(Pdata.empty())
 		return;
 
-	const occi::Date profDate = OracleDate( Pdata[0].profileDate );
-	const occi::Date calcDate = OracleDate(info.computation_date);
-	const string stat_abk = Pdata[0].stationname;
+	const occi::Date profDate( OracleDate( Pdata[0].profileDate ) );
+	const occi::Date calcDate( OracleDate(info.computation_date) );
+	const std::string stat_abk( Pdata[0].stationname );
 	const unsigned char stao_nr = Pdata[0].loc_for_snow;
 	const double version = atof( info.version.c_str() );
 
@@ -182,7 +182,7 @@ void ImisDBIO::insertProfile(const std::vector<SnowProfileLayer> &Pdata)
 	if(stat_abk.size()>4 || stat_abk.find_first_of("0123456789")!=string::npos)
 		throw IOException("Is station \""+stat_abk+"\" really an IMIS station?", AT);
 
-	stmt->setSQL(sqlInsertProfile);
+	stmt->setSQL( sqlInsertProfile );
 	stmt->setAutoCommit(false);
 
 	const size_t nL = Pdata.size();
@@ -238,7 +238,7 @@ void ImisDBIO::writeProfile(const mio::Date& dateOfProfile, const SnowStation& X
 	if ((Xdata.sector != 0) || (nE == 0)) {
 		return;
 	}
-	vector<SnowProfileLayer> Pdata = SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf);
+	std::vector<SnowProfileLayer> Pdata( SnowProfileLayer::generateProfile(dateOfProfile, Xdata, hoar_density_surf, hoar_min_size_surf) );
 	Aggregate::aggregate(Pdata);
 
 	try {
@@ -264,7 +264,7 @@ bool ImisDBIO::writeHazardData(const std::string& stationID, const std::vector<P
 		return false; //nothing to do
 	}
 
-	string stationName, stationNumber;
+	std::string stationName, stationNumber;
 	parseStationName(stationID, stationName, stationNumber);
 
 	try {
@@ -300,7 +300,7 @@ void ImisDBIO::parseStationName(const std::string& stationName, std::string& stN
 void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& stationNumber,
                            const mio::Date& dateStart, const mio::Date& dateEnd)
 {
-	vector< vector<string> > vecResult;
+	std::vector< std::vector<std::string> > vecResult;
 
 	stmt->setSQL(sqlDeleteHdata);
 	stmt->setAutoCommit(true);
@@ -316,7 +316,7 @@ void ImisDBIO::deleteHdata(const std::string& stationName, const std::string& st
 
 void ImisDBIO::print_Profile_query(const SnowProfileLayer& Pdata) const
 {
-	const size_t posE=sqlInsertProfile.find_last_of('(');
+	const size_t posE = sqlInsertProfile.find_last_of('(');
 	cerr << "\n[E] SDB querry       :  " << sqlInsertProfile.substr(0, posE) << "(";
 	
 	string profileDate(  "to_date('" + Pdata.profileDate.toString(mio::Date::ISO) +  "', 'yyyy-mm-dd hh24:mi:ss')" );
@@ -458,9 +458,9 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 	const double version = atof( info.version.c_str() );
 	int statNum = 0;
 	IOUtils::convertString(statNum, stationNumber);
-	const occi::Date computationdate = OracleDate( info.computation_date );
+	const occi::Date computationdate( OracleDate( info.computation_date ) );
 
-	stmt->setSQL(sqlInsertHdata);
+	stmt->setSQL( sqlInsertHdata );
 	stmt->setAutoCommit(false);
 
 	for (size_t i = 0; i<num; ++i){ //loop over the available timesteps
@@ -589,7 +589,7 @@ void ImisDBIO::insertHdata(const std::string& stationName, const std::string& st
 
 oracle::occi::Date ImisDBIO::OracleDate(mio::Date in_date) const
 {
-	vector<int> date   = vector<int>(5);
+	std::vector<int> date( 5 );
 	in_date.setTimeZone(time_zone);
 	in_date.getDate(date[0], date[1], date[2], date[3], date[4]);
 

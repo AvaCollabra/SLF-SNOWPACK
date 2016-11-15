@@ -55,12 +55,12 @@ class SmetIO : public SnowpackIOInterface {
 		                             const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
 		mio::Date read_hazsmet(const std::string& hazfilename, ZwischenData& Zdata);
-		void writeHazFile(const std::string& hazfilename, const mio::Date& date,
-		                         const SnowStation& Xdata, const ZwischenData& Zdata) const;
+		static void writeHazFile(const std::string& hazfilename, const mio::Date& date,
+		                         const SnowStation& Xdata, const ZwischenData& Zdata);
 
 	private:
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
-		void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const;
+		static void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer);
 		static void setSnoSmetHeader(const SnowStation& Xdata, const mio::Date& date, smet::SMETWriter& smet_writer);
 		static void setFormatting(const size_t& nr_solutes,
 		                   std::vector<int>& vec_width, std::vector<int>&  vec_precision);
