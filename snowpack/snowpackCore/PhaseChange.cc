@@ -35,7 +35,7 @@ using namespace std;
  *   ALL water in the snowpack.  This ensures that we can have DRY snow. (Perryanic comment!)
  */
 const double PhaseChange::theta_r = 0.0;
-const double PhaseChange::RE_theta_r = 1E-5/10;			// Minimum amount of liquid water that will remain. It is recommended that this value is at least smaller than PhaseChange::RE_theta_threshold (see ReSolver1d.cc)
+const double PhaseChange::RE_theta_r = 1E-5/10.;		// Minimum amount of liquid water that will remain. It is recommended that this value is at least smaller than PhaseChange::RE_theta_threshold (see ReSolver1d.cc)
 const double PhaseChange::RE_theta_threshold = 1E-5; 		// Above this threshold, the element is considered in melting of freezing state. It is recommended that this value is REQUIRED_ACCURACY_THETA (see ReSolver1d.cc)
 
 //Saturated Water Content, for now we say 1.0
