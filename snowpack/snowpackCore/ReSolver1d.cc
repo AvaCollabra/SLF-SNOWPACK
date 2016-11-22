@@ -1181,6 +1181,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				break;
 			}
 
+			// Recheck pref flow area: some processes in SNOWPACK may change pore space and water contents, such that the pref flow area is not consistent to store all water.
+			EMS[SnowpackElement[i]].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), std::max(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), EMS[SnowpackElement[i]].PrefFlowArea));
+			// Scale theta_s
 			if(WATERINDEX==WATER_PREF) {
 				theta_s[i]*=EMS[SnowpackElement[i]].PrefFlowArea;
 			} else {
