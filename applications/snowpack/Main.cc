@@ -340,7 +340,7 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const unsigned int& nslopes)
 {
 	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
-	bool miss_rad=false, miss_ea=false, miss_wind=false;;
+	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
@@ -357,10 +357,12 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_splitting=true;
 	if (md("EA") == mio::IOUtils::nodata)
 		miss_ea=true;
-	if (md(MeteoData::VW) ==mio::IOUtils::nodata || (nslopes>1 && md(MeteoData::DW) ==mio::IOUtils::nodata))
+	if (md(MeteoData::VW) ==mio::IOUtils::nodata)
 		miss_wind=true;
+	if (nslopes>1 && (md("DW_DRIFT")==mio::IOUtils::nodata || md("VW_DRIFT")==mio::IOUtils::nodata))
+		miss_drift=true;
 
-	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind) {
+	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
@@ -372,7 +374,8 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		if (miss_precip) cerr << "precipitation ";
 		if (miss_splitting) cerr << "precip_splitting ";
 		if (miss_ea) cerr << "lw_radiation ";
-		if (miss_wind) cerr << "wind ";
+		if (miss_wind) cerr << "VW ";
+		if (miss_drift) cerr << "drift ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
