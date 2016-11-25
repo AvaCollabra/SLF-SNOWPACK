@@ -546,35 +546,34 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date, const SnowStation& Xdata,
                           const ZwischenData& Zdata)
 {
-	std::vector<std::string> vec_timestamp;
-	std::vector<double> vec_data;
-
 	smet::SMETWriter haz_writer(hazfilename);
 	setBasicHeader(Xdata, "timestamp SurfaceHoarIndex DriftIndex ThreeHourNewSnow TwentyFourHourNewSnow", haz_writer);
 	haz_writer.set_header_value("ProfileDate", date.toString(Date::ISO));
 
-	haz_writer.set_width(vector<int>(4,10));
-	haz_writer.set_precision(vector<int>(4,6));
+	haz_writer.set_width( vector<int>(4,10) );
+	haz_writer.set_precision( vector<int>(4,6) );
 
 	Date hrs72(date - Date(3.0,0.0));
-	const Duration half_hour(1.0/48.0,0.0);
+	const Duration half_hour(.5/24., 0.0);
+	std::vector<std::string> vec_timestamp;
+	std::vector<double> vec_data;
 
 	for (size_t ii=0; ii<144; ii++){
 		//hn3 and hn24 have 144 fields, the newest values have index 0
 		//hoar24 and drift 24 have 48 fields, the newest values have index 0
 		hrs72 += half_hour;
-		vec_timestamp.push_back(hrs72.toString(Date::ISO));
+		vec_timestamp.push_back( hrs72.toString(Date::ISO) );
 		if (ii >= 96){
 			const size_t index = 143-ii;
-			vec_data.push_back(Zdata.hoar24[index]);  //Print out the hoar hazard data info
-			vec_data.push_back(Zdata.drift24[index]); //Print out the drift hazard data info
+			vec_data.push_back( Zdata.hoar24[index] );  //Print out the hoar hazard data info
+			vec_data.push_back( Zdata.drift24[index] ); //Print out the drift hazard data info
 		} else {
-			vec_data.push_back(IOUtils::nodata);
-			vec_data.push_back(IOUtils::nodata);
+			vec_data.push_back( IOUtils::nodata );
+			vec_data.push_back( IOUtils::nodata );
 		}
 
-		vec_data.push_back(Zdata.hn3[143-ii]);  //Print out the 3 hour new snowfall hazard data info
-		vec_data.push_back(Zdata.hn24[143-ii]); //Print out the 24 hour new snowfall hazard data info
+		vec_data.push_back( Zdata.hn3[143-ii] );  //Print out the 3 hour new snowfall hazard data info
+		vec_data.push_back( Zdata.hn24[143-ii] ); //Print out the 24 hour new snowfall hazard data info
 	}
 	haz_writer.write(vec_timestamp, vec_data);
 }
@@ -825,7 +824,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 	units_offset << "0 "; units_multiplier << "1 ";
 
 	std::ostringstream plot_units, plot_description, plot_color, plot_min, plot_max;
-	plot_units << "- "; plot_description << "timestamp  "; plot_color << "000000 "; plot_min << IOUtils::nodata << " "; plot_max << IOUtils::nodata << " ";
+	plot_units << "- "; plot_description << "timestamp  "; plot_color << "0x000000 "; plot_min << IOUtils::nodata << " "; plot_max << IOUtils::nodata << " ";
 
 	if (out_heat) {
 		//"Qs Ql Qg TSG Qg0 Qr"
@@ -833,7 +832,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2 °C W/m2 W/m2" << " ";
 		units_offset << "0 0 0 273.15 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -843,7 +842,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2" << " ";
 		units_offset << "0 0 0" << " ";
 		units_multiplier << "1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -853,7 +852,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2 - - W/m2 W/m2 W/m2" << " ";
 		units_offset << "0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -863,7 +862,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "°C °C °C °C % m/s m/s ° kg/m2/h m m" << " ";
 		units_offset << "273.15 273.15 273.15 273.15 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 0.01 1 1 1 1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -873,7 +872,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "mm cm cm cm" << " ";
 		units_offset << "0 0 0 0" << " ";
 		units_multiplier << "0.001 0.01 0.01 0.01" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -883,7 +882,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 J/m2" << " ";
 		units_offset << "0 0 0" << " ";
 		units_multiplier << "1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -893,7 +892,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2/h kg/m2 kg/m2" << " ";
 		units_offset << "0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -903,7 +902,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "-" << " "; //HACK
 		units_offset << "0" << " ";
 		units_multiplier << "1" << " ";
-		plot_color << "FF0000" << " ";
+		plot_color << "0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -914,7 +913,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 			plot_units << "°C ";
 			units_offset << "273.15 ";
 			units_multiplier << "1 ";
-			plot_color << "FF0000" << " ";
+			plot_color << "0xFF0000" << " ";
 			plot_min << "" << " ";
 			plot_max << "" << " ";
 		}
@@ -925,7 +924,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "- - m - m - m - m - m -" << " ";
 		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1" << " ";
-		plot_color << "FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000 FF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
