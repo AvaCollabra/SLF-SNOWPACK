@@ -324,16 +324,13 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 		md.addParameter("EA");
 		md("EA") = SnLaws::AirEmissivity(md, variant);
 	}
-
 	// Snow stations without separate wind station use their own wind for local drifting and blowing snow
-	if (!md.param_exists("VW_DRIFT")) {
-		md.addParameter("VW_DRIFT");
+	if (!md.param_exists("VW_DRIFT")) md.addParameter("VW_DRIFT");
+	if (md("VW_DRIFT") == mio::IOUtils::nodata)
 		md("VW_DRIFT") = md(MeteoData::VW);
-	}
-	if (!md.param_exists("DW_DRIFT")) {
-		md.addParameter("DW_DRIFT");
+	if (!md.param_exists("DW_DRIFT")) md.addParameter("DW_DRIFT");
+	if (md("DW_DRIFT") == mio::IOUtils::nodata)
 		md("DW_DRIFT") = md(MeteoData::DW);
-	}
 }
 
 // Return true if snowpack can compute the next timestep, else false
