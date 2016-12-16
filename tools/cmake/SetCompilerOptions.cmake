@@ -8,7 +8,7 @@ BuildVersion()
 
 MACRO (SET_COMPILER_OPTIONS)
 	###########################################################
-	IF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+	IF(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} /EHa")
 		ENDIF(DEBUG_ARITHM)
@@ -17,8 +17,11 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(WARNINGS "/W4 /D_CRT_SECURE_NO_WARNINGS /EHsc") #Za: strict ansi EHsc: handle c++ exceptions
 		#SET(EXTRA_WARNINGS "/Wp64") #/Wall
 		SET(OPTIM "/O2 /DNDEBUG /MD /DNOSAFECHECKS")
-		SET(ARCH_OPTIM "/arch:SSE2")
+		SET(ARCH_OPTIM "/arch:AVX2")
 		SET(ARCH_SAFE "")
+		IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
+			SET(ARCH_SAFE  "/arch:SSE2")
+		ENDIF()
 		SET(DEBUG "/Z7 /Od /D__DEBUG /MDd")
 		SET(_VERSION "/D_VERSION=${_versionString}")
 		IF(BUILD_SHARED_LIBS)
@@ -26,7 +29,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF(BUILD_SHARED_LIBS)
 		
 	###########################################################
-	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+	ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL Intel)
 		IF(ENABLE_LAPACK)
 			SET(EXTRA "${EXTRA} -DCLAPACK")
 		ENDIF(ENABLE_LAPACK)
@@ -38,14 +41,14 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(DEEP_WARNINGS "-Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic ${DEEP_WARNINGS}")
 		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-		IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
 			SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")
 		SET(_VERSION "-D_VERSION=${_versionString}")
 		
 	###########################################################
-	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Cray")
+	ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL Cray)
 		IF(ENABLE_LAPACK)
 			SET(EXTRA "${EXTRA} -DCLAPACK")
 		ENDIF(ENABLE_LAPACK)
@@ -56,8 +59,8 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(WARNINGS "-hlist=m -h negmsgs -h msglevel_3 -h nomessage=870") #870: accept multibyte chars
 		#SET(EXTRA_WARNINGS "-h msglevel_2")
 		SET(OPTIM "-O3 -hfp3 -h msglevel_4 -DNDEBUG -DNOSAFECHECKS")
-		IF("$ENV{CRAY_CPU_TARGET}" STREQUAL "")
-			IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		IF($ENV{CRAY_CPU_TARGET} MATCHES "^$")
+			IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
 				SET(ARCH_SAFE  "-h cpu=x86-64")
 				MESSAGE("No CRAY_CPU_TARGET set, setting it to x86-64; please consider loading the proper target module.")
 			ELSE()
@@ -68,7 +71,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(_VERSION "-D_VERSION=${_versionString}")
 	
 	###########################################################
-	ELSEIF("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+	ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
 		#we consider that all other compilers support "-" options and silently ignore what they don't know
 		IF(ENABLE_LAPACK)
 			SET(EXTRA "${EXTRA} -DCLAPACK")
@@ -84,7 +87,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
 		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
-		IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
 			SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")
@@ -110,7 +113,7 @@ MACRO (SET_COMPILER_OPTIONS)
 			IF(NOT WIN32)
 				SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
 			ENDIF(NOT WIN32)
-			# if set to ON, all binaries depending on the library have to be compiled the same way.
+			#if set to ON, all binaries depending on the library have to be compiled the same way.
 			#Then, do an "export ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.4" and run with "ASAN_OPTIONS=symbolize=1"
 			SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
 			IF (LEAKS_CHECK)
@@ -125,7 +128,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 
 	###########################################################
-	ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+	ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		IF(ENABLE_LAPACK)
 			SET(EXTRA "${EXTRA} -DCLAPACK")
 		ENDIF(ENABLE_LAPACK)
@@ -136,12 +139,12 @@ MACRO (SET_COMPILER_OPTIONS)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
 		
-		SET(WARNINGS_OFF "-Wno-long-long -Wno-date-time -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-switch-enum -Wno-covered-switch-default -Wno-global-constructors -Wno-exit-time-destructors -Wno-unknown-pragmas -Wno-format-nonliteral")
+		SET(WARNINGS_OFF "-Wno-long-long -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-switch-enum -Wno-covered-switch-default -Wno-global-constructors -Wno-exit-time-destructors -Wno-unknown-pragmas -Wno-format-nonliteral")
 		SET(WARNINGS "-Wall -Wswitch -Weverything ${WARNINGS_OFF}") #obviously, we should try to fix the warnings! Keeping in mind that some of these W are half buggy...
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Rpass=.* for static analysis
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
 		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS -flto")
-		IF("${CMAKE_SYSTEM_PROCESSOR}" MATCHES "x86_64" OR "${CMAKE_SYSTEM_PROCESSOR}" MATCHES "AMD64")
+		IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
 			SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")

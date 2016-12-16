@@ -84,7 +84,7 @@ class SmetIO : public SnowpackIOInterface {
 		const RunInfo info;
 		smet::SMETWriter *ts_smet_writer;
 		double in_dflt_TZ;
-		double calculation_step_length, hazard_steps_between, ts_days_between;
+		double calculation_step_length, ts_days_between;
 		double min_depth_subsurf;
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
 		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy, out_soileb;

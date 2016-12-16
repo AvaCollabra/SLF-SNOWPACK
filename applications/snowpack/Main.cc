@@ -876,7 +876,7 @@ inline void real_main (int argc, char *argv[])
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
 #endif
 	//parse the command line arguments
-	string begin_date_str, end_date_str;
+	std::string begin_date_str, end_date_str;
 	parseCmdLine(argc, argv, begin_date_str, end_date_str);
 
 	const bool prn_check = false;

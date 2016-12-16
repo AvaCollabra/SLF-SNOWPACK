@@ -140,7 +140,7 @@ using namespace mio;
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info), ts_smet_writer(NULL),
-          in_dflt_TZ(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.), min_depth_subsurf(0.),
+          in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
           out_load(false), out_stab(false), out_canopy(false), out_soileb(false)
@@ -176,7 +176,6 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("OUT_SW", "Output", out_sw);
 	cfg.getValue("OUT_T", "Output", out_t);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
-	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
 }
 
@@ -234,8 +233,8 @@ bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /
 void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
 {
-	string snofilename( getFilenamePrefix(i_snowfile, i_snowpath, false) );
-	string hazfilename(snofilename);
+	std::string snofilename( getFilenamePrefix(i_snowfile, i_snowpath, false) );
+	std::string hazfilename(snofilename);
 
 	if (snofilename.rfind(".sno") == string::npos) {
 		snofilename += ".sno";
@@ -244,9 +243,9 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 		hazfilename.replace(hazfilename.rfind(".sno"), 4, ".haz");
 	}
 
-	const Date sno_date = read_snosmet(snofilename, stationID, SSdata);
+	const Date sno_date( read_snosmet(snofilename, stationID, SSdata) );
 	if (FileUtils::fileExists(hazfilename)) {
-		const Date haz_date = read_hazsmet(hazfilename, Zdata);
+		const Date haz_date( read_hazsmet(hazfilename, Zdata) );
 		if (haz_date != sno_date)
 			throw IOException("Inconsistent ProfileDate in files: " + snofilename + " and " + hazfilename, AT);
 	} else {
@@ -524,11 +523,11 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
                             const ZwischenData& Zdata, const bool& forbackup)
 {
-	string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno" );
-	string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
+	std::string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno" );
+	std::string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
 
 	if (forbackup){
-		stringstream ss;
+		std::stringstream ss;
 		ss << (int)(date.getJulian() + 0.5);
 		snofilename += ss.str();
 		hazfilename += ss.str();
@@ -553,7 +552,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 	haz_writer.set_width( vector<int>(4,10) );
 	haz_writer.set_precision( vector<int>(4,6) );
 
-	Date hrs72(date - Date(3.0,0.0));
+	Date hrs72( date - Date(3.0,0.0) );
 	const Duration half_hour(.5/24., 0.0);
 	std::vector<std::string> vec_timestamp;
 	std::vector<double> vec_data;
@@ -934,7 +933,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 
 	ts_smet_writer->set_header_value("units_offset", units_offset.str());
 	ts_smet_writer->set_header_value("units_multiplier", units_multiplier.str());
-	ts_smet_writer->set_header_value("plot_units", plot_units.str());
+	ts_smet_writer->set_header_value("plot_unit", plot_units.str());
 	ts_smet_writer->set_header_value("plot_description", plot_description.str());
 	ts_smet_writer->set_header_value("plot_color", plot_color.str());
 	//ts_smet_writer->set_header_value("plot_min", plot_min.str());
