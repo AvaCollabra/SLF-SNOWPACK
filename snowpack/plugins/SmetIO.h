@@ -72,13 +72,22 @@ class SmetIO : public SnowpackIOInterface {
 		mio::Date read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		mio::Date read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
 		                              SN_SNOWSOIL_DATA& SSdata);
+		double compPerpPosition(const double& z_vert, const double& hs_ref,
+		                        const double& ground, const double& cos_sl);
+		std::string getFieldsHeader();
+		void writeTimeSeriesHeader(const SnowStation& Xdata);
+		void writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24);
 
 	private:
+		std::vector<double> fixedPositions;
 		std::string outpath, o_snowpath, snowpath, experiment, inpath, i_snowpath, sw_mode;
 		const RunInfo info;
 		smet::SMETWriter *ts_smet_writer;
 		double in_dflt_TZ;
-		bool useSoilLayers, perp_to_slope;
+		double calculation_step_length, ts_days_between;
+		double min_depth_subsurf;
+		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;
+		bool out_heat, out_lw, out_sw, out_meteo, out_haz, out_mass, out_t, out_load, out_stab, out_canopy, out_soileb;
 		bool enable_pref_flow;
 };
 

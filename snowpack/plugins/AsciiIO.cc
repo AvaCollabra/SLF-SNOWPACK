@@ -550,6 +550,7 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	int nFields = 0;
+	Date prev_depositionDate( 0., 1. );
 	if (SSdata.nLayers > 0)
 		SSdata.Ldata.resize(SSdata.nLayers, LayerData());
 	for (size_t ll = 0; ll < SSdata.nLayers; ll++) {
@@ -562,10 +563,18 @@ void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 		if (SSdata.Ldata[ll].depositionDate > SSdata.profileDate) {
 		    fclose(fin);
 			prn_msg(__FILE__, __LINE__, "err", Date(),
-			        "Layer %u from bottom is younger (%f) than ProfileDate (%f) !!!",
-			        ll+1, SSdata.Ldata[ll].depositionDate.getJulian(), SSdata.profileDate.getJulian());
+			        "Layer %u from bottom is younger (%s) than ProfileDate (%s) !!!",
+			        ll+1, SSdata.Ldata[ll].depositionDate.toString(Date::ISO).c_str(), SSdata.profileDate.toString(Date::ISO).c_str());
 			throw IOException("Cannot generate Xdata from file "+snofilename, AT);
 		}
+		if (SSdata.Ldata[ll].depositionDate < prev_depositionDate) {
+			prn_msg(__FILE__, __LINE__, "err", Date(),
+				   "Layer %d is younger (%s) than layer above (%s) !!!",
+				   ll, prev_depositionDate.toString(Date::ISO).c_str(), SSdata.profileDate.toString(Date::ISO).c_str());
+			throw IOException("Cannot generate Xdata from file "+snofilename, AT);
+		}
+		prev_depositionDate = SSdata.Ldata[ll].depositionDate;
+
 		if ((nFields = fscanf(fin, " %lf %lf %lf %lf %lf %lf",
 		                      &SSdata.Ldata[ll].hl, &SSdata.Ldata[ll].tl, &SSdata.Ldata[ll].phiIce,
 		                      &SSdata.Ldata[ll].phiWater, &SSdata.Ldata[ll].phiVoids, &SSdata.Ldata[ll].phiSoil)) != 6) {

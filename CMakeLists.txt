@@ -228,7 +228,7 @@ IF(CPACK_BUNDLE_ALL)
 	ENDIF(CPACK_BUNDLE_SNOPVIZ)
 ENDIF(CPACK_BUNDLE_ALL)
 
-SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Library")
+SET(CPACK_PACKAGE_DESCRIPTION "Snowpack Model")
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "This is the SNOWPACK model ([Bartelt 2002], [Lehning 2002a], [Lehning 2002b]) for physical modeling of snow pack. This consists of a library and a program calling it so it can easily be integrated into other models.")
 SET(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/Welcome.txt")
 SET(CPACK_PACKAGE_NAME "Snowpack")
@@ -249,6 +249,7 @@ SET(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}${PACKAGE_EXTRA}-${VERSION}-${
 
 #installation by components for formats that support it
 #SET(CPACK_COMPONENTS_ALL_GROUPS_IN_ONE_PACKAGE 1)
+SET(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 SET(CPACK_COMPONENTS_ALL documentation examples exe)
 SET(CPACK_COMPONENT_LIBRARIES_DISPLAY_NAME "Snowpack static library")
 SET(CPACK_COMPONENT_LIBRARIES_DESCRIPTION "The SNOWPACK static library")
@@ -403,4 +404,3 @@ IF(BUILD_TESTING)
 	INCLUDE(CTest) # This makes ENABLE_TESTING() and gives support for Dashboard
 	ADD_SUBDIRECTORY(tests)
 ENDIF(BUILD_TESTING)
-
