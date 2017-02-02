@@ -94,7 +94,7 @@ using namespace mio;
  * nSoilLayerData   = 0				;number of soil layers
  * nSnowLayerData   = 1				;number of snow layers
  * SoilAlbedo       = 0.20				;albedo of the exposed soil
- * BareSoil_z0      = 0.200			;roughtness length of the exposed soil
+ * BareSoil_z0      = 0.020			;roughtness length of the exposed soil
  * CanopyHeight     = 0.00				;height (in m) of the canopy
  * CanopyLeafAreaIndex     = 0.00		
  * CanopyDirectThroughfall = 1.00		
