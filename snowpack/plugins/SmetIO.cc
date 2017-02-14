@@ -173,24 +173,41 @@ SmetIO::~SmetIO()
 
 SmetIO& SmetIO::operator=(const SmetIO& source) {
 	if (this != &source) {
+		fixedPositions = source.fixedPositions;
 		outpath = source.outpath;
 		o_snowpath = source.o_snowpath;
 		snowpath = source.snowpath;
 		experiment = source.experiment;
-		experiment = source.experiment;
 		inpath = source.inpath;
 		i_snowpath = source.i_snowpath;
 		sw_mode = source.sw_mode;
+		//info = source.info;
 		ts_smet_writer = NULL; //it will have to be re-allocated for thread safety
 
 		in_dflt_TZ = source.in_dflt_TZ;
+		calculation_step_length = source.calculation_step_length;
+		ts_days_between = source.ts_days_between;
+		min_depth_subsurf = source.min_depth_subsurf;
+		avgsum_time_series = source.avgsum_time_series;
+		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
+		research_mode = source.research_mode;
 		perp_to_slope = source.perp_to_slope;
+		out_heat = source.out_heat;
+		out_lw = source.out_lw;
+		out_sw = source.out_sw;
+		out_meteo = source.out_meteo;
+		out_haz = source.out_haz;
+		out_mass = source.out_mass;
+		out_t = source.out_t;
+		out_load = source.out_load;
+		out_stab = source.out_stab;
+		out_canopy = source.out_canopy;
+		out_soileb = source.out_soileb;
 		enable_pref_flow = source.enable_pref_flow;
 	}
 	return *this;
 }
-
 
 /**
  * @brief This routine checks if the specified snow cover data exists

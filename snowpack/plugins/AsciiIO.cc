@@ -366,6 +366,54 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	o_snowpath = (out_snowpath.empty())? outpath : out_snowpath;
 }
 
+AsciiIO& AsciiIO::operator=(const AsciiIO& source) {
+	if (this != &source) {
+		setAppendableFiles = source.setAppendableFiles;
+		variant = source.variant;
+		experiment = source.experiment;
+		sw_mode = source.sw_mode;
+		inpath = source.inpath;
+		snowfile = source.snowfile;
+		i_snowpath = source.i_snowpath;
+		outpath = source.outpath;
+		o_snowpath = source.o_snowpath;
+		//info = source.info;
+		vecProfileFmt = source.vecProfileFmt;
+		aggregate_prf = source.aggregate_prf;
+		fixedPositions = source.fixedPositions;
+		numberMeasTemperatures = source.numberMeasTemperatures;
+		maxNumberMeasTemperatures = source.maxNumberMeasTemperatures;
+		numberTags = source.numberTags;
+		numberFixedSensors = source.numberFixedSensors;
+		totNumberSensors = source.totNumberSensors;
+		time_zone = source.time_zone;
+		calculation_step_length = source.calculation_step_length;
+		hazard_steps_between = source.hazard_steps_between;
+		ts_days_between = source.ts_days_between;
+		min_depth_subsurf = source.min_depth_subsurf;
+		hoar_density_surf = source.hoar_density_surf;
+		hoar_min_size_surf = source.hoar_min_size_surf;
+		avgsum_time_series = source.avgsum_time_series;
+		useCanopyModel = source.useCanopyModel;
+		useSoilLayers = source.useSoilLayers;
+		research_mode = source.research_mode;
+		perp_to_slope = source.perp_to_slope;
+		out_heat = source.out_heat;
+		out_lw = source.out_lw;
+		out_sw = source.out_sw;
+		out_meteo = source.out_meteo;
+		out_haz = source.out_haz;
+		out_mass = source.out_mass;
+		out_t = source.out_t;
+		out_load = source.out_load;
+		out_stab = source.out_stab;
+		out_canopy = source.out_canopy;
+		out_soileb = source.out_soileb;
+		r_in_n = source.r_in_n;
+	}
+	return *this;
+}
+
 /**
  * @brief This routine checks if the specified snow cover data exists
  * @param i_snowfile file containing the initial state of the snowpack

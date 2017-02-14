@@ -28,6 +28,7 @@ class AsciiIO : public SnowpackIOInterface {
 
 	public:
 		AsciiIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
+		AsciiIO& operator=(const AsciiIO&); ///<Assignement operator, required because of const "info" member
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
