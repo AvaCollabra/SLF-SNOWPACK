@@ -165,6 +165,19 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
 	i_snowpath = (!snowpath.empty())? snowpath : inpath;
 
+	cfg.getValue("OUT_CANOPY", "Output", out_canopy);
+	cfg.getValue("OUT_HAZ", "Output", out_haz);
+	cfg.getValue("OUT_HEAT", "Output", out_heat);
+	cfg.getValue("OUT_LOAD", "Output", out_load);
+	cfg.getValue("OUT_LW", "Output", out_lw);
+	cfg.getValue("OUT_MASS", "Output", out_mass);
+	cfg.getValue("OUT_METEO", "Output", out_meteo);
+	cfg.getValue("OUT_SOILEB", "Output", out_soileb);
+	cfg.getValue("OUT_STAB", "Output", out_stab);
+	cfg.getValue("OUT_SW", "Output", out_sw);
+	cfg.getValue("OUT_T", "Output", out_t);
+	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
+	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 }
 
