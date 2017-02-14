@@ -15,14 +15,13 @@ LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 FIND_PACKAGE(MeteoIO REQUIRED)
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
 
+INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
+BuildVersion()
+
 IF(APPLE)
 	#this is necessary for GUI exceptions
 	LIST(APPEND SN_LINKS "-framework CoreServices")
 ENDIF(APPLE)
-
-INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
-BuildVersion()
-
 IF(UNIX)
 	LIST(APPEND SN_LINKS "dl;pthread")
 ENDIF(UNIX)

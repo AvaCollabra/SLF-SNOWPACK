@@ -84,7 +84,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf);
 
 	/*
-	* Hazard data interval in units of CALCULATION_STEP_LENGTH \n
+	* Hazard data interval in units of CALCULATION_STEP_LENGTH
 	* WARNING: In operational mode, this has to result in a 30 min interval!
 	* It is a matter of consitency. If you change this, a big mess will result!!!
 	*/

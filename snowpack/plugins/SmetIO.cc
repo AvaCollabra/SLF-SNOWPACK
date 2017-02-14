@@ -95,7 +95,7 @@ using namespace mio;
  * nSoilLayerData   = 0				;number of soil layers
  * nSnowLayerData   = 1				;number of snow layers
  * SoilAlbedo       = 0.20				;albedo of the exposed soil
- * BareSoil_z0      = 0.200			;roughtness length of the exposed soil
+ * BareSoil_z0      = 0.020			;roughtness length of the exposed soil
  * CanopyHeight     = 0.00				;height (in m) of the canopy
  * CanopyLeafAreaIndex     = 0.00		
  * CanopyDirectThroughfall = 1.00		
@@ -141,7 +141,10 @@ using namespace mio;
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
           info(run_info), ts_smet_writer(NULL),
-          in_dflt_TZ(), useSoilLayers(false), perp_to_slope(false), enable_pref_flow(false)
+          in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
+          avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
+          out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
+          out_load(false), out_stab(false), out_canopy(false), out_soileb(false), enable_pref_flow(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);

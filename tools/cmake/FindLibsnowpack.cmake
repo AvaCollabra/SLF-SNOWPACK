@@ -14,7 +14,7 @@ IF(WIN32)
 		${LIBSNOWPACK_ROOT2}/bin ${LIBSNOWPACK_ROOT2}/lib
 		${LIBSNOWPACK_ROOT3}/bin ${LIBSNOWPACK_ROOT3}/lib
 		${SRC_DIR}/snowpack/bin ${SRC_DIR}/snowpack/lib
-		"C:/Program Files/Snowpack/bin" "C:/Program Files/Snowpack/lib"	)
+		"C:/Program Files/Snowpack/bin" "C:/Program Files/Snowpack/lib" )
 
 	IF(MSVC)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
