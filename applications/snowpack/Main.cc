@@ -316,9 +316,6 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 			md(MeteoData::PSUM_PH) = (ta>=IOUtils::C_TO_K(thresh_rain))? 1. : 0.; //fallback: simple temp threshold
 	}
 
-	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
-		md(MeteoData::TSG) = 273.15;
-
 	//Add the atmospheric emissivity as a parameter
 	if (!md.param_exists("EA")) {
 		md.addParameter("EA");
@@ -336,11 +333,13 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 // Return true if snowpack can compute the next timestep, else false
 inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const unsigned int& nslopes)
 {
-	bool miss_ta=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
+	bool miss_ta=false, miss_tsg=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
 	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
+	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
+		miss_tsg=true;
 	if (md(MeteoData::RH) == mio::IOUtils::nodata)
 		miss_rh=true;
 	if ((variant != "ANTARCTICA")
@@ -359,12 +358,13 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 	if (nslopes>1 && (md("DW_DRIFT")==mio::IOUtils::nodata || md("VW_DRIFT")==mio::IOUtils::nodata))
 		miss_drift=true;
 
-	if (miss_ta || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift) {
+	if (miss_ta || miss_tsg || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
 		cerr << StationName << " missing { ";
 		if (miss_ta) cerr << "TA ";
+		if (miss_tsg) cerr << "TSG ";
 		if (miss_rh) cerr << "RH ";
 		if (miss_rad) cerr << "sw_radiation ";
 		if (miss_hs) cerr << "HS ";

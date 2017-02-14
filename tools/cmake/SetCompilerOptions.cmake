@@ -122,8 +122,13 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 
 		IF(GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
-			IF (PLUGIN_IMISIO) #HACK: current OCCI does not support the short strings optimizations of gcc>=5
+			IF(PLUGIN_IMISIO) #HACK: current OCCI does not support the short strings optimizations of gcc>=5
 				SET(EXTRA "-D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA}")
+			ELSE(PLUGIN_IMISIO)
+				SET(FORCE_C03_ABI OFF CACHE BOOL "Compatibility with Oracle's OCCI")
+				IF (FORCE_C03_ABI)
+					SET(EXTRA "-D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA}")
+				ENDIF(FORCE_C03_ABI)
 			ENDIF(PLUGIN_IMISIO)
 		ENDIF()
 

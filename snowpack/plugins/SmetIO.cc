@@ -834,7 +834,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2 °C W/m2 W/m2" << " ";
 		units_offset << "0 0 0 273.15 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -844,7 +844,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2" << " ";
 		units_offset << "0 0 0" << " ";
 		units_multiplier << "1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x8F6216 0xD99521 0xD9954E" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -854,7 +854,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 W/m2 - - W/m2 W/m2 W/m2" << " ";
 		units_offset << "0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x7D643A 0xF9CA25 0xF9CA9D 0xCC9966 0x996633 0xF9CA25 0x90ca25 0x90CAB8" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -864,7 +864,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "°C °C °C °C % m/s m/s ° kg/m2/h m m" << " ";
 		units_offset << "273.15 273.15 273.15 273.15 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 0.01 1 1 1 1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x8324A4 0xFAA6D0 0xFA72B7 0xDE22E2 0x50CBDB 0x297E24 0x297E24 0x64DD78 0x2431A4 0x818181 0x000000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -874,7 +874,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "mm cm cm cm" << " ";
 		units_offset << "0 0 0 0" << " ";
 		units_multiplier << "0.001 0.01 0.01 0.01" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x9933FF 0x99FFCC 0x006699 0x33CCCC" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -884,7 +884,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "W/m2 W/m2 J/m2" << " ";
 		units_offset << "0 0 0" << " ";
 		units_multiplier << "1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x663300 0x996666 0xCC9966" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -894,7 +894,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2/h kg/m2 kg/m2" << " ";
 		units_offset << "0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
