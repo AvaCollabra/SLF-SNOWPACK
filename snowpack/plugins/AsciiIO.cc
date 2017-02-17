@@ -1743,7 +1743,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
                               const CurrentMeteo& Mdata, const ProcessDat& Hdata,
                               const double wind_trans24)
 {
-	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
+	const std::string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met" );
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const size_t nN = Xdata.getNumberOfNodes();
 	const double cos_sl = Xdata.cos_sl;

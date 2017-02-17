@@ -57,13 +57,10 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
         hoar_density_surf(IOUtils::nodata), hoar_min_size_surf(IOUtils::nodata)
 
 {
-	if (duration<=0.)
-		throw InvalidArgumentException("Hazard duration must be >0", AT);
-	
 	/**
 	 * @brief Defines how the height of snow is going to be handled
-	 * - 0: Depth of snowfall is determined from the water equivalent of snowfall (PSUM)
-	 * - 1: The measured height of snow is used to determine whether new snow has been deposited.
+	 * - false: Depth of snowfall is determined from the water equivalent of snowfall (PSUM)
+	 * - true: The measured height of snow is used to determine whether new snow has been deposited.
 	 *      This setting MUST be chosen in operational mode. \n
 	 *      This procedure has the disadvantage that if the snowpack settles too strongly
 	 *      extra mass is added to the snowpack. \n
@@ -74,8 +71,8 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 	/* Dew point relative to water or ice
-	 * - default: 1
-	 * - Antarctica: 0 */
+	 * - default: true
+	 * - Antarctica: false */
 	cfg.getValue("FORCE_RH_WATER", "SnowpackAdvanced", force_rh_water);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 	//Density of surface hoar (-> hoar index of surface node) (kg m-3)
@@ -89,7 +86,7 @@ Hazard::Hazard(const SnowpackConfig& cfg, const double duration)
 	* It is a matter of consitency. If you change this, a big mess will result!!!
 	*/
 	cfg.getValue("HAZARD_STEPS_BETWEEN", "Output", hazard_steps_between);
-
+	if (duration<=0.) throw InvalidArgumentException("Hazard duration must be >0", AT);
 	nHz = static_cast<unsigned int>( floor( (duration / (static_cast<double>(hazard_steps_between) * sn_dt)) ) + 2 );
 	if (nHz == 0) nHz = 1;
 }

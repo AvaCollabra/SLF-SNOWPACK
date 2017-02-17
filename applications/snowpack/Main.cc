@@ -104,7 +104,6 @@ static vector<string> vecStationIDs;
 /// @brief Main control parameters
 struct MainControl
 {
-	double Duration;     ///< Duration of run (s)
 	size_t nStep;        ///< Time step number
 	size_t nAvg;         ///< Number of calculation time steps to average fluxes etc.
 	size_t HzStep;       ///< Hazard step number (should be half of nStep in operational mode)
@@ -1003,7 +1002,7 @@ inline void real_main (int argc, char *argv[])
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
 			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, snowpackio.getExtensions());
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
-			current_date -= calculation_step_length/1440;
+			current_date -= calculation_step_length/(24.*60.);
 		} else {
 			const string db_name = cfg.get("DBNAME", "Output", mio::IOUtils::nothrow);
 			if (db_name == "sdbo" || db_name == "sdbt")
@@ -1012,10 +1011,10 @@ inline void real_main (int argc, char *argv[])
 
 		SunObject sun(vecSSdata[slope.mainStation].meta.position.getLat(), vecSSdata[slope.mainStation].meta.position.getLon(), vecSSdata[slope.mainStation].meta.position.getAltitude());
 		sun.setElevationThresh(0.6);
-		mn_ctrl.Duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
-		Hazard hazard(cfg, mn_ctrl.Duration);
+		const double duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600; //HACK: why is it computed this way?
+		Hazard hazard(cfg, duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
@@ -1184,7 +1183,6 @@ inline void real_main (int argc, char *argv[])
 						}
 					}
 					if (mn_ctrl.HzDump) { // Save hazard data ...
-						//strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
 						qr_Hdata.at(i_hz).stat_abbrev = vecStationIDs[i_stn];
 						if (mode == "OPERATIONAL") {
 							qr_Hdata.at(i_hz).loc_for_snow = (unsigned char)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
@@ -1363,12 +1361,12 @@ inline void real_main (int argc, char *argv[])
 }
 
 int main(int argc, char *argv[]) {
-	try {
+	//try {
 		real_main(argc, argv);
-	} catch (const std::exception &e) {
+	/*} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
 		throw;
-	}
+	}*/
 
 	return EXIT_SUCCESS;
 }
