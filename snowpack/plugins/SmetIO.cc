@@ -745,7 +745,7 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[AIR]
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[SOIL]
 	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_RHO]
-	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_K]
+	vec_width.push_back(9); vec_precision.push_back(3);  //EMS[e].soil[SOIL_K]
 	vec_width.push_back(12); vec_precision.push_back(1);  //EMS[e].soil[SOIL_C]
 	vec_width.push_back(11); vec_precision.push_back(6);  //EMS[e].rg
 	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].rb
