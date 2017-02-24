@@ -456,7 +456,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	Se[0][0] = Se[1][1] = k;
 	Se[0][1] = Se[1][0] = -k;
 	// Heat the element via short-wave radiation
-	if (Edata.sw_abs < 0.0) {
+	if (Edata.sw_abs < 0.0 && !advective_heat) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "NEGATIVE Shortwave Radiation %e", Edata.sw_abs);
 		return false;
 	}
@@ -802,8 +802,6 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	// TREAT AN ASSUMED ADVECTIVE HEAT SOURCE
 	// Simple treatment of constant heating rate between two depths.
 	if(advective_heat) {
-		if(Mdata.adv_heat==IOUtils::nodata) //HACK integrate within the checks done in Main?
-			throw NoDataException("[E] advective heat missing at "+Mdata.date.toString(Date::ISO), AT);
 		SnLaws::compAdvectiveHeat(Xdata, Mdata.adv_heat, heat_begin, heat_end);
 	}
 

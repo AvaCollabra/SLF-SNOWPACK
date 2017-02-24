@@ -35,6 +35,7 @@ const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 bool SnowpackConfig::initStaticData()
 {
 	//[SnowpackAdvanced] section
+	advancedConfig["ADVECTIVE_HEAT"] = "false";
 	advancedConfig["ALPINE3D"] = "false";
 	advancedConfig["ALLOW_ADAPTIVE_TIMESTEPPING"] = "true";
 	advancedConfig["DETECT_GRASS"] = "false";

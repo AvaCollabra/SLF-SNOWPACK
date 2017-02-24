@@ -330,10 +330,10 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 }
 
 // Return true if snowpack can compute the next timestep, else false
-inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const unsigned int& nslopes)
+inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const bool& advective_heat, const unsigned int& nslopes)
 {
 	bool miss_ta=false, miss_tsg=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
-	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false;
+	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false, miss_adv=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
@@ -356,8 +356,10 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_wind=true;
 	if (nslopes>1 && (md("DW_DRIFT")==mio::IOUtils::nodata || md("VW_DRIFT")==mio::IOUtils::nodata))
 		miss_drift=true;
+	if (advective_heat && md("ADV_HEAT")==mio::IOUtils::nodata)
+		miss_adv=true;
 
-	if (miss_ta || miss_tsg || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift) {
+	if (miss_ta || miss_tsg || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift || miss_adv) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
@@ -372,6 +374,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		if (miss_ea) cerr << "lw_radiation ";
 		if (miss_wind) cerr << "VW ";
 		if (miss_drift) cerr << "drift ";
+		if (miss_adv) cerr << "adv_heat ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
@@ -426,7 +429,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.rho_hn = md("RHO_HN");
 
 	// Add advective heat (for permafrost) if available
-	if(md.param_exists("ADV_HEAT"))
+	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");
 }
 
@@ -931,6 +934,7 @@ inline void real_main (int argc, char *argv[])
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
 	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
+	const bool advective_heat = cfg.get("ADVECTIVE_HEAT", "SnowpackAdvanced", mio::IOUtils::nothrow);
 
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //operational use case: stationIDs provided on the command line
@@ -1052,7 +1056,7 @@ inline void real_main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rain);
-			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, slope.nSlopes)) {
+			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, advective_heat, slope.nSlopes)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				current_date -= calculation_step_length/1440;
