@@ -1704,8 +1704,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			if (niter==1) {
 				if (int(nsoillayers)<int(nE)) {	//We have snow layers
-					// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
-					snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+  					if(nsoillayers>0) {
+						// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
+						snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+					} else {
+						// HACK: what to do here? How to determine the outflux at the bottom at the beginning of the first time step?
+						// In any case, we don't use this approach right now, so maybe abandon it?
+						snowsoilinterfaceflux_before=0.;
+					}
 				}
 			}
 
@@ -2428,10 +2434,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				} else {
 					// See McCord (1996). Note: I think there is a minus sign missing there.
 					// In any case: snowsoilinterfaceflux > 0 means influx!
-					snowsoilinterfaceflux_after=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
-					snowsoilinterfaceflux1+=snowsoilinterfaceflux_after;
-					// Other method to estimate soil snow interface flux (based on average before and end of time step).
-					snowsoilinterfaceflux2+=0.5*(snowsoilinterfaceflux_before+snowsoilinterfaceflux_after);
+					if(nsoillayers>0) {
+						snowsoilinterfaceflux_after=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+						snowsoilinterfaceflux1+=snowsoilinterfaceflux_after;
+						// Other method to estimate soil snow interface flux (based on average before and end of time step).
+						snowsoilinterfaceflux2+=0.5*(snowsoilinterfaceflux_before+snowsoilinterfaceflux_after);
+					} else {
+						snowsoilinterfaceflux_after=actualbottomflux-snowsoilinterfaceflux1;
+						snowsoilinterfaceflux1=snowsoilinterfaceflux2=actualbottomflux;
+					}
 				}
 			} else {
 				//Make the commented lines active if you whish to add the TopFluxRate to the snowsoilinterfaceflux even when no snow is present.
@@ -2681,23 +2692,27 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	}
 
 	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers ...
-		//Heat advection by water flow
-		double deltaN=0.;
-		if(i == int(nE)-1) {								//HACK, TODO: remove type inconstency in comparison
-			deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
-		} else {
-			if(i==0) {
-				deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L);
+		if(nE > 1) {
+		  	//Heat advection by water flow
+			double deltaN=0.;
+			if(i == int(nE)-1 && i > 0) {							//HACK, TODO: remove type inconstency in comparison
+				deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
 			} else {
-				deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
+				if(i==0) {
+					deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L);
+				} else {
+					deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
+				}
 			}
-		}
-		NDS[i+1].T+=deltaN;
-		NDS[i].T+=deltaN;
-		if(fabs(deltaN)>0.) {
-			if(i < int(nE)-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);		//HACK, TODO: remove type inconstency in comparison
-			EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
-			if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
+			NDS[i+1].T+=deltaN;
+			NDS[i].T+=deltaN;
+			if(fabs(deltaN)>0.) {
+				if(i < int(nE)-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);		//HACK, TODO: remove type inconstency in comparison
+				EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
+				if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
+			}
+		} else {
+			// If there is only 1 element, we don't care about heat advection...
 		}
 		if (WriteOutNumerics_Level2==true) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f\n", i, EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER]+EMS[i].theta[WATER_PREF], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te);
 	}
