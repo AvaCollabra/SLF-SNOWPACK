@@ -1655,17 +1655,23 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Note: BottomFluxRate is defined as gradient over pressure head. For outflux (drainage), pressure head is increasing with increasing height, so BottomFluxRate is positive.
 				BottomFluxRate=0.0000005;	//Flux for Neumann BC.
 			} else if (BottomBC==FREEDRAINAGE) {
-				//First calculate flux between lowest and lowest+1 element.
-				const double tmpgrad=((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
-				if((tmpgrad+cos_sl) < 0.) {
-					//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
-					//Then set zero flux:
-					aBottomBC=NEUMANN;
-					BottomFluxRate=0.;
+				if(uppernode>0) {
+					//First calculate flux between lowest and lowest+1 element.
+					const double tmpgrad=((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
+					if((tmpgrad+cos_sl) < 0.) {
+						//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
+						//Then set zero flux:
+						aBottomBC=NEUMANN;
+						BottomFluxRate=0.;
+					} else {
+						aBottomBC=NEUMANN;
+						//Now, prescribe flux at lower boundary equivalent to tmpgrad
+						BottomFluxRate=(tmpgrad+cos_sl)*k_np1_m_im12[lowernode];
+					}
 				} else {
+					//With one element only, fall back to GRAVITATIONALDRAINAGE
 					aBottomBC=NEUMANN;
-					//Now, prescribe flux at lower boundary equivalent to tmpgrad
-					BottomFluxRate=(tmpgrad+cos_sl)*k_np1_m_im12[lowernode];
+					BottomFluxRate=k_np1_m_im12[lowernode];
 				}
 			} else if (BottomBC==SEEPAGEBOUNDARY) {
 				//Neumann with flux=0 in case of unsaturated
@@ -1741,14 +1747,17 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					if(i!=lowernode) ainv[i*(uppernode+1)+(i-1)]=(-1./(dz_[i]))*((k_np1_m_im12[i]/(dz_down[i])));
 					if(i!=uppernode) ainv[i*(uppernode+1)+(i+1)]=(-1./(dz_[i]))*((k_np1_m_ip12[i]/(dz_up[i])));
 
-					//Correct upper and lower diagonals in case of Dirichlet
-					if(aTopBC==DIRICHLET && i==uppernode) {
-						ainv[(i-1)*(uppernode+1)+i]=0.;
-						ainv[i*(uppernode+1)+(i-1)]=0.;
-					}
-					if(aBottomBC==DIRICHLET && i==lowernode) {
-						ainv[(i+1)*(uppernode+1)+i]=0.;
-						ainv[i*(uppernode+1)+(i+1)]=0.;
+					if(uppernode>0) {
+						//Correct upper and lower diagonals in case of Dirichlet
+						//HACK/TODO: check if this piece of code is actually correct. Why is condition uppernode>0 necessary here, but not when using DGTSV or TDMA solvers?
+						if(aTopBC==DIRICHLET && i==uppernode) {
+							ainv[(i-1)*(uppernode+1)+i]=0.;
+							ainv[i*(uppernode+1)+(i-1)]=0.;
+						}
+						if(aBottomBC==DIRICHLET && i==lowernode) {
+							ainv[(i+1)*(uppernode+1)+i]=0.;
+							ainv[i*(uppernode+1)+(i+1)]=0.;
+						}
 					}
 				}
 
@@ -2197,7 +2206,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			if(aBottomBC==NEUMANN) {	//If we use Neumann, the massbalance should incorporate the applied BottomFluxRate:
 				tmp_mb_bottomflux=BottomFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the outflux: (Note that basically with Dirichlet, the change of theta in the element is 0., so the outflux in the model domain is equal to the flux from the element above the lowest one to the lowest one.)
-				tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+				if(uppernode > 0) {
+					tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+				} else {
+					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
+					tmp_mb_bottomflux=0.;
+				}
 			}
 			massbalanceerror+=tmp_mb_topflux;		//Add topflux (note: topflux>0. means influx)
 			massbalanceerror-=tmp_mb_bottomflux;		//Substract bottomflufx (note: bottomflux>0. means outflux)
@@ -2416,7 +2430,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			actualtopflux+=TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
 			if(aBottomBC==DIRICHLET) {
-				actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+				if(uppernode > 0) {
+					actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+				} else {
+					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
+					actualbottomflux=0.;
+				}
 			} else {
 				actualbottomflux+=BottomFluxRate*dt;
 			}

@@ -1263,8 +1263,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	}
 
 	if(iwatertransportmodel_snow == RICHARDSEQUATION && !useSoilLayers) {
-		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers is not implemented and tested! It is not clear which lower boundary condition makes sense and the snow-soil interfaceflux is only defined with soil.");
-		throw;
+		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers has passed preliminary validation, but is not well tested! If you wish to pursue this simulation, recompile snowpack after commenting the indicated line."); throw;
 	}
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
