@@ -825,7 +825,11 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					const double Diffus = std::max((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
 					dhfDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dhf));
 					if (fabs(EMS[e].gradT)<5.0) {
-						dhfDot=-60000000.*exp(-6000./EMS[e].Te)/86400.;  //NIED (H. Hirashima)
+						if (mio::IOUtils::K_TO_C(EMS[e].Te) <= -5) {
+							dhfDot= -(2.44E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+6.58E-8); //NIED (H. Hirashima)
+						} else {
+							dhfDot= -(-8.96E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+8.46E-9); //NIED (H. Hirashima)
+						}
 					}
 				}
 			} else { // (OLD) SNOW
