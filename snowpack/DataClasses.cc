@@ -760,7 +760,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), PrefFlowArea(0.), dhf(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -823,7 +823,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
 	os.write(reinterpret_cast<const char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
-	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
+	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
 	return os;
 }
 
@@ -892,7 +892,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
-	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
+	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
 	return is;
 }
 
@@ -1328,7 +1328,7 @@ const std::string ElementData::toString() const
 	os << "\tStrains: dEps=" << dEps << " Eps=" <<  Eps << " Eps_e=" <<  Eps_e << " Eps_v=" <<  Eps_v << "\n";
 	os << "\tYoung's modulus of elasticity=" << E << "\n";
 	os << "\tStrain rates Eps_Dot=" <<  Eps_Dot << " Eps_vDpt=" <<  Eps_vDot << " CDot=" <<  CDot << "\n";
-	os << "\tStability: S_dr=" << S_dr << " hard=" << hard << " dhf=" << dhf << "\n";
+	os << "\tStability: S_dr=" << S_dr << " hard=" << hard << " dsm=" << dsm << "\n";
 	os << "</ElementData>\n";
 	return os.str();
 }
@@ -1345,9 +1345,9 @@ std::iostream& operator<<(std::iostream& os, const NodeData& data)
 	os.write(reinterpret_cast<const char*>(&data.ssi), sizeof(data.ssi));
 	os.write(reinterpret_cast<const char*>(&data.hoar), sizeof(data.hoar));
 
-	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
-	os.write(reinterpret_cast<const char*>(&data.S_dhf), sizeof(data.S_dhf));
-	os.write(reinterpret_cast<const char*>(&data.Sigdhf), sizeof(data.Sigdhf));
+	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
+	os.write(reinterpret_cast<const char*>(&data.S_dsm), sizeof(data.S_dsm));
+	os.write(reinterpret_cast<const char*>(&data.Sigdsm), sizeof(data.Sigdsm));
 	return os;
 }
 
@@ -1363,9 +1363,9 @@ std::iostream& operator>>(std::iostream& is, NodeData& data)
 	is.read(reinterpret_cast<char*>(&data.ssi), sizeof(data.ssi));
 	is.read(reinterpret_cast<char*>(&data.hoar), sizeof(data.hoar));
 
-	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
-	is.read(reinterpret_cast<char*>(&data.S_dhf), sizeof(data.S_dhf));
-	is.read(reinterpret_cast<char*>(&data.Sigdhf), sizeof(data.Sigdhf));
+	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
+	is.read(reinterpret_cast<char*>(&data.S_dsm), sizeof(data.S_dsm));
+	is.read(reinterpret_cast<char*>(&data.Sigdsm), sizeof(data.Sigdsm));
 	return is;
 }
 

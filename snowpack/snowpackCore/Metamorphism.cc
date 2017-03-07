@@ -710,6 +710,9 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 
 /**
  * @brief Main routine for Metamorphism model adapted according to NIED (H. Hirashima)
+ *        See: Hirashima H, Abe O, Sato A and Lehning M (2009) An adjustment for kinetic growth metamorphism
+ *             to improve shear strength parameterization in the SNOWPACK model. Cold Reg. Sci. Technol.,
+ *             59 (2-3), 169-177 (doi: 10.1016/j.coldregions.2009.05.001).
  * @param Mdata
  * @param Xdata
  */
@@ -722,7 +725,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 	double spDot;        // Rate of sphericity change (d-1)
 	const double a1 = 1.11e-3, a2 = 3.65e-5;  // mm3 day-1 Volumetric growth coefficients for wet snow
 	const double cw = 1.e8 * exp(-6000. / 273.15);
-	double dhfDot = Constants::undefined;       //NIED (H. Hirashima) Depth hoar factor ...
+	double dsmDot = Constants::undefined;       //NIED (H. Hirashima) Dry snow metamorphism factor...
 	const size_t nE = Xdata.getNumberOfElements();
 
 	// Dereference the element pointer containing micro-structure data
@@ -795,7 +798,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 			spDot = wind_slab * (CALL_MEMBER_FN(*this, mapSpRate[metamorphism_model])(EMS[e]));
 			rgDot = 0.;
 			rbDot = 0.5 * rgDotMax;
-			//dhfdot = 0.; //Fz HACK You'd need to define dhfdot in this case also
+			//dsmdot = 0.; //Fz HACK You'd need to define dsmdot in this case also
 		} else {
 			//normal processes for snow
 			// NEW SNOW
@@ -809,7 +812,7 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					spDot = -0.5 * ddDot;
 
 					rgDot = rbDot = 0.0; // no grain growth until dd <= 0.0
-					dhfDot = -Optim::pow3(thetam_w)/16./86400.; //NIED (H. Hirashima)
+					dsmDot = -Optim::pow3(thetam_w)/16./86400.; //NIED (H. Hirashima)
 				} else {
 					// DRY new snow //NIED (H. Hirashima)
 					ddDot = ddRate(EMS[e]);
@@ -823,12 +826,12 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					const double gradV=dPdZ*7.93E-4;  //NIED (H. Hirashima) hPa/m��kg/m2�ɕϊ�
 					const double DenFact = -0.136*EMS[e].Rho+4.56;
 					const double Diffus = std::max((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
-					dhfDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dhf));
+					dsmDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dsm));
 					if (fabs(EMS[e].gradT)<5.0) {
 						if (mio::IOUtils::K_TO_C(EMS[e].Te) <= -5) {
-							dhfDot= -(2.44E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+6.58E-8); //NIED (H. Hirashima)
+							dsmDot= -(2.44E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+6.58E-8); //NIED (H. Hirashima)
 						} else {
-							dhfDot= -(-8.96E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+8.46E-9); //NIED (H. Hirashima)
+							dsmDot= -(-8.96E-9*mio::IOUtils::K_TO_C(EMS[e].Te)+8.46E-9); //NIED (H. Hirashima)
 						}
 					}
 				}
@@ -847,9 +850,9 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					if ( (marker%10 == 2) || EMS[e].sp > 0.5 ) {
 						rgDot = 1. / (4. * Constants::pi * Optim::pow2(EMS[e].rg)) * (a1 + a2 * Optim::pow3(thetam_w));
 						rbDot = 0.6 * rgDot;
-						dhfDot = -(Optim::pow3(thetam_w)/16./86400.);
-						if ( dhfDot>-2.*cw/86400. ) {  //NIED (H. Hirashima)
-							dhfDot=-2.*cw/86400.;
+						dsmDot = -(Optim::pow3(thetam_w)/16./86400.);
+						if ( dsmDot>-2.*cw/86400. ) {  //NIED (H. Hirashima)
+							dsmDot=-2.*cw/86400.;
 						}
 					} else {
 						rgDot = rbDot = 0.;
@@ -861,9 +864,9 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 					const double gradV=dPdZ*7.93E-4; //NIED (H. Hirashima) //hPa/m��kg/m2�ɕϊ�
 					const double DenFact = -0.136*EMS[e].Rho+4.56;  //NIED (H. Hirashima)
 					const double Diffus = std::max((2.23E-5*(1013.25/1013.25)*pow((EMS[e].Te)/273.15,1.78)),((0.78*(EMS[e].Te-273.15))+10.84)*1.0E-5); //NIED (H. Hirashima)
-					dhfDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dhf));
+					dsmDot = fabs(-DenFact*Diffus*gradV*(1.0-EMS[e].dsm));
 					if ( fabs(EMS[e].gradT)<5.0 ) {
-						dhfDot=-500000000.0*exp(-6000.0/EMS[e].Te)*(5.-fabs(EMS[e].gradT))/86400.; //NIED (H. Hirashima)
+						dsmDot=-500000000.0*exp(-6000.0/EMS[e].Te)*(5.-fabs(EMS[e].gradT))/86400.; //NIED (H. Hirashima)
 					}
 					if ( dPdZ > Metamorphism::mm_tg_dpdz ) {
 						rbDot = TGBondRate( EMS[e] );
@@ -904,16 +907,16 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 		// UPDATE THE MICROSTRUCTURE PARAMETERS
 		if(EMS[e].theta[WATER] > 0.01 ) { //NIED (H. Hirashima)
-			dhfDot = -(Optim::pow3(thetam_w)/16./86400.);
-			if(dhfDot>-2.*cw/86400.) {
-				dhfDot=-2.*cw/86400.;
+			dsmDot = -(Optim::pow3(thetam_w)/16./86400.);
+			if(dsmDot>-2.*cw/86400.) {
+				dsmDot=-2.*cw/86400.;
 			}
 			if (EMS[e].dd == 0.) {
-				dhfDot=dhfDot/2.; // HACK //Fz Hazardous comparison!
+				dsmDot=dsmDot/2.; // HACK //Fz Hazardous comparison!
 			}
 		}
-		EMS[e].dhf += dhfDot * sn_dt; //NIED (H. Hirashima) HACK //Fz use consistent units dDay instead of sn_dt
-		EMS[e].dhf = std::max(0.0, std::min(1.0, EMS[e].dhf)); //NIED (H. Hirashima)
+		EMS[e].dsm += dsmDot * sn_dt; //NIED (H. Hirashima) HACK //Fz use consistent units dDay instead of sn_dt
+		EMS[e].dsm = std::max(0.0, std::min(1.0, EMS[e].dsm)); //NIED (H. Hirashima)
 		// Update dendricity
 		EMS[e].dd += ddDot * dDay;
 		EMS[e].dd = std::max(0.0, std::min(1.0, EMS[e].dd));

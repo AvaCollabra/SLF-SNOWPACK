@@ -332,14 +332,14 @@ class ElementData {
 		double lwc_source;         ///< Source/sink term for Richards equation
 		double PrefFlowArea;       ///< Preferential flow path relative area (-)
 		//NIED (H. Hirashima)
-		double dhf;
+		double dsm;                ///< Dry snow metamorphism factor 
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::iostream& operator<<(std::iostream& os, const NodeData& data);
@@ -356,9 +356,9 @@ class NodeData {
 		double hoar; ///< Mass of surface hoar collected while node was exposed to surface
 
 		//NIED (H. Hirashima)
-		double dhf;
-		double S_dhf;
-		double Sigdhf;
+		double dsm;  ///< Dry snow metamorphism factor
+		double S_dsm;
+		double Sigdsm;
 };
 
 /**

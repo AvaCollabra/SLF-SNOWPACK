@@ -1286,8 +1286,8 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	//NIED (H. Hirashima)
 	const double Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 	const double Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
-	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
-	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
+	Ndata.Sigdsm = Sig_ET - Edata.dsm*(Sig_ET - Sig_DH);
+	Ndata.S_dsm = (Ndata.Sigdsm + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
 	Edata.s_strength = Sig_c2;
 	STpar.Sig_c2 = std::min(Sig_c2, STpar.strength_upper);
