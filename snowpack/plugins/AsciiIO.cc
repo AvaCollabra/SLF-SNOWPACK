@@ -192,6 +192,9 @@ const bool AsciiIO::t_gnd = false;
  * 0604,nElems,structural stability index SSI
  * 0605,nElems,inverse texture index ITI (Mg m-4)
  * 0606,nElems,critical cut length (m)
+ * 0621,nElems,dsm (for NIED only)
+ * 0622,nElems,Sigdsm (for NIED only)
+ * 0623,nElems,S_dsm (for NIED only)
  *
  * [DATA]
  * @endcode
@@ -1164,10 +1167,33 @@ void AsciiIO::writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream 
 		for (size_t e = Xdata.SoilNode; e < nE; e++) {
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].crit_cut_length;
 		}
+		if (variant == "JAPAN" || variant == "NIED") {
+			// 0621: Dry snow metamorphism factor
+			fout << "\n0621," << nE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < nE; e++) {
+				fout << "," << std::fixed << std::setprecision(2) << EMS[e].dsm;
+			}
+			// 0622: Sigdsm
+			fout << "\n0622," << nE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < nE; e++) {
+				fout << "," << std::fixed << std::setprecision(2) << NDS[e+1].Sigdsm;
+			}
+			// 0623: S_dsm
+			fout << "\n0623," << nE-Xdata.SoilNode;
+			for (size_t e = Xdata.SoilNode; e < nE; e++) {
+				fout << "," << std::fixed << std::setprecision(2) << NDS[e+1].S_dsm;
+			}
+		}
 	} else {
 		for (size_t jj = 1; jj < 7; jj++) {
 			fout << "\n060" << jj << ",1,0";
 		}
+		if (variant == "JAPAN" || variant == "NIED") {
+			for (size_t jj = 1; jj < 4; jj++) {
+			      fout << "\n062" << jj << ",1,0";
+			}
+		}
+		
 	}
 }
 
@@ -2333,6 +2359,11 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0604,nElems,ssi";
 	fout << "\n0605,nElems,inverse texture index ITI (Mg m-4)";
 	fout << "\n0606,nElems,critical cut length (m)";
+	if (variant == "JAPAN" || variant == "NIED") {
+		fout << "\n0621,nElems,dry snow metamorphism factor (dsm)";
+		fout << "\n0622,nElems,Sigdsm";
+		fout << "\n0623,nElems,S_dsm";
+	}
 	if (variant == "CALIBRATION") {
 		fout << "\n0701,nElems,SNOWPACK: total settling rate (% h-1)";
 		fout << "\n0702,nElems,SNOWPACK: settling rate due to load (% h-1)";
