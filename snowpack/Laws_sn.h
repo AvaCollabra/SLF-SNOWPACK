@@ -81,7 +81,7 @@ class SnLaws {
 
 		static double compLWRadCoefficient(const double& t_snow, const double& t_atm, const double& e_atm);
 
-		static double parameterizedSnowAlbedo(const std::string& i_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki,
+		static double parameterizedSnowAlbedo(const std::string& i_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki, const double& i_albNIED_av,
 		                                      const double& i_hn_albedo_fixedValue, const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata, const bool& ageAlbedo=true);
 		static void compShortWaveAbsorption(const std::string& i_sw_absorption_scheme, SnowStation& Xdata, const double& I0);
 		static void compAdvectiveHeat(SnowStation& Xdata, const double& advective_heat,

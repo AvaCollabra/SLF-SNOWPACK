@@ -297,7 +297,7 @@ double SnLaws::conductivity_water(const double& Temperature)
  * @param Tss Snow surface temperature (K)
  * @param Mdata
  */
-double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki,
+double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const std::string& i_albedo_parameterization, const std::string& i_albAverageSchmucki, const double& i_albNIED_av,
                                        const double& i_albedo_fixedValue, const ElementData& Edata, const double& Tss, const CurrentMeteo& Mdata, const bool& ageAlbedo)
 {
 	double Alb = Constants::min_albedo;
@@ -407,7 +407,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		}
 	}
 	else if (i_albedo_parameterization == "NIED") { // by H. Hirashima (NIED, Nagaoka, Japan)
-		const double av = 0.75;
+		const double av = i_albNIED_av;
 		const double inter = 1.005;
 		const double Cage = -0.00016*10.0, Cta = -0.000249*2.0, Cv = 0.00578, Clwc = -2.15;
 		const double Crho = -0.000047, Crh = 0.129, Crb = -0.306, Crg = 0.107;

@@ -100,6 +100,7 @@ class Snowpack {
 		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
+		double albedo_NIED_av;
 		Meteo::ATM_STABILITY atm_stability_model;
 		bool allow_adaptive_timestepping;
 		double albedo_fixedValue, hn_density_fixedValue;
