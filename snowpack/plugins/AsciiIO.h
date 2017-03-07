@@ -99,7 +99,7 @@ class AsciiIO : public SnowpackIOInterface {
 		void readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata);
 
 		std::set<std::string> setAppendableFiles;
-		std::string variant, experiment, sw_mode;
+		std::string metamorphism_model, variant, experiment, sw_mode;
 		std::string inpath, snowfile, i_snowpath, outpath, o_snowpath;
 		const RunInfo info;
 

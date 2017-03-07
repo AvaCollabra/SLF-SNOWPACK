@@ -359,6 +359,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	// SnowpackAdvanced section
 	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoar_density_surf); // Density of SH at surface node (kg m-3)
 	cfg.getValue("HOAR_MIN_SIZE_SURF", "SnowpackAdvanced", hoar_min_size_surf); // Minimum size to show SH on surface (mm)
+	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
 	cfg.getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf);
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
@@ -1167,7 +1168,7 @@ void AsciiIO::writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream 
 		for (size_t e = Xdata.SoilNode; e < nE; e++) {
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].crit_cut_length;
 		}
-		if (variant == "JAPAN" || variant == "NIED") {
+		if (metamorphism_model == "NIED") {
 			// 0621: Dry snow metamorphism factor
 			fout << "\n0621," << nE-Xdata.SoilNode;
 			for (size_t e = Xdata.SoilNode; e < nE; e++) {
@@ -1188,7 +1189,7 @@ void AsciiIO::writeProfileProAddDefault(const SnowStation& Xdata, std::ofstream 
 		for (size_t jj = 1; jj < 7; jj++) {
 			fout << "\n060" << jj << ",1,0";
 		}
-		if (variant == "JAPAN" || variant == "NIED") {
+		if (metamorphism_model == "NIED") {
 			for (size_t jj = 1; jj < 4; jj++) {
 			      fout << "\n062" << jj << ",1,0";
 			}
@@ -2359,7 +2360,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0604,nElems,ssi";
 	fout << "\n0605,nElems,inverse texture index ITI (Mg m-4)";
 	fout << "\n0606,nElems,critical cut length (m)";
-	if (variant == "JAPAN" || variant == "NIED") {
+	if (metamorphism_model == "NIED") {
 		fout << "\n0621,nElems,dry snow metamorphism factor (dsm)";
 		fout << "\n0622,nElems,Sigdsm";
 		fout << "\n0623,nElems,S_dsm";
