@@ -113,7 +113,10 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("SNOW_ALBEDO", "SnowpackAdvanced", snow_albedo);
 	cfg.getValue("ALBEDO_PARAMETERIZATION", "SnowpackAdvanced", albedo_parameterization);
 	cfg.getValue("ALBEDO_AVERAGE_SCHMUCKI", "SnowpackAdvanced", albedo_average_schmucki);
-	cfg.getValue("ALBEDO_NIED_AV", "SnowpackAdvanced", albedo_NIED_av);
+	if (albedo_parameterization=="NIED")
+		cfg.getValue("ALBEDO_NIED_AV", "SnowpackAdvanced", albedo_NIED_av);
+	else 
+		albedo_NIED_av=Constants::undefined;
 	cfg.getValue("ALBEDO_FIXEDVALUE", "SnowpackAdvanced", albedo_fixedValue);
 	cfg.getValue("ALBEDO_AGING", "SnowpackAdvanced", ageAlbedo);
 
