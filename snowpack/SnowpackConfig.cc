@@ -206,6 +206,7 @@ void SnowpackConfig::setDefaults()
 		// Use default settings
 	} else if (variant == "JAPAN") {
 		if (albedo_model.empty()) addKey("ALBEDO_MODEL", "SnowpackAdvanced", "NIED");
+		if (hn_density_parameterization.empty()) addKey("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", "NIED");
 		if (metamorphism_model.empty()) addKey("METAMORPHISM_MODEL", "SnowpackAdvanced", "NIED");
 		if (strength_model.empty()) addKey("STRENGTH_MODEL", "SnowpackAdvanced", "NIED");
 		if (viscosity_model.empty()) addKey("VISCOSITY_MODEL", "SnowpackAdvanced", "KOJIMA");
