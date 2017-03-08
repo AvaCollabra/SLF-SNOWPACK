@@ -566,6 +566,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const size_t nN = Xdata.getNumberOfNodes(), nE = nN-1;
 	size_t rnN = nN, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
+	vector<NodeData>& NDS = Xdata.Ndata;
 
 	if ((nN == Xdata.SoilNode+1)
 	        || (water_layer && useSoilLayers && (nN == Xdata.SoilNode+2)
@@ -600,30 +601,40 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		
 		if (do_merge && is_snow_layer && !wet_layer_exception) {
 			bool UpperJoin=false;			// Default is joining with elements below
-			bool merged = true;		// true: element is finally merged, false: element is finally removed.
+			bool merged = true;			// true: element is finally merged, false: element is finally removed.
 			if (eUpper > Xdata.SoilNode) { 		// If we have snow elements below to merge with
-				// We always merge snow elements, except if it is the top element, which is removed when the ice contents is below the threshold.
-				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] <= Snowpack::min_ice_content) ) {
-					merged=false;
+				// We always merge snow elements
+				merged=true;
+				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
+					// In this case, we would prefer to keep the eUpper-1 element density constant, which is done in SnowStation::mergeElements(...)
 					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
 					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
 						RichardsEquationSolver1d_matrix.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
 						// We remove water from the element, which is now in surfacefluxrate
+						EMS[eUpper].theta[AIR]+=(EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF]);
 						EMS[eUpper].theta[WATER]=0.;
 						EMS[eUpper].theta[WATER_PREF]=0.;
 						// Adjust density and mass accordingly
 						EMS[eUpper].Rho = (EMS[eUpper].theta[ICE]*Constants::density_ice) + ((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*Constants::density_water) + (EMS[eUpper].theta[SOIL]*EMS[eUpper].soil[SOIL_RHO]);
 						EMS[eUpper].M = EMS[eUpper].Rho*EMS[eUpper].L;
 					}
-				} else {
-					merged=true;
 				}
+
 				// We never merge snow elements with elements containing soil inside the snowpack (e.g., for snow farming)
 				if (EMS[eUpper-1].theta[SOIL]>Constants::eps) {
 					merged=false;
 				}
+
 				// After dealing with all possibilities, now finally do the merge:
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
+
+				// The upper element may grow too much in length by subsequent element merging, limit this! Note that this has the desired effect of averaging the two top elements.
+				if(eUpper==rnE-1 && merged==true) {
+					if(0.5*(EMS[eUpper-1].L) > SnowStation::comb_thresh_l) {
+						rnE++;
+						Xdata.splitElement(eUpper-1);
+					}
+				}
 			} else {										// We are dealing with first snow element above soil
 				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0.) {				// If at least one snow layer above AND this layer above is not marked to be removed yet.
 					// In case it is the lowest snow element and there are snow elements above, join with the element above:
