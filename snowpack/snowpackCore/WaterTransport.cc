@@ -575,6 +575,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		return;
 	}
 
+	bool verify_top_element=false;
 	size_t eUpper = nE; // Index of the upper element, the properties of which will be transferred to the lower adjacent one
 	while (eUpper-- > Xdata.SoilNode) {
 		bool enforce_merge = true;	// To enforce merging in special cases
@@ -595,7 +596,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			enforce_merge = false;
 		}
 		const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && eUpper>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && eUpper<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
-		const bool do_merge = (EMS[eUpper].theta[ICE] <= Snowpack::min_ice_content) || enforce_merge;
+		const bool do_merge = (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_merge;
 		const bool is_snow_layer = (EMS[eUpper].theta[SOIL] < Constants::eps2) && (EMS[eUpper].mk % 100 != 9); //exclude plastic or water_layer
 		const bool wet_layer_exception = (eUpper > 0 && eUpper == nE-1 && EMS[eUpper].theta[ICE] > 0.2 * Snowpack::min_ice_content && EMS[eUpper].L > 0.2 * minimum_l_element && EMS[eUpper-1].theta[SOIL] < Constants::eps && EMS[eUpper].theta[ICE] > Constants::eps && EMS[eUpper].theta[WATER] < theta_r + Constants::eps && EMS[eUpper-1].theta[WATER] > theta_r + Constants::eps); // Don't merge a dry surface snow layer with a wet one below, as the surface node may then experience a sudden increase in temperature, destroying energy balance.
 		
@@ -630,10 +631,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 				// The upper element may grow too much in length by subsequent element merging, limit this! Note that this has the desired effect of averaging the two top elements.
 				if(eUpper==rnE-1 && merged==true) {
-					if(0.5*(EMS[eUpper-1].L) > SnowStation::comb_thresh_l) {
-						rnE++;
-						Xdata.splitElement(eUpper-1);
-					}
+					verify_top_element=true;
 				}
 			} else {										// We are dealing with first snow element above soil
 				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0.) {				// If at least one snow layer above AND this layer above is not marked to be removed yet.
@@ -717,6 +715,11 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		Xdata.reduceNumberOfElements(rnE);
 		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
 			Xdata.Ndata[Xdata.SoilNode].T = std::min(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
+		}
+		if(verify_top_element) {
+			if(0.5*(EMS[Xdata.getNumberOfElements()-1].L) > SnowStation::comb_thresh_l) {
+				Xdata.splitElement(Xdata.getNumberOfElements()-1);
+			}
 		}
 	}
 
