@@ -2022,6 +2022,39 @@ bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData&
 }
 
 /**
+ * @brief Split the element provided as first argument.
+ */
+void SnowStation::splitElement(const size_t& e)
+{
+	resize(nElems+1);
+	if(e!=nElems-1) { // If it is not the top node that needs splitting ...
+		// then shift all elements and nodes above upward
+		for(size_t ee = nElems-1; ee >= e+2; ee--) {
+			Edata[ee]=Edata[ee-1];
+			Ndata[ee+1]=Ndata[ee];
+			Ndata[ee]=Ndata[ee-1];
+		}
+	}
+	// Fill info of new element
+	Edata[e+1]=Edata[e];
+	// Half the element
+	Edata[e].L*=0.5;
+	Edata[e].L0*=0.5;
+	Edata[e+1].L*=0.5;
+	Edata[e+1].L0*=0.5;
+	Edata[e].M*=0.5;
+	Edata[e+1].M*=0.5;
+	// Fill info of new node
+	Ndata[e+2]=Ndata[e+1];
+	Ndata[e+1].hoar=0.;
+	Ndata[e+1].T=Edata[e].Te;
+	// Position the new node correctly in the domain
+	Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
+	Ndata[e+2].u*=0.5;
+	Ndata[e+1].u*=0.5;
+}
+
+/**
  * @brief Split elements when they are near the top of the snowpack, when REDUCE_N_ELEMENTS is used.
  * - This function split elements when they are getting closer to the top of the snowpack. This is required
  *   when using the "aggressive" merging option (REDUCE_N_ELEMENTS). When snow melt brings elements back to the
@@ -2037,32 +2070,7 @@ void SnowStation::splitElements()
 		const double depth = cH - Ndata[e].z;
 		max_elem_l = flexibleMaxElemLength(depth);
 		if(0.5*(Edata[e].L) > max_elem_l) {
-			resize(nElems+1);
-			if(e!=nElems-1) { // If it is not the top node that needs splitting ...
-				// then shift all elements and nodes above upward
-				for(size_t ee = nElems-1; ee >= e+2; ee--) {
-					Edata[ee]=Edata[ee-1];
-					Ndata[ee+1]=Ndata[ee];
-					Ndata[ee]=Ndata[ee-1];
-				}
-			}
-			// Fill info of new element
-			Edata[e+1]=Edata[e];
-			// Half the element
-			Edata[e].L*=0.5;
-			Edata[e].L0*=0.5;
-			Edata[e+1].L*=0.5;
-			Edata[e+1].L0*=0.5;
-			Edata[e].M*=0.5;
-			Edata[e+1].M*=0.5;
-			// Fill info of new node
-			Ndata[e+2]=Ndata[e+1];
-			Ndata[e+1].hoar=0.;
-			Ndata[e+1].T=Edata[e].Te;
-			// Position the new node correctly in the domain
-			Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
-			Ndata[e+2].u*=0.5;
-			Ndata[e+1].u*=0.5;
+			splitElement(e);
 		}
 	}
 }
