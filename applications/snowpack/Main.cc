@@ -330,14 +330,14 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 }
 
 // Return true if snowpack can compute the next timestep, else false
-inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const bool& advective_heat, const unsigned int& nslopes)
+inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const bool& advective_heat, const bool& soil_flux, const unsigned int& nslopes)
 {
 	bool miss_ta=false, miss_tsg=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
 	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false, miss_adv=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
-	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
+	if (soil_flux==false && md(MeteoData::TSG) == mio::IOUtils::nodata)
 		miss_tsg=true;
 	if (md(MeteoData::RH) == mio::IOUtils::nodata)
 		miss_rh=true;
@@ -935,6 +935,7 @@ inline void real_main (int argc, char *argv[])
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
 	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
 	const bool advective_heat = cfg.get("ADVECTIVE_HEAT", "SnowpackAdvanced", mio::IOUtils::nothrow);
+	const bool soil_flux =  (useSoilLayers)? cfg.get("SOIL_FLUX", "Snowpack", mio::IOUtils::nothrow) : false;
 
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //operational use case: stationIDs provided on the command line
@@ -1056,7 +1057,7 @@ inline void real_main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rain);
-			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, advective_heat, slope.nSlopes)) {
+			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, advective_heat, soil_flux, slope.nSlopes)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				current_date -= calculation_step_length/1440;
