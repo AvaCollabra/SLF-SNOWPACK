@@ -962,8 +962,8 @@ void Metamorphism::metamorphismNIED(const CurrentMeteo& Mdata, SnowStation& Xdat
 		}
 
 		// First wetting //NIED (H. Hirashima)
-		EMS[e].snowResidualWaterContent();
-		if ((marker < 10) && (EMS[e].theta[WATER] > 0.99 * EMS[e].res_wat_cont) ) {
+		const double theta_residual = 0.024;	// See: Yamaguchi, S., Watanabe, K., Katsushima, T., Sato, A., and Kumakura, T.: Dependence of the water retention curve of snow on snow characteristics, Ann. Glaciol., 53, 6-12, doi:10.3189/2012AoG61A001, 2012.
+		if ((marker < 10) && (EMS[e].theta[WATER] > 0.99 * theta_residual)) {
 			EMS[e].mk += 10;
 		}
 		// First melt-freeze cycle completed
