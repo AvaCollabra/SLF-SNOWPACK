@@ -68,6 +68,7 @@ class WaterTransport {
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
 		bool enable_pref_flow;
+		std::string pref_flow_rain_input_domain;
 
 		double sn_dt;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;

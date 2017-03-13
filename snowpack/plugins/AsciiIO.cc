@@ -952,7 +952,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if(enable_pref_flow) {
 		fout << "\n0507," << nE;
 		for (size_t e = 0; e < nE; e++)
-			fout << "," << std::fixed << std::setprecision(1) << 100.*EMS[e].theta[WATER_PREF];
+			fout << "," << std::fixed << std::setprecision(3) << 100.*EMS[e].theta[WATER_PREF];
 	}
 	// 0508: snow dendricity (1)
 	if (no_snow) {

@@ -32,7 +32,7 @@ using namespace mio;
 
 WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                : RichardsEquationSolver1d_matrix(cfg, true), RichardsEquationSolver1d_pref(cfg, false), variant(),
-                 iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), enable_pref_flow(false),
+                 iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), enable_pref_flow(false), pref_flow_rain_input_domain("MATRIX"),
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
@@ -103,6 +103,15 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	if (enable_pref_flow && watertransportmodel_snow!="RICHARDSEQUATION") {
 		prn_msg( __FILE__, __LINE__, "err", Date(), "PREF_FLOW = TRUE requires WATERTRANSPORTMODEL_SNOW = RICHARDSEQUATION. Preferential flow is only implemented as an extension of Richards equation.");
 		throw;
+	}
+	if(enable_pref_flow) {
+		cfg.getValue("PREF_FLOW_RAIN_INPUT_DOMAIN", "SnowpackAdvanced", pref_flow_rain_input_domain);
+		if(pref_flow_rain_input_domain != "MATRIX" && pref_flow_rain_input_domain != "PREF_FLOW") {
+			prn_msg( __FILE__, __LINE__, "err", Date(), "PREF_FLOW_RAIN_INPUT_DOMAIN is expected to be MATRIX or PREF_FLOW (mind the upper case!).");
+		}
+	} else {
+		// Enforce the rain water into the matrix domain, in case PREF_FLOW model is not enabled.
+		pref_flow_rain_input_domain="MATRIX";
 	}
 
 	//Water transport model soil
@@ -903,7 +912,16 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			}
 
 			//This adds the left over rain input to the surfacefluxrate, to be used as BC in Richardssolver:
-			RichardsEquationSolver1d_matrix.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
+			if (pref_flow_rain_input_domain=="MATRIX") {
+				// Put rain in matrix domain
+				RichardsEquationSolver1d_matrix.surfacefluxrate+=(Store)/(sn_dt);	//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
+			} else if (pref_flow_rain_input_domain=="PREF_FLOW") {
+				// Put rain in preferential domain
+				RichardsEquationSolver1d_pref.surfacefluxrate+=(Store)/(sn_dt);		//NANDER: Store=[m], surfacefluxrate=[m^3/m^2/s]
+			} else {
+				prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Unknown domain to transfer rain water to (check key PREF_FLOW_RAIN_INPUT_DOMAIN).");
+				throw;
+			}
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += Mdata.psum * Mdata.psum_ph;
 		}
 	}
@@ -1274,10 +1292,6 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 	if(iwatertransportmodel_soil == NIED) {
 	  	prn_msg( __FILE__, __LINE__, "err", Mdata.date, "You can only use NIED for snow, not for soil (soil parameters of the Van Genuchten model not implemented)!");
 		throw;
-	}
-
-	if(iwatertransportmodel_snow == RICHARDSEQUATION && !useSoilLayers) {
-		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "The implementation of RICHARDSEQUATION for snow without soil layers has passed preliminary validation, but is not well tested! If you wish to pursue this simulation, recompile snowpack after commenting the indicated line."); throw;
 	}
 
 	// First, consider no soil with no snow on the ground and deal with possible rain water
