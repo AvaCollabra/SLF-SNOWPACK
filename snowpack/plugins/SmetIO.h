@@ -75,14 +75,14 @@ class SmetIO : public SnowpackIOInterface {
 		double compPerpPosition(const double& z_vert, const double& hs_ref,
 		                        const double& ground, const double& cos_sl);
 		std::string getFieldsHeader();
-		void writeTimeSeriesHeader(const SnowStation& Xdata);
-		void writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24);
+		void writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& smet_writer);
+		void writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24, smet::SMETWriter& smet_writer);
 
 	private:
 		std::vector<double> fixedPositions;
 		std::string outpath, o_snowpath, snowpath, experiment, inpath, i_snowpath, sw_mode;
 		const RunInfo info;
-		smet::SMETWriter *ts_smet_writer;
+		std::map<std::string, smet::SMETWriter*> tsWriters; ///< for each filename, we keep an associated SMETWriter
 		double in_dflt_TZ;
 		double calculation_step_length, ts_days_between;
 		double min_depth_subsurf;

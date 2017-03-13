@@ -274,7 +274,7 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
 /**
  * @page prf_format PRF profiles time series
  * @section prf_structure General structure
- * This format should make it easier to extract data out of simulated snow profiles. Each new snow profile is <b>appended</b> to
+ * This format should make it easier to extract data out of simulated snow profiles, but it <b>does not work with soil layers</b>. Each new snow profile is <b>appended</b> to
  * the current file. Each new data block starts with commented out metadata: first a line giving the fields names and then a
  * line giving the units. Then the data lines follow until either an empty line (end of the profile for this date) or a new
  * metadata block (followed by new data).
@@ -894,7 +894,7 @@ void AsciiIO::writeProfile(const mio::Date& i_date, const SnowStation& Xdata)
 void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata, const bool& /*aggregate*/)
 {
 //TODO: optimize this method. For high-res outputs, we spend more than 50% of the time in this method...
-	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro";
+	const string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".pro" );
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
 	const vector<ElementData>& EMS = Xdata.Edata;
@@ -913,8 +913,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		throw IOException("Cannot dump profiles in " + filename, AT);
 	}
 
-	std::ofstream fout;
-	fout.open(filename.c_str(),  std::ios::out | std::ofstream::app);
+	std::ofstream fout(filename.c_str(),  std::ios::out | std::ofstream::app);
 	if (fout.fail()) {
 		prn_msg(__FILE__, __LINE__, "err", i_date,
 			   "Cannot open profile series file: %s", filename.c_str());
@@ -1314,7 +1313,7 @@ void AsciiIO::writeProfilePrf(const mio::Date& dateOfProfile, const SnowStation&
 	
 	//open profile filestream
 	const std::string ext = (aggregate)? ".aprf" : ".prf";
-	const std::string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ext;
+	const std::string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ext );
 
 	//Check whether file exists, if so check whether data can be appended
 	//or file needs to be deleted
@@ -1780,7 +1779,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
                               const CurrentMeteo& Mdata, const ProcessDat& Hdata,
                               const double wind_trans24)
 {
-	const string filename = getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met";
+	const std::string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".met" );
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const size_t nN = Xdata.getNumberOfNodes();
 	const double cos_sl = Xdata.cos_sl;

@@ -1,6 +1,7 @@
-cmake_minimum_required(VERSION 2.8)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
+PROJECT(snowpack)
 # Version of library
 SET(VERSION_MAJOR 3 CACHE INTERNAL "")
 SET(VERSION_MINOR 4 CACHE INTERNAL "")
@@ -9,7 +10,66 @@ SET(VERSION_PATCH 0 CACHE INTERNAL "")
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
 SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
 
-PROJECT(snowpack)
+###########################################################
+#platform specific. First, compiler specific flags, then system specific flags
+OPTION(BUILD_SHARED_LIBS "Set to ON to build dynamic libraries" ON)
+IF(WIN32)
+	SET(BUILD_STATIC_LIBS ON) #otherwise the lib files are not generated
+ELSE(WIN32)
+	OPTION(BUILD_STATIC_LIBS "Set to ON to build static libraries" OFF)
+ENDIF(WIN32)
+
+###########################################################
+#set compiler flags according to the detected compiler and user options
+INCLUDE("${CMAKE_SOURCE_DIR}/tools/cmake/SetCompilerOptions.cmake")
+SET_COMPILER_OPTIONS()
+
+#The following pre-processor variables are automatically defined:
+# __linux, __GNUC__, __CYGWIN__, _WIN32, __MINGW32__, __APPLE__
+IF(UNIX)
+	#set a full rpath for both build & install tree
+	SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+	SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+	# add the automatically determined parts of the RPATH
+	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+	# the RPATH to be used when installing, but only if it's not a system directory
+	LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+	IF("${isSystemDir}" STREQUAL "-1")
+		SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+	ENDIF("${isSystemDir}" STREQUAL "-1")
+
+	IF(APPLE)
+		SET(DLL_EXT "dylib")
+		SET(STAT_EXT "a")
+		#set(CMAKE_OSX_SYSROOT iphoneos2.2.1) #for IOS
+		#set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_BIT)) #for IOS
+	ELSE(APPLE)
+		SET(DLL_EXT "so*")
+		SET(STAT_EXT "a")
+	ENDIF(APPLE)
+ELSE(UNIX)
+	IF(WIN32)
+		#SET(PLATFORM "-D_WIN32 -U__STRICT_ANSI__")
+		ADD_DEFINITIONS(-U__STRICT_ANSI__)
+		SET(DLL_EXT "dll")
+		SET(STAT_EXT "a")
+	ENDIF(WIN32)
+ENDIF(UNIX)
+
+IF(NOT CMAKE_BUILD_TYPE)
+	SET(CMAKE_BUILD_TYPE "release" CACHE STRING "Choose the type of build, options are: debug release coverage cxxflags" FORCE)
+	SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+###########################################################
+#finally, SET compile flags
+SET(CMAKE_CXX_FLAGS "${_VERSION} ${ARCH} ${EXTRA}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_RELEASE "${OPTIM}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_DEBUG "${DEBUG} ${WARNINGS} ${EXTRA_WARNINGS}" CACHE STRING "" FORCE)
+SET(CMAKE_CXX_FLAGS_CXXFLAGS "$ENV{CXXFLAGS}" CACHE STRING "" FORCE)
+MARK_AS_ADVANCED(FORCE CMAKE_CXX_FLAGS_CXXFLAGS)
+
+#Add subdirectory, so they can inherit all variables defined above
 ADD_SUBDIRECTORY(snowpack)
 
 IF(SNOWPACK_STANDALONE)
@@ -36,89 +96,10 @@ ENDIF(PROFEVAL)
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
 SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
-SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
 SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
-
-###########################################################
-#platform specific. First, compiler specific flags, then system specific flags
-SET(BUILD_SHARED_LIBS ON CACHE BOOL "Set to ON to build dynamic libraries")
-IF(WIN32)
-	SET(BUILD_STATIC_LIBS ON CACHE INTERNAL "Set to ON to build static libraries") #otherwise the lib files are not generated
-ELSE(WIN32)
-	SET(BUILD_STATIC_LIBS OFF CACHE BOOL "Set to ON to build static libraries")
-ENDIF(WIN32)
-
-###########################################################
-#set compiler flags according to the detected compiler and user options
-INCLUDE("${CMAKE_SOURCE_DIR}/tools/cmake/SetCompilerOptions.cmake")
-SET_COMPILER_OPTIONS()
-
-#The following pre-processor variables are automatically defined:
-# __linux, __GNUC__, __CYGWIN__, _WIN32, __MINGW32__, __APPLE__
-IF(UNIX)
-	IF(APPLE)
-		SET(DLL_EXT "dylib")
-		SET(STAT_EXT "a")
-		#set(CMAKE_OSX_SYSROOT iphoneos2.2.1) #for IOS
-		#set(CMAKE_OSX_ARCHITECTURES $(ARCHS_STANDARD_32_BIT)) #for IOS
-
-		#set a full rpath for both build & install tree
-		SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
-		SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-		SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-
-		# add the automatically determined parts of the RPATH
-		# which point to directories outside the build tree to the install RPATH
-		SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-		# the RPATH to be used when installing, but only if it's not a system directory
-		LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-		IF("${isSystemDir}" STREQUAL "-1")
-			SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-		ENDIF("${isSystemDir}" STREQUAL "-1")
-	ELSE(APPLE)
-		SET(DLL_EXT "so*")
-		SET(STAT_EXT "a")
-	ENDIF(APPLE)
-ELSE(UNIX)
-	IF(WIN32)
-		#SET(PLATFORM "-D_WIN32 -U__STRICT_ANSI__")
-		ADD_DEFINITIONS(-U__STRICT_ANSI__)
-		SET(DLL_EXT "dll")
-		SET(STAT_EXT "a")
-	ENDIF(WIN32)
-ENDIF(UNIX)
-
-IF(NOT CMAKE_BUILD_TYPE)
-	SET(CMAKE_BUILD_TYPE "release" CACHE STRING "Choose the type of build, options are: debug release " FORCE)
-	SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
-ENDIF(NOT CMAKE_BUILD_TYPE)
-
-###########################################################
-#targets providing sets of compiler options
-if(NOT DEST)
-  set(DEST "safe" CACHE STRING "Choose safe or optimized" FORCE)
-endif(NOT DEST)
-
-IF (DEST STREQUAL "safe")
-	SET(ARCH  "${ARCH_SAFE}")
-ENDIF(DEST STREQUAL "safe")
-
-IF(DEST STREQUAL "optimized")
-	SET(ARCH  "${ARCH_OPTIM}")
-ENDIF(DEST STREQUAL "optimized")
-
-###########################################################
-#finally, SET compile flags
-SET(CMAKE_CXX_FLAGS "${_VERSION} ${ARCH} ${CFLAGS} ${EXTRA}" CACHE STRING "" FORCE)
-SET(CMAKE_CXX_FLAGS_RELEASE "${OPTIM}" CACHE STRING "" FORCE)
-SET(CMAKE_CXX_FLAGS_DEBUG "${DEBUG} ${WARNINGS} ${EXTRA_WARNINGS}" CACHE STRING "" FORCE)
-
-MESSAGE(STATUS "DEBUG CXXFLAGS  : ${CMAKE_CXX_FLAGS_DEBUG}")
-MESSAGE(STATUS "RELEASE CXXFLAGS: ${CMAKE_CXX_FLAGS_RELEASE}")
 
 ###########################################################
 #for the install target
@@ -159,6 +140,7 @@ IF (DOXYGEN_FOUND)
 	ADD_CUSTOM_TARGET(doc "doxygen" ${PROJECT_SOURCE_DIR}/snowpack/config.dox)
 ENDIF (DOXYGEN_FOUND)
 #Install the documentation if the user desires it
+SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
 IF(INSTALL_DOC)
 	IF(WIN32)
 		SET(DOC_PATH "doc")

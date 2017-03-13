@@ -1,4 +1,4 @@
-INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}")
+INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/")
 
 IF(MSVC)
 	SET(getopt_src getopt.c getopt_long.c)

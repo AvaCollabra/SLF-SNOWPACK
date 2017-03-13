@@ -104,7 +104,6 @@ static vector<string> vecStationIDs;
 /// @brief Main control parameters
 struct MainControl
 {
-	double Duration;     ///< Duration of run (s)
 	size_t nStep;        ///< Time step number
 	size_t nAvg;         ///< Number of calculation time steps to average fluxes etc.
 	size_t HzStep;       ///< Hazard step number (should be half of nStep in operational mode)
@@ -331,14 +330,14 @@ inline void editMeteoData(mio::MeteoData& md, const string& variant, const doubl
 }
 
 // Return true if snowpack can compute the next timestep, else false
-inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const unsigned int& nslopes)
+inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, const string& variant, const bool& enforce_snow_height, const bool& advective_heat, const bool& soil_flux, const unsigned int& nslopes)
 {
 	bool miss_ta=false, miss_tsg=false, miss_rh=false, miss_precip=false, miss_splitting=false, miss_hs=false;
-	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false;
+	bool miss_rad=false, miss_ea=false, miss_wind=false, miss_drift=false, miss_adv=false;
 
 	if (md(MeteoData::TA) == mio::IOUtils::nodata)
 		miss_ta=true;
-	if (md(MeteoData::TSG) == mio::IOUtils::nodata)
+	if (soil_flux==false && md(MeteoData::TSG) == mio::IOUtils::nodata)
 		miss_tsg=true;
 	if (md(MeteoData::RH) == mio::IOUtils::nodata)
 		miss_rh=true;
@@ -357,8 +356,10 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		miss_wind=true;
 	if (nslopes>1 && (md("DW_DRIFT")==mio::IOUtils::nodata || md("VW_DRIFT")==mio::IOUtils::nodata))
 		miss_drift=true;
+	if (advective_heat && md("ADV_HEAT")==mio::IOUtils::nodata)
+		miss_adv=true;
 
-	if (miss_ta || miss_tsg || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift) {
+	if (miss_ta || miss_tsg || miss_rh || miss_rad || miss_precip || miss_splitting || miss_hs || miss_ea || miss_wind || miss_drift || miss_adv) {
 		mio::Date now;
 		now.setFromSys();
 		cerr << "[E] [" << now.toString(mio::Date::ISO) << "] ";
@@ -373,6 +374,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 		if (miss_ea) cerr << "lw_radiation ";
 		if (miss_wind) cerr << "VW ";
 		if (miss_drift) cerr << "drift ";
+		if (miss_adv) cerr << "adv_heat ";
 		cerr << "} on " << md.date.toString(mio::Date::ISO) << "\n";
 		return false;
 	}
@@ -427,7 +429,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 		Mdata.rho_hn = md("RHO_HN");
 
 	// Add advective heat (for permafrost) if available
-	if(md.param_exists("ADV_HEAT"))
+	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");
 }
 
@@ -932,6 +934,8 @@ inline void real_main (int argc, char *argv[])
 	const bool avgsum_time_series = cfg.get("AVGSUM_TIME_SERIES", "Output", mio::IOUtils::nothrow);
 	const bool cumsum_mass = cfg.get("CUMSUM_MASS", "Output", mio::IOUtils::nothrow);
 	const double thresh_rain = cfg.get("THRESH_RAIN", "SnowpackAdvanced"); //Rain only for air temperatures warmer than threshold (degC)
+	const bool advective_heat = cfg.get("ADVECTIVE_HEAT", "SnowpackAdvanced", mio::IOUtils::nothrow);
+	const bool soil_flux =  (useSoilLayers)? cfg.get("SOIL_FLUX", "Snowpack", mio::IOUtils::nothrow) : false;
 
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //operational use case: stationIDs provided on the command line
@@ -1003,7 +1007,7 @@ inline void real_main (int argc, char *argv[])
 			mn_ctrl.resFirstDump = true; //HACK to dump the initial state in research mode
 			deleteOldOutputFiles(outpath, experiment, vecStationIDs[i_stn], slope.nSlopes, snowpackio.getExtensions());
 			cfg.write(outpath + "/" + vecStationIDs[i_stn] + "_" + experiment + ".ini"); //output config
-			current_date -= calculation_step_length/1440;
+			current_date -= calculation_step_length/(24.*60.);
 		} else {
 			const string db_name = cfg.get("DBNAME", "Output", mio::IOUtils::nothrow);
 			if (db_name == "sdbo" || db_name == "sdbt")
@@ -1012,10 +1016,10 @@ inline void real_main (int argc, char *argv[])
 
 		SunObject sun(vecSSdata[slope.mainStation].meta.position.getLat(), vecSSdata[slope.mainStation].meta.position.getLon(), vecSSdata[slope.mainStation].meta.position.getAltitude());
 		sun.setElevationThresh(0.6);
-		mn_ctrl.Duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600;
 		vector<ProcessDat> qr_Hdata;     //Hazard data for t=0...tn
 		vector<ProcessInd> qr_Hdata_ind; //Hazard data Index for t=0...tn
-		Hazard hazard(cfg, mn_ctrl.Duration);
+		const double duration = (dateEnd.getJulian() - current_date.getJulian() + 0.5/24)*24*3600; //HACK: why is it computed this way?
+		Hazard hazard(cfg, duration);
 		hazard.initializeHazard(sn_Zdata.drift24, vecXdata.at(0).meta.getSlopeAngle(), qr_Hdata, qr_Hdata_ind);
 
 		prn_msg(__FILE__, __LINE__, "msg", mio::Date(), "Start simulation for %s on %s",
@@ -1053,7 +1057,7 @@ inline void real_main (int argc, char *argv[])
 			}
 			meteoRead_timer.stop();
 			editMeteoData(vecMyMeteo[i_stn], variant, thresh_rain);
-			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, slope.nSlopes)) {
+			if (!validMeteoData(vecMyMeteo[i_stn], vecStationIDs[i_stn], variant, enforce_snow_height, advective_heat, soil_flux, slope.nSlopes)) {
 				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No valid data for station %s on [%s]",
 				        vecStationIDs[i_stn].c_str(), current_date.toString(mio::Date::ISO).c_str());
 				current_date -= calculation_step_length/1440;
@@ -1184,7 +1188,6 @@ inline void real_main (int argc, char *argv[])
 						}
 					}
 					if (mn_ctrl.HzDump) { // Save hazard data ...
-						//strncpy(qr_Hdata.at(i_hz).stat_abbrev, vecStationIDs[i_stn].c_str(), 15);
 						qr_Hdata.at(i_hz).stat_abbrev = vecStationIDs[i_stn];
 						if (mode == "OPERATIONAL") {
 							qr_Hdata.at(i_hz).loc_for_snow = (unsigned char)vecStationIDs[i_stn][vecStationIDs[i_stn].length()-1];
@@ -1363,12 +1366,12 @@ inline void real_main (int argc, char *argv[])
 }
 
 int main(int argc, char *argv[]) {
-	try {
+	//try {
 		real_main(argc, argv);
-	} catch (const std::exception &e) {
+	/*} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
 		throw;
-	}
+	}*/
 
 	return EXIT_SUCCESS;
 }

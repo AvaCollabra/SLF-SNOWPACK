@@ -140,7 +140,7 @@ using namespace mio;
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info), ts_smet_writer(NULL),
+          info(run_info), tsWriters(),
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
@@ -183,8 +183,12 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 
 SmetIO::~SmetIO()
 {
-	if (ts_smet_writer!=NULL) delete ts_smet_writer;
-	ts_smet_writer = NULL;
+	for (std::map<std::string, smet::SMETWriter*>::iterator it = tsWriters.begin(); it != tsWriters.end(); ++it){
+		if (it->second!=NULL) {
+			delete it->second;
+			it->second = NULL;
+		}
+	}
 }
 
 SmetIO& SmetIO::operator=(const SmetIO& source) {
@@ -198,7 +202,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		i_snowpath = source.i_snowpath;
 		sw_mode = source.sw_mode;
 		//info = source.info;
-		ts_smet_writer = NULL; //it will have to be re-allocated for thread safety
+		tsWriters = std::map<std::string, smet::SMETWriter*>(); //it will have to be re-allocated for thread safety
 
 		in_dflt_TZ = source.in_dflt_TZ;
 		calculation_step_length = source.calculation_step_length;
@@ -760,7 +764,7 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[AIR]
 	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[SOIL]
 	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_RHO]
-	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_K]
+	vec_width.push_back(9); vec_precision.push_back(3);  //EMS[e].soil[SOIL_K]
 	vec_width.push_back(12); vec_precision.push_back(1);  //EMS[e].soil[SOIL_C]
 	vec_width.push_back(11); vec_precision.push_back(6);  //EMS[e].rg
 	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].rb
@@ -845,14 +849,14 @@ std::string SmetIO::getFieldsHeader()
 	return os.str();
 }
 
-void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
+void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& smet_writer)
 {
 	const std::string fields( getFieldsHeader() );
-	setBasicHeader(Xdata, fields, *ts_smet_writer);
+	setBasicHeader(Xdata, fields, smet_writer);
 	if (out_haz) { // HACK To avoid troubles in A3D
 		ostringstream ss;
 		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
-		ts_smet_writer->set_header_value("creator", ss.str());
+		smet_writer.set_header_value("creator", ss.str());
 	}
 
 	std::ostringstream units_offset, units_multiplier;
@@ -967,19 +971,19 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata)
 		os << " ";
 	}	*/
 
-	ts_smet_writer->set_header_value("units_offset", units_offset.str());
-	ts_smet_writer->set_header_value("units_multiplier", units_multiplier.str());
-	ts_smet_writer->set_header_value("plot_unit", plot_units.str());
-	ts_smet_writer->set_header_value("plot_description", plot_description.str());
-	ts_smet_writer->set_header_value("plot_color", plot_color.str());
-	//ts_smet_writer->set_header_value("plot_min", plot_min.str());
-	//ts_smet_writer->set_header_value("plot_max", plot_max.str());
+	smet_writer.set_header_value("units_offset", units_offset.str());
+	smet_writer.set_header_value("units_multiplier", units_multiplier.str());
+	smet_writer.set_header_value("plot_unit", plot_units.str());
+	smet_writer.set_header_value("plot_description", plot_description.str());
+	smet_writer.set_header_value("plot_color", plot_color.str());
+	//smet_writer.set_header_value("plot_min", plot_min.str());
+	//smet_writer.set_header_value("plot_max", plot_max.str());
 }
 
-void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24)
+void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24, smet::SMETWriter& smet_writer)
 {
-	vector<string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
-	vector<double> data;
+	std::vector<std::string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
+	std::vector<double> data;
 
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const size_t nN = Xdata.getNumberOfNodes();
@@ -1087,30 +1091,31 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 
 	/*if (out_canopy)
 		os << " ";*/
-
-	ts_smet_writer->write(timestamp, data);
+	smet_writer.write(timestamp, data);
 }
 
 void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
                                const ProcessDat& Hdata, const double wind_trans24)
 {
-	if (ts_smet_writer==NULL) {
+	const std::string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".smet" );
+	std::map<std::string,smet::SMETWriter*>::iterator it = tsWriters.find(filename);
+
+	if (it==tsWriters.end()) {
 		if (out_t)
 			Mdata.getFixedPositions(fixedPositions);
 
-		const std::string filename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), outpath) + ".smet" );
 		if (!FileUtils::validFileAndPath(filename)) //Check whether filename is valid
 				throw InvalidNameException(filename, AT);
 
 		if (FileUtils::fileExists(filename)) {
-			ts_smet_writer = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
+			it->second = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
 		} else {
-			ts_smet_writer = new smet::SMETWriter(filename);
-			writeTimeSeriesHeader(Xdata);
+			it->second = new smet::SMETWriter(filename);
+			writeTimeSeriesHeader(Xdata, *(it->second));
 		}
 	}
 
-	writeTimeSeriesData(Xdata, Sdata, Mdata, Hdata, wind_trans24);
+	writeTimeSeriesData(Xdata, Sdata, Mdata, Hdata, wind_trans24, *(it->second));
 }
 
 void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)
@@ -1127,8 +1132,7 @@ bool SmetIO::writeHazardData(const std::string& /*stationID*/, const std::vector
 // complete filename_prefix
 std::string SmetIO::getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp) const
 {
-	//TODO: read only once (in constructor)
-	string filename_prefix( path + "/" + fnam );
+	std::string filename_prefix( path + "/" + fnam );
 
 	if (addexp && (experiment != "NO_EXP")) //NOTE usually, experiment == NO_EXP in operational mode
 		filename_prefix += "_" + experiment;
