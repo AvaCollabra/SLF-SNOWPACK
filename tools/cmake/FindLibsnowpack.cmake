@@ -8,13 +8,15 @@ IF(WIN32)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT2 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT3 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\WSL Institute for Snow and Avalanche Research\\Snowpack]" ABSOLUTE CACHE INTERNAL)
+	GET_FILENAME_COMPONENT(METEOIO_ROOT4 "C:/Progra~1/Snowpack*" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
+		${SRC_DIR}/snowpack/bin ${SRC_DIR}/snowpack/lib
+		${SRC_DIR}/../../snowpack/bin ${SRC_DIR}/../../snowpack/lib
 		${LIBSNOWPACK_ROOT1}/bin ${LIBSNOWPACK_ROOT1}/lib
 		${LIBSNOWPACK_ROOT2}/bin ${LIBSNOWPACK_ROOT2}/lib
 		${LIBSNOWPACK_ROOT3}/bin ${LIBSNOWPACK_ROOT3}/lib
-		${SRC_DIR}/snowpack/bin ${SRC_DIR}/snowpack/lib
-		"C:/Program Files/Snowpack/bin" "C:/Program Files/Snowpack/lib" )
+		${LIBSNOWPACK_ROOT4}/bin ${LIBSNOWPACK_ROOT4}/lib )
 
 	IF(MSVC)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
@@ -34,14 +36,15 @@ ELSE(WIN32)
 		FIND_LIBRARY(LIBSNOWPACK_LIBRARY
 		NAMES snowpack
 		PATHS
-			"/Applications/Snowpack/lib"
 			ENV LD_LIBRARY_PATH
 			ENV DYLD_FALLBACK_LIBRARY_PATH
+			${SRC_DIR}/snowpack/lib
+			${SRC_DIR}/../../snowpack/lib
 			"~/usr/lib"
+			"/Applications/Snowpack/lib"
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
-			${SRC_DIR}/snowpack/lib
 		DOC "Location of the libsnowpack, like /usr/lib/libsnowpack.dylib"
 		)
 	ELSE(APPLE)
@@ -49,11 +52,12 @@ ELSE(WIN32)
 		NAMES snowpack
 		PATHS
 			ENV LD_LIBRARY_PATH
+			${SRC_DIR}/snowpack/lib
+			${SRC_DIR}/../../snowpack/lib
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
 			"/opt/lib"
-			${SRC_DIR}/snowpack/lib
 		DOC "Location of the libsnowpack, like /usr/lib"
 		)
 	ENDIF(APPLE)

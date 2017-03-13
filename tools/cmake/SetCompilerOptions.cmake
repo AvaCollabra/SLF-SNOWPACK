@@ -179,6 +179,6 @@ MACRO (SET_COMPILER_OPTIONS)
 	ENDIF(DEST STREQUAL "optimized")
 
 	#show exception messages in a graphical message box
-	SET(GUI_EXCEPTIONS OFF CACHE BOOL "Show a message box with exceptions texts ON or OFF")
+	#SET(GUI_EXCEPTIONS OFF CACHE BOOL "Show a message box with exceptions texts ON or OFF")
 
 ENDMACRO (SET_COMPILER_OPTIONS)
