@@ -135,6 +135,22 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		// Warn if enable_pref_flow == true and the K_AverageType != GEOMETRICMEAN.
 		// Dual domain approach was designed using GEOMETRICMEAN and other combinations are unlikely to be made on purpose.
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "PREF_FLOW = TRUE is expecting AVG_METHOD_HYDRAULIC_CONDUCTIVITY = GEOMETRICMEAN!");
+		std::string tmp_avg_method_K;
+		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K);
+		if (tmp_avg_method_K=="ARITHMETICMEAN") {
+			K_AverageType_PrefFlow=ARITHMETICMEAN;
+		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
+			K_AverageType_PrefFlow=GEOMETRICMEAN;
+		} else if (tmp_avg_method_K=="HARMONICMEAN") {
+			K_AverageType_PrefFlow=HARMONICMEAN;
+		} else if (tmp_avg_method_K=="MINIMUMVALUE") {
+			K_AverageType_PrefFlow=MINIMUMVALUE;
+		} else if (tmp_avg_method_K=="UPSTREAM") {
+			K_AverageType_PrefFlow=UPSTREAM;
+		} else {
+			prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW).");
+			throw;
+		}
 	}
 	matrix=matrix_part;
 }
@@ -682,7 +698,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		WATERINDEX=WATER;
 	} else {
 		WATERINDEX=WATER_PREF;
-		BottomBC=DIRICHLET;
+		K_AverageType=K_AverageType_PrefFlow;
 	}
 
 	//
