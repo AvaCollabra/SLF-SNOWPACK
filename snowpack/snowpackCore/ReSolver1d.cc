@@ -131,6 +131,7 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 	cfg.getValue("PREF_FLOW_PARAM_TH", "SnowpackAdvanced", pref_flow_param_th);
 	cfg.getValue("PREF_FLOW_PARAM_N", "SnowpackAdvanced", pref_flow_param_N);
+	cfg.getValue("PREF_FLOW_PARAM_HETEROGENEITY_FACTOR", "SnowpackAdvanced", pref_flow_param_heterogeneity_factor);
 	if(enable_pref_flow && K_AverageType!=GEOMETRICMEAN) {
 		// Warn if enable_pref_flow == true and the K_AverageType != GEOMETRICMEAN.
 		// Dual domain approach was designed using GEOMETRICMEAN and other combinations are unlikely to be made on purpose.
@@ -2609,7 +2610,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						}*/
 					} else {
 						// Calculate threshold in the current layer that belongs to water entry pressure of the layer below
-						const double matrix_threshold=std::max(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i-1].ogs) + 0.01074))-dz_up[i-1], theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i-1].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
+						const double matrix_threshold=std::max(0.001, fromHtoTHETA((-1.*((0.0437 / (pref_flow_param_heterogeneity_factor * EMS[i-1].ogs)) + 0.01074))-dz_up[i-1], theta_r[i-1], (1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i-1].PrefFlowArea), alpha[i-1], m[i-1], n[i-1], Sc[i-1], h_e[i-1]));
 						if(EMS[i].theta[WATER]>matrix_threshold) {
 							// Enforcing equal saturation between matrix part at [i] and preferential part at [i-1]
 							const double tmp_theta_water_tot = EMS[i].theta[WATER]*EMS[i].L + EMS[i-1].theta[WATER_PREF]*EMS[i-1].L;
