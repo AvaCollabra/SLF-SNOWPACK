@@ -312,7 +312,7 @@ snowpack mass,Eroded mass,Rain rate,Surface runoff (without soil infiltration),S
  */
 
 AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-         : setAppendableFiles(), variant(), experiment(), sw_mode(),
+         : setAppendableFiles(), metamorphism_model(), variant(), experiment(), sw_mode(),
            inpath(), snowfile(), i_snowpath(), outpath(), o_snowpath(),
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),

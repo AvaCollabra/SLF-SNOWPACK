@@ -575,7 +575,6 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	const size_t nN = Xdata.getNumberOfNodes(), nE = nN-1;
 	size_t rnN = nN, rnE = nN-1;
 	vector<ElementData>& EMS = Xdata.Edata;
-	vector<NodeData>& NDS = Xdata.Ndata;
 
 	if ((nN == Xdata.SoilNode+1)
 	        || (water_layer && useSoilLayers && (nN == Xdata.SoilNode+2)

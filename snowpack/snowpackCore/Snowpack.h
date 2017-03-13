@@ -100,9 +100,8 @@ class Snowpack {
 		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
-		double albedo_NIED_av;
 		Meteo::ATM_STABILITY atm_stability_model;
-		bool allow_adaptive_timestepping;
+		double albedo_NIED_av;
 		double albedo_fixedValue, hn_density_fixedValue;
 		double meteo_step_length;
 		double thresh_change_bc, geo_heat, height_of_meteo_values, height_new_elem, sn_dt;
@@ -113,6 +112,7 @@ class Snowpack {
 		double minimum_l_element;
 		double t_surf;
 		static const double min_snow_albedo;
+		bool allow_adaptive_timestepping;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;
 		bool combine_elements, reduce_n_elements, change_bc, meas_tss;
