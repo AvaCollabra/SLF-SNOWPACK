@@ -56,8 +56,8 @@ using namespace mio;
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
-             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.),
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN), K_AverageType_PrefFlow(ARITHMETICMEAN),
+             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
              sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false), matrix(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -136,17 +136,17 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		// Warn if enable_pref_flow == true and the K_AverageType != GEOMETRICMEAN.
 		// Dual domain approach was designed using GEOMETRICMEAN and other combinations are unlikely to be made on purpose.
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "PREF_FLOW = TRUE is expecting AVG_METHOD_HYDRAULIC_CONDUCTIVITY = GEOMETRICMEAN!");
-		std::string tmp_avg_method_K;
-		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K);
-		if (tmp_avg_method_K=="ARITHMETICMEAN") {
+		std::string tmp_avg_method_K_pref;
+		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K_pref);
+		if (tmp_avg_method_K_pref=="ARITHMETICMEAN") {
 			K_AverageType_PrefFlow=ARITHMETICMEAN;
-		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
+		} else if (tmp_avg_method_K_pref=="GEOMETRICMEAN") {
 			K_AverageType_PrefFlow=GEOMETRICMEAN;
-		} else if (tmp_avg_method_K=="HARMONICMEAN") {
+		} else if (tmp_avg_method_K_pref=="HARMONICMEAN") {
 			K_AverageType_PrefFlow=HARMONICMEAN;
-		} else if (tmp_avg_method_K=="MINIMUMVALUE") {
+		} else if (tmp_avg_method_K_pref=="MINIMUMVALUE") {
 			K_AverageType_PrefFlow=MINIMUMVALUE;
-		} else if (tmp_avg_method_K=="UPSTREAM") {
+		} else if (tmp_avg_method_K_pref=="UPSTREAM") {
 			K_AverageType_PrefFlow=UPSTREAM;
 		} else {
 			prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW).");
