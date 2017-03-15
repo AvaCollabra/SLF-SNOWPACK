@@ -1041,6 +1041,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	h_d=0.;									//Set definition of pressure head of completely dry to zero, we will determine it in the next loop.
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
+		if(EMS[i].VGModel == NULL) {EMS[i].VGModel = new VanGenuchtenModel;};
 		if ( i >= nsoillayers) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
 			const double max_allowed_ice=0.95;			//An ice pore space of 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 			if(EMS[i].theta[ICE]>max_allowed_ice) {

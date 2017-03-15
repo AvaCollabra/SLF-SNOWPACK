@@ -245,6 +245,11 @@ class SN_SNOWSOIL_DATA {
 };
 
 /**
+ * @brief Van Genuchten model for water retention of the porous medium \n
+ */
+class VanGenuchtenModel {};
+
+/**
  * @brief ELEMENT DATA used as a pointer in the SnowStation structure
  * NOTE on M below: this is the mass of an element that is neither changed by phase changes nor densification. \n
  * It is set in the data initialization and used to compute the stress field.
@@ -260,6 +265,9 @@ class ElementData {
 		} Young_Modulus;
 
 		ElementData();
+		ElementData(const ElementData& cc);
+		~ElementData();
+		ElementData& operator=(const ElementData&); ///<Assignement operator
 
 		bool checkVolContent() const;
 		void heatCapacity();
@@ -269,6 +277,7 @@ class ElementData {
 		void snowResidualWaterContent();
 		static double snowResidualWaterContent(const double& theta_i);
 		double soilFieldCapacity() const;
+		double RelativeHumidity() const;
 
 		double snowElasticity() const;
 		double neckStressEnhancement() const;
@@ -293,6 +302,7 @@ class ElementData {
 		double melting_tk;	   ///< melt temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		double freezing_tk;	   ///< freezing temperature of layer (principally initialized as 0 degC, but enables possibility for freezing point depression)
 		std::vector<double> theta; ///< volumetric contents: SOIL, ICE, WATER, WATER_PREF, AIR (1)
+		double h;                  ///< pressure head (m)
 		mio::Array2D<double> conc; ///< Concentration for chemical constituents in (kg m-3)
 		std::vector<double> k;     ///< For example, heat conductivity of TEMPERATURE field (W m-1 K-1)
 		//   Stored in order to visualize constitutive laws
@@ -328,7 +338,9 @@ class ElementData {
 		double hard;               ///< Parameterized hand hardness (1)
 		double S_dr;               ///< Stability Index based on deformation rate (Direct Action Avalanching)
 		double crit_cut_length;    ///< Critical cut length (m)
-		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation in snow
+		VanGenuchtenModel* VGModel;///< Van Genuchten Model for water retention
+		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation
+		double theta_s;            ///< Saturated water content of previous time step (m^3/m^3), used exclusively for solving Richards equation
 		double lwc_source;         ///< Source/sink term for Richards equation
 		double PrefFlowArea;       ///< Preferential flow path relative area (-)
 		//NIED (H. Hirashima)

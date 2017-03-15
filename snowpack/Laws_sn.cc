@@ -610,6 +610,96 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
 }
 
 /**
+ * @brief Water vapor diffusion coefficient in soil.
+ * The formulation is based on Saito et al., 2006 "Numerical analysis of coupled water vapor
+ * and heat transport in the vadose zone", see eq. [14] and [15].
+ * It is defined as the product of the tortuosity factor (-) as defined by Millington and Quirck (1961),
+ * the air-filled porosity (m3 m-3) and the diffusivity of water vapor in air (m2 s-1).
+ * @author Margaux Couttet
+ * @param Edata element data
+ * @return vapour diffusivity in soil (m2 s-1)
+ */
+double SnLaws::soilVaporDiffusivity(const ElementData& Edata)
+{
+    double tortuosity = (Edata.theta_s > Constants::eps2)?(pow(Edata.theta[AIR], 7./3.)/pow(Edata.theta_s, 2.)):(0.);
+    
+    return (tortuosity * Edata.theta[AIR] * Constants::diffusion_coefficient_in_air);
+}
+
+
+/**
+ * @brief Computes the enhancement factor for water vapor transport in soil.
+ * Derived from Cass et al., 1984 "Enhancement of thermal water vapor diffusion in soil", see eq. [19].
+ * Describe the increase in thermal vapor flux as a result of liquid islands and increased 
+ * temperature gradients in the air phase.
+ * @author Margaux Couttet
+ * @param Edata element data
+ * @return Enhancement factor (-)
+ */
+double SnLaws::compEnhanceWaterVaporTransportSoil(const ElementData& Edata, const double& clay_fraction)
+{
+	const double r = (Edata.theta[WATER]+Edata.theta[ICE]*Constants::density_ice/Constants::density_water)/Edata.theta_s;
+	return ((Edata.theta_s > Constants::eps2)?(9.5 + 3.*(r) - 8.5*exp(-1.*pow((1.+2.6/sqrt(clay_fraction))*r,4.))):(0.));
+}
+
+/**
+* @brief Computes the soil THERMAL vapor hydraulic conductivity.
+* Requires the use of RE to determine pressure head (Edata.h) and saturated water content (theta_s).
+* The THERMAL vapor hydraulic conductivy formulation is based on Saito et al., 2006 
+* "Numerical analysis of coupled water, vapor, and heat transport in the vadose zone", see eq. [13].
+* It is used to determine the flux density of water vapor in soil due to THERMAL gradient: q_vT = -Kvapor_T*gradT.
+* The enhancement factor is used to describe the increase in the thermal vapor flux as a result of liquid islands 
+* and increased temperature gradients in the air phase (Philip and de Vries, 1957)
+* The relative humidity is calculated from the pressure head (h), using a thermodynamic relationship between liquid water 
+* and water vapour in soil pores (Philip and de Vries, 1957)
+* @author Margaux Couttet
+* @param Edata_bot element data
+* @param Edata_top element data
+* @param Te_bot lower element temperature (K)
+* @param Te_top upper element temperature (K)
+* @return thermal vapor hydraulic conductivity (m2 K-1 s-1)
+*/
+double SnLaws::compSoilThermalVaporConductivity(const ElementData& Edata_bot, const ElementData& Edata_top, const double& Te_bot, const double& Te_top, const double& clay_fraction)
+{
+	//Determine the nodal values by averaging between top and bottom elements
+	const double nodal_diffusivity = .5 * (SnLaws::soilVaporDiffusivity(Edata_top) + SnLaws::soilVaporDiffusivity(Edata_bot)); //(m2 s-1)
+	const double nodal_HR = .5 * (Edata_top.RelativeHumidity() + Edata_bot.RelativeHumidity()); //(-)
+	const double nodal_enhancement = .5 * (SnLaws::compEnhanceWaterVaporTransportSoil(Edata_top,clay_fraction) 
+	+ SnLaws::compEnhanceWaterVaporTransportSoil(Edata_bot,clay_fraction)); // (-)
+	
+	double dRhovs_dT = 0.; // change of water vapor density due to temperature gradient (kg m-3 K-1)
+	if (fabs(Te_top - Te_bot) > Constants::eps2) { // if no temperature difference between top and bottom nodes, the vapor density gradient remains zero
+		dRhovs_dT = (Atmosphere::waterVaporDensity(Te_top, Atmosphere::vaporSaturationPressure(Te_top)) - 
+			Atmosphere::waterVaporDensity(Te_bot, Atmosphere::vaporSaturationPressure(Te_bot))) / (Te_top - Te_bot);
+	}
+	return (nodal_diffusivity/Constants::density_water * nodal_enhancement * nodal_HR * dRhovs_dT);
+}
+
+/**
+ * @brief Computes the soil ISOTHERMAL vapor hydraulic conductivity.
+ * The ISOTHERMAL vapor hydraulic conductivy formulation is based on Saito et al., 2006 
+ * "Numerical analysis of coupled water, vapor, and heat transport in the vadose zone", see eq. [12].
+ * It is used to determine the flux density of water vapor in soil due to MOISTURE gradient: q_vh = -Kvapor_h*gradH.
+ * @author Margaux Couttet
+ * @param Edata_bot element data
+ * @param Edata_top element data
+ * @param Te_bot lower element temperature (K)
+ * @param Te_top upper element temperature (K)
+ * @param T_node nodal temperature (K)
+ * @return isothermal vapor hydraulic conductivity (m s-1)
+ */
+double SnLaws::compSoilIsothermalVaporConductivity(const ElementData& Edata_bot, const ElementData& Edata_top, const double& Te_bot, const double& Te_top, const double& T_node)
+{
+	//Determine the nodal values by averaging between top and bottom elements
+	const double nodal_diffusivity = .5*(SnLaws::soilVaporDiffusivity(Edata_top) + SnLaws::soilVaporDiffusivity(Edata_bot)); //(m2 s-1)
+	const double nodal_vaporDensity = .5*(Atmosphere::waterVaporDensity(Te_top, Atmosphere::vaporSaturationPressure(Te_top))   
+	                                   + Atmosphere::waterVaporDensity(Te_bot, Atmosphere::vaporSaturationPressure(Te_bot))); //(kg m-3)
+	const double nodal_HR = .5*(Edata_top.RelativeHumidity() + Edata_bot.RelativeHumidity()); //(-)
+
+	return (nodal_diffusivity/Constants::density_water * nodal_vaporDensity * Constants::g/(Constants::gas_constant * T_node)) * nodal_HR;
+}
+
+/**
  * @brief Computes the enhancement factor for water vapor transport in wet snow
  * @version 9Y.mm
  * @param Xdata
@@ -789,8 +879,6 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	double eS;
 
 	// Vapor Pressures
-	const double th_w_ss = (nElems>0)? (Xdata.Edata[nElems-1].theta[WATER]+Xdata.Edata[nElems-1].theta[WATER_PREF]) : 0.;
-
 	// TODO The part below needs to be rewritten in a more consistent way !!!
 	//      In particular, look closely at the condition within compLatentHeat()
 	const double eA = Mdata.rh * Atmosphere::vaporSaturationPressure(T_air);
@@ -808,11 +896,8 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 			 * function is defined in compLatentHeat, and the Switch SnLaws::soil_evaporation is found
 			 * in Laws_sn.h
 			*/
-			if (SnLaws::soil_evaporation==EVAP_RELATIVE_HUMIDITY && th_w_ss < Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity()) {
-				eS = Vp2 * 0.5 * ( 1. - cos (std::min(Constants::pi, th_w_ss * Constants::pi
-				         / (Xdata.Edata[Xdata.SoilNode-1].soilFieldCapacity() * 1.6))));
-			} else {
-				eS = Vp2;
+			if (SnLaws::soil_evaporation==EVAP_RELATIVE_HUMIDITY) {
+				eS = Vp2 * Xdata.Edata[Xdata.SoilNode-1].RelativeHumidity();
 			}
 		}
 	} else {

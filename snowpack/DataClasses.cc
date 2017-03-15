@@ -754,13 +754,99 @@ void CanopyData::initializeSurfaceExchangeData()
 // Class ElementData
 ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
-                             theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
+                             theta((size_t)N_COMPONENTS), h(0.), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VGModel(NULL), theta_r(0.), theta_s(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
+
+ElementData::ElementData(const ElementData& cc) :
+                             depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
+                             Te(cc.Te), gradT(cc.gradT), melting_tk(cc.melting_tk), freezing_tk(cc.freezing_tk),
+                             theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
+                             Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
+                             rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
+                             type(cc.type), metamo(0.), dth_w(0.), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
+                             dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
+                             S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VGModel(NULL), theta_r(cc.theta_r), theta_s(cc.theta_s), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), dsm(cc.dsm) {
+	if (cc.VGModel != NULL) {
+		// Deep copy pointer to VanGenuchtenModel object
+		VGModel = new VanGenuchtenModel(*cc.VGModel);
+	} else {
+		VGModel = NULL;
+	}
+}
+
+ElementData::~ElementData() {
+	if (VGModel != NULL) {
+		delete VGModel;
+		VGModel = NULL;
+	}
+}
+
+ElementData& ElementData::operator=(const ElementData& source) {
+	if(this != &source) {
+		depositionDate = source.depositionDate;
+		L0 = source.L0;
+		L = source.L;
+		Te = source.Te;
+		gradT = source.gradT;
+		melting_tk = source.melting_tk;
+		freezing_tk = source.freezing_tk;
+		theta = source.theta;
+		h = source.h;
+		conc = source.conc;
+		k = source.k;
+		c = source.c;
+		soil = source.soil;
+		Rho = source.Rho;
+		M = source.M;
+		sw_abs = source.sw_abs;
+		rg = source.rg;
+		dd = source.dd;
+		sp = source.sp;
+		ogs = source.ogs;
+		rb = source.rb;
+		N3 = source.N3;
+		mk = source.mk;
+		type = source.type;
+		metamo = source.metamo;
+		dth_w = source.dth_w;
+		res_wat_cont = source.res_wat_cont;
+		Qmf = source.Qmf;
+		QIntmf = source.QIntmf;
+		dEps = source.dEps;
+		Eps = source.Eps;
+		Eps_e = source.Eps_e;
+		Eps_v = source.Eps_v;
+		Eps_Dot = source.Eps_Dot;
+		Eps_vDot = source.Eps_vDot;
+		E = source.E;
+		S = source.S;
+		C = source.C;
+		CDot = source.CDot;
+		ps2rb = source.ps2rb;
+		s_strength = source.s_strength;
+		hard = source.hard;
+		S_dr = source.S_dr;
+		crit_cut_length = source.crit_cut_length;
+		if (source.VGModel != NULL) {
+			// Deep copy pointer to VanGenuchtenModel object
+			VGModel = new VanGenuchtenModel(*source.VGModel);
+		} else {
+			VGModel = NULL;
+		}
+		theta_r = source.theta_r;
+		theta_s = source.theta_s;
+		lwc_source = source.lwc_source;
+		PrefFlowArea = source.PrefFlowArea;
+		dsm = source.dsm;
+	}
+	return *this;
+}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -775,6 +861,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	const size_t s_theta = data.theta.size();
 	os.write(reinterpret_cast<const char*>(&s_theta), sizeof(size_t));
 	os.write(reinterpret_cast<const char*>(&data.theta[0]), static_cast<streamsize>(s_theta*sizeof(data.theta[0])));
+	os.write(reinterpret_cast<const char*>(&data.h), sizeof(data.h));
 	os << data.conc;
 
 	const size_t s_k = data.k.size();
@@ -821,6 +908,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.hard), sizeof(data.hard));
 	os.write(reinterpret_cast<const char*>(&data.S_dr), sizeof(data.S_dr));
 	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
+	os.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
 	os.write(reinterpret_cast<const char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
@@ -841,6 +929,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&s_theta), sizeof(size_t));
 	data.theta.resize(s_theta);
 	is.read(reinterpret_cast<char*>(&data.theta[0]), static_cast<streamsize>(s_theta*sizeof(data.theta[0])));
+	is.read(reinterpret_cast<char*>(&data.h), sizeof(data.h));
 	is >> data.conc;
 
 	size_t s_k;
@@ -890,6 +979,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.hard), sizeof(data.hard));
 	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
 	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
+	is.read(reinterpret_cast<char*>(&data.theta_s), sizeof(data.theta_s));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
@@ -1084,6 +1174,33 @@ double ElementData::soilFieldCapacity() const
 }
 
 /**
+ * @brief RelativeHumidity
+ * @author Nander Wever et al.
+ * @brief Relative humidity in soil.
+ * The formulation is based on Saito et al., 2006 "Numerical analysis of 
+ * coupled water vapor and heat transport in the vadose zone".
+ * Calculated from the pressure head using a thermodynamic relationship 
+ * between liquid water and water vapor in soil pores (Philip and de Vries, 1957)
+ * @author Margaux Couttet
+ * @param Edata element data
+ * @param Temperature temperature (K)
+ * @return Soil relative humidity (-)
+ */
+ 
+double ElementData::RelativeHumidity() const
+{
+	if (VGModel != NULL) {
+		return (std::max(0., std::min(1., exp(h * Constants::g / (Constants::gas_constant * Te))))); //see eq. [18] from Saito et al., 2006
+	} else {
+		if ((theta[WATER] + theta[WATER_PREF]) < soilFieldCapacity() ) {
+			return (0.5 * ( 1. - cos (std::min(Constants::pi, (theta[WATER] + theta[WATER_PREF]) * Constants::pi / (soilFieldCapacity() * 1.6)))));
+		} else {
+			return 1.;
+		}
+	}
+}
+
+/**
  * @brief SNOW ELASTICITY  :  This important routine was programmed by Marc Christen, who took it directly
  * from Mellor's famous 1975 paper on SNOW MECHANICS in the GRINDLEWALD symposium. Dimensions
  * are in [Pa]. (Presently, it is NOT temperature dependent.)
@@ -1096,8 +1213,8 @@ double ElementData::snowElasticity() const
 		return Constants::big;
 
 	const double g = (Rho >= 70.)? ((Rho/1000.0)*8.235)-0.47 : ((70./1000.0)*8.235 )-0.47;
-	const double h = pow(10.0, g);
-	return (h * 100000.0);
+	const double he = pow(10.0, g);
+	return (he * 100000.0);
 }
 
 /**
@@ -1820,6 +1937,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].theta[ICE]   = SSdata.Ldata[ll].phiIce;
 			Edata[e].theta[WATER] = SSdata.Ldata[ll].phiWater;
 			Edata[e].theta[WATER_PREF] = SSdata.Ldata[ll].phiWaterPref;
+			Edata[e].theta_s = (1. - Edata[e].theta[SOIL] - ((Edata[e].theta[SOIL]>0.)?(0.):(Edata[e].theta[ICE])))*(Constants::density_ice/Constants::density_water);	// Pore space calculation, leaves space for expanding volume when water freezes. HACK: only initial guess. In case REQ is used, it will be overwritten.
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[ll].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[ll].SoilC;
