@@ -768,7 +768,7 @@ ElementData::ElementData(const ElementData& cc) :
                              theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
                              Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
                              rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
-                             type(cc.type), metamo(0.), dth_w(0.), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
+                             type(cc.type), metamo(cc.metamo), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
                              s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VGModel(NULL), theta_r(cc.theta_r), theta_s(cc.theta_s), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), dsm(cc.dsm) {
