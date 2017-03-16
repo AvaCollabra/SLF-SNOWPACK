@@ -2530,9 +2530,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {									//We are in snow
 			EMS[i].theta[WATERINDEX]=fromHtoTHETAforICE(h_n[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_n[i]);
 		}
+		EMS[i].h=h_n[i];
 		EMS[i].theta_r=theta_r[i];
-		//EMS[i].head=h_n[i];
-		
+		EMS[i].theta_s=theta_s[i];
+
 		//In case we had to melt ice to get theta_r, we have to adjust the temperature:
 		EMS[i].Te -= dT[i];
 		if(i==int(nE)-1 && i>=0) {							//HACK, TODO: remove type inconstency in comparison
