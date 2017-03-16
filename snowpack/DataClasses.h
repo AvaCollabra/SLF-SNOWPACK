@@ -491,8 +491,8 @@ class SnowStation {
 		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements, const size_t& cond);
 		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
-		void splitElement(const size_t& e);	//Split an element
-		void splitElements();			//Check for splitting, calls splitElement(...) for actual splitting
+		void splitElement(const size_t& e);				//Split an element
+		void splitElements(const double& max_element_length);		//Check for splitting, calls splitElement(...) for actual splitting
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);

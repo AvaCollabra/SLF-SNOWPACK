@@ -2177,8 +2177,10 @@ void SnowStation::splitElement(const size_t& e)
  * - This function split elements when they are getting closer to the top of the snowpack. This is required
  *   when using the "aggressive" merging option (REDUCE_N_ELEMENTS). When snow melt brings elements back to the
  *   snow surface, smaller layer spacing is required to accurately describe temperature and moisture gradients.
+ * @param max_element_length If positive: maximum allowed element length (m), above which splitting is applied.
+ *                           If argument is not positive: use function flexibleMaxElemLength.
  */
-void SnowStation::splitElements()
+void SnowStation::splitElements(const double& max_element_length)
 {
 	//Return when no snow present
 	if (nElems == SoilNode) return;
@@ -2186,7 +2188,8 @@ void SnowStation::splitElements()
 	for (size_t e = SoilNode; e < nElems; e++) {
 		double max_elem_l = comb_thresh_l;
 		const double depth = cH - Ndata[e].z;
-		max_elem_l = flexibleMaxElemLength(depth);
+		// If max_element_length > 0: take its value, else use function flexibleMaxElemLength.
+		max_elem_l = (max_element_length > 0) ? (0.5 * max_element_length) : (flexibleMaxElemLength(depth));
 		if(0.5*(Edata[e].L) > max_elem_l) {
 			splitElement(e);
 		}

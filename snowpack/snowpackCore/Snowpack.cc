@@ -1818,7 +1818,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		Xdata.combineElements(SnowStation::number_top_elements, reduce_n_elements, 1);
 		// Check for splitting elements
 		if (reduce_n_elements) {
-			Xdata.splitElements();
+			Xdata.splitElements(-1.);
 		}
 	}
 }
