@@ -193,16 +193,25 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 {
 	current_variant = variant;
 
-	if (current_variant == "ANTARCTICA") {
+	if (current_variant == "ANTARCTICA" || current_variant == "POLAR") {
 		t_term = t_term_arrhenius_critical;
 		visc = visc_dflt;
 		visc_ice_fudge = 9.45;
 		visc_sp_fudge = 16.5;
 		//visc_water_fudge is set to zero by default
 		setfix = false;
-		event = event_wind;
-		event_wind_lowlim = 4.0;
-		event_wind_highlim = 7.0;
+		if (watertransport_model == "RICHARDSEQUATION" ) {
+			// No sophisticated calibration was performed to find this value. The only issue is that a different water transport scheme leads to different settling behaviour.
+			// This value is chosen such that the melt curves in spring more or less resemble those of simulations with BUCKET.
+			visc_water_fudge = 45.;
+		} else {
+			visc_water_fudge = 33.;
+		}
+		if (current_variant == "ANTARCTICA") {
+			event = event_wind;
+			event_wind_lowlim = 4.0;
+			event_wind_highlim = 7.0;
+		}
 	} else if (current_variant == "CALIBRATION") {
 		// actual calibration; see factors in Laws_sn.cc
 		t_term = t_term_arrhenius_critical;
@@ -1179,18 +1188,24 @@ double SnLaws::NewSnowViscosityLehning(const ElementData& Edata)
 
 /**
  * @brief Computes the temperature term of viscosity
+ * The modifications for POLAR variant are described in: Steger CR, Reijmer CH, van den Broeke MR, Wever N, 
+ * Forster RR, Koenig LS, Kuipers Munneke P, Lehning M, Lhermitte S, Ligtenberg SRM, Miège C and Noël BPY (2017)
+ * Firn Meltwater Retention on the Greenland Ice Sheet: A Model Comparison. Front. Earth Sci. 5:3.
+ * doi: 10.3389/feart.2017.00003: "To improve the agreement with observations, the tunable factors in the snow
+ * viscosity scheme (Groot Zwaaftink et al., 2013) for the activation energy of snow Qs and the critical exponent
+ * β are set to 16,080 J mol−1 and 0.3, respectively."
  * @version 11.06
  * @param Te Element temperature (K)
  * @return Temperature term of snow viscosity
  */
 double SnLaws::snowViscosityTemperatureTerm(const double& Te)
 {
-	const double Q = 67000.; // Activation energy for defects in ice (J mol-1)
+	const double Q = (current_variant == "POLAR") ? (16080.) : (67000.); // Activation energy for defects in ice (J mol-1)
 
 	switch (SnLaws::t_term) {
 	case t_term_arrhenius_critical: {
 		const double Q_fac = 0.39; // Adjust Q to snow; from Schweizer et al. (2004): 0.24
-		const double criticalExp = 0.7; //0.5; //0.3; //
+		const double criticalExp = (current_variant == "POLAR") ? (0.3) : (0.7); //0.5; //0.3; //
 		const double T_r = 265.15; // Reference temperature (K), from Schweizer et al. (2004)
 		return ((1. / SnLaws::ArrheniusLaw(Q_fac * Q, Te, T_r))
 		             * (0.3 * pow((Constants::melting_tk - Te), criticalExp) + 0.4));

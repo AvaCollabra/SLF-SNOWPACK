@@ -225,7 +225,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	* - If VW_DENDRICITY is set, new snow dendricity is f(vw)
 	* - BOND_FACTOR_RH new snow bonds get stronger for average winds >= SnLaws::event_wind_lowlim and
 	*   mean relative humidity >= rh_lowlim */
-	if (variant == "ANTARCTICA") {
+	if (variant == "ANTARCTICA" || variant == "POLAR") {
 		new_snow_dd = 0.5;
 		new_snow_sp = 0.75;
 		new_snow_dd_wind = 0.15;
@@ -1180,7 +1180,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 			elem.dd = new_snow_dd;
 			elem.sp = new_snow_sp;
 			// Adapt dd and sp for blowing snow
-			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA")
+			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA" || variant == "POLAR")
 			|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
 			|| (hn_density_parameterization == "LEHNING_NEW"))))) {
 				elem.dd = new_snow_dd_wind;
