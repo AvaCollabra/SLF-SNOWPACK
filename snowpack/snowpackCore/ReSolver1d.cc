@@ -1325,18 +1325,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			// The part is blended out, as we suppress preferential flow in soil for the moment.
 		} else {
 			//For snow, we have to melt ice to create theta_r!!
-			if(theta_d[i]>0.) {	//Do we have room for melt water?
-				if(EMS[i].theta[WATERINDEX]<theta_d[i]) {
-					const double tmp_missing_theta=(theta_d[i]-EMS[i].theta[WATERINDEX]);	//Not too dry (original)
-					dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-					if (WriteOutNumerics_Level1==true) 
-						std::cout << "WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << "  theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
-					EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
-					EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
-				}
-			} else {
-				//Else we have a pure ice layer, TODO what to do?
-				throw;
+			if(EMS[i].theta[WATERINDEX]<theta_d[i]) {
+				const double tmp_missing_theta=(theta_d[i]-EMS[i].theta[WATERINDEX]);	//Not too dry (original)
+				dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+				if (WriteOutNumerics_Level1==true) 
+					std::cout << "WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << "  theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
+				EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
+				EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
 			}
 		}
 
