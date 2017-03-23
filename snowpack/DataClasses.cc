@@ -760,93 +760,7 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VGModel(NULL), theta_r(0.), theta_s(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
-
-ElementData::ElementData(const ElementData& cc) :
-                             depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
-                             Te(cc.Te), gradT(cc.gradT), melting_tk(cc.melting_tk), freezing_tk(cc.freezing_tk),
-                             theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
-                             Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
-                             rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
-                             type(cc.type), metamo(cc.metamo), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
-                             dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
-                             S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VGModel(NULL), theta_r(cc.theta_r), theta_s(cc.theta_s), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), dsm(cc.dsm) {
-	if (cc.VGModel != NULL) {
-		// Deep copy pointer to VanGenuchtenModel object
-		VGModel = new VanGenuchtenModel(*cc.VGModel);
-	} else {
-		VGModel = NULL;
-	}
-}
-
-ElementData::~ElementData() {
-	if (VGModel != NULL) {
-		delete VGModel;
-		VGModel = NULL;
-	}
-}
-
-ElementData& ElementData::operator=(const ElementData& source) {
-	if(this != &source) {
-		depositionDate = source.depositionDate;
-		L0 = source.L0;
-		L = source.L;
-		Te = source.Te;
-		gradT = source.gradT;
-		melting_tk = source.melting_tk;
-		freezing_tk = source.freezing_tk;
-		theta = source.theta;
-		h = source.h;
-		conc = source.conc;
-		k = source.k;
-		c = source.c;
-		soil = source.soil;
-		Rho = source.Rho;
-		M = source.M;
-		sw_abs = source.sw_abs;
-		rg = source.rg;
-		dd = source.dd;
-		sp = source.sp;
-		ogs = source.ogs;
-		rb = source.rb;
-		N3 = source.N3;
-		mk = source.mk;
-		type = source.type;
-		metamo = source.metamo;
-		dth_w = source.dth_w;
-		res_wat_cont = source.res_wat_cont;
-		Qmf = source.Qmf;
-		QIntmf = source.QIntmf;
-		dEps = source.dEps;
-		Eps = source.Eps;
-		Eps_e = source.Eps_e;
-		Eps_v = source.Eps_v;
-		Eps_Dot = source.Eps_Dot;
-		Eps_vDot = source.Eps_vDot;
-		E = source.E;
-		S = source.S;
-		C = source.C;
-		CDot = source.CDot;
-		ps2rb = source.ps2rb;
-		s_strength = source.s_strength;
-		hard = source.hard;
-		S_dr = source.S_dr;
-		crit_cut_length = source.crit_cut_length;
-		if (source.VGModel != NULL) {
-			// Deep copy pointer to VanGenuchtenModel object
-			VGModel = new VanGenuchtenModel(*source.VGModel);
-		} else {
-			VGModel = NULL;
-		}
-		theta_r = source.theta_r;
-		theta_s = source.theta_s;
-		lwc_source = source.lwc_source;
-		PrefFlowArea = source.PrefFlowArea;
-		dsm = source.dsm;
-	}
-	return *this;
-}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VGModel(), theta_r(0.), theta_s(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -1189,7 +1103,7 @@ double ElementData::soilFieldCapacity() const
  
 double ElementData::RelativeHumidity() const
 {
-	if (VGModel != NULL) {
+	if (VGModel.defined == true) {
 		return (std::max(0., std::min(1., exp(h * Constants::g / (Constants::gas_constant * Te))))); //see eq. [18] from Saito et al., 2006
 	} else {
 		if ((theta[WATER] + theta[WATER_PREF]) < soilFieldCapacity() ) {

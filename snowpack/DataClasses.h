@@ -247,7 +247,10 @@ class SN_SNOWSOIL_DATA {
 /**
  * @brief Van Genuchten model for water retention of the porous medium \n
  */
-class VanGenuchtenModel {};
+class VanGenuchtenModel {
+	public:
+		bool defined;
+};
 
 /**
  * @brief ELEMENT DATA used as a pointer in the SnowStation structure
@@ -265,9 +268,6 @@ class ElementData {
 		} Young_Modulus;
 
 		ElementData();
-		ElementData(const ElementData& cc);
-		~ElementData();
-		ElementData& operator=(const ElementData&); ///<Assignement operator
 
 		bool checkVolContent() const;
 		void heatCapacity();
@@ -338,7 +338,7 @@ class ElementData {
 		double hard;               ///< Parameterized hand hardness (1)
 		double S_dr;               ///< Stability Index based on deformation rate (Direct Action Avalanching)
 		double crit_cut_length;    ///< Critical cut length (m)
-		VanGenuchtenModel* VGModel;///< Van Genuchten Model for water retention
+		VanGenuchtenModel VGModel; ///< Van Genuchten Model for water retention
 		double theta_r;            ///< Residual water content of previous time step (m^3/m^3), used exclusively for solving Richards equation
 		double theta_s;            ///< Saturated water content of previous time step (m^3/m^3), used exclusively for solving Richards equation
 		double lwc_source;         ///< Source/sink term for Richards equation
