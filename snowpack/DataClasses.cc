@@ -821,6 +821,8 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.s_strength), sizeof(data.s_strength));
 	os.write(reinterpret_cast<const char*>(&data.hard), sizeof(data.hard));
 	os.write(reinterpret_cast<const char*>(&data.S_dr), sizeof(data.S_dr));
+	os.write(reinterpret_cast<const char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
+	os.write(reinterpret_cast<const char*>(&data.VGModel), sizeof(data.VGModel));
 	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
 	os.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
@@ -892,6 +894,8 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.s_strength), sizeof(data.s_strength));
 	is.read(reinterpret_cast<char*>(&data.hard), sizeof(data.hard));
 	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
+	is.read(reinterpret_cast<char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
+	is.read(reinterpret_cast<char*>(&data.VGModel), sizeof(data.VGModel));
 	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
 	is.read(reinterpret_cast<char*>(&data.theta_s), sizeof(data.theta_s));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
