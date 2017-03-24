@@ -376,7 +376,7 @@ IF(BUILD_TESTING)
 		IF(BUILD_TESTING_WITH_COVERAGE)
 			# force the correct flags to make coverage trought a build type
 			SET(CMAKE_BUILD_TYPE coverage)
-			SET(CMAKE_CXX_FLAGS_COVERAGE "-Wall -O0 -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
+			SET(CMAKE_CXX_FLAGS_COVERAGE "${OPTIM} -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
 			MARK_AS_ADVANCED(FORCE CMAKE_CXX_FLAGS_COVERAGE)
 			# Force debug mode, so that no optimisation is made to get "Correct" results of coverage testing
 			SET(CMAKE_BUILD_TYPE "coverage" CACHE STRING "Choose the type of build, options are: debug release coverage " FORCE)
