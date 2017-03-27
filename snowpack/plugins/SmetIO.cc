@@ -849,7 +849,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 	if (out_heat) {
 		//"Qs Ql Qg TSG Qg0 Qr"
 		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy" << " ";
-		plot_units << "W/m2 W/m2 W/m2 °C W/m2 W/m2" << " ";
+		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2" << " ";
 		units_offset << "0 0 0 273.15 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1" << " ";
 		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF" << " ";
@@ -879,9 +879,9 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 	if (out_meteo) {
 		//"TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas"
 		plot_description << "air_temperature  surface_temperature(mod)  surface_temperature(meas)  bottom_temperature  relative_humidity  wind_velocity  wind_velocity_drift  wind_direction  solid_precipitation_rate  snow_height(mod)  snow_height(meas)" << " ";
-		plot_units << "°C °C °C °C % m/s m/s ° kg/m2/h m m" << " ";
+		plot_units << "K K K K % m/s m/s ° kg/m2/h m m" << " ";
 		units_offset << "273.15 273.15 273.15 273.15 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 0.01 1 1 1 1 1 1" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1" << " ";
 		plot_color << "0x8324A4 0xFAA6D0 0xFA72B7 0xDE22E2 0x50CBDB 0x297E24 0x297E24 0x64DD78 0x2431A4 0x818181 0x000000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
@@ -889,7 +889,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 	if (out_haz) {
 		//"hoar_size wind_trans24 HN24 HN72_24"
 		plot_description << "hoar_size  24h_wind_drift  24h_height_of_new_snow  3d_sum_of_daily_height_of_new_snow" << " ";
-		plot_units << "mm cm cm cm" << " ";
+		plot_units << "m m m m" << " ";
 		units_offset << "0 0 0 0" << " ";
 		units_multiplier << "0.001 0.01 0.01 0.01" << " ";
 		plot_color << "0x9933FF 0x99FFCC 0x006699 0x33CCCC" << " ";
@@ -930,7 +930,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 		// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 		for (size_t ii = 0; ii < fixedPositions.size(); ii++) {
 			plot_description << "temperature@" << fixedPositions[ii] << "m ";
-			plot_units << "°C ";
+			plot_units << "K ";
 			units_offset << "273.15 ";
 			units_multiplier << "1 ";
 			plot_color << "0xFF0000" << " ";
