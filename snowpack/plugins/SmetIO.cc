@@ -879,9 +879,9 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 	if (out_meteo) {
 		//"TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas"
 		plot_description << "air_temperature  surface_temperature(mod)  surface_temperature(meas)  bottom_temperature  relative_humidity  wind_velocity  wind_velocity_drift  wind_direction  solid_precipitation_rate  snow_height(mod)  snow_height(meas)" << " ";
-		plot_units << "K K K K % m/s m/s ° kg/m2/h m m" << " ";
+		plot_units << "K K K K - m/s m/s ° kg/m2/h m m" << " ";
 		units_offset << "273.15 273.15 273.15 273.15 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1" << " ";
+		units_multiplier << "1 1 1 1 0.01 1 1 1 1 0.01 0.01" << " ";
 		plot_color << "0x8324A4 0xFAA6D0 0xFA72B7 0xDE22E2 0x50CBDB 0x297E24 0x297E24 0x64DD78 0x2431A4 0x818181 0x000000" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
