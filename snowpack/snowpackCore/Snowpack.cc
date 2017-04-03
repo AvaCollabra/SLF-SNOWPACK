@@ -1427,7 +1427,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			Xdata.mH -= Xdata.Cdata.height; // Adjust Xdata.mH to represent the "true" enforced snow depth
 			if (Xdata.mH < Xdata.Ground)    //   and make sure it doesn't get negative
 				Xdata.mH = Xdata.Ground;
-			delta_cH = Xdata.mH - Xdata.cH  + ( (Xdata.findMarkedReferenceLayer() == IOUtils::nodata) ? (0.) : (Xdata.findMarkedReferenceLayer()) );
+			delta_cH = Xdata.mH - Xdata.cH  + ( (Xdata.findMarkedReferenceLayer() == Constants::undefined) ? (0.) : (Xdata.findMarkedReferenceLayer()) );
 		}
 
 		// Now determine whether the increase in snow depth is large enough.
