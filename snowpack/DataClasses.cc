@@ -2241,7 +2241,26 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 		return is_pure_ice;
 	}
+}
 
+/**
+ * @brief returns the height of a marked reference layer inside the model domain
+ * Searches for the layer that is marked using (int(mk/1000)==9, e.g. 9000 or 9028) inside model domain
+ * This is for example used to interpret snow height measurements with an arbitrary reference level
+ * (i.e., not necessarily 0.) on a glacier, ice sheets or sea ice using the snow height driven mode.
+ * @return height of top node of marked reference layer
+ */
+double SnowStation::findMarkedReferenceLayer() const
+{
+	if(nElems == 0) {
+		return Constants::undefined;
+	}
+	for (size_t e = SoilNode; e < nElems; e++) {
+		if (int(Edata[e].mk/1000) == 9) {
+			return Ndata[e+1].z;
+		}
+	}
+	return Constants::undefined;
 }
 
 std::iostream& operator<<(std::iostream& os, const SnowStation& data)

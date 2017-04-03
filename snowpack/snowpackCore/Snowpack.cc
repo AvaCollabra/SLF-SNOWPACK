@@ -1348,8 +1348,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
 			return;
 		}
-	} else { // HS driven
-		delta_cH = Xdata.mH - Xdata.cH;
+	} else { // HS driven, correct for a possible offset in measured snow height provided by a marked reference layer
+		delta_cH = Xdata.mH - Xdata.cH + ( (Xdata.findMarkedReferenceLayer() == Constants::undefined) ? (0.) : (Xdata.findMarkedReferenceLayer()) );
 	}
 	if (rho_hn == Constants::undefined)
 		return;
@@ -1427,7 +1427,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			Xdata.mH -= Xdata.Cdata.height; // Adjust Xdata.mH to represent the "true" enforced snow depth
 			if (Xdata.mH < Xdata.Ground)    //   and make sure it doesn't get negative
 				Xdata.mH = Xdata.Ground;
-			delta_cH = Xdata.mH - Xdata.cH;
+			delta_cH = Xdata.mH - Xdata.cH  + ( (Xdata.findMarkedReferenceLayer() == IOUtils::nodata) ? (0.) : (Xdata.findMarkedReferenceLayer()) );
 		}
 
 		// Now determine whether the increase in snow depth is large enough.

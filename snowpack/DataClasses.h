@@ -505,6 +505,7 @@ class SnowStation {
 		size_t getNumberOfNodes() const;
 		bool isGlacier(const bool& hydro=false) const;
 		bool hasSoilLayers() const;
+		double findMarkedReferenceLayer() const;
 
 		size_t find_tag(const size_t& tag) const;
 
