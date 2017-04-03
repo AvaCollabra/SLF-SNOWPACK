@@ -428,6 +428,12 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	if (md.param_exists("RHO_HN"))
 		Mdata.rho_hn = md("RHO_HN");
 
+	// Add geo_heat if available
+	if(md.param_exists("GEO_HEAT"))
+		Mdata.geo_heat = md("GEO_HEAT");
+	else
+		Mdata.geo_heat = mio::IOUtils::nodata;
+
 	// Add advective heat (for permafrost) if available
 	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");

@@ -547,7 +547,16 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	Bdata.lw_out = Constants::emissivity_snow * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
 
-	Bdata.qg = geo_heat;
+	if (Mdata.geo_heat != IOUtils::nodata) {
+		// If geo_heat is provided in CurrentMeteo,  use it.
+		Bdata.qg = Mdata.geo_heat;
+	} else if (geo_heat != Constants::undefined) {
+		// Otherwise check if geo_heat is defined
+		Bdata.qg = geo_heat;
+	} else {
+		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "geo_heat not specified!");
+		throw;
+	}
 }
 
 /**

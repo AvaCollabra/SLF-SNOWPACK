@@ -120,11 +120,12 @@ class CurrentMeteo {
 		double tss_a12h; ///< Snow surface temperature averaged over past 12 hours (K)
 		double tss_a24h; ///< Snow surface temperature averaged over past 24 hours (K)
 		double ts0;      ///< Bottom temperatures of snow/soil pack (K)
-		double psum; ///< precipitation sum over the current timestep
-		double psum_ph; ///< precipitation phase for the current timestep (between 0 and 1, 0 is fully solid while 1 is fully liquid).
+		double psum;     ///< precipitation sum over the current timestep
+		double psum_ph;  ///< precipitation phase for the current timestep (between 0 and 1, 0 is fully solid while 1 is fully liquid).
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
+		double geo_heat; ///< Geo heat flux (W/m^2), for the neumann lower boundary condition in the heat equation
 		double adv_heat; ///< Advective heat to inject in the soil (if ADVECTIVE_HEAT and related parameters set to true)
 
 		std::vector<double> ts;    ///< Measured snow or/and soil temperatures (K)
