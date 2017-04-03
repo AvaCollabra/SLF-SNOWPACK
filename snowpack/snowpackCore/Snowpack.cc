@@ -554,8 +554,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 		// Otherwise check if geo_heat is defined
 		Bdata.qg = geo_heat;
 	} else {
-		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "geo_heat not specified!");
-		throw;
+		Bdata.qg = 0.;
 	}
 }
 
