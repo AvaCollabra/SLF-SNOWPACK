@@ -854,7 +854,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	double h_d_uppernode=0.;			//Used for LIMITEDFLUXEVAPORATION boundary condition.
 	double hbottom=0., BottomFluxRate=0.;		//Dirichlet (constant head) and Neumann (constant flux) lower boundary values respectively.
 	double actualtopflux=0;				//Stores the actual applied flux through top (positive is inflow).
-	double actualtopfluxcheck=0.;			//Stores the water change in the top element + outflow to lower layers to derive the input flux at the surface.
 	double refusedtopflux=0;			//Stores the difference in flux that was requested, but could not be applied
 	double actualbottomflux=0;			//Stores the actual flux through the bottom (positive is outflow).
 	double snowsoilinterfaceflux1=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
@@ -2440,7 +2439,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			//Determine (estimate) flux across boundaries (downward ==> positive flux):
 			//This is an additional check for the boundaries.
-			actualtopfluxcheck+=((delta_theta_dt[uppernode]*dt)*dz[uppernode])+(((h_n[uppernode]-h_n[uppernode-1])/dz_down[uppernode])+cos_sl)*k_np1_m_im12[uppernode]*dt;
 			actualtopflux+=TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
 			if(aBottomBC==DIRICHLET) {
@@ -2483,7 +2481,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//snowsoilinterfaceflux2+=TopFluxRate*dt;
 			}
 
-			if(WriteOutNumerics_Level2==true) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, actualtopfluxcheck, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux1, snowsoilinterfaceflux2, dt);
+			if(WriteOutNumerics_Level2==true) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux1, snowsoilinterfaceflux2, dt);
 
 			//Time step control
 			//This time step control increases the time step when niter is below a certain value. When rewinds occurred in the time step, no change is done (dt already adapted by the rewind-mechanim), if too many iterations, time step is decreased.
@@ -2762,14 +2760,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 
 	if(WriteOutNumerics_Level1==true) {
-		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %.15f %f\n", TopBC, actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, actualtopfluxcheck/snowpack_dt, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0.);
+		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0.);
 		printf("ACTUALBOTTOMFLUX: [ BC: %d ] %.15f %.15f %.15f %f    K_ip1=%.15f\n", BottomBC, actualbottomflux, actualbottomflux/snowpack_dt, BottomFluxRate, (BottomFluxRate!=0.)?(actualbottomflux/snowpack_dt)/BottomFluxRate:0., k_np1_m_ip12[lowernode]);
 		// This is more or less for testing only. This snowsoilinterfaceflux should anyway be stored in MS_SNOWPACK_RUNOFF and found in the met file
 		printf("SNOWSOILINTERFACEFLUX: %.15f %.15f\n", snowsoilinterfaceflux1/snowpack_dt, snowsoilinterfaceflux2/snowpack_dt);
 	}
 
 
-	if(WriteOutNumerics_Level0==true) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f CHK2: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0., actualtopfluxcheck/snowpack_dt, totalwateroverflow, massbalanceerror_sum);
+	if(WriteOutNumerics_Level0==true) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0., totalwateroverflow, massbalanceerror_sum);
 
 	//Update soil runoff (mass[MS_SOIL_RUNOFF] = kg/m^2). Note: it does not matter whether SNOWPACK is run with soil or not. MS_SOIL_RUNOFF is always runoff from lower boundary.
 	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += actualbottomflux*Constants::density_water;
