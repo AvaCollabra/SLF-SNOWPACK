@@ -53,6 +53,8 @@ using namespace mio;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
+const double ReSolver1d::max_theta_ice = 0.95;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
@@ -1043,10 +1045,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		EMS[i].VGModel.defined=true;
 		if ( i >= nsoillayers) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
-			const double max_allowed_ice=0.95;			//An ice pore space of 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
-			if(EMS[i].theta[ICE]>max_allowed_ice) {
+			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
-				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_allowed_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
+				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
 				//HACK: how to treat ice layers? The line below that is commented out makes the model spiral out of control...
 				//dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 				std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
@@ -1723,7 +1724,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 			if (niter==1) {
 				if (int(nsoillayers)<int(nE)) {	//We have snow layers
-  					if(nsoillayers>0) {
+					if(nsoillayers>0) {
 						// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
 						snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
 					} else {
@@ -2726,7 +2727,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers ...
 		if(nE > 1) {
-		  	//Heat advection by water flow
+			//Heat advection by water flow
 			double deltaN=0.;
 			if(i == int(nE)-1 && i > 0) {							//HACK, TODO: remove type inconstency in comparison
 				deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);

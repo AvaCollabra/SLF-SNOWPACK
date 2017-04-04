@@ -529,8 +529,10 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 	if (Xdata.getNumberOfElements() > 0) {
 	  	// Limit fluxes in case of explicit treatment of boundary conditions
 		const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+		const double max_ice = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (ReSolver1d::max_theta_ice * (1. - Constants::eps)) : (1.);
 		if (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] > theta_r + Constants::eps		// Water and ice ...
-		    && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps) {		// ... coexisting
+		    && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] > Constants::eps			// ... coexisting
+		    && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] < max_ice) {
 			Bdata.qs = std::min(350., std::max(-350., Bdata.qs));
 			Bdata.ql = std::min(250., std::max(-250., Bdata.ql));
 		}
@@ -596,9 +598,11 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 	// Now branch between phase change cases (semi-explicit treatment) and
 	// dry snowpack dynamics/ice-free soil dynamics (implicit treatment)
 	const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+	const double max_ice = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (ReSolver1d::max_theta_ice * (1. - Constants::eps)) : (1.);
 
 	if ((Xdata.Edata[nE-1].theta[WATER] > theta_r + Constants::eps		// Water and ice ...
-	   && Xdata.Edata[nE-1].theta[ICE] > Constants::eps)			// ... coexisting
+	     && Xdata.Edata[nE-1].theta[ICE] > Constants::eps			// ... coexisting
+	     && Xdata.Edata[nE-1].theta[ICE] < max_ice)
 	     && (T_iter != T_snow)) {
 		// Explicit
 		// Now allow a temperature index method if desired by the user
