@@ -907,6 +907,8 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 			*/
 			if (SnLaws::soil_evaporation==EVAP_RELATIVE_HUMIDITY) {
 				eS = Vp2 * Xdata.Edata[Xdata.SoilNode-1].RelativeHumidity();
+			} else {
+				eS = Vp2;
 			}
 		}
 	} else {
