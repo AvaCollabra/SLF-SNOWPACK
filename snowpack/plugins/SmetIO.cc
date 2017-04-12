@@ -1081,7 +1081,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 	const std::string filename( getFilenamePrefix(Xdata.meta.getStationID(), outpath) + ".smet" );
 	std::map<std::string,smet::SMETWriter*>::iterator it = tsWriters.find(filename);
 
-	if (it==tsWriters.end()) {
+	if (it==tsWriters.end()) { //if it was not found, create it
 		if (out_t)
 			Mdata.getFixedPositions(fixedPositions);
 
@@ -1089,14 +1089,14 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 				throw InvalidNameException(filename, AT);
 
 		if (FileUtils::fileExists(filename)) {
-			it->second = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
+			tsWriters[filename] = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
 		} else {
-			it->second = new smet::SMETWriter(filename);
-			writeTimeSeriesHeader(Xdata, *(it->second));
+			tsWriters[filename] = new smet::SMETWriter(filename);
+			writeTimeSeriesHeader(Xdata, *tsWriters[filename]);
 		}
 	}
 
-	writeTimeSeriesData(Xdata, Sdata, Mdata, Hdata, wind_trans24, *(it->second));
+	writeTimeSeriesData(Xdata, Sdata, Mdata, Hdata, wind_trans24, *tsWriters[filename]);
 }
 
 void SmetIO::writeProfile(const mio::Date& /*date*/, const SnowStation& /*Xdata*/)
