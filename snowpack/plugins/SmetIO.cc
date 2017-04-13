@@ -234,7 +234,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
  */
 bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /*stationID*/) const
 {
-	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
+	std::string snofilename( getFilenamePrefix(i_snowfile, i_snowpath, false) );
 
 	if (snofilename.rfind(".sno") == string::npos) {
 		snofilename += ".sno";
@@ -283,15 +283,15 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 	 * check with the corresponding SNO SMET file
 	 */
 	smet::SMETReader haz_reader(hazfilename);
-	const unsigned char nr_datalines = 144;
+	static const unsigned char nr_datalines = 144;
 
 	Date profile_date;
 	IOUtils::convertString(profile_date, haz_reader.get_header_value("ProfileDate"),  SmetIO::in_dflt_TZ);
 	if (profile_date.isUndef())
 		throw InvalidFormatException("Invalid ProfileDate in file \""+hazfilename+"\"", AT);
 
-	vector<string> vec_timestamp;
-	vector<double> vec_data;
+	std::vector<string> vec_timestamp;
+	std::vector<double> vec_data;
 	haz_reader.read(vec_timestamp, vec_data);
 
 	if (vec_timestamp.size() != nr_datalines)
@@ -417,7 +417,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	 * Read values for certain header keys (integer and double values) and perform
 	 * consistency checks upon them.
 	 */
-	const string station_name = sno_reader.get_header_value("station_name");
+	const std::string station_name( sno_reader.get_header_value("station_name") );
 	IOUtils::convertString(SSdata.profileDate, sno_reader.get_header_value("ProfileDate"),  in_dflt_TZ);
 
 	SSdata.HS_last = get_doubleval(sno_reader, "HS_Last");
@@ -508,7 +508,7 @@ double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& 
 	const double value = reader.get_header_doublevalue(key);
 
 	if (value == nodata){
-		const string msg = "Missing key '" + key + "'";
+		const std::string msg( "Missing key '" + key + "'" );
 		prn_msg(__FILE__, __LINE__, "err", Date(), msg.c_str());
 		throw InvalidFormatException("Cannot generate Xdata from file " + reader.get_filename(), AT);
 	}
@@ -525,7 +525,7 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) c
 
 	const int value = reader.get_header_intvalue(key);
 	if (value == inodata){
-		const string msg = "Missing key '" + key + "'";
+		const std::string msg( "Missing key '" + key + "'" );
 		prn_msg(__FILE__, __LINE__, "err", Date(), msg.c_str());
 		throw InvalidFormatException("Cannot generate Xdata from file " + reader.get_filename(), AT);
 	}
