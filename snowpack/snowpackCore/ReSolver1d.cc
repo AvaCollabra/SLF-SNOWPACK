@@ -621,7 +621,7 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
  * @param Xdata
  * @param Sdata
  */
-void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
+void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
 {
 // Main references used to write this code, as a reference to understand the working of this code:
 // - Celia, M, A., Bouloutas, E.T., Zabra, R.L. (1990) A general mass-conservative numerical solution for the unsaturated flow equation Water Resources Research (26:7), 1483-1496.
@@ -1385,6 +1385,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		aTopBC=DIRICHLET;
 		htop=h_n[uppernode];
 	}
+
+	// Initialize upper boundary for evaporation
+	surfacefluxrate += (ql/Constants::lh_vaporization)/Constants::density_water;
+	Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
+	ql = 0.; //We dealt with ql, so set it to 0, only to be possibly modified at the end of the function.
 
 	//Initialize lower boundary in case of Dirichlet
 	if(BottomBC==DIRICHLET) {
@@ -2777,78 +2782,28 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux1*Constants::density_water;
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
-	if (refusedtopflux<0. && toplayer>nsoillayers) {
+	if (refusedtopflux<0. && toplayer>=nsoillayers) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
 		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
-		double ql=(refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
-
-		double dL=0.;
-		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
-		size_t e = nE-1;
-		while ((e >= Xdata.SoilNode) && (ql < -Constants::eps2)) {  // While energy is available and we are in snow
-			const double L0 = EMS[e].L;
-			// If there is no water or if there was not enough water ...
-			// Note: as we do not pass through mergeElements anymore, we must assure that elements do not disappear here.
-			// By specifying a minimum value just below the Snowpack::min_ice_content, we make sure the element gets removed the next time it passes mergeElements.
-			const double theta_i0 = std::max(0., EMS[e].theta[ICE] - (0.99*Snowpack::min_ice_content));
-			double M = theta_i0*Constants::density_ice*L0;
-			double dM = ql*sn_dt/Constants::lh_sublimation;
-			if (-dM > M) dM = -M;
-
-			dL = dM/(EMS[e].Rho);
-			if (e < Xdata.SoilNode) {
-				dL = 0.;
-			}
-			NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
-			NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
-
-			EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
-			EMS[e].theta[ICE] *= L0/EMS[e].L;
-			EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
-			EMS[e].theta[WATER] *= L0/EMS[e].L;
-			EMS[e].theta[WATER_PREF] *= L0/EMS[e].L;
-			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-				EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
-			}
-
-			EMS[e].M += dM;
-			// Instead of evaporating, we sublimate the ice matrix:
-			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= dM*(Constants::lh_sublimation/Constants::lh_vaporization);	//Correct evaporation for sublimated mass
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;							//Add mass to sublimation
-			ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
-
-			//Update volumetric contents
-			EMS[e].theta[AIR]=1.-EMS[e].theta[ICE]-EMS[e].theta[WATER]-EMS[e].theta[WATER_PREF]-EMS[e].theta[SOIL];
-			EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATERINDEX] + EMS[e].theta[WATER_PREF]) * Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-			EMS[e].heatCapacity();
-
-			e--;
+		ql += (refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
+		refusedtopflux = 0.;
+		//First, we fully intepreted ql as evaporation. Now, remaining energy (ql) should not be counted as evaporation
+		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= ql*sn_dt/Constants::lh_vaporization;
+		if(toplayer==nsoillayers) {
+			//The energy is substracted from the top element
+			//const double tmp_delta_Te = ql / (EMS[nsoillayers-1].c[TEMPERATURE] * EMS[nsoillayers-1].Rho);
+			//NDS[nsoillayers].T += 2.*tmp_delta_Te;
+			//EMS[nsoillayers-1].Te += tmp_delta_Te;
 		}
-		//Remaining energy should go back again into refusedtopflux and also should not be counted as evaporation
-		Sdata.mass[SurfaceFluxes::MS_EVAPORATION]-=ql*sn_dt/Constants::lh_vaporization;
-		refusedtopflux=std::min(0., (ql*sn_dt)/(Constants::density_water*Constants::lh_vaporization));
-	}
-	if(refusedtopflux<0. && toplayer==nsoillayers) {
-		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
-		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
-		double ql=(refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
-		refusedtopflux=0.;
-		//Remaining energy should not be counted as evaporation
-		Sdata.mass[SurfaceFluxes::MS_EVAPORATION]-=ql*sn_dt/Constants::lh_vaporization;
-		//The energy is substracted from the top element
-		const double tmp_delta_Te = ql / (EMS[nsoillayers-1].c[TEMPERATURE] * EMS[nsoillayers-1].Rho);
-		NDS[nsoillayers].T += 2.*tmp_delta_Te;
-		EMS[nsoillayers-1].Te += tmp_delta_Te;
 	}
 
 	//If we could not handle all incoming water at top boundary AND we have snow AND we solve RE for snow:
 	if(refusedtopflux>0. && toplayer>int(Xdata.SoilNode)) {
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
 	}
-	//If we could not handle all snowpack runoff when not modelling snow with RE:
-	if(refusedtopflux>0. && toplayer==int(Xdata.SoilNode) && Xdata.getNumberOfElements()>Xdata.SoilNode ){
-		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
-	}
+
+	//If we could not handle all snowpack runoff when not modelling snow with RE: HACK what to do with refusedtopflux?
+
 	//We want wateroverflow in the snow to be a source/sink term. Therefore, these lines are inactive.
 	//if(totalwateroverflow>0. && toplayer>Xdata.SoilNode) {
 	//	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += totalwateroverflow*Constants::density_water;

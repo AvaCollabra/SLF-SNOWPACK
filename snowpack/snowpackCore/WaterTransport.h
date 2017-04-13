@@ -40,7 +40,15 @@ class WaterTransport {
 
 	public:
 		WaterTransport(const SnowpackConfig& cfg);
-		void compTransportMass(const CurrentMeteo& Mdata, const double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		virtual ~WaterTransport() {};
+		void compTransportMass(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql);
+
+	protected:
+		void mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void adjustDensity(SnowStation& Xdata);
+		
+		//To prevent string comparisons, we define an enumerated list:
+		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
 
 	private:
 		//The following 3 functions are used in WaterTransport model "NIED"
@@ -48,21 +56,14 @@ class WaterTransport {
 		double Bisection(const double minval, const double maxval, double P[]);
 		void KHCalcNaga(const double RG, const double Dens, double ThR, const double WatCnt, const double SatuK, double &Rh, double &Rk);
 
-		void compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
-
-		void mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata);
-
-		void adjustDensity(SnowStation& Xdata);
-
-		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql);
 
 		ReSolver1d RichardsEquationSolver1d_matrix;
 		ReSolver1d RichardsEquationSolver1d_pref;
 
 		std::string variant;
 
-		//To prevent string comparisons, we define an enumerated list:
-		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
 		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
 
 		std::string watertransportmodel_snow;

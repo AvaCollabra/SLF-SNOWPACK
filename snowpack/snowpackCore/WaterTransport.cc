@@ -263,30 +263,20 @@ void WaterTransport::KHCalcNaga(const double RG, const double Dens, double ThR, 
 }
 
 /**
- * @brief This part of the code is EXTREMELY IMPORTANT -- especially for predicting SURFACE HOAR and BURIED DEPTH HOAR layers \n
- * The total latent heat flux is predicted.  If positive (and above a certain cutoff level) then there
- * is a good possibility that SURFACE HOAR crystal have grown.  Of course, if negative
- * then we are also loosing mass from the surface.  These are seperate routines since
- * they might want to be changed or updated in future. \n
- * Just before his wedding, when Michael was implementing solute transport as initiated by
- * Peter Waldner, he realized that sublimation and evaporation was not possible from blank
- * soil layers. So he changed the routine on 29 of April 2002. \n
- * Another very important case of WATER movement through the snowpack is the SUBLIMATION of
- * VAPOR; this piece of code was taken from phase change and placed here because there is the
- * good possibility that the an ELEMENT might be SUBLIMATED away. \n
- * TODO Revise description!
- * @param *Xdata
+ * @brief This function deals with the top flux for the bucket water transport scheme.\n
+ * Determines the fraction of the latent heat flux ql that can be used for evaporation or
+ * condensation. IMPORTANT: sublimation/deposition is treated by VapourTransport.
+ * The variable ql is updated with the amount used for evaporation/condensation, such that
+ * VapourTransport should interpret all remaining energy as sublimation/deposition and
+ * additionally take care of surface hoar formation/destruction.
  * @param ql Latent heat flux (W m-2)
+ * @param *Xdata
  * @param *Sdata
- * @param *Mdata
  */
-void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql, SnowStation& Xdata,
-                                            SurfaceFluxes& Sdata)
+void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	double dL=0., dM=0.;     // Length and mass chamges
-	double M=0.;             // Initial mass and volumetric content (water or ice)
-	double hoar=0.0;         // Actual change in hoar mass
-	double cH_old;           // Temporary variable to hold height of snow
+	double dM = 0.;              // Mass changes
+	double M = 0.;               // Initial mass and volumetric content (water or ice)
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
@@ -297,42 +287,18 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 	/*
 	 * If there are elements and ql > 0:
 	 * update densities and volumetric contents (ELEMENT data),
-	 * add/subtract mass to MS_SUBLIMATION and/or MS_EVAPORATION,
-	 * potential surface hoar formation will be tested at the end of this routine (NODAL data);
-	*/
+	 * add/subtract mass to MS_EVAPORATION,
+	 * potential surface hoar formation/destruction is tested in VapourTransport.
+	 */
 	if (ql > Constants::eps2) { // Add Mass
 		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
-		if (Tss < melting_tk) { // Add Ice
-			dM = ql*sn_dt/Constants::lh_sublimation;
-			ql=0.;
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
-			hoar = dM;
-
-			// In this case adjust properties of element, keeping snow density constant
-			const double L_top = EMS[nE-1].L;
-			const double theta_i0 = EMS[nE-1].theta[ICE];
-			dL = dM/(EMS[nE-1].Rho); // length change
-			if (nE == Xdata.SoilNode) {
-				dL = 0.;
-				dM = std::min(dM,EMS[nE-1].theta[AIR]*(Constants::density_ice*EMS[nE-1].L));
-			}
-			NDS[nE].z += dL + NDS[nE].u; NDS[nE].u = 0.0;
-			EMS[nE-1].L0 = EMS[nE-1].L = L_top + dL;
-			EMS[nE-1].E = EMS[nE-1].Eps = EMS[nE-1].dEps = EMS[nE-1].Eps_e = EMS[nE-1].Eps_v = EMS[nE-1].S = 0.0;
-			EMS[nE-1].theta[ICE] *= L_top/EMS[nE-1].L;
-			EMS[nE-1].theta[ICE] += dM/(Constants::density_ice*EMS[nE-1].L);
-			EMS[nE-1].theta[WATER] *= L_top/EMS[nE-1].L;
-			EMS[nE-1].theta[WATER_PREF] *= L_top/EMS[nE-1].L;
-
-			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-				EMS[nE-1].conc[ICE][ii] *= L_top*theta_i0/(EMS[nE-1].theta[ICE]*EMS[nE-1].L);
-			}
-		} else { // Add water
+		if (!(Tss < melting_tk)) {
+			// Add water
 			if ((iwatertransportmodel_snow != RICHARDSEQUATION && nE>Xdata.SoilNode) || (iwatertransportmodel_soil != RICHARDSEQUATION && nE==Xdata.SoilNode)) {	//NANDER: check if the upper element is not part of the domain solved by the Richards Equation, because if so, we should put it in the surface flux
 				// Add Water
 				const double theta_w0 = EMS[nE-1].theta[WATER];
 				dM = ql*sn_dt/Constants::lh_vaporization;
-				ql=0.;
+				ql = 0.;
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				if (nE == Xdata.SoilNode) {
 					dM = std::min(dM,EMS[nE-1].theta[AIR]*(Constants::density_water*EMS[nE-1].L));
@@ -353,20 +319,20 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 		                     + ((EMS[nE-1].theta[WATER] + EMS[nE-1].theta[WATER_PREF]) * Constants::density_water)
 		                         + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 	} else if ((ql < (-Constants::eps2)) && (nE > 0)) {
-		// If  there is water in some form and ql < 0, SUBLIMATE and/or EVAPORATE some mass off
+		// If  there is water in some form and ql < 0, EVAPORATE some mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
-		while ((e > 0) && (ql < (-Constants::eps2))) {  // While energy is available
+		double ql2 = ql; // Dummy of ql. We want to mimick the effect of evaporation from deeper layers, if the energy flux is so large, that complete elements disappear.
+		                 // So, ql2 also keeps track of sublimation, which is not applied here, but later in VapourTransport.
+		while ((e > 0) && (ql2 < (-Constants::eps2))) {  // While energy is available
 			e--;
 			if ((iwatertransportmodel_snow != RICHARDSEQUATION && e>=Xdata.SoilNode) || (iwatertransportmodel_soil != RICHARDSEQUATION && e<Xdata.SoilNode)) {
 				/*
 				* Determine the amount of potential sublimation/evaporation and collect some variables
 				* that will be continuously used: L0 and M
-				*  - NOTE: if water is present, evaporate first, then sublimate ice matrix.
-				*          Otherwise sublimate ice matrix only.
+				*  - NOTE: if water is present, evaporate
 				*/
 				const double L0 = EMS[e].L;
-				assert(L0>0.);
 				// If there is water ...
 				if ((EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF]) > ((e==nE-1)?(2.*Constants::eps):0.)) {
 					//For the top layer, it is important to keep a tiny amount of liquid water, so we are able to detect whether we need the
@@ -400,109 +366,27 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 					assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 					Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 					ql -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
+					ql2 -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 				}
-				if (ql < (-Constants::eps2)) {
+				if (ql2 < (-Constants::eps2)) {
 					// If there is no water or if there was not enough water ...
 					const double theta_i0 = EMS[e].theta[ICE];
 					M = theta_i0*Constants::density_ice*L0;
-					dM = ql*sn_dt/Constants::lh_sublimation;
+					dM = ql2*sn_dt/Constants::lh_sublimation;
 					if (-dM > M) {
 						dM = -M;
-						// Add solutes to Storage
-						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-							M_Solutes[ii] += EMS[e].conc[ICE][ii]*theta_i0*L0;
-						}
-						EMS[e].theta[ICE]=0.0; dL = 0.;
-					} else {
-						dL = dM/(EMS[e].Rho);
-						if (e < Xdata.SoilNode) {
-							dL = 0.;
-						}
-						NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
-						NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
-
-						EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
-						EMS[e].theta[ICE] *= L0/EMS[e].L;
-						EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
-						EMS[e].theta[WATER] *= L0/EMS[e].L;
-						EMS[e].theta[WATER_PREF] *= L0/EMS[e].L;
-						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-							EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
-						}
 					}
-					EMS[e].M += dM;
-					//if we remove the whole mass, we might have some small inconcistencies between mass and theta[ICE]*density*L -> negative
-					//but the whole element will be removed anyway when getting out of here
-					assert(EMS[e].M >= (-Constants::eps2));
-					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
-					ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
-
-					// If present at surface, surface hoar is sublimated away
-					if (e == nE-1) {
-						hoar = dM;
-					}
-				}
-				// Update remaining volumetric contents and density
-				EMS[e].theta[AIR] = std::max(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-				EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER]  + EMS[e].theta[WATER_PREF])* Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-			} else if (e==nE-1) {
-				//In case we use RE for snow or soil, check if we can sublimate hoar away:
-				dM = ql*sn_dt/Constants::lh_sublimation;
-				if (-dM > NDS[nN-1].hoar ) dM=-NDS[nN-1].hoar;	//Limit, so that only the hoar will sublimate
-
-				if (dM < 0. ) {					//If we have actual hoar to sublimate, do it:
-					const double L0 = EMS[e].L;
-					const double theta_i0 = EMS[e].theta[ICE];
-					M = theta_i0*Constants::density_ice*L0;
-					if (-dM > M) {
-						dM = -M;
-						// Add solutes to Storage
-						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-							M_Solutes[ii] += EMS[e].conc[ICE][ii]*theta_i0*L0;
-						}
-						EMS[e].theta[ICE]=0.0; dL = 0.;
-					} else {
-						dL = dM/(EMS[e].Rho);
-						if (e < Xdata.SoilNode) {
-							dL = 0.;
-						}
-						NDS[e+1].z += dL; EMS[e].L0 = EMS[e].L = L0 + dL;
-						NDS[e+1].z += NDS[e+1].u; NDS[e+1].u = 0.0;
-
-						EMS[e].E = EMS[e].Eps = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
-						EMS[e].theta[ICE] *= L0/EMS[e].L;
-						EMS[e].theta[ICE] += dM/(Constants::density_ice*EMS[e].L);
-						EMS[e].theta[WATER] *= L0/EMS[e].L;
-						EMS[e].theta[WATER_PREF] *= L0/EMS[e].L;
-						for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-							EMS[e].conc[ICE][ii] *= L0*theta_i0/(EMS[e].theta[ICE]*EMS[e].L);
-						}
-					}
-					EMS[e].M += dM;
-					//if we remove the whole mass, we might have some small inconcistencies between mass and theta[ICE]*density*L -> negative
-					//but the whole element will be removed anyway when getting out of here
-					assert(EMS[e].M>=(-Constants::eps2));
-					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
-					ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
-
-					// If present at surface, surface hoar is sublimated away
-					if (e == nE-1) {
-						hoar = dM;
-					}
-
-					// Update remaining volumetric contents and density
-					EMS[nE-1].theta[AIR] = std::max(0., 1.0 - EMS[nE-1].theta[WATER] - EMS[nE-1].theta[WATER_PREF] - EMS[nE-1].theta[ICE] - EMS[nE-1].theta[SOIL]);
-					EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice) + ((EMS[nE-1].theta[WATER] + EMS[nE-1].theta[WATER_PREF]) * Constants::density_water) + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
+					ql2 -= dM*Constants::lh_sublimation/sn_dt;     //Anticipated update of the energy that will be used for sublimation
 				}
 			}
-			
+
 			//check that thetas and densities are consistent
-//			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
-//			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
-//			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
-//			assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
-//			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
-//			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
+			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
+			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
+			assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
+			assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
 		}
 
 		// Now take care of left over solute mass.
@@ -526,34 +410,6 @@ void WaterTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double ql
 			}
 		}
 	}
-
-	//Any left over energy (ql) should go to soil (surfacefluxrate). Units: ql = [W/m^2]=[J/s/m^2], surfacefluxrate=[m^3/m^2/s]
-	if(fabs(ql)>Constants::eps2) { // TODO Check that this takes correctly care of energy balance
-		RichardsEquationSolver1d_matrix.surfacefluxrate+=(ql/Constants::lh_vaporization)/Constants::density_water;
-		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
-	}
-
-	// Check for surface hoar destruction or formation (once upon a time ml_sn_SurfaceHoar)
-	if ((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(hoar_thresh_ta))) {
-		//if rh is very close to 1, vw too high or ta too high, surface hoar is destroyed
-		hoar = std::min(hoar, 0.);
-	}
-
-	Sdata.hoar += hoar;
-	NDS[nN-1].hoar += hoar;
-	if (NDS[nN-1].hoar < 0.) {
-		NDS[nN-1].hoar = 0.;
-	}
-	for (size_t e = 0; e<nE-1; e++) {
-		const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && e>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
-		if (Xdata.Edata[e].theta[WATER] > theta_r) {
-			NDS[e+1].hoar = 0.;
-		}
-	}
-	// At the end also update the overall height
-	cH_old = Xdata.cH;
-	Xdata.cH = NDS[Xdata.getNumberOfNodes()-1].z + NDS[Xdata.getNumberOfNodes()-1].u;
-	if (Xdata.mH!=Constants::undefined) Xdata.mH -= (cH_old - Xdata.cH);
 }
 
 /**
@@ -811,7 +667,7 @@ void WaterTransport::adjustDensity(SnowStation& Xdata)
  * @param *Sdata
  * @param *Mdata
  */
-void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata)
+void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
 {
 	size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
@@ -1171,9 +1027,9 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
-		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata);
-		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata);  
-
+		double dummy_ql = 0.;
+		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (nE == Xdata.SoilNode) ? (ql) : (dummy_ql));					// Only send ql if Richards equation is used for the full domain, not only soil part
+		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql);	// Matrix flow will take care of potential evaporation, provided by ql
 	}
 
 	// The TOP element is very important because it is always losing mass--the strain state
@@ -1262,8 +1118,8 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
  * @param Sdata
  * @param Mdata
  */
-void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& ql,
-                                       SnowStation& Xdata, SurfaceFluxes& Sdata)
+void WaterTransport::compTransportMass(const CurrentMeteo& Mdata,
+                                       SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
 {
 	RichardsEquationSolver1d_matrix.surfacefluxrate=0.;		//These are for the interface of snowpack with the richards solver. Initialize it to 0.
 	RichardsEquationSolver1d_matrix.soilsurfacesourceflux=0.;
@@ -1306,12 +1162,12 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata, const double& 
 		return;
 	}
 
-	compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
+	compTopFlux(ql, Xdata, Sdata);
 	mergingElements(Xdata, Sdata);
 
 	try {
 		adjustDensity(Xdata);
-		transportWater(Mdata, Xdata, Sdata);
+		transportWater(Mdata, Xdata, Sdata, ql);
 	} catch(const exception&){
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportMass()");
 		throw;

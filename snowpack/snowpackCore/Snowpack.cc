@@ -32,6 +32,7 @@
 #include <snowpack/Laws_sn.h>
 #include <snowpack/SnowDrift.h>
 #include <snowpack/snowpackCore/WaterTransport.h>
+#include <snowpack/snowpackCore/VapourTransport.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
 #include <snowpack/snowpackCore/PhaseChange.h>
 
@@ -1661,6 +1662,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 {
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
 	WaterTransport watertransport(cfg);
+	VapourTransport vapourtransport(cfg);
 	Metamorphism metamorphism(cfg);
 	SnowDrift snowdrift(cfg);
 	PhaseChange phasechange(cfg);
@@ -1798,7 +1800,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 		// The water transport routines must be placed here, otherwise the temperature
 		// and creep solution routines will not pick up the new mesh boolean.
-		watertransport.compTransportMass(Mdata, Bdata.ql, Xdata, Sdata);
+		double ql = Bdata.ql;	// Variable to keep track of how latent heat is used
+		watertransport.compTransportMass(Mdata, Xdata, Sdata, ql);
+		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata);
 
 		// See if any SUBSURFACE phase changes are occuring due to updated water content (infiltrating rain/melt water in cold snow layers)
 		if(!alpine3d)
