@@ -764,7 +764,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	const int MAX_ITER=15;				//Maximum number of iterations for the Richard solver.
 	const double MIN_VAL_TIMESTEP=1E-12;		//Minimum time step allowed in Richards solver. Don't set this too low (let's say 1E-40), becuase the calculations are then done at the limits of the floating point precision.
 	const double MAX_VAL_TIMESTEP=900.;		//Maximum time step allowed in Richards solver.
-	const double MAX_VAL_TIMESTEP_FOR_SNOW=900.;	//Maximum time step allowed in Richards solver when there are snow layers in the domain.
 	const size_t BS_MAX_ITER=5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
 	const double SF_epsilon=1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
@@ -2505,11 +2504,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Limit time steps:
 			if ( dt < MIN_VAL_TIMESTEP) dt=MIN_VAL_TIMESTEP;
 			if ( dt > MAX_VAL_TIMESTEP) dt=MAX_VAL_TIMESTEP;
-
-			//Special limit in case of snow:
-			if(int(nsoillayers)<int(nE) && dt>MAX_VAL_TIMESTEP_FOR_SNOW) {
-				dt=MAX_VAL_TIMESTEP_FOR_SNOW;
-			}
 
 			//Time step statistics
 			if(stats_min_dt>dt) stats_min_dt=dt;
