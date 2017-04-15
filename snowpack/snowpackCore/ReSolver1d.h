@@ -71,12 +71,12 @@ class ReSolver1d {
 
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
-		BoundaryConditions BottomBC;				//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
-		K_AverageTypes K_AverageType, K_AverageType_PrefFlow;	//Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
-		bool enable_pref_flow;					//true: dual domain approach, false: classic Richards equation.
-		double pref_flow_param_th;				//Tuning parameter: saturation threshold in preferential flow
-		double pref_flow_param_N;				//Tuning parameter: number of preferential flow paths for heat exchange
-		double pref_flow_param_heterogeneity_factor;		//Tuning parameter: heterogeneity factor for grain size
+		BoundaryConditions BottomBC;			//Bottom boundary condition (recommended choice either DIRICHLET with saturation (lower boundary in water table) or FREEDRAINAGE (lower boundary not in water table))
+		K_AverageTypes K_AverageType;			//Implemented choices: ARITHMETICMEAN (recommended), HARMONICMEAN, GEOMETRICMEAN, MINIMUMVALUE, UPSTREAM
+		bool enable_pref_flow;				//true: dual domain approach, false: classic Richards equation.
+		double pref_flow_param_th;			//Tuning parameter: saturation threshold in preferential flow
+		double pref_flow_param_N;			//Tuning parameter: number of preferential flow paths for heat exchange
+		double pref_flow_param_heterogeneity_factor;	//Tuning parameter: heterogeneity factor for grain size
 
 		double sn_dt;
 		bool useSoilLayers, water_layer;

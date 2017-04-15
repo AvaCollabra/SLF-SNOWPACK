@@ -95,7 +95,6 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["WATERTRANSPORTMODEL_SOIL"]="BUCKET";
 	advancedConfig["LB_COND_WATERFLUX"]="FREEDRAINAGE";				// Only for use with RE.
 	advancedConfig["AVG_METHOD_HYDRAULIC_CONDUCTIVITY"]="ARITHMETICMEAN";		// Only for use with RE.
-	advancedConfig["AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW"]="ARITHMETICMEAN";	// Only for use with RE.
 	advancedConfig["PREF_FLOW" ] = "false";						// Only for use with RE.
 	advancedConfig["PREF_FLOW_PARAM_TH"] = "0.1";					// Only for use with RE and preferential flow.
 	advancedConfig["PREF_FLOW_PARAM_N"] = "0.0";					// Only for use with RE and preferential flow.
@@ -323,4 +322,14 @@ void SnowpackConfig::setDefaults()
 	 * @brief Default lower boundary condition for Richards equation solver \n
 	 */
 	if (watertransportmodel_soil == "RICHARDSEQUATION" && lb_cond_waterflux.empty()) addKey("LB_COND_WATERFLUX", "SnowpackAdvanced", "FREEDRAINAGE");
+
+	/**
+	 * @brief Checking the settings for hydraulic conductivity \n
+	 */
+	string tmp_avg_method_K; getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K, IOUtils::nothrow);
+	if (tmp_avg_method_K.empty()) {
+		// If not explicitly specified, take the default one (i.e., the one for matrix flow)
+		getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
+		addKey("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K);
+	}
 }

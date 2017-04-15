@@ -58,7 +58,7 @@ const double ReSolver1d::max_theta_ice = 0.95;	//An ice pore space of around 5% 
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN), K_AverageType_PrefFlow(ARITHMETICMEAN),
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
              enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
              sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false), matrix(false)
 {
@@ -111,45 +111,44 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		BottomBC=SEEPAGEBOUNDARY;
 	}
 
-	//Set averaging method for hydraulic conductivity at the layer interfaces
-	std::string tmp_avg_method_K;
-	cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
-	if (tmp_avg_method_K=="ARITHMETICMEAN") {
-		K_AverageType=ARITHMETICMEAN;
-	} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
-		K_AverageType=GEOMETRICMEAN;
-	} else if (tmp_avg_method_K=="HARMONICMEAN") {
-		K_AverageType=HARMONICMEAN;
-	} else if (tmp_avg_method_K=="MINIMUMVALUE") {
-		K_AverageType=MINIMUMVALUE;
-	} else if (tmp_avg_method_K=="UPSTREAM") {
-		K_AverageType=UPSTREAM;
-	} else {
-		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY).");
-		throw;
-	}
-
 	//Check for preferential flow
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 	cfg.getValue("PREF_FLOW_PARAM_TH", "SnowpackAdvanced", pref_flow_param_th);
 	cfg.getValue("PREF_FLOW_PARAM_N", "SnowpackAdvanced", pref_flow_param_N);
 	cfg.getValue("PREF_FLOW_PARAM_HETEROGENEITY_FACTOR", "SnowpackAdvanced", pref_flow_param_heterogeneity_factor);
-	if(enable_pref_flow && K_AverageType!=GEOMETRICMEAN) {
-		// Warn if enable_pref_flow == true and the K_AverageType != GEOMETRICMEAN.
-		// Dual domain approach was designed using GEOMETRICMEAN and other combinations are unlikely to be made on purpose.
-		prn_msg(__FILE__, __LINE__, "wrn", Date(), "PREF_FLOW = TRUE is expecting AVG_METHOD_HYDRAULIC_CONDUCTIVITY = GEOMETRICMEAN!");
-		std::string tmp_avg_method_K_pref;
-		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K_pref);
-		if (tmp_avg_method_K_pref=="ARITHMETICMEAN") {
-			K_AverageType_PrefFlow=ARITHMETICMEAN;
-		} else if (tmp_avg_method_K_pref=="GEOMETRICMEAN") {
-			K_AverageType_PrefFlow=GEOMETRICMEAN;
-		} else if (tmp_avg_method_K_pref=="HARMONICMEAN") {
-			K_AverageType_PrefFlow=HARMONICMEAN;
-		} else if (tmp_avg_method_K_pref=="MINIMUMVALUE") {
-			K_AverageType_PrefFlow=MINIMUMVALUE;
-		} else if (tmp_avg_method_K_pref=="UPSTREAM") {
-			K_AverageType_PrefFlow=UPSTREAM;
+
+	//Set averaging method for hydraulic conductivity at the layer interfaces
+	std::string tmp_avg_method_K;
+	if(matrix_part) {
+		// Setting the values for matrix domain
+		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
+		if (tmp_avg_method_K=="ARITHMETICMEAN") {
+			K_AverageType=ARITHMETICMEAN;
+		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
+			K_AverageType=GEOMETRICMEAN;
+		} else if (tmp_avg_method_K=="HARMONICMEAN") {
+			K_AverageType=HARMONICMEAN;
+		} else if (tmp_avg_method_K=="MINIMUMVALUE") {
+			K_AverageType=MINIMUMVALUE;
+		} else if (tmp_avg_method_K=="UPSTREAM") {
+			K_AverageType=UPSTREAM;
+		} else {
+			prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY).");
+			throw;
+		}
+	} else {
+		// Setting the values for preferential flow domain
+		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K);
+		if (tmp_avg_method_K=="ARITHMETICMEAN") {
+			K_AverageType=ARITHMETICMEAN;
+		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
+			K_AverageType=GEOMETRICMEAN;
+		} else if (tmp_avg_method_K=="HARMONICMEAN") {
+			K_AverageType=HARMONICMEAN;
+		} else if (tmp_avg_method_K=="MINIMUMVALUE") {
+			K_AverageType=MINIMUMVALUE;
+		} else if (tmp_avg_method_K=="UPSTREAM") {
+			K_AverageType=UPSTREAM;
 		} else {
 			prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW).");
 			throw;
@@ -701,7 +700,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		WATERINDEX=WATER;
 	} else {
 		WATERINDEX=WATER_PREF;
-		K_AverageType=K_AverageType_PrefFlow;
 	}
 
 	//
@@ -934,6 +932,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		prn_msg( __FILE__, __LINE__, "wrn", Date(), "SNOWPACK has been compiled with DEBUG_ARITHM set to ON. This will likely result in a \"Floating point exception\" when using Richards equation solver. It is strongly recommended to set DEBUG_ARITHM to OFF!");
 	}
 #endif
+
+	if(boolFirstFunctionCall==true && matrix == true && enable_pref_flow == true && K_AverageType != GEOMETRICMEAN) {
+		// Warn if enable_pref_flow == true and the K_AverageType != GEOMETRICMEAN.
+		// Dual domain approach was designed using GEOMETRICMEAN and other combinations are unlikely to be made on purpose.
+		prn_msg(__FILE__, __LINE__, "wrn", Date(), "PREF_FLOW = TRUE is expecting (for the matrix part) AVG_METHOD_HYDRAULIC_CONDUCTIVITY = GEOMETRICMEAN!");
+	}
 
 	if(WriteOutNumerics_Level0==true) {
 		if(matrix == true) {
