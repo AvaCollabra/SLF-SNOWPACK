@@ -337,10 +337,10 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, con
 	botFlux = -ql/Constants::lh_sublimation; //top flux when snowpack interacts with atmosphere, inverse sign with ql (upward vapour flux for sublimation/downward for deposition)
 
 	while (e-- > 0.) {
-		const double topFlux = botFlux;								//top layer flux (kg m-2 s-1)
+		const double topFlux = botFlux;										//top layer flux (kg m-2 s-1)
 		
-		const double gradTbot = .5 * (EMS[e-1].gradT + EMS[e].gradT);				//Temperature gradient at the upper node (K m-1)
-		const double gradHbot = (EMS[e].h - EMS[e-1].h) / (EMS[e].L/2. + EMS[e-1].L/2.);	//Pressure head gradient at the upper node (m m-1)
+		const double gradTbot = (e == 0) ? (0.) : .5 * (EMS[e-1].gradT + EMS[e].gradT);				//Temperature gradient at the upper node (K m-1)
+		const double gradHbot = (e == 0) ? (0.) : (EMS[e].h - EMS[e-1].h) / (EMS[e].L/2. + EMS[e-1].L/2.);	//Pressure head gradient at the upper node (m m-1)
 
 		const double clay_fraction = 0.2;							//Silty clay from Zhang et al., 2016
 		double dM = 0.;										//mass change induced by vapor flux (kg m-2)
