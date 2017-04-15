@@ -580,14 +580,14 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
 			Xdata.Ndata[Xdata.SoilNode].T = std::min(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
-		if(verify_top_element) {
-			if(0.5*(EMS[Xdata.getNumberOfElements()-1].L) > SnowStation::comb_thresh_l) {
+		if (verify_top_element && rnE > 0) {
+			if (.5 * (EMS[Xdata.getNumberOfElements()-1].L) > SnowStation::comb_thresh_l) {
 				Xdata.splitElement(Xdata.getNumberOfElements()-1);
 			}
 		}
 	}
 
-	if(rnE>=Xdata.SoilNode) {
+	if (rnE >= Xdata.SoilNode) {
 		Xdata.ColdContent = 0.;
 		for (size_t e=Xdata.SoilNode; e<rnE; e++) {
 			Xdata.ColdContent += EMS[e].coldContent();
