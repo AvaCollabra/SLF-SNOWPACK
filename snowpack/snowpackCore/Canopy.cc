@@ -1556,6 +1556,9 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
  */
 void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length, double height_of_wind_val, const bool& adjust_VW_height)
 {
+	if (Xdata.Cdata.direct_throughfall==1.)
+		throw InvalidArgumentException("Can not use Canopy with CanopyDirectThroughfall == 1", AT);
+
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
 	// First check, whether there is Canopy above the snow, i.e. whether s.th. needs to be done here
@@ -1565,7 +1568,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	}
 
 	// Check that some important initial values are within reasonable bounds
-	if ( Xdata.Cdata.temp < 203.15 ){
+	if ( Xdata.Cdata.temp < 203.15 ) {
 		Xdata.Cdata.temp = 273.15;
 	}
 	if ( Xdata.Cdata.storage < 0.0 ) {

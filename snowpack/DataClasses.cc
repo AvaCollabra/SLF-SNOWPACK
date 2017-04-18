@@ -348,7 +348,7 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	qw     += Mdata.iswr - Mdata.rswr;
 
 	pAlbedo += Xdata.pAlbedo;
-	if (Mdata.mAlbedo != Constants::undefined)
+	if (Mdata.mAlbedo != Constants::undefined && mAlbedo != Constants::undefined)
 		mAlbedo += Mdata.mAlbedo;
 	else
 		mAlbedo = Constants::undefined;
