@@ -782,22 +782,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> dz_(nE, 0.);		//Layer distance for the finite differences, see Rathfelder (2004).
 	int uppernode=-1;				//Upper node of Richards solver domain
 	int lowernode=-1;				//Lower node of Richards solver domain
-	int toplayer;					//highest layer (top of snowpack, or top of soil in case of no soil)
-	const int nsoillayers=int(Xdata.SoilNode);	//where does the soil start? Note, when toplayer is set to nsoillayers, only soil is treated with Richards equation. HACK, TODO: remove type inconstency in comparison
-							//Note here that Xdata.SoilNode denotes first element as 0, so Xdata.SoilNode=4 denotes 4 soil layers.
-
-	if(iwatertransportmodel_snow != RICHARDSEQUATION) {	//RE only for soil
-		toplayer=nsoillayers;				//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers: only soil.
-	} else {						//RE for both snow and soil
-		toplayer=int(nE);				//toplayer=nE: all layers are treated by richards equation, toplayer=nsoillayers: only soil. HACK, TODO: remove type inconstency in comparison
-	}
+	const size_t toplayer = (iwatertransportmodel_snow != RICHARDSEQUATION) ? (Xdata.SoilNode) : (nE);	//highest layer (top of snowpack, or top of soil in case of no soil)
 	if(toplayer==0) return;				//Nothing to do here!
-	if(nsoillayers==1) {
-		// Running Richards equation solver with only 1 layer results in a segmentation fault, because out of bound indices with heat advection.
-		// Note: resolving this issue is not planned for, but may be addressed in the future. Anyway, it shouldn't be a big issue to have two soil layers or more instead of one.
-		prn_msg( __FILE__, __LINE__, "err", Date(), "The implementation of RICHARDSEQUATION requires two or more soil layers, whereas now only one soil layer is present. Please change your initialization.");
-		throw;
-	}
 
 	//Initializations of the convergence criteria
 	int trigger_layer_accuracy=-1;			//At which layer the accuracy was not reached.
@@ -861,7 +847,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> delta_Te_adv_i(nE, 0.);	//Change in element temperature per iteration time step due to heat advection by the water flow.
 
 	//std::vector<std::vector<double> > a(nE, std::vector<double> (nE, 0));	//Left hand side matrix. Note, we write immediately to ainv! But this is kept in to understand the original code.
-	std::vector<double> ainv(nE*nE, 0.);			//Inverse of A, written down as a 1D array instead of a 2D array, with the translation: a[i][j]=ainv[i*nsoillayers+j]
+	std::vector<double> ainv(nE*nE, 0.);			//Inverse of A, written down as a 1D array instead of a 2D array, with the translation: a[i][j]=ainv[i*nlayers+j]
 	std::vector<double> ad(nE, 0.);				//The diagonal of matrix A, used for DGTSV
 	std::vector<double> adu(nE, 0.);			//The upper second diagonal of matrix A, used for DGTSV
 	std::vector<double> adl(nE, 0.);			//The lower second diagonal of matrix A, used for DGTSV
@@ -964,7 +950,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if (WriteOutNumerics_Level2==true) std::cout << "RECEIVING at layer " << i << ": sum=" << sum << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
 
 		//In case we don't want to allow soil to freeze, melt all ice that is there:
-		if(AllowSoilFreezing==false && i<nsoillayers && EMS[i].theta[ICE]>0.) {	//If we are in soil, and have ice, but don't allow soil freezing, melt all the ice.
+		if(AllowSoilFreezing==false && i<Xdata.SoilNode && EMS[i].theta[ICE]>0.) {	//If we are in soil, and have ice, but don't allow soil freezing, melt all the ice.
 			if(i>0) {				//Because we now work with Dirichlet BC at the lower boundary, we cannot increase water content. So then, increase air content.
 				EMS[i].theta[WATER]+=EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water);
 			} else {
@@ -1034,7 +1020,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double tmpheight=0.;
 	for (i=uppernode; i >= 0; i--) {					//Go from top to bottom in Richard solver domain
 		EMS[i].VGModel.defined=true;
-		if ( i >= nsoillayers) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
+		if ( i >= Xdata.SoilNode) {		//Snow, assuming that the use of sublayers (higher resolution) is only used in snow. TODO: this has to be rewritten more nicely!!
 			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
 				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
@@ -1324,7 +1310,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		}
 
 		//Now add soilsurfacesourceflux (in case RemoveElements removed the lowest snow element):
-		if(soilsurfacesourceflux>0. && i==nsoillayers) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
+		if(soilsurfacesourceflux>0. && i==Xdata.SoilNode) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
 			//Remember: soilsurfacesourceflux=[m^3/m^2/s]
 			s[i]+=soilsurfacesourceflux/dz[i];				//Soilsurfacesourceflux>0. if we remove the first snow element above the soil AND there are more snow layers (else it is a surfaceflux) AND we use RE for snow.
 		}
@@ -1456,7 +1442,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Applying ice impedance on K
 				if(ApplyIceImpedance==true) {
 					const double omega=7.;		//See Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
-					if (i < nsoillayers && theta_i_np1_m[i]>0. && K[i]>0. ) {	//Only for soil and when there is ice in the soil
+					if (i < Xdata.SoilNode && theta_i_np1_m[i]>0. && K[i]>0. ) {	//Only for soil and when there is ice in the soil
 						//q=theta_i_np1_m[i]/(theta_s[i]-theta_r[i]);					//This is how Dall'Amico presents it, but it is based on Hanssen (2004), who defines it as:
 						const double q = (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water))/((theta_np1_m[i]+(theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)))-theta_r[i]);		//Hanssen (2004).
 						impedance[i]=pow(10., -1.*omega*q);
@@ -1527,7 +1513,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					}
 					if(matrix==false) {
 						// When solving preferential flow, we suppress liquid water flow in soil by setting hydraulic conductivity to 0.
-						if(i<nsoillayers) {
+						if(i<Xdata.SoilNode) {
 							K[i]=0.;
 							k_np1_m_ip12[i]=0.;
 						}
@@ -1573,9 +1559,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
 				// Now reduce flux when necessary:
   				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
-				     (LIMITEDFLUXINFILTRATION_soil==true && int(nsoillayers)==int(nE))
-				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && int(nsoillayers)<int(nE) && toplayer==nsoillayers)
-				           || (LIMITEDFLUXINFILTRATION_snow==true && int(nsoillayers)<int(nE)))) {
+				     (LIMITEDFLUXINFILTRATION_soil==true && Xdata.SoilNode==nE)
+				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && Xdata.SoilNode<nE && toplayer==Xdata.SoilNode)
+				           || (LIMITEDFLUXINFILTRATION_snow==true && Xdata.SoilNode<nE))) {
 					// Influx condition
 					// Determine the limiting flux:
 					const double flux_compare =														//The limiting flux is:
@@ -1595,7 +1581,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
 				}
-  				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers)==int(nE) || toplayer==nsoillayers)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers)<int(nE)))) {
+  				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || toplayer==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {
 					// Outflux condition
 					const double head_compare=h_d_uppernode;
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
@@ -1685,10 +1671,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 			if (niter==1) {
-				if (int(nsoillayers)<int(nE)) {	//We have snow layers
-					if(nsoillayers>0) {
+				if (Xdata.SoilNode<nE) {	//We have snow layers
+					if(Xdata.SoilNode>0) {
 						// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
-						snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+Xdata.cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+						snowsoilinterfaceflux_before=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
 					} else {
 						// HACK: what to do here? How to determine the outflux at the bottom at the beginning of the first time step?
 						// In any case, we don't use this approach right now, so maybe abandon it?
@@ -1927,7 +1913,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					theta_np1_mp1[i]=fromHtoTHETAforICE(h_np1_mp1[i], theta_r[i], theta_s[i], alpha[i], m[i], n[i], Sc[i], h_e[i], theta_i_np1_m[i]);
 
 					//Calculate temperature change of soil layers to reflect heat advected by the flowing water
-					if(i<nsoillayers) {
+					if(i<Xdata.SoilNode) {
 						//Calculate the fluxes from above and below for this layer
 						const double tmp_flux_above = (i<toplayer-1) ? (((((h_np1_m[i+1]+delta_h[memstate%nmemstates][i+1])-(h_np1_m[i]+delta_h[memstate%nmemstates][i]))/dz_up[i])+Xdata.cos_sl)*k_np1_m_ip12[i]*dt) : 0;			//Units: [m^3/m^2]
 						const double tmp_flux_below = (i>0) ? (((((h_np1_m[i]+delta_h[memstate%nmemstates][i])-(h_np1_m[i-1]+delta_h[memstate%nmemstates][i-1]))/dz_up[i-1])+Xdata.cos_sl)*k_np1_m_ip12[i-1]*dt) : 0;				//Units: [m^3/m^2]
@@ -2125,7 +2111,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Note: because we want to be able to very accurately determine the flux over the snow-soil boundary (for MS_SNOW_RUNOFF) and model boundaries (for MS_SOIL_RUNOFF),
 				//we ALWAYS have to assess the accuracy in head in this region! If we don't do this, then in case of dry soil layers, the estimated pressure head can be quite
 				//inaccurate, leading to a completely wrong estimation of these fluxes!
-				if(Se[i]>convergencecriterionthreshold || i==nsoillayers-1 || i==nsoillayers || i==lowernode || i==lowernode-1) {
+				if(Se[i]>convergencecriterionthreshold || i==Xdata.SoilNode-1 || i==Xdata.SoilNode || i==lowernode || i==lowernode-1) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
 						if(fabs(delta_h[memstate%nmemstates][i])>track_accuracy_h) {
@@ -2143,8 +2129,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 				//Absolute accuracy in theta. This doesn't behave stable, especially during saturated soil conditions, when the accuracy is set too low.
 				//See Huang (1996), which proposes this, and also discusses the need for a higher accuracy:
-				//if(not(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==nsoillayers-1 || i==nsoillayers)) {
-				if(not(Se[i]>convergencecriterionthreshold || i==nsoillayers-1 || i==nsoillayers || i==lowernode || i==lowernode-1)) {
+				//if(not(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==Xdata.SoilNode-1 || i==Xdata.SoilNode)) {
+				if(not(Se[i]>convergencecriterionthreshold || i==Xdata.SoilNode-1 || i==Xdata.SoilNode || i==lowernode || i==lowernode-1)) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
 						if(fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water))>track_accuracy_theta) {
@@ -2268,7 +2254,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				std::cout << "      - When using Canopy module, there is a known issue with transpiration.\n      Please see issue 471 (http://models.slf.ch/p/snowpack/issues/471/).\n";
 				std::cout << "\n  -----------------------------------------------------------------------------\n    SOLVER DUMP:\n";
 				for (i = uppernode; i >= lowernode; i--) {
-					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", i, h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], theta_np1_m[i], (i<nsoillayers)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<nsoillayers)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), alpha[i], m[i], n[i]);
+					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", i, h_n[i], h_np1_m[i], theta_n[i], theta_r[i], theta_s[i], theta_np1_m[i], (i<Xdata.SoilNode)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<Xdata.SoilNode)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), alpha[i], m[i], n[i]);
 				}
 				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G\n", TopBC, surfacefluxrate, TopFluxRate);
 				if(DoThrow==true) {
@@ -2420,16 +2406,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 			//Determine flux at soil snow interface (note: postive=flux upward, negative=flux downward):
-			if (int(nsoillayers)<int(nE)) {	//We have snow layers
-				if(toplayer==nsoillayers) {	//We run RE-solver only for soil layers AND have snow layers in the model (meaning TopFluxRate is coming from snow)
+			if (Xdata.SoilNode<nE) {	//We have snow layers
+				if(toplayer==Xdata.SoilNode) {	//We run RE-solver only for soil layers AND have snow layers in the model (meaning TopFluxRate is coming from snow)
 					//These lines are not active, as this particular case (RE for soil, other for snow), is dealt with in compTransportMass.
 					//snowsoilinterfaceflux1+=surfacefluxrate*dt;
 					//snowsoilinterfaceflux2+=surfacefluxrate*dt;
 				} else {
 					// See McCord (1996). Note: I think there is a minus sign missing there.
 					// In any case: snowsoilinterfaceflux > 0 means influx!
-					if(nsoillayers>0) {
-						snowsoilinterfaceflux_after=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+Xdata.cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+					if(Xdata.SoilNode>0) {
+						snowsoilinterfaceflux_after=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
 						snowsoilinterfaceflux1+=snowsoilinterfaceflux_after;
 						// Other method to estimate soil snow interface flux (based on average before and end of time step).
 						snowsoilinterfaceflux2+=0.5*(snowsoilinterfaceflux_before+snowsoilinterfaceflux_after);
@@ -2521,7 +2507,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//(i==uppernode)?(surfacefluxrate):(((((h_n[i]-h_n[i-1])/dz_up[i-1])+cos_sl)*sqrt(K[i]*K[i-1])*dt))
 				//);
 				//if(max_flux<flux_compare) max_flux=flux_compare;
-				if(i>nsoillayers-1) {	//For snow only
+				if(i>Xdata.SoilNode-1) {	//For snow only
 					// Volumetric area:
 					//vol_area = exp(0.09904-3.557*(EMS[i].ogs));		// As presented at EGU 2016.
 					const double vol_area = 0.0584 * pow((0.5*EMS[i].ogs), -1.1090277);
@@ -2545,10 +2531,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// To determine the thresholds below, we use the water entry pressure, as provided in Eq. 15 in Hirashima et al. (2014).
 	for (i = toplayer-1; i >= 0; i--) {							//We loop over all SNOWPACK layers
 	  	if(enable_pref_flow) {
-			if(i>nsoillayers-1) {	// For snow
+			if(i>Xdata.SoilNode-1) {	// For snow
 				if(matrix) {
 					// First from matrix to preferential flow ...
-					if(i==nsoillayers) {
+					if(i==Xdata.SoilNode) {
 						// First snow layer should not put water in soil directly
 						// Calculate threshold in the current layer that belongs to water entry pressure of the layer
 						const double matrix_threshold=std::max(0.001, fromHtoTHETA((-1.*((0.0437 / EMS[i].ogs) + 0.01074)), theta_r[i], (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i].PrefFlowArea), alpha[i], m[i], n[i], Sc[i], h_e[i]));
@@ -2600,7 +2586,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					}
 				} else {
 					// Now from preferential to matrix flow
-					if(i==nsoillayers) {
+					if(i==Xdata.SoilNode) {
 						//For the snow layer just above the soil, we equalize the saturation in the matrix and preferential flow domain
 						//This leads to more realistic snowpack runoff behavior, as with the approach for the other snow layers, spiky behavior arises from whether or not pref_threshold is exceeded
 						const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
@@ -2710,7 +2696,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double totalwateroverflow=0.;					//Total water outflow due to numerical issues (requiring minimum theta_r, maximum theta_s, etc), in m^3/m^2
 	for (i = uppernode; i>=lowernode; i--) {
 		totalwateroverflow+=wateroverflow[i]*dz[i];
-		if(i==nsoillayers) {
+		if(i==Xdata.SoilNode) {
 			// I decided to put all wateroverflow from snow directly in the snowsoilinterfaceflux, although the wateroverflow may occur somewhere in the snowpack.
 			snowsoilinterfaceflux1+=totalwateroverflow;
 		}
@@ -2735,18 +2721,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux1*Constants::density_water;
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
-	if (refusedtopflux<0. && toplayer>=nsoillayers) {
+	if (refusedtopflux<0. && toplayer>=Xdata.SoilNode) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
 		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
 		ql += (refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
 		refusedtopflux = 0.;
 		//First, we fully intepreted ql as evaporation. Now, remaining energy (ql) should not be counted as evaporation
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= ql*sn_dt/Constants::lh_vaporization;
-		if(toplayer==nsoillayers) {
+		if(toplayer==Xdata.SoilNode) {
 			//The energy is substracted from the top element
-			//const double tmp_delta_Te = ql / (EMS[nsoillayers-1].c[TEMPERATURE] * EMS[nsoillayers-1].Rho);
-			//NDS[nsoillayers].T += 2.*tmp_delta_Te;
-			//EMS[nsoillayers-1].Te += tmp_delta_Te;
+			//const double tmp_delta_Te = ql / (EMS[Xdata.SoilNode-1].c[TEMPERATURE] * EMS[Xdata.SoilNode-1].Rho);
+			//NDS[Xdata.SoilNode].T += 2.*tmp_delta_Te;
+			//EMS[Xdata.SoilNode-1].Te += tmp_delta_Te;
 		}
 	}
 
@@ -2805,7 +2791,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				std::cout << "TDMA.";
 				break;
 		}
-		std::cout << " BS_avg_iter: " << double(double(bs_stats_totiter)/double(stats_niters*nsoillayers)) << " BS_max_iter: " << bs_stats_maxiter << "\n";
+		std::cout << " BS_avg_iter: " << double(double(bs_stats_totiter)/double(stats_niters*Xdata.SoilNode)) << " BS_max_iter: " << bs_stats_maxiter << "\n";
 	}
 }
 
