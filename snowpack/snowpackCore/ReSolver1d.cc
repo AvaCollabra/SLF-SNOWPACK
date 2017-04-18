@@ -692,12 +692,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 //    or write it out in a kind of overland flow variable.
 
 	// define if matrix or preferential flow
-	int WATERINDEX=WATER;
-	if(matrix == true) {
-		WATERINDEX=WATER;
-	} else {
-		WATERINDEX=WATER_PREF;
-	}
+	int WATERINDEX = (matrix == true) ? (WATER) : (WATER_PREF);
 
 	//
 	// BEGIN OF SETTINGS
@@ -764,7 +759,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	const double SF_epsilon=1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 	//Initializing and defining Richards solver time domain
-	const double snowpack_dt = sn_dt;		//Time step of SNOWPACK (in seconds)
 	double dt=10.;					//Set the initial time step for the Richard solver (in seconds). This time step should be smaller or equal to the SNOWPACK time step.
 	bool boolFirstFunctionCall;			//true: first execution of this function, false: not the first execution of this function
 	if (Xdata.ReSolver_dt>0.) {			//Retrieve last dt used in last performed time step. Note Xdata.SoliNumerics_dt<0 when initialized
@@ -985,7 +979,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				NDS[i].T+=deltaT;
 			}
 
-			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / snowpack_dt;	// Units: [W m-3]
+			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / sn_dt;	// Units: [W m-3]
 			EMS[i].theta[ICE]=0.;
 			//And now update state properties.
 			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
@@ -1395,8 +1389,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		}
 
 		Xdata.ReSolver_dt=dt;			//Store the last used time step.
-		if ((TimeAdvance+dt)>=snowpack_dt) {	//If our time step is so large that the integrated time step will exceed the SNOWPACK time step, we limit the dt for the current time step...
-			dt=snowpack_dt-TimeAdvance;	//...so it matches exactly the SNOWPACK time step.
+		if ((TimeAdvance+dt)>=sn_dt) {		//If our time step is so large that the integrated time step will exceed the SNOWPACK time step, we limit the dt for the current time step...
+			dt=sn_dt-TimeAdvance;		//...so it matches exactly the SNOWPACK time step.
 			StopLoop=true;			//And we set the switch to stop the Richards solver.
 		}
 		TimeAdvance+=dt;			//Update the total time in this time step. This variable is used to match SNOWPACK time steps.
@@ -2265,7 +2259,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					}
 				}
 				std::cout << "    POSSIBLE SOLUTIONS:\n  =============================================================================\n";
-				if(snowpack_dt>900) std::cout << "      - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
+				if(sn_dt>900) std::cout << "      - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
 #ifndef CLAPACK
 				std::cout << "      - SNOWPACK was not compiled with BLAS and CLAPACK libraries.\n      Try installing libraries BLAS and CLAPACK and use solver TGSV (default).\n";
 #endif
@@ -2513,7 +2507,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		EMS[i].heatCapacity();
 
 		//Every change in ice content in a specific layer must be associated with phase changes. Store the associated energy accordingly.
-		EMS[i].Qmf += ((EMS[i].theta[ICE]-snowpackBACKUPTHETAICE[i]) * Constants::density_ice * Constants::lh_fusion) / snowpack_dt;	// Units: [W m-3]
+		EMS[i].Qmf += ((EMS[i].theta[ICE]-snowpackBACKUPTHETAICE[i]) * Constants::density_ice * Constants::lh_fusion) / sn_dt;	// Units: [W m-3]
 		//We transferred the temperature change of the element due to soil freezing/thawing in Qmf, so reset delta_Te:
 		delta_Te[i]=0.;
 
@@ -2726,14 +2720,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 	if(WriteOutNumerics_Level1==true) {
-		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0.);
-		printf("ACTUALBOTTOMFLUX: [ BC: %d ] %.15f %.15f %.15f %f    K_ip1=%.15f\n", BottomBC, actualbottomflux, actualbottomflux/snowpack_dt, BottomFluxRate, (BottomFluxRate!=0.)?(actualbottomflux/snowpack_dt)/BottomFluxRate:0., k_np1_m_ip12[lowernode]);
+		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0.);
+		printf("ACTUALBOTTOMFLUX: [ BC: %d ] %.15f %.15f %.15f %f    K_ip1=%.15f\n", BottomBC, actualbottomflux, actualbottomflux/sn_dt, BottomFluxRate, (BottomFluxRate!=0.)?(actualbottomflux/sn_dt)/BottomFluxRate:0., k_np1_m_ip12[lowernode]);
 		// This is more or less for testing only. This snowsoilinterfaceflux should anyway be stored in MS_SNOWPACK_RUNOFF and found in the met file
-		printf("SNOWSOILINTERFACEFLUX: %.15f %.15f\n", snowsoilinterfaceflux1/snowpack_dt, snowsoilinterfaceflux2/snowpack_dt);
+		printf("SNOWSOILINTERFACEFLUX: %.15f %.15f\n", snowsoilinterfaceflux1/sn_dt, snowsoilinterfaceflux2/sn_dt);
 	}
 
 
-	if(WriteOutNumerics_Level0==true) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/snowpack_dt, refusedtopflux/snowpack_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/snowpack_dt)/surfacefluxrate:0., totalwateroverflow, massbalanceerror_sum);
+	if(WriteOutNumerics_Level0==true) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0., totalwateroverflow, massbalanceerror_sum);
 
 	//Update soil runoff (mass[MS_SOIL_RUNOFF] = kg/m^2). Note: it does not matter whether SNOWPACK is run with soil or not. MS_SOIL_RUNOFF is always runoff from lower boundary.
 	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += actualbottomflux*Constants::density_water;
