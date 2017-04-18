@@ -1816,7 +1816,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 #ifdef CLAPACK
 					// Solver for Tridiagonal matrices, with partial pivoting.
 					int info=0;
-					const int matrixdimensions=int((uppernode-lowernode)+1);
+					const int matrixdimensions=int((uppernode-lowernode)+1);	// Cast from size_t to int is necessary, to interface correctly with LAPACK dgtsv_.
 					const int vectordimensions=1;
 					dgtsv_( (integer*) &matrixdimensions, (integer*) &vectordimensions, &adl[0], &ad[0], &adu[0], &r_mpfd2[0], (integer*) &matrixdimensions, (integer*) &info );
 
