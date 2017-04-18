@@ -62,6 +62,15 @@ IF(NOT CMAKE_BUILD_TYPE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 ###########################################################
+#plugins and applications
+SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
+SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
+
+SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
+SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
+SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
+
+###########################################################
 #finally, SET compile flags
 SET(CMAKE_CXX_FLAGS "${_VERSION} ${ARCH} ${EXTRA}" CACHE STRING "" FORCE)
 SET(CMAKE_CXX_FLAGS_RELEASE "${OPTIM}" CACHE STRING "" FORCE)
@@ -91,15 +100,6 @@ ENDIF(SNOWPACK_STANDALONE)
 IF(PROFEVAL)
 	ADD_SUBDIRECTORY(applications/profeval)
 ENDIF(PROFEVAL)
-
-###########################################################
-#plugins and applications
-SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
-SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
-
-SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
-SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
-SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
 
 ###########################################################
 #for the install target
@@ -376,7 +376,7 @@ IF(BUILD_TESTING)
 		IF(BUILD_TESTING_WITH_COVERAGE)
 			# force the correct flags to make coverage trought a build type
 			SET(CMAKE_BUILD_TYPE coverage)
-			SET(CMAKE_CXX_FLAGS_COVERAGE "-Wall -O0 -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
+			SET(CMAKE_CXX_FLAGS_COVERAGE "${OPTIM} -ftest-coverage -fprofile-arcs" CACHE STRING "" FORCE)
 			MARK_AS_ADVANCED(FORCE CMAKE_CXX_FLAGS_COVERAGE)
 			# Force debug mode, so that no optimisation is made to get "Correct" results of coverage testing
 			SET(CMAKE_BUILD_TYPE "coverage" CACHE STRING "Choose the type of build, options are: debug release coverage " FORCE)
