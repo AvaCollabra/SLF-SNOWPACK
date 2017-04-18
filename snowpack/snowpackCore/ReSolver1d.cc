@@ -773,7 +773,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//Initializing and defining Richards solver space domain
 	const size_t nN=Xdata.getNumberOfNodes();	//Number of nodes
 	const size_t nE=nN-1;				//Number of layers
-	const double cos_sl = Xdata.cos_sl;		//Slope cosinus, giving cos_sl=1 for flat field.
 	vector<ElementData>& EMS = Xdata.Edata;		//Create reference to SNOWPACK elements.
 	vector<NodeData>& NDS = Xdata.Ndata;		//Create reference to SNOWPACK nodes.
 	std::vector<double> dz(nE, 0.);			//Layer height (in meters)
@@ -993,15 +992,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Domain initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height.
 	//i=0 is bottom layer, and toplayer-1 is top layer.
-	double heightshift=0.;			//heightshift can be used to shift the vertical domain up and down.
 	double totalheight=0.;			//tracking the total height of the column
 	for (i = 0; i<toplayer; i++) {		//Cycle over all SNOWPACK layers
 		dz[i]=EMS[i].L;
 		totalheight+=dz[i];
 		if(i==0) {	//Lowest element
-			z[i]=.5*dz[i]-heightshift;
+			z[i]=.5*dz[i];
 		} else {
-			z[i]=z[i-1]+(dz[i-1]/2.+(dz[i])/2.)-heightshift;
+			z[i]=z[i-1]+(dz[i-1]/2.+(dz[i])/2.);
 		}
 	}
 	uppernode=toplayer-1;
@@ -1519,7 +1517,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 						case UPSTREAM:
 						{
-							if (((h_np1_m[i+1]-h_np1_m[i])/dz_down[i+1]) - cos_sl > 0.) {
+							if (((h_np1_m[i+1]-h_np1_m[i])/dz_down[i+1]) - Xdata.cos_sl > 0.) {
 								k_np1_m_ip12[i]=K[i];
 							} else {
 								k_np1_m_ip12[i]=K[i+1];
@@ -1582,7 +1580,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// Determine the limiting flux:
 					const double flux_compare =														//The limiting flux is:
 					        (dz[uppernode]*(theta_s[uppernode] - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt)					// net flux that would lead to saturation of the top layer
-					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + cos_sl) : 0.);	// plus what could leave below
+					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + Xdata.cos_sl) : 0.);	// plus what could leave below
 
 					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
 					if (alpine3d==true) {
@@ -1600,7 +1598,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (int(nsoillayers)==int(nE) || toplayer==nsoillayers)) || (LIMITEDFLUXEVAPORATION_snow==true && int(nsoillayers)<int(nE)))) {
 					// Outflux condition
 					const double head_compare=h_d_uppernode;
-					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + cos_sl);
+					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
 					if(flux_compare > TopFluxRate) {
 						TopFluxRate=std::min(0., flux_compare);
 					}
@@ -1636,7 +1634,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				if(uppernode>0) {
 					//First calculate flux between lowest and lowest+1 element.
 					const double tmpgrad=((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
-					if((tmpgrad+cos_sl) < 0.) {
+					if((tmpgrad+Xdata.cos_sl) < 0.) {
 						//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
 						//Then set zero flux:
 						aBottomBC=NEUMANN;
@@ -1644,7 +1642,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					} else {
 						aBottomBC=NEUMANN;
 						//Now, prescribe flux at lower boundary equivalent to tmpgrad
-						BottomFluxRate=(tmpgrad+cos_sl)*k_np1_m_im12[lowernode];
+						BottomFluxRate=(tmpgrad+Xdata.cos_sl)*k_np1_m_im12[lowernode];
 					}
 				} else {
 					//With one element only, fall back to GRAVITATIONALDRAINAGE
@@ -1690,7 +1688,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				if (int(nsoillayers)<int(nE)) {	//We have snow layers
 					if(nsoillayers>0) {
 						// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
-						snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+						snowsoilinterfaceflux_before=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+Xdata.cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
 					} else {
 						// HACK: what to do here? How to determine the outflux at the bottom at the beginning of the first time step?
 						// In any case, we don't use this approach right now, so maybe abandon it?
@@ -1784,7 +1782,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Note: the gravity term is not explicitly in Celia et al (1990). It is just z[i], as pressure head should already be scaled by rho_water * g. Then it is taken outside the nabla, by using the chain rule.
 				if(i==uppernode) {
 					if(aTopBC==NEUMANN) {		//Neumann, following Equation 4 in McCord, WRR (1991).
-						term_up[i]=(TopFluxRate)*dz_up[i] - cos_sl*(dz_up[i]*k_np1_m_ip12[i]);
+						term_up[i]=(TopFluxRate)*dz_up[i] - Xdata.cos_sl*(dz_up[i]*k_np1_m_ip12[i]);
 					} else {	//Dirichlet
 						term_up[i]=0.;
 					}
@@ -1793,7 +1791,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 				if(i==lowernode) {
 					if(aBottomBC == NEUMANN) {	//Neumann, following Equation 4 in McCord, WRR (1991).
-						term_down[i]=(BottomFluxRate)*dz_down[i] - cos_sl*(dz_down[i]*k_np1_m_im12[i]);
+						term_down[i]=(BottomFluxRate)*dz_down[i] - Xdata.cos_sl*(dz_down[i]*k_np1_m_im12[i]);
 					} else {			//Dirichlet
 						term_down[i]=0.;
 					}
@@ -1802,7 +1800,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 
 				//RHS eq. 17 in Celia et al. (1990):
-				r_mpfd[i]=(1./(dz_[i]))*((term_up[i]/dz_up[i])-(term_down[i]/dz_down[i])) + cos_sl*((k_np1_m_ip12[i]-k_np1_m_im12[i])/(dz_[i])) - (1./dt)*((theta_np1_m[i]-theta_n[i]) + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) + s[i];
+				r_mpfd[i]=(1./(dz_[i]))*((term_up[i]/dz_up[i])-(term_down[i]/dz_down[i])) + Xdata.cos_sl*((k_np1_m_ip12[i]-k_np1_m_im12[i])/(dz_[i])) - (1./dt)*((theta_np1_m[i]-theta_n[i]) + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) + s[i];
 
 				// r_mpfd is an approximation of how far one is away from the solution. So in case of Dirichlet boundaries, we are *at* the solution:
 				if(aTopBC==DIRICHLET) r_mpfd[uppernode]=0.;
@@ -1931,8 +1929,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					//Calculate temperature change of soil layers to reflect heat advected by the flowing water
 					if(i<nsoillayers) {
 						//Calculate the fluxes from above and below for this layer
-						const double tmp_flux_above = (i<toplayer-1) ? (((((h_np1_m[i+1]+delta_h[memstate%nmemstates][i+1])-(h_np1_m[i]+delta_h[memstate%nmemstates][i]))/dz_up[i])+cos_sl)*k_np1_m_ip12[i]*dt) : 0;			//Units: [m^3/m^2]
-						const double tmp_flux_below = (i>0) ? (((((h_np1_m[i]+delta_h[memstate%nmemstates][i])-(h_np1_m[i-1]+delta_h[memstate%nmemstates][i-1]))/dz_up[i-1])+cos_sl)*k_np1_m_ip12[i-1]*dt) : 0;				//Units: [m^3/m^2]
+						const double tmp_flux_above = (i<toplayer-1) ? (((((h_np1_m[i+1]+delta_h[memstate%nmemstates][i+1])-(h_np1_m[i]+delta_h[memstate%nmemstates][i]))/dz_up[i])+Xdata.cos_sl)*k_np1_m_ip12[i]*dt) : 0;			//Units: [m^3/m^2]
+						const double tmp_flux_below = (i>0) ? (((((h_np1_m[i]+delta_h[memstate%nmemstates][i])-(h_np1_m[i-1]+delta_h[memstate%nmemstates][i-1]))/dz_up[i-1])+Xdata.cos_sl)*k_np1_m_ip12[i-1]*dt) : 0;				//Units: [m^3/m^2]
 
 						//Calculate intermediate state variables of this layer
 						const double tmp_theta_air = 1. - theta_i_n[i] - (theta_np1_mp1[i] + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) - EMS[i].theta[SOIL];					//Units: [m^3 m^-3]
@@ -2179,13 +2177,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(aTopBC==NEUMANN) {		//If we use Neumann, the massbalance should incorporate the applied TopFluxRate:
 				tmp_mb_topflux=TopFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the influx: (Note that basically with Dirichlet, the change of theta in the element is 0., so the influx in the model domain is equal to the flux from the upper element to the one below.)
-				tmp_mb_topflux=((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_mp1[uppernode]-h_np1_mp1[uppernode-1])/dz_down[uppernode])+cos_sl)*k_np1_m_im12[uppernode]*dt);
+				tmp_mb_topflux=((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_mp1[uppernode]-h_np1_mp1[uppernode-1])/dz_down[uppernode])+Xdata.cos_sl)*k_np1_m_im12[uppernode]*dt);
 			}
 			if(aBottomBC==NEUMANN) {	//If we use Neumann, the massbalance should incorporate the applied BottomFluxRate:
 				tmp_mb_bottomflux=BottomFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the outflux: (Note that basically with Dirichlet, the change of theta in the element is 0., so the outflux in the model domain is equal to the flux from the element above the lowest one to the lowest one.)
 				if(uppernode > 0) {
-					tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+					tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt));
 				} else {
 					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
 					tmp_mb_bottomflux=0.;
@@ -2194,7 +2192,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			massbalanceerror+=tmp_mb_topflux;		//Add topflux (note: topflux>0. means influx)
 			massbalanceerror-=tmp_mb_bottomflux;		//Substract bottomflufx (note: bottomflux>0. means outflux)
 			massbalanceerror+=totalsourcetermflux*dt;	//Add the sink/source term flux.
-			if(WriteOutNumerics_Level2==true) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
+			if(WriteOutNumerics_Level2==true) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
 
 			//Make sure to trigger a rewind by making max_delta_h very large in case the mass balance is violated or change in head are too large.
 			if(fabs(massbalanceerror)>1E-1 || max_delta_h>MAX_ALLOWED_DELTA_H) {
@@ -2408,7 +2406,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
 			if(aBottomBC==DIRICHLET) {
 				if(uppernode > 0) {
-					actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
+					actualbottomflux+=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt));
 				} else {
 					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
 					actualbottomflux+=0.;
@@ -2431,7 +2429,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// See McCord (1996). Note: I think there is a minus sign missing there.
 					// In any case: snowsoilinterfaceflux > 0 means influx!
 					if(nsoillayers>0) {
-						snowsoilinterfaceflux_after=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
+						snowsoilinterfaceflux_after=((((h_n[nsoillayers]-h_n[nsoillayers-1])/dz_up[nsoillayers-1])+Xdata.cos_sl)*k_np1_m_ip12[nsoillayers-1]*dt);
 						snowsoilinterfaceflux1+=snowsoilinterfaceflux_after;
 						// Other method to estimate soil snow interface flux (based on average before and end of time step).
 						snowsoilinterfaceflux2+=0.5*(snowsoilinterfaceflux_before+snowsoilinterfaceflux_after);
