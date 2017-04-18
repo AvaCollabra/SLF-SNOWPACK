@@ -91,7 +91,7 @@ class ReSolver1d {
 		void SetSoil(SoilTypes type, double *theta_r, double *theta_s, double *alpha, double *m, double *n, double *ksat, double *he);
 
 		// Solvers
-		int TDMASolver (int n, double *a, double *b, double *c, double *v, double *x);
+		int TDMASolver (size_t n, double *a, double *b, double *c, double *v, double *x);
 		int pinv(int m, int n, int lda, double *a);
 };
 #endif //End of WaterTransport.h
