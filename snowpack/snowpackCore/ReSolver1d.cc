@@ -692,7 +692,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 //    or write it out in a kind of overland flow variable.
 
 	// define if matrix or preferential flow
-	int WATERINDEX = (matrix == true) ? (WATER) : (WATER_PREF);
+	const int WATERINDEX = (matrix == true) ? (WATER) : (WATER_PREF);
 
 	//
 	// BEGIN OF SETTINGS
