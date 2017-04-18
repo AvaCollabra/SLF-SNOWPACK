@@ -691,9 +691,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 // -  Implement a strategy what to do with the rejected infilitrating water in case of LIMITEDFLUX and LIMITEDFLUXINFILTRATION. Either built-up a water layer (theta[WATER]==1) on top (real ponding),
 //    or write it out in a kind of overland flow variable.
 
-	//Initializations
-	enum RunCases{UNIFORMSOIL, IMISDEFAULT, WFJ, CDP, SNOFILE};
-
 	// define if matrix or preferential flow
 	int WATERINDEX=WATER;
 	if(matrix == true) {
@@ -705,7 +702,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//
 	// BEGIN OF SETTINGS
 	//
-	const RunCases runcase = SNOFILE;					//Defines what the soil looks like. Recommended: SNOFILE, soil type based on grain size in sno file.
 	const BoundaryConditions TopBC = LIMITEDFLUX;				//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).
 		//In case you select one of the LIMITEDFLUX options, specify whether these are only for soil, for snow or for both:
 		const bool LIMITEDFLUXEVAPORATION_soil=true;
@@ -1180,67 +1176,34 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		} else {  				//Soil
 			tmpheight+=dz[i];		//This is only done in soil, so we have a relative reference only for a soil, not for snow.
 
-			switch ( runcase ) {
-			case UNIFORMSOIL:
-				//Uniform soil
-				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				//SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				break;
-			case IMISDEFAULT:
-				//Default case (IMIS):
-				if(tmpheight<=0.25001) {
-					//Silt loam
-					//SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					//SetSoil(SILTLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else { //Gravel/sand
-					if(tmpheight<1.001) {
-						SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					} else {
-						SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-					}
-				}
-				break;
-			case WFJ:
-				//Case WFJ:
-				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				break;
-			case CDP:
-				//Case Col de Porte
+			if(EMS[i].rg < 0.5) {
+				SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 1.) {
+				SetSoil(CLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 2.) {
+				SetSoil(CLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 3.) {
+				SetSoil(LOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 4.) {
+				SetSoil(LOAMYSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 5.) {
+				SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 6.) {
+				SetSoil(SANDYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 7.) {
+				SetSoil(SANDYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 8.) {
 				SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				break;
-			case SNOFILE:
-				if(EMS[i].rg < 0.5) {
-					SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 1.) {
-					SetSoil(CLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 2.) {
-					SetSoil(CLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 3.) {
-					SetSoil(LOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 4.) {
-					SetSoil(LOAMYSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 5.) {
-					SetSoil(SAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 6.) {
-					SetSoil(SANDYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 7.) {
-					SetSoil(SANDYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 8.) {
-					SetSoil(SANDYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 9.) {
-					SetSoil(SILT, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 10.) {
-					SetSoil(SILTYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 11.) {
-					SetSoil(SILTYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else if (EMS[i].rg < 12.) {
-					SetSoil(SILTLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				} else {
-					SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
-				}
-				break;
+			} else if (EMS[i].rg < 9.) {
+				SetSoil(SILT, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 10.) {
+				SetSoil(SILTYCLAY, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 11.) {
+				SetSoil(SILTYCLAYLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else if (EMS[i].rg < 12.) {
+				SetSoil(SILTLOAM, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
+			} else {
+				SetSoil(WFJGRAVELSAND, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 			}
 
 			//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
