@@ -318,7 +318,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 	// For snow, update theta_s (i.e., pore space)
 	if (nE > Xdata.SoilNode) {
 		for (size_t e = Xdata.SoilNode; e < nE; e++) {
-			EMS[e].theta_s = (1. - EMS[e].theta[ICE])*(Constants::density_ice/Constants::density_water);
+			EMS[e].theta_s = (1. - EMS[e].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
 		}
 	}
 
@@ -347,8 +347,8 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			} else {
 				if (e < Xdata.SoilNode) {
 					//in soil
-					botFlux = -SnLaws::compSoilThermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te,clay_fraction)*Constants::density_water*gradTbot
-						  -SnLaws::compSoilIsothermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te, NDS[e].T)*Constants::density_water*gradHbot;
+					botFlux = -(SnLaws::compSoilThermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te,clay_fraction)*Constants::density_water*gradTbot
+						    + SnLaws::compSoilIsothermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te, NDS[e].T)*Constants::density_water*gradHbot);
 				} else {
 					//in snow 
 					if (e > 0) { //if soil below botFlux from soil diffusion, else botFlux = 0
@@ -364,8 +364,9 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			// Now, the mass change is limited by:
 			// - we cannot remove more WATER and ICE than available
 			// - we cannot add more WATER and ICE than pore space available
-			dM = std::max(-((EMS[e].theta[WATER] - EMS[e].theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L),
-				      std::min((EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), qL2L * sn_dt)); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
+			dM = std::max(  -((EMS[e].theta[WATER] - EMS[e].theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L)  ,
+				      std::min(  (EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), qL2L * sn_dt  )
+				     ); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
 
 			// - we should not remove more ICE from the snow layer then just below the minimum ice content, such that the layer is removed in the next time step
 			if (EMS[e].theta[ICE] > (1. - Constants::eps) * Snowpack::min_ice_content && EMS[e].theta[SOIL] < Constants::eps) {
