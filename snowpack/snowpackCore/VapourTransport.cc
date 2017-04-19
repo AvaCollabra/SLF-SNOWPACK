@@ -181,7 +181,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 			}
 		}
 	} else if ((ql < (-Constants::eps2)) && (nE > 0)) {
-		// If  there is water in some form and ql < 0, SUBLIMATE mass off in case complete elements will disappear
+		// If ql < 0, SUBLIMATE mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
 		while ((e > 0) && (ql < (-Constants::eps2))) {  // While energy is available
@@ -228,16 +228,9 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 							Xdata.reduceNumberOfElements(nE);
 						}
 					} else {
+						//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
 						break;
 					}
-
-					//check that thetas and densities are consistent HACK repetition needed because of the temporary break statement
-					assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
-					assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
-					assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
-					assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
-					assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
-					assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
 				} else {
 					break; //HACK temporary to let L2L take care of surface sublimation (otherwise topflux=0 -> icy layers on top of the snowpack for the wrong reasons)
 				}
