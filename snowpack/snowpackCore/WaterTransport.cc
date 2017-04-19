@@ -323,7 +323,9 @@ void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& 
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
 		double ql2 = ql; // Dummy of ql. We want to mimick the effect of evaporation from deeper layers, if the energy flux is so large, that complete elements disappear.
-		                 // So, ql2 also keeps track of sublimation, which is not applied here, but later in VapourTransport.
+				 // But, since we now have separate locations for water and ice evaporation respectively sublimation, we need to calculate already here the 
+				 // sublimation of ice to decide whether any water is evaporated from the next element below. So, ql2 also keeps track of sublimation, which is not
+				 // applied here, but later in VapourTransport.
 		while ((e > 0) && (ql2 < (-Constants::eps2))) {  // While energy is available
 			e--;
 			if ((iwatertransportmodel_snow != RICHARDSEQUATION && e>=Xdata.SoilNode) || (iwatertransportmodel_soil != RICHARDSEQUATION && e<Xdata.SoilNode)) {
