@@ -44,7 +44,7 @@ class VapourTransport : public WaterTransport {
 
 	private:  
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
-		void LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, const double& ql);
+		void LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql);
 
 		ReSolver1d RichardsEquationSolver1d;
 

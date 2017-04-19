@@ -212,7 +212,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 
 					// If present at surface, surface hoar is sublimated away
 					if (e == nE-1) {
-						dHoar = dM;
+						dHoar = std::max(-NDS[nN-1].hoar, dM);
 					}
 
 					// Update remaining volumetric contents and density
@@ -232,10 +232,11 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 						break;
 					}
 				} else {
-					break; //HACK temporary to let L2L take care of surface sublimation (otherwise topflux=0 -> icy layers on top of the snowpack for the wrong reasons)
+					// Not enough energy anymore to remove complete element, so we should break out of the loop.
+					break;
 				}
 			}
-			
+
 			//check that thetas and densities are consistent
 			assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
 			assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
@@ -308,7 +309,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
  * @param Sdata Surface data (update the sublimated/deposited mass: surface flux MS_SUBLIMATION)
  * @param ql Latent heat flux (W m-2) from compSurfaceSublimation()
  */
-void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, const double& ql) {
+void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql) {
 	const size_t nN = Xdata.getNumberOfNodes();
 	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -327,80 +328,93 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, con
 
 	double botFlux = 0.;	//bottom layer flux (kg m-2 s-1)
 	//Going top-down through the model domain, the first estimate of the topFlux is the surface sublimation, we put it in the botFlux, so it will be assigned the topFlux inside the while-loop
-	botFlux = -ql/Constants::lh_sublimation; //top flux when snowpack interacts with atmosphere, inverse sign with ql (upward vapour flux for sublimation/downward for deposition)
+	botFlux = -ql / Constants::lh_sublimation; //top flux when snowpack interacts with atmosphere, inverse sign with ql (upward vapour flux for sublimation/downward for deposition)
+	ql = 0.; //Now that we used the remaining ql, put it to 0.
 
-	while (e-- > 0.) {
-		const double topFlux = botFlux;										//top layer flux (kg m-2 s-1)
-		
-		const double gradTbot = (e == 0) ? (0.) : .5 * (EMS[e-1].gradT + EMS[e].gradT);				//Temperature gradient at the upper node (K m-1)
-		const double gradHbot = (e == 0) ? (0.) : (EMS[e].h - EMS[e-1].h) / (EMS[e].L/2. + EMS[e-1].L/2.);	//Pressure head gradient at the upper node (m m-1)
+	if (enable_vapour_transport) {
+		// Solve vapour transport in snow
+		while (e-- > 0.) {
+			const double topFlux = botFlux;										//top layer flux (kg m-2 s-1)
+			
+			const double gradTbot = (e == 0) ? (0.) : .5 * (EMS[e-1].gradT + EMS[e].gradT);				//Temperature gradient at the upper node (K m-1)
+			const double gradHbot = (e == 0) ? (0.) : (EMS[e].h - EMS[e-1].h) / (EMS[e].L/2. + EMS[e-1].L/2.);	//Pressure head gradient at the upper node (m m-1)
 
-		const double clay_fraction = 0.2;							//Silty clay from Zhang et al., 2016
-		double dM = 0.;										//mass change induced by vapor flux (kg m-2)
+			const double clay_fraction = 0.2;							//Silty clay from Zhang et al., 2016
+			double dM = 0.;										//mass change induced by vapor flux (kg m-2)
 
-		if (e == 0) {
-			botFlux = 0.;
-		} else {
-			if (e < Xdata.SoilNode) {
-				//in soil
-				botFlux = -SnLaws::compSoilThermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te,clay_fraction)*Constants::density_water*gradTbot
-					  -SnLaws::compSoilIsothermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te, NDS[e].T)*Constants::density_water*gradHbot;
+			if (e == 0) {
+				botFlux = 0.;
 			} else {
-				//in snow 
-				if (e > 0) { //if soil below botFlux from soil diffusion, else botFlux = 0
-					botFlux = -Constants::diffusion_coefficient_in_snow/(Constants::gas_constant*NDS[e].T*NDS[e].T)
-						  * (Constants::lh_sublimation/(Constants::gas_constant*NDS[e].T)-1.) * gradTbot;
-					botFlux *= Atmosphere::vaporSaturationPressure(NDS[e].T);
+				if (e < Xdata.SoilNode) {
+					//in soil
+					botFlux = -SnLaws::compSoilThermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te,clay_fraction)*Constants::density_water*gradTbot
+						  -SnLaws::compSoilIsothermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te, NDS[e].T)*Constants::density_water*gradHbot;
+				} else {
+					//in snow 
+					if (e > 0) { //if soil below botFlux from soil diffusion, else botFlux = 0
+						botFlux = -Constants::diffusion_coefficient_in_snow/(Constants::gas_constant*NDS[e].T*NDS[e].T)
+							  * (Constants::lh_sublimation/(Constants::gas_constant*NDS[e].T)-1.) * gradTbot;
+						botFlux *= Atmosphere::vaporSaturationPressure(NDS[e].T);
+					}
 				}
 			}
+
+			const double qL2L = -(topFlux - botFlux); //Layer to layer flux, (kg m-2 s-1)
+
+			// Now, the mass change is limited by:
+			// - we cannot remove more WATER and ICE than available
+			// - we cannot add more WATER and ICE than pore space available
+			dM = std::max(-((EMS[e].theta[WATER] - EMS[e].theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L),
+				      std::min((EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), qL2L * sn_dt)); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
+
+			// - we should not remove more ICE from the snow layer then just below the minimum ice content, such that the layer is removed in the next time step
+			if (EMS[e].theta[ICE] > (1. - Constants::eps) * Snowpack::min_ice_content && EMS[e].theta[SOIL] < Constants::eps) {
+				// Make sure elements don't get too light. By setting element ice content just below the threshold to merge, it will be merged in the next time step. 
+				dM = std::max(-Constants::density_ice * EMS[e].L * (EMS[e].theta[ICE] - (1. - Constants::eps) * Snowpack::min_ice_content), dM);
+			}
+
+			// If there is no pore space, or, in fact, only so much pore space to accomodate the larger volume occupied by ice when all water freezes,
+			// we inhibit vapour flux. This is necessary to maintain saturated conditions when present, and this is in turn necessary for the stability in the Richards equation solver.
+			if(EMS[e].theta[AIR] < EMS[e].theta[WATER]*(Constants::density_water/Constants::density_ice - 1.) + Constants::eps) {
+				dM = 0.;
+			}
+			deltaM[e] += dM;
+
+			// Correct botFlux if mass change was limited. Note that we cannot adapt topFlux anymore, as it was applied to the upper element already.
+			botFlux += (deltaM[e] / sn_dt - qL2L);
+
+			if (e == nE-1) Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux*sn_dt;			//update surface flux (minus when the flux is leaving the snowpack)
+			if (e == Xdata.SoilNode) Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] -= botFlux*sn_dt;	//update mass loss of snowpack due to water transport
 		}
-
-		double qL2L = -(topFlux - botFlux); //Layer to layer flux, (kg m-2 s-1)
-
-		// Now, the mass change is limited by:
-		// - we cannot remove more WATER and ICE than available
-		// - we cannot add more WATER and ICE than pore space available
-		dM = std::max(-((EMS[e].theta[WATER] - EMS[e].theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L),
-			      std::min((EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), qL2L * sn_dt)); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
-
-		// - we should not remove more ICE from the snow layer then just below the minimum ice content, such that the layer is removed in the next time step
-		if (EMS[e].theta[ICE] > (1. - Constants::eps) * Snowpack::min_ice_content && EMS[e].theta[SOIL] < Constants::eps) {
-			// Make sure elements don't get too light. By setting element ice content just below the threshold to merge, it will be merged in the next time step. 
-			dM = std::max(-Constants::density_ice * EMS[e].L * (EMS[e].theta[ICE] - (1. - Constants::eps) * Snowpack::min_ice_content), dM);
-		}
-
-		// If there is no pore space, or, in fact, only so much pore space to accomodate the larger volume occupied by ice when all water freezes,
-		// we inhibit vapour flux. This is necessary to maintain saturated conditions when present, and this is in turn necessary for the stability in the Richards equation solver.
-		if(EMS[e].theta[AIR] < EMS[e].theta[WATER]*(Constants::density_water/Constants::density_ice - 1.) + Constants::eps) {
-			dM = 0.;
-		}
-		deltaM[e] += dM;
-
-		// Correct botFlux if mass change was limited. Note that we cannot adapt topFlux anymore, as it was applied to the upper element already.
-		botFlux += (deltaM[e] / sn_dt - qL2L);
-
-		if (e == nE-1) Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux*sn_dt;			//update surface flux (minus when the flux is leaving the snowpack)
-		if (e == Xdata.SoilNode) Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] -= botFlux*sn_dt;	//update mass loss of snowpack due to water transport
+	} else {
+		// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
+		const double topFlux = botFlux;										//top layer flux (kg m-2 s-1)
+		deltaM[nE-1] += std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
+		// HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
+		// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
+		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
 	}
 
+	double dHoar = 0.;
 	for (e = 0; e < nE; e++) {
-		//check that thetas and densities are consistent
-		assert(EMS[e].theta[SOIL] >= (-Constants::eps2) && EMS[e].theta[SOIL] <= (1.+Constants::eps2));
-		assert(EMS[e].theta[ICE] >= (-Constants::eps2) && EMS[e].theta[ICE]<=(1.+Constants::eps2));
-		assert(EMS[e].theta[WATER] >= (-Constants::eps2) && EMS[e].theta[WATER]<=(1.+Constants::eps2));
-		assert(EMS[e].theta[WATER_PREF] >= (-Constants::eps2) && EMS[e].theta[WATER_PREF]<=(1.+Constants::eps2));
-		assert(EMS[e].theta[AIR] >= (-Constants::eps2) && EMS[e].theta[AIR]<=(1.+Constants::eps2));
-		assert(EMS[e].Rho >= (-Constants::eps2) || EMS[e].Rho==IOUtils::nodata); //we want positive density
-
 		EMS[e].M += deltaM[e];
 		assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 
-		if (deltaM[e] < 0.) {	// Mass loss: apply mass change first to water, then to ice, based on energy considerations
-			// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
-			const double dTh_water = std::max( (EMS[e].theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
-			const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
-			EMS[e].theta[WATER] += dTh_water;
-			EMS[e].theta[ICE] += dTh_ice;
+		if (deltaM[e] < 0.) {
+			if (e >= Xdata.SoilNode) { //for snow layers:   Mass loss: apply mass change first to water, then to ice, based on energy considerations
+				// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
+				const double dTh_water = std::max( (EMS[e].theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
+				const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
+				EMS[e].theta[WATER] += dTh_water;
+				EMS[e].theta[ICE] += dTh_ice;
+				
+				// If present at surface, surface hoar is sublimated away
+				if (e == nE-1 && deltaM[e]<0) {
+					dHoar = std::max(-NDS[nN-1].hoar, deltaM[e]);
+				}
+			} else { // for soil
+				EMS[e].theta[ICE] += deltaM[e];
+			}
 		} else {		// Mass gain: add water in case temperature at or above melting point, ice otherwise
 			if (EMS[e].Te >= EMS[e].freezing_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
@@ -421,6 +435,12 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, con
 				throw IOException("Cannot evaluate mass balance in adjust density routine", AT);
 		}
 	}
+
+	Sdata.hoar += dHoar;
+	NDS[nN-1].hoar += dHoar;
+	if (NDS[nN-1].hoar < 0.) {
+		NDS[nN-1].hoar = 0.;
+	}
 }
 
 void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
@@ -435,7 +455,7 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 
 	try {
 		WaterTransport::adjustDensity(Xdata);
-		if (enable_vapour_transport) LayerToLayer(Xdata, Sdata, ql);
+		LayerToLayer(Xdata, Sdata, ql);
 	} catch(const exception&){
 		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
 		throw;
