@@ -191,50 +191,47 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 			* that will be continuously used: L0 and M
 			*/
 			const double L0 = EMS[e].L;
+			const double theta_i0 = EMS[e].theta[ICE];
+			M = theta_i0*Constants::density_ice*L0;
+			dM = ql*sn_dt/Constants::lh_sublimation;
+			if (-dM > M) {
+				// Only if mass change is sufficient to remove the full element
+				dM = -M;
+				// Add solutes to Storage
+				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
+					M_Solutes[ii] += EMS[e].conc[ICE][ii]*theta_i0*L0;
+				}
+				EMS[e].theta[ICE] = 0.;
+				dL = 0.;
 
-			if (ql < (-Constants::eps2)) {
-				const double theta_i0 = EMS[e].theta[ICE];
-				M = theta_i0*Constants::density_ice*L0;
-				dM = ql*sn_dt/Constants::lh_sublimation;
-				if (-dM > M) {
-					// Only if mass change is sufficient to remove the full element
-					dM = -M;
-					// Add solutes to Storage
-					for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
-						M_Solutes[ii] += EMS[e].conc[ICE][ii]*theta_i0*L0;
-					}
-					EMS[e].theta[ICE] = 0.;
-					dL = 0.;
+				EMS[e].M += dM;
+				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
+				ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
 
-					EMS[e].M += dM;
-					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
-					ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
+				// If present at surface, surface hoar is sublimated away
+				if (e == nE-1) {
+					dHoar = std::max(-NDS[nN-1].hoar, dM);
+				}
 
-					// If present at surface, surface hoar is sublimated away
-					if (e == nE-1) {
-						dHoar = std::max(-NDS[nN-1].hoar, dM);
-					}
-
-					// Update remaining volumetric contents and density
-					EMS[e].theta[AIR] = std::max(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-					EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF])* Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
-					// Merge the element if it is a snow layer. This will take care of possible left over liquid water (will be put one layer down)
-					// Keep layer if it is a soil layer inside the snowpack (for example with snow farming)
-					if(e>Xdata.SoilNode) {
-						if(EMS[e].theta[SOIL]<Constants::eps) {
-							SnowStation::mergeElements(EMS[e-1], EMS[e], false, true);
-							// Now reduce the number of elements by one.
-							nE--;
-							Xdata.reduceNumberOfElements(nE);
-						}
-					} else {
-						//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
-						break;
+				// Update remaining volumetric contents and density
+				EMS[e].theta[AIR] = std::max(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
+				EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF])* Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
+				// Merge the element if it is a snow layer. This will take care of possible left over liquid water (will be put one layer down)
+				// Keep layer if it is a soil layer inside the snowpack (for example with snow farming)
+				if(e>Xdata.SoilNode) {
+					if(EMS[e].theta[SOIL]<Constants::eps) {
+						SnowStation::mergeElements(EMS[e-1], EMS[e], false, true);
+						// Now reduce the number of elements by one.
+						nE--;
+						Xdata.reduceNumberOfElements(nE);
 					}
 				} else {
-					// Not enough energy anymore to remove complete element, so we should break out of the loop.
+					//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
 					break;
 				}
+			} else {
+				// Not enough energy anymore to remove complete element, so we should break out of the loop.
+				break;
 			}
 
 			//check that thetas and densities are consistent
