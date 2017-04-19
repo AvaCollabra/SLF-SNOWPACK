@@ -625,6 +625,14 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
  */
 void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
 {
+// Main publications about the development of this code:
+// - Wever, N., Fierz, C., Mitterer, C., Hirashima, H., and Lehning, M.: Solving Richards Equation for snow improves snowpack meltwater runoff estimations in detailed multi-layer snowpack model, The Cryosphere, 8, 257-274, doi:10.5194/tc-8-257-2014, 2014.
+//   First publication describing the implementation of Richards equation in SNOWPACK.
+// - Wever, N., Schmid, L., Heilig, A., Eisen, O., Fierz, C., and Lehning, M.: Verification of the multi-layer SNOWPACK model with different water transport schemes, The Cryosphere, 9, 2271-2293, doi:10.5194/tc-9-2271-2015, 2015.
+//   In-depth model verification and description of the soil part with Richards equation (soil properties and soil phase changes).
+// - Wever, N., Würzer, S., Fierz, C., and Lehning, M.: Simulating ice layer formation under the presence of preferential flow in layered snowpacks, The Cryosphere, 10, 2731-2744, doi:10.5194/tc-10-2731-2016, 2016.
+//   Describes the preferential flow implementation via the dual-domain approach.
+//
 // Main references used to write this code, as a reference to understand the working of this code:
 // - Celia, M, A., Bouloutas, E.T., Zabra, R.L. (1990) A general mass-conservative numerical solution for the unsaturated flow equation Water Resources Research (26:7), 1483-1496.
 //   Describes the main part of the solver (Picard iteration of the mixed form of the Richards equation, see eq. 17 in that paper)
@@ -656,42 +664,26 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 // - Rathfelder, K and Abriola, L. (1994) Mass conservative numerical solutions of the head-based Richards equation. Water Resources Research (30:9) 2579-2586.
 //   Describes an implementation of variable grid spacing for solving Richards Equation in 1D.
 
-
-// PROBLEM SOLVER GUIDE:
 // KNOWN ISSUES:
-//	- When using Richars-Equation, the new energy conservative PhaseChange-schemes may cause snow temperatures to be above 273.15K. As long as they are transient, it should not considered
-//        to be a problem. Future optimization here may be possible. It's likely related to the fact that when solving Richards-Equation, basically every snow layer has some amount of water in it,
-//        albeit very tiny. But this causes some difficulties in determining whether snow is wet or dry, so whether the nodes are at melting temperature.
+//	- When using Richars-Equation, the PhaseChange-scheme may cause snow temperatures to be above 273.15K. As long as they are transient, it should not considered
+//        to be a problem. Future optimization here may be possible. It's likely related to the fact that when solving Richards Equation, basically every snow layer has some amount
+//        of water in it, albeit very little. But this causes some difficulties in determining whether snow is wet or dry, so whether the nodes are at melting temperature.
 //      - In case of floating point exceptions: ReSolver1d has some problems when (in CMake) DEBUG_ARITHM is set to ON. You can safely set it to OFF, as the code detects for
 //        illegal operations itself and takes appropriate measures, like choosing another solver or reducing the time step.
 //	- In case of non-convergence of the solver: Numerical problems were found when the SNOWPACK time step is larger than 15 minutes. For example caused by the settling routine,
 //	  which is based on 15 minute time steps. So before digging further in the problem, make sure you run SNOWPACK with 15 minute time steps.
-//      - Evaporation from soil in dry limit. This cause numerical troubles, but it is also not realistic to force a certain amount of evaporation from a near-dry soil (the water
+//
+//      A lot of problems arise from non convergence in the solver and very small time steps. A common reason for this is filling of the model domain. Clear examples:
+//      - Evaporation from soil in dry limit. This causes numerical troubles, but it is also not realistic to force a certain amount of evaporation from a near-dry soil (the water
 //	  is just not there!). Set LIMITEDFLUXEVAPORATION or LIMITEDFLUX as top boundary condition to be safe.
 //      - Infiltration in soil in wet limit. This can cause numerical trouble, but it is also not realistic. You cannot put more water in the domain then there is room for.
-//	  So for example: never use 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe.
-//
-// SOME DEEPER LYING PROBLEMS:
-// -  In case of floating point exceptions with DEBUG_ARITHM set to OFF:
-//      - either pressure head is blowing up to extremely high values, before rewinds can be done. This can happen if you change MAX_ALLOWED_DELTA_H, but also make sure that the time step is still larger than the minimum allowed time step.
-//        If no rewinds can be done anymore, because the time step is already too small, the solver is just trying until it is killed.
-// -  In case of other exceptions, see the error message on screen. Messages from the solver: if info-value is positive, the number indicates quite often the element that is having illegal value, like nan, or inf. This can be a result from very small time steps (check dt), or else it is a bug.
-// -  Problems can be caused when the state of the snowcover changes rapidly between calls to ReSolver1d. For example, it was found that when SNOWPACK was run with 60 minute
-//    time steps, the settling was so fast that elements collapsed, producing saturated snow layers. Then ReSolver1d was not able to solve the equation anymore with reasonable time steps.
-// -  A lot of problems arise from non convergence in the solver and very small time steps. A common reason for this is filling of the model domain. Clear examples:
-//    - 10cm soil with saturated lower boundary condition. The soil will saturate quickly. No melt water can infilitrate the soil anymore, but starts ponding. In reality, such cases would lead to a water layer, or overland flow.
-//    - Strong infiltration rates (like high precipitation rates)
-//    - High values in the source term
-//    In these cases the model just cannot do anything with all the water...
-// -  The model is still running and producing sensible results, but is having a very small time step.
-//      First of all, I found that only numerous subsequent timesteps of <1s. should not be accepted and there is something "wrong" with the code. Else, just leave the code running. Note: you cannot really say wrong, as it is still finding converging solutions.
-//      Try to understand why the time step rewinds are done, maybe by even enabling the Level3 output. And using less to search the output with "less" and search for "rewind".
-//	  - Is there a massbalance problem? Then probably the fluxes at the top and/or bottom are not correctly calculated, or there is a real bug.
-//	    Massbalance errors also arise when k_ip12(i-1) != k_im12(i)! The nodal values should always be the same for both the upper and lower node!
-//	  - Is there a very strong gradient in pressure head, for example at the new snow layer? What is the value for h_d, is it very small? Then maybe limit the range over which the Van Genuchten parameters can vary (limiting grain size for example for snow).
-//
+//        Typically this may occur with strong infiltration rates (high precipitation rates) or large values in the source/sink term (potentially from the canopy module).
+//	  So for example: never use 10 cm of soil with DIRICHLET lower boundary condition and NEUMANN on top. The soil then may saturate very quickly. No melt water can infilitrate
+//        the soil anymore, but starts ponding. In reality, such cases would lead to a water layer, or overland flow, which is not considered in SNOWPACK (yet).
+//        Set LIMITEDFLUXINFILTRATION or LIMITEDFLUX as lower boundary condition to be safe.
+
 // TODO IN FUTURE DEVELOPMENT
-// -  Implement a strategy what to do with the rejected infilitrating water in case of LIMITEDFLUX and LIMITEDFLUXINFILTRATION. Either built-up a water layer (theta[WATER]==1) on top (real ponding),
+// -  Implement a strategy what to do with the rejected infiltrating water in case of LIMITEDFLUX and LIMITEDFLUXINFILTRATION. Either built-up a water layer (theta[WATER]==1) on top (real ponding),
 //    or write it out in a kind of overland flow variable.
 
 	// define if matrix or preferential flow
@@ -736,7 +728,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	SOLVERS ActiveSolver=PreferredSolver;		//Set the ActiveSolver to the PreferredSolver. This is because the code tries to prevent "difficult" matrices to be solved by the DGTSV or TDMA algorithm, so we should be able to switch temporarily to another solver.
 
 	//Set parameterization for hydraulic conductivity
-	const K_Parameterizations K_PARAM=CALONNE;		// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
+	const K_Parameterizations K_PARAM=CALONNE;	// Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
 
 
 
@@ -922,7 +914,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	}
 
 	//Backup SNOWPACK state
-	for (i = lowernode; i <= uppernode; i++) {		//Cycle through all SNOWPACK layers
+	for (i = lowernode; i <= uppernode; i++) {
 		//Do the basic check if there is not too much ice.
 		if(EMS[i].theta[ICE]>1.) {
 			std::cout << "WARNING: very strange, theta[ICE]>1 at layer " << i << "/" << nE << " (" << EMS[i].theta[ICE] << ")\n";
@@ -978,7 +970,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Domain initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
 	double totalheight=0.;				//tracking the total height of the column
-	for (i = lowernode; i <= uppernode; i++) {	//Cycle over all SNOWPACK layers
+	for (i = lowernode; i <= uppernode; i++) {
 		dz[i]=EMS[i].L;
 		totalheight+=dz[i];
 		if(i==0) {	//Lowest element
@@ -1242,7 +1234,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					EMS[i].theta[WATERINDEX]=theta_s[i]-(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water));
 				}
 			}
-		} else {								//For snow
+		} else {						//For snow
   			if(EMS[i].theta[WATERINDEX] > theta_s[i]) {
 				wateroverflow[i]+=EMS[i].theta[WATERINDEX]-theta_s[i];
 				EMS[i].theta[WATERINDEX]=theta_s[i];
@@ -1309,7 +1301,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Now add soilsurfacesourceflux (in case RemoveElements removed the lowest snow element):
 		if(soilsurfacesourceflux>0. && i==Xdata.SoilNode) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
 			//Remember: soilsurfacesourceflux=[m^3/m^2/s]
-			s[i]+=soilsurfacesourceflux/dz[i];				//Soilsurfacesourceflux>0. if we remove the first snow element above the soil AND there are more snow layers (else it is a surfaceflux) AND we use RE for snow.
+			s[i]+=soilsurfacesourceflux/dz[i];			//Soilsurfacesourceflux>0. if we remove the first snow element above the soil AND there are more snow layers (else it is a surfaceflux) AND we use RE for snow.
 		}
 
 		//Add source/sink term from other parts of SNOWPACK (in particular Canopy.cc)
@@ -1684,7 +1676,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Solve equation
 			std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
 			for (i = lowernode; i <= uppernode; i++) {
-				j=i;	//As matrix A is tridiagonal, so it can be filled very efficiently. However, I keep the notation of i and j, so it's better understood how the structure of A is. I only evaluate i==j.
+				j=i;	//As matrix A is tridiagonal, it can be filled very efficiently. The notation of i and j is kept for clarity of the structure of A. However, only evaluating when i==j is required.
 				//This part is for the DGESVD/DGESDD solver, which uses full matrix a (ainv). We always need them, because in case DGTSV fails, we should be able to fall back on DGESVD/DGESDD:
 				if(i==j) {
 					//Set up the matrix diagonal
