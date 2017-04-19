@@ -2707,7 +2707,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {
 		//Be careful: refusedtopflux = m^3/m^2 and not m^3/m^2/s!!!
-		//Now invert the calculation of ql, using refusedtopflux. This amount of ql should be used for sublimation.
+		//Now invert the calculation of ql, using refusedtopflux. This amount of ql could not be used for evaporation and should be used for sublimation.
 		ql += (refusedtopflux/sn_dt)*Constants::density_water*Constants::lh_vaporization;
 		refusedtopflux = 0.;
 		//First, we fully intepreted ql as evaporation. Now, remaining energy (ql) should not be counted as evaporation
