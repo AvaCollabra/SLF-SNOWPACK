@@ -399,19 +399,16 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 		assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 
 		if (deltaM[e] < 0.) {
-			if (e >= Xdata.SoilNode) { //for snow layers:   Mass loss: apply mass change first to water, then to ice, based on energy considerations
-				// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
-				const double dTh_water = std::max( (EMS[e].theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
-				const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
-				EMS[e].theta[WATER] += dTh_water;
-				EMS[e].theta[ICE] += dTh_ice;
-				
-				// If present at surface, surface hoar is sublimated away
-				if (e == nE-1 && deltaM[e]<0) {
-					dHoar = std::max(-NDS[nN-1].hoar, deltaM[e]);
-				}
-			} else { // for soil
-				EMS[e].theta[ICE] += deltaM[e];
+			// Mass loss: apply mass change first to water, then to ice, based on energy considerations
+			// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
+			const double dTh_water = std::max( (EMS[e].theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
+			const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
+			EMS[e].theta[WATER] += dTh_water;
+			EMS[e].theta[ICE] += dTh_ice;
+
+			// If present at surface, surface hoar is sublimated away
+			if (e == nE-1 && deltaM[e]<0) {
+				dHoar = std::max(-NDS[nN-1].hoar, deltaM[e]);
 			}
 		} else {		// Mass gain: add water in case temperature at or above melting point, ice otherwise
 			if (EMS[e].Te >= EMS[e].freezing_tk) {
