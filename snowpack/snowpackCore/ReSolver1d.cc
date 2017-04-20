@@ -858,8 +858,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> term_down(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
 	std::vector<double> r_mpfd(nE, 0.);			//R_mpfd (see Celia et al, 1990).
 	std::vector<double> r_mpfd2(nE, 0.);			//Copy of R_mpfd, used for DGTSV. Note: R_mpfd2 is overwritten by DGTSV, so we need a copy.
-	std::vector<double> deficit_vector(nE, 0.);		//Deficit vector of solution
-	double deficit_vector_norm=0.;				//2nd norm of deficit vector
 	std::vector<double> h_np1_mp1(nE, 0.);			//Pressure head for the solution time step in the next iteration
 	std::vector<double> theta_np1_m(nE, 0.);		//Theta for the solution time step in the current iteration.
 	std::vector<double> theta_np1_mp1(nE, 0.);		//Theta for the solution time step in the next iteration.
@@ -2172,7 +2170,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 
-			if(WriteOutNumerics_Level1==true) printf("CONVERGENCE:  acc_h: %.10f acc_theta: %.10f acc: %.10f def_norm: %f converged? %s\n", track_accuracy_h, track_accuracy_theta, accuracy, deficit_vector_norm, (boolConvergence)?"yes":"no");
+			if(WriteOutNumerics_Level1==true) printf("CONVERGENCE:  acc_h: %.10f acc_theta: %.10f acc: %.10f converged? %s\n", track_accuracy_h, track_accuracy_theta, accuracy, (boolConvergence)?"yes":"no");
 
 			//Copy solution, to prepare for next iteration
 			for (i = lowernode; i <= uppernode; i++) {
