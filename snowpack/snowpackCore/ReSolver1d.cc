@@ -820,10 +820,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double actualtopflux=0;				//Stores the actual applied flux through top (positive is inflow).
 	double refusedtopflux=0;			//Stores the difference in flux that was requested, but could not be applied
 	double actualbottomflux=0;			//Stores the actual flux through the bottom (positive is outflow).
-	double snowsoilinterfaceflux1=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
-	double snowsoilinterfaceflux2=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
-	double snowsoilinterfaceflux_before=0.;		//Stores the actual flux through the soil-snow interface at the beginning of a time step (positive is flow into soil).
-	double snowsoilinterfaceflux_after=0.;		//Stores the actual flux through the soil-snow interface at the end of a time step (positive is flow into soil).
+	double snowsoilinterfaceflux=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
 	double totalsourcetermflux=0.;			//Stores the total applied source term flux (it's a kind of boundary flux, but then in the middle of the domain).
 
 	//Declare all numerical arrays and matrices:
@@ -1657,20 +1654,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				std::cout << "NUMERICS: BCTOP: " << TopBC << std::scientific << "  TOPFLUXRATE = " << TopFluxRate << " SURFACEFLUXRATE = " << surfacefluxrate << "\n" << std::fixed;
 
 
-			if (niter==1) {
-				if (Xdata.SoilNode<nE) {	//We have snow layers
-					if(Xdata.SoilNode>0) {
-						// See McCord (1996). snowsoilinterfaceflux > 0 means influx!
-						snowsoilinterfaceflux_before=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
-					} else {
-						// HACK: what to do here? How to determine the outflux at the bottom at the beginning of the first time step?
-						// In any case, we don't use this approach right now, so maybe abandon it?
-						snowsoilinterfaceflux_before=0.;
-					}
-				}
-			}
-
-
 			//Solve equation
 			std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
 			for (i = lowernode; i <= uppernode; i++) {
@@ -2389,28 +2372,23 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if (Xdata.SoilNode<nE) {	//We have snow layers
 				if(uppernode+1==Xdata.SoilNode) {	//We run RE-solver only for soil layers AND have snow layers in the model (meaning TopFluxRate is coming from snow)
 					//These lines are not active, as this particular case (RE for soil, other for snow), is dealt with in compTransportMass.
-					//snowsoilinterfaceflux1+=surfacefluxrate*dt;
-					//snowsoilinterfaceflux2+=surfacefluxrate*dt;
+					//snowsoilinterfaceflux+=surfacefluxrate*dt;
 				} else {
 					// See McCord (1996). Note: I think there is a minus sign missing there.
 					// In any case: snowsoilinterfaceflux > 0 means influx!
 					if(Xdata.SoilNode>0) {
-						snowsoilinterfaceflux_after=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
-						snowsoilinterfaceflux1+=snowsoilinterfaceflux_after;
-						// Other method to estimate soil snow interface flux (based on average before and end of time step).
-						snowsoilinterfaceflux2+=0.5*(snowsoilinterfaceflux_before+snowsoilinterfaceflux_after);
+					  	const double tmp_snowsoilinterfaceflux=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
+						snowsoilinterfaceflux+=tmp_snowsoilinterfaceflux;
 					} else {
-						snowsoilinterfaceflux_after=actualbottomflux-snowsoilinterfaceflux1;
-						snowsoilinterfaceflux1=snowsoilinterfaceflux2=actualbottomflux;
+						snowsoilinterfaceflux=actualbottomflux;
 					}
 				}
 			} else {
 				//Make the commented lines active if you whish to add the TopFluxRate to the snowsoilinterfaceflux even when no snow is present.
-				//snowsoilinterfaceflux1+=TopFluxRate*dt;
-				//snowsoilinterfaceflux2+=TopFluxRate*dt;
+				//snowsoilinterfaceflux+=TopFluxRate*dt;
 			}
 
-			if(WriteOutNumerics_Level2==true) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux1, snowsoilinterfaceflux2, dt);
+			if(WriteOutNumerics_Level2==true) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux, dt);
 
 			//Time step control
 			//This time step control increases the time step when niter is below a certain value. When rewinds occurred in the time step, no change is done (dt already adapted by the rewind-mechanim), if too many iterations, time step is decreased.
@@ -2432,8 +2410,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 			//Update mass balance status variable (mass1 becomes mass2 to serve as reference for the next iteration)
 			mass1=mass2;
-			//And snowsoilinterfaceflux_before becomes snowsoilinterfaceflux_after for the next time step.
-			snowsoilinterfaceflux_before=snowsoilinterfaceflux_after;
 
 			if(WriteOutNumerics_Level1==true) printf("NSTEPS: %d, TIME ADVANCE: %f, ITERS NEEDED: %d [%d], ACTUALTOPFLUX: %.10f     ---> new dt: %.15f\n", nsteps, TimeAdvance, niter, niter_nrewinds, actualtopflux, dt);
 		}	//END DoRewindFlag==false
@@ -2680,7 +2656,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		totalwateroverflow+=wateroverflow[i]*dz[i];
 		if(i==Xdata.SoilNode) {
 			// I decided to put all wateroverflow from snow directly in the snowsoilinterfaceflux, although the wateroverflow may occur somewhere in the snowpack.
-			snowsoilinterfaceflux1+=totalwateroverflow;
+			snowsoilinterfaceflux+=totalwateroverflow;
 		}
 	}
 
@@ -2689,7 +2665,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0.);
 		printf("ACTUALBOTTOMFLUX: [ BC: %d ] %.15f %.15f %.15f %f    K_ip1=%.15f\n", BottomBC, actualbottomflux, actualbottomflux/sn_dt, BottomFluxRate, (BottomFluxRate!=0.)?(actualbottomflux/sn_dt)/BottomFluxRate:0., k_np1_m_ip12[lowernode]);
 		// This is more or less for testing only. This snowsoilinterfaceflux should anyway be stored in MS_SNOWPACK_RUNOFF and found in the met file
-		printf("SNOWSOILINTERFACEFLUX: %.15f %.15f\n", snowsoilinterfaceflux1/sn_dt, snowsoilinterfaceflux2/sn_dt);
+		printf("SNOWSOILINTERFACEFLUX: %.15f\n", snowsoilinterfaceflux/sn_dt);
 	}
 
 
@@ -2700,7 +2676,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m^2 (almost equal to mm/m^2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
-	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux1*Constants::density_water;
+	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {
