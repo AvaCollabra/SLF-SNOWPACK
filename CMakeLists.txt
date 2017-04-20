@@ -61,6 +61,8 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
+FIND_PACKAGE(MeteoIO)
+
 ###########################################################
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
