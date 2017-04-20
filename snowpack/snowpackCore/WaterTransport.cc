@@ -592,7 +592,9 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if (!useSoilLayers && (rnE == Xdata.SoilNode)) {
 			Xdata.Ndata[Xdata.SoilNode].T = std::min(Constants::melting_tk, Xdata.Ndata[Xdata.SoilNode].T);
 		}
-		if (verify_top_element && rnE > 0) {
+		if (verify_top_element && rnE > 0 && rnE > Xdata.SoilNode) {
+			// Note: we have to check for the SoilNode, because verify_top_element may have been set to true, but multiple element removals may have
+			// set rnE to the upper soil element, in case we should inhibit element splitting.
 			if (.5 * (EMS[Xdata.getNumberOfElements()-1].L) > SnowStation::comb_thresh_l) {
 				Xdata.splitElement(Xdata.getNumberOfElements()-1);
 			}
