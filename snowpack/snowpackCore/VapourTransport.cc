@@ -280,12 +280,13 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 	}
 
 	// Surface hoar cannot exist when the top element is wet
-	for (size_t e = 0; e<nE-1; e++) {
-		const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && e>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && e<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
-		if (Xdata.Edata[e].theta[WATER] > theta_r) {
-			NDS[e+1].hoar = 0.;
+	if (nE > 0) {
+		const double theta_r=((iwatertransportmodel_snow==RICHARDSEQUATION && nE-1>=Xdata.SoilNode) || (iwatertransportmodel_soil==RICHARDSEQUATION && nE-1<Xdata.SoilNode)) ? (PhaseChange::RE_theta_r) : (PhaseChange::theta_r);
+		if (Xdata.Edata[nE-1].theta[WATER] > theta_r) {
+			NDS[nE].hoar = 0.;
 		}
 	}
+
 	// At the end also update the overall height
 	cH_old = Xdata.cH;
 	Xdata.cH = NDS[Xdata.getNumberOfNodes()-1].z + NDS[Xdata.getNumberOfNodes()-1].u;
