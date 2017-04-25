@@ -898,7 +898,7 @@ double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& 
 {
 	switch (model) {
 		case Sigrist: {//This is the parametrization by Sigrist, 2006
-			const double A = 968.e6; //in Pa
+			static const double A = 968.e6; //in Pa
 			const double E = A * pow( rho_slab/Constants::density_ice, 2.94 ); //in Pa
 			return E;
 		}
@@ -1030,8 +1030,8 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
 {
 	double resWatCont;
 
-	const double fraction = Constants::density_water/Constants::density_ice;
-	const double limit_theta_i = 1. - fraction * ((1. + 0.0165 * fraction) - sqrt((1. + 0.0165 * fraction)*(1. + 0.0165 * fraction) - 4. * fraction * 0.0264)) / (2. * fraction);	// abc-formula
+	static const double fraction = Constants::density_water/Constants::density_ice;
+	static const double limit_theta_i = 1. - fraction * ((1. + 0.0165 * fraction) - sqrt((1. + 0.0165 * fraction)*(1. + 0.0165 * fraction) - 4. * fraction * 0.0264)) / (2. * fraction);	// abc-formula
 
 	if (theta_i > limit_theta_i) {
 		// This case is the limiting case where:
@@ -1949,7 +1949,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  */
 double SnowStation::flexibleMaxElemLength(const double& depth)
 {
-	const double upper_limit_length=1.0;
+	static const double upper_limit_length=1.0;
 	const double calc_length = static_cast<double>( int( int(depth * 100.) / 10) + 1) * comb_thresh_l;
 	return std::min(calc_length, upper_limit_length);
 }
@@ -2161,7 +2161,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 {
 	if (hydro) {
 		//if more than 2m of pure ice in the whole profile -> hydrologically, glacier melt
-		const double ice_depth_glacier = 2.;
+		static const double ice_depth_glacier = 2.;
 		double sum_ice_depth=0.;
 		for (size_t layer_index=0; layer_index<nElems; layer_index++) {
 			if ((Edata[layer_index].type==880) || (Edata[layer_index].mk % 10 == 7) || (Edata[layer_index].mk % 10 == 8))
@@ -2171,7 +2171,7 @@ bool SnowStation::isGlacier(const bool& hydro) const
 		return (sum_ice_depth>=ice_depth_glacier);
 	} else {
 		bool is_pure_ice=true;
-		const size_t check_depth=5;
+		static const size_t check_depth=5;
 		const size_t top_index = nElems-1;
 		const size_t top_index_toCheck = top_index - check_depth;
 		const size_t soil_index = SoilNode-1;

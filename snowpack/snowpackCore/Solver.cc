@@ -491,7 +491,7 @@ inline int ComputePermutation( SD_CON_MATRIX_DATA *pMat )
 	int *marker;   /* array 0..maxN */
 	int *xadj;     /* array 0..maxN */
 	int *adjncy;   /* array 0..maxCol */
-	const int maxint = 32000;   /* use a better value */
+	static const int maxint = 32000;   /* use a better value */
 	int ncsub;
 	int delta;
 	int nEq;

@@ -236,7 +236,7 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
  */
 void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& adjust_VW_height) const
 {
-	const unsigned int max_iter = 100;
+	static const unsigned int max_iter = 100;
 
 	// Ideal approximation of pressure and vapor pressure
 	const double p0 = Atmosphere::stdAirPressure(Xdata.meta.position.getAltitude());
@@ -255,7 +255,7 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 
 	// Iterate to find atmospheric stability
 	// initial guess (neutral)
-	const double eps1 = 1.e-3;
+	static const double eps1 = 1.e-3;
 	double psi_m = 0., psi_s = 0.;
 	const double z_ratio = log((zref - d_pump) / roughness_length);
 	double ustar_old, ustar = Constants::karman * vw / (z_ratio - psi_m); //at first, psi_m=0
