@@ -572,9 +572,9 @@ double StabilityAlgorithms::getLayerSkierStability(const double& Pk, const doubl
 	const double layer_depth = depth_lay - Pk;
 	if ( layer_depth > Constants::eps ) {
 		const double Alpha_max = STpar.alpha_max_rad;
-		const double skier_weight = 85.;
-		const double ski_length = 1.7;
-		const double load = skier_weight*Constants::g/ski_length;
+		static const double skier_weight = 85.;
+		static const double ski_length = 1.7;
+		static const double load = skier_weight*Constants::g/ski_length;
 		double delta_sig = 2. * load * cos(Alpha_max) * Optim::pow2( sin(Alpha_max) ) * sin(Alpha_max + STpar.psi_ref);
 		delta_sig /= Constants::pi *  layer_depth * STpar.cos_psi_ref; // in Pa
 		delta_sig /= 1000.; // convert to kPa
@@ -640,8 +640,8 @@ bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
 		
 		//compute the weibull function for the depth from the top
 		const double layer_depth = hs_top - (NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z)/cos_sl;
-		const double w1 = 2.5;
-		const double w2 = 50.;
+		static const double w1 = 2.5;
+		static const double w2 = 50.;
 		const double weibull_depth = (w1/w2) * pow(layer_depth, w1-1.) * exp( -1*pow(layer_depth/w2, w1) );
 		
 		//compute crust factor
@@ -901,9 +901,9 @@ void StabilityAlgorithms::classifyStability_Bellaire(const double& Swl_ssi, Snow
  */
 bool StabilityAlgorithms::classifyType_SchweizerLuetschg(SnowStation& Xdata)
 {
-	const size_t n_window=5;                              // Window half-width in number of elements
-	const double L_base_0=0.2;
-	const double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
+	static const size_t n_window=5;                              // Window half-width in number of elements
+	static const double L_base_0=0.2;
+	static const double min_hard=19.472, slope_hard=150.;        // Constants to compute reduced hardness,
 	                                                      // (N) and (N m-1), respectively
 	const double cos_sl = Xdata.cos_sl;
 	const double cH = (Xdata.cH - Xdata.Ground)/cos_sl; // Vertical snow depth
@@ -946,7 +946,7 @@ bool StabilityAlgorithms::classifyType_SchweizerLuetschg(SnowStation& Xdata)
 	double L_base = L_base_0;
 	double L_sum = 0.;
 	double mean_hard=0.,mean_gsz = 0.; // Means
-	const double thresh_hard = 19.472*pow(4., 2.3607); // Hardness threshold (N)
+	static const double thresh_hard = 19.472*pow(4., 2.3607); // Hardness threshold (N)
 	bool mf_base = (hard[0] > thresh_hard);
 	size_t e = 0; //element index
 
@@ -1316,20 +1316,21 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
  * @param *Edata Xdata->Edata[e-1]
  * @param cos_sl cosinus of the simulated slope angle
  * @param STpar
+ * @param stress stress to apply to the current slab, usually the sum of all layers above
  * @return return critical cut length (m)
  */
-double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const double& cos_sl, const ElementData& Edata, const StabilityData& STpar)
+double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double& rho_slab, const double& cos_sl, const ElementData& Edata, const StabilityData& STpar, const double& stress)
 {
 	const double sin_sl = sqrt( 1. - mio::Optim::pow2(cos_sl) );
 	const double D = H_slab;
 	const double tau_p = STpar.Sig_c2;
-	const double tau_g = STpar.sig_s * sin_sl / STpar.sin_psi_ref;
-	const double sigma_n = STpar.sig_n * cos_sl / STpar.cos_psi_ref;
+	const double sigma_n = - stress / 1000.; 
+	const double tau_g = sigma_n * sin_sl / cos_sl; 
 	const double E = ElementData::getYoungModule(rho_slab, ElementData::Exp);
 	
 	const double E_prime = E / (1. - 0.2*0.2);	// 0.2 is poisson ratio
-	const double G_wl = 2e5;
-	const double Dwl = Edata.L * STpar.cos_psi_ref; //project the layer thickness to the slopw normal
+	static const double G_wl = 2e5;
+	const double Dwl = Edata.L;
 	const double lambda = sqrt( (E_prime * D * Dwl) / (G_wl) );
 	const double sqrt_arg = Optim::pow2(tau_g) + 2.*sigma_n*(tau_p - tau_g);
 	if (sqrt_arg<0.) return 0.;
@@ -1341,5 +1342,5 @@ double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double
 	//const double sig_t = 2.4E5 * pow((rho_slab / Constants::density_ice), 2.44);
 	//Edata.crit_length = (sig_xx > sig_t) ? 6.0 : (crit_length);
 	 
-	return (H_slab < Stability::minimum_slab || crit_length > 1.) ? (1.) : (crit_length);
+	return (H_slab < Stability::minimum_slab || crit_length > 3.) ? (3.) : (crit_length);
 }

@@ -120,7 +120,7 @@ void Stability::initStability(SnowStation& Xdata)
 double Stability::initStructuralStabilityIndex(const ElementData& Edata_lower, const ElementData& Edata_upper,
                                               const double& Sk, unsigned short &n_lemon)
 {
-	const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
+	static const double thresh_dhard=1.5, thresh_dgsz=0.5; // Thresholds for structural instabilities
 
 	n_lemon = 0;
 	const double dhard = fabs(Edata_lower.hard - Edata_upper.hard);
@@ -162,8 +162,8 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	const double Pk = StabilityAlgorithms::compPenetrationDepth(Xdata); // Skier penetration depth
 	double strength_upper = 1001.; //default initial value
 
-	double H_slab = 0.;	// Slab depth
-	double M_slab = 0.;	// Slab mass
+	double slab_thick = 0.;	// Slab thickness
+	double slab_mass = 0.;	// Slab mass
 	double hi_Ei = 0.;		//this is the denominator of the multi layer Young's modulus
 
 	std::vector<unsigned short> n_lemon(nN, 0.);
@@ -174,10 +174,10 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		StabilityData  STpar(Stability::psi_ref);
 		
 		//update slab properties
-		const double hi = EMS[e].L / STpar.cos_psi_ref;
-		H_slab += hi;		// Add to slab depth
-		M_slab += EMS[e].M / STpar.cos_psi_ref;		// Add to slab mass
-		EMS[e].E = ElementData::getYoungModule(M_slab/H_slab, ElementData::Sigrist);
+		const double hi = EMS[e].L;
+		slab_thick += hi;			//Increment slab depth
+		slab_mass += EMS[e].M;	//Increment slab mass
+		EMS[e].E = ElementData::getYoungModule(slab_mass/slab_thick, ElementData::Sigrist);
 		STpar.strength_upper = strength_upper; //reset to previous value
 		StabilityAlgorithms::compReducedStresses(EMS[e].C, cos_sl, STpar);
 
@@ -194,14 +194,14 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		} else {		//compute the multi-layer equivalent depth
 			//current layer properties
 			const double Ei_cbrt = pow(ElementData::getYoungModule(EMS[e].Rho, ElementData::Sigrist), 1./3.);
-			hi_Ei +=  hi * Ei_cbrt;
+			hi_Ei +=  hi * Ei_cbrt / STpar.cos_psi_ref;
 			const double h_e = hi_Ei / Ei_cbrt; //avoid computing cbrt, cube, cbrt again*/
 			NDS[e+1].S_s = StabilityAlgorithms::getLayerSkierStability(Pk, h_e, STpar);
 		}
 		if (e < nE-1) {
 			NDS[e+1].ssi = initStructuralStabilityIndex(EMS[e], EMS[e+1], NDS[e+1].S_s, n_lemon[e+1]);
 			if(e>Xdata.SoilNode+1) // Calculate critical cut length
-				EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(H_slab, M_slab/H_slab, cos_sl, EMS[e-1], STpar);
+				EMS[e-1].crit_cut_length = StabilityAlgorithms::CriticalCutLength(slab_thick, slab_mass/slab_thick, cos_sl, EMS[e-1], STpar, EMS[e].C);
 		} else {
 			NDS[nN-1].ssi = Stability::max_stability;
 			EMS[nE-1].crit_cut_length = Constants::undefined;
