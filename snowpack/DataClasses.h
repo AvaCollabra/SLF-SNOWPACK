@@ -488,11 +488,11 @@ class SnowStation {
 		void resize(const size_t& number_of_elements);
 
 		void reduceNumberOfElements(const size_t& rnE);
-		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements, const size_t& cond);
-		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements);
+		void combineElements(const size_t& number_top_elements, const bool& reduce_n_elements, const size_t& cond, const double& comb_thresh_l);
+		static bool combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements, const double& comb_thresh_l);
 		static void mergeElements(ElementData& Edata0, const ElementData& Edata1, const bool& merge, const bool& topElement);
-		void splitElement(const size_t& e);				//Split an element
-		void splitElements(const double& max_element_length);		//Check for splitting, calls splitElement(...) for actual splitting
+		void splitElement(const size_t& e);							//Split an element
+		void splitElements(const double& max_element_length, const double& comb_thresh_l);	//Check for splitting, calls splitElement(...) for actual splitting
 
 		void compSnowpackMasses();
 		void compSnowpackInternalEnergyChange(const double& sn_dt);
@@ -559,7 +559,7 @@ class SnowStation {
 		double WindScalingFactor;   ///< Local scaling factor for wind at drift station
 		double TimeCountDeltaHS;    ///< Time counter tracking erroneous settlement in operational mode
 
-		static const double comb_thresh_l, comb_thresh_ice, comb_thresh_water;
+		static const double comb_thresh_l_ratio, comb_thresh_ice, comb_thresh_water;
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;
 		static const double thresh_moist_snow, thresh_moist_soil;
 		static const size_t number_top_elements;
@@ -569,7 +569,7 @@ class SnowStation {
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
-		static double flexibleMaxElemLength(const double& depth); ///< When using REDUCE_N_ELEMENTS, this function determines the max element length, depending on depth inside the snowpack.
+		static double flexibleMaxElemLength(const double& depth, const double& comb_thresh_l); ///< When using REDUCE_N_ELEMENTS, this function determines the max element length, depending on depth inside the snowpack.
 };
 
 /**

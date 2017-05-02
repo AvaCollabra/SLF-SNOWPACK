@@ -93,7 +93,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             height_new_elem(0.), sn_dt(0.), t_crazy_min(0.), t_crazy_max(0.), thresh_rh(0.), thresh_dtempAirSnow(0.),
             new_snow_dd(0.), new_snow_sp(0.), new_snow_dd_wind(0.), new_snow_sp_wind(0.), rh_lowlim(0.), bond_factor_rh(0.),
             new_snow_grain_size(0.), new_snow_bond_size(0.), hoar_density_buried(0.), hoar_density_surf(0.), hoar_min_size_buried(0.),
-            minimum_l_element(0.), t_surf(0.),
+            minimum_l_element(0.), comb_thresh_l(IOUtils::nodata), t_surf(0.),
             allow_adaptive_timestepping(false), research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
@@ -215,6 +215,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	//Activates algorithm to reduce the number of elements deeper in the snowpack AND to split elements again when they come back to the surface
 	//Only works when COMBINE_ELEMENTS == TRUE.
 	cfg.getValue("REDUCE_N_ELEMENTS", "SnowpackAdvanced", reduce_n_elements);
+	cfg.getValue("COMB_THRESH_L", "SnowpackAdvanced", comb_thresh_l, IOUtils::nothrow);
+	if(comb_thresh_l == IOUtils::nodata) comb_thresh_l = SnowStation::comb_thresh_l_ratio * height_new_elem;	// If no comb_thresh_l specified, use the default one (i.e., a fixed ratio from height_new_elem)
 
 	//Warning is issued if snow tempeartures are out of bonds, that is, crazy
 	cfg.getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min);
@@ -1831,10 +1833,10 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 	if (combine_elements) {
 		// Check for combining elements
-		Xdata.combineElements(SnowStation::number_top_elements, reduce_n_elements, 1);
+		Xdata.combineElements(SnowStation::number_top_elements, reduce_n_elements, 1, comb_thresh_l);
 		// Check for splitting elements
 		if (reduce_n_elements) {
-			Xdata.splitElements(-1.);
+			Xdata.splitElements(-1., comb_thresh_l);
 		}
 	}
 }

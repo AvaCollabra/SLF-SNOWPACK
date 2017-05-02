@@ -47,8 +47,9 @@ unsigned short SnowStation::number_of_solutes = 0;
 const double SnowStation::thresh_moist_snow = 0.003;
 const double SnowStation::thresh_moist_soil = 0.0001;
 
-/// Both elements must be smaller than COMB_THRESH_L (m) for an action to be taken
-const double SnowStation::comb_thresh_l = 0.015;
+/// The default ratio between height_new_elem and comb_thresh_l, in case comb_thresh_l is not explicitly defined.
+const double SnowStation::comb_thresh_l_ratio = 0.75;
+
 /// Volumetric ice content (1), i.e., about 46 kg m-3
 const double SnowStation::comb_thresh_ice = 0.05;
 const double SnowStation::comb_thresh_water = 0.01; ///< Water content (1)
@@ -1659,8 +1660,9 @@ bool SnowStation::hasSoilLayers() const
  * @param i_number_top_elements The number of surface elements to be left untouched
  * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack
  * @param cond Condition to use to determine whether or not to combine: 1 = combineCondition, 2 = Aggregate::joinSimilarLayers, 3 = Aggregate::mergeThinLayer
+ * @param comb_thresh_l Only used for cond == 1: both elements must be smaller than this value for an action to be taken.
  */
-void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements, const size_t& cond)
+void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements, const size_t& cond, const double& comb_thresh_l)
 {
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
@@ -1671,7 +1673,7 @@ void SnowStation::combineElements(const size_t& i_number_top_elements, const boo
 	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
 		switch (cond) {
 			case 1:	// merging WaterTransport
-				merge = (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements));
+				merge = (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements, comb_thresh_l));
 				break;
 			case 2:	// aggregate first round
 				merge = (Aggregate::joinSimilarLayers(Edata[eUpper], Edata[eLower]));
@@ -1966,7 +1968,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
  * @param depth Distance of the element from the snow surface
  * @return Maximum element length.
  */
-double SnowStation::flexibleMaxElemLength(const double& depth)
+double SnowStation::flexibleMaxElemLength(const double& depth, const double& comb_thresh_l)
 {
 	const double upper_limit_length=1.0;
 	const double calc_length = static_cast<double>( int( int(depth * 100.) / 10) + 1) * comb_thresh_l;
@@ -1990,14 +1992,14 @@ double SnowStation::flexibleMaxElemLength(const double& depth)
  * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack, to reduce the number of elements and thus the computational load.
  * @return true if the two elements should be combined, false otherwise
  */
-bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements)
+bool SnowStation::combineCondition(const ElementData& Edata0, const ElementData& Edata1, const double& depth, const bool& reduce_n_elements, const double& comb_thresh_l)
 {
 	// Default max_elem_l
 	double max_elem_l = comb_thresh_l;
 
 	// When aggressive combining is activated, override max_elem_l when necessary
 	if (reduce_n_elements == true) {
-		max_elem_l = flexibleMaxElemLength(depth);
+		max_elem_l = flexibleMaxElemLength(depth, comb_thresh_l);
 	}
 
 	if ( (Edata0.L > max_elem_l) || (Edata1.L > max_elem_l) )
@@ -2078,7 +2080,7 @@ void SnowStation::splitElement(const size_t& e)
  * @param max_element_length If positive: maximum allowed element length (m), above which splitting is applied.
  *                           If argument is not positive: use function flexibleMaxElemLength.
  */
-void SnowStation::splitElements(const double& max_element_length)
+void SnowStation::splitElements(const double& max_element_length, const double& comb_thresh_l)
 {
 	//Return when no snow present
 	if (nElems == SoilNode) return;
@@ -2087,7 +2089,7 @@ void SnowStation::splitElements(const double& max_element_length)
 		double max_elem_l = comb_thresh_l;
 		const double depth = cH - Ndata[e].z;
 		// If max_element_length > 0: take its value, else use function flexibleMaxElemLength.
-		max_elem_l = (max_element_length > 0) ? (0.5 * max_element_length) : (flexibleMaxElemLength(depth));
+		max_elem_l = (max_element_length > 0) ? (0.5 * max_element_length) : (flexibleMaxElemLength(depth, comb_thresh_l));
 		if(0.5*(Edata[e].L) > max_elem_l) {
 			splitElement(e);
 		}

@@ -109,7 +109,7 @@ class Snowpack {
 		double new_snow_dd, new_snow_sp, new_snow_dd_wind, new_snow_sp_wind, rh_lowlim, bond_factor_rh;
 		double new_snow_grain_size, new_snow_bond_size;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
-		double minimum_l_element;
+		double minimum_l_element, comb_thresh_l;
 		double t_surf;
 		static const double min_snow_albedo;
 		bool allow_adaptive_timestepping;

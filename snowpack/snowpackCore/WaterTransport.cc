@@ -36,7 +36,7 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
-                 minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)
+                 minimum_l_element(IOUtils::nodata), comb_thresh_l(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -87,6 +87,11 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 
 	//Minimum element length (m)
 	cfg.getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", minimum_l_element);
+
+	double dummy_height_new_elem;	//only temporarily needed
+	cfg.getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", dummy_height_new_elem);
+	cfg.getValue("COMB_THRESH_L", "SnowpackAdvanced", comb_thresh_l, IOUtils::nothrow);
+	if(comb_thresh_l == IOUtils::nodata) comb_thresh_l = SnowStation::comb_thresh_l_ratio * dummy_height_new_elem;	// If no comb_thres_l specified, use the default one (i.e., a fixed ratio from height_new_elem)
 
 	//Water transport model snow
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
@@ -595,7 +600,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if (verify_top_element && rnE > 0 && rnE > Xdata.SoilNode) {
 			// Note: we have to check for the SoilNode, because verify_top_element may have been set to true, but multiple element removals may have
 			// set rnE to the upper soil element, in case we should inhibit element splitting.
-			if (.5 * (EMS[Xdata.getNumberOfElements()-1].L) > SnowStation::comb_thresh_l) {
+			if (.5 * (EMS[Xdata.getNumberOfElements()-1].L) > comb_thresh_l) {
 				Xdata.splitElement(Xdata.getNumberOfElements()-1);
 			}
 		}

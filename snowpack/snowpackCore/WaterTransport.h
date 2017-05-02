@@ -74,7 +74,7 @@ class WaterTransport {
 		double sn_dt;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
-		double minimum_l_element;
+		double minimum_l_element, comb_thresh_l;
 		bool useSoilLayers, water_layer, jam;
 };
 #endif //End of WaterTransport.h
