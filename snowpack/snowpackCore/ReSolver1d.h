@@ -93,5 +93,11 @@ class ReSolver1d {
 		// Solvers
 		int TDMASolver (size_t n, double *a, double *b, double *c, double *v, double *x);
 		int pinv(int m, int n, int lda, double *a);
+
+		// Solver control variables
+		const static double REQUIRED_ACCURACY_H, REQUIRED_ACCURACY_THETA, convergencecriterionthreshold, MAX_ALLOWED_DELTA_H;
+		const static size_t INCR_ITER, DECR_ITER, MAX_ITER, BS_MAX_ITER;
+		const static double MIN_VAL_TIMESTEP, MAX_VAL_TIMESTEP;
+		const static double SF_epsilon;
 };
 #endif //End of WaterTransport.h

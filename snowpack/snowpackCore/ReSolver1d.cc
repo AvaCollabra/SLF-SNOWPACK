@@ -55,6 +55,21 @@ using namespace mio;
 
 const double ReSolver1d::max_theta_ice = 0.95;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 
+//Setting convergence criteria and numerical limits
+const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-3;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
+const double ReSolver1d::REQUIRED_ACCURACY_THETA = 1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. It is recommended to adjust PhaseChange::RE_theta_r in PhaseChanges.cc in case this value is changed.
+								//Huang et al. (1996) proposes 0.0001 here (=1E-4). 1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
+const double ReSolver1d::convergencecriterionthreshold = 0.99;	//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
+const double ReSolver1d::MAX_ALLOWED_DELTA_H = 1E32;		//Set an upper threshold for the delta_h[i] that is allowed. The idea is that when delta_h for an iteration is too large, we have a too large time step and a rewind is necessary.
+const size_t ReSolver1d::INCR_ITER = 5;				//Number of iterations for the Richard solver after which time step is increased.
+const size_t ReSolver1d::DECR_ITER = 10;			//Number of iterations for the Richard solver after which time step is decreased.
+const size_t ReSolver1d::MAX_ITER = 15;				//Maximum number of iterations for the Richard solver.
+const double ReSolver1d::MIN_VAL_TIMESTEP = 1E-12;		//Minimum time step allowed in Richards solver. Don't set this too low (let's say 1E-40), becuase the calculations are then done at the limits of the floating point precision.
+const double ReSolver1d::MAX_VAL_TIMESTEP = 900.;		//Maximum time step allowed in Richards solver.
+const size_t ReSolver1d::BS_MAX_ITER = 5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
+const double ReSolver1d::SF_epsilon = 1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
+
+
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
@@ -312,7 +327,7 @@ int ReSolver1d::TDMASolver (size_t n, double *a, double *b, double *c, double *v
 	size_t i;
 	for (i = 1; i < n; i++) {
 		if (b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
-		double m = a[i-1]/b[i-1];
+		const double m = a[i-1]/b[i-1];
 		b[i] = b[i] - m * c[i - 1];
 		v[i] = v[i] - m*v[i-1];
 	}
@@ -349,12 +364,12 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 //		  For DGESDD: DBDSDC did not converge, updating process failed. The algorithm failed to compute an singular value. The update process of divide and conquer failed.
 {
 	//Switch for dgesvd/dgesdd
-	bool useOptimezedSVD=true;	//True: dgesdd is used, which is faster, but requires more memory, compared to dgesvd. Note that when dgesdd failes, the function tries dgesvd. When that fails as well, the program is terminated.
-					//I encountered some numerical issues with dgesdd, depending on settings in feenable (likely over- or underflow). So setting this switch to false gives a safe mode.
-					//Note: there are some bugreports for dgesdd.
+	const bool useOptimezedSVD=true;	//True: dgesdd is used, which is faster, but requires more memory, compared to dgesvd. Note that when dgesdd failes, the function tries dgesvd. When that fails as well, the program is terminated.
+						//I encountered some numerical issues with dgesdd, depending on settings in feenable (likely over- or underflow). So setting this switch to false gives a safe mode.
+						//Note: there are some bugreports for dgesdd.
 
 	//1D-Array for singular values:
-	int nSV = m < n ? m : n;	//nSV: number of singular values
+	const int nSV = m < n ? m : n;	//nSV: number of singular values
 	double *s = (double *)calloc(nSV * sizeof *s, sizeof(double));
 
 	//2D-Arrays for matrices U and Vt:
@@ -738,20 +753,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// END OF SETTINGS
 	// WARNING: Below this line, changes to initializations are likely to break the code!
 	//
-
-	//Setting convergence criteria and numerical limits
-	const double REQUIRED_ACCURACY_H=1E-3;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
-	const double REQUIRED_ACCURACY_THETA=1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. It is recommended to adjust PhaseChange::RE_theta_r in PhaseChanges.cc in case this value is changed.
-							//Huang et al. (1996) proposes 0.0001 here (=1E-4). 1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
-	const double convergencecriterionthreshold=0.99;//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
-	const double MAX_ALLOWED_DELTA_H=1E32;		//Set an upper threshold for the delta_h[i] that is allowed. The idea is that when delta_h for an iteration is too large, we have a too large time step and a rewind is necessary.
-	const unsigned int INCR_ITER=5;			//Number of iterations for the Richard solver after which time step is increased.
-	const unsigned int DECR_ITER=10;		//Number of iterations for the Richard solver after which time step is decreased.
-	const unsigned int MAX_ITER=15;			//Maximum number of iterations for the Richard solver.
-	const double MIN_VAL_TIMESTEP=1E-12;		//Minimum time step allowed in Richards solver. Don't set this too low (let's say 1E-40), becuase the calculations are then done at the limits of the floating point precision.
-	const double MAX_VAL_TIMESTEP=900.;		//Maximum time step allowed in Richards solver.
-	const unsigned int BS_MAX_ITER=5000;		//Maximum allowed number of iterations in the soil-freezing algorithm.
-	const double SF_epsilon=1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 	//Initializing and defining Richards solver time domain
 	double dt=10.;					//Set the initial time step for the Richard solver (in seconds). This time step should be smaller or equal to the SNOWPACK time step.
