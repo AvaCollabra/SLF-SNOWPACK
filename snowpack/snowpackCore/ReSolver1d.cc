@@ -322,17 +322,17 @@ int ReSolver1d::TDMASolver (size_t n, double *a, double *b, double *c, double *v
          * x - the solution
 	 * Return value: 0 = succes, otherwise: error
          */
-	if (b[n-1]==0.) return -1;		// This will cause division by 0, so return with error code.
+	if (b[n-1] == 0.) return -1;		// This will cause division by 0, so return with error code.
 
 	size_t i;
 	for (i = 1; i < n; i++) {
 		if (b[i-1]==0.) return -1;	// This will cause division by 0, so return with error code.
-		const double m = a[i-1]/b[i-1];
-		b[i] = b[i] - m * c[i - 1];
-		v[i] = v[i] - m*v[i-1];
+		const double m = a[i-1] / b[i-1];
+		b[i] = b[i] - m * c[i-1];
+		v[i] = v[i] - m * v[i-1];
 	}
 
-	x[n-1] = v[n-1]/b[n-1];
+	x[n-1] = v[n-1] / b[n-1];
 
 	i = n - 1;
 	while (i-- > 0) {
