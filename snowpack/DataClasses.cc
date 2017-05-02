@@ -1658,28 +1658,8 @@ bool SnowStation::hasSoilLayers() const
  * NOTE that the condense element check is placed at the end of a time step, allowing elements do develop on their own.
  * @param i_number_top_elements The number of surface elements to be left untouched
  * @param reduce_n_elements Enable more "aggressive" combining for layers deeper in the snowpack
+ * @param cond Condition to use to determine whether or not to combine: 1 = combineCondition, 2 = Aggregate::joinSimilarLayers, 3 = Aggregate::mergeThinLayer
  */
-void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements)
-{
-	if (nElems - SoilNode < i_number_top_elements+1) {
-		return;
-	}
-
-	size_t nRemove=0;       // Number of elements to be removed
-	for (size_t eLower = SoilNode, eUpper = SoilNode+1; eLower < nElems-i_number_top_elements; eLower++, eUpper++) {
-		if (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements)) {
-			mergeElements(Edata[eLower], Edata[eUpper], true, (eUpper==nElems-1));
-			nRemove++;
-			Edata[eUpper].Rho = Constants::undefined;
-			eLower++; eUpper++;
-		}
-	}
-	if (nRemove > 0) {
-		const size_t rnE = nElems - nRemove; //Reduced number of elements
-		reduceNumberOfElements(rnE);
-	}
-}
-
 void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements, const size_t& cond)
 {
 	if (nElems - SoilNode < i_number_top_elements+1) {
