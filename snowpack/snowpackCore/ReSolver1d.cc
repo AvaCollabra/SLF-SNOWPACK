@@ -75,7 +75,7 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
              watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
              enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
-             sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false), matrix(false)
+             sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -630,6 +630,51 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 	return;
 }
 
+void ReSolver1d::InitializeGrid(const vector<ElementData>& EMS, const size_t& lowernode, const size_t& uppernode)
+{
+	// Give vectors correct size
+	z.resize(uppernode+1);
+	dz.resize(uppernode+1);
+	dz_.resize(uppernode+1);
+	dz_up.resize(uppernode+1);
+	dz_down.resize(uppernode+1);
+
+	// Initialize grid
+	double totalheight=0.;				//tracking the total height of the column
+	size_t i, j;					//layer indices
+	for (i = lowernode; i <= uppernode; i++) {
+		dz[i]=EMS[i].L;
+		totalheight+=dz[i];
+		if(i==0) {	//Lowest element
+			z[i]=.5*dz[i];
+		} else {
+			z[i]=z[i-1]+(dz[i-1]/2.+(dz[i])/2.);
+		}
+	}
+
+	//Additional domain initialization: determine grid cell sizes, and node distances.
+	//See for additional details on finite differences scheme with varying grid cell size: Rathfelder (1994).
+	double tmpheight1=0., tmpheight2=0.;
+	for (j=lowernode; j<=uppernode; j++) {
+		//Distance to lower node
+		if(j!=lowernode) {
+			dz_down[j]=z[j]-z[j-1];
+		}
+		tmpheight1+=dz_down[j];
+		//Distance to upper node
+		if(j!=uppernode) {
+			dz_up[j]=z[j+1]-z[j];
+		}
+		tmpheight2+=dz_up[j];
+		//Mean distance
+		//dz_[j]=0.5*(dz_down[j]+dz_up[j]);	//This is the definition of dz_ by Rathfelder (2004). However, it does not work, results in mass balance errors.
+		dz_[j]=dz[j];				//This works.
+	}
+	dz_down[lowernode]=totalheight-tmpheight1;
+	dz_up[uppernode]=totalheight-tmpheight2;
+
+	return;
+}
 
 /**
  * @brief Solve Richards Equation \n
@@ -771,11 +816,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	const size_t nE=nN-1;				//Number of layers
 	vector<ElementData>& EMS = Xdata.Edata;		//Create reference to SNOWPACK elements.
 	vector<NodeData>& NDS = Xdata.Ndata;		//Create reference to SNOWPACK nodes.
-	std::vector<double> dz(nE, 0.);			//Layer height (in meters)
-	std::vector<double> z(nE, 0.);			//Height above the surface (so -1 is 1m below surface)
-	std::vector<double> dz_up(nE, 0.);		//Distance to upper node (in meters)
-	std::vector<double> dz_down(nE, 0.);		//Distance to lower node (in meters)
-	std::vector<double> dz_(nE, 0.);		//Layer distance for the finite differences, see Rathfelder (2004).
+
 	if ((nE == 0) || (iwatertransportmodel_snow != RICHARDSEQUATION && Xdata.SoilNode == 0.)) return; //Nothing to do here!
 	const size_t uppernode = (iwatertransportmodel_snow != RICHARDSEQUATION) ? (Xdata.SoilNode - 1) : (nE - 1);	//highest layer (top of snowpack, or top of soil in case of no soil)
 	size_t lowernode=0;				//Lower node of Richards solver domain
@@ -964,41 +1005,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	}
 
 
-	//Domain initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
-	double totalheight=0.;				//tracking the total height of the column
-	for (i = lowernode; i <= uppernode; i++) {
-		dz[i]=EMS[i].L;
-		totalheight+=dz[i];
-		if(i==0) {	//Lowest element
-			z[i]=.5*dz[i];
-		} else {
-			z[i]=z[i-1]+(dz[i-1]/2.+(dz[i])/2.);
-		}
-	}
-
-
-	//Additional domain initialization: determine grid cell sizes, and node distances.
-	//See for additional details on finite differences scheme with varying grid cell size: Rathfelder (1994).
-	double tmpheight1=0., tmpheight2=0.;
-	for (j=lowernode; j<=uppernode; j++) {
-		//Distance to lower node
-		if(j!=lowernode) {
-			dz_down[j]=z[j]-z[j-1];
-		}
-		tmpheight1+=dz_down[j];
-		//Distance to upper node
-		if(j!=uppernode) {
-			dz_up[j]=z[j+1]-z[j];
-		}
-		tmpheight2+=dz_up[j];
-		//Mean distance
-		//dz_[j]=0.5*(dz_down[j]+dz_up[j]);	//This is the definition of dz_ by Rathfelder (2004). However, it does not work, results in mass balance errors.
-		dz_[j]=dz[j];				//This works.
-		if(WriteOutNumerics_Level3==true) 
-			std::cout << "DOMAIN: node " << j << " -- z=" << z[j] << std::fixed << std::setprecision(15) << " dz=" << dz[j] << " dz_up=" << dz_up[j] << " dz_down=" << dz_down[j] << " dz_=" << dz_[j] << "\n" << std::setprecision(6);
-	}
-	dz_down[lowernode]=totalheight-tmpheight1;
-	dz_up[uppernode]=totalheight-tmpheight2;
+	// Grid initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
+	InitializeGrid(EMS, lowernode, uppernode);
 
 	//Now set van Genuchten parameter for each layer
 	h_d=0.;							//Set definition of pressure head of completely dry to zero, we will determine it in the next loop.

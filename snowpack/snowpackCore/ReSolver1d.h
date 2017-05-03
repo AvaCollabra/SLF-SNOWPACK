@@ -30,6 +30,7 @@
 #include <meteoio/MeteoIO.h>
 
 #include <string.h>
+
 /**
  * @class ReSolver1d
  * @version 10.02
@@ -82,6 +83,12 @@ class ReSolver1d {
 		bool useSoilLayers, water_layer;
 		bool matrix;		// boolean to define if water transport is calculated for matrixflow or preferential flow
 
+		std::vector<double> dz;				//Layer height (in meters)
+		std::vector<double> z;				//Height above the surface (so -1 is 1m below surface)
+		std::vector<double> dz_up;			//Distance to upper node (in meters)
+		std::vector<double> dz_down;			//Distance to lower node (in meters)
+		std::vector<double> dz_;			//Layer distance for the finite differences, see Rathfelder (2004).
+
 		// Van Genuchten functions
 		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
 		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
@@ -93,6 +100,9 @@ class ReSolver1d {
 		// Solvers
 		int TDMASolver (size_t n, double *a, double *b, double *c, double *v, double *x);
 		int pinv(int m, int n, int lda, double *a);
+		
+		// General functions
+		void InitializeGrid(const std::vector<ElementData>& EMS, const size_t& lowernode, const size_t& uppernode);
 
 		// Solver control variables
 		const static double REQUIRED_ACCURACY_H, REQUIRED_ACCURACY_THETA, convergencecriterionthreshold, MAX_ALLOWED_DELTA_H;
