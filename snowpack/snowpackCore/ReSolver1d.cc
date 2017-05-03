@@ -759,7 +759,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		const bool LIMITEDFLUXINFILTRATION_soil=true;
 		const bool LIMITEDFLUXINFILTRATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
-	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2012;	//(Recommended: YAMAGUCHI2012) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
 
@@ -976,28 +975,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		}
 
 		if (WriteOutNumerics_Level2==true) std::cout << "RECEIVING at layer " << i << ": sum=" << sum << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
-
-		//In case we don't want to allow soil to freeze, melt all ice that is there:
-		if(AllowSoilFreezing==false && i<Xdata.SoilNode && EMS[i].theta[ICE]>0.) {	//If we are in soil, and have ice, but don't allow soil freezing, melt all the ice.
-			if(i>0) {				//Because we now work with Dirichlet BC at the lower boundary, we cannot increase water content. So then, increase air content.
-				EMS[i].theta[WATER]+=EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water);
-			} else {
-				EMS[i].theta[AIR]+=EMS[i].theta[ICE];
-			}
-			const double deltaT=(-1.*EMS[i].theta[ICE]) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-			EMS[i].Te+=deltaT;
-
-			if(i==nE-1) {
-				NDS[i+1].T+=deltaT;
-				NDS[i].T+=deltaT;
-			}
-
-			EMS[i].Qmf += (-1.*EMS[i].theta[ICE] * Constants::density_ice * Constants::lh_fusion) / sn_dt;	// Units: [W m-3]
-			EMS[i].theta[ICE]=0.;
-			//And now update state properties.
-			EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
-			EMS[i].M=EMS[i].L*EMS[i].Rho;
-		}
 
 		//Make backup of incoming values for theta[ICE]
 		snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
@@ -1905,7 +1882,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 
 						//Repartition ice/water based on new head
-						if(AllowSoilFreezing==true && matrix==true) {
+						if(matrix==true) {
 							unsigned int BS_iter=0;			//Counting the number of iterations
 							const double hw0=h_np1_mp1[i];
 							T_melt[i]=T_0+((Constants::g*T_0)/delF)*hw0;
@@ -2713,20 +2690,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(EMS[i].theta[SOIL]<Constants::eps2) {
 				EMS[i].melting_tk=T_0;
 			} else {
-				if(AllowSoilFreezing == true) {
-					//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
-					//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
-					EMS[i].freezing_tk=EMS[i].melting_tk=EMS[i].Te;
-				} else {
-					EMS[i].freezing_tk=EMS[i].melting_tk=T_melt[i];
-					//This is a trick. Now that we deal with phase change in soil right here, we set the melting and freezing temperatures equal to the current Element temperature, so that
-					//in CompTemperatures, the element temperature will not be adjusted to freezing temperature just because there is water in it!
-					EMS[i].Te=std::max(EMS[i].Te, T_0);	//Because we don't allow soil freezing, soil remains 0 degC.
-					NDS[i].T=std::max(NDS[i].T, T_0);
-					NDS[i+1].T=std::max(NDS[i+1].T, T_0);
-					EMS[i].melting_tk=EMS[i].Te;
-					EMS[i].freezing_tk=EMS[i].Te;
-				}
+				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
+				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
+				EMS[i].freezing_tk=EMS[i].melting_tk=EMS[i].Te;
 			}
 			if(WriteOutNumerics_Level2==true)
 				std::cout << "EMS[" << i << "].melting_tk = " << EMS[i].melting_tk << ", EMS[" << i << "].freezing_tk = " << EMS[i].freezing_tk << " (ice: " << EMS[i].theta[ICE] << ")\n";
