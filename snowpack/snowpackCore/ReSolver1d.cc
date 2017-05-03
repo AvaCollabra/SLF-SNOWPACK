@@ -630,6 +630,14 @@ void ReSolver1d::SetSoil(SoilTypes type, double *theta_r, double *theta_s, doubl
 	return;
 }
 
+/**
+ * @brief Initializing the finite differences grid for solving Richards Equation \n
+ * The function fills vectors z, dz, dz_, dz_up and dz_down.
+ * @author Nander Wever
+ * @param EMS ElementData structure
+ * @param lowernode The lower node of the domain for which Richards Equation is solved. The function assumes that lowernode is contained in EMS.
+ * @param uppernode The upper node of the domain for which Richards Equation is solved. The function assumes that uppernode is contained in EMS.
+ */
 void ReSolver1d::InitializeGrid(const vector<ElementData>& EMS, const size_t& lowernode, const size_t& uppernode)
 {
 	// Give vectors correct size
