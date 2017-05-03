@@ -762,7 +762,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	const bool AllowSoilFreezing=true;					//true: soil may freeze. false: all ice will be removed (if any ice present) and no ice will form.
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 	const VanGenuchten_ModelTypesSnow VGModelTypeSnow=YAMAGUCHI2012;	//(Recommended: YAMAGUCHI2012) Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
-	const bool alpine3d=false;						//Flag for alpine3d simulations. Note: this flag is not necessary to set, but it will enforce some precautions to provide extra numerical stability (at the cost of small mass balance violations).
 
 	//Setting some program flow variables
 	const bool SafeMode=true;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
@@ -1287,7 +1286,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		s[i]=0.;								//Reset source/sink term
 
 		//Add wateroverflow (Remember: units wateroverflow [m^3/m^3]):
-		if (alpine3d==false && (wateroverflow[i]>0 || SafeMode==false)) {	//In SafeMode, we don't allow the negative wateroverflow to be used as sink term, as a negative wateroverflow is caused by initialization of very dry snow layers, so the sink term would basically be a sink term in very dry conditions, which is numerically unstable.
+		if (wateroverflow[i]>0 || SafeMode==false) {	//In SafeMode, we don't allow the negative wateroverflow to be used as sink term, as a negative wateroverflow is caused by initialization of very dry snow layers, so the sink term would basically be a sink term in very dry conditions, which is numerically unstable.
 			if(i==uppernode) {
 				surfacefluxrate+=(wateroverflow[i]*dz[i])/sn_dt;
 				wateroverflow[i]=0.;
@@ -1560,16 +1559,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					const double flux_compare =														//The limiting flux is:
 					        (dz[uppernode]*(theta_s[uppernode] - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt)					// net flux that would lead to saturation of the top layer
 					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + Xdata.cos_sl) : 0.);	// plus what could leave below
-
-					// For alpine3d simulations, we are stricter for the sake of stability: we also don't allow a positive influx when there is ponding inside the model domain:
-					if (alpine3d==true) {
-						bool isPonding=false;
-						for(size_t jj=lowernode; jj<=uppernode; jj++) {
-							if(h_np1_m[jj]>h_e[jj]) isPonding=true;
-						}
-						if(isPonding==true) TopFluxRate=0.;
-					}
-
 					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
 						TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
