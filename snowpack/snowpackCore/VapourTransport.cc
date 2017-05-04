@@ -348,12 +348,10 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 					botFlux = -(SnLaws::compSoilThermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te,clay_fraction)*Constants::density_water*gradTbot
 						    + SnLaws::compSoilIsothermalVaporConductivity(EMS[e-1],EMS[e],EMS[e-1].Te,EMS[e].Te, NDS[e].T)*Constants::density_water*gradHbot);
 				} else {
-					//in snow 
-					if (e > 0) { //if soil below botFlux from soil diffusion, else botFlux = 0
-						botFlux = -Constants::diffusion_coefficient_in_snow/(Constants::gas_constant*NDS[e].T*NDS[e].T)
-							  * (Constants::lh_sublimation/(Constants::gas_constant*NDS[e].T)-1.) * gradTbot;
-						botFlux *= Atmosphere::vaporSaturationPressure(NDS[e].T);
-					}
+					//in snow
+					botFlux = -Constants::diffusion_coefficient_in_snow/(Constants::gas_constant*NDS[e].T*NDS[e].T)
+						  * (Constants::lh_sublimation/(Constants::gas_constant*NDS[e].T)-1.) * gradTbot;
+					botFlux *= Atmosphere::vaporSaturationPressure(NDS[e].T);
 				}
 			}
 
