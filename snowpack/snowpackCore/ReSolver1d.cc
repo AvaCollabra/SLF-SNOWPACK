@@ -918,7 +918,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	std::vector<double> dT(nE, 0.);				//Stores the energy needed to create theta_r from the ice matrix.
 	std::vector<double> snowpackBACKUPTHETAICE(nE, 0.);	//Backup array for the initial SNOWPACK theta ice
-	std::vector<double> wateroverflow(nE, 0.);		//Array for all the water that is >theta_s (m^3/m^3)]. This water is just thrown away in the model and is a leak in the mass balance.
 
         //For soil freezing/thawing
 	std::vector<double> T_melt(nE, 0.);			//Contains the freezing point depression due to unsaturated conditions (K)
@@ -967,11 +966,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Note: we do not scale theta[SOIL].
 			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
 			EMS[i].theta[AIR]/=correction_factor;
-			wateroverflow[i]+=(EMS[i].theta[ICE]-(EMS[i].theta[ICE]/correction_factor))*(Constants::density_ice/Constants::density_water);	//We just throw away the ice, without considering melting it.
 			EMS[i].theta[ICE]/=correction_factor;
-			wateroverflow[i]+=EMS[i].theta[WATER]-(EMS[i].theta[WATER]/correction_factor);
 			EMS[i].theta[WATER]/=correction_factor;
-			wateroverflow[i]+=EMS[i].theta[WATER_PREF]-(EMS[i].theta[WATER_PREF]/correction_factor);
 			EMS[i].theta[WATER_PREF]/=correction_factor;
 		} else {
 			if(boolFirstFunctionCall==true) {
@@ -1214,13 +1210,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if(EMS[i].theta[SOIL]>Constants::eps2) {		//For soil
 			if(WATERINDEX==WATER){	//As for soil, we only use the matrix flow part, and we inhibit water flow in preferential flow, we should check this only for the matrix flow
 				if(EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)) > theta_s[i]) {
-					wateroverflow[i]+=(EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water))-theta_s[i]);
 					EMS[i].theta[WATERINDEX]=theta_s[i]-(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water));
 				}
 			}
 		} else {						//For snow
   			if(EMS[i].theta[WATERINDEX] > theta_s[i]) {
-				wateroverflow[i]+=EMS[i].theta[WATERINDEX]-theta_s[i];
 				EMS[i].theta[WATERINDEX]=theta_s[i];
 			}
 		}
@@ -1229,7 +1223,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if(EMS[i].theta[SOIL]>Constants::eps2) {		//For soil
 			if(matrix==true) {
 				if ((EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water))) < theta_d[i]) {
-					wateroverflow[i]+=( (EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water))) - theta_d[i]);
 					EMS[i].theta[WATERINDEX]=theta_d[i]-(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water));
 				}
 			} /* else {
@@ -1265,22 +1258,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 		//Determine source/sink term
 		s[i]=0.;								//Reset source/sink term
-
-		//Add wateroverflow (Remember: units wateroverflow [m^3/m^3]):
-		if (wateroverflow[i]>0 || SafeMode==false) {	//In SafeMode, we don't allow the negative wateroverflow to be used as sink term, as a negative wateroverflow is caused by initialization of very dry snow layers, so the sink term would basically be a sink term in very dry conditions, which is numerically unstable.
-			if(i==uppernode) {
-				surfacefluxrate+=(wateroverflow[i]*dz[i])/sn_dt;
-				wateroverflow[i]=0.;
-			} else {
-				if((wateroverflow[i]*dz[i])/sn_dt < ksat[i+1]) {	//Check if influx is not too large
-					s[i]+=wateroverflow[i]/sn_dt;			//These terms mainly are caused by merging elements, where the mass of the upper element is added to the lower one. This can lead to too much water in a certain element. We add this as a source term.
-					wateroverflow[i]=0.;				//Since we have put wateroverflow in source/sink term, it's not an overflow anymore for this layer.
-				} else {						//Else limit influx and throw other water away... So this is a water hole in the model. I suggest making a variable MS_LATERALRUNOFF to track this water.
-					s[i]+=(ksat[i]/dz[i]);
-					wateroverflow[i]-=(ksat[i]/dz[i])*sn_dt;
-				}
-			}
-		}
 
 		//Now add soilsurfacesourceflux (in case RemoveElements removed the lowest snow element):
 		if(soilsurfacesourceflux>0. && i==Xdata.SoilNode) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
@@ -1318,10 +1295,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		aBottomBC=DIRICHLET;
 		hbottom=h_e[lowernode];
 		h_n[lowernode]=hbottom;
-
-		wateroverflow[lowernode]+=(theta_n[lowernode]);	//First we remove all water from the lowest element
 		theta_n[lowernode]=fromHtoTHETAforICE(h_n[lowernode], theta_r[lowernode], theta_s[lowernode], alpha[lowernode], m[lowernode], n[lowernode], Sc[lowernode], h_e[lowernode], theta_i_n[lowernode]);
-		wateroverflow[lowernode]-=(theta_n[lowernode]);	//Then we add the saturated boundary water content from the lowest element.
 	}
 
 
@@ -2622,15 +2596,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if (WriteDebugOutputput) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f\n", int(i), EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER]+EMS[i].theta[WATER_PREF], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te);
 	}
 
-	double totalwateroverflow=0.;					//Total water outflow due to numerical issues (requiring minimum theta_r, maximum theta_s, etc), in m^3/m^2
-	for (i = lowernode; i<=uppernode; i++) {
-		totalwateroverflow+=wateroverflow[i]*dz[i];
-		if(i==Xdata.SoilNode) {
-			// I decided to put all wateroverflow from snow directly in the snowsoilinterfaceflux, although the wateroverflow may occur somewhere in the snowpack.
-			snowsoilinterfaceflux+=totalwateroverflow;
-		}
-	}
-
 
 	if(WriteDebugOutputput) {
 		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0.);
@@ -2638,7 +2603,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	}
 
 
-	if(WriteDebugOutputput) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  WATEROVERFLOW: %.15f MB_ERROR: %.15f\n", actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0., totalwateroverflow, massbalanceerror_sum);
+	if(WriteDebugOutputput) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  MB_ERROR: %.15f\n", actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0., massbalanceerror_sum);
 
 	//Update soil runoff (mass[MS_SOIL_RUNOFF] = kg/m^2). Note: it does not matter whether SNOWPACK is run with soil or not. MS_SOIL_RUNOFF is always runoff from lower boundary.
 	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += actualbottomflux*Constants::density_water;
@@ -2670,10 +2635,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//If we could not handle all snowpack runoff when not modelling snow with RE: HACK what to do with refusedtopflux?
 
-	//We want wateroverflow in the snow to be a source/sink term. Therefore, these lines are inactive.
-	//if(totalwateroverflow>0. && uppernode+1>Xdata.SoilNode) {
-	//	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += totalwateroverflow*Constants::density_water;
-	//}
 
 	surfacefluxrate=0.;			//As we now have used the rate for the current time step, reset the value.
 
