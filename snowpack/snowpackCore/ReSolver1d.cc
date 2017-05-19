@@ -954,33 +954,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Backup SNOWPACK state
 	for (i = lowernode; i <= uppernode; i++) {
-		//Do the basic check if there is not too much ice.
-		if(EMS[i].theta[ICE]>1.) {
-			std::cout << "WARNING: very strange, theta[ICE]>1 at layer " << i << "/" << nE << " (" << EMS[i].theta[ICE] << ")\n";
-			EMS[i].theta[ICE]=1.;
-		}
-		//Do the basic check of the sum of element contents.
-		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
-		if((sum>1.+Constants::eps || sum<1.-Constants::eps) && (boolFirstFunctionCall!=true)) {
-			std::cout << "WARNING: very strange, sum of element contents != 1. (but " << sum << ") at layer " << i << "/" << nE << ". Values scaled.\n";
-			//Note: we do not scale theta[SOIL].
-			const double correction_factor=(EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE])/(1.-EMS[i].theta[SOIL]);
-			EMS[i].theta[AIR]/=correction_factor;
-			EMS[i].theta[ICE]/=correction_factor;
-			EMS[i].theta[WATER]/=correction_factor;
-			EMS[i].theta[WATER_PREF]/=correction_factor;
-		} else {
-			if(boolFirstFunctionCall==true) {
-				EMS[i].theta[AIR]=1.-EMS[i].theta[SOIL]-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
-			}
-		}
-
-		if (WriteDebugOutputput) std::cout << "RECEIVING at layer " << i << ": sum=" << sum << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
+		if (WriteDebugOutputput) std::cout << "RECEIVING at layer " << i << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
 
 		//Make backup of incoming values for theta[ICE]
 		snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
 	}
-
 
 	// Grid initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
 	InitializeGrid(EMS, lowernode, uppernode);
