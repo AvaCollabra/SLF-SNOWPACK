@@ -1602,6 +1602,27 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if (WriteDebugOutputput) 
 				std::cout << "BOUNDARYTOPFLUX: [ BC: " << TopBC << "] " << std::scientific << TopFluxRate << " " << surfacefluxrate << " " << theta_n[lowernode] << " " << K[lowernode] << " " << ((h_np1_mp1[lowernode])+(((TopFluxRate/k_np1_m_im12[lowernode])-1.)*dz_down[lowernode])) << " " << h_np1_mp1[lowernode] << " " << k_np1_m_im12[lowernode] << " " << (TopFluxRate/k_np1_m_im12[lowernode]) << "\n" << std::fixed;
 
+			// Verify source/sink term
+			for (i = lowernode; i <= uppernode; i++) {
+				if(s[i] != 0.) {
+					const double tmp = s[i];
+					// Determine the limiting influx:
+					const double flux_compare_max =														//The limiting flux is (positive is inflow):
+						std::max(0., (dz[i]*(theta_s[i] - (theta_np1_m[i] + theta_i_np1_m[i]))/dt)							// net flux that would lead to saturation of the layer
+							+ ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// plus what could leave below
+							- ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// minus what comes from above
+					// Determine the limiting outflux
+					const double flux_compare_min =														//The limiting flux is (positive is outflow):
+						std::min(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - theta_r[i])/dt)							// net flux that would lead to drying of the layer
+							- ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// minus what will leave below
+							+ ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// plus what comes from above
+					s[i] = std::min(std::max(s[i], -0.999*flux_compare_min), 0.999*flux_compare_max);
+					if(fabs(tmp - s[i])>Constants::eps2) {
+						std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied. Term reduced from " << tmp << " to " << s[i] << ".\n";
+					}
+				}
+			}
+
 			//Solve equation
 			std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
 			for (i = lowernode; i <= uppernode; i++) {
