@@ -1496,10 +1496,22 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || uppernode+1==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {
 					// Outflux condition
-					const double head_compare=h_d_uppernode;
-					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
-					if(flux_compare > TopFluxRate) {
-						TopFluxRate=std::min(0., flux_compare);
+					if (Xdata.SoilNode<nE) {
+						// For snow, following the publication Wever et al. (2014) in The Cryosphere.
+						// The approach for soil may actually be better, but it would break with existing code and the publication, so we make a separation for evaporation from snow and soil.
+						const double head_compare=h_d_uppernode;
+						const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
+						if(flux_compare > TopFluxRate) {
+							TopFluxRate=std::min(0., flux_compare);
+						}
+					} else {
+						// For soil
+						const double flux_compare =																	//The limiting flux is (positive is evaporation):
+						std::max(0., (dz[uppernode]*((theta_np1_m[uppernode] + theta_i_np1_m[uppernode]) - (1.001)*theta_d[uppernode])/dt)						// net flux that would lead to drying of the layer
+							+ ((uppernode>lowernode) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + Xdata.cos_sl) : BottomFluxRate));	// minus what will leave below
+						if(-0.999*flux_compare > TopFluxRate) {
+							TopFluxRate=std::min(0., -0.999*flux_compare);
+						}
 					}
 				}
 			} else if (TopBC==WATERTABLE) {
@@ -1591,10 +1603,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							- ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// minus what comes from above
 					// Determine the limiting outflux
 					const double flux_compare_min =														//The limiting flux is (positive is outflow):
-						std::min(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - theta_r[i])/dt)							// net flux that would lead to drying of the layer
+						std::max(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - (1.001)*theta_d[i])/dt)						// net flux that would lead to drying of the layer
 							- ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// minus what will leave below
 							+ ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// plus what comes from above
 					s[i] = std::min(std::max(s[i], -0.999*flux_compare_min), 0.999*flux_compare_max);
+
 					if(fabs(tmp - s[i])>Constants::eps2) {
 						std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied. Term reduced from " << tmp << " to " << s[i] << ".\n";
 					}
