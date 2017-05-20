@@ -1187,8 +1187,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		// 1) Not too wet
 		if(EMS[i].theta[SOIL]>Constants::eps2) {		//For soil
 			if(WATERINDEX==WATER){	//As for soil, we only use the matrix flow part, and we inhibit water flow in preferential flow, we should check this only for the matrix flow
-				if(EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)) > theta_s[i]) {
-					EMS[i].theta[WATERINDEX]=theta_s[i]-(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water));
+				const double corr_factor = (boolFirstFunctionCall) ? (0.95) : (1.);
+				if(EMS[i].theta[WATERINDEX]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)) > corr_factor*theta_s[i]) {
+					EMS[i].theta[WATERINDEX]=corr_factor*theta_s[i]-(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water));
 				}
 			}
 		} else {						//For snow
