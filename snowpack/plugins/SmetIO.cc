@@ -983,14 +983,14 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 
 	if (out_lw) {
 		data.push_back( Sdata.lw_out );
-		data.push_back(  Sdata.lw_in );
+		data.push_back( Sdata.lw_in );
 		data.push_back( Sdata.lw_net );
 	}
 
 	if (out_sw) {
 		data.push_back( Sdata.sw_out );
 		data.push_back( Sdata.sw_in );
-		data.push_back(  Sdata.qw );
+		data.push_back( Sdata.qw );
 		data.push_back( Sdata.pAlbedo );
 		data.push_back( Sdata.mAlbedo );
 		data.push_back( Sdata.sw_hor );

@@ -806,7 +806,7 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 	rt2 *= CanopyClosure;
 
 	// 2.3. SW direct & NetRad to Trunks
-	const double rsnettrunkdir = CanClosDirLeaves * RadFracDirect * iswrac * (1. -sigf) * (1. - attfactor_SWdir)*(1.-trunkalb)
+	const double rsnettrunkdir = CanClosDirLeaves * RadFracDirect * iswrac * (1. -sigfdirect) * (1. - attfactor_SWdir)*(1.-trunkalb)
 				+ CanClosDirTrunks *  RadFracDirect * iswrac * (1. - attfactor_SWdir) *(1.-trunkalb);
 	rsnettrunk += rsnettrunkdir;
 	rt0 += rsnettrunkdir;
@@ -1515,7 +1515,7 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
 		
 		// radiations to trunks
 		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * iswrac * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse
-				+ CanClosDirLeaves * RadFracDirect *iswrac * (1. -sigf) * (1.-trunkalb)*(1. - attfactor_SWdir)
+				+ CanClosDirLeaves * RadFracDirect *iswrac * (1. -sigfdirect) * (1.-trunkalb)*(1. - attfactor_SWdir)
                                 + CanClosDirTrunks *  RadFracDirect *iswrac * (1.-trunkalb)*(1. - attfactor_SWdir) ;
 		Xdata.Cdata.LWnet_Trunks = RAT  * CanopyClosureDiffuse ;
 		 
@@ -1885,3 +1885,4 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
         	Xdata.Cdata.QStrunks += ht0 + ht1 * Xdata.Cdata.Ttrunk;
 	}
 }
+
