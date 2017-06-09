@@ -1,8 +1,13 @@
 INCLUDE(LibFindMacros)
 
-# Finally the library itself
-GET_FILENAME_COMPONENT(SRC_DIR ${CMAKE_SOURCE_DIR} PATH) #ie goes up one level
-STRING(REPLACE " " "\\ " SRC_DIR ${SRC_DIR})
+# Where can we find something that looks like a Snowpack source tree?
+FILE(GLOB sn_local_src LIST_DIRECTORIES TRUE  ../../../[sS]nowpack ../[sS]nowpack ../../../[sS]nowpack-[0-9]* ../[sS]nowpack-[0-9]*)
+LIST(LENGTH sn_local_src n)
+IF("${n}" EQUAL "0")
+	SET(SRC_DIR ".")
+ELSE("${n}" EQUAL "0")
+	LIST(GET sn_local_src 0 SRC_DIR) #only keep the first match
+ENDIF("${n}" EQUAL "0")
 
 IF(WIN32)
 	GET_FILENAME_COMPONENT(LIBSNOWPACK_ROOT1 "[HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Snowpack;UninstallString]" PATH CACHE INTERNAL)
@@ -11,8 +16,7 @@ IF(WIN32)
 	GET_FILENAME_COMPONENT(METEOIO_ROOT4 "C:/Progra~1/Snowpack*" ABSOLUTE CACHE INTERNAL)
 	SET(SEARCH_PATH
 		ENV LIB
-		${SRC_DIR}/snowpack/bin ${SRC_DIR}/snowpack/lib
-		${SRC_DIR}/../../snowpack/bin ${SRC_DIR}/../../snowpack/lib
+		${SRC_DIR}/bin ${SRC_DIR}/lib
 		${LIBSNOWPACK_ROOT1}/bin ${LIBSNOWPACK_ROOT1}/lib
 		${LIBSNOWPACK_ROOT2}/bin ${LIBSNOWPACK_ROOT2}/lib
 		${LIBSNOWPACK_ROOT3}/bin ${LIBSNOWPACK_ROOT3}/lib
@@ -38,8 +42,7 @@ ELSE(WIN32)
 		PATHS
 			ENV LD_LIBRARY_PATH
 			ENV DYLD_FALLBACK_LIBRARY_PATH
-			${SRC_DIR}/snowpack/lib
-			${SRC_DIR}/../../snowpack/lib
+			${SRC_DIR}/lib
 			"~/usr/lib"
 			"/Applications/Snowpack/lib"
 			"/usr/local/lib"
@@ -52,8 +55,7 @@ ELSE(WIN32)
 		NAMES snowpack
 		PATHS
 			ENV LD_LIBRARY_PATH
-			${SRC_DIR}/snowpack/lib
-			${SRC_DIR}/../../snowpack/lib
+			${SRC_DIR}/lib
 			"~/usr/lib"
 			"/usr/local/lib"
 			"/usr/lib"
