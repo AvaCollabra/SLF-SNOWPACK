@@ -756,9 +756,15 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("RH_AVG::COPY", "Input", "RH");
 
 		cfg.addKey("VW_AVG::filter1", "Filters", "AGGREGATE");
-		cfg.addKey("VW_AVG::arg1", "Filters", "MEAN soft 101 360000");
+		cfg.addKey("VW_AVG::arg1::type", "Filters", "MEAN");
+		cfg.addKey("VW_AVG::arg1::soft", "Filters", "true");
+		cfg.addKey("VW_AVG::arg1::min_pts", "Filters", "101");
+		cfg.addKey("VW_AVG::arg1::min_span", "Filters", "360000");
 		cfg.addKey("RH_AVG::filter1", "Filters", "AGGREGATE");
-		cfg.addKey("RH_AVG::arg1", "Filters", "MEAN soft 101 360000");
+		cfg.addKey("RH_AVG::arg1::type", "Filters", "MEAN");
+		cfg.addKey("RH_AVG::arg1::soft", "Filters", "true");
+		cfg.addKey("RH_AVG::arg1::min_pts", "Filters", "101");
+		cfg.addKey("RH_AVG::arg1::min_span", "Filters", "360000");
 	}
 
 	const std::string tst_sw_mode = cfg.get("SW_MODE", "Snowpack"); // Test settings for SW_MODE
@@ -792,15 +798,24 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		// Require at least one value per 3 hours
 		cfg.addKey("TSS_A24H::COPY", "Input", "TSS");
 		cfg.addKey("TSS_A24H::filter1", "Filters", "AGGREGATE");
-		cfg.addKey("TSS_A24H::arg1", "Filters", "MEAN left 48 86340"); //TODO change # data required to 4
+		cfg.addKey("TSS_A24H::arg1::type", "Filters", "MEAN");
+		cfg.addKey("TSS_A24H::arg1::centering", "Filters", "left");
+		cfg.addKey("TSS_A24H::arg1::min_pts", "Filters", "48"); //TODO change # data required to 4
+		cfg.addKey("TSS_A24H::arg1::min_span", "Filters", "86340");
 
 		cfg.addKey("TSS_A12H::COPY", "Input", "TSS");
 		cfg.addKey("TSS_A12H::filter1", "Filters", "AGGREGATE");
-		cfg.addKey("TSS_A12H::arg1", "Filters", "MEAN left 24 43140"); //TODO change # data required to 2
+		cfg.addKey("TSS_A12H::arg1::type", "Filters", "MEAN");
+		cfg.addKey("TSS_A12H::arg1::centering", "Filters", "left");
+		cfg.addKey("TSS_A12H::arg1::min_pts", "Filters", "24"); //TODO change # data required to 2
+		cfg.addKey("TSS_A12H::arg1::min_span", "Filters", "43140");
 
 		cfg.addKey("HS_A3H::COPY", "Input", "HS");
 		cfg.addKey("HS_A3H::filter1", "Filters", "AGGREGATE");
-		cfg.addKey("HS_A3H::arg1", "Filters", "MEAN left 6 10740"); //TODO change # data required to 1
+		cfg.addKey("HS_A3H::arg1::type", "Filters", "MEAN");
+		cfg.addKey("HS_A3H::arg1::centering", "Filters", "left");
+		cfg.addKey("HS_A3H::arg1::min_pts", "Filters", "6"); //TODO change # data required to 1
+		cfg.addKey("HS_A3H::arg1::min_span", "Filters", "10740");
 	}
 	
 	//warn the user if the precipitation miss proper re-accumulation

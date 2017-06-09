@@ -356,7 +356,7 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	// 2) Long wave fluxes.
 	lw_out += Bdata.lw_out;
 	lw_net += Bdata.lw_net;
-	lw_in  += (Bdata.lw_net + Bdata.lw_out);
+	lw_in  +=  Atmosphere::blkBody_Radiation(Mdata.ea, Mdata.ta);
 
 	// 3) Turbulent fluxes.
 	qs += Bdata.qs;
@@ -1571,7 +1571,7 @@ void SnowStation::resize(const size_t& number_of_elements)
 	try {
 		Edata.resize(number_of_elements);
 		Ndata.resize(number_of_elements + 1);
-	}catch(const exception& e){
+	} catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
 
