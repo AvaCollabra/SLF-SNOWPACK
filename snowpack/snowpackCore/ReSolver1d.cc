@@ -965,10 +965,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Now set van Genuchten parameter for each layer
 	h_d=0.;							//Set definition of pressure head of completely dry to zero, we will determine it in the next loop.
-	double tmpheight=0.;
 	for (i = lowernode; i <= uppernode; i++) {
 		EMS[i].VGModel.defined=true;
-		if ( i >= Xdata.SoilNode ) {
+		if ( i >= Xdata.SoilNode ) {		//Snow
 			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
 				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
@@ -1100,8 +1099,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Restore original grain size value from backup
 			EMS[i].rg=tmprg;
 		} else {  				//Soil
-			tmpheight+=dz[i];		//This is only done in soil, so we have a relative reference only for a soil, not for snow.
-
 			if(EMS[i].rg < 0.5) {
 				SetSoil(ORGANIC, &theta_r[i], &theta_s[i], &alpha[i], &m[i], &n[i], &ksat[i], &h_e[i]);
 			} else if (EMS[i].rg < 1.) {
