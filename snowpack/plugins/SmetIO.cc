@@ -318,7 +318,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 }
 
 //Read SNO SMET file, parse header and fill SSdata with values from the [DATA] section
-mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata)
+mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata) const
 {
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date( read_snosmet_header(sno_reader, stationID, SSdata) );
@@ -419,7 +419,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 }
 
 mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const std::string& stationID,
-                                      SN_SNOWSOIL_DATA& SSdata)
+                                      SN_SNOWSOIL_DATA& SSdata) const
 {
 	/*
 	 * Read values for certain header keys (integer and double values) and perform
@@ -500,7 +500,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	return SSdata.profileDate;
 }
 
-bool SmetIO::keyExists(const smet::SMETReader& reader, const std::string& key) const
+bool SmetIO::keyExists(const smet::SMETReader& reader, const std::string& key)
 {
 	const double nodata = reader.get_header_doublevalue("nodata");
 	const double value = reader.get_header_doublevalue(key);
@@ -508,7 +508,7 @@ bool SmetIO::keyExists(const smet::SMETReader& reader, const std::string& key) c
 	return value!=nodata;
 }
 
-double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& key) const
+double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& key)
 {
 	// Retrieve a double value from a SMETReader object header and make sure it exists.
 	// If the header key does not exist or the value is not set throw an exception
@@ -524,7 +524,7 @@ double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& 
 	return value;
 }
 
-int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key) const
+int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key)
 {
 	// Retrieve an integer value from a SMETReader object header and make sure it exists.
 	// If the header key does not exist or the value is not set throw an exception
@@ -612,7 +612,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 * The SMETWriter object finally writes out the SNO SMET file
 */
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const ZwischenData& /*Zdata*/, const bool& write_pref_flow)
+                          const ZwischenData& /*Zdata*/, const bool& write_pref_flow) const
 {
 	smet::SMETWriter sno_writer(snofilename);
 	stringstream ss;
@@ -796,7 +796,7 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
  * @param Ground Ground level (m)
  * @param slope_angle (deg)
  */
-double SmetIO::compPerpPosition(const double& z_vert, const double& hs_ref, const double& ground, const double& cos_sl)
+double SmetIO::compPerpPosition(const double& z_vert, const double& hs_ref, const double& ground, const double& cos_sl) const
 {
 	double pos=0.;
 	if (z_vert == mio::IOUtils::nodata) {
@@ -813,7 +813,7 @@ double SmetIO::compPerpPosition(const double& z_vert, const double& hs_ref, cons
 	return pos;
 }
 
-std::string SmetIO::getFieldsHeader()
+std::string SmetIO::getFieldsHeader() const
 {
 	std::ostringstream os;
 	os << "timestamp ";
@@ -849,10 +849,11 @@ std::string SmetIO::getFieldsHeader()
 	return os.str();
 }
 
-void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& smet_writer)
+void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, smet::SMETWriter& smet_writer) const
 {
 	const std::string fields( getFieldsHeader() );
 	setBasicHeader(Xdata, fields, smet_writer);
+	smet_writer.set_header_value("tz", tz);
 	if (out_haz) { // HACK To avoid troubles in A3D
 		ostringstream ss;
 		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
@@ -967,7 +968,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
-	/*if (out_canopy) {
+	/*if (out_canopy) { //HACK
 		os << " ";
 	}	*/
 
@@ -980,7 +981,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, smet::SMETWriter& s
 	//smet_writer.set_header_value("plot_max", plot_max.str());
 }
 
-void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24, smet::SMETWriter& smet_writer)
+void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata, const ProcessDat& Hdata, const double &wind_trans24, smet::SMETWriter& smet_writer) const
 {
 	std::vector<std::string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
 	std::vector<double> data;
@@ -1001,14 +1002,14 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 
 	if (out_lw) {
 		data.push_back( Sdata.lw_out );
-		data.push_back(  Sdata.lw_in );
+		data.push_back( Sdata.lw_in );
 		data.push_back( Sdata.lw_net );
 	}
 
 	if (out_sw) {
 		data.push_back( Sdata.sw_out );
 		data.push_back( Sdata.sw_in );
-		data.push_back(  Sdata.qw );
+		data.push_back( Sdata.qw );
 		data.push_back( Sdata.pAlbedo );
 		data.push_back( Sdata.mAlbedo );
 		data.push_back( Sdata.sw_hor );
@@ -1111,7 +1112,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 			tsWriters[filename] = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
 		} else {
 			tsWriters[filename] = new smet::SMETWriter(filename);
-			writeTimeSeriesHeader(Xdata, *tsWriters[filename]);
+			writeTimeSeriesHeader(Xdata, Mdata.date.getTimeZone(), *tsWriters[filename]);
 		}
 	}
 

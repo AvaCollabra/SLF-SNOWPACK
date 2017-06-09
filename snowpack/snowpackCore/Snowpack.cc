@@ -1185,8 +1185,8 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 			&& ((hn_density_parameterization == "LEHNING_NEW") || (hn_density_parameterization == "LEHNING_OLD"))) {
 			elem.dd = std::max(0.5, std::min(1.0, Optim::pow2(1.87 - 0.04*Mdata.vw)) );
 			elem.sp = new_snow_sp;
-			const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
-			const double delta = -0.117, eta=0.0011, phi=-0.0034;
+			static const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
+			static const double delta = -0.117, eta=0.0011, phi=-0.0034;
 			elem.rg = std::min(0.5*new_snow_grain_size, std::max(0.15*new_snow_grain_size,
 				alpha + beta*TA + gamma*RH + delta*Mdata.vw
 				+ eta*RH*Mdata.vw + phi*TA*Mdata.vw));
@@ -1207,8 +1207,8 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 				elem.dd = std::max(0.2, elem.dd);
 			}
 			if (Snowpack::hydrometeor) { // empirical
-				const double alpha=1.4, beta=-0.08, gamma=-0.15;
-				const double delta=-0.02;
+				static const double alpha=1.4, beta=-0.08, gamma=-0.15;
+				static const double delta=-0.02;
 				elem.rg = 0.5*(alpha + beta*TA + gamma*Mdata.vw + delta*TA*Mdata.vw);
 				elem.rb = 0.25*elem.rg;
 			} else {
@@ -1308,13 +1308,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	double hn = 0.; //new snow amount
 
 	//Threshold for detection of the first snow fall on soil/canopy (grass/snow detection)
-	const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
-	const double TSS_threshold12_smallHSincrease=-0.5;	//deg Celcius of 12 hour average TSS in case of low rate of change of HS
-	const double TSS_threshold12_largeHSincrease=3.0;	//deg Celcius of 12 hour average TSS in case of high rate of change of HS
-	const double HS_threshold_smallincrease=0.005;		//low rate of change of HS (m/hour)
-	const double HS_threshold_largeincrease=0.010;		//high rate of change of HS (m/hour)
-	const double HS_threshold_verylargeincrease=0.015;	//very high rate of change of HS (m/hour)
-	const double ThresholdSmallCanopy=1.;			//Set the threshold for the canopy height. Below this threshold, the canopy is considered to be small and snow will fall on top (like grass, or small bushes). Above this threshold, snow will fall through (like in forests). When the canopy is small, the measured snow height will be assigned to the canopy height in case of no snow pack on the ground.
+	static const double TSS_threshold24=-1.5;			//deg Celcius of 24 hour average TSS
+	static const double TSS_threshold12_smallHSincrease=-0.5;	//deg Celcius of 12 hour average TSS in case of low rate of change of HS
+	static const double TSS_threshold12_largeHSincrease=3.0;	//deg Celcius of 12 hour average TSS in case of high rate of change of HS
+	static const double HS_threshold_smallincrease=0.005;		//low rate of change of HS (m/hour)
+	static const double HS_threshold_largeincrease=0.010;		//high rate of change of HS (m/hour)
+	static const double HS_threshold_verylargeincrease=0.015;	//very high rate of change of HS (m/hour)
+	static const double ThresholdSmallCanopy=1.;			//Set the threshold for the canopy height. Below this threshold, the canopy is considered to be small and snow will fall on top (like grass, or small bushes). Above this threshold, snow will fall through (like in forests). When the canopy is small, the measured snow height will be assigned to the canopy height in case of no snow pack on the ground.
 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
