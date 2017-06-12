@@ -630,7 +630,7 @@ double SnLaws::compSoilThermalConductivity(const ElementData& Edata, const doubl
  */
 double SnLaws::soilVaporDiffusivity(const ElementData& Edata)
 {
-    double tortuosity = (Edata.theta_s > Constants::eps2)?(pow(Edata.theta[AIR], 7./3.)/pow(Edata.theta_s, 2.)):(0.);
+    double tortuosity = (Edata.VG.theta_s > Constants::eps2)?(pow(Edata.theta[AIR], 7./3.)/pow(Edata.VG.theta_s, 2.)):(0.);
     
     return (tortuosity * Edata.theta[AIR] * Constants::diffusion_coefficient_in_air);
 }
@@ -647,8 +647,8 @@ double SnLaws::soilVaporDiffusivity(const ElementData& Edata)
  */
 double SnLaws::compEnhanceWaterVaporTransportSoil(const ElementData& Edata, const double& clay_fraction)
 {
-	const double r = (Edata.theta[WATER]+Edata.theta[ICE]*Constants::density_ice/Constants::density_water)/Edata.theta_s;
-	return ((Edata.theta_s > Constants::eps2)?(9.5 + 3.*(r) - 8.5*exp(-1.*pow((1.+2.6/sqrt(clay_fraction))*r,4.))):(0.));
+	const double r = (Edata.theta[WATER]+Edata.theta[ICE]*Constants::density_ice/Constants::density_water)/Edata.VG.theta_s;
+	return ((Edata.VG.theta_s > Constants::eps2)?(9.5 + 3.*(r) - 8.5*exp(-1.*pow((1.+2.6/sqrt(clay_fraction))*r,4.))):(0.));
 }
 
 /**

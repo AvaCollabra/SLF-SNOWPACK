@@ -316,7 +316,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 	// For snow, update theta_s (i.e., pore space)
 	if (nE > Xdata.SoilNode) {
 		for (size_t e = Xdata.SoilNode; e < nE; e++) {
-			EMS[e].theta_s = (1. - EMS[e].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
+			EMS[e].VG.theta_s = (1. - EMS[e].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
 		}
 	}
 
@@ -360,7 +360,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			// Now, the mass change is limited by:
 			// - we cannot remove more WATER and ICE than available
 			// - we cannot add more WATER and ICE than pore space available
-			dM = std::max(  -((EMS[e].theta[WATER] - EMS[e].theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L)  ,
+			dM = std::max(  -((EMS[e].theta[WATER] - EMS[e].VG.theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + EMS[e].theta[ICE] * Constants::density_ice * EMS[e].L)  ,
 				      std::min(  (EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), qL2L * sn_dt  )
 				     ); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
 
@@ -400,7 +400,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 		if (deltaM[e] < 0.) {
 			// Mass loss: apply mass change first to water, then to ice, based on energy considerations
 			// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
-			const double dTh_water = std::max( (EMS[e].theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
+			const double dTh_water = std::max( (EMS[e].VG.theta_r * (1. + Constants::eps) - EMS[e].theta[WATER])  ,  deltaM[e] / (Constants::density_water * EMS[e].L) );
 			const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
 			EMS[e].theta[WATER] += dTh_water;
 			EMS[e].theta[ICE] += dTh_ice;

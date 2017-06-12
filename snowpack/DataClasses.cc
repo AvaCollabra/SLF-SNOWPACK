@@ -761,7 +761,18 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VGModel(), theta_r(0.), theta_s(0.), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
+
+ElementData::ElementData(const ElementData& cc) :
+                             depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
+                             Te(cc.Te), gradT(cc.gradT), melting_tk(cc.melting_tk), freezing_tk(cc.freezing_tk),
+                             theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
+                             Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
+                             rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
+                             type(cc.type), metamo(cc.metamo), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
+                             dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
+                             S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), dsm(cc.dsm) {}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -823,9 +834,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.hard), sizeof(data.hard));
 	os.write(reinterpret_cast<const char*>(&data.S_dr), sizeof(data.S_dr));
 	os.write(reinterpret_cast<const char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
-	os.write(reinterpret_cast<const char*>(&data.VGModel), sizeof(data.VGModel));
-	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
-	os.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
+	os.write(reinterpret_cast<const char*>(&data.VG), sizeof(data.VG));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
 	os.write(reinterpret_cast<const char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
@@ -896,9 +905,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.hard), sizeof(data.hard));
 	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
 	is.read(reinterpret_cast<char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
-	is.read(reinterpret_cast<char*>(&data.VGModel), sizeof(data.VGModel));
-	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
-	is.read(reinterpret_cast<char*>(&data.theta_s), sizeof(data.theta_s));
+	is.read(reinterpret_cast<char*>(&data.VG), sizeof(data.VG));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
@@ -1108,7 +1115,7 @@ double ElementData::soilFieldCapacity() const
  
 double ElementData::RelativeHumidity() const
 {
-	if (VGModel.defined == true) {
+	if (VG.defined == true) {
 		return (std::max(0., std::min(1., exp(h * Constants::g / (Constants::gas_constant * Te))))); //see eq. [18] from Saito et al., 2006
 	} else {
 		if ((theta[WATER] + theta[WATER_PREF]) < soilFieldCapacity() ) {
@@ -1837,7 +1844,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].theta[ICE]   = SSdata.Ldata[ll].phiIce;
 			Edata[e].theta[WATER] = SSdata.Ldata[ll].phiWater;
 			Edata[e].theta[WATER_PREF] = SSdata.Ldata[ll].phiWaterPref;
-			Edata[e].theta_s = (1. - Edata[e].theta[SOIL] - ((Edata[e].theta[SOIL]>0.)?(0.):(Edata[e].theta[ICE])))*(Constants::density_ice/Constants::density_water);	// Pore space calculation, leaves space for expanding volume when water freezes. HACK: only initial guess. In case REQ is used, it will be overwritten.
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
 			Edata[e].soil[SOIL_K]   = SSdata.Ldata[ll].SoilK;
 			Edata[e].soil[SOIL_C]   = SSdata.Ldata[ll].SoilC;

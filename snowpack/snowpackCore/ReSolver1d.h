@@ -48,20 +48,15 @@ class ReSolver1d {
 		double soilsurfacesourceflux;		// Soilsurfacesourceflux for solving RE. This is used when we use RE for snow AND there is a snowpack AND the lowest snow element is removed.
 
 		const static double max_theta_ice;	// Maximum allowed theta[ICE]. RE always need some pore space, which is defined by this value.
+		const static double REQUIRED_ACCURACY_THETA;
 
 	private:
 		std::string variant;
 
 		//To prevent string comparisons, we define an enumerated list:
 		enum watertransportmodels{UNDEFINED, BUCKET, NIED, RICHARDSEQUATION};
-		//Soil types
-		enum SoilTypes{ORGANIC, CLAY, CLAYLOAM, LOAM, LOAMYSAND, SAND, SANDYCLAY, SANDYCLAYLOAM, SANDYLOAM, SILT, SILTYCLAY, SILTYCLAYLOAM, SILTLOAM, WFJGRAVELSAND};
-		//Hydraulic conductivity parameterizations
-		enum K_Parameterizations{SHIMIZU, CALONNE};
 		//K_Average types
 		enum K_AverageTypes{ARITHMETICMEAN, GEOMETRICMEAN, HARMONICMEAN, MINIMUMVALUE, UPSTREAM};
-		//Van genuchten model types
-		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI2012, YAMAGUCHI2010, YAMAGUCHI2010_ADAPTED, DAANEN};
 		//Solvers
 		enum SOLVERS{DGESVD, DGTSV, TDMA};
 		//Boundary conditions
@@ -89,14 +84,6 @@ class ReSolver1d {
 		std::vector<double> dz_down;			//Distance to lower node (in meters)
 		std::vector<double> dz_;			//Layer distance for the finite differences, see Rathfelder (2004).
 
-		// Van Genuchten functions
-		double fromTHETAtoH(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d);
-		double fromTHETAtoHforICE(double theta, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double h_d, double theta_i);
-		double fromHtoTHETA(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e);
-		double fromHtoTHETAforICE(double h, double theta_r, double theta_s, double alpha, double m, double n, double Sc, double h_e, double theta_i);
-		double AirEntryPressureHead(double MaximumPoreSize, double Temperature);
-		void SetSoil(SoilTypes type, double *theta_r, double *theta_s, double *alpha, double *m, double *n, double *ksat, double *he);
-
 		// Solvers
 		int TDMASolver (size_t n, double *a, double *b, double *c, double *v, double *x);
 		int pinv(int m, int n, int lda, double *a);
@@ -105,7 +92,7 @@ class ReSolver1d {
 		void InitializeGrid(const std::vector<ElementData>& EMS, const size_t& lowernode, const size_t& uppernode);
 
 		// Solver control variables
-		const static double REQUIRED_ACCURACY_H, REQUIRED_ACCURACY_THETA, convergencecriterionthreshold, MAX_ALLOWED_DELTA_H;
+		const static double REQUIRED_ACCURACY_H, convergencecriterionthreshold, MAX_ALLOWED_DELTA_H;
 		const static size_t INCR_ITER, DECR_ITER, MAX_ITER, BS_MAX_ITER;
 		const static double MIN_VAL_TIMESTEP, MAX_VAL_TIMESTEP;
 		const static double SF_epsilon;

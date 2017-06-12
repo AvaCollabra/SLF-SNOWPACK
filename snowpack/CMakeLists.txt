@@ -16,6 +16,7 @@ ENDIF(ENABLE_LAPACK)
 
 SET(snowpacklib_sources
 	DataClasses.cc
+	vanGenuchten.cc
 	SnowpackConfig.cc
 	Meteo.cc
 	Saltation.cc
