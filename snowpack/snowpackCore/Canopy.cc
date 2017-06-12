@@ -306,7 +306,7 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 	}
 	const double d_theta = std::min( std::max(0., ( EMS[RootLayer].theta[WATER] -
 	                       Canopy::wp_fraction * EMS[RootLayer].soilFieldCapacity() ) ),
-	                       waterresidual / ( Constants::density_water * EMS[RootLayer].L ) );
+	                       waterresidual_real / ( Constants::density_water * EMS[RootLayer].L ) );
 
 	if (watertransportmodel_soil == "RICHARDSEQUATION") {
 		// Transpiration is considered a source/sink term for Richards equation
