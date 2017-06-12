@@ -177,7 +177,7 @@ class Canopy {
 		static const bool canopy_stabilitycorrection;
 		static const double can_diameter, roughmom_to_canopyheight_ratio, displ_to_canopyheight_ratio, raincrease_snow;
 		static const double canopytemp_maxchange_perhour, roughheat_to_roughmom_ratio, can_ch0, can_rs_mult, rsmin;
-		static const double f3_gd, rootdepth, wp_fraction;
+		static const double f3_gd, rootdepth, wp_fraction, h_wilt;
 
 		std::string hn_density, hn_density_parameterization, variant, watertransportmodel_soil;
 		double hn_density_fixedValue, calculation_step_length;

@@ -110,6 +110,8 @@ const double Canopy::f3_gd = 0.0003;
 const double Canopy::rootdepth = 1.0;
 /// @brief Wilting point, defined as a fraction of water content at field capacity (-)
 const double Canopy::wp_fraction = 0.17;
+/// @brief Wilting point pressure head, when using Richards equation for soil.
+const double Canopy::h_wilt = -1.55E6;
 //@}
 
 
@@ -276,9 +278,17 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 			RootLayer = e;
 
 			// Change in volumetric water content in layer
-			const double d_theta_l = std::min( std::max(0., ( EMS[e].theta[WATER] -
-			                         Canopy::wp_fraction * EMS[e].soilFieldCapacity() )),
-			                         rootfr*water / ( Constants::density_water * EMS[e].L ) );
+			double d_theta_l = 0.;
+			if (watertransportmodel_soil == "RICHARDSEQUATION" && EMS[e].VG.defined == true) {
+				const double theta_wilt = EMS[e].VG.fromHtoTHETAforICE(h_wilt, EMS[e].theta[ICE]);
+				d_theta_l = std::min( std::max(0., ( EMS[e].theta[WATER] -
+				    theta_wilt )),
+				    rootfr*water / ( Constants::density_water * EMS[e].L ) );
+			} else {
+				d_theta_l = std::min( std::max(0., ( EMS[e].theta[WATER] -
+				    Canopy::wp_fraction * EMS[e].soilFieldCapacity() )),
+				    rootfr*water / ( Constants::density_water * EMS[e].L ) );
+			}
 
 			// residual water to be extracted in layers below
 			waterresidual -= rootfr * water;
@@ -304,20 +314,25 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
 		// modify by Moustapha if there is a problem .
 		RootLayer -= 1;
 	}
-	const double d_theta = std::min( std::max(0., ( EMS[RootLayer].theta[WATER] -
+
+	if (watertransportmodel_soil == "RICHARDSEQUATION" && EMS[RootLayer].VG.defined == true) {
+		// Transpiration is considered a source/sink term for Richards equation
+		const double theta_wilt = EMS[RootLayer].VG.fromHtoTHETAforICE(h_wilt, EMS[RootLayer].theta[ICE]);
+		const double d_theta = std::min( std::max(0., ( EMS[RootLayer].theta[WATER] -
+	                       theta_wilt ) ),
+	                       waterresidual_real / ( Constants::density_water * EMS[RootLayer].L ) );
+		EMS[RootLayer].lwc_source -= d_theta;
+		waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
+	} else {
+		const double d_theta = std::min( std::max(0., ( EMS[RootLayer].theta[WATER] -
 	                       Canopy::wp_fraction * EMS[RootLayer].soilFieldCapacity() ) ),
 	                       waterresidual_real / ( Constants::density_water * EMS[RootLayer].L ) );
-
-	if (watertransportmodel_soil == "RICHARDSEQUATION") {
-		// Transpiration is considered a source/sink term for Richards equation
-		EMS[RootLayer].lwc_source -= d_theta;
-	} else {
 		EMS[RootLayer].theta[WATER] -= d_theta;
 		assert(EMS[RootLayer].theta[WATER] >= -Constants::eps);
 		EMS[RootLayer].theta[AIR] += d_theta;
 		assert(EMS[RootLayer].theta[AIR] >= -Constants::eps);
+		waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
 	}
-	waterresidual_real -= d_theta * Constants::density_water * EMS[RootLayer].L;
 
 	// Check if water content is below wilting point in last layer
 	if ( waterresidual_real > 0.5 ) {
