@@ -887,7 +887,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Write out initial water content
 		if (WriteDebugOutputput) {
 			for (i = lowernode; i <= uppernode; i++) {
-				std::cout << "ITER: " << niter << " i: " << i << std::setprecision(15) << "; h_n: " << h_n[i] << " (h_np1: " << h_np1_m[i] << ") theta: " << theta_n[i] << std::setprecision(6) << "(" << EMS[i].VG.theta_r << "-" << EMS[i].VG.theta_s << ") ice: " << EMS[i].theta[ICE] << "/" << theta_i_n[i] << " (vg_params: " << EMS[i].VG.alpha << " " << EMS[i].VG.m << " " << EMS[i].VG.n << ")\n";
+				std::cout << "ITER: " << niter << " i: " << i << std::setprecision(15) << "; h_n: " << h_n[i] << " (h_np1: " << h_np1_m[i] << ") theta: " << theta_n[i] << std::setprecision(6) << "(" << EMS[i].VG.theta_r << "-" << EMS[i].VG.theta_s << ") ice: " << EMS[i].theta[ICE] << "/" << theta_i_n[i] << " (vg_params: " << EMS[i].VG.alpha << " " << EMS[i].VG.m << " " << EMS[i].VG.n << ") s[i]: " << s[i] << "\n";
 			}
 		}
 
@@ -1059,22 +1059,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || uppernode+1==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {
 					// Outflux condition
-					if (Xdata.SoilNode<nE) {
-						// For snow, following the publication Wever et al. (2014) in The Cryosphere.
-						// The approach for soil may actually be better, but it would break with existing code and the publication, so we make a separation for evaporation from snow and soil.
-						const double head_compare=h_d_uppernode;
-						const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
-						if(flux_compare > TopFluxRate) {
-							TopFluxRate=std::min(0., flux_compare);
-						}
-					} else {
-						// For soil
-						const double flux_compare =																	//The limiting flux is (positive is evaporation):
-						std::max(0., (dz[uppernode]*((theta_np1_m[uppernode] + theta_i_np1_m[uppernode]) - (1.001)*theta_d[uppernode])/dt)						// net flux that would lead to drying of the layer
-							+ ((uppernode>lowernode) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + Xdata.cos_sl) : BottomFluxRate));	// minus what will leave below
-						if(-0.999*flux_compare > TopFluxRate) {
-							TopFluxRate=std::min(0., -0.999*flux_compare);
-						}
+					const double head_compare=h_d_uppernode;
+					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
+					if(flux_compare > TopFluxRate) {
+						TopFluxRate=std::min(0., flux_compare);
 					}
 				}
 			} else if (TopBC==WATERTABLE) {
@@ -1164,9 +1152,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						std::max(0., (dz[i]*(EMS[i].VG.theta_s - (theta_np1_m[i] + theta_i_np1_m[i]))/dt)						// net flux that would lead to saturation of the layer
 							+ ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// plus what could leave below
 							- ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// minus what comes from above
-					// Determine the limiting outflux
+					// Determine the limiting outflux (note we take theta_d as reference "dry")
 					const double flux_compare_min =														//The limiting flux is (positive is outflow):
-						std::max(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - (1.001)*theta_d[i])/dt)						// net flux that would lead to drying of the layer
+						std::max(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - theta_d[i])/dt)							// net flux that would lead to drying of the layer
 							- ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// minus what will leave below
 							+ ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// plus what comes from above
 					s[i] = std::min(std::max(s[i], -0.999*flux_compare_min), 0.999*flux_compare_max);
