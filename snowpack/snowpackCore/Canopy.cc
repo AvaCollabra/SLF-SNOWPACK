@@ -65,13 +65,13 @@ const double Canopy::can_diameter = 1.0;  // average canopy (tree) diameter [m],
 
 /// @brief ENERGY BALANCE
 /// parameters for HeatMass and 2layercanopy
-const double Canopy:: biomass_heat_capacity = 2800. ;	// from Linroth et al., 2013 (J Kg-1 K-1)
-const double Canopy:: biomass_density = 900. ;		// from Linroth et al., 2013 (Kg m-3)
-const double Canopy:: lai_frac_top_default = 0.5 ;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
-const double Canopy:: trunk_frac_height = 0.2 ;  	// (optional) fraction of total tree height occupied by trunks,
+const double Canopy::biomass_heat_capacity = 2800.;	// from Linroth et al., 2013 (J Kg-1 K-1)
+const double Canopy::biomass_density = 900.;		// from Linroth et al., 2013 (Kg m-3)
+const double Canopy::lai_frac_top_default = 0.5;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
+const double Canopy::trunk_frac_height = 0.2;		// (optional) fraction of total tree height occupied by trunks,
 							// used to calculate direct solar insolation of trunks.
-const double Canopy:: trunkalb = 0.09 ; 		// trunk albedo
-const double Canopy:: et = 1. ; 			// trunk emissivity
+const double Canopy::trunkalb = 0.09;			// trunk albedo
+const double Canopy::et = 1.;				// trunk emissivity
 
 /// @brief TURBULENT HEAT EXCHANGE
 /// @brief Stab. corr. aerodyn. resist. above and below canopy: 0=off and 1=on (Monin-Obukhov formulation)
