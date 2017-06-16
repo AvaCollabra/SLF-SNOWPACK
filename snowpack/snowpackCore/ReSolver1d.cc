@@ -712,13 +712,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		} else {  				//Soil
 			EMS[i].VG.SetVGParamsSoil();
 			theta_i_n[i]=EMS[i].theta[ICE];
-			//Get T_melt that suffices partitioning pressure head into part for ice and part for water
-			if(theta_i_n[i]>0.) {			//If there is ice in soil, calculate freezing point depression.
-				const double hw0=EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d);
-				EMS[i].melting_tk=EMS[i].freezing_tk=T_0+((Constants::g*T_0)/delF)*hw0;
-			} else {
-				EMS[i].melting_tk=EMS[i].freezing_tk=T_0;			//Melting point is just the standard melting point.
-			}
+			//Get melting point that suffices partitioning pressure head into part for ice and part for water
+			const double hw0=EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d);
+			EMS[i].melting_tk=EMS[i].freezing_tk=T_0+((Constants::g*T_0)/delF)*hw0;
 		}
 
 		//Determine what pressure head should be considered "dry".
