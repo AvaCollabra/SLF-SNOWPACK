@@ -69,6 +69,35 @@ vanGenuchten& vanGenuchten::operator=(const vanGenuchten& source) {
 	return *this;
 }
 
+std::iostream& operator<<(std::iostream& os, const vanGenuchten& data)
+{
+	os.write(reinterpret_cast<const char*>(&data.EMS), sizeof(data.EMS));
+	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
+	os.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
+	os.write(reinterpret_cast<const char*>(&data.alpha), sizeof(data.alpha));
+	os.write(reinterpret_cast<const char*>(&data.n), sizeof(data.n));
+	os.write(reinterpret_cast<const char*>(&data.m), sizeof(data.m));
+	os.write(reinterpret_cast<const char*>(&data.h_e), sizeof(data.h_e));
+	os.write(reinterpret_cast<const char*>(&data.Sc), sizeof(data.Sc));
+	os.write(reinterpret_cast<const char*>(&data.ksat), sizeof(data.ksat));
+	os.write(reinterpret_cast<const char*>(&data.defined), sizeof(data.defined));
+	return os;
+}
+
+std::iostream& operator>>(std::iostream& is, vanGenuchten& data)
+{
+	is.write(reinterpret_cast<const char*>(&data.EMS), sizeof(data.EMS));
+	is.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
+	is.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
+	is.write(reinterpret_cast<const char*>(&data.alpha), sizeof(data.alpha));
+	is.write(reinterpret_cast<const char*>(&data.n), sizeof(data.n));
+	is.write(reinterpret_cast<const char*>(&data.m), sizeof(data.m));
+	is.write(reinterpret_cast<const char*>(&data.h_e), sizeof(data.h_e));
+	is.write(reinterpret_cast<const char*>(&data.Sc), sizeof(data.Sc));
+	is.write(reinterpret_cast<const char*>(&data.ksat), sizeof(data.ksat));
+	is.write(reinterpret_cast<const char*>(&data.defined), sizeof(data.defined));
+	return is;
+}
 
 /**
  * @brief Calculate air entry pressure head \n

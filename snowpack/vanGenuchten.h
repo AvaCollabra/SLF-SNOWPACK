@@ -23,6 +23,10 @@
 #ifndef VANGENUCHTEN_H
 #define VANGENUCHTEN_H
 
+#include <sstream>
+
+using namespace std;
+
 /**
  * @class vanGenuchten
  * @version 1.0
@@ -39,6 +43,8 @@ class vanGenuchten {
 		vanGenuchten(const vanGenuchten& c);
 		virtual ~vanGenuchten() {};
 		vanGenuchten& operator=(const vanGenuchten&); ///<Assignement operator
+		friend std::iostream& operator<<(std::iostream& os, const vanGenuchten& data);
+		friend std::iostream& operator>>(std::iostream& is, vanGenuchten& data);
 
 		//Soil types
 		enum SoilTypes{ORGANIC, CLAY, CLAYLOAM, LOAM, LOAMYSAND, SAND, SANDYCLAY, SANDYCLAYLOAM, SANDYLOAM, SILT, SILTYCLAY, SILTYCLAYLOAM, SILTLOAM, WFJGRAVELSAND};
