@@ -636,10 +636,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> dT(nE, 0.);				//Stores the energy needed to create theta_r from the ice matrix.
 	std::vector<double> snowpackBACKUPTHETAICE(nE, 0.);	//Backup array for the initial SNOWPACK theta ice
 
-        //For soil freezing/thawing
-	const double T_0=Constants::freezing_tk;		//Freezing temperature of water at atmospheric pressure (K)
-	const double delF=Constants::lh_fusion;			//Heat associated with freezing
-
 
 	//Prevent buffering on the stdout when we write debugging output. In case of exceptions (program crashes), we don't loose any output which is still in the buffer and we can better track what went wrong.
 	if(WriteDebugOutputput) {
@@ -707,14 +703,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 			}
 
-			theta_i_n[i]=0.;				//This sounds strange for snow, but the idea is that ice in snow functions as soil in soil (being the matrix)
-			EMS[i].melting_tk=EMS[i].freezing_tk=T_0;	//For snow, we currently don't have anything with freezing point depression, as we have in soil.
+			theta_i_n[i]=0.;						//This sounds strange for snow, but the idea is that ice in snow functions as soil in soil (being the matrix)
+			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk;	//For snow, we currently don't have anything with freezing point depression, as we have in soil.
 		} else {  				//Soil
 			EMS[i].VG.SetVGParamsSoil();
 			theta_i_n[i]=EMS[i].theta[ICE];
 			//Get melting point that suffices partitioning pressure head into part for ice and part for water
 			const double hw0=EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d);
-			EMS[i].melting_tk=EMS[i].freezing_tk=T_0+((Constants::g*T_0)/delF)*hw0;
+			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
 		}
 
 		//Determine what pressure head should be considered "dry".
@@ -1413,7 +1409,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						if(matrix==true) {
 							unsigned int BS_iter=0;			//Counting the number of iterations
 							const double hw0=h_np1_mp1[i];
-							EMS[i].melting_tk=EMS[i].freezing_tk=T_0+((Constants::g*T_0)/delF)*hw0;
+							EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
 							// Bisection-Secant method, see wikipedia: http://en.wikipedia.org/wiki/False_position_method
 							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*(EMS[i].Te-EMS[i].melting_tk))
 							//      +
