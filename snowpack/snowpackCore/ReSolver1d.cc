@@ -2204,6 +2204,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 	surfacefluxrate=0.;			//As we now have used the rate for the current time step, reset the value.
+
+	return;
 }
 
 #ifdef __clang__
