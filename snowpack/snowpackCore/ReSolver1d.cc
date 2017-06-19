@@ -2195,6 +2195,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	surfacefluxrate=0.;			//As we now have used the rate for the current time step, reset the value.
 
+	//Now set freezing point depression correctly:
+	if(matrix==true) {
+		for (i = lowernode; i <= uppernode; i++) {
+			if(EMS[i].theta[SOIL]<Constants::eps2) {
+				EMS[i].melting_tk=Constants::melting_tk;
+			} else {
+				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
+				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
+				EMS[i].freezing_tk=EMS[i].melting_tk=std::min(Constants::melting_tk, EMS[i].Te);
+			}
+		}
+	}
+
 	return;
 }
 
