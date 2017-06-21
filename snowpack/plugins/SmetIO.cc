@@ -32,6 +32,9 @@ using namespace mio;
  * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library documentation (under
  * <i>"Available plugins and usage"</i>, then <i>"smet"</i>).
  *
+ * @section fluxes_ts Fluxes timeseries
+ * These files are very regular SMET files with a large number of fields. 
+ *
  * @section layers_data Layers data
  * The snow/soil layers file has the structure described below:
  * - the SMET signature (to identify the file as SMET as well as the format version)
