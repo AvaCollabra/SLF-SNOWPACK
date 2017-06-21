@@ -76,12 +76,6 @@ namespace Constants {
 	const double density_ice = 917.0; ///< At T = 0 degC
 	const double density_water = 1000.0; ///<  At T = 0 degC
 	const double density_vapor = 1.0; ///< Approximation: use ideal gas law
-	/// @name Max and min densities (kg m-3)
-	//@{
-	const double min_rho = 5.0;
-	const double max_rho = 1000.0;
-	//@}
-	//@}
 
 	///@name Specific heat (J kg-1 K-1)
 	//@{

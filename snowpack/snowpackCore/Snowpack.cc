@@ -407,7 +407,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER]+EMS[e].theta[WATER_PREF])
 		                *Constants::density_water) + (EMS[e].theta[SOIL]
 		                  * EMS[e].soil[SOIL_RHO]);
-		if (! (EMS[e].Rho > 0. && EMS[e].Rho <= Constants::max_rho)) {
+		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR]>=0.)) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 			          "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf air=%le",
 			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR]);
