@@ -124,6 +124,11 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0)
 			IF(PLUGIN_IMISIO) #HACK: current OCCI does not support the short strings optimizations of gcc>=5
 				SET(EXTRA "-D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA}")
+			ELSE(PLUGIN_IMISIO)
+				SET(FORCE_C03_ABI OFF CACHE BOOL "Compatibility with Oracle's OCCI")
+				IF (FORCE_C03_ABI)
+					SET(EXTRA "-D_GLIBCXX_USE_CXX11_ABI=0 ${EXTRA}")
+				ENDIF(FORCE_C03_ABI)
 			ENDIF(PLUGIN_IMISIO)
 		ENDIF()
 
@@ -174,6 +179,6 @@ MACRO (SET_COMPILER_OPTIONS)
 	ENDIF(DEST STREQUAL "optimized")
 
 	#show exception messages in a graphical message box
-	SET(GUI_EXCEPTIONS OFF CACHE BOOL "Show a message box with exceptions texts ON or OFF")
+	#SET(GUI_EXCEPTIONS OFF CACHE BOOL "Show a message box with exceptions texts ON or OFF")
 
 ENDMACRO (SET_COMPILER_OPTIONS)
