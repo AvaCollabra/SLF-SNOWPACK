@@ -1084,22 +1084,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Note: BottomFluxRate is defined as gradient over pressure head. For outflux (drainage), pressure head is increasing with increasing height, so BottomFluxRate is positive.
 				BottomFluxRate=0.0000005;	//Flux for Neumann BC.
 			} else if (BottomBC==FREEDRAINAGE) {
+				aBottomBC=NEUMANN;
 				if(uppernode>0) {
 					//First calculate flux between lowest and lowest+1 element.
 					const double tmpgrad=((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode]);	//Note: flux would be (tmpgrad * K).
 					if((tmpgrad+Xdata.cos_sl) < 0.) {
 						//In this case, we would create influx at lower boundary, which does not work with FREEDRAINAGE.
 						//Then set zero flux:
-						aBottomBC=NEUMANN;
 						BottomFluxRate=0.;
 					} else {
-						aBottomBC=NEUMANN;
 						//Now, prescribe flux at lower boundary equivalent to tmpgrad
 						BottomFluxRate=(tmpgrad+Xdata.cos_sl)*k_np1_m_im12[lowernode];
 					}
 				} else {
 					//With one element only, fall back to GRAVITATIONALDRAINAGE
-					aBottomBC=NEUMANN;
 					BottomFluxRate=k_np1_m_im12[lowernode];
 				}
 			} else if (BottomBC==SEEPAGEBOUNDARY) {
