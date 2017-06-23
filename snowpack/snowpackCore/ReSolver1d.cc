@@ -720,7 +720,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		const double tmp_head=EMS[i].VG.fromTHETAtoHforICE(EMS[i].VG.theta_r+(REQUIRED_ACCURACY_THETA/10.), h_d, theta_i_n[i]);
 		if(h_d>tmp_head) h_d=tmp_head;
 		if(i==uppernode) h_d_uppernode=tmp_head;	//We store this value in order to use it for the LIMITEDFLUXEVAPORATION
-		if (WriteDebugOutputput) 
+		if (WriteDebugOutputput)
 			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << EMS[i].VG.alpha << "; m: " << EMS[i].VG.m << "; n: " << EMS[i].VG.n << "; Sc: " << EMS[i].VG.Sc << "; h_e: " << EMS[i].VG.h_e << "\n";
 	}
 
@@ -1033,7 +1033,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			} else if (TopBC==LIMITEDFLUXEVAPORATION || TopBC==LIMITEDFLUXINFILTRATION || TopBC==LIMITEDFLUX) {
 				//Now check if the topflux is not too big or small, giving positive pressure heads. For example: during heavy rain, the rain rate can be much more than handled by the soil. The upper layer will blow up the model in this case, as it cannot deal with all the incoming water. So the fluxes should not exceed dry or saturated conditions.
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
-				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC
+				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC, plus we also only allow reductions during a time step with constant forcing, so we set it only at the first iteration.
 				// Now reduce flux when necessary:
   				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
 				     (LIMITEDFLUXINFILTRATION_soil==true && Xdata.SoilNode==nE)
@@ -1549,7 +1549,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							//Update BS-solver statistics
 							bs_stats_totiter+=BS_iter;
 							if(BS_iter>bs_stats_maxiter) bs_stats_maxiter=BS_iter;
-							if(WriteDebugOutputput) 
+							if(WriteDebugOutputput)
 								std::cout << "AFTER [" << i << std::setprecision(15) << "]: theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_mp1[i] << " theta_s:" << EMS[i].VG.theta_s << std::setprecision(3) << "  T: " << EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] << " (niter=" << BS_iter << ")\n" << std::setprecision(6);
 						} else { //END OF REPARTITIONING ICE/WATER
 							theta_i_np1_mp1[i]=theta_i_np1_m[i];
@@ -1704,17 +1704,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << "].\n";
 					}
 				}
-				std::cout << "    POSSIBLE SOLUTIONS:\n  =============================================================================\n";
+				std::cout << "    POSSIBLE SOLUTIONS:\n  ========================================================================================\n";
 				if(sn_dt>900) std::cout << "      - SNOWPACK time step is larger than 15 minutes. This numerical problem\n      may be resolved by using a time step of 15 minutes.\n";
 #ifndef CLAPACK
 				std::cout << "      - SNOWPACK was not compiled with BLAS and CLAPACK libraries.\n      Try installing libraries BLAS and CLAPACK and use solver TGSV (default).\n";
 #endif
 				std::cout << "      - Verify that the soil is not initialized in a very dry or a very\n      wet state.\n";
-				if(BottomBC!=FREEDRAINAGE) std::cout << "      - If the soil is saturated, try setting LB_COND_WATERFLUX = FREEDRAINAGE\n      in the [SnowpackAdvanced] section of the ini-file.\n";
-				if(BottomBC!=WATERTABLE) std::cout << "      - If the soil is dry, try setting LB_COND_WATERFLUX = WATERTABLE in the\n      [SnowpackAdvanced] section of the ini-file.\n";
+				std::cout << "      - If the snow and/or soil saturates, try setting LB_COND_WATERFLUX = FREEDRAINAGE\n      in the [SnowpackAdvanced] section of the ini-file.\n";
+				std::cout << "      - If the soil is drying out, try setting LB_COND_WATERFLUX = WATERTABLE in the\n      [SnowpackAdvanced] section of the ini-file.\n";
 				std::cout << "      - Try bucket scheme, by setting WATERTRANSPORTMODEL_SNOW = BUCKET and\n      WATERTRANSPORTMODEL_SOIL = BUCKET in the [SnowpackAdvanced] section\n      of the ini-file.\n";
-				std::cout << "      - When using Canopy module, there is a known issue with transpiration.\n      Please see issue 471 (http://models.slf.ch/p/snowpack/issues/471/).\n";
-				std::cout << "\n  -----------------------------------------------------------------------------\n    SOLVER DUMP:\n";
+				std::cout << "\n  ----------------------------------------------------------------------------------------\n    SOLVER DUMP:\n";
 				for (i = lowernode; i <= uppernode; i++) {
 					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", int(i), h_n[i], h_np1_m[i], theta_n[i], EMS[i].VG.theta_r, EMS[i].VG.theta_s, theta_np1_m[i], (i<Xdata.SoilNode)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<Xdata.SoilNode)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), EMS[i].VG.alpha, EMS[i].VG.m, EMS[i].VG.n);
 				}
@@ -1723,7 +1722,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 					throw;
 				} else {
-					std::cout << "  -----------------------------------------------------------------------------\n    SAFE MODE:\n";
+					std::cout << "  ----------------------------------------------------------------------------------------\n    SAFE MODE:\n";
 
 					//We rescue the simulation ...
 					double SafeMode_MBE=0.;		// Mass balance error (kg/m^2) due to SafeMode
@@ -1779,12 +1778,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 								delta_Te_i[i]=0.;			//Reset temperature change due to soil freezing/thawing
 								delta_Te_adv_i[i]=0.;			//Reset temperature change due to heat advection by water flowing
-								
+
 								//Now update mass1, which may have changed due to SafeMode throwing some water away, or introducing some water:
 								mass1+=(theta_n[i]+(theta_i_n[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
 							}
 							std::cout << "    --> reset dry and wet layers.\n";
-							
+
 							//Deal with the TopFluxRate:
 							if(surfacefluxrate!=0.) {
 								SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
@@ -1797,7 +1796,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
 							printf("    --> set surfacefluxrate from %G ", surfacefluxrate);
 							surfacefluxrate/=2.;
-							printf("to %G.\n", surfacefluxrate);	
+							printf("to %G.\n", surfacefluxrate);
 						}
 					}
 					std::cout << "    Estimated mass balance error due to SafeMode: " << std::scientific << SafeMode_MBE << std::fixed << " kg/m^2\n";
@@ -2107,7 +2106,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 			}
 		}
-		
+
 		//Then check the volumetric contents. This we do, to make a crash at this place, and we have information about the Richards solver available in the core file.
 		//Do some checks on volumetric contents:
 		const double sum=EMS[i].theta[AIR] + EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF] + EMS[i].theta[ICE] + EMS[i].theta[SOIL];
