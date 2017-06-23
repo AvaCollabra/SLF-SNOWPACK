@@ -348,6 +348,10 @@ double vanGenuchten::fromHtoTHETAforICE(const double h, const double theta_i)
  * @param h Pressure head (m)
  */
 double vanGenuchten::dtheta_dh(const double h) {
+	// To determine derivative in wxMaxima, do the following:
+	// > theta(h) = theta_r + ( (theta_s-theta_r)*(1./Sc)*(1.+((alpha*abs(h))^n))^(-m) )
+	// > diff(%o1, h)
+	// result: -(pow((alpha*fabs(h)),n)*pow((pow((alpha*fabs(h)), n)+1.),-m-1.)*m*n*(theta_s-theta_r))/(h*Sc), rewrites to:
 	return alpha*n*m*((theta_s-theta_r)/Sc)*(pow((alpha*fabs(h)), (n-1.)))*(pow(1.+pow((alpha*fabs(h)), n), (-m-1.)));
 }
 
@@ -372,7 +376,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 		//For preferential flow, we fix theta_r to 0:
 		theta_r=0.;
 	}
-	
+
 	theta_s=(1. - EMS->theta[ICE])*(Constants::density_ice/Constants::density_water);
 
 	if(theta_s<Constants::eps2) {
@@ -479,7 +483,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 
 	//The VG model has been initialized
 	defined=true;
-	
+
 	return;
 }
 
@@ -528,7 +532,7 @@ void vanGenuchten::SetVGParamsSoil()
 
 	//The VG model has been initialized
 	defined=true;
-	
+
 	//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
 	//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].
 	//However, this will not work in the Richards, as theta[WATER] is varying per time step. So we keep free a volume as if the soil is saturated AND will freeze:
