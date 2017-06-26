@@ -709,7 +709,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			EMS[i].VG.SetVGParamsSoil();
 			theta_i_n[i]=EMS[i].theta[ICE];
 			//Get melting point that suffices partitioning pressure head into part for ice and part for water
-			const double hw0=EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d);
+			const double hw0=std::min(EMS[i].VG.h_e, EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d));
 			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
 		}
 
@@ -1406,7 +1406,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						//Repartition ice/water based on new head
 						if(matrix==true) {
 							unsigned int BS_iter=0;			//Counting the number of iterations
-							const double hw0=h_np1_mp1[i];
+							const double hw0=std::min(EMS[i].VG.h_e, h_np1_mp1[i]);
 							EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
 							// Bisection-Secant method, see wikipedia: http://en.wikipedia.org/wiki/False_position_method
 							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*(EMS[i].Te-EMS[i].melting_tk))
