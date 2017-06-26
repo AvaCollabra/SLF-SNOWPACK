@@ -60,7 +60,7 @@ const double ReSolver1d::max_theta_ice = 0.95;	//An ice pore space of around 5% 
 const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-3;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
 const double ReSolver1d::REQUIRED_ACCURACY_THETA = 1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. It is recommended to adjust PhaseChange::RE_theta_r in PhaseChanges.cc in case this value is changed.
 								//Huang et al. (1996) proposes 0.0001 here (=1E-4). 1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
-const double ReSolver1d::convergencecriterionthreshold = 0.99;	//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
+const double ReSolver1d::convergencecriterionthreshold = 0.9;	//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
 const double ReSolver1d::MAX_ALLOWED_DELTA_H = 1E32;		//Set an upper threshold for the delta_h[i] that is allowed. The idea is that when delta_h for an iteration is too large, we have a too large time step and a rewind is necessary.
 const size_t ReSolver1d::INCR_ITER = 5;				//Number of iterations for the Richard solver after which time step is increased.
 const size_t ReSolver1d::DECR_ITER = 10;			//Number of iterations for the Richard solver after which time step is decreased.
@@ -897,26 +897,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Calculate theta from h
 				theta_np1_m[i]=EMS[i].VG.fromHtoTHETAforICE(h_np1_m[i], theta_i_np1_m[i]);
 
-				//Determine Se
-				if(h_np1_m[i]<EMS[i].VG.h_e) {			//See Ippisch (2006)
-					//Calculate dimensionless saturation
-					Se[i] = ((theta_np1_m[i] + (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)) - EMS[i].VG.theta_r)/(EMS[i].VG.theta_s - EMS[i].VG.theta_r));
-					if(Se[i]<0.) {
-						//The formulation of Se[i] as used here may lead to very small negative values for Se. These are corrected here.
-						if(Se[i]<-1E-12) std::cout << "WARNING: Se[" << i << "]=" << std::scientific << Se[i] << std::fixed << ".\n";	//This points towards a more serious problem, so give a warning...
-						Se[i]=0.;
-					}
-				} else {					//In case of saturation:
-					Se[i]=1.;
+				//Calculate dimensionless saturation Se, see Ippisch (2006), Eq. 11
+				Se[i] = ((theta_np1_m[i] + (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)) - EMS[i].VG.theta_r)/(EMS[i].VG.theta_s - EMS[i].VG.theta_r));
+				if(Se[i]<0.) {
+					//The formulation of Se[i] as used here may lead to very small negative values for Se. These are corrected here.
+					if(Se[i]<-1E-12) std::cout << "WARNING: Se[" << i << "]=" << std::scientific << Se[i] << std::fixed << ".\n";	//This points towards a more serious problem, so give a warning...
+					Se[i]=0.;
 				}
 
-				//Determine hydraulic conductivity
-				if(Se[i]<1.) {
-					//Compute the hydraulic conductivity, using the Mualem model (see Ippisch, 2006)
-					K[i]=EMS[i].VG.ksat*sqrt(Se[i])*pow((1.-(pow(1.-pow(Se[i]*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
-				} else {
-					K[i]=EMS[i].VG.ksat;
-				}
+				//Determine hydraulic conductivity, using the Mualem model (see Ippisch, 2006), Eq. 11
+				K[i]=EMS[i].VG.ksat*sqrt(Se[i])*pow((1.-(pow(1.-pow(Se[i]*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
 
 				//Applying ice impedance on K
 				if(ApplyIceImpedance==true) {
@@ -932,12 +922,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 
 				//Calculate the specific moisture capacity (which is derivative d.theta/d.h)
-				if(Se[i]<1.)	{	//No saturation
-					C[i]=EMS[i].VG.dtheta_dh(h_np1_m[i]);
-					if(isnan(C[i])) solver_result=-1;
-				} else {		//Saturation
+				if(h_np1_m[i]>EMS[i].VG.h_e) {
 					C[i]=0.;
+				} else {
+					C[i]=EMS[i].VG.dtheta_dh(std::min(h_np1_m[i], EMS[i].VG.h_e));
+					if(isnan(C[i])) solver_result=-1;
 				}
+
 				if(WriteDebugOutputput) std::cout << "HYDPROPS: i=" << i << std::scientific << " Se=" << Se[i] << " C=" << C[i] << " K=" << K[i] << ".\n" << std::fixed;
 			}
 
