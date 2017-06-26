@@ -1102,13 +1102,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 			} else if (BottomBC==SEEPAGEBOUNDARY) {
 				//Neumann with flux=0 in case of unsaturated
-				//Dirichlet with h_bottom=0 in case of saturated
+				//Dirichlet with h_bottom=h_e in case of saturated
 				if(h_n[lowernode]<EMS[lowernode].VG.h_e) {
 					aBottomBC=NEUMANN;
 					BottomFluxRate=0.;
 				} else {
 					aBottomBC=DIRICHLET;
-					hbottom=0.;
+					h_n[lowernode]=EMS[lowernode].VG.h_e;
+					hbottom=h_n[lowernode];
 					BottomFluxRate=0.;
 				}
 			} else if (BottomBC==GRAVITATIONALDRAINAGE) {
