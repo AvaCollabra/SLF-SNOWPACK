@@ -1076,9 +1076,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
 				theta_np1_m[lowernode]=theta_n[lowernode];
 			} else if (BottomBC==WATERTABLE) {
+				// Default water table
 				aBottomBC=DIRICHLET;		//Water table is a Dirichlet BC.
-				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
+				h_n[lowernode]=EMS[lowernode].VG.h_e;
+				hbottom=h_n[lowernode];
 				theta_np1_m[lowernode]=theta_n[lowernode];
+				BottomFluxRate=0.;		//Dirichlet BC, so no prescribed flux.
 			} else if (BottomBC==NEUMANN) {
 				aBottomBC=NEUMANN;		//Set Neumann BC.
 				//Note: BottomFluxRate is defined as gradient over pressure head. For outflux (drainage), pressure head is increasing with increasing height, so BottomFluxRate is positive.
