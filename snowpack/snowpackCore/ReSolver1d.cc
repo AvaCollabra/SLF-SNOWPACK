@@ -1040,10 +1040,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && Xdata.SoilNode<nE && (uppernode+1)==Xdata.SoilNode)
 				           || (LIMITEDFLUXINFILTRATION_snow==true && Xdata.SoilNode<nE))) {
 					// Influx condition
-					// Determine the limiting flux:
-					const double flux_compare =														//The limiting flux is:
-					        (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt)					// net flux that would lead to saturation of the top layer
-					                + ((uppernode>0) ? k_np1_m_im12[uppernode]*(((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode]) + Xdata.cos_sl) : 0.);	// plus what could leave below
+					// Determine the limiting flux, which is the flux that would fill the upper element:
+					const double flux_compare = (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt);
 					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
 						TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 					}
