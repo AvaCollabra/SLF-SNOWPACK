@@ -104,6 +104,13 @@
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
  * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
  *
+ * @section model_workflow Simulation workflow
+ * When running a simulation, it is important to keep in mind that the model is organized as several modules that interract together. It is possible to configure
+ * some parameters for the various modules and to enable/disable modules. Some modules can be used outside of Snowpack (like
+ * <A HREF="https://models.slf.ch">MeteoIO</A> that is used in various applications or libSnowpack that is used by <A HREF="https://models.slf.ch">Alpine3D</A>) .
+ *
+ * \image html simulation_workflow.png "Simulation workflow"
+ * \image latex simulation_workflow.eps "Simulation workflow" width=0.9\textwidth
  */
 
 /**
