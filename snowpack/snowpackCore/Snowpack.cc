@@ -1285,6 +1285,8 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	//Initialise the Stability Index for ml_st_CheckStability routine
 	elem.S_dr = INIT_STABILITY;
 	elem.hard = IOUtils::nodata;
+
+	elem.h = Constants::undefined;	//Pressure head not initialized yet
 }
 
 /**
