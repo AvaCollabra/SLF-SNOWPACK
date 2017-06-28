@@ -50,7 +50,7 @@
  * March 1989].
  * All direct-solver (ds-)functions return 0 = FALSE if succesfull, respectively 1 = TRUE with
  * an error message on standard output if an error has occurred.
- * 
+ *
  * @author GUIDO SARTORIS  ETH ZUERICH
  */
 
@@ -313,8 +313,9 @@ int ds_AssembleMatrix( SD_MATRIX_DATA *pMat0, const int& nEq, int Eq[], const in
  * @param [in] Code functionlaity code defined above
  * @param [in] pMat pointer to the matrix [A] opaque data
  * @param [in] pX right hand side vector {B} to be overwritten by the solution vector {X}:  B[i] := X[i]
+ * @param [out] return true whenever the solve produced NaNs in the solution vector
  */
-int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *pX );
+bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *pX);
 
 int ReleaseConMatrix( SD_CON_MATRIX_DATA * pMat );
 int ReleaseBlockMatrix( SD_BLOCK_MATRIX_DATA * pMat );

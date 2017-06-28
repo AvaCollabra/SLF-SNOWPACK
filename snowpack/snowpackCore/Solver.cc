@@ -543,8 +543,10 @@ inline int SymbolicFact(SD_MATRIX_DATA *pMat)
 
 }  // SymbolicFact
 
-int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
+bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 {
+  bool unsuccessful = false;
+
 	// SymbolicFactorize
 	if ( Code & SymbolicFactorize ){
 		if ( Code & NumericFactorize ){
@@ -580,6 +582,10 @@ int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 			X[i] = 0.;
 		}
 		Permute( DimTot, pMat->Mat.Block.pPerm, X );
+
+    // Check for NaN
+    unsuccessful = isnan(X[0]);
+
 	}
 
 	// ResetMatrixData
@@ -606,7 +612,7 @@ int ds_Solve( const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 		}
 	}
 
-	return 0;
+  return unsuccessful;
 
 }  /* ds_Solve */
 
