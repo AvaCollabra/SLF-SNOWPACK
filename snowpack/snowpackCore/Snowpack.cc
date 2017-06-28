@@ -116,7 +116,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ALBEDO_AVERAGE_SCHMUCKI", "SnowpackAdvanced", albedo_average_schmucki);
 	if (albedo_parameterization=="NIED")
 		cfg.getValue("ALBEDO_NIED_AV", "SnowpackAdvanced", albedo_NIED_av);
-	else 
+	else
 		albedo_NIED_av=Constants::undefined;
 	cfg.getValue("ALBEDO_FIXEDVALUE", "SnowpackAdvanced", albedo_fixedValue);
 	cfg.getValue("ALBEDO_AGING", "SnowpackAdvanced", ageAlbedo);
@@ -1030,8 +1030,14 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		 * Solve the linear system of equation. The te_F vector is used first as right-
 		 * hand-side vector for the linear system. The solver stores in this vector
 		 * the solution of the system of equations, the new temperature.
+     * It will throw an exception whenever the linear solver failed
 		*/
-		ds_Solve( ComputeSolution, (SD_MATRIX_DATA*)Kt, dU );
+    if (ds_Solve(ComputeSolution, (SD_MATRIX_DATA*) Kt, dU)) {
+      prn_msg(__FILE__, __LINE__, "err", Mdata.date,
+              "Linear solver failed to solve for dU on the %d-th iteration.",
+              iteration);
+      throw IOException("Runtime error in compTemperatureProfile", AT);
+    }
 		// Update the solution vectors and check for convergence
 		for (size_t n = 0; n < nN; n++)
 			ddU[n] = dU[n] - ddU[n];
