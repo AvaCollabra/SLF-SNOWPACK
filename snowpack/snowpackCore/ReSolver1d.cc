@@ -76,15 +76,9 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
              watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
              enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
-             sn_dt(IOUtils::nodata), useSoilLayers(false), water_layer(false), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
+             sn_dt(IOUtils::nodata), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
-
-	// Defines whether soil layers are used
-	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
-
-	//To build a thin top rain-water layer over a thin top ice layer, rocks, roads etc.
-	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", water_layer);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");

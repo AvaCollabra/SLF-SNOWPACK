@@ -75,7 +75,6 @@ class ReSolver1d {
 		double pref_flow_param_heterogeneity_factor;	//Tuning parameter: heterogeneity factor for grain size
 
 		double sn_dt;
-		bool useSoilLayers, water_layer;
 		bool matrix;		// boolean to define if water transport is calculated for matrixflow or preferential flow
 
 		std::vector<double> dz;				//Layer height (in meters)
