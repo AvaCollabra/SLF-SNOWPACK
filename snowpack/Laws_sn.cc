@@ -883,7 +883,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	const size_t nElems = Xdata.getNumberOfElements();
 	const double T_air = Mdata.ta;
 	const double Tss = Xdata.Ndata[nElems].T;
-	const double Tse = (nElems>0)? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
+	const double Tse = (nElems > 0) ? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
 	double eS;
 
 	// Vapor Pressures
@@ -912,7 +912,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 		}
 	} else {
 		// for snow assume saturation
-		const double melting_tk = (nElems>0)? Xdata.Edata[nElems-1].melting_tk : Constants::melting_tk;
+		const double melting_tk = (nElems > 0) ? Xdata.Edata[nElems-1].melting_tk : Constants::melting_tk;
 		if (Tss < melting_tk)
 			eS = Vp1;
 		else
