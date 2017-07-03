@@ -952,7 +952,7 @@ double SnLaws::compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, const double& height_of_meteo_values)
 {
 	const size_t nElems = Xdata.getNumberOfElements();
-	const bool SurfSoil = (nElems>0)? (Xdata.Edata[nElems-1].theta[SOIL]>0.) : false;
+	const bool SurfSoil = (nElems > 0) ? (Xdata.Edata[nElems-1].theta[SOIL] > 0.) : false;
 
 	double c = compSensibleHeatCoefficient(Mdata, Xdata, height_of_meteo_values);
 
