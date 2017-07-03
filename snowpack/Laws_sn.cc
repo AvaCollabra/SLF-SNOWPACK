@@ -958,7 +958,7 @@ double SnLaws::compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata, con
 
 	if (SurfSoil && (Xdata.Ndata[nElems].T >= Xdata.Edata[nElems-1].melting_tk)
 		    && (SnLaws::soil_evaporation == EVAP_RESISTANCE)) {
-		const double Tse = (nElems>0)? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
+		const double Tse = (nElems > 0) ? (Xdata.Edata[nElems-1].Te) : Constants::melting_tk;
 		const double eA = Mdata.rh * Atmosphere::vaporSaturationPressure( Mdata.ta );
 		const double eS = Atmosphere::vaporSaturationPressure( Tse );
 		if (eS >= eA) {
