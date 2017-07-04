@@ -1038,10 +1038,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// Influx condition
 					// Determine the limiting flux, which is the flux that would fill the upper element:
 					const double flux_compare = (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt);
-					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
-						if(dt>MIN_DT_FOR_INFILTRATION) {
+					if((0.999*flux_compare) < TopFluxRate) {			//If prescribed flux is too large:
+						if(dt>MIN_DT_FOR_INFILTRATION) {			//Trigger rewind when the top layer cannot accomodate for all infiltrating flux
 							solver_result=-1.;
-						} else {
+						} else {						//Limit flux. Note: we multiply flux_compare with 0.999 because flux_compare can be
 							TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 						}
 					}
