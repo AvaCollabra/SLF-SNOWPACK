@@ -74,8 +74,8 @@ class ReSolver1d {
 		double pref_flow_param_N;			//Tuning parameter: number of preferential flow paths for heat exchange
 		double pref_flow_param_heterogeneity_factor;	//Tuning parameter: heterogeneity factor for grain size
 
-		double sn_dt;
-		bool matrix;		// boolean to define if water transport is calculated for matrixflow or preferential flow
+		double sn_dt;					//SNOWPACK time step
+		bool matrix;					//boolean to define if water transport is calculated for matrixflow or preferential flow
 
 		std::vector<double> dz;				//Layer height (in meters)
 		std::vector<double> z;				//Height above the surface (so -1 is 1m below surface)
