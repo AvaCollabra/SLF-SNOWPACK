@@ -193,7 +193,7 @@ int ReSolver1d::TDMASolver (size_t n, double *a, double *b, double *c, double *v
          * c - sup-diagonal (means it is the diagonal above the main diagonal) -- indexed from 0..n-2
          * v - right part
          * x - the solution
-	 * Return value: 0 = succes, otherwise: error
+         * Return value: 0 = succes, otherwise: error
          */
 	if (b[n-1] == 0.) return -1;		// This will cause division by 0, so return with error code.
 
@@ -234,7 +234,7 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 //          = 0:  successful exit.
 //          < 0:  if INFO = -i, the i-th argument had an illegal value.
 //          > 0:  For DGESVD: DBDSQR did not converge, INFO specifies how many. Superdiagonals of an intermediate bidiagonal form B did not converge to zero.
-//		  For DGESDD: DBDSDC did not converge, updating process failed. The algorithm failed to compute an singular value. The update process of divide and conquer failed.
+//                For DGESDD: DBDSDC did not converge, updating process failed. The algorithm failed to compute an singular value. The update process of divide and conquer failed.
 {
 	//Switch for dgesvd/dgesdd
 	const bool useOptimezedSVD=true;	//True: dgesdd is used, which is faster, but requires more memory, compared to dgesvd. Note that when dgesdd failes, the function tries dgesvd. When that fails as well, the program is terminated.
@@ -633,10 +633,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 	//Prevent buffering on the stdout when we write debugging output. In case of exceptions (program crashes), we don't loose any output which is still in the buffer and we can better track what went wrong.
-	if(WriteDebugOutputput) {
-		setvbuf(stdout, NULL, _IONBF, 0);
-	}
-
+	if(WriteDebugOutputput) setvbuf(stdout, NULL, _IONBF, 0);
 
 #ifdef DEBUG_ARITHM
 	if(boolFirstFunctionCall==true) {
@@ -700,7 +697,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 			theta_i_n[i]=0.;						//This sounds strange for snow, but the idea is that ice in snow functions as soil in soil (being the matrix)
 			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk;	//For snow, we currently don't have anything with freezing point depression, as we have in soil.
-		} else {  				//Soil
+		} else {				//Soil
 			EMS[i].VG.SetVGParamsSoil();
 			theta_i_n[i]=EMS[i].theta[ICE];
 			//Get melting point that suffices partitioning pressure head into part for ice and part for water
@@ -721,7 +718,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
-        for (i = lowernode; i <= uppernode; i++) {
+	for (i = lowernode; i <= uppernode; i++) {
 		//Now calculate the theta that should be considered "dry soil".
 		theta_d[i]=EMS[i].VG.fromHtoTHETAforICE(h_d, 0.);
 
@@ -741,7 +738,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 			}
 		} else {						//For snow
-  			if(EMS[i].theta[WATERINDEX] > EMS[i].VG.theta_s) {
+			if(EMS[i].theta[WATERINDEX] > EMS[i].VG.theta_s) {
 				EMS[i].theta[WATERINDEX]=EMS[i].VG.theta_s;
 			}
 		}
@@ -1031,7 +1028,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				aTopBC=NEUMANN;					// Limited flux is technically just Neumann, but with limited fluxes.
 				if(niter==1) TopFluxRate=surfacefluxrate;	// Initial guess for Neumann BC, plus we also only allow reductions during a time step with constant forcing, so we set it only at the first iteration.
 				// Now reduce flux when necessary:
-  				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
+				if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
 				     (LIMITEDFLUXINFILTRATION_soil==true && Xdata.SoilNode==nE)
 				        || (LIMITEDFLUXINFILTRATION_snowsoil==true && Xdata.SoilNode<nE && (uppernode+1)==Xdata.SoilNode)
 				           || (LIMITEDFLUXINFILTRATION_snow==true && Xdata.SoilNode<nE))) {
@@ -1046,7 +1043,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 					}
 				}
-  				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || uppernode+1==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {
+				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || uppernode+1==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {
 					// Outflux condition
 					const double head_compare=h_d_uppernode;
 					const double flux_compare=k_np1_m_ip12[uppernode]*(((head_compare-h_np1_m[uppernode])/dz_up[uppernode]) + Xdata.cos_sl);
@@ -1137,6 +1134,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			// Verify source/sink term
 			for (i = lowernode; i <= uppernode; i++) {
 				if(s[i] != 0.) {
+					//TODO: a similar dt limiting procedure as for the surfacefluxrate should be considered
 					const double tmp = s[i];
 					// Determine the limiting influx:
 					const double flux_compare_max =														//The limiting flux is (positive is inflow):
