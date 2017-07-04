@@ -67,6 +67,7 @@ const size_t ReSolver1d::DECR_ITER = 10;			//Number of iterations for the Richar
 const size_t ReSolver1d::MAX_ITER = 15;				//Maximum number of iterations for the Richard solver.
 const double ReSolver1d::MIN_VAL_TIMESTEP = 1E-12;		//Minimum time step allowed in Richards solver. Don't set this too low (let's say 1E-40), becuase the calculations are then done at the limits of the floating point precision.
 const double ReSolver1d::MAX_VAL_TIMESTEP = 900.;		//Maximum time step allowed in Richards solver.
+const double ReSolver1d::MIN_DT_FOR_INFILTRATION=10.;		//If dt is above this value, do a rewind if the matrix cannot allow for all infiltrating water
 const size_t ReSolver1d::BS_MAX_ITER = 5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
 const double ReSolver1d::SF_epsilon = 1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
@@ -811,6 +812,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
 	ql = 0.; //We dealt with ql, so set it to 0, only to be possibly modified at the end of the function.
 
+	//Important: We have to be aware that the previous time step may be too large for the infiltration flux in the current time step. Then, too much of the infiltration flux may be rejected.
+	//           Two mechanisms to prevent this are: provide a better estimate of the necessery time step (done here), and try trigger a rewind with smaller time step first, before limiting the infilitration flux (done later).
+	if((TopBC == LIMITEDFLUXINFILTRATION || TopBC == LIMITEDFLUX) && (TopFluxRate>0.) && (
+	      (LIMITEDFLUXINFILTRATION_soil==true && Xdata.SoilNode==nE)
+	        || (LIMITEDFLUXINFILTRATION_snowsoil==true && Xdata.SoilNode<nE && (uppernode+1)==Xdata.SoilNode)
+	            || (LIMITEDFLUXINFILTRATION_snow==true && Xdata.SoilNode<nE))) {
+		// Improve estimate of required time step to accomodate for all infiltrating water
+		dt=std::min(dt, std::max(MIN_DT_FOR_INFILTRATION, (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_n[uppernode] + theta_i_n[uppernode]))/surfacefluxrate)));
+	}
+
 	//Initialize lower boundary in case of Dirichlet
 	if(BottomBC==DIRICHLET) {
 		hbottom=h_n[lowernode];
@@ -1028,7 +1039,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// Determine the limiting flux, which is the flux that would fill the upper element:
 					const double flux_compare = (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt);
 					if((0.999*flux_compare) < TopFluxRate) {		//Limit flux if necessary. Note: we multiply flux_compare with 0.999 because flux_compare can be
-						TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
+						if(dt>MIN_DT_FOR_INFILTRATION) {
+							solver_result=-1.;
+						} else {
+							TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
+						}
 					}
 				}
   				if((TopBC == LIMITEDFLUXEVAPORATION || TopBC == LIMITEDFLUX) && (TopFluxRate<0.) && ((LIMITEDFLUXEVAPORATION_soil==true && (Xdata.SoilNode==nE || uppernode+1==Xdata.SoilNode)) || (LIMITEDFLUXEVAPORATION_snow==true && Xdata.SoilNode<nE))) {

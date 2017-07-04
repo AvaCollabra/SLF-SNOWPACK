@@ -93,7 +93,7 @@ class ReSolver1d {
 		// Solver control variables
 		const static double REQUIRED_ACCURACY_H, convergencecriterionthreshold, MAX_ALLOWED_DELTA_H;
 		const static size_t INCR_ITER, DECR_ITER, MAX_ITER, BS_MAX_ITER;
-		const static double MIN_VAL_TIMESTEP, MAX_VAL_TIMESTEP;
+		const static double MIN_VAL_TIMESTEP, MAX_VAL_TIMESTEP, MIN_DT_FOR_INFILTRATION;
 		const static double SF_epsilon;
 };
 #endif //End of WaterTransport.h
