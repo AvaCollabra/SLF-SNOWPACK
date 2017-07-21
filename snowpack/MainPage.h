@@ -384,7 +384,7 @@
  * Concepts" introduction)!
  *
  * @section inishell_config The inishell tool
- * It is highly recommended to use the <a href="https:/models.slf.ch/p/inishell">Inishell</a> tool to generate these ini files
+ * It is highly recommended to use the <a href="https://models.slf.ch/p/inishell">Inishell</a> tool to generate these ini files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
  * \image html inishell.png "inishell overview"
  * \image latex inishell.eps "inishell overview" width=0.9\textwidth
