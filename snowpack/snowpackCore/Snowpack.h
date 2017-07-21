@@ -47,22 +47,21 @@ class Snowpack {
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;
 
-  enum BoundaryCondition {
-    NEUMANN_BC,
-    DIRICHLET_BC
-  };
+		enum BoundaryCondition {
+			NEUMANN_BC,
+			DIRICHLET_BC
+		};
+
 
  protected:
 
-  bool compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
+		bool compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
                               BoundCond& Bdata,
                               const bool& ThrowAtNoConvergence);
 
+		BoundaryCondition surfaceCode;
 
-
-  BoundaryCondition surfaceCode;
-
-	private:
+ private:
 		/**
 		 * @brief Specifies what kind of boundary condition is to be implemented at the top surface \n
 		 * - 0 : use surface fluxes (NEUMANN_BC)
