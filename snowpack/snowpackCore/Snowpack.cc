@@ -455,6 +455,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	} else {
 		Keff = SnLaws::compSnowThermalConductivity(Edata, dvdz, !alpine3d); //do not show the warning for Alpine3D
 	}
+
 	// mimics effect of vapour transport if liquid water present in snowpack
 	Keff *= VaporEnhance;
 	Edata.k[TEMPERATURE] = Keff;
@@ -791,6 +792,8 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 	double *U=NULL, *dU=NULL, *ddU=NULL;         // Solution vectors
 
+  sn_dt = 5;
+
 	// Dereference the pointers
 	void *Kt = Xdata.Kt;
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -994,6 +997,8 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		 * right-hand side vector dU. Note:  Shortwave radiation --- since it is a body
 		 * or volumetric force --- is computed in sn_ElementKtMatrix().
 		*/
+    const double mybig = 1000.0;
+
 		if (surfaceCode == NEUMANN_BC) {
 			EL_INCID(nE-1, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
@@ -1007,7 +1012,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = static_cast<int>( nE );
-			ds_AssembleMatrix((SD_MATRIX_DATA*)Kt, 1, Ie, 1, &Big);
+      ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
 		}
 		// Bottom node
 		if ((Xdata.SoilNode > 0) && soil_flux) {
@@ -1023,7 +1028,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			// Dirichlet BC at bottom: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = 0;
-			ds_AssembleMatrix((SD_MATRIX_DATA*)Kt, 1, Ie, 1, &Big);
+      ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
 		}
 
 		/*
@@ -1088,8 +1093,9 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 				NotConverged = false;		// Ensure we leave the do...while loop
 			}
 		}
-		for (size_t n = 0; n < nN; n++)
+    for (size_t n = 0; n < nN; n++) {
 			U[n] += ddU[ n ];
+    }
 	} while ( NotConverged ); // end Convergence Loop
 
 	if (TempEqConverged) {

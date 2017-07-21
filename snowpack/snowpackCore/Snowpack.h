@@ -38,7 +38,7 @@
 
 class Snowpack {
 
-	public:
+ public:
 		Snowpack(const SnowpackConfig& i_cfg);
 
 		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
@@ -47,17 +47,29 @@ class Snowpack {
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;
 
+  enum BoundaryCondition {
+    NEUMANN_BC,
+    DIRICHLET_BC
+  };
+
+ protected:
+
+  bool compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
+                              BoundCond& Bdata,
+                              const bool& ThrowAtNoConvergence);
+
+
+
+  BoundaryCondition surfaceCode;
+
 	private:
 		/**
 		 * @brief Specifies what kind of boundary condition is to be implemented at the top surface \n
 		 * - 0 : use surface fluxes (NEUMANN_BC)
 		 * - 1 : use prescribed surface temperature (DIRICHLET_BC)
 		 */
-		enum BoundaryCondition {
-			NEUMANN_BC,
-			DIRICHLET_BC
-		};
-		
+
+
 		static void EL_INCID(const size_t &e, int Ie[]);
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
@@ -81,8 +93,6 @@ class Snowpack {
 
 		double getParameterizedAlbedo(const SnowStation& Xdata, const CurrentMeteo& Mdata) const;
 		double getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const;
-		
-		bool compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata, BoundCond& Bdata, const bool& ThrowAtNoConvergence);
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);
@@ -96,7 +106,7 @@ class Snowpack {
 		                  SurfaceFluxes& Sdata);
 
 		const SnowpackConfig& cfg;
-		BoundaryCondition surfaceCode;
+
 		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
