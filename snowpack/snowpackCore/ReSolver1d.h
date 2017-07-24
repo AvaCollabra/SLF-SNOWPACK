@@ -75,6 +75,7 @@ class ReSolver1d {
 		double pref_flow_param_heterogeneity_factor;	//Tuning parameter: heterogeneity factor for grain size
 
 		double sn_dt;					//SNOWPACK time step
+		bool allow_surface_ponding;			//boolean to switch on/off the formation of surface ponds in case prescribed infiltration flux exceeds matrix capacity
 		bool matrix;					//boolean to define if water transport is calculated for matrixflow or preferential flow
 
 		std::vector<double> dz;				//Layer height (in meters)

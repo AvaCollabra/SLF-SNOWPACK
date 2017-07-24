@@ -77,9 +77,12 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
              watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
              enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
-             sn_dt(IOUtils::nodata), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
+             sn_dt(IOUtils::nodata), allow_surface_ponding(false), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
+
+	//Allow for water ponding on the surface in case of high infilitration fluxes
+	cfg.getValue("WATER_LAYER", "SnowpackAdvanced", allow_surface_ponding);
 
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -519,6 +522,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// WARNING: Below this line, changes to initializations are likely to break the code!
 	//
 
+
+	//Check for water layer (presence of a pond) and add it to the surfacefluxrate:
+	double backupWATERLAYER_Te = Constants::undefined;
+	if(allow_surface_ponding == true && Xdata.getNumberOfElements() > Xdata.SoilNode) {
+		if(Xdata.Edata[Xdata.getNumberOfElements()-1].theta[ICE] == 0. && Xdata.Edata[Xdata.getNumberOfElements()-1].theta[SOIL] == 0.) {
+			surfacefluxrate += (Xdata.Edata[Xdata.getNumberOfElements()-1].theta[WATER] * Xdata.Edata[Xdata.getNumberOfElements()-1].L) / sn_dt;
+			backupWATERLAYER_Te = Xdata.Edata[Xdata.getNumberOfElements()-1].Te;
+			Xdata.reduceNumberOfElements(Xdata.getNumberOfElements()-1);
+		} else {
+			backupWATERLAYER_Te = Constants::undefined;
+		}
+	}
 
 
 	//Initializing and defining Richards solver time domain
@@ -2187,7 +2202,25 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
 	}
 
-	//If we could not handle all snowpack runoff when not modelling snow with RE: HACK what to do with refusedtopflux?
+	//If we could not handle all snowpack runoff when not modelling snow with RE, add water layer
+	if(allow_surface_ponding == true && refusedtopflux > Constants::eps) {
+		Xdata.resize(nE+1);
+		const size_t newnE = Xdata.getNumberOfElements();
+		Xdata.Edata[newnE-1] = Xdata.Edata[Xdata.getNumberOfElements()-2];
+		Xdata.Ndata[Xdata.getNumberOfNodes()-1] = Xdata.Ndata[Xdata.getNumberOfNodes()-2];
+		Xdata.Edata[newnE-1].theta[WATER] = 1.;
+		Xdata.Edata[newnE-1].theta[WATER_PREF] = 0.;
+		Xdata.Edata[newnE-1].theta[ICE] = 0.;
+		Xdata.Edata[newnE-1].theta[AIR] = 0.;
+		Xdata.Edata[newnE-1].theta[SOIL] = 0.;
+		Xdata.Edata[newnE-1].L = Xdata.Edata[newnE-1].L0 = refusedtopflux;
+		EMS[newnE-1].Rho = (EMS[newnE-1].theta[ICE] * Constants::density_ice) + ((EMS[newnE-1].theta[WATER] + EMS[newnE-1].theta[WATER_PREF]) * Constants::density_water) + (EMS[newnE-1].theta[SOIL] * EMS[newnE-1].soil[SOIL_RHO]);
+		EMS[newnE-1].M = EMS[newnE-1].L*EMS[newnE-1].Rho;
+		EMS[newnE-1].Te = (backupWATERLAYER_Te != Constants::undefined) ? (backupWATERLAYER_Te) : NDS[newnE-2].T;
+		NDS[newnE].T = NDS[newnE-1].T = NDS[newnE-2].T = EMS[newnE-1].Te;
+		Xdata.Edata[newnE-1].mk = 19;	// Mark the layer as a water layer
+		prn_msg( __FILE__, __LINE__, "wrn", Date(), "Ponding occuring, water layer added! [depth = %lf m]", Xdata.Edata[newnE-1].L);
+	}
 
 
 	surfacefluxrate=0.;			//As we now have used the rate for the current time step, reset the value.

@@ -710,7 +710,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		if (Mdata.psum > 0. && Mdata.psum_ph>0.) { //there is some rain
 			double Store = (Mdata.psum * Mdata.psum_ph) / Constants::density_water; // Depth of liquid precipitation ready to infiltrate snow and/or soil (m)
 			// Now find out whether you are on an impermeable surface and want to create a water layer ...
-			if (water_layer && (Store > 0.)
+			if (water_layer && iwatertransportmodel_snow != RICHARDSEQUATION && iwatertransportmodel_soil != RICHARDSEQUATION && (Store > 0.)
 			        && ((useSoilLayers && (nE == Xdata.SoilNode)
 			                && (EMS[nE-1].theta[SOIL] > 0.95)) || ((nE-1 > 0) && (EMS[nE-2].theta[ICE] > 0.95)))) {
 				nE++;
@@ -741,7 +741,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				EMS[nE-1].rg = 1.0;
 				EMS[nE-1].rb = 0.5;
 				Xdata.cH = Xdata.mH = NDS[nN-1].z + NDS[nN-1].u;
-			} else if (water_layer && (Store > 0.)
+			} else if (water_layer && iwatertransportmodel_snow != RICHARDSEQUATION && iwatertransportmodel_soil != RICHARDSEQUATION && (Store > 0.)
 			               && ((useSoilLayers && (nE == Xdata.SoilNode+1) && (EMS[nE-2].theta[SOIL] > 0.95))
 			                       || ((nE > 1) && (EMS[nE-2].theta[ICE] > 0.95)))) {
 				// Put rain water in existing wet layer
