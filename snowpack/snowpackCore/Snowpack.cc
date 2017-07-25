@@ -23,6 +23,7 @@
  * @bug     -
  * @brief This module contains the driving routines for the 1d snowpack model
  */
+
 #include <snowpack/snowpackCore/Snowpack.h>
 #include <snowpack/snowpackCore/Solver.h>
 #include <snowpack/Meteo.h>
