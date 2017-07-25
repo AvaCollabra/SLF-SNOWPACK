@@ -23,7 +23,6 @@
  * @bug     -
  * @brief This module contains the driving routines for the 1d snowpack model
  */
-
 #include <snowpack/snowpackCore/Snowpack.h>
 #include <snowpack/snowpackCore/Solver.h>
 #include <snowpack/Meteo.h>
@@ -133,6 +132,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
       detect_grass(false),
       soil_flux(false),
       useSoilLayers(false),
+      useNewPhaseChange(false),
       combine_elements(false),
       reduce_n_elements(false),
       change_bc(false),
@@ -179,7 +179,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * - 0 ==> Dirichlet, i.e fixed Temperature
 	 * - 1 ==> Neumann, fixed geothermal heat flux GEO_HEAT */
 	cfg.getValue("SOIL_FLUX", "Snowpack", soil_flux, IOUtils::nothrow);
-	if (useSoilLayers && soil_flux) {
+	if ((useSoilLayers && soil_flux) || variant == "SEAICE") {
+		// For sea ice, geo_heat is ocean heat flux
 		cfg.getValue("GEO_HEAT", "Snowpack", geo_heat); //Constant geothermal heat flux at (great) depth (W m-2)
 	} else {
 		geo_heat = Constants::undefined;
@@ -498,6 +499,9 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	double Keff;    // the effective thermal conductivity
 	if (Edata.theta[SOIL] > 0.0) {
 		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz);
+	} else if (variant == "SEAICE" && Edata.theta[ICE] > 0.94) {
+		// When theta[ICE] > 0.7, VaporEnhance should be 1, so no exception needed.
+		Keff = SeaIce::compSeaIceThermalConductivity(Edata);
 	} else if (Edata.theta[ICE] > 0.55 || Edata.theta[ICE] < min_ice_content) {
 		Keff = Edata.theta[AIR] * Constants::conductivity_air + Edata.theta[ICE] * Constants::conductivity_ice +
 		           (Edata.theta[WATER]+Edata.theta[WATER_PREF]) * Constants::conductivity_water + Edata.theta[SOIL] * Edata.soil[SOIL_K];
@@ -532,6 +536,9 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	Se[0][1] += c;
 	Se[1][0] += c;
 
+	// Add the source/sink term resulting from phase changes
+	Fe[0] += 0.5 * Edata.Qph * Edata.L;
+	Fe[1] += 0.5 * Edata.Qph * Edata.L;
 	return true;
 }
 
@@ -942,6 +949,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	Xdata.Kt = Kt;
 
 	// Set the temperature at the snowpack base to the prescribed value.
+	// This only in case the soil_flux is not used.
 	if (!(useSoilLayers && soil_flux)) {
 		if ((EMS[0].theta[ICE] >= min_ice_content)) {
 			// NOTE if there is water and ice in the base element, then the base temperature MUST be melting_tk
@@ -957,10 +965,20 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			NDS[0].T = Mdata.ts0;
 		}
 	}
+	// Now treat sea ice variant, in which ocean heat flux is used already at this point to build or destroy sea ice based on the net energy balance, so just set the temperature of the lowest node to melting.
+	if (variant == "SEAICE") {
+		NDS[0].T = EMS[0].melting_tk; //IOUtils::C_TO_K(-1.8); // EMS[0].melting_tk;
+	}
 
 	// Copy Temperature at time0 into First Iteration
 	for (size_t n = 0; n < nN; n++) {
-		U[n] = NDS[n].T;
+		if(n==nN-1 && useNewPhaseChange) {
+			//Correct the upper node, as it may have been forced to melting temperature for assessing the energy balance
+			U[n] = 2. * Xdata.Edata[n-1].Te - NDS[n-1].T;
+		} else {
+			U[n] = NDS[n].T;
+		}
+
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
 		if (!(U[n] > t_crazy_min && U[n] < t_crazy_max)) {
@@ -1005,7 +1023,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	// validity range for the linearization. Therefore, we increase the MaxItnTemp for these cases:
 	if (nN==3) MaxItnTemp = 200;
 	if (nN==2) MaxItnTemp = 400;
-	if (nN==1) MaxItnTemp = 2000;
+	if (nN==1 || useNewPhaseChange) MaxItnTemp = 2000;
 
 	// IMPLICIT INTEGRATION LOOP
 	bool TempEqConverged = true;	// Return value of this function compTemperatureProfile(...)
@@ -1020,6 +1038,35 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 		// Assemble matrix
 		for(size_t e = nE; e -->0; ) {
+			if(useNewPhaseChange) {
+				// Calculate the melting/freezing associated with the current temperature state
+				Xdata.Edata[e].Qph = 0.;
+				const double Te_new = 0.5*(U[e+1]+U[e]);
+				double dth_i = 0.;
+				const bool explicitBC= ((Xdata.Edata[nE-1].theta[WATER] > 1E-5/10. + Constants::eps && Xdata.Edata[nE-1].theta[ICE] > Constants::eps && Xdata.Edata[nE-1].theta[ICE]<ReSolver1d::max_theta_ice*(1.-Constants::eps)));
+				if(Xdata.Edata[e].melting_tk > Te_new) {
+					// Freezing
+					const double A = (Xdata.Edata[e].c[TEMPERATURE] * Xdata.Edata[e].Rho) / ( Constants::density_ice * Constants::lh_fusion );
+					/*double*/ dth_i = A * (Xdata.Edata[e].melting_tk - Te_new); // change in volumetric ice content
+					dth_i=std::min((Xdata.Edata[e].theta[WATER]-1E-5/10.) * (Constants::density_water / Constants::density_ice), dth_i);
+					dth_i=std::min(std::max(0., (ReSolver1d::max_theta_ice - Xdata.Edata[e].theta[ICE])), dth_i);
+					Xdata.Edata[e].Qph += (dth_i * Constants::density_ice * Constants::lh_fusion) / sn_dt;
+					if(e==nE-1 && !explicitBC) {U[e+1]=std::min(Xdata.Edata[e].melting_tk, U[e+1]);}
+				}
+				if(Xdata.Edata[e].melting_tk < Te_new) {
+					// Melting
+					const double A = (Xdata.Edata[e].c[TEMPERATURE] * Xdata.Edata[e].Rho) / ( Constants::density_ice * Constants::lh_fusion );
+					/*double*/ dth_i = A * (Xdata.Edata[e].melting_tk - Te_new); // change in volumetric ice content
+					size_t ee=e+1;
+					while(e-->0) {
+						const double dth_i2 = std::max(-Xdata.Edata[ee].theta[ICE] + (Xdata.Edata[ee].Qph/((Constants::density_ice * Constants::lh_fusion) / sn_dt)), dth_i);
+						Xdata.Edata[ee].Qph += (dth_i2 * Constants::density_ice * Constants::lh_fusion) / sn_dt;
+						dth_i-=dth_i2;
+						if(dth_i>0) {dth_i=0.;};
+					}
+					if(e==nE-1 && dth_i+Xdata.Edata[e].theta[ICE]>Constants::eps && !explicitBC) {U[e+1]=std::min(Xdata.Edata[e].melting_tk, U[e+1]);}
+				}
+			}
 			EL_INCID( e, Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Update the wind pumping velocity gradient
@@ -1043,7 +1090,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		 * Several terms must be added to the global stiffness matrix Kt and flux
 		 * right-hand side vector dU. Note:  Shortwave radiation --- since it is a body
 		 * or volumetric force --- is computed in sn_ElementKtMatrix().
-		*/
+		 */
 
 		if (surfaceCode == NEUMANN_BC) {
 			EL_INCID(nE-1, Ie);
@@ -1058,10 +1105,10 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = static_cast<int>( nE );
-      ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
+			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
 		}
 		// Bottom node
-		if ((Xdata.SoilNode > 0) && soil_flux) {
+		if ((Xdata.SoilNode > 0) && soil_flux && variant != "SEAICE") {
 			// Neumann BC at bottom: The lower boundary is now a heat flux -- put the heat flux in dU[0]
 			EL_INCID(0, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
@@ -1074,21 +1121,21 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			// Dirichlet BC at bottom: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = 0;
-      ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
+			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
 		}
 
 		/*
 		 * Solve the linear system of equation. The te_F vector is used first as right-
 		 * hand-side vector for the linear system. The solver stores in this vector
 		 * the solution of the system of equations, the new temperature.
-     * It will throw an exception whenever the linear solver failed
-		*/
-    if (ds_Solve(ComputeSolution, (SD_MATRIX_DATA*) Kt, dU)) {
-      prn_msg(__FILE__, __LINE__, "err", Mdata.date,
-              "Linear solver failed to solve for dU on the %d-th iteration.",
-              iteration);
-      throw IOException("Runtime error in compTemperatureProfile", AT);
-    }
+		 * It will throw an exception whenever the linear solver failed
+		 */
+		if (ds_Solve(ComputeSolution, (SD_MATRIX_DATA*) Kt, dU)) {
+			  prn_msg(__FILE__, __LINE__, "err", Mdata.date,
+			  "Linear solver failed to solve for dU on the %d-th iteration.",
+			  iteration);
+			  throw IOException("Runtime error in compTemperatureProfile", AT);
+		}
 		// Update the solution vectors and check for convergence
 		for (size_t n = 0; n < nN; n++)
 			ddU[n] = dU[n] - ddU[n];
@@ -1110,7 +1157,12 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			ControlTemp = 0.007;
 			MaxItnTemp = std::max(MaxItnTemp, (unsigned)200); // NOTE originally 100;
 		}
-		NotConverged = (MaxTDiff > ControlTemp);
+		if(useNewPhaseChange) {
+			//With new phase change, we want at least one iteration extra, to account for possible phase changes
+			NotConverged = (MaxTDiff > ControlTemp || iteration == 1);
+		} else {
+			NotConverged = (MaxTDiff > ControlTemp);
+		}
 		if (iteration > MaxItnTemp) {
 			if (ThrowAtNoConvergence) {
 				prn_msg(__FILE__, __LINE__, "err", Mdata.date,
@@ -1139,9 +1191,9 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 				NotConverged = false;		// Ensure we leave the do...while loop
 			}
 		}
-    for (size_t n = 0; n < nN; n++) {
+		for (size_t n = 0; n < nN; n++) {
 			U[n] += ddU[ n ];
-    }
+		}
 	} while ( NotConverged ); // end Convergence Loop
 
 	if (TempEqConverged) {
@@ -1210,6 +1262,12 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		}
 	}
 	free(U); free(dU); free(ddU);
+	if(useNewPhaseChange) {
+		const size_t e=nE-1;
+		if(e==nE-1 && Xdata.Edata[e].theta[ICE]>Constants::eps)
+			NDS[e+1].T=std::min(Xdata.Edata[e].melting_tk, NDS[e+1].T);
+	}
+
 	return TempEqConverged;
 }
 
@@ -1345,6 +1403,11 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	elem.hard = IOUtils::nodata;
 
 	elem.h = Constants::undefined;	//Pressure head not initialized yet
+
+	//Initial snow salinity
+	if (variant == "SEAICE" ) {
+		elem.salinity = SeaIce::InitSnowSalinity;
+	}
 }
 
 /**
@@ -1446,6 +1509,10 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		               )
 		            || (Mdata.hs_rate > HS_threshold_verylargeincrease)
 		);
+	}
+	if (variant == "SEAICE" && nOldE == 0) {
+		// Ignore snow fall on open ocean
+		snowed_in = false;
 	}
 
 	// Go ahead if there is a snow fall AND the ground is or can be snowed in.
@@ -1758,6 +1825,16 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		} else
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_precip);
 
+		if(variant == "SEAICE" ) {
+			// Reinitialize and compute the initial meteo heat fluxes
+			memset((&Bdata), 0, sizeof(BoundCond));
+			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
+			// Run sea ice module
+			Xdata.Seaice->runSeaIceModule(Xdata, Mdata, Bdata, sn_dt);
+			// Remesh when necessary
+			Xdata.splitElements(2. * comb_thresh_l, comb_thresh_l);
+		}
+
 		const double sn_dt_bcu = sn_dt;		// Store original SNOWPACK time step
 		const double psum_bcu = Mdata.psum;	// Store original psum value
 		const double psum_ph_bcu = Mdata.psum_ph;	// Store original psum_ph value
@@ -1813,10 +1890,21 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 				if (ii == 1) phasechange.initialize(Xdata);
 
 				// See if any SUBSURFACE phase changes are occuring due to updated temperature profile
-				if (!alpine3d)
-					phasechange.compPhaseChange(Xdata, Mdata.date);
-				else
-					phasechange.compPhaseChange(Xdata, Mdata.date, false);
+				if(!useNewPhaseChange) {
+					if (!alpine3d)
+						phasechange.compPhaseChange(Xdata, Mdata.date);
+					else
+						phasechange.compPhaseChange(Xdata, Mdata.date, false);
+				} else {
+					for (size_t e = 0; e < Xdata.getNumberOfElements(); e++) {
+						const double dth_i = (Xdata.Edata[e].Qph * sn_dt) / (Constants::density_ice * Constants::lh_fusion);
+						Xdata.Edata[e].theta[ICE] += dth_i;
+						Xdata.Edata[e].theta[WATER] -= dth_i*Constants::density_ice/Constants::density_water;
+						Xdata.Edata[e].theta[AIR] = 1. - Xdata.Edata[e].theta[WATER] - Xdata.Edata[e].theta[WATER_PREF] - Xdata.Edata[e].theta[ICE] - Xdata.Edata[e].theta[SOIL];
+						Xdata.Edata[e].Qmf += Xdata.Edata[e].Qph / sn_dt;
+						Xdata.Edata[e].Qph = 0.;
+					}
+				}
 
 				// Compute the final heat fluxes at the last sub-time step
 				if (LastTimeStep) Sdata.ql += Bdata.ql; // Bad;-) HACK, needed because latent heat ql is not (yet)
@@ -1845,6 +1933,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 					prn_msg(__FILE__, __LINE__, "msg", Date(),
 					        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
 					        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, Mdata.iswr - Mdata.rswr);
+					if(useNewPhaseChange) break;
 					throw IOException("Runtime error in runSnowpackModel", AT);
 				}
 				std::cout << "                            --> time step temporarily reduced to: " << sn_dt << "\n";
@@ -1867,13 +1956,15 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata);
 
 		// See if any SUBSURFACE phase changes are occuring due to updated water content (infiltrating rain/melt water in cold snow layers)
-		if(!alpine3d)
-			phasechange.compPhaseChange(Xdata, Mdata.date);
-		else
-			phasechange.compPhaseChange(Xdata, Mdata.date, false);
+		if(!useNewPhaseChange) {
+			if(!alpine3d)
+				phasechange.compPhaseChange(Xdata, Mdata.date);
+			else
+				phasechange.compPhaseChange(Xdata, Mdata.date, false);
 
-		// Finalize PhaseChange
-		phasechange.finalize(Sdata, Xdata, Mdata.date);
+			// Finalize PhaseChange
+			phasechange.finalize(Sdata, Xdata, Mdata.date);
+		}
 
 		// Compute change of internal energy during last time step (J m-2)
 		Xdata.compSnowpackInternalEnergyChange(sn_dt);

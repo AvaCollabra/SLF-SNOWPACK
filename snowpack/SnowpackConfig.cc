@@ -259,6 +259,9 @@ void SnowpackConfig::setDefaults()
 		if (max_number_meas_temperatures.empty()) addKey("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", "5");
 		string min_depth_subsurf; getValue("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", min_depth_subsurf, IOUtils::nothrow);
 		if (min_depth_subsurf.empty()) addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.0");
+	} else if (variant == "SEAICE") {
+		// Initializations for sea ice
+		if (lb_cond_waterflux.empty()) addKey("LB_COND_WATERFLUX", "SnowpackAdvanced", "SEAICEFLOODING");
 	} else {
 		throw UnknownValueException("Unknown variant " + variant, AT);
 	}

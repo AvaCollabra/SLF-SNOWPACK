@@ -1006,7 +1006,7 @@ inline void real_main (int argc, char *argv[])
 		vector<SN_SNOWSOIL_DATA> vecSSdata(slope.nSlopes, SN_SNOWSOIL_DATA(/*number_of_solutes*/));
 		vector<SnowStation> vecXdata;
 		for (size_t ii=0; ii<slope.nSlopes; ii++) //fill vecXdata with *different* SnowStation objects
-			vecXdata.push_back( SnowStation(useCanopyModel, useSoilLayers/*, number_of_solutes*/) );
+			vecXdata.push_back( SnowStation(useCanopyModel, useSoilLayers, (variant=="SEAICE")/*, number_of_solutes*/) );
 
 		// Create meteo data object to hold interpolated current time steps
 		CurrentMeteo Mdata(cfg);

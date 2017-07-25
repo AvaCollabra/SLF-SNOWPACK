@@ -758,10 +758,10 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              theta((size_t)N_COMPONENTS), h(Constants::undefined), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
-                             type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
+                             type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), dsm(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), Qph(0.), dsm(0.) {}
 
 ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
@@ -769,10 +769,10 @@ ElementData::ElementData(const ElementData& cc) :
                              theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
                              Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
                              rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
-                             type(cc.type), metamo(cc.metamo), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
+                             type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), dsm(cc.dsm) {}
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), Qph(cc.Qph), dsm(cc.dsm) {}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -814,6 +814,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.mk), sizeof(data.mk));
 	os.write(reinterpret_cast<const char*>(&data.type), sizeof(data.type));
 	os.write(reinterpret_cast<const char*>(&data.metamo), sizeof(data.metamo));
+	os.write(reinterpret_cast<const char*>(&data.salinity), sizeof(data.salinity));
 	os.write(reinterpret_cast<const char*>(&data.dth_w), sizeof(data.dth_w));
 	os.write(reinterpret_cast<const char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	os.write(reinterpret_cast<const char*>(&data.Qmf), sizeof(data.Qmf));
@@ -837,6 +838,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.VG), sizeof(data.VG));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
 	os.write(reinterpret_cast<const char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
+	os.write(reinterpret_cast<const char*>(&data.Qph), sizeof(data.Qph));
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
 	return os;
 }
@@ -885,6 +887,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.mk), sizeof(data.mk));
 	is.read(reinterpret_cast<char*>(&data.type), sizeof(data.type));
 	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
+	is.read(reinterpret_cast<char*>(&data.salinity), sizeof(data.salinity));
 	is.read(reinterpret_cast<char*>(&data.dth_w), sizeof(data.dth_w));
 	is.read(reinterpret_cast<char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	is.read(reinterpret_cast<char*>(&data.Qmf), sizeof(data.Qmf));
@@ -908,6 +911,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.VG), sizeof(data.VG));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
+	is.read(reinterpret_cast<char*>(&data.Qph), sizeof(data.Qph));
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
 	return is;
 }
@@ -1424,8 +1428,8 @@ const std::string NodeData::toString() const
 	return os.str();
 }
 
-SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
-	meta(), cos_sl(1.), sector(0), Cdata(), pAlbedo(0.), Albedo(0.),
+SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers, const bool& i_useSeaIceModule) :
+	meta(), cos_sl(1.), sector(0), Cdata(), Seaice(NULL), pAlbedo(0.), Albedo(0.),
 	SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), Ground(0.),
 	cH(0.), mH(0.), mass_sum(0.), swe(0.), lwc_sum(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
@@ -1433,10 +1437,16 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
-	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
+	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers)
+{
+	if (i_useSeaIceModule)
+		Seaice = new SeaIce;
+	else
+		Seaice = NULL;
+}
 
 SnowStation::SnowStation(const SnowStation& c) :
-	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
+	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), Seaice(c.Seaice), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
 	SoilAlb(c.SoilAlb),BareSoil_z0(c.BareSoil_z0), SoilNode(c.SoilNode), Ground(c.Ground),
 	cH(c.cH), mH(c.mH), mass_sum(c.mass_sum), swe(c.swe), lwc_sum(c.lwc_sum), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
@@ -1444,7 +1454,14 @@ SnowStation::SnowStation(const SnowStation& c) :
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), windward(c.windward),
 	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
-	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
+	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {
+	if (c.Seaice != NULL) {
+		// Deep copy pointer to sea ice object
+		Seaice = new SeaIce(*c.Seaice);
+	} else {
+		Seaice = NULL;
+	}
+}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
 	if(this != &source) {
@@ -1452,6 +1469,12 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		cos_sl = source.cos_sl;
 		sector = source.sector;
 		Cdata = source.Cdata;
+		if (source.Seaice != NULL) {
+			// Deep copy pointer to sea ice object
+			Seaice = new SeaIce(*source.Seaice);
+		} else {
+			Seaice = NULL;
+		}
 		pAlbedo = source.pAlbedo;
 		Albedo = source.Albedo;
 		SoilAlb = source.SoilAlb;
@@ -1512,6 +1535,11 @@ SnowStation::~SnowStation()
 			ReleaseBlockMatrix(&pMat->Mat.Block);
 		}
 		free(pMat);
+	}
+
+	if (Seaice != NULL) {
+		delete Seaice;
+		Seaice = NULL;
 	}
 }
 
@@ -1880,6 +1908,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			// Memories, memories
 			Edata[e].CDot = SSdata.Ldata[ll].CDot;
 			Edata[e].metamo = SSdata.Ldata[ll].metamo;
+			Edata[e].salinity = SSdata.Ldata[ll].salinity;
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
@@ -2260,6 +2289,7 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.sector), sizeof(data.sector));
 
 	os << data.Cdata;
+	//os << data.Seaice;	//HACK how to do this with a pointer?
 	os.write(reinterpret_cast<const char*>(&data.pAlbedo), sizeof(data.pAlbedo));
 	os.write(reinterpret_cast<const char*>(&data.Albedo), sizeof(data.Albedo));
 	os.write(reinterpret_cast<const char*>(&data.SoilAlb), sizeof(data.SoilAlb));
@@ -2338,6 +2368,7 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.sector), sizeof(data.sector));
 
 	is >> data.Cdata;
+	//is >> data.Seaice;	//HACK how to do this with a pointer?
 	is.read(reinterpret_cast<char*>(&data.pAlbedo), sizeof(data.pAlbedo));
 	is.read(reinterpret_cast<char*>(&data.Albedo), sizeof(data.Albedo));
 	is.read(reinterpret_cast<char*>(&data.SoilAlb), sizeof(data.SoilAlb));
@@ -2878,7 +2909,7 @@ LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
                      phiSoil(0.), phiIce(0.), phiWater(0.), phiWaterPref(0.), phiVoids(0.),
                      cSoil(SnowStation::number_of_solutes), cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
-                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.)
+                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.), salinity(0.)
 {
 }
 
@@ -2922,6 +2953,7 @@ std::iostream& operator<<(std::iostream& os, const LayerData& data)
 	os.write(reinterpret_cast<const char*>(&data.hr), sizeof(data.hr));
 	os.write(reinterpret_cast<const char*>(&data.CDot), sizeof(data.CDot));
 	os.write(reinterpret_cast<const char*>(&data.metamo), sizeof(data.metamo));
+	os.write(reinterpret_cast<const char*>(&data.salinity), sizeof(data.salinity));
 	return os;
 }
 
@@ -2969,6 +3001,7 @@ std::iostream& operator>>(std::iostream& is, LayerData& data)
 	is.read(reinterpret_cast<char*>(&data.hr), sizeof(data.hr));
 	is.read(reinterpret_cast<char*>(&data.CDot), sizeof(data.CDot));
 	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
+	is.read(reinterpret_cast<char*>(&data.salinity), sizeof(data.salinity));
 	return is;
 }
 

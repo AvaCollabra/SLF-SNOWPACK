@@ -10,5 +10,6 @@ SET(core_sources
 	snowpackCore/Canopy.cc
 	snowpackCore/Metamorphism.cc
 	snowpackCore/PhaseChange.cc
+	snowpackCore/SeaIce.cc
 	snowpackCore/Solver.cc
 )

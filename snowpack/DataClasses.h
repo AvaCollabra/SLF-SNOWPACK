@@ -28,6 +28,7 @@
 
 #include <snowpack/SnowpackConfig.h>
 #include <snowpack/vanGenuchten.h>
+#include <snowpack/snowpackCore/SeaIce.h>
 
 #include <snowpack/Constants.h>
 #include <meteoio/MeteoIO.h>
@@ -206,6 +207,7 @@ class LayerData {
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
+		double salinity;            ///< salinity (kg/kg)
 };
 
 /**
@@ -318,6 +320,7 @@ class ElementData {
 		size_t mk;                 ///< grain marker (history dependent)
 		unsigned short int type;   ///< grain class
 		double metamo;             ///< keep track of metamorphism
+		double salinity;           ///< salinity (kg/kg)
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
@@ -336,6 +339,7 @@ class ElementData {
 		vanGenuchten VG;           ///< Van Genuchten Model for water retention
 		double lwc_source;         ///< Source/sink term for Richards equation
 		double PrefFlowArea;       ///< Preferential flow path relative area (-)
+		double Qph;                ///< Heat source/sink due to phase changes for the heat equation (W/m^3)
 		//NIED (H. Hirashima)
 		double dsm;                ///< Dry snow metamorphism factor 
 };
@@ -468,9 +472,10 @@ class CanopyData {
  * It is used extensively not only during the finite element solution but also to control
  * the post-processing writes. It is initialized from SN_SNOWSOIL_DATA (at present).
  */
+class SeaIce;	// Foreward-declare sea ice class
 class SnowStation {
 	public:
-		explicit SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
+		explicit SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true, const bool& i_useSeaIceModule=false);
 		SnowStation(const SnowStation& c);
 
 		~SnowStation();
@@ -509,6 +514,7 @@ class SnowStation {
 		size_t sector;              ///< current slope sector of width 360./max(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
+		SeaIce* Seaice;             ///< Pointer to sea ice class
 		double pAlbedo;             ///< Parameterized snow albedo
 		double Albedo;              ///< Snow albedo used by the model
 		double SoilAlb;             ///< Soil albedo
