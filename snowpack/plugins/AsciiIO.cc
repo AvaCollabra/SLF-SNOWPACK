@@ -924,6 +924,15 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	const double cos_sl = Xdata.cos_sl;
 	const bool no_snow = (nE == Xdata.SoilNode);
 
+	// Are we using sea ice variant? Check if the object is defined via the pointer:
+	const bool SeaIce = (Xdata.Seaice==NULL)?(false):(true);
+	// Offset profile [m]:
+	const double offset = (SeaIce)?(4.):(0.);
+	// Check reference level: either a marked reference level, or, if non existent, the sea level (if sea ice module is used), otherwise 0:
+	const double ReferenceLevel = (  Xdata.findMarkedReferenceLayer()==IOUtils::nodata  )  ?  (  (Xdata.Seaice==NULL)?(0.):(Xdata.Seaice->SeaLevel)  )  :  (Xdata.findMarkedReferenceLayer()  );
+	// Number of fill elements for offset (only 0 or 1 is supported now):
+	const int Noffset = (SeaIce)?(1):(0);
+
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
 	const size_t nz = (useSoilLayers)? nN : nE;
 	if(nE==0) {
@@ -931,25 +940,36 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout.close();
 		return;
 	} else {
-		fout << "\n0501," << nz;
+		fout << "\n0501," << nz + Noffset;
 	}
-	for (size_t n = nN-nz; n < nN; n++)
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z)/cos_sl);
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(offset - ReferenceLevel/cos_sl);
+	for (size_t n = nN-nz; n < nN; n++) {
+		if (SeaIce) {
+			//Correct for sea level:
+			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z - ReferenceLevel)/cos_sl + offset);
+		} else {
+			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((NDS[n].z+NDS[n].u - NDS[Xdata.SoilNode].z)/cos_sl);
+		}
+	}
 	// 0502: element density (kg m-3)
-	fout << "\n0502," << nE;
+	fout << "\n0502," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(1) << EMS[e].Rho;
 	// 0503: element temperature (degC)
-	fout << "\n0503," << nE;
+	fout << "\n0503," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(EMS[e].Te);
 	// 0506: liquid water content by volume (%)
-	fout << "\n0506," << nE;
+	fout << "\n0506," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(1) << 100.*EMS[e].theta[WATER];
 	// 0507: liquid preferential flow water content by volume (%)
 	if(enable_pref_flow) {
-		fout << "\n0507," << nE;
+		fout << "\n0507," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(3) << 100.*EMS[e].theta[WATER_PREF];
 	}
@@ -957,7 +977,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0508,1,0";
 	} else {
-		fout << "\n0508," << nE-Xdata.SoilNode;
+		fout << "\n0508," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].dd;
 	}
@@ -965,7 +986,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0509,1,0";
 	} else {
-		fout << "\n0509," << nE-Xdata.SoilNode;
+		fout << "\n0509," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].sp;
 	}
@@ -973,7 +995,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0510,1,0";
 	} else {
-		fout << "\n0510," << nE-Xdata.SoilNode;
+		fout << "\n0510," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(1) << EMS[e].N3;
 	}
@@ -981,7 +1004,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0511,1,0";
 	} else {
-		fout << "\n0511," << nE-Xdata.SoilNode;
+		fout << "\n0511," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << 2.*EMS[e].rb;
 	}
@@ -989,12 +1013,14 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0512,1,0";
 	} else {
-		fout << "\n0512," << nE-Xdata.SoilNode;
+		fout << "\n0512," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << 2.*EMS[e].rg;
 	}
 	// 0513: snow grain type (Swiss code F1F2F3), dumps either 1,0 or 1,660 if no snow on the ground!
-	fout << "\n0513," << nE+1-Xdata.SoilNode;
+	fout << "\n0513," << nE+1-Xdata.SoilNode + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setfill ('0') << std::setw (3) << 0;
 	for (size_t e = Xdata.SoilNode; e < nE; e++)
 		fout << "," << std::fixed << std::setfill ('0') << std::setw (3) << EMS[e].type;
 	// surface hoar at surface? (depending on boundary conditions)
@@ -1009,38 +1035,46 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout << "\n0514,3,-999,-999.0,-999.0";
 	}
 	// 0515: ice volume fraction (%)
-	fout << "\n0515," << nE;
+	fout << "\n0515," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(0) << 100.*EMS[e].theta[ICE];
 	// 0516: air volume fraction (%)
-	fout << "\n0516," << nE;
+	fout << "\n0516," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(0) << 100.*EMS[e].theta[AIR];
 	// 0517: stress (kPa)
-	fout << "\n0517," << nE;
+	fout << "\n0517," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << 1.e-3*EMS[e].C;
 	// 0518: viscosity (GPa s)
-	fout << "\n0518," << nE;
+	fout << "\n0518," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << 1.e-9*EMS[e].k[SETTLEMENT];
 	// 0519: soil volume fraction (%)
-	fout << "\n0519," << nE;
+	fout << "\n0519," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(0) <<100.*EMS[e].theta[SOIL];
 	// 0520: temperature gradient (K m-1)
-	fout << "\n0520," << nE;
+	fout << "\n0520," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << EMS[e].gradT;
 	// 0521: thermal conductivity (W K-1 m-1)
-	fout << "\n0521," << nE;
+	fout << "\n0521," << nE + Noffset;
+	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::scientific << std::setprecision(3) << EMS[e].k[TEMPERATURE];
 	// 0522: snow absorbed shortwave radiation (W m-2)
 	if (no_snow) {
 		fout << "\n0522,1,0";
 	} else {
-		fout << "\n0522," << nE-Xdata.SoilNode;
+		fout << "\n0522," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(1) << EMS[e].sw_abs;
 	}
@@ -1048,7 +1082,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0523,1,0";
 	} else {
-		fout << "\n0523," << nE-Xdata.SoilNode;
+		fout << "\n0523," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(1) << 1.e6*EMS[e].Eps_vDot;
 	}
@@ -1062,7 +1097,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0531,1,0";
 	} else {
-		fout << "\n0531," << nE-Xdata.SoilNode;
+		fout << "\n0531," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].S_dr;
 	}
@@ -1070,7 +1106,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0532,1,0";
 	} else {
-		fout << "\n0532," << nE-Xdata.SoilNode;
+		fout << "\n0532," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode;  e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << NDS[e+1].S_n;
 	}
@@ -1078,7 +1115,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0533,1,0";
 	} else {
-		fout << "\n0533," << nE-Xdata.SoilNode;
+		fout << "\n0533," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << NDS[e+1].S_s;
 	}
@@ -1086,7 +1124,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0534,1,0";
 	} else {
-		fout << "\n0534," << nE-Xdata.SoilNode;
+		fout << "\n0534," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		if (r_in_n) { // ... either converted to newtons according to the ICSSG 2009
 			for (size_t e = Xdata.SoilNode; e < nE; e++)
 				fout << "," << std::fixed << std::setprecision(1) << -1.*(19.3*pow(EMS[e].hard, 2.4));
@@ -1099,7 +1138,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (no_snow) {
 		fout << "\n0535,1,0";
 	} else {
-		fout << "\n0535," << nE-Xdata.SoilNode;
+		fout << "\n0535," << nE-Xdata.SoilNode + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = Xdata.SoilNode; e < nE; e++)
 			fout << "," << std::fixed << std::setprecision(2) << EMS[e].ogs;
 	}
@@ -1794,6 +1834,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	// Check for availability of measured snow/soil temperatures
 	setNumberSensors(Mdata);
 
+	// Correction for snow depth. If we have a marked reference layer, then subtract the height of the reference layer in the output.
+	const double HScorrC = (Xdata.findMarkedReferenceLayer()==IOUtils::nodata)?(0.):(Xdata.findMarkedReferenceLayer());
+
 	// Check file for header
 	if (!checkHeader(Xdata, filename, "met", "[STATION_PARAMETERS]")) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
@@ -1845,7 +1888,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		// 27: solid precipitation rate (kg m-2 h-1),
 		// 28-29: modeled and enforced vertical snow depth (cm); see also 51
 		fout  << "," << 100.*Mdata.rh << "," << Mdata.vw << "," << Mdata.vw_drift << "," << Mdata.dw << "," << Sdata.mass[SurfaceFluxes::MS_HNW];
-		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl) << ",";
+		fout << "," << std::fixed << std::setprecision(2) << M_TO_CM((Xdata.cH - Xdata.Ground - HScorrC)/cos_sl) << ",";
 		if (Xdata.mH!=Constants::undefined)
 			fout << M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl) << std::setprecision(6);
 		else
