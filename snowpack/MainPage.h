@@ -104,6 +104,13 @@
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
  * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
  *
+ * @section model_workflow Simulation workflow
+ * When running a simulation, it is important to keep in mind that the model is organized as several modules that interract together. It is possible to configure
+ * some parameters for the various modules and to enable/disable modules. Some modules can be used outside of Snowpack (like
+ * <A HREF="https://models.slf.ch">MeteoIO</A> that is used in various applications or libSnowpack that is used by <A HREF="https://models.slf.ch">Alpine3D</A>) .
+ *
+ * \image html simulation_workflow.png "Simulation workflow"
+ * \image latex simulation_workflow.eps "Simulation workflow" width=0.9\textwidth
  */
 
 /**
@@ -282,7 +289,7 @@
  * - incoming short wave radiation (ISWR) <i>and/or</i> reflected short wave radiation (RSWR)
  * - incoming long wave radiation (ILWR) <i>and/or</i> surface temperature (TSS)
  * - precipitation (PSUM) <i>and/or</i> snow height (HS)
- * - ground temperature (TSG, if available)
+ * - ground temperature (TSG, if available. Otherwise, you will have to use <a href="https://models.slf.ch">MeteoIO</A>'s data generators to generate a value)
  * - snow temperatures at various depths (TS1, TS2, etc if available and only for comparisons, see section \ref SnowSoilTemperatures)
  *
  * These parameters <b>should best</b> be available at a hourly time step and preferably in MKSA units 
@@ -293,7 +300,8 @@
  * This enables %Snowpack to get data from a variety of sources (several input file formats, connection to a database, connection to a web service) and to
  * pre-process real-world data, by filtering the data on the fly and by resampling the data on the fly. Please read the MeteoIO documentation (available 
  * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A> for the last official release) to learn about
- * the supported file formats, the available filters and resampling/re-accumulation strategies. 
+ * the supported file formats, the available filters and resampling/re-accumulation strategies as well as the available parametrizations that can help generate
+ * some otherwise missing data (either from other parameters or fully synthetic, as last resort).
  * 
  * It is recommended to prepare the data in the
  * <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
@@ -359,8 +367,10 @@
  * the section <i>"Available data generators and usage"</i> for the full list of available generators):
  * @code
  * [Generators]
- * PSUM_PH::generators = PPHASE
- * PSUM_PH::PPHASE = RANGE 273.35 275.35
+ * PSUM_PH::generators   = PPHASE
+ * PSUM_PH::pphase::type = RANGE
+ * PSUM_PH::pphase::snow = 273.35
+ * PSUM_PH::pphase::rain = 275.35
  * @endcode
  * 
  */
@@ -370,10 +380,11 @@
  * The configuration for a given simulation is kept in a <i>".ini"</i> file (see http://en.wikipedia.org/wiki/INI_file). This is an ascii file that contains
  * keys/values structured by sections. This can be easily edited with a simple text editor. More information about the structure of the file and how to generally deal
  * with it can be found in MeteoIO's documentation (section "How to build your io.ini configuration file"). However, it is recommended to use the inishell tool for
- * generating the configuration file for %Snowpack in order to prevent missing important keys, etc
+ * generating the configuration file for %Snowpack in order to prevent missing important keys, etc Please read <a href="https://models.slf.ch">MeteoIO</A>'s documentation (specially the "general
+ * Concepts" introduction)!
  *
  * @section inishell_config The inishell tool
- * It is highly recommended to use the <a href="https:/models.slf.ch/p/inishell">Inishell</a> tool to generate these ini files
+ * It is highly recommended to use the <a href="https://models.slf.ch/p/inishell">Inishell</a> tool to generate these ini files
  * in order to reduce editing errors. This tool also allows you to edit an existing file in order to change the configuration.
  * \image html inishell.png "inishell overview"
  * \image latex inishell.eps "inishell overview" width=0.9\textwidth

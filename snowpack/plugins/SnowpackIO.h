@@ -89,7 +89,11 @@
  *
  * @section available_met_ts Fluxes time series
  * %Snowpack computes various meteorological parameters as well as fluxes and can write them out as time series.
- * Currently, only the \subpage met_format "MET format" is supported.
+ * <center><table border="1">
+ * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
+ * <tr><td>\subpage met_format "MET"</td><td>legacy %Snowpack time series for visualization with sngui</td><td></td></tr>
+ * <tr><td>\subpage smet "SMET"</td><td>smet formatted time series for visualization with <A HREF="snopviz.org">SnopViz</A></td><td></td></tr>
+ * </table></center>
  *
  */
 class SnowpackIO : public SnowpackIOInterface {

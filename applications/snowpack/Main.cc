@@ -832,7 +832,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		if (psum_resampling!="ACCUMULATE") {
 			std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH, not doing it is most probably an error!\n";
 		} else {
-			const double psum_accumulate = cfg.get("PSUM::accumulate", "Interpolations1D");
+			const double psum_accumulate = cfg.get("PSUM::accumulate::period", "Interpolations1D");
 			const double sn_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 			if (sn_step_length*60. != psum_accumulate)
 				std::cerr << "[W] The precipitation should be re-accumulated over CALCULATION_STEP_LENGTH (currently, over " <<  psum_accumulate << "s)\n";
