@@ -1044,7 +1044,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
 		double dummy_ql = 0.;
-		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (nE == Xdata.SoilNode) ? (ql) : (dummy_ql));					// Only send ql if Richards equation is used for the full domain, not only soil part
+		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (nE == Xdata.SoilNode || (nE > Xdata.SoilNode && iwatertransportmodel_snow == RICHARDSEQUATION)) ? (ql) : (dummy_ql));					// Only send ql if Richards equation is used for the full domain, not only soil part
 		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql);	// Matrix flow will take care of potential evaporation, provided by ql
 	}
 
