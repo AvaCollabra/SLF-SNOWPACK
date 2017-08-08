@@ -1043,9 +1043,17 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 
 	//Now solve richards equation:
 	if((iwatertransportmodel_snow == RICHARDSEQUATION && nE>0) || (iwatertransportmodel_soil == RICHARDSEQUATION && Xdata.SoilNode > 0)) {
-		double dummy_ql = 0.;
-		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (nE == Xdata.SoilNode || (nE > Xdata.SoilNode && iwatertransportmodel_snow == RICHARDSEQUATION)) ? (ql) : (dummy_ql));					// Only send ql if Richards equation is used for the full domain, not only soil part
-		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql);	// Matrix flow will take care of potential evaporation, provided by ql
+		double dummy_ql = 0.;	// A dummy_ql, that may be sent to Richards equation, when evaporation / condensation doesn't need to be considered, to keep the original ql intact, so it can be treated as sublimation / deposition later
+
+		// Only send ql if Richards equation will solve the upper element and thus should take care of evaporation / condensation:
+		const bool isTopLayerSolvedByREQ = (nE == Xdata.SoilNode || (nE > Xdata.SoilNode && iwatertransportmodel_snow == RICHARDSEQUATION));
+
+		// Only send ql if ql should first be considered as evaporation / condensation, and NOT sublimation / deposition, depending on surface temperature:
+		const double melting_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].melting_tk : Constants::melting_tk;
+		const bool isSurfaceMelting = !(NDS[nE].T < melting_tk);
+
+		RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (isTopLayerSolvedByREQ && isSurfaceMelting) ? (ql) : (dummy_ql));					
+		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql);	// Matrix flow will take care of potential evaporation/condensation, provided by ql, so send dummy_ql for preferential flow
 	}
 
 	// The TOP element is very important because it is always losing mass--the strain state
