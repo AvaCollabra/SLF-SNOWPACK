@@ -47,6 +47,14 @@ class Snowpack {
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;
 
+		double getSnDt() const {
+			return sn_dt;
+		}
+
+		void setSnDt(double snDt) {
+			sn_dt = snDt;
+		}
+
 		enum BoundaryCondition {
 			NEUMANN_BC,
 			DIRICHLET_BC

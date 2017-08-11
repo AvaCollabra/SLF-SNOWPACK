@@ -11,19 +11,50 @@
 #include <math.h>
 #include <iostream>
 #include <stdlib.h>
+#include <vector>
+#include <map>
+#include "snowpack/DataClasses.h"
+
+struct Error {
+
+		std::vector<double> absError;
+		double rmsError, maxError;
+
+		Error()
+				: absError(),
+				  rmsError(0.0),
+				  maxError(0.0) {
+
+		}
+
+		void clear() {
+
+			absError.clear();
+			rmsError = 0.0;
+			maxError = 0.0;
+
+		}
+
+};
+
+
 
 class HeatEquationAnalytical {
  public:
-  explicit HeatEquationAnalytical(const double & totalThickness,
-                                  const double &T0,
-                         const double &T1, const double &heatCapacity,
-                                  const double &snowDensity = 400.0,
-                                  const double &thermalConductivity = 1.0,
-                                  const unsigned int &p = 100);
+		explicit HeatEquationAnalytical(const size_t & nTestLayers,
+		                                const double & totalThickness,
+		                                const double &T0,
+                                    const double &T1,
+		                                const double &heatCapacity,
+		                                const double &snowDensity = 400.0,
+		                                const double &thermalConductivity = 1.0,
+		                                const unsigned int &p = 1000);
 
-  virtual ~HeatEquationAnalytical();
+		virtual ~HeatEquationAnalytical();
 
-  double getTemperature(const double &x, const double &t);
+		bool computeErrors(const double &t, const size_t &n,
+		                   const std::vector<NodeData> &nodesData,
+		                   Error &errors);
 
  private:
 
@@ -36,10 +67,21 @@ class HeatEquationAnalytical {
   double _thermalConductivity;
 
 
+
   unsigned int _p;
 
-  double _alpha;
-  double _totalThickness;
+		double _alpha;
+		double _totalThickness;
+		size_t _nTestLayers;
+		double _layerTestThickness;
+
+		double getTemperatureAt(const size_t& n, const double &t);
+
+		std::vector<double> getTemperatureAtTestsPoints(const double &t);
+
+		std::vector<double> interpolate1D(const size_t &n,
+		                                  const std::vector<NodeData> &nodesData);
+
 
 };
 

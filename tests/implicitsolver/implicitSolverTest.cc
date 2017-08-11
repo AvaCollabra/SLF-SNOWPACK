@@ -10,7 +10,6 @@
 using namespace std;
 using namespace mio;
 
-static string mode = "RESEARCH";
 
 // Forward declarations
 size_t getNodeNumber(size_t elementNumber);
@@ -36,33 +35,26 @@ int main(int argc, char *argv[]) {
   }
 
   /* Parameters definition */
-  const double totalThickness = 1.0;
+	const double totalThickness = 20.0;
   const double T0 = 273.15;
-  const double T1 = 268.15;
-  const double snowDensity = 100.0;
-  const double thetaAir = 1.0 / Constants::conductivity_air;
+	const double T1 = 263.15;
+	const double snowDensity = 100.0;
+	const double thetaAir = 1.0 / Constants::conductivity_air;
   const size_t nTestLayers = 10000;
-  const double layerTestThickness(totalThickness / nTestLayers);
+	const size_t timeStep = 1000;
 
   /* Needed variables */
   double layerThickness(0.0);
 
   /* Benchmark data from analytical solution */
   HeatEquationAnalytical he(
+	    nTestLayers,
       totalThickness,
       T0,
       T1,
       Constants::density_air / Constants::conductivity_air
           * Constants::specific_heat_air / snowDensity,
       snowDensity, 1.0);
-
-  vector<double> benchmarkTemp;
-  for (size_t n = 0; n <= nTestLayers; n++) {
-
-    benchmarkTemp.push_back(
-        he.getTemperature((double) n * layerTestThickness, 900));
-
-  }
 
 
   /* Create static test data for comparison */
@@ -91,61 +83,100 @@ int main(int argc, char *argv[]) {
 
   /* Create container for */
   size_t layersVectorTmp[] = { 5, 10, 50, 100, 500, 1000, 5000 };
+	size_t timeVectorTmp[] = { 1 };
+
   vector<size_t> layersVector(
       layersVectorTmp,
       layersVectorTmp + sizeof(layersVectorTmp) / sizeof(size_t));
-  map<unsigned int, vector<NodeData> > nodesMap;
 
-  /* Loop to fill container with start data and solve diffusion problem */
-  for (vector<size_t>::iterator it = layersVector.begin();
-      it != layersVector.end(); it++) {
+	vector<size_t> timeVector(
+	    timeVectorTmp, timeVectorTmp + sizeof(timeVectorTmp) / sizeof(size_t));
 
-    // Clear element and node vector
-    Xdata.Ndata.clear();
-    Xdata.Edata.clear();
+	map<size_t, map<size_t, Error> > resultsMap;
 
-    // Resize SnowStation data to adequate size
-    Xdata.resize(*it);
+	/* Loop over time step lengths */
+	for (vector<size_t>::iterator it2 = timeVector.begin();
+			it2 != timeVector.end(); it2++) {
 
-    // Actual layerThickness
-    layerThickness = totalThickness / (double) *it;
+		// Change time step
+		testsnowpack.setSnDt(static_cast<double>(*it2));
 
-    // Set all nodes to same temp
-    for (size_t n = 0; n < Xdata.getNumberOfNodes(); n++) {
-      Xdata.Ndata[n].T = T0;
-    }
+		// Declare fresh first level map
+		map<size_t, Error> tmpResultsMap;
 
 
-    Xdata.Ndata[Xdata.getNumberOfNodes() - 1].T = T1;
+		/* Loop over number of layers */
+		for (vector<size_t>::iterator it = layersVector.begin();
+		    it != layersVector.end(); it++) {
+
+			// Clear element and node vector
+			Xdata.Ndata.clear();
+			Xdata.Edata.clear();
+
+			// Resize SnowStation data to adequate size
+			Xdata.resize(*it);
+
+			// Actual layerThickness
+			layerThickness = totalThickness / (double) *it;
+
+			// Set all nodes to same temp
+			for (size_t n = 0; n < Xdata.getNumberOfNodes(); n++) {
+				Xdata.Ndata[n].T = T0;
+			}
+
+			Xdata.Ndata[Xdata.getNumberOfNodes() - 1].T = T1;
+
+			// Set all elements to same property
+			for (size_t n = 0; n < Xdata.getNumberOfElements(); n++) {
+
+				Xdata.Edata[n].Rho = snowDensity;
+				Xdata.Edata[n].theta[ICE] = 0.0;
+				Xdata.Edata[n].theta[WATER] = 0.0;
+				Xdata.Edata[n].theta[WATER_PREF] = 0.0;
+				Xdata.Edata[n].L = layerThickness;
+				Xdata.Edata[n].theta[AIR] = thetaAir;
+				Xdata.Edata[n].res_wat_cont = 0.00001;
+				Xdata.Edata[n].Te = T0;
+
+			}
+
+			/* Solve temp diffusion */
+			int ii = 0;		// Counter for sub-timesteps to match one SNOWPACK time step
+			bool LastTimeStep = false;	// Flag to indicate if it is the last sub-time step
+			double p_dt = 0.;			// Cumulative progress of time steps
+
+			// Computation of temp profile
+			while (LastTimeStep == false) {
+				if (testsnowpack.testCompTempProfile(Mdata, Xdata, Bdata, false)) {
+					// Entered after convergence
+					ii++;						// Update time step counter
+					p_dt += testsnowpack.getSnDt();					// Update progress variable
+					if (p_dt > timeStep - Constants::eps) {  // Check if it is the last sub-time step
+						LastTimeStep = true;
+					}
+				}
+			}
+
+			// Store the error in first map for layer "it"
+			Error actualError;
+			he.computeErrors(timeStep, *it, Xdata.Ndata, actualError);
+			tmpResultsMap.insert(
+			    tmpResultsMap.end(),
+			                     pair<size_t, Error>(
+			        *it, actualError));
+
+			}
+
+		// Store error map in main map
+		resultsMap.insert(resultsMap.end(),
+		                  pair<size_t, map<size_t, Error> >(*it2, tmpResultsMap));
+
+		}
 
 
-    // Set all elements to same property
-    for (size_t n = 0; n < Xdata.getNumberOfElements(); n++) {
-
-      Xdata.Edata[n].Rho = snowDensity;
-      Xdata.Edata[n].theta[ICE] = 0.0;
-      Xdata.Edata[n].theta[WATER] = 0.0;
-      Xdata.Edata[n].theta[WATER_PREF] = 0.0;
-      Xdata.Edata[n].L = layerThickness;
-      Xdata.Edata[n].theta[AIR] = thetaAir;
-      Xdata.Edata[n].res_wat_cont = 0.00001;
-      Xdata.Edata[n].Te = T0;
-
-    }
-
-    // Compute temp profile
-    testsnowpack.testCompTempProfile(Mdata, Xdata, Bdata, false);
-
-    // Save result to map
-    nodesMap.insert(nodesMap.end(),
-                    pair<size_t, vector<NodeData> >(*it, Xdata.Ndata));
-
-  }
 
 
-
-
-  /* Output to file
+  /* Output to file */
   // Open input stream
   string str = "myoutput.dat";
   std::ofstream ofs;
@@ -156,24 +187,43 @@ int main(int argc, char *argv[]) {
   }
 
 
-  for (size_t n = 0; n < nN; n++) {
-    ofs << setprecision(12) << NDS[n].T << "\t";
+  // Retrieve results for 1000s step
+	std::map<size_t, map<size_t, Error> >::iterator res;
+	res = resultsMap.find(1);
+	map<size_t, Error> tmpMap;
+	if (res != resultsMap.end()) {
+
+		tmpMap = res->second;
+
+	} else {
+		cerr << "big error";
+	}
+
+
+
+	for (map<size_t, Error>::iterator it = tmpMap.begin();
+	    it != tmpMap.end(); it++) {
+
+		for (vector<double>::iterator it2 = it->second.absError.begin();
+		    it2 != it->second.absError.end();
+		    it2++) {
+			ofs << setprecision(12)
+			    << *it2 << "\t";
+		}
+
+		ofs << "\n";
+
+		cout << it->second.rmsError << "\t" << it->second.maxError << endl;
+
   }
 
-  ofs << "\n";
-
-  for (size_t n = 0; n < nN; n++) {
-    ofs << setprecision(12)
-        << he.getTemperature((double) n * layerThickness, 900)
-        << "\t";
-  }
-
-   ofs << "\n";*/
-
+	ofs.close();
 
   return 0;
-}
+	}
 
 inline size_t getNodeNumber(size_t elementNumber) {
-  return elementNumber + 1;
+	return elementNumber + 1;
 }
+
+
