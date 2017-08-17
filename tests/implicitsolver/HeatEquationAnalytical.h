@@ -52,7 +52,7 @@ class HeatEquationAnalytical {
 
 		virtual ~HeatEquationAnalytical();
 
-		bool computeErrors(const double &t, const size_t &n,
+		bool computeErrors(const size_t &t, const size_t &n,
 		                   const std::vector<NodeData> &nodesData,
 		                   Error &errors);
 
@@ -75,9 +75,9 @@ class HeatEquationAnalytical {
 		size_t _nTestLayers;
 		double _layerTestThickness;
 
-		double getTemperatureAt(const size_t& n, const double &t);
+		double getTemperatureAt(const size_t& n, const size_t &t);
 
-		std::vector<double> getTemperatureAtTestsPoints(const double &t);
+		std::vector<double> getTemperatureAtTestsPoints(const size_t &t);
 
 		std::vector<double> interpolate1D(const size_t &n,
 		                                  const std::vector<NodeData> &nodesData);

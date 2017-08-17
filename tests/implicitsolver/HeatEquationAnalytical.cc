@@ -39,11 +39,11 @@ HeatEquationAnalytical::~HeatEquationAnalytical() {
 }
 
 double HeatEquationAnalytical::getTemperatureAt(const size_t& n,
-                                              const double& t) {
+                                                const size_t& t) {
 
 	const double x = (double) n * _layerTestThickness;
 
-  if (t < 0) {
+	if (t <= 0) {
     std::cerr << "t must be greater than 0" << std::endl;
     exit(1);
   }
@@ -62,7 +62,8 @@ double HeatEquationAnalytical::getTemperatureAt(const size_t& n,
     double tmp = 2 / M_PI * (_T1 - _T0) / p * (p % 2 ? -1.0 : 1.0);
 
     tmp *= exp(
-        -_alpha * M_PI * M_PI / _totalThickness / _totalThickness * p * p * t);
+		    -_alpha * M_PI * M_PI / _totalThickness / _totalThickness * p * p
+		        * static_cast<double>(t));
 
     tmp *= sin(p * M_PI / _totalThickness * x);
 
@@ -80,7 +81,7 @@ inline void HeatEquationAnalytical::updateAlpha() {
 }
 
 bool HeatEquationAnalytical::computeErrors(
-    const double &t,
+    const size_t &t,
     const size_t& n, const std::vector<NodeData>& nodesData,
     Error &errors) {
 
@@ -143,7 +144,7 @@ std::vector<double> HeatEquationAnalytical::interpolate1D(
 }
 
 std::vector<double> HeatEquationAnalytical::getTemperatureAtTestsPoints(
-    const double& t) {
+    const size_t& t) {
 
 	std::vector<double> benchmarkTemp;
 
