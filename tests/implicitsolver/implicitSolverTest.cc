@@ -1,10 +1,10 @@
 #include <meteoio/MeteoIO.h>
-//#include <snowpack/snowpackCore/Snowpack.h>
 #include "TestSnowpack.h"
 #include "HeatEquationAnalytical.h"
 #include <snowpack/libsnowpack.h>
 #include <stdlib.h>
 #include <fstream>
+#include <sstream>
 #include <cmath>
 
 using namespace std;
@@ -13,6 +13,13 @@ using namespace mio;
 
 // Forward declarations
 size_t getNodeNumber(size_t elementNumber);
+void printOutUponError(const char *dir, const size_t &totalStep,
+                       const size_t &layer, const size_t &step,
+                       const vector<double> &data, const string &type);
+template<class T>
+string toString(T argument);
+
+
 
 // PARAMETERS
 const double tol_inf = 1e-6;  // Tolerance for the infinite-norm error
@@ -35,17 +42,18 @@ int main(int argc, char *argv[]) {
   }
 
   /* Parameters definition */
-	const double totalThickness = 10.0;
+	const double totalThickness = 2.0;
   const double T0 = 273.15;
-	const double T1 = 263.15;
+	const double T1 = 273.00;
 	const double snowDensity = 100.0;
 	const double thetaAir = 1.0 / Constants::conductivity_air;
   const size_t nTestLayers = 10000;
 
 	/* Read-in argument */
 	size_t overallTimeStep = atoi(argv[1]);
-	cout << "Running consistency checks for implicit integration scheme." << endl
-	     << "Overall step length is " << overallTimeStep << "s." << endl;
+	cout << "\n\nRunning consistency checks for implicit integration scheme."
+	     << endl << "\nOverall step length is " << overallTimeStep << "s."
+	     << endl;
 
   /* Needed variables */
   double layerThickness(0.0);
@@ -60,8 +68,9 @@ int main(int argc, char *argv[]) {
           * Constants::specific_heat_air / snowDensity,
 	    snowDensity, 1.0);
 
-
+	/******************************************/
   /* Create static test data for comparison */
+	/******************************************/
   // Config file
   static string cfgfile = "io.ini";
   SnowpackConfig cfg(cfgfile);
@@ -86,9 +95,9 @@ int main(int argc, char *argv[]) {
 
 
   /* Create container for */
-	size_t layersVectorTmp[] = { 1, 2, 5, 10, 20, 50, 100, 200, 500, 1000, 2000 };
-	size_t timeVectorTmp[] = { 1000, 500, 200, 100, 50, 20, 10, 5, 2, 1 };
-	//size_t timeVectorTmp[] = { 1 };
+	size_t layersVectorTmp[] = { 1, 10, 100, 1000 };
+	size_t timeVectorTmp[] = { 1000, 100, 10, 1 };
+
 
   vector<size_t> layersVector(
       layersVectorTmp,
@@ -179,20 +188,10 @@ int main(int argc, char *argv[]) {
 		}
 
 
-
-
-  /* Output to file */
-  // Open input stream
-  string str = "myoutput.dat";
-  std::ofstream ofs;
-  ofs.open(str.c_str());
-  if (!ofs.is_open()) {
-		cerr << "\nCould not open data file " << argv[0] << "\n";
-    exit(1);
-  }
-
+	/****************************************/
 	/* Physical dimension consistency check */
-	cout << "Physical dimension consistency check" << endl;
+	/****************************************/
+	cout << "\nPhysical dimension consistency check" << endl;
 	const size_t timeStep = 1;
 	cout << "Integration time step is " << timeStep
 	     << "s and overall time step is " << overallTimeStep << "s." << endl;
@@ -213,7 +212,6 @@ int main(int argc, char *argv[]) {
 	// Huge start error
 	double lastRmsError = 1e10;
 
-	Matrix XTX(3, 3), XTY(3, 1);
 	// Loop over grid sizes
 	for (map<size_t, Error>::iterator it = tmpMap.begin();
 	    it != tmpMap.end();
@@ -233,51 +231,29 @@ int main(int argc, char *argv[]) {
 			    << " layers. The time resolution might be not small enough.\n"
 			    << "If this error appears again after a consequent time resolution improvement, then there is an actual consistency issue!"
 			    << endl;
+			printOutUponError(argv[0], overallTimeStep, it->first, res->first,
+			                  it->second.absError, "physical");
 			it++;
 			return 1;
 		} else {
 			lastRmsError = it->second.rmsError;
 		}
 
-		for (vector<double>::iterator it2 = it->second.absError.begin();
-		    it2 != it->second.absError.end(); it2++) {
-			ofs << setprecision(12) << *it2 << "\t";
-		}
-
-		ofs << "\n";
-
-
-
-		// Fitting
-		XTX(1, 1) += pow(it->first, 4.0);
-		XTX(1, 2) += pow(it->first, 3.0);
-		XTX(1, 3) += pow(it->first, 2.0);
-		XTX(2, 1) += pow(it->first, 3.0);
-		XTX(2, 2) += pow(it->first, 2.0);
-		XTX(2, 3) += pow(it->first, 1.0);
-		XTX(3, 1) += pow(it->first, 2.0);
-		XTX(3, 2) += pow(it->first, 1.0);
-		XTX(3, 3) += 1.0;
-
-		XTY(1, 1) += pow(it->first, 2.0) * it->second.rmsError;
-		XTY(2, 1) += it->first * it->second.rmsError;
-		XTY(3, 1) += it->second.rmsError;
-
+		//printOutUponError(argv[0], overallTimeStep, it->first, res->first,
+		//                  it->second.temperature, "physical");
 
   }
 
 
-	//Matrix coeffVec = Matrix::solve(XTX, XTY);
-
-	ofs.close();
-
 	/* END of physical dimension consistency check */
 
+	/************************************/
 	/* Time dimension consistency check */
-	cout << "Time dimension consistency check" << endl;
+	/************************************/
+	cout << "\nTime dimension consistency check" << endl;
 
 	// Retrieve results for finest grid resolution to check consistency
-	const size_t nLayers = 2000;
+	const size_t nLayers = 1000;
 	cout << "Number of layers is " << nLayers << " and overall time step is "
 	     << overallTimeStep << "s." << endl;
 	cout << "| step length [s] \t| RMS error [K] \t| MAX error [K] \t|" << endl;
@@ -315,20 +291,17 @@ int main(int argc, char *argv[]) {
 			    << "s per step. The grid resolution might be not small enough.\n"
 			    << "If this error appears again after a consequent grid resolution improvement, then there is an actual consistency issue!"
 			    << endl;
+			printOutUponError(argv[0], overallTimeStep, res->first, it->first,
+			                  tmpError.absError, "time");
 			return 1;
 		} else {
 			lastRmsError = tmpError.rmsError;
 		}
 
+		//printOutUponError(argv[0], overallTimeStep, res->first, it->first,
+		//                  tmpError.temperature, "time");
 
 	}
-
-
-
-
-
-
-
 
 
   return 0;
@@ -338,4 +311,54 @@ inline size_t getNodeNumber(size_t elementNumber) {
 	return elementNumber + 1;
 }
 
+
+
+void printOutUponError(const char *dir, const size_t &totalStep,
+                       const size_t &layer, const size_t &step,
+                       const vector<double> &data, const string &type) {
+
+	/* Output to file */
+	// Open input stream
+	string test = toString(layer);
+	string str = "implicitTestOutputError_layer_" + toString(layer) + "_step_"
+	    + toString(step) + "_totalStep_" + toString(totalStep)
+	    + "_"
+	    + toString(type) + ".dat";
+	std::ofstream ofs;
+	ofs.open(str.c_str());
+	if (!ofs.is_open()) {
+		cerr << "\nCould not open data file " << str << "in " << dir << ".\n";
+		exit(1);
+	}
+
+	for (vector<double>::const_iterator it = data.begin(); it != data.end();
+	    it++) {
+		ofs << setprecision(12) << *it << "\t";
+	}
+
+	ofs << "\n";
+
+
+	ofs.close();
+
+}
+
+template<class T>
+string toString(T argument) {
+	/**************************************/
+	/* This template shows the power of   */
+	/* C++ templates. This function will  */
+	/* convert anything to a string!      */
+	/* Precondition:                      */
+	/* operator<< is defined for type T    */
+	/**************************************/
+	string r;
+	stringstream s;
+
+	s << argument;
+	r = s.str();
+
+	return r;
+
+}
 

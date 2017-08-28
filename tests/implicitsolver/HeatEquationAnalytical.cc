@@ -89,6 +89,7 @@ bool HeatEquationAnalytical::computeErrors(
 
 	std::vector<double> analytical = getTemperatureAtTestsPoints(t);
 	std::vector<double> approximated = interpolate1D(n, nodesData);
+	errors.temperature = approximated;
 
 	double rmsError = 0.0;
 

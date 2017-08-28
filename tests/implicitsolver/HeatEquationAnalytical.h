@@ -17,11 +17,12 @@
 
 struct Error {
 
-		std::vector<double> absError;
+		std::vector<double> absError, temperature;
 		double rmsError, maxError;
 
 		Error()
 				: absError(),
+				  temperature(),
 				  rmsError(0.0),
 				  maxError(0.0) {
 
@@ -30,6 +31,7 @@ struct Error {
 		void clear() {
 
 			absError.clear();
+			temperature.clear();
 			rmsError = 0.0;
 			maxError = 0.0;
 
