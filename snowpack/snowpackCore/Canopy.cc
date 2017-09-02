@@ -114,6 +114,84 @@ const double Canopy::wp_fraction = 0.17;
 const double Canopy::h_wilt = -1.55E6;
 //@}
 
+/**
+ * @brief Write header for 28 canopy parameters to Outfile, columns 65-92
+ * @param fout Dump file stream
+ */
+void Canopy::DumpCanopyHeader(std::ofstream &fout)
+{
+	// 28 canopy fields (27 assigned, 1 empty at the end)
+
+	// PRIMARY "STATE" VARIABLES
+	fout << ",Interception storage";
+	fout << ",Canopy surface temperature";
+
+	// SECONDARY "STATE" VARIABLES
+	fout << ",Canopy albedo";
+	fout << ",Wet fraction";
+	fout << ",Interception capacity";
+
+	// RADIATIVE FLUXES (W m-2)
+	fout << ",Net shortwave radiation absorbed by canopy";
+	fout << ",Net longwave radiation absorbed by canopy";
+	fout << ",Net radiation to canopy";
+
+	// HEAT FLUXES CANOPY (W m-2)
+	fout << ",Sensible heat flux to canopy";
+	fout << ",Latent heat flux to canopy";
+	fout << ",Biomass heat storage flux towards Canopy";
+
+	// WATER FLUXES CANOPY (kg m-2)
+	fout << ",Transpiration of the canopy";
+	fout << ",Evaporation and sublimation of interception (liquid and frozen)";
+	fout << ",Interception rate";
+	fout << ",Throughfall";
+	fout << ",Snow unload";
+
+	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
+	fout << ",Longwave radiation up above canopy";
+	fout << ",Longwave radiation down above canopy";
+	fout << ",Shortwave radiation up above canopy";
+	fout << ",Shortwave radiation down above canopy";
+	fout << ",Total land surface albedo";
+	fout << ",Total net radiation to the surface (ground + canopy)";
+	fout << ",Surface radiative temperature (ground + canopy)";
+	fout << ",Forest floor albedo";
+	fout << ",Snowfall rate Above Canopy";
+	fout << ",Rainfall rate Above Canopy";
+	fout << ",Evapotranspiration of the total surface (ground + canopy)";
+	fout << ",";	//Note: 1 empty field here!
+	return;
+}
+
+/**
+ * @brief Write units for 28 canopy parameters to Outfile, columns 65-92
+ * @param fout Dump file stream
+ */
+void Canopy::DumpCanopyUnits(std::ofstream &fout)
+{
+	// 28 canopy fields (27 assigned, 1 empty at the end)
+
+	// PRIMARY "STATE" VARIABLES
+	fout << ",kg m-2,degC";
+
+	// SECONDARY "STATE" VARIABLES
+	fout << ",-,-,kg m-2";
+
+	// RADIATIVE FLUXES (W m-2)
+	fout << ",W m-2,W m-2,W m-2";
+
+	// HEAT FLUXES CANOPY (W m-2)
+	fout << ",W m-2,W m-2,W m-2";
+
+	// WATER FLUXES CANOPY (kg m-2)
+	fout << ",kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep";
+
+	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
+	fout << ",W m-2,W m-2,W m-2,W m-2,-,W m-2,degC,-,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep";
+	fout << ",";	//Note: 1 empty field here!
+	return;
+}
 
 /**
  * @brief Dump 28 canopy parameters to Outfile, columns 65-92
@@ -125,52 +203,53 @@ const double Canopy::h_wilt = -1.55E6;
 void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl)
 {
 	// PRIMARY "STATE" VARIABLES
-	fout << "," << Cdata->storage/cos_sl;      // intercepted water (mm or kg m-2)
-	fout << "," << IOUtils::K_TO_C(Cdata->temp);        // temperature (degC)
+	fout << "," << Cdata->storage/cos_sl;        // intercepted water (mm or kg m-2)
+	fout << "," << IOUtils::K_TO_C(Cdata->temp); // temperature (degC)
 
 	// SECONDARY "STATE" VARIABLES
-	fout << "," << Cdata->canopyalb;           // albedo (1)
-	fout << "," << Cdata->wetfraction;         // wet fraction
-	fout << "," << Cdata->intcapacity/cos_sl;  // interception capacity (kg m-2)
+	fout << "," << Cdata->canopyalb;             // albedo (1)
+	fout << "," << Cdata->wetfraction;           // wet fraction
+	fout << "," << Cdata->intcapacity/cos_sl;    // interception capacity (kg m-2)
 
 	// RADIATIVE FLUXES (W m-2)
-	fout << "," << Cdata->rsnet;               // net shortwave radiation to canopy
-	fout << "," << Cdata->rlnet;               // net longwave radiation to canopy
-	fout << "," << Cdata->rsnet+Cdata->rlnet;  // net radiation to canopy
+	fout << "," << Cdata->rsnet;                 // net shortwave radiation to canopy
+	fout << "," << Cdata->rlnet;                 // net longwave radiation to canopy
+	fout << "," << Cdata->rsnet+Cdata->rlnet;    // net radiation to canopy
 
 	// HEAT FLUXES CANOPY (W m-2)
-	fout << "," << -Cdata->sensible;           // sensible heat flux to canopy (>0 towards canopy)
-	fout << "," << -Cdata->latentcorr;         // latent heat flux to canopy (>0 towards canopy)
-        fout << "," << Cdata->CondFluxCanop,
+	fout << "," << -Cdata->sensible;             // sensible heat flux to canopy (>0 towards canopy)
+	fout << "," << -Cdata->latentcorr;           // latent heat flux to canopy (>0 towards canopy)
+        fout << "," << Cdata->CondFluxCanop,         // biomass heat storage flux towards Canopy
 
 	// WATER FLUXES CANOPY (kg m-2)
-	fout << "," << Cdata->transp/cos_sl;       // transpiration
-	fout << "," << Cdata->intevap/cos_sl;      // interception evaporation
-	fout << "," << Cdata->interception/cos_sl; // interception
-	fout << "," << Cdata->throughfall/cos_sl;  // throughfall
-	fout << "," << Cdata->snowunload/cos_sl;   // unload of snow
+	fout << "," << Cdata->transp/cos_sl;         // transpiration
+	fout << "," << Cdata->intevap/cos_sl;        // interception evaporation
+	fout << "," << Cdata->interception/cos_sl;   // interception
+	fout << "," << Cdata->throughfall/cos_sl;    // throughfall
+	fout << "," << Cdata->snowunload/cos_sl;     // unload of snow
 
 	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
-	fout << "," << Cdata->rlwrac;              // upward longwave radiation ABOVE canopy
-	fout << "," << Cdata->ilwrac;              // downward longwave radiation ABOVE canopy
-	fout << "," << Cdata->rswrac;              // upward shortwave above canopy
-	fout << "," << Cdata->iswrac;              // downward shortwave radiation above canopy
-	fout << "," << Cdata->totalalb;            // total albedo [-]
+	fout << "," << Cdata->rlwrac;                // upward longwave radiation ABOVE canopy
+	fout << "," << Cdata->ilwrac;                // downward longwave radiation ABOVE canopy
+	fout << "," << Cdata->rswrac;                // upward shortwave above canopy
+	fout << "," << Cdata->iswrac;                // downward shortwave radiation above canopy
+	fout << "," << Cdata->totalalb;              // total albedo [-]
 	fout << "," << Cdata->rlnet+Sdata->lw_net+Cdata->rsnet+Sdata->qw; // net radiation to the total surface
 	fout << "," << IOUtils::K_TO_C(pow(Cdata->rlwrac/Constants::stefan_boltzmann, 0.25)); // surface (ground + canopy) temperature
-	fout << "," << Cdata->forestfloor_alb;     // albedo of the forest floor [-]
-	fout << "," << Cdata->snowfac/cos_sl;      // snowfall rate above canopy (mm per output timestep)
-	fout << "," << Cdata->rainfac/cos_sl;      // rainfall rate above canopy (mm per output timestep)
+	fout << "," << Cdata->forestfloor_alb;       // albedo of the forest floor [-]
+	fout << "," << Cdata->snowfac/cos_sl;        // snowfall rate above canopy (mm per output timestep)
+	fout << "," << Cdata->rainfac/cos_sl;        // rainfall rate above canopy (mm per output timestep)
 	fout << "," << (Cdata->transp+Cdata->intevap-(Sdata->mass[SurfaceFluxes::MS_SUBLIMATION]+Sdata->mass[SurfaceFluxes::MS_EVAPORATION]))/cos_sl;//       evapotranspiration of total surface (mm h-1)
-	fout << ",";                            // 1 empty field here
+	fout << ",";                                 // 1 empty field here
 }
+//TODO: this function is not yet integrated into AsciiIO, and now this function is actually never called by any routine.
 void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata)
 {
-	fout << "," << IOUtils::K_TO_C(Cdata->Ttrunk);      // Trunk temperature (degC)
-	fout << "," << Cdata->CondFluxTrunks;      // Trunk biomass heat storage flux (W m-2)
-	fout << "," << Cdata->LWnet_Trunks;        // net LW radiations to Trunk layer (W m-2)
-	fout << "," << Cdata->SWnet_Trunks;        // net SW radiations to Trunk layer (W m-2)
-	fout << "," << -Cdata->QStrunks;           // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
+	fout << "," << IOUtils::K_TO_C(Cdata->Ttrunk); // Trunk temperature (degC)
+	fout << "," << Cdata->CondFluxTrunks;          // Trunk biomass heat storage flux (W m-2)
+	fout << "," << Cdata->LWnet_Trunks;            // net LW radiations to Trunk layer (W m-2)
+	fout << "," << Cdata->SWnet_Trunks;            // net SW radiations to Trunk layer (W m-2)
+	fout << "," << -Cdata->QStrunks;               // sensible heat flux to trunk layer  (W m-2), (>0 towards trunks)
 	fout << ",,,";
 }
 /****i*******************************************************
