@@ -1931,7 +1931,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	Xdata.Cdata.ilwrac += ilwrac;
 	Xdata.Cdata.rlwrac += rlwrac;
 	Xdata.Cdata.ilwrbc += ilwrbc;
-	Xdata.Cdata.rlwrbc += rlwrbc ;
+	Xdata.Cdata.rlwrbc += rlwrbc;
 
 	// Net longwave and shortwave radiation of canopy [W m-2]
 	Xdata.Cdata.rlnet += RNCANOPY-rsnet;
@@ -1970,8 +1970,8 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	Xdata.Cdata.intcapacity += intcapacity;
 	Xdata.Cdata.canopyalb += canopyalb;
 	const double albedo = (nE>Xdata.SoilNode)? Xdata.Albedo : Xdata.SoilAlb;
-	Xdata.Cdata.totalalb =  TotalAlbedo(canopyalb, Xdata.Cdata.sigf, albedo,
-	                          Xdata.Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
+	Xdata.Cdata.totalalb += TotalAlbedo(canopyalb, Xdata.Cdata.sigf, albedo,
+	                                    Xdata.Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
 	// modifs for HeatMass and 2layercanopy: new fluxes, to be updated here for EB closure reasons
         Xdata.Cdata.CondFluxCanop += HM0 + HM1 * Xdata.Cdata.temp;
 	if (Twolayercanopy) {
