@@ -201,9 +201,9 @@ Canopy::Canopy(const SnowpackConfig& cfg)
  */
 double Canopy::get_f1(const double& ris)
 {
-	const double a = 0.81;
-	const double b = 0.004;
-	const double c = 0.05;
+	static const double a = 0.81;
+	static const double b = 0.004;
+	static const double c = 0.05;
 	const double f1 = ( a * ( 1.0 + b * ris ) ) / ( b * ris + c );
 	if (f1 < 1.0) {
 		return 1.0;
@@ -226,8 +226,8 @@ double Canopy::RootFraction(const double& zupper, const double& zlower)
 
 	// Constants.h: Canopy::rootdepth, default 0.5
 	if ( zupper < Canopy::rootdepth ) {
-		const double ar = 6.706; // evergreen needleleaf trees
-		const double br = 2.175; // evergreen needleleaf trees
+		static const double ar = 6.706; // evergreen needleleaf trees
+		static const double br = 2.175; // evergreen needleleaf trees
 		// fraction of roots below root depth (according to exponential distribution)
 		const double tail = 0.5 * (exp(-ar * Canopy::rootdepth)+ exp(-br * Canopy::rootdepth));
 		// multiplicative factor to distribute tail on layers above root depth
@@ -340,8 +340,8 @@ void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration
  */
 double Canopy::get_f4(const double& tempC)
 {
-	const double F4_A = 1.75;
-	const double F4_B = 0.5;
+	static const double F4_A = 1.75;
+	static const double F4_B = 0.5;
 
 	// OBS tempC in C
 	const double f4 = 1.0 / ( 1.0 - exp( -F4_A * pow( std::max( 0.00001, tempC ), F4_B ) ) );
@@ -1148,10 +1148,10 @@ double Canopy::get_psim(const double& xi)
 		return log((1. + x) * (1. + x) * (1. + x * x) / 8.) - 2 * atan(x) + mio::Cst::PI / 2.;
 	} else {
 		// stable case from Holstlag and Bruin, following Beljaars & Holtslag 1991
-		const double a = 1.;
-		const double b = 2./3.;
-		const double c = 5.;
-		const double d = 0.35;
+		static const double a = 1.;
+		static const double b = 2./3.;
+		static const double c = 5.;
+		static const double d = 0.35;
 		return -(a * xi + b * (xi - c/d) * exp(-d * xi) + b * c/d);
 	}
 }
@@ -1169,10 +1169,10 @@ double Canopy::get_psih(const double& xi)
 		return (2. * log((1. + x*x) / 2.) );
 	} else {
 		// Stable case, func=1, equation from Holtslag and De Bruin following Beljaars & Holstlag, 1991
-		const double a = 1.;
-		const double b = 2. / 3.;
-		const double c = 5.;
-		const double d = 0.35;
+		static const double a = 1.;
+		static const double b = 2. / 3.;
+		static const double c = 5.;
+		static const double d = 0.35;
 		return -(pow((1. + 2. / 3. * a * xi), 3. / 2.) + b * (xi - c/d) * exp(-d * xi) + b * c/d - 1.);
 	}
 }
@@ -1201,7 +1201,7 @@ double Canopy::RichardsonToAeta(double za, double TempAir, double DiffTemp,
 	// STEP 2: Compute error in terms of Ri using etaOld and Ri2eta(etaOld)
 	double Error = Eta / Ri2eta - Ri;
 	// STEP 3: solve iteratively
-	const double acc = 0.0001;
+	static const double acc = 0.0001;
 	int itt=1;
 	while ( fabs(Error) > acc && itt <= maxitt ) {
 		// 3.1 new Eta
@@ -1293,8 +1293,8 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
 
 	// Shaw Perreira parameters
 	// double CanDensMax = 0.7;
-	const double RoughLmin = 0.01;
-	const double RoughLmax = 100.;
+	static const double RoughLmin = 0.01;
+	static const double RoughLmax = 100.;
 	const double zdisplcan = std::max(0., std::min(refheight - 0.5, Canopy::displ_to_canopyheight_ratio * zcan));
 	const double zomc = std::max(std::max(RoughLmin, zomg), std::min(RoughLmax, Canopy::roughmom_to_canopyheight_ratio * zcan));
 
@@ -1553,19 +1553,20 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
  * @param height_of_wind_val
  * @param adjust_VW_height if set to false, assumes a constant measurement height for wind values (default: true, ie.
  * take into account the snow height decreasing the sensor height above the surface)
+ * @return true if the canopy module could be used, false if not (canopy under the snow, etc)
  */
-void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length, double height_of_wind_val, const bool& adjust_VW_height)
+bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length, double height_of_wind_val, const bool& adjust_VW_height)
 {
-	if (Xdata.Cdata.direct_throughfall==1.)
-		throw InvalidArgumentException("Can not use Canopy with CanopyDirectThroughfall == 1", AT);
-
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
-	// First check, whether there is Canopy above the snow, i.e. whether s.th. needs to be done here
-	if ( (Xdata.Cdata.height - 0.01) < hs ) {
+	//no canopy or no canopy above the snow
+	if ( (Xdata.Cdata.lai <= 0.0) || (Xdata.Cdata.height <= 0.0) || ((Xdata.Cdata.height - 0.01) < hs)) {
 		Xdata.Cdata.zdispl = -0.7;
-		return;
+		return false;
 	}
+	
+	if (Xdata.Cdata.direct_throughfall==1.)
+		throw InvalidArgumentException("Can not use Canopy with CanopyDirectThroughfall == 1", AT);
 
 	// Check that some important initial values are within reasonable bounds
 	if ( Xdata.Cdata.temp < 203.15 ) {
@@ -1574,13 +1575,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	if ( Xdata.Cdata.storage < 0.0 ) {
 		Xdata.Cdata.storage = 0.0;
 	}
-	if ( Xdata.Cdata.lai <= 0.0 ) {
-		Xdata.Cdata.lai = 0.0;
-		return; //abort function execution, there is no canopy at this point
-	}
-	if ( Xdata.Cdata.height <= 0.0 ) {
-		Xdata.Cdata.height = 0.0;
-	}
+	
 	Xdata.Cdata.snowfac += Mdata.psum * (1. - Mdata.psum_ph);
 	Xdata.Cdata.rainfac += Mdata.psum * Mdata.psum_ph;
 	
@@ -1721,7 +1716,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
 	// calculate Canopy Heat Mass based on canopy basal area and LAI
 	CalculateHeatMass(Xdata.Cdata.height, Xdata.Cdata.BasalArea, Xdata.Cdata.lai, Xdata.Cdata.HMLeaves, Xdata.Cdata.HMTrunks);
 
-	for ( int ebalitt = 0; ebalitt < 7; ebalitt++ ) {
+	for (int ebalitt = 0; ebalitt < 7; ebalitt++ ) {
 		const double TC_OLD = Xdata.Cdata.temp; // Cdata.temp is updated in the iteration...
 
 		// update ce_canopy as function of wetfraction
@@ -1884,5 +1879,7 @@ void Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roug
         	Xdata.Cdata.CondFluxTrunks += HMt0 + HMt1 * Xdata.Cdata.Ttrunk;
         	Xdata.Cdata.QStrunks += ht0 + ht1 * Xdata.Cdata.Ttrunk;
 	}
+	
+	return true;
 }
 

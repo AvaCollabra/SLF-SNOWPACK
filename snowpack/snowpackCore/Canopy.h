@@ -81,7 +81,7 @@ class Canopy {
 		Canopy(const SnowpackConfig& i_cfg);
 
 		static void DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
-		void runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,
+		bool runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,
 		                    double height_of_wind_val, const bool& adjust_VW_height=true);
 		static void writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata);
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
@@ -123,7 +123,7 @@ class Canopy {
 
 		void LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor);
 
-                void CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
+		void CanopyEnergyBalance(const double& h0, const double& h1, const double& le0,
                                                          const double& le1, const double& HM0,  const double& HM1,
                                                          const double& ce_canopy,
                                                          const double& ce_condensation,
@@ -190,4 +190,4 @@ class Canopy {
 		static const double biomass_heat_capacity, biomass_density, lai_frac_top_default, trunk_frac_height, trunkalb, et;
 };
 
-#endif //END of Canopy.h
+#endif

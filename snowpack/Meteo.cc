@@ -344,11 +344,12 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  */
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
 {
+	bool canopy_status = true;
 	if (useCanopyModel && runCanopyModel) {	// The canopy model should not necessarily be called at every call to compMeteo
-		canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, adjust_height_of_wind_value);
+		canopy_status = canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, adjust_height_of_wind_value);
 	}
 
-	if (!(useCanopyModel) || Xdata.Cdata.zdispl < 0.) {
+	if (!(useCanopyModel) || canopy_status==false) {
 		MicroMet(Xdata, Mdata, adjust_height_of_wind_value);
 	}
 }
