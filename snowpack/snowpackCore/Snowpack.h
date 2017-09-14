@@ -60,6 +60,9 @@ class Snowpack {
 			DIRICHLET_BC
 		};
 
+		double getParameterizedAlbedo(const SnowStation& Xdata,
+		                              const CurrentMeteo& Mdata) const;
+		double getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const;
 
  protected:
 
@@ -97,9 +100,6 @@ class Snowpack {
 		void neumannBoundaryConditionsSoil(const double& flux, const double& T_snow,
 		                                   double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
 		                                   double Fe[ N_OF_INCIDENCES ]);
-
-		double getParameterizedAlbedo(const SnowStation& Xdata, const CurrentMeteo& Mdata) const;
-		double getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const;
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);

@@ -1,5 +1,5 @@
 
-## Test linearsolver
+## Test implicitsolver
 
 FIND_PACKAGE(MeteoIO)
 INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})

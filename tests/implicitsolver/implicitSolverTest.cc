@@ -266,11 +266,11 @@ int main(int argc, char *argv[]) {
 	    resultsMap.rbegin(); it != resultsMap.rend(); it++) {
 
 		// Find finest grid resolution for current time step and save Error
-		map<size_t, Error>::iterator res;
-		res = it->second.find(nLayers);
+		map<size_t, Error>::iterator res2;
+		res2 = it->second.find(nLayers);
 		Error tmpError;
-		if (res != it->second.end()) {
-			tmpError = res->second;
+		if (res2 != it->second.end()) {
+			tmpError = res2->second;
 		} else {
 			cerr << "Could not retrieve result for " << nLayers
 			     << " layers. Please check layers vector." << endl;
@@ -291,7 +291,7 @@ int main(int argc, char *argv[]) {
 			    << "s per step. The grid resolution might be not small enough.\n"
 			    << "If this error appears again after a consequent grid resolution improvement, then there is an actual consistency issue!"
 			    << endl;
-			printOutUponError(argv[0], overallTimeStep, res->first, it->first,
+			printOutUponError(argv[0], overallTimeStep, res2->first, it->first,
 			                  tmpError.absError, "time");
 			return 1;
 		} else {
