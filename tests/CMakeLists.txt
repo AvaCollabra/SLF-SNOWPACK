@@ -21,5 +21,5 @@ ADD_SUBDIRECTORY(basics)
 ADD_SUBDIRECTORY(mass_and_energy_balance)
 ADD_SUBDIRECTORY(linearsolver)
 ADD_SUBDIRECTORY(implicitsolver)
-#ADD_SUBDIRECTORY(albedo)
+ADD_SUBDIRECTORY(albedo)
 
