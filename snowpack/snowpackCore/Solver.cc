@@ -545,7 +545,7 @@ inline int SymbolicFact(SD_MATRIX_DATA *pMat)
 
 bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 {
-  bool unsuccessful = false;
+  bool success = true;
 
 	// SymbolicFactorize
 	if ( Code & SymbolicFactorize ){
@@ -584,7 +584,7 @@ bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 		Permute( DimTot, pMat->Mat.Block.pPerm, X );
 
     // Check for NaN
-    unsuccessful = isnan(X[0]);
+    success = !isnan(X[0]);
 
 	}
 
@@ -612,7 +612,7 @@ bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *X)
 		}
 	}
 
-  return unsuccessful;
+  return success;
 
 }  /* ds_Solve */
 

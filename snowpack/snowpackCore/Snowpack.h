@@ -47,14 +47,14 @@ class Snowpack {
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;
 
-		double getSnDt() const {
-			return sn_dt;
-		}
+		double getSnDt() const { return sn_dt;}
 
-		void setSnDt(double snDt) {
-			sn_dt = snDt;
-		}
+		void setSnDt(const double& snDt) { sn_dt = snDt;}
 
+		/**
+		 * @brief Specifies what kind of boundary condition is to be implemented at the top surface.
+		 * Either use surface fluxes (NEUMANN_BC) or use a prescribed surface temperature (DIRICHLET_BC)
+		 */
 		enum BoundaryCondition {
 			NEUMANN_BC,
 			DIRICHLET_BC
@@ -73,13 +73,6 @@ class Snowpack {
 		BoundaryCondition surfaceCode;
 
  private:
-		/**
-		 * @brief Specifies what kind of boundary condition is to be implemented at the top surface \n
-		 * - 0 : use surface fluxes (NEUMANN_BC)
-		 * - 1 : use prescribed surface temperature (DIRICHLET_BC)
-		 */
-
-
 		static void EL_INCID(const size_t &e, int Ie[]);
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);

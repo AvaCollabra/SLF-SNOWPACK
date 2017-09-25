@@ -313,7 +313,7 @@ int ds_AssembleMatrix( SD_MATRIX_DATA *pMat0, const int& nEq, int Eq[], const in
  * @param [in] Code functionlaity code defined above
  * @param [in] pMat pointer to the matrix [A] opaque data
  * @param [in] pX right hand side vector {B} to be overwritten by the solution vector {X}:  B[i] := X[i]
- * @param [out] return true whenever the solve produced NaNs in the solution vector
+ * @param [out] return false whenever the solve produced NaNs in the solution vector
  */
 bool ds_Solve(const SD_MATRIX_WHAT& Code, SD_MATRIX_DATA *pMat, double *pX);
 
