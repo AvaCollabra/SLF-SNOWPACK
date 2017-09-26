@@ -97,7 +97,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		#ENDIF(BUILD_SHARED_LIBS)
 		
 		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
-		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wvector-operation-performance -Wwrite-strings")
+		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wwrite-strings")
 		IF(NOT ANDROID)
 			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
 			IF(WIN32) #for gcc on windows
@@ -110,6 +110,7 @@ MACRO (SET_COMPILER_OPTIONS)
 			SET(ARCH_OPTIM  "-march=native -mtune=native")
 		ENDIF()
 		IF(GCC_VERSION VERSION_GREATER 4.8 OR GCC_VERSION VERSION_EQUAL 4.8)
+			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wvector-operation-performance") #for gcc>=4.7.0
 			IF(NOT WIN32)
 				SET(OPTIM "${OPTIM} -flto") #for gcc>4.5, but first implementations were slow, so it is safe to enforce 4.8
 			ENDIF(NOT WIN32)
