@@ -39,6 +39,9 @@
 using namespace mio;
 using namespace std;
 
+/// maximum ElementID currently used (so each element can get a unique ID)
+unsigned short int maxElementID = 0;
+
 /// Number of top elements left untouched by the join functions
 const size_t SnowStation::number_top_elements = 5;
 unsigned short SnowStation::number_of_solutes = 0;
@@ -617,6 +620,21 @@ std::iostream& operator<<(std::iostream& os, const CanopyData& data)
 	os.write(reinterpret_cast<const char*>(&data.interception), sizeof(data.interception));
 	os.write(reinterpret_cast<const char*>(&data.throughfall), sizeof(data.throughfall));
 	os.write(reinterpret_cast<const char*>(&data.snowunload), sizeof(data.snowunload));
+	
+	os.write(reinterpret_cast<const char*>(&data.snowfac), sizeof(data.snowfac));
+	os.write(reinterpret_cast<const char*>(&data.rainfac), sizeof(data.rainfac));
+	os.write(reinterpret_cast<const char*>(&data.liquidfraction), sizeof(data.liquidfraction));
+	os.write(reinterpret_cast<const char*>(&data.sigftrunk), sizeof(data.sigftrunk));
+	os.write(reinterpret_cast<const char*>(&data.Ttrunk), sizeof(data.Ttrunk));
+	os.write(reinterpret_cast<const char*>(&data.CondFluxCanop), sizeof(data.CondFluxCanop));
+	os.write(reinterpret_cast<const char*>(&data.CondFluxTrunks), sizeof(data.CondFluxTrunks));
+	os.write(reinterpret_cast<const char*>(&data.LWnet_Trunks), sizeof(data.LWnet_Trunks));
+	os.write(reinterpret_cast<const char*>(&data.SWnet_Trunks), sizeof(data.SWnet_Trunks));
+	os.write(reinterpret_cast<const char*>(&data.QStrunks), sizeof(data.QStrunks));
+	os.write(reinterpret_cast<const char*>(&data.forestfloor_alb), sizeof(data.forestfloor_alb));
+	os.write(reinterpret_cast<const char*>(&data.BasalArea), sizeof(data.BasalArea));
+	os.write(reinterpret_cast<const char*>(&data.HMLeaves), sizeof(data.HMLeaves));
+	os.write(reinterpret_cast<const char*>(&data.HMTrunks), sizeof(data.HMTrunks));
 	return os;
 }
 
@@ -664,6 +682,21 @@ std::iostream& operator>>(std::iostream& is, CanopyData& data)
 	is.read(reinterpret_cast<char*>(&data.interception), sizeof(data.interception));
 	is.read(reinterpret_cast<char*>(&data.throughfall), sizeof(data.throughfall));
 	is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
+	
+	is.read(reinterpret_cast<char*>(&data.snowfac), sizeof(data.snowfac));
+	is.read(reinterpret_cast<char*>(&data.rainfac), sizeof(data.rainfac));
+	is.read(reinterpret_cast<char*>(&data.liquidfraction), sizeof(data.liquidfraction));
+	is.read(reinterpret_cast<char*>(&data.sigftrunk), sizeof(data.sigftrunk));
+	is.read(reinterpret_cast<char*>(&data.Ttrunk), sizeof(data.Ttrunk));
+	is.read(reinterpret_cast<char*>(&data.CondFluxCanop), sizeof(data.CondFluxCanop));
+	is.read(reinterpret_cast<char*>(&data.CondFluxTrunks), sizeof(data.CondFluxTrunks));
+	is.read(reinterpret_cast<char*>(&data.LWnet_Trunks), sizeof(data.LWnet_Trunks));
+	is.read(reinterpret_cast<char*>(&data.SWnet_Trunks), sizeof(data.SWnet_Trunks));
+	is.read(reinterpret_cast<char*>(&data.QStrunks), sizeof(data.QStrunks));
+	is.read(reinterpret_cast<char*>(&data.forestfloor_alb), sizeof(data.forestfloor_alb));
+	is.read(reinterpret_cast<char*>(&data.BasalArea), sizeof(data.BasalArea));
+	is.read(reinterpret_cast<char*>(&data.HMLeaves), sizeof(data.HMLeaves));
+	is.read(reinterpret_cast<char*>(&data.HMTrunks), sizeof(data.HMTrunks));
 	return is;
 }
 
@@ -752,7 +785,7 @@ void CanopyData::initializeSurfaceExchangeData()
 }
 
 // Class ElementData
-ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
+ElementData::ElementData(/*const unsigned short int &ElementID*/) : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
@@ -760,7 +793,11 @@ ElementData::ElementData() : depositionDate(), L0(0.), L(0.),
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.) {}
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.)/*, ID(ElementID)*/ {}
+                             
+unsigned short int ElementData::getNextID() { 
+	return ++maxElementID;
+}
 
 std::iostream& operator<<(std::iostream& os, const ElementData& data)
 {
@@ -804,6 +841,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.dth_w), sizeof(data.dth_w));
 	os.write(reinterpret_cast<const char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	os.write(reinterpret_cast<const char*>(&data.Qmf), sizeof(data.Qmf));
+	os.write(reinterpret_cast<const char*>(&data.QIntmf), sizeof(data.QIntmf));
 
 	os.write(reinterpret_cast<const char*>(&data.dEps), sizeof(data.dEps));
 	os.write(reinterpret_cast<const char*>(&data.Eps), sizeof(data.Eps));
@@ -820,9 +858,11 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.s_strength), sizeof(data.s_strength));
 	os.write(reinterpret_cast<const char*>(&data.hard), sizeof(data.hard));
 	os.write(reinterpret_cast<const char*>(&data.S_dr), sizeof(data.S_dr));
+	os.write(reinterpret_cast<const char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
 	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
 	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
+	os.write(reinterpret_cast<const char*>(&data.ID), sizeof(data.ID));
 	return os;
 }
 
@@ -872,6 +912,7 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.dth_w), sizeof(data.dth_w));
 	is.read(reinterpret_cast<char*>(&data.res_wat_cont), sizeof(data.res_wat_cont));
 	is.read(reinterpret_cast<char*>(&data.Qmf), sizeof(data.Qmf));
+	is.read(reinterpret_cast<char*>(&data.QIntmf), sizeof(data.QIntmf));
 
 	is.read(reinterpret_cast<char*>(&data.dEps), sizeof(data.dEps));
 	is.read(reinterpret_cast<char*>(&data.Eps), sizeof(data.Eps));
@@ -888,9 +929,11 @@ std::iostream& operator>>(std::iostream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.s_strength), sizeof(data.s_strength));
 	is.read(reinterpret_cast<char*>(&data.hard), sizeof(data.hard));
 	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
+	is.read(reinterpret_cast<char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
 	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
+	is.read(reinterpret_cast<char*>(&data.ID), sizeof(data.ID));
 	return is;
 }
 
@@ -2259,8 +2302,8 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
 	os.write(reinterpret_cast<const char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
 	os.write(reinterpret_cast<const char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
-	os.write(reinterpret_cast<const char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
-	os.write(reinterpret_cast<const char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
+	os.write(reinterpret_cast<const char*>(&data.number_top_elements), sizeof(data.number_top_elements));
+	os.write(reinterpret_cast<const char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));*/
 
 	// private member variables:
 	os.write(reinterpret_cast<const char*>(&data.nNodes), sizeof(data.nNodes));
@@ -2340,8 +2383,8 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.comb_thresh_rg), sizeof(data.comb_thresh_rg));
 	is.read(reinterpret_cast<char*>(&data.thresh_moist_snow), sizeof(data.thresh_moist_snow));
 	is.read(reinterpret_cast<char*>(&data.thresh_moist_soil), sizeof(data.thresh_moist_soil));
-	is.read(reinterpret_cast<char*>(&data.number_top_elements), sizeof(data.number_top_elements));*/
-	is.read(reinterpret_cast<char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));
+	is.read(reinterpret_cast<char*>(&data.number_top_elements), sizeof(data.number_top_elements));
+	is.read(reinterpret_cast<char*>(&data.number_of_solutes), sizeof(data.number_of_solutes));*/
 
 	// private member variables:
 	is.read(reinterpret_cast<char*>(&data.nNodes), sizeof(data.nNodes));
@@ -2786,7 +2829,7 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 
 const std::string SurfaceFluxes::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<SurfaceFluxes>" << "\n";
 	os << std::setprecision(10);
 	os << "Long wave: lw_in=" << lw_in << " lw_out=" << lw_out << " lw_net=" << lw_net << "\n";
@@ -2925,121 +2968,4 @@ const std::string LayerData::toString() const
 
 	os << "</LayerData>\n";
 	return os.str();
-}
-
-/// @brief To be set while using the explicit metamorphism model to output ML2L and lp on tagged elements
-const bool Tag::metamo_expl = false;
-
-Tag::Tag()
-     : label(), date(), elem(static_cast<size_t>(-1)), previous_depth(IOUtils::nodata),
-       etaNS(IOUtils::nodata), etaMSU(IOUtils::nodata), ML2L(IOUtils::nodata), lp(IOUtils::nodata)
-{}
-
-/**
- * @brief Compute tag properties
- * @author Charles Fierz
- * @version 10.05
- * @param Edata
- */
-void Tag::compute_properties(const ElementData& Edata)
-{
-	etaNS  = SnLaws::NewSnowViscosityLehning(Edata);
-	etaMSU = SnLaws::SnowViscosityMSU(Edata);
-
-	// set ML2L and lp to NODATA if not using the explicit metamorphism model
-	if (!Tag::metamo_expl) {
-		ML2L = lp = IOUtils::nodata;
-	}
-}
-
-/**
- * @brief Reposition tag
- * @author Charles Fierz
- * @version 10.03
- * @bug Don't  be surprised ...
- * @param useSoilLayers
- * @param z Position of corresponding sensor perpendicular to slope (m)
- * @param Xdata
- */
-void Tag::reposition_tag(const bool&, const double& z, SnowStation& Xdata)
-{
-	//HACK: double z_pos = getPerpSensorPosition(useSoilLayers, z, Xdata.cH, Xdata.Ground, Xdata.meta.getSlopeAngle());
-
-	//INITIAL_HS = Xdata.cH; //HACK: why set this value here?
-	Xdata.Edata[elem].mk %= 100;
-
-	const size_t n_up = findUpperNode(z, Xdata.Ndata, Xdata.getNumberOfNodes()); // Upper node number
-
-	elem = n_up - 1;
-	compute_properties(Xdata.Edata.at(n_up-1));
-}
-
-TaggingData::TaggingData(const double& i_calculation_step_length)
-            : useSoilLayers(false), surface_write(false),
-              calculation_step_length(i_calculation_step_length),
-              tag_low(1), tag_top(99), repos_low(1), repos_top(99), tags(), number_tags(0)
-{}
-
-void TaggingData::resize(size_t i_size)
-{
-	if ((i_size != IOUtils::npos) && (i_size > 0)) {
-		tags.resize(i_size);
-		number_tags = i_size - 1;
-	} else {
-		//throw exception
-	}
-}
-
-/**
- * @brief Update tags
- * -# Event driven tagging according to TAG_EVENT
- * -# Tagging of surface element on given date
- * @author Charles Fierz
- * @version 10.04
- * @param Mdata
- * @param Xdata
- */
-void TaggingData::update_tags(const CurrentMeteo&  Mdata, SnowStation& Xdata)
-{
-	const bool TAG_EVENT = false;
-
-	if ( (tags.back().date == Date()) && TAG_EVENT ) {
-		tags.back().date = Mdata.date;
-	}
-
-	for(size_t tag = 1; tag <= number_tags; tag++) { //HACK: check indices
-		const size_t e = Xdata.find_tag(tag);
-		if (e != IOUtils::npos) {
-			tags[tag-1].elem = e;
-			tags[tag-1].compute_properties(Xdata.Edata[e]);
-
-		} else if ((Xdata.Edata.back().mk < 100) && (Mdata.date >= tags[tag-1].date)
-				 && (Mdata.date < (tags[tag-1].date + M_TO_D(calculation_step_length))) ) {
-			Xdata.Edata.back().mk += tag*100;
-			tags[tag-1].compute_properties(Xdata.Edata.back());
-		} else {
-			//???
-			continue;
-		}
-
-		if ((tag >= repos_low) && (tag <= repos_top)) {
-			const size_t depth = Mdata.getNumberFixedPositions() + tag - 1;
-
-			if ((Mdata.zv_ts[depth] > tags[tag-1].previous_depth)) {
-				tags[tag-1].reposition_tag(useSoilLayers, Mdata.zv_ts[depth], Xdata);
-			}
-			tags[tag-1].previous_depth = Mdata.zv_ts[depth];
-		}
-	}
-
-	for (size_t tag = repos_low; tag <= repos_top; tag++) { // TODO make sure that no marker has been overwritten
-		if ( Xdata.Edata[tags[tag-1].elem].mk < 100 ) {
-			Xdata.Edata[tags[tag-1].elem].mk += tag*100;
-		}
-	}
-
-	if ( surface_write ) { // There ARE NUMBER_TAGS tags structures!!!
-		tags[number_tags].compute_properties(Xdata.Edata.back());
-	}
-
 }
