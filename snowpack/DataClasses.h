@@ -65,8 +65,8 @@ class ZwischenData {
 		ZwischenData(): hoar24(48, 0.0), drift24(48, 0.0), hn3(144, 0.0), hn24(144, 0.0) {}
 		void reset();                ///< Sets all the values in the vectors to 0.0
 
-		friend std::iostream& operator<<(std::iostream& os, const ZwischenData& data);
-		friend std::iostream& operator>>(std::iostream& is, ZwischenData& data);
+		friend std::ostream& operator<<(std::ostream& os, const ZwischenData& data);
+		friend std::istream& operator>>(std::istream& is, ZwischenData& data);
 
 		std::vector<double> hoar24;  ///< Twenty-four hour hoar index every half-hour over one day 48
 		std::vector<double> drift24; ///< Twenty-four hour hoar index every half-hour over one day 48
@@ -82,6 +82,7 @@ class CurrentMeteo {
 	public:
 		CurrentMeteo();
 		CurrentMeteo(const SnowpackConfig& i_cfg);
+		
 		void reset(const SnowpackConfig& i_cfg);
 		void setMeasTempParameters(const mio::MeteoData& md);
 		size_t getNumberMeasTemperatures() const;
@@ -93,8 +94,8 @@ class CurrentMeteo {
 		void copySolutes(const mio::MeteoData& md, const size_t& i_number_of_solutes);
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const CurrentMeteo& data);
-		friend std::iostream& operator>>(std::iostream& is, CurrentMeteo& data);
+		friend std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data);
+		friend std::istream& operator>>(std::istream& is, CurrentMeteo& data);
 
 		mio::Date date;  ///< Date of current meteo data
 		double ta;       ///< Air temperature (K)
@@ -168,16 +169,17 @@ enum SN_SOIL_DATA{
 };
 
 /**
- * @brief Parameters of the different layers of the snowpack \n
- * The layers form a vector within the SSdata (profile) data structure.
+ * @brief Parameters of the different layers of the snowpack.
+ * @details The layers form a vector within the SSdata (profile) data structure.
+ * This is only used by SN_SNOWSOIL_DATA and filled in the plugins
  */
 class LayerData {
 	public:
 		LayerData();
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const LayerData& data);
-		friend std::iostream& operator>>(std::iostream& is, LayerData& data);
+		friend std::ostream& operator<<(std::ostream& os, const LayerData& data);
+		friend std::istream& operator>>(std::istream& is, LayerData& data);
 
 		mio::Date depositionDate;   ///< Date of deposition (mainly used for snow layers)
 		double hl;                  ///< The thickness of the layer in m
@@ -205,8 +207,8 @@ class LayerData {
 };
 
 /**
- * @brief SN_SNOWSOIL_DATA includes all important station parameters as well as LayerData \n
- * This data structure will have to be replaced by something a little more complicated soon ???
+ * @brief SN_SNOWSOIL_DATA includes all important station parameters as well as LayerData.
+ * @details This data structure will have to be replaced by something a little more complicated soon ???
  * For now it is simply an efficient way of creating a snowpack to investigate.
  */
 class SN_SNOWSOIL_DATA {
@@ -214,14 +216,11 @@ class SN_SNOWSOIL_DATA {
 		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
                      nLayers(0), Ldata(), HS_last(0.), Albedo(0.), SoilAlb(0.), BareSoil_z0(0.),
                      Canopy_Height(0.), Canopy_LAI(0.), Canopy_BasalArea(0.004), Canopy_Direct_Throughfall(0.),
-                     WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.)
-		{
-			Ldata.clear();
-		}
+                     WindScalingFactor(1.), ErosionLevel(0), TimeCountDeltaHS(0.) {}
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data);
-		friend std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data);
+		friend std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data);
+		friend std::istream& operator>>(std::istream& is, SN_SNOWSOIL_DATA& data);
 
 		mio::StationData meta;            ///< Station meta data
 		mio::Date profileDate;            ///< Date of profile
@@ -256,11 +255,9 @@ class ElementData {
 			    Pow, ///< another power law
 		            Exp ///< exponential law
 		} Young_Modulus;
-
-		ElementData(/*const unsigned short int &ElementID*/);
 		
-		static unsigned short int getNextID();
-
+		ElementData(const unsigned short int& in_ID);
+		
 		bool checkVolContent() const;
 		void heatCapacity();
 		double coldContent() const;
@@ -283,8 +280,8 @@ class ElementData {
 		static double getYoungModule(const double& rho_slab, const Young_Modulus& model);
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const ElementData& data);
-		friend std::iostream& operator>>(std::iostream& is, ElementData& data);
+		friend std::ostream& operator<<(std::ostream& os, const ElementData& data);
+		friend std::istream& operator>>(std::istream& is, ElementData& data);
 
 		mio::Date depositionDate;  ///< Date of deposition
 		double L0, L;              ///< Original and present element thickness (m)
@@ -343,8 +340,8 @@ class NodeData {
 		             dhf(0.), S_dhf(0.), Sigdhf(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const NodeData& data);
-		friend std::iostream& operator>>(std::iostream& is, NodeData& data);
+		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
+		friend std::istream& operator>>(std::istream& is, NodeData& data);
 
 		double z;    ///< nodal height from ground in m
 		double u;    ///< creep displacements in m
@@ -394,8 +391,8 @@ class CanopyData {
 		void multiplyFluxes(const double& factor);
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const CanopyData& data);
-		friend std::iostream& operator>>(std::iostream& is, CanopyData& data);
+		friend std::ostream& operator<<(std::ostream& os, const CanopyData& data);
+		friend std::istream& operator>>(std::istream& is, CanopyData& data);
 
 		// State variable
 		double storage;     ///< intercepted water (mm or kg m-2)
@@ -497,8 +494,8 @@ class SnowStation {
 		size_t find_tag(const size_t& tag) const;
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const SnowStation& data);
-		friend std::iostream& operator>>(std::iostream& is, SnowStation& data);
+		friend std::ostream& operator<<(std::ostream& os, const SnowStation& data);
+		friend std::istream& operator>>(std::istream& is, SnowStation& data);
 
 		mio::StationData meta;      ///< Station meta data
 		double cos_sl;              ///< Cosinus of slope angle, initialized once!
@@ -535,7 +532,7 @@ class SnowStation {
 		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
-		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all
+		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all HACK: to remove once we have Elements' ID
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double ColdContentSoil;     ///< Cold content of soil (J m-2)
 		double dIntEnergy;          ///< Internal energy change of snowpack (J m-2)
@@ -558,6 +555,7 @@ class SnowStation {
 		
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
+		unsigned short int maxElementID;    ///< maximum ElementID currently used (so each element can get a unique ID)
 		bool useCanopyModel, useSoilLayers; ///< The model includes soil layers
 };
 
@@ -605,8 +603,8 @@ class SurfaceFluxes {
 		};
 
 		const std::string toString() const;
-		friend std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data);
-		friend std::iostream& operator>>(std::iostream& is, SurfaceFluxes& data);
+		friend std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& data);
+		friend std::istream& operator>>(std::istream& is, SurfaceFluxes& data);
 
 		SurfaceFluxes();
 
@@ -654,6 +652,7 @@ class SurfaceFluxes {
 //@}
 
 /// @brief Defines structure for snow profile layers
+//HACK: could it be moved to plugins? (as well as Aggregate)
 class SnowProfileLayer {
 	public:
 		SnowProfileLayer();

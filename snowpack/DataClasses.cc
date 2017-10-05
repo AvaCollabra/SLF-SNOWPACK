@@ -39,9 +39,6 @@
 using namespace mio;
 using namespace std;
 
-/// maximum ElementID currently used (so each element can get a unique ID)
-unsigned short int maxElementID = 0;
-
 /// Number of top elements left untouched by the join functions
 const size_t SnowStation::number_top_elements = 5;
 unsigned short SnowStation::number_of_solutes = 0;
@@ -89,7 +86,7 @@ void ZwischenData::reset()
 	hn24.resize(144, 0.0);
 }
 
-std::iostream& operator<<(std::iostream& os, const ZwischenData& data)
+std::ostream& operator<<(std::ostream& os, const ZwischenData& data)
 {
 	const size_t s_hoar24 = data.hoar24.size();
 	os.write(reinterpret_cast<const char*>(&s_hoar24), sizeof(size_t));
@@ -103,7 +100,7 @@ std::iostream& operator<<(std::iostream& os, const ZwischenData& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, ZwischenData& data)
+std::istream& operator>>(std::istream& is, ZwischenData& data)
 {
 	size_t s_hoar24, s_hn3;
 	is.read(reinterpret_cast<char*>(&s_hoar24), sizeof(size_t));
@@ -263,7 +260,7 @@ void SnowProfileLayer::average(const double& Lp0, const double& Lp1, const SnowP
 
 const std::string BoundCond::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<BoundCond>\n";
 	os << "\tlw_out=" << lw_out << " lw_net=" << lw_net << "\n";
 	os << "\tQsensible=" << qs << " Qlatent=" << ql << " Qrain=" << qr << " Qgeo=" << qg << "\n";
@@ -425,7 +422,7 @@ void SurfaceFluxes::multiplyFluxes(const double& factor)
 		mAlbedo *= factor;
 }
 
-std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)
+std::ostream& operator<<(std::ostream& os, const SurfaceFluxes& data)
 {
 	os.write(reinterpret_cast<const char*>(&data.lw_in), sizeof(data.lw_in));
 	os.write(reinterpret_cast<const char*>(&data.lw_out), sizeof(data.lw_out));
@@ -465,7 +462,7 @@ std::iostream& operator<<(std::iostream& os, const SurfaceFluxes& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, SurfaceFluxes& data)
+std::istream& operator>>(std::istream& is, SurfaceFluxes& data)
 {
 	is.read(reinterpret_cast<char*>(&data.lw_in), sizeof(data.lw_in));
 	is.read(reinterpret_cast<char*>(&data.lw_out), sizeof(data.lw_out));
@@ -576,7 +573,7 @@ void CanopyData::multiplyFluxes(const double& factor)
 	intcapacity *= factor;
 }
 
-std::iostream& operator<<(std::iostream& os, const CanopyData& data)
+std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 {
 	os.write(reinterpret_cast<const char*>(&data.storage), sizeof(data.storage));
 	os.write(reinterpret_cast<const char*>(&data.temp), sizeof(data.temp));
@@ -638,7 +635,7 @@ std::iostream& operator<<(std::iostream& os, const CanopyData& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, CanopyData& data)
+std::istream& operator>>(std::istream& is, CanopyData& data)
 {
 	is.read(reinterpret_cast<char*>(&data.storage), sizeof(data.storage));
 	is.read(reinterpret_cast<char*>(&data.temp), sizeof(data.temp));
@@ -702,7 +699,7 @@ std::iostream& operator>>(std::iostream& is, CanopyData& data)
 
 const std::string CanopyData::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<CanopyData>" << "\n";
 
 	os << "\t<Aa>\n";
@@ -785,7 +782,7 @@ void CanopyData::initializeSurfaceExchangeData()
 }
 
 // Class ElementData
-ElementData::ElementData(/*const unsigned short int &ElementID*/) : depositionDate(), L0(0.), L(0.),
+ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
                              Rho(0.), M(0.), sw_abs(0.),
@@ -793,13 +790,10 @@ ElementData::ElementData(/*const unsigned short int &ElementID*/) : depositionDa
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.)/*, ID(ElementID)*/ {}
-                             
-unsigned short int ElementData::getNextID() { 
-	return ++maxElementID;
-}
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.), ID(in_ID) 
+							 { }
 
-std::iostream& operator<<(std::iostream& os, const ElementData& data)
+std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
 	os << data.depositionDate;
 	os.write(reinterpret_cast<const char*>(&data.L0), sizeof(data.L0));
@@ -866,7 +860,7 @@ std::iostream& operator<<(std::iostream& os, const ElementData& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, ElementData& data)
+std::istream& operator>>(std::istream& is, ElementData& data)
 {
 	is >> data.depositionDate;
 	is.read(reinterpret_cast<char*>(&data.L0), sizeof(data.L0));
@@ -1353,7 +1347,7 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 
 const std::string ElementData::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<ElementData>\t";
 	os << std::fixed << std::showpoint;
 	os << depositionDate.toString(mio::Date::ISO) << "\n";
@@ -1374,7 +1368,7 @@ const std::string ElementData::toString() const
 	return os.str();
 }
 
-std::iostream& operator<<(std::iostream& os, const NodeData& data)
+std::ostream& operator<<(std::ostream& os, const NodeData& data)
 {
 	os.write(reinterpret_cast<const char*>(&data.z), sizeof(data.z));
 	os.write(reinterpret_cast<const char*>(&data.u), sizeof(data.u));
@@ -1392,7 +1386,7 @@ std::iostream& operator<<(std::iostream& os, const NodeData& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, NodeData& data)
+std::istream& operator>>(std::istream& is, NodeData& data)
 {
 	is.read(reinterpret_cast<char*>(&data.z), sizeof(data.z));
 	is.read(reinterpret_cast<char*>(&data.u), sizeof(data.u));
@@ -1412,7 +1406,7 @@ std::iostream& operator>>(std::iostream& is, NodeData& data)
 
 const std::string NodeData::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << std::fixed << std::showpoint;
 	os << "<NodeData>\n";
 	os << "\tz=" << z << " T=" << T << " hoar=" << hoar << "\n";
@@ -1431,7 +1425,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	Ndata(), Edata(), Kt(NULL), tag_low(0), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
-	nNodes(0), nElems(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
+	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
 
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
@@ -1442,7 +1436,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), tag_low(c.tag_low), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), windward(c.windward),
 	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
-	nNodes(c.nNodes), nElems(c.nElems), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
+	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {}
 
 SnowStation& SnowStation::operator=(const SnowStation& source) {
 	if(this != &source) {
@@ -1479,7 +1473,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		z_S_5 = source.z_S_5;
 		Ndata = source.Ndata;
 		Edata = source.Edata;
-		Kt = source.Kt;
+		Kt = NULL;
 		tag_low = source.tag_low;
 		ColdContent = source.ColdContent;
 		ColdContentSoil = source.ColdContentSoil;
@@ -1487,14 +1481,15 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		dIntEnergySoil = source.dIntEnergySoil;
 		meltFreezeEnergy = source.meltFreezeEnergy;
 		meltFreezeEnergySoil = source.meltFreezeEnergySoil;
-		nNodes = source.nNodes;
-		nElems = source.nElems;
-		useCanopyModel = source.useCanopyModel;
-		useSoilLayers = source.useSoilLayers;
+		ReSolver_dt = source.ReSolver_dt;
 		windward = source.windward;
 		WindScalingFactor = source.WindScalingFactor;
 		TimeCountDeltaHS = source.TimeCountDeltaHS;
-		ReSolver_dt = source.ReSolver_dt;
+		nNodes = source.nNodes;
+		nElems = source.nElems;
+		maxElementID = source.maxElementID;
+		useCanopyModel = source.useCanopyModel;
+		useSoilLayers = source.useSoilLayers;
 	}
 	return *this;
 }
@@ -1612,7 +1607,7 @@ void SnowStation::resize(const size_t& number_of_elements)
 {
 
 	try {
-		Edata.resize(number_of_elements);
+		Edata.resize(number_of_elements, ElementData(0));
 		Ndata.resize(number_of_elements + 1);
 	} catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
@@ -2235,10 +2230,8 @@ bool SnowStation::isGlacier(const bool& hydro) const
 
 }
 
-std::iostream& operator<<(std::iostream& os, const SnowStation& data)
+std::ostream& operator<<(std::ostream& os, const SnowStation& data)
 {
-	// HACK: nothing is done for the void* Kt
-
 	os << data.meta;
 	os.write(reinterpret_cast<const char*>(&data.cos_sl), sizeof(data.cos_sl));
 	os.write(reinterpret_cast<const char*>(&data.sector), sizeof(data.sector));
@@ -2308,12 +2301,13 @@ std::iostream& operator<<(std::iostream& os, const SnowStation& data)
 	// private member variables:
 	os.write(reinterpret_cast<const char*>(&data.nNodes), sizeof(data.nNodes));
 	os.write(reinterpret_cast<const char*>(&data.nElems), sizeof(data.nElems));
+	os.write(reinterpret_cast<const char*>(&data.maxElementID), sizeof(data.maxElementID));
 	os.write(reinterpret_cast<const char*>(&data.useCanopyModel), sizeof(data.useCanopyModel));
 	os.write(reinterpret_cast<const char*>(&data.useSoilLayers), sizeof(data.useSoilLayers));
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, SnowStation& data)
+std::istream& operator>>(std::istream& is, SnowStation& data)
 {
 	// HACK: nothing is done for the void* Kt
 
@@ -2357,7 +2351,7 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 
 	size_t s_Edata;
 	is.read(reinterpret_cast<char*>(&s_Edata), sizeof(size_t));
-	data.Edata.resize(s_Edata);
+	data.Edata.resize( s_Edata, ElementData(0) );
 	for (size_t ii=0; ii<s_Edata; ii++) is >> data.Edata[ii];
 
 	data.Kt = NULL;
@@ -2389,6 +2383,7 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 	// private member variables:
 	is.read(reinterpret_cast<char*>(&data.nNodes), sizeof(data.nNodes));
 	is.read(reinterpret_cast<char*>(&data.nElems), sizeof(data.nElems));
+	is.read(reinterpret_cast<char*>(&data.maxElementID), sizeof(data.maxElementID));
 	is.read(reinterpret_cast<char*>(&data.useCanopyModel), sizeof(data.useCanopyModel));
 	is.read(reinterpret_cast<char*>(&data.useSoilLayers), sizeof(data.useSoilLayers));
 	return is;
@@ -2396,7 +2391,7 @@ std::iostream& operator>>(std::iostream& is, SnowStation& data)
 
 const std::string SnowStation::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<SnowStation>" << "\n";
 	os << meta.toString();
 	os << setprecision(4);
@@ -2593,7 +2588,7 @@ void CurrentMeteo::copySolutes(const mio::MeteoData& md, const size_t& i_number_
 	}
 }
 
-std::iostream& operator<<(std::iostream& os, const CurrentMeteo& data)
+std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data)
 {
 	os << data.date;
 	os.write(reinterpret_cast<const char*>(&data.ta), sizeof(data.ta));
@@ -2651,7 +2646,7 @@ std::iostream& operator<<(std::iostream& os, const CurrentMeteo& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, CurrentMeteo& data)
+std::istream& operator>>(std::istream& is, CurrentMeteo& data)
 {
 	is >> data.date;
 	is.read(reinterpret_cast<char*>(&data.ta), sizeof(data.ta));
@@ -2715,7 +2710,7 @@ std::iostream& operator>>(std::iostream& is, CurrentMeteo& data)
 
 const std::string CurrentMeteo::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	const double to_deg = 180. / mio::Cst::PI;
 	os << "<CurrentMeteo>" << "\n";
 	os << date.toString(Date::ISO) << "\n";
@@ -2745,7 +2740,7 @@ const std::string CurrentMeteo::toString() const
 	return os.str();
 }
 
-std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data)
+std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data)
 {
 	os << data.meta;
 	os << data.profileDate;
@@ -2771,7 +2766,7 @@ std::iostream& operator<<(std::iostream& os, const SN_SNOWSOIL_DATA& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data)
+std::istream& operator>>(std::istream& is, SN_SNOWSOIL_DATA& data)
 {
 	is >> data.meta;
 	is >> data.profileDate;
@@ -2800,7 +2795,7 @@ std::iostream& operator>>(std::iostream& is, SN_SNOWSOIL_DATA& data)
 
 const std::string SN_SNOWSOIL_DATA::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<SN_SNOWSOIL_DATA>\n";
 	os << meta.toString()   << "\n";
 	os << "profileDate:                " << profileDate.toString(Date::ISO) << "\n";
@@ -2864,7 +2859,7 @@ LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
 {
 }
 
-std::iostream& operator<<(std::iostream& os, const LayerData& data)
+std::ostream& operator<<(std::ostream& os, const LayerData& data)
 {
 	os << data.depositionDate;
 	os.write(reinterpret_cast<const char*>(&data.hl), sizeof(data.hl));
@@ -2906,7 +2901,7 @@ std::iostream& operator<<(std::iostream& os, const LayerData& data)
 	return os;
 }
 
-std::iostream& operator>>(std::iostream& is, LayerData& data)
+std::istream& operator>>(std::istream& is, LayerData& data)
 {
 	is >> data.depositionDate;
 	is.read(reinterpret_cast<char*>(&data.hl), sizeof(data.hl));
@@ -2954,7 +2949,7 @@ std::iostream& operator>>(std::iostream& is, LayerData& data)
 
 const std::string LayerData::toString() const
 {
-	std::stringstream os;
+	std::ostringstream os;
 	os << "<LayerData>\n";
 
 	os << depositionDate.toString(mio::Date::ISO) << "\n";
