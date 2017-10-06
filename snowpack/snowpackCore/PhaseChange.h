@@ -33,6 +33,8 @@
 class PhaseChange {
  	public:
 		PhaseChange(const SnowpackConfig& i_cfg);
+		
+		void reset();
 		void initialize(SnowStation& Xdata);								//Call before first call to compPhaseChange in a time step
 		void finalize(const SurfaceFluxes& Sdata, SnowStation& Xdata, const mio::Date& date_in);	//Call after last call to compPhaseChange in a time step
 		double compPhaseChange(SnowStation& Xdata, const mio::Date& date_in, const bool& verbose=true);	//Call to do a phase change in a time step, returning the temperature of the top node (K)
@@ -53,14 +55,14 @@ class PhaseChange {
 		void compSubSurfaceFrze(ElementData& Edata, const unsigned int nSolutes, const double& dt,
 		                        const mio::Date& date_in);
 
-		double sn_dt; ///< The calculation_step_length in seconds
+		const double sn_dt; ///< The calculation_step_length in seconds
 
 		double cold_content_in;		///< cold content before first PhaseChange call (for checking energy balance)
 		double cold_content_soil_in;	///< cold content before first PhaseChange call (for checking energy balance)
 		double cold_content_out;	///< cold content after last PhaseChange call (for checking energy balance)
 		double cold_content_soil_out;	///< cold content after last PhaseChange call (for checking energy balance)
 
-		bool alpine3d;			///< flag for alpine3d simulations
+		const bool alpine3d;			///< flag for alpine3d simulations
 		double t_crazy_min, t_crazy_max;///< reasonable temperature bounds
 
 		static const double theta_s; ///< Saturated Water Content, for now we say  1.0

@@ -28,6 +28,9 @@
 
 #include <snowpack/Meteo.h>
 #include <snowpack/DataClasses.h>
+#include <snowpack/SnowDrift.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
 
 #include <meteoio/MeteoIO.h>
 #include <vector>
@@ -96,6 +99,9 @@ class Snowpack {
 		                  SurfaceFluxes& Sdata);
 
 		const SnowpackConfig& cfg;
+		const Metamorphism metamorphism;
+		PhaseChange phasechange;
+		const SnowDrift snowdrift;
 		BoundaryCondition surfaceCode;
 		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;

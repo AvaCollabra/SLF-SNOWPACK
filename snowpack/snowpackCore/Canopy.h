@@ -81,8 +81,8 @@ class Canopy {
 		Canopy(const SnowpackConfig& i_cfg);
 
 		static void DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl);
-		bool runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, double roughness_length,
-		                    double height_of_wind_val, const bool& adjust_VW_height=true);
+		bool runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const double& roughness_length,
+		                    const double& height_of_wind_val, const bool& adjust_VW_height=true);
 		static void writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *Cdata);
 		static const double can_alb_dry, can_alb_wet, can_alb_snow, krnt_lai; //public constants
 
@@ -137,27 +137,27 @@ class Canopy {
                                                          double& r0, double& r1, double& r2, double& TCANOPY, double& Ttrunk, double& RNCANOPY,
                                                          double& HCANOPY, double& LECANOPY);
 
-		void CanopyEvaporationComponents(double& ce_canopy,
-                                      double& ce_transpiration, double& LECANOPY,
-                                      double& ta,double& I, double DT,
+		void CanopyEvaporationComponents(const double& ce_canopy,
+                                      const double& ce_transpiration, double& LECANOPY,
+                                      const double& ta, const double& I, const double DT,
                                       double& CanopyEvaporation,
                                       double& INTEVAP, double& TRANSPIRATION,
                                       double& RNCANOPY, double& HCANOPY,double& TCANOPY,
-                                      double& r0, double& r1, double& h0, double& h1,
+                                      const double& r0, const double& r1, const double& h0, const double& h1,
                                       double& LECANOPYCORR,
-                                      double& wetfraction, double& HM0, double& HM1);
+                                      const double& wetfraction, const double& HM0, const double& HM1);
 
-		void CanopyEvaporationComponents2L(double& ce_canopy,
-							double& ce_transpiration, double& LECANOPY,
-							double& ta, double& I, double DT,
-							double& CanopyEvaporation,
-							double& INTEVAP, double& TRANSPIRATION,
-							double& RNCANOPY, double& HCANOPY,double& TCANOPY, double& Ttrunk,
-							double& TT0, double& TT1,
-							double& r0, double& r1, double& r2, double& h0, double& h1,
-							double& LECANOPYCORR,
-							double& wetfraction,
-							double& HM0, double& HM1);
+		void CanopyEvaporationComponents2L(const double& ce_canopy,
+                                      const double& ce_transpiration, double& LECANOPY,
+                                      const double& ta, const double& I, const double DT,
+                                      double& CanopyEvaporation,
+                                      double& INTEVAP, double& TRANSPIRATION,
+                                      double& RNCANOPY, double& HCANOPY,double& TCANOPY, double& Ttrunk,
+                                      const double& TT0, const double& TT1,
+                                      const double& r0, const double& r1, const double& r2, const double& h0, const double& h1,
+                                      double& LECANOPYCORR,
+                                      const double& wetfraction,
+                                      const double& HM0, const double& HM1);
 		double get_psim(const double& xi);
 		double get_psih(const double& xi);
 		double RichardsonToAeta(double za, double TempAir, double DiffTemp, double Windspeed, double zom, double zoh, int maxitt);
