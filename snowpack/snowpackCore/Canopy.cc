@@ -177,7 +177,7 @@ void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *C
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
-          CanopyHeatMass(true), Twolayercanopy(true), canopytransmission(true), forestfloor_alb(true)
+          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -188,7 +188,8 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
 	cfg.getValue("CANOPY_HEAT_MASS", "SnowpackAdvanced", CanopyHeatMass);
 	cfg.getValue("CANOPY_TRANSMISSION", "SnowpackAdvanced", canopytransmission);
-	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy);
+	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy_user);
+	Twolayercanopy = Twolayercanopy_user;
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 }
 
@@ -255,7 +256,7 @@ double Canopy::RootFraction(const double& zupper, const double& zlower)
  * @param *EMS
  * @param transpiration
  */
-void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS)
+void Canopy::SoilWaterUptake(const size_t& SoilNode, const double& transpiration, ElementData* EMS) const
 {
 	// transpiration [mm]
 	if ( transpiration == 0. ) return;
@@ -584,7 +585,7 @@ double Canopy::CanopyTransmissivity(const double& lai, const double& elev)
 void Canopy::LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
                                       double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1,
                                       const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
-                                      const double& sigfdirect, double& r1p)
+                                      const double& sigfdirect, double& r1p) const
 {
 	// Variables used a lot
 	const bool snow = (Xdata.getNumberOfElements()>Xdata.SoilNode);
@@ -684,7 +685,7 @@ void Canopy::LineariseNetRadiation(const CurrentMeteo& Mdata, const CanopyData& 
 void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData& Cdata, const SnowStation& Xdata,
                                       double& iswrac, double& rsnet, double& ilwrac, double& r0,double& r1, double& r2,
                                       double& rt0, double& rt1, double& rt2, const double& canopyalb, double& CanopyClosureDirect, double& RadFracDirect,
-                                      const double& sigfdirect,const double& sigftrunkdirect, double& r1p, double& r2p)
+                                      const double& sigfdirect,const double& sigftrunkdirect, double& r1p, double& r2p) const
 {
 	// Variables used a lot
 	const bool snow = (Xdata.getNumberOfElements()>Xdata.SoilNode);
@@ -896,7 +897,7 @@ void Canopy::CalculateHeatMass(const double& height, const double& BasalArea, do
  * @param HM0
  * @param HM1
  */
-void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor)
+void Canopy::LineariseConductiveHeatFlux(const double& tc_old, const double& HM, double& HM0, double& HM1,  const double& DT, const double& scalingfactor) const
 {
 	if (CanopyHeatMass) {
 		HM0 = -1.0 * scalingfactor * HM /H_TO_S(DT) *tc_old;
@@ -1260,7 +1261,7 @@ double Canopy::RichardsonToAeta(double za, double TempAir, double DiffTemp,
 void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& refheight, const double& zomg,
                                         const double& wetfraction, SnowStation& Xdata, double& ch_canopy,
                                         double& ce_canopy, double& ce_transpiration,
-                                        double& ce_interception, double& ce_condensation)
+                                        double& ce_interception, double& ce_condensation) const
 {
 	const double karman = 0.4;
 	CanopyData *Cdata = &Xdata.Cdata;
@@ -1428,7 +1429,7 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
  * @param sigfdirect
  * @param sigftrunkdirect
  */
-void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata, double ac, double &iswrac, double &rswrac, double &iswrbc, double &rswrbc, double &ilwrac, double &rlwrac, double &ilwrbc, double &rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect, double sigftrunkdirect)
+void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata, double ac, double &iswrac, double &rswrac, double &iswrbc, double &rswrbc, double &ilwrac, double &rlwrac, double &ilwrbc, double &rlwrbc, double CanopyClosureDirect, double RadFracDirect, double sigfdirect, double sigftrunkdirect) const
 {
 	const bool snow = (Xdata.getNumberOfElements() > Xdata.SoilNode);
 	const double Tsfc4 = (snow)? Optim::pow4(Xdata.Ndata[Xdata.getNumberOfElements()].T) : Optim::pow4(Mdata.ta);
@@ -1557,6 +1558,7 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
  */
 bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const double& roughness_length, const double& height_of_wind_val, const bool& adjust_VW_height)
 {
+	Twolayercanopy = Twolayercanopy_user; //so we can temporarily overwrite the user's choice if needed
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
 	//no canopy or no canopy above the snow
@@ -1741,7 +1743,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		// NOTE: for sparse canopies turbulent fluxes should be scaled in the
 		// canopy EB calculation; for the moment scalingfactor is sigf*(1-direct_throughfall)
 		LineariseSensibleHeatFlux(ch_canopy, Mdata.ta, h0, h1, Xdata.Cdata.sigf*(1. - Xdata.Cdata.direct_throughfall));
-                if (Twolayercanopy) {
+		if (Twolayercanopy) {
 			LineariseSensibleHeatFlux(ch_canopy, Mdata.ta, ht0, ht1,  Xdata.Cdata.sigftrunk*(1. - Xdata.Cdata.direct_throughfall));
 		}
 

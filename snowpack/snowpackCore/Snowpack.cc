@@ -1682,12 +1682,11 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			sn_dt = 60.;
 			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
 		}
+		
+		Meteo M(cfg);
 		do {
-			if (ii >= 1) {
-				// After the first sub-time step, update Meteo object to reflect on the new stability state
-				Meteo M(cfg);
-				M.compMeteo(Mdata, Xdata, false);
-			}
+			// After the first sub-time step, update Meteo object to reflect on the new stability state
+			if (ii >= 1) M.compMeteo(Mdata, Xdata, false);
 			// Reinitialize and compute the initial meteo heat fluxes
 			memset((&Bdata), 0, sizeof(BoundCond));
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
