@@ -331,6 +331,7 @@ class ElementData {
 		double dhf;
 		
 		unsigned short int ID;    ///< Element ID used to track elements
+		static const unsigned short int noID;
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure

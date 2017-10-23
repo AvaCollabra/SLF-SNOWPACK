@@ -935,6 +935,10 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	fout << "\n0503," << nE;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(EMS[e].Te);
+	// 0504: element ID
+	fout << "\n0504," << nE;
+	for (size_t e = 0; e < nE; e++)
+		fout << "," << std::fixed << std::setprecision(0) << EMS[e].ID;
 	// 0506: liquid water content by volume (%)
 	fout << "\n0506," << nE;
 	for (size_t e = 0; e < nE; e++)

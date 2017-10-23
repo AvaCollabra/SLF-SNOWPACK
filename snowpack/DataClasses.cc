@@ -782,6 +782,7 @@ void CanopyData::initializeSurfaceExchangeData()
 }
 
 // Class ElementData
+const unsigned short int ElementData::noID = static_cast<unsigned short int>(-1);
 ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), melting_tk(Constants::melting_tk), freezing_tk(Constants::freezing_tk),
                              theta((size_t)N_COMPONENTS), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
@@ -1605,12 +1606,18 @@ double SnowStation::getModelledTemperature(const double& z) const
  */
 void SnowStation::resize(const size_t& number_of_elements)
 {
-
+	const size_t nEdata_old = Edata.size();
 	try {
-		Edata.resize(number_of_elements, ElementData(0));
+		Edata.resize(number_of_elements, ElementData(ElementData::noID));
 		Ndata.resize(number_of_elements + 1);
 	} catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
+	}
+	
+	if (number_of_elements>nEdata_old) {
+		for(size_t ii=nEdata_old; ii<Edata.size(); ii++) {
+			if (Edata[ii].ID==ElementData::noID) Edata[ii].ID = ++maxElementID;
+		}
 	}
 
 	nElems = Edata.size();
@@ -2351,7 +2358,7 @@ std::istream& operator>>(std::istream& is, SnowStation& data)
 
 	size_t s_Edata;
 	is.read(reinterpret_cast<char*>(&s_Edata), sizeof(size_t));
-	data.Edata.resize( s_Edata, ElementData(0) );
+	data.Edata.resize( s_Edata, ElementData(ElementData::noID) );
 	for (size_t ii=0; ii<s_Edata; ii++) is >> data.Edata[ii];
 
 	data.Kt = NULL;
