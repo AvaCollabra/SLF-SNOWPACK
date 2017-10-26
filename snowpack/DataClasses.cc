@@ -2461,7 +2461,8 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
 	maxNumberMeasTemperatures = cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced", IOUtils::nothrow);
-	fixedPositions = cfg.get("FIXED_POSITIONS", "SnowpackAdvanced", IOUtils::nothrow);
+	if (cfg.keyExists("FIXED_POSITIONS", "SnowpackAdvanced"))
+		cfg.getValues("FIXED_POSITIONS", "SnowpackAdvanced", fixedPositions);
 	minDepthSubsurf = cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", IOUtils::nothrow);
 	numberFixedRates = cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced", IOUtils::nothrow);
 }

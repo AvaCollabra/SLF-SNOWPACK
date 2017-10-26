@@ -2295,6 +2295,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)";
 	fout << "\n0502,nElems,element density (kg m-3)";
 	fout << "\n0503,nElems,element temperature (degC)";
+	fout << "\n0504,nElems,element ID (1)";
 	fout << "\n0506,nElems,liquid water content by volume (%)";
 	fout << "\n0508,nElems,dendricity (1)";
 	fout << "\n0509,nElems,sphericity (1)";
