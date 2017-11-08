@@ -610,14 +610,14 @@ bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nE = EMS.size();
-	size_t e = nE;
 	
 	const double cos_sl = Xdata.cos_sl;
-	const double hs_top = (NDS[e].z+NDS[e].u - NDS[Xdata.SoilNode].z) / cos_sl;
+	const double hs_top = (NDS[nE].z+NDS[nE].u - NDS[Xdata.SoilNode].z) / cos_sl;
 	std::vector<double> vecRG, vecRG_diff, vecHard, vecHard_diff, vecTypes;
 	std::vector<double> weibull, crust_index;
 	
 	double crust_coeff = 0.;
+	size_t e = nE-1;
 	while (e-- > Xdata.SoilNode) {
 		NDS[ e ].ssi = 0.; //initialize with 0 so layers that can not get computed don't t in the way
 		
@@ -696,7 +696,7 @@ bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
 	}
 	
 	for (size_t ii=0; ii<vecRG.size(); ii++) {
-		NDS[ nE - ii ].ssi = index[ii] / max_index;
+		NDS[ nE - ii -1 ].ssi = index[ii] / max_index;
 	}
 	
 	return true;
