@@ -618,8 +618,9 @@ bool StabilityAlgorithms::getRelativeThresholdSum(SnowStation& Xdata)
 	
 	double crust_coeff = 0.;
 	size_t e = nE-1;
+	NDS[ nE ].ssi = 0.; //the top node is assumed perfectly stable
 	while (e-- > Xdata.SoilNode) {
-		NDS[ e ].ssi = 0.; //initialize with 0 so layers that can not get computed don't t in the way
+		NDS[ e ].ssi = 0.; //initialize with 0 so layers that can not get computed don't get in the way
 		
 		vecRG.push_back( EMS[e].rg );
 		vecRG_diff.push_back( fabs(EMS[e+1].rg - EMS[e].rg) );
