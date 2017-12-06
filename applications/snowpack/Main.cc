@@ -499,8 +499,6 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
 	if (Mdata.tss == mio::IOUtils::nodata) {
-		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use parameterized
-		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
