@@ -995,11 +995,13 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 			dU[n] = 0.0;
 		}
 
+		// Reset phase change energy
+		for(size_t e = nE; e -->0; ) Xdata.Edata[e].Qph = 0.;
+
 		// Assemble matrix
 		for(size_t e = nE; e -->0; ) {
 			if(useNewPhaseChange) {
 				// Calculate the melting/freezing associated with the current temperature state
-				Xdata.Edata[e].Qph = 0.;
 				const double Te_new = 0.5*(U[e+1]+U[e]);
 				double dth_i = 0.;
 				const bool explicitBC= ((Xdata.Edata[nE-1].theta[WATER] > 1E-5/10. + Constants::eps && Xdata.Edata[nE-1].theta[ICE] > Constants::eps && Xdata.Edata[nE-1].theta[ICE]<ReSolver1d::max_theta_ice*(1.-Constants::eps)));
