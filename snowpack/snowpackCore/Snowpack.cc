@@ -1873,8 +1873,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 						// Net ice contents change:
 						double dth_i = 0.5 * (Xdata.Edata[e].Qph_up + Xdata.Edata[e].Qph_down) / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
 						// Limit to all ice melts:
-						double dth_i2 = (dth_i<0.)?(std::max(-Xdata.Edata[e].theta[ICE], dth_i)):(dth_i);
-						dth_i = dth_i2;
+						dth_i = (dth_i<0.)?(std::max(-Xdata.Edata[e].theta[ICE], dth_i)):(dth_i);
 						// Apply phase change:
 						Xdata.Edata[e].dth_w += -dth_i * Constants::density_ice / Constants::density_water;
 						Xdata.Edata[e].Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / sn_dt_bcu; // (W m-3)
