@@ -130,7 +130,8 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 		}
 		// Determine the DECREASE in ice content and the INCREASE of water content
 		// Adapt A to compute mass changes
-		const double A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion );
+		const double Lh = (Edata.salinity > 0.) ? (SeaIce::compSeaIceLatentHeatFusion(Edata)) : (Constants::lh_fusion);
+		const double A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Lh );
 		double dth_i = A * dT; // change in volumetric ice content
 		double dth_w = - (Constants::density_ice / Constants::density_water) * dth_i; // change in volumetric water content
 		// It could happen that there is enough energy available to melt more ice than is present.
@@ -155,7 +156,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 			ql_Rest = Edata.c[TEMPERATURE] * Edata.Rho * Edata.L * (Edata.Te - T_melt);
 			Edata.Te = T_melt;
 		}
-		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
+		Edata.Qmf += (dth_i * Constants::density_ice * Lh) / dt; // (W m-3)
 		Edata.dth_w += dth_w; // (1)
 		for (unsigned int ii = 0; ii < nSolutes; ii++) {
 			if (dth_w > 0. ) {
@@ -243,7 +244,8 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 	} else {
 		double dT = T_freeze - Edata.Te;
 		// Adapt A to compute mass changes
-		double A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Constants::lh_fusion );
+		const double Lh = (Edata.salinity > 0.) ? (SeaIce::compSeaIceLatentHeatFusion(Edata)) : (Constants::lh_fusion);
+		double A = (Edata.c[TEMPERATURE] * Edata.Rho) / ( Constants::density_ice * Lh );
 		// Compute the change in volumetric ice and water contents
 		double dth_i = A * dT;
 		double dth_w = - (Constants::density_ice / Constants::density_water) * dth_i;
@@ -296,7 +298,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		                    (Edata.theta[SOIL] * Edata.soil[SOIL_RHO]);
 		Edata.heatCapacity();
 		// Compute the volumetric refreezing power
-		Edata.Qmf += (dth_i * Constants::density_ice * Constants::lh_fusion) / dt; // (W m-3)
+		Edata.Qmf += (dth_i * Constants::density_ice * Lh) / dt; // (W m-3)
 		Edata.dth_w += dth_w;
 		Edata.Te += dT;
 	}
