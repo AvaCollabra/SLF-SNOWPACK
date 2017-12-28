@@ -269,6 +269,7 @@ class ElementData {
 		bool checkVolContent() const;
 		void heatCapacity();
 		double coldContent() const;
+		void updDensity();
 		double extinction() const;
 		void opticalEquivalentGrainSize();
 		void snowResidualWaterContent();
