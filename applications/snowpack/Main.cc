@@ -1189,7 +1189,7 @@ inline void real_main (int argc, char *argv[])
 							}
 						}
 						// If the error persisted for at least one day => apply correction
-						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
+						if (enforce_snow_height && (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length)))) {
 							deflateInflate(Mdata, vecXdata[slope.mainStation],
 							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							if (prn_check) {
