@@ -253,18 +253,9 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 			dth_i = - (Constants::density_water / Constants::density_ice) * dth_w;
 		}
 		// See if the element is pure ICE
-		if (Edata.theta[ICE] + dth_i >= max_theta_ice / (1. - Constants::eps)) {
-			dth_i = std::max(0., max_theta_ice / (1. - Constants::eps) - Edata.theta[ICE]);
+		if (Edata.theta[ICE] + dth_i >= max_theta_ice) {
+			dth_i = std::max(0., max_theta_ice - Edata.theta[ICE]);
 			dth_w = - dth_i * (Constants::density_ice / Constants::density_water);
-			Edata.theta[WATER] += dth_w;
-			Edata.theta[ICE] += dth_i;
-			Edata.theta[AIR] = std::max(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
-		} else if ((Edata.theta[ICE] + cmp_theta_r + dth_i + Edata.theta[SOIL] + Edata.theta[WATER_PREF]) >= 1.0) {
-			dth_w = - fabs( Edata.theta[WATER] - cmp_theta_r );
-			dth_i = - (Constants::density_water / Constants::density_ice) * dth_w;
-			Edata.theta[WATER] = cmp_theta_r;
-			Edata.theta[ICE] = 1.0 - Edata.theta[SOIL] - Edata.theta[WATER] - Edata.theta[WATER_PREF];
-			Edata.theta[AIR] = 0.0;
 		} else {
 			// Concentration of solutes
 			for (unsigned int ii = 0; ii < nSolutes; ii++) {
@@ -273,10 +264,11 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 					                           dth_i * Edata.conc[WATER][ii]) / ( Edata.theta[ICE] + dth_i);
 				}
 			}
-			Edata.theta[ICE] += dth_i;
-			Edata.theta[WATER] += dth_w;
-			Edata.theta[AIR] = std::max(0., 1.0 - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
 		}
+		Edata.theta[WATER] += dth_w;
+		Edata.theta[ICE] += dth_i;
+		Edata.theta[AIR] = std::max(0., 1. - Edata.theta[ICE] - Edata.theta[WATER] - Edata.theta[WATER_PREF] - Edata.theta[SOIL]);
+
 		// State when the element is wet (PERMAFROST)
 		if (Edata.theta[WATER] >= 1.0) {
 			prn_msg(__FILE__, __LINE__, "msg+", Date(), "Wet Element! (dth_w=%e) (compSubSurfaceFrze)", dth_w);
