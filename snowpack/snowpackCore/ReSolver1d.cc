@@ -2038,7 +2038,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//(i==uppernode)?(surfacefluxrate):(((((h_n[i]-h_n[i-1])/dz_up[i-1])+cos_sl)*sqrt(K[i]*K[i-1])*dt))
 				//);
 				//if(max_flux<flux_compare) max_flux=flux_compare;
-				if(i>Xdata.SoilNode-1) {	//For snow only
+				if(i>=Xdata.SoilNode) {	//For snow only
 					// Volumetric area:
 					//vol_area = exp(0.09904-3.557*(EMS[i].ogs));		// As presented at EGU 2016.
 					const double vol_area = 0.0584 * pow((0.5*EMS[i].ogs), -1.1090277);
