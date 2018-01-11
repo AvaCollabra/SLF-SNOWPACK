@@ -1759,7 +1759,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				for (i = lowernode; i <= uppernode; i++) {
 					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", int(i), h_n[i], h_np1_m[i], theta_n[i], EMS[i].VG.theta_r, EMS[i].VG.theta_s, theta_np1_m[i], (i<Xdata.SoilNode)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<Xdata.SoilNode)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), EMS[i].VG.alpha, EMS[i].VG.m, EMS[i].VG.n);
 				}
-				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G\n", TopBC, surfacefluxrate, TopFluxRate);
+				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G     domain: %s\n", TopBC, surfacefluxrate, TopFluxRate, (matrix)?("matrix"):("pref_flow"));
 				if(DoThrow==true) {
 					//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 					throw;
