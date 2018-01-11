@@ -1038,11 +1038,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					}
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
-					if(i==uppernode) {
-						k_np1_m_ip12[i]=K[i];
-					} else {
-						k_np1_m_ip12[i]=0.;
-					}
+					k_np1_m_ip12[i]=K[i];
 				}
 
 				// 2) Determine k_np1_m_im12
@@ -1051,11 +1047,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					k_np1_m_im12[i]=k_np1_m_ip12[i-1];
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
-					if(i==lowernode) {
-						k_np1_m_im12[i]=K[i];
-					} else {
-						k_np1_m_im12[i]=0.;
-					}
+					k_np1_m_im12[i]=K[i];
 				}
 			}
 
