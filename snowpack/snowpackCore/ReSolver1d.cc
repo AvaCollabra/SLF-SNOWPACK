@@ -2063,7 +2063,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	i = uppernode + 1;
 	while (i-- > lowernode) {
 		if(enable_pref_flow) {
-			if(i>Xdata.SoilNode-1) {	// For snow
+			if(i>=Xdata.SoilNode) {	// For snow
 				if(matrix) {
 					// First from matrix to preferential flow ...
 					if(i==Xdata.SoilNode) {
