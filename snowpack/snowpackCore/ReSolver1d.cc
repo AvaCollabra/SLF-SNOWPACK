@@ -692,14 +692,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if ( i >= Xdata.SoilNode ) {		//Snow
 			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
-				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
+				const double tmp_excess_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);
 				//HACK: how to treat ice layers? The line below that is commented out makes the model spiral out of control...
 				// Produce warning, but not when running for sea ice, because then ice layers are too common.
 				//const double Lh = (EMS[i].salinity > 0.) ? (SeaIce::compSeaIceLatentHeatFusion(EMS[i])) : (Constants::lh_fusion);
-				//dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Lh ));
-				if(variant!="SEAICE") std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
-				EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
-				EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
+				//dT[i]+=tmp_excess_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Lh ));
+				if(variant!="SEAICE") std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_excess_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
+				EMS[i].theta[WATERINDEX]+=tmp_excess_theta;
+				EMS[i].theta[ICE]-=tmp_excess_theta*(Constants::density_water/Constants::density_ice);
 				EMS[i].theta[AIR]=1.-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
 			}
 
@@ -714,7 +714,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 			// Recheck pref flow area: some processes in SNOWPACK may change pore space and water contents, such that the pref flow area is not consistent to store all water.
-			EMS[i].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), std::max(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), EMS[i].PrefFlowArea));
+			const double tmpPoreSpace = (1. - EMS[i].theta[ICE]) * (Constants::density_ice / Constants::density_water);
+			EMS[i].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/tmpPoreSpace)), std::max(1.001*(EMS[i].theta[WATER_PREF]/tmpPoreSpace), EMS[i].PrefFlowArea));
+
 			// Scale theta_s
 			if(WATERINDEX==WATER_PREF) {
 				EMS[i].VG.theta_s*=EMS[i].PrefFlowArea;
@@ -743,7 +745,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if(h_d>tmp_head) h_d=tmp_head;
 		if(i==uppernode) h_d_uppernode=tmp_head;	//We store this value in order to use it for the LIMITEDFLUXEVAPORATION
 		if (WriteDebugOutputput)
-			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << EMS[i].VG.alpha << "; m: " << EMS[i].VG.m << "; n: " << EMS[i].VG.n << "; Sc: " << EMS[i].VG.Sc << "; h_e: " << EMS[i].VG.h_e << "\n";
+			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << EMS[i].VG.alpha << "; m: " << EMS[i].VG.m << "; n: " << EMS[i].VG.n << "; Sc: " << EMS[i].VG.Sc << "]; h_e: " << EMS[i].VG.h_e << "\n";
 	}
 
 
