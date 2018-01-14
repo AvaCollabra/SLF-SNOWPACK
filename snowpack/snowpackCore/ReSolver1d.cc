@@ -828,9 +828,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Add source/sink term from other parts of SNOWPACK (in particular Canopy.cc)
 		s[i]+=EMS[i].lwc_source/sn_dt;
 		EMS[i].lwc_source=0.;		// Now that we used the variable, reset it.
-
-		//To now the flux of water in/out of the model domain due to the source/sink term.
-		totalsourcetermflux+=s[i]*dz[i];
 	}
 
 
@@ -1177,6 +1174,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				std::cout << "BOUNDARYTOPFLUX: [ BC: " << TopBC << "] " << std::scientific << TopFluxRate << " " << surfacefluxrate << " " << theta_n[lowernode] << " " << K[lowernode] << " " << ((h_np1_mp1[lowernode])+(((TopFluxRate/k_np1_m_im12[lowernode])-1.)*dz_down[lowernode])) << " " << h_np1_mp1[lowernode] << " " << k_np1_m_im12[lowernode] << " " << (TopFluxRate/k_np1_m_im12[lowernode]) << "\n" << std::fixed;
 
 			// Verify source/sink term
+			totalsourcetermflux=0.;
 			for (i = lowernode; i <= uppernode; i++) {
 				if(s[i] != 0.) {
 					//TODO: a similar dt limiting procedure as for the surfacefluxrate should be considered
@@ -1196,6 +1194,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					if(fabs(tmp - s[i])>Constants::eps2) {
 						std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied. Term reduced from " << tmp << " to " << s[i] << ".\n";
 					}
+
+					//Update now the flux of water in/out of the model domain due to the source/sink term.
+					totalsourcetermflux+=s[i]*dz[i];
 				}
 			}
 
