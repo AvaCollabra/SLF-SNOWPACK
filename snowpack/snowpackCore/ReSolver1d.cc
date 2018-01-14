@@ -541,7 +541,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//Initializing and defining Richards solver time domain
 	double dt=10.;					//Set the initial time step for the Richard solver (in seconds). This time step should be smaller or equal to the SNOWPACK time step.
 	bool boolFirstFunctionCall;			//true: first execution of this function, false: not the first execution of this function
-	if (Xdata.ReSolver_dt>0.) {			//Retrieve last dt used in last performed time step. Note Xdata.SoliNumerics_dt<0 when initialized
+	if (Xdata.ReSolver_dt>0.) {			//Retrieve last dt used in last performed time step. Note Xdata.ReSolver_dt<0 when initialized
 		boolFirstFunctionCall=false;		//Subsequent call to ReSolver1d
 		dt=Xdata.ReSolver_dt;			//Set time step to last used time step
  	} else {					//else it is the first time this function is called.
@@ -589,7 +589,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	size_t i, j, k;					//Counters for layers
 	const size_t nmemstates=1;			//Number of memory states, used to store changes of delta_h between iterations. Currently not used, but possible use is to check if delta_h is blowing up.
 	int memstate=0;					//Keeping track of the current memory index
-	double h_d=0.;					//Lower limit for pressure head: definition of "completely dry". This value will determined later on.
+	double h_d=0.;					//Lower limit for pressure head: definition of "completely dry". This value will be determined later.
 
 
 	//Initializing and declaring boundary conditions and flux variables
@@ -817,7 +817,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		theta_n[i]=EMS[i].VG.fromHtoTHETAforICE(h_n[i], theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
 
 		//Determine source/sink term
-		s[i]=0.;								//Reset source/sink term
+		s[i]=0.;							//Reset source/sink term
 
 		//Now add soilsurfacesourceflux (in case RemoveElements removed the lowest snow element):
 		if(soilsurfacesourceflux>0. && i==Xdata.SoilNode) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
@@ -2171,7 +2171,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						EMS[i].theta[WATER]+=dtheta_w3;
 						EMS[i].theta[WATER_PREF]-=dtheta_w3;
 					}
-					// Check for first wetting
+					// Check for first wetting to set microstructural marker correctly
 					if ((EMS[i].theta[WATER] > 5E-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
 						EMS[i].mk += 10;
 					}
