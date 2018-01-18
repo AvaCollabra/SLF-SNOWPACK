@@ -1863,7 +1863,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	}
 	if (maxNumberMeasTemperatures == 5) {
 		// 50: Solute load at ground surface
-		if (out_load)
+		if (out_load && !Sdata.load.empty())
 			fout << "," << Sdata.load[0];
 		else
 			fout << ",";

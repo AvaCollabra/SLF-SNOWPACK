@@ -1044,7 +1044,10 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 	}
 
 	if (out_load) {
-		data.push_back( Sdata.load[0] );
+		if (!Sdata.load.empty())
+			data.push_back( Sdata.load[0] );
+		else
+			data.push_back( IOUtils::nodata );
 	}
 
 	if (out_t && !fixedPositions.empty()) {
