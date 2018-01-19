@@ -343,7 +343,7 @@ class ElementData {
 		double Qph_up;             ///< Heat source/sink due to phase changes for the heat equation (W/m^3), at the upper node of the element
 		double Qph_down;           ///< Heat source/sink due to phase changes for the heat equation (W/m^3), at the lower node of the element
 		//NIED (H. Hirashima)
-		double dsm;                ///< Dry snow metamorphism factor 
+		double dsm;                ///< Dry snow metamorphism factor
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
