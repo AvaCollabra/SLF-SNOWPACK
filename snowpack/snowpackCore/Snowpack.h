@@ -46,6 +46,12 @@ class Snowpack {
 
 		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
+		
+		/**
+		 * @brief Perform snow preparation (grooming, etc) on a given snowpack
+		 * @param Xdata snowpack to work on
+		 */
+		static void snowPreparation(SnowStation& Xdata);
 
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;

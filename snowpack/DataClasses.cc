@@ -2444,7 +2444,7 @@ CurrentMeteo::CurrentMeteo()
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          psum(0.), psum_ph(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
+          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -2455,7 +2455,7 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          psum(0.), psum_ph(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
+          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -2623,6 +2623,7 @@ std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data)
 	os.write(reinterpret_cast<const char*>(&data.ts0), sizeof(data.ts0));
 	os.write(reinterpret_cast<const char*>(&data.psum), sizeof(data.psum));
 	os.write(reinterpret_cast<const char*>(&data.psum_ph), sizeof(data.psum_ph));
+	os.write(reinterpret_cast<const char*>(&data.psum_tech), sizeof(data.psum_tech));
 	os.write(reinterpret_cast<const char*>(&data.hs), sizeof(data.hs));
 	os.write(reinterpret_cast<const char*>(&data.hs_a3h), sizeof(data.hs_a3h));
 	os.write(reinterpret_cast<const char*>(&data.hs_rate), sizeof(data.hs_rate));
@@ -2681,6 +2682,7 @@ std::istream& operator>>(std::istream& is, CurrentMeteo& data)
 	is.read(reinterpret_cast<char*>(&data.ts0), sizeof(data.ts0));
 	is.read(reinterpret_cast<char*>(&data.psum), sizeof(data.psum));
 	is.read(reinterpret_cast<char*>(&data.psum_ph), sizeof(data.psum_ph));
+	is.read(reinterpret_cast<char*>(&data.psum_tech), sizeof(data.psum_tech));
 	is.read(reinterpret_cast<char*>(&data.hs), sizeof(data.hs));
 	is.read(reinterpret_cast<char*>(&data.hs_a3h), sizeof(data.hs_a3h));
 	is.read(reinterpret_cast<char*>(&data.hs_rate), sizeof(data.hs_rate));
@@ -2726,7 +2728,7 @@ const std::string CurrentMeteo::toString() const
 	os << setw(8) << "RH=" << rh << " rh_avg=" << rh_avg << "\n";
 	os << setw(8) << "ISWR=" << iswr << " RSWR=" << rswr << " mAlbedo=" << mAlbedo << "\n";
 	os << setw(8) << "diff=" << diff << " dir_h=" << dir_h << " Sun_elev=" << elev*to_deg << "° EA=" << ea << "\n";
-	os << setw(8) << "PSUM=" << psum << " PSUM_PH=" << psum_ph << " HS=" << hs << " rho_hn=" << rho_hn << "\n";
+	os << setw(8) << "PSUM=" << psum << " PSUM_PH=" << psum_ph << " HS=" << hs << " rho_hn=" << rho_hn << " PSUM_TECH=" << psum_tech << "\n";
 	os << setw(8) << "VW=" << vw << " vw_avg=" << vw_avg << " vw_max=" << vw_max << " vw_drift=" << vw_drift << "\n";
 	os << setw(8) << "DW=" << dw << "\n";
 	os << setw(8) << "U*=" << ustar << " z0=" << z0 << " psi_s=" << psi_s << "\n";

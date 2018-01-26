@@ -1811,3 +1811,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		}
 	}
 }
+
+void Snowpack::snowPreparation(SnowStation& /*Xdata*/)
+{
+	
+}
