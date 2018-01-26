@@ -647,6 +647,7 @@ void Snowpack::neumannBoundaryConditionsSoil(const double& flux, const double& T
 
 double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentMeteo& Mdata) const
 {
+	//please keep in mind that the radiation might have been tweaked in Meteo::compRadiation()
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nN = Xdata.getNumberOfNodes();
@@ -711,6 +712,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 
 double Snowpack::getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const
 {
+	//please keep in mind that the radiation might have been tweaked in Meteo::compRadiation()
 	const double pAlbedo = Xdata.pAlbedo;
 
 	// Assign iswr and rswr correct values according to switch value
