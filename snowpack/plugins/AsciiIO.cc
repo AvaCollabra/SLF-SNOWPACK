@@ -1904,21 +1904,6 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 				throw IOException("Writing Time Series data failed", AT);
 			}
 		}
-		if (Xdata.tag_low) {
-			size_t tag = Xdata.tag_low, j_lim;
-			while ( (tag + ii) <= numberFixedSensors ) {
-				if ((tag + ii) <= numberMeasTemperatures)
-					j_lim = 41;
-				else
-					j_lim = 43;
-				if (jj < j_lim) {
-					jj += writeHeightTemperatureTag(fout, tag, Mdata, Xdata);
-					tag++;
-				} else {
-					break;
-				}
-			}
-		}
 		for (; jj < 44; jj++)
 			fout << ",";
 	} else {
@@ -2167,21 +2152,6 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 			}
 			jj += 2;
 		}
-		if (Xdata.tag_low) {
-			size_t tag = Xdata.tag_low;
-			while ((tag + numberFixedSensors) <= totNumberSensors) {
-				const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
-				if (jj < j_lim) {
-					fout << ",H(tag" << std::fixed << std::setfill('0') << std::setw(2) << tag << "),T(tag" << tag << ")";
-					jj += 2;
-					if (numberFixedSensors < numberMeasTemperatures) {
-						fout << ",H(meas" << std::fixed << std::setfill('0') << std::setw(2) << tag << "),T(meas" << tag << ")";
-						jj += 2;
-					}
-					tag++;
-				}
-			}
-		}
 		for (; jj < 44; jj++) {
 			fout << ",-";
 		}
@@ -2229,21 +2199,6 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 			if (ii < numberMeasTemperatures) {
 				fout << ",degC";
 				jj++;
-			}
-		}
-		if (Xdata.tag_low) {
-			size_t tag = Xdata.tag_low;
-			while ((tag + numberFixedSensors) <= totNumberSensors) {
-				const size_t j_lim = ((tag + numberFixedSensors) <= numberMeasTemperatures)? 41 : 43;
-				if (jj < j_lim) {
-					fout << ",cm,degC";
-					jj += 2;
-					if (numberFixedSensors < numberMeasTemperatures) {
-						fout << ",cm,degC";
-						jj += 2;
-					}
-					tag++;
-				}
 			}
 		}
 		for (; jj < 44; jj++)

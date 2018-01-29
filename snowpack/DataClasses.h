@@ -534,7 +534,6 @@ class SnowStation {
 		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
-		size_t tag_low;             ///< Lowest tag to dump, 0 means no tags at all HACK: to remove once we have Elements' ID
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double ColdContentSoil;     ///< Cold content of soil (J m-2)
 		double dIntEnergy;          ///< Internal energy change of snowpack (J m-2)
