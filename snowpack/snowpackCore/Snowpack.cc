@@ -1393,6 +1393,20 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 }
 
 /**
+ * @brief Introduce new snow elements as technical snow
+ * @details When there is natural snow as well as man-made snow,
+ * the whole snow fall will have the properties of man-made snow. 
+ * @param Mdata Meteorological data
+ * @param Xdata Snow cover data
+ * @param cumu_precip cumulated amount of precipitation (kg m-2)
+ */
+void Snowpack::compTechnicalSnow(const CurrentMeteo& /*Mdata*/, SnowStation& /*Xdata*/, double& /*cumu_precip*/,
+                            SurfaceFluxes& /*Sdata*/)
+{
+	
+}
+
+/**
  * @brief Determines whether new snow elements are added on top of the snowpack
  * - If enforce_measured_snow_heights=0 (research mode), the new snow height corresponding to the cumulated
  *   new snow water equivalent cumu_precip must be greater than HEIGHT_NEW_ELEM to allow adding elements.
@@ -1408,6 +1422,11 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                             SurfaceFluxes& Sdata)
 {
+	if (Mdata.psum_tech!=IOUtils::nodata) {
+		compTechnicalSnow(Mdata, Xdata, cumu_precip, Sdata);
+		return;
+	}
+	
 	bool add_element = false;
 	double delta_cH = 0.; // Actual enforced snow depth
 	double hn = 0.; //new snow amount
@@ -1985,4 +2004,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			Xdata.splitElements(-1., comb_thresh_l);
 		}
 	}
+}
+
+void Snowpack::snowPreparation(SnowStation& /*Xdata*/)
+{
+	
 }

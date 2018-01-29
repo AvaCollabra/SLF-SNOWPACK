@@ -2720,6 +2720,7 @@ std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data)
 	os.write(reinterpret_cast<const char*>(&data.ts0), sizeof(data.ts0));
 	os.write(reinterpret_cast<const char*>(&data.psum), sizeof(data.psum));
 	os.write(reinterpret_cast<const char*>(&data.psum_ph), sizeof(data.psum_ph));
+	os.write(reinterpret_cast<const char*>(&data.psum_tech), sizeof(data.psum_tech));
 	os.write(reinterpret_cast<const char*>(&data.hs), sizeof(data.hs));
 	os.write(reinterpret_cast<const char*>(&data.hs_a3h), sizeof(data.hs_a3h));
 	os.write(reinterpret_cast<const char*>(&data.hs_rate), sizeof(data.hs_rate));
@@ -2779,6 +2780,7 @@ std::istream& operator>>(std::istream& is, CurrentMeteo& data)
 	is.read(reinterpret_cast<char*>(&data.ts0), sizeof(data.ts0));
 	is.read(reinterpret_cast<char*>(&data.psum), sizeof(data.psum));
 	is.read(reinterpret_cast<char*>(&data.psum_ph), sizeof(data.psum_ph));
+	is.read(reinterpret_cast<char*>(&data.psum_tech), sizeof(data.psum_tech));
 	is.read(reinterpret_cast<char*>(&data.hs), sizeof(data.hs));
 	is.read(reinterpret_cast<char*>(&data.hs_a3h), sizeof(data.hs_a3h));
 	is.read(reinterpret_cast<char*>(&data.hs_rate), sizeof(data.hs_rate));
@@ -2825,7 +2827,7 @@ const std::string CurrentMeteo::toString() const
 	os << setw(8) << "RH=" << rh << " rh_avg=" << rh_avg << "\n";
 	os << setw(8) << "ISWR=" << iswr << " RSWR=" << rswr << " mAlbedo=" << mAlbedo << "\n";
 	os << setw(8) << "diff=" << diff << " dir_h=" << dir_h << " Sun_elev=" << elev*to_deg << "° EA=" << ea << "\n";
-	os << setw(8) << "PSUM=" << psum << " PSUM_PH=" << psum_ph << " HS=" << hs << " rho_hn=" << rho_hn << "\n";
+	os << setw(8) << "PSUM=" << psum << " PSUM_PH=" << psum_ph << " HS=" << hs << " rho_hn=" << rho_hn << " PSUM_TECH=" << psum_tech << "\n";
 	os << setw(8) << "VW=" << vw << " vw_avg=" << vw_avg << " vw_max=" << vw_max << " vw_drift=" << vw_drift << "\n";
 	os << setw(8) << "DW=" << dw << "\n";
 	os << setw(8) << "U*=" << ustar << " z0=" << z0 << " psi_s=" << psi_s << "\n";
