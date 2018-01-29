@@ -417,6 +417,10 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 
 	Mdata.psum_ph = md(MeteoData::PSUM_PH);
 	Mdata.psum = md(MeteoData::PSUM);
+	if (md.param_exists("PSUM_TECH"))
+		Mdata.psum_tech = md("PSUM_TECH");
+	else
+		Mdata.psum_tech = Constants::undefined;
 
 	Mdata.hs = md(MeteoData::HS);
 	if (md.param_exists("HS_A3H") && (md("HS_A3H") != mio::IOUtils::nodata))
