@@ -505,8 +505,6 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
 	if (Mdata.tss == mio::IOUtils::nodata) {
-		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use parameterized
-		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
@@ -696,13 +694,14 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
 				                                vecSSdata[slope.mainStation].meta);
 			} else {
-				stringstream sec_snowfile;
+				std::stringstream sec_snowfile;
 				sec_snowfile << snowfile << sector;
 				ss.str("");
 				ss << vecSSdata[slope.mainStation].meta.getStationID() << sector;
 				snowpackio.readSnowCover(sec_snowfile.str(), ss.str(), vecSSdata[sector], sn_Zdata);
 				vecSSdata[sector].meta.position = vecSSdata[slope.mainStation].meta.getPosition();
 				vecSSdata[sector].meta.stationName = vecSSdata[slope.mainStation].meta.getStationName();
+				if (!current_date.isUndef()) vecSSdata[sector].profileDate = current_date; //this should have been set when processing the main station
 			}
 			vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
 		} catch (const exception& e) {
@@ -1196,7 +1195,7 @@ inline void real_main (int argc, char *argv[])
 							}
 						}
 						// If the error persisted for at least one day => apply correction
-						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
+						if (enforce_snow_height && (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length)))) {
 							deflateInflate(Mdata, vecXdata[slope.mainStation],
 							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							if (prn_check) {
@@ -1387,12 +1386,12 @@ inline void real_main (int argc, char *argv[])
 }
 
 int main(int argc, char *argv[]) {
-	//try {
+	try {
 		real_main(argc, argv);
-	/*} catch (const std::exception &e) {
+	} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
 		throw;
-	}*/
+	}
 
 	return EXIT_SUCCESS;
 }
