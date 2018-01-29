@@ -28,6 +28,9 @@
 
 #include <snowpack/Meteo.h>
 #include <snowpack/DataClasses.h>
+#include <snowpack/SnowDrift.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
 
 #include <meteoio/MeteoIO.h>
 #include <vector>
