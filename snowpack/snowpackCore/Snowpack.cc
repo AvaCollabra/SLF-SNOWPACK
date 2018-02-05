@@ -1400,26 +1400,21 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
  * @param Xdata Snow cover data
  * @param cumu_precip cumulated amount of precipitation (kg m-2)
  */
-void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
-                            SurfaceFluxes& Sdata)
+void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip)
 {
-	bool add_element = false;
-	double delta_cH = 0.; // Actual enforced snow depth
-	double hn = 0.; //new snow amount
-	double th_w = 0.; // volume fraction of liquid water in each element
-
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
 	const double cos_sl = Xdata.cos_sl; //slope cosinus
 
-	double rho_hn = 400.; // Pirmin's playground I
+	static double rho_hn = 400.; // Pirmin's playground I
 
 	const double precip_snow = (Mdata.psum_tech + cumu_precip) * (1. -  Mdata.psum_ph);
 	const double precip_rain = (Mdata.psum_tech + Mdata.psum) * Mdata.psum_ph;
-	delta_cH = (precip_snow / rho_hn);
-	th_w = precip_rain/delta_cH/Constants::density_water;
-		
+	const double delta_cH = (precip_snow / rho_hn); // Actual enforced snow depth
+	const double th_w = precip_rain / (delta_cH * Constants::density_water); // volume fraction of liquid water in each element
+	
 	// Now determine whether the increase in snow depth is large enough.
+	double hn = 0.; //new snow amount
 	if ( (delta_cH >= height_new_elem * cos_sl) ) {
 		cumu_precip = 0.0; // we use the mass through delta_cH
 		hn = delta_cH;
@@ -1429,8 +1424,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 				          "Large snowfall! hn=%.3f cm (azi=%.0f, slope=%.0f)",
 				            M_TO_CM(hn), Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 
-	size_t nAddE = (size_t)(hn / (height_new_elem*cos_sl));
-
+	const size_t nAddE = (size_t)(hn / (height_new_elem*cos_sl));
 	if (nAddE < 1) return;
 
 	Xdata.Albedo = Snowpack::new_snow_albedo;
@@ -1466,7 +1460,6 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 				// Now give specific properties for technical snow, consider liquid water 
 				// Assume that the user does not specify unreasonably high liquid water contents. 
 				// This depends also on the density of the solid fraction - print a warning if it looks bad
-				
 				EMS[e].theta[WATER] += th_w;
 				if ( (EMS[e].theta[WATER] + EMS[e].theta[ICE]) > 0.7)
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
@@ -1522,8 +1515,8 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                             SurfaceFluxes& Sdata)
 {
-	if (Mdata.psum_tech > 0.) {
-		compTechnicalSnow(Mdata, Xdata, cumu_precip, Sdata);
+	if (Mdata.psum_tech!=IOUtils::nodata && Mdata.psum_tech > 0.) {
+		compTechnicalSnow(Mdata, Xdata, cumu_precip);
 		return;
 	}
 	
