@@ -174,6 +174,8 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 	//Check if lateral flow is considered
 	lateral_flow = false;
 	cfg.getValue("LATERAL_FLOW", "Alpine3D", lateral_flow, IOUtils::nothrow);
+
+	//Assign if we solve matrix or prefential flow
 	matrix=matrix_part;
 }
 
