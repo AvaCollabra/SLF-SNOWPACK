@@ -1924,7 +1924,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		} else
 			snowdrift.compSnowDrift(Mdata, Xdata, Sdata, cumu_precip);
 
-		if(variant == "SEAICE" ) {
+		if (Xdata.Seaice != NULL) {
 			// Reinitialize and compute the initial meteo heat fluxes
 			memset((&Bdata), 0, sizeof(BoundCond));
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
