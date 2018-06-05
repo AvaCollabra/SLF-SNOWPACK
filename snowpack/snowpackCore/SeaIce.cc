@@ -234,11 +234,6 @@ void SeaIce::updateFreeboard(SnowStation& Xdata)
 }
 
 /**
- * @brief Find marked layer level\n
- * @version 16.08
- */
-
-/**
  * @brief Find snow/ice transition for sea ice simulations\n
  * @version 16.08
  */
