@@ -26,10 +26,6 @@
 #define RESOLVER1D_H
 
 #include <snowpack/DataClasses.h>
-#include <snowpack/SnowpackConfig.h>
-#include <meteoio/MeteoIO.h>
-
-//#include <string.h>
 
 /**
  * @class ReSolver1d
@@ -59,8 +55,8 @@ class ReSolver1d {
 		enum SOLVERS{DGESVD, DGTSV, TDMA};
 		//Boundary conditions
 		enum BoundaryConditions{DIRICHLET, NEUMANN, LIMITEDFLUXEVAPORATION, LIMITEDFLUXINFILTRATION, LIMITEDFLUX, WATERTABLE, FREEDRAINAGE, GRAVITATIONALDRAINAGE, SEEPAGEBOUNDARY, SEAICE};
-		
-		
+
+
 		watertransportmodels iwatertransportmodel_snow, iwatertransportmodel_soil;
 
 		std::string watertransportmodel_snow;
@@ -86,7 +82,7 @@ class ReSolver1d {
 		// Solvers
 		int TDMASolver (size_t n, double *a, double *b, double *c, double *v, double *x);
 		int pinv(int m, int n, int lda, double *a);
-		
+
 		// General functions
 		void InitializeGrid(const std::vector<ElementData>& EMS, const size_t& lowernode, const size_t& uppernode);
 
