@@ -29,13 +29,11 @@
 #include <snowpack/SnowpackConfig.h>
 #include <meteoio/MeteoIO.h>
 
-#include <string.h>
+//#include <string.h>
 
 /**
  * @class ReSolver1d
- * @version 10.02
  * @author Nander Wever
- * @bug Prone to bugs at any changes! Be aware!
  * @brief This module contains the solver for the 1d Richards Equation for the 1d snowpack model
  */
 class ReSolver1d {
@@ -98,4 +96,4 @@ class ReSolver1d {
 		const static double MIN_VAL_TIMESTEP, MAX_VAL_TIMESTEP, MIN_DT_FOR_INFILTRATION;
 		const static double SF_epsilon;
 };
-#endif //End of WaterTransport.h
+#endif //End of ReSolver1d.h
