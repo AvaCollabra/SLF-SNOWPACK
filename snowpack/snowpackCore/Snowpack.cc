@@ -1053,7 +1053,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 						// Melt: Only available ice can melt
 						dth_i_lim = std::max(-Xdata.Edata[e].theta[ICE], dth_i_lim);
 					} else {
-						// Freeze: Only available liquid water can feeze, and not more than max_ice
+						// Freeze: Only available liquid water can freeze, and not more than max_ice
 						dth_i_lim = std::min(std::max(0., std::min(max_ice - Xdata.Edata[e].theta[ICE], (Xdata.Edata[e].theta[WATER]-theta_r) * (Constants::density_water / Constants::density_ice))), dth_i_lim);
 					}
 					// Correct volumetric changes in upper and lower half of element proportional to limits
