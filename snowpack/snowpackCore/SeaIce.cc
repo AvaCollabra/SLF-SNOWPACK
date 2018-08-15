@@ -416,115 +416,150 @@ void SeaIce::bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, c
 		//dM = (-netBottomEnergy * sn_dt) / compSeaIceLatentHeatFusion(Xdata.Ndata[Xdata.SoilNode].T, SeaIce::OceanSalinity);
 		dM = ThicknessFirstIceLayer * SeaIceDensity;
 	}
+	ApplyBottomIceMassBalance(Xdata, Mdata, dM);
+}
+
+
+/**
+ * @brief Apply mass gain/loss at the bottom (dM)
+ * @version 16.08: initial version
+ * @param Xdata
+ * @param Mdata
+ * @param dM: mass change (kg/m^2), positive=gain, negative=loss.
+ */
+void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& Mdata, double dM)
+{
+	//Dereference pointers
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	size_t nE = Xdata.getNumberOfElements();
 
 	// Apply mass change:
-	if (dM > 0) {
+	double dz = 0.;
+	if ( dM > 0 ) {
 		// dM > 0: mass gain
-		const double dL = dM / SeaIceDensity;
 		if ( nE == 0 || EMS[Xdata.SoilNode].Rho < ice_threshold ) {
-			// In these case, add new element with ice density
-			nE++;
-			Xdata.resize(nE);
-			if(nE > 1) {
-				// Shift all existing elements up in the domain
-				for(size_t ee = nE-1; ee > Xdata.SoilNode; ee--) {
-					EMS[ee]=EMS[ee-1];
-					NDS[ee+1]=NDS[ee];
-					NDS[ee]=NDS[ee-1];
+			const double dH = dM / SeaIceDensity;								// Total height to be added
+			const size_t nAddE = 1;										// Number of elements
+			const double dL = (dH / double(nAddE));								// Height of each individual layer
+			for ( size_t j = 0; j < nAddE; j++ ) {
+				dz += dL;
+				nE++;
+				Xdata.resize(nE);
+				if(nE > 1) {
+					// Shift all existing elements up in the domain
+					for(size_t ee = nE-1; ee > Xdata.SoilNode; ee--) {
+						EMS[ee]=EMS[ee-1];
+						NDS[ee+1]=NDS[ee];
+						NDS[ee]=NDS[ee-1];
+					}
+				} else {
+					// Set upper node for very first element in the domain that will be newly created
+					NDS[nE].T = SeaIce::calculateMeltingTemperature(OceanSalinity);
 				}
-			} else {
-				// Set upper node for very first element in the domain that will be newly created
-				NDS[nE].T = SeaIce::SeaWaterFreezingTemp;
+				// Set the new ice element
+				EMS[Xdata.SoilNode].depositionDate = Mdata.date;
+				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = dL;
+				EMS[Xdata.SoilNode].theta[SOIL] = 0.;
+				EMS[Xdata.SoilNode].theta[ICE] = (SeaIceDensity/Constants::density_ice);
+				EMS[Xdata.SoilNode].theta[WATER] = (1. - EMS[Xdata.SoilNode].theta[ICE]) * (Constants::density_ice/Constants::density_water);
+				EMS[Xdata.SoilNode].theta[WATER_PREF] = 0.;
+				EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL];
+				EMS[Xdata.SoilNode].updDensity();
+				EMS[Xdata.SoilNode].M = dM / nAddE;
+
+				for (unsigned short ii = 0; ii < Xdata.number_of_solutes; ii++) {
+					EMS[Xdata.SoilNode].conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
+					EMS[Xdata.SoilNode].conc[WATER][ii] = Mdata.conc[ii];
+					EMS[Xdata.SoilNode].conc[AIR][ii]   = 0.;
+					EMS[Xdata.SoilNode].conc[SOIL][ii]  = 0.;
+				}
+
+				// Constitutive Parameters
+				EMS[Xdata.SoilNode].k[TEMPERATURE] = EMS[Xdata.SoilNode].k[SEEPAGE] = EMS[Xdata.SoilNode].k[SETTLEMENT]= 0.;
+				EMS[Xdata.SoilNode].heatCapacity();
+				EMS[Xdata.SoilNode].c[SEEPAGE] = EMS[Xdata.SoilNode].c[SETTLEMENT]= 0.;
+				EMS[Xdata.SoilNode].soil[SOIL_RHO] = EMS[Xdata.SoilNode].soil[SOIL_K] = EMS[Xdata.SoilNode].soil[SOIL_C] = 0.;
+				EMS[Xdata.SoilNode].snowResidualWaterContent();
+
+				//new snow micro-structure
+				EMS[Xdata.SoilNode].sw_abs = 0.;
+				EMS[Xdata.SoilNode].rg = InitRg;
+				EMS[Xdata.SoilNode].dd = 0.;
+				EMS[Xdata.SoilNode].sp = 1.;
+				EMS[Xdata.SoilNode].rb = InitRb;
+				EMS[Xdata.SoilNode].N3 = Metamorphism::getCoordinationNumberN3(EMS[Xdata.SoilNode].Rho);
+				EMS[Xdata.SoilNode].opticalEquivalentGrainSize();
+				EMS[Xdata.SoilNode].mk = 7.;
+				EMS[Xdata.SoilNode].metamo = 0.;
+				EMS[Xdata.SoilNode].snowType(); // Snow classification
+				EMS[Xdata.SoilNode].salinity = OceanSalinity * EMS[Xdata.SoilNode].theta[WATER];
+				EMS[Xdata.SoilNode].dth_w = 0.;
+				EMS[Xdata.SoilNode].Qmf = 0.;
+				EMS[Xdata.SoilNode].QIntmf = 0.;
+				EMS[Xdata.SoilNode].dEps = 0.;
+				EMS[Xdata.SoilNode].Eps = EMS[Xdata.SoilNode].Eps_e = EMS[Xdata.SoilNode].Eps_v = EMS[Xdata.SoilNode].Eps_Dot = EMS[Xdata.SoilNode].Eps_vDot = EMS[Xdata.SoilNode].E = 0.;
+				EMS[Xdata.SoilNode].S = 0.;
+				EMS[Xdata.SoilNode].C = EMS[Xdata.SoilNode].CDot = 0.;
+				EMS[Xdata.SoilNode].ps2rb = 0.;
+				EMS[Xdata.SoilNode].s_strength = 0.;
+				EMS[Xdata.SoilNode].hard = 0.;
+				EMS[Xdata.SoilNode].S_dr = INIT_STABILITY;
+				EMS[Xdata.SoilNode].crit_cut_length = Constants::undefined;
+				EMS[Xdata.SoilNode].VG.theta_r = 0.;
+				EMS[Xdata.SoilNode].lwc_source = 0.;
+				EMS[Xdata.SoilNode].PrefFlowArea = 0.;
+				EMS[Xdata.SoilNode].dsm = 0.;
+
+				EMS[Xdata.SoilNode].h = EMS[Xdata.SoilNode+1].h + .5 * dL;
+
+				// Initial nodal properties
+				NDS[Xdata.SoilNode].u = 0.;                     // Initial displacement is 0
+				NDS[Xdata.SoilNode].hoar = 0.;                  // The new snow surface hoar is set to zero
+				NDS[Xdata.SoilNode].udot = 0.;                  // Settlement rate is also 0
+				NDS[Xdata.SoilNode].f = 0.;                     // Unbalanced forces are 0
+				NDS[Xdata.SoilNode].S_n = INIT_STABILITY;
+				NDS[Xdata.SoilNode].S_s = INIT_STABILITY;
+				NDS[Xdata.SoilNode].z = 0.;
+
+				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
 			}
-			// Set the new ice element
-			EMS[Xdata.SoilNode].depositionDate = Mdata.date;
-			EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = dL;
-			EMS[Xdata.SoilNode].theta[SOIL] = 0.;
-			EMS[Xdata.SoilNode].theta[WATER] = 0.;
-			EMS[Xdata.SoilNode].theta[WATER_PREF] = 0.;
-			EMS[Xdata.SoilNode].theta[ICE] = (SeaIceDensity/Constants::density_ice);
-			EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL];
-			EMS[Xdata.SoilNode].updDensity();
-			EMS[Xdata.SoilNode].M = dM;
-
-			for (unsigned short ii = 0; ii < Xdata.number_of_solutes; ii++) {
-				EMS[Xdata.SoilNode].conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
-				EMS[Xdata.SoilNode].conc[WATER][ii] = Mdata.conc[ii];
-				EMS[Xdata.SoilNode].conc[AIR][ii]   = 0.;
-				EMS[Xdata.SoilNode].conc[SOIL][ii]  = 0.;
-			}
-
-			// Constitutive Parameters
-			EMS[Xdata.SoilNode].k[TEMPERATURE] = EMS[Xdata.SoilNode].k[SEEPAGE] = EMS[Xdata.SoilNode].k[SETTLEMENT]= 0.;
-			EMS[Xdata.SoilNode].heatCapacity();
-			EMS[Xdata.SoilNode].c[SEEPAGE] = EMS[Xdata.SoilNode].c[SETTLEMENT]= 0.;
-			EMS[Xdata.SoilNode].soil[SOIL_RHO] = EMS[Xdata.SoilNode].soil[SOIL_K] = EMS[Xdata.SoilNode].soil[SOIL_C] = 0.;
-			EMS[Xdata.SoilNode].snowResidualWaterContent();
-
-			//new snow micro-structure
-			EMS[Xdata.SoilNode].sw_abs = 0.;
-			EMS[Xdata.SoilNode].rg = InitRg;
-			EMS[Xdata.SoilNode].dd = 0.;
-			EMS[Xdata.SoilNode].sp = 1.;
-			EMS[Xdata.SoilNode].rb = InitRb;
-			EMS[Xdata.SoilNode].N3 = Metamorphism::getCoordinationNumberN3(EMS[Xdata.SoilNode].Rho);
-			EMS[Xdata.SoilNode].opticalEquivalentGrainSize();
-			EMS[Xdata.SoilNode].mk = 7.;
-			EMS[Xdata.SoilNode].metamo = 0.;
-			EMS[Xdata.SoilNode].snowType(); // Snow classification
-			EMS[Xdata.SoilNode].salinity = SeaIce::InitSeaIceSalinity;
-			EMS[Xdata.SoilNode].dth_w = 0.;
-			EMS[Xdata.SoilNode].Qmf = 0.;
-			EMS[Xdata.SoilNode].QIntmf = 0.;
-			EMS[Xdata.SoilNode].dEps = 0.;
-			EMS[Xdata.SoilNode].Eps = EMS[Xdata.SoilNode].Eps_e = EMS[Xdata.SoilNode].Eps_v = EMS[Xdata.SoilNode].Eps_Dot = EMS[Xdata.SoilNode].Eps_vDot = EMS[Xdata.SoilNode].E = 0.;
-			EMS[Xdata.SoilNode].S = 0.;
-			EMS[Xdata.SoilNode].C = EMS[Xdata.SoilNode].CDot = 0.;
-			EMS[Xdata.SoilNode].ps2rb = 0.;
-			EMS[Xdata.SoilNode].s_strength = 0.;
-			EMS[Xdata.SoilNode].hard = 0.;
-			EMS[Xdata.SoilNode].S_dr = INIT_STABILITY;
-			EMS[Xdata.SoilNode].crit_cut_length = Constants::undefined;
-			EMS[Xdata.SoilNode].VG.theta_r = 0.;
-			EMS[Xdata.SoilNode].lwc_source = 0.;
-			EMS[Xdata.SoilNode].PrefFlowArea = 0.;
-			EMS[Xdata.SoilNode].dsm = 0.;
-			
-			// Initial nodal properties
-			NDS[Xdata.SoilNode].u = 0.;                     // Initial displacement is 0
-			NDS[Xdata.SoilNode].hoar = 0.;                  // The new snow surface hoar is set to zero
-			NDS[Xdata.SoilNode].udot = 0.;                  // Settlement rate is also 0
-			NDS[Xdata.SoilNode].f = 0.;                     // Unbalanced forces are 0
-			NDS[Xdata.SoilNode].S_n = INIT_STABILITY;
-			NDS[Xdata.SoilNode].S_s = INIT_STABILITY;
-			NDS[Xdata.SoilNode].z = 0.;
 		} else {
 			// In this case, increase existing element
+			const double dL = dM / (EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice);
+			dz += dL;
 			const double L0 = EMS[Xdata.SoilNode].L;
 			EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = (L0 + dL);
-
-			EMS[Xdata.SoilNode].theta[WATER] *= L0 / (L0 + dL);
-			EMS[Xdata.SoilNode].theta[WATER_PREF] *= L0 / (L0 + dL);
-			EMS[Xdata.SoilNode].theta[ICE] = (EMS[Xdata.SoilNode].theta[ICE] * L0 + dL * (SeaIceDensity/Constants::density_ice)) / (L0 + dL);
-			EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL];
-			EMS[Xdata.SoilNode].updDensity();
 			EMS[Xdata.SoilNode].M += dM;
+			EMS[Xdata.SoilNode].updDensity();
+			EMS[Xdata.SoilNode].h += .5 * dL;
+			BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
 		}
 	} else {
 		// dM < 0: Mass loss
 		while (dM < 0. && nE > 0) {
-			const double dL = dM / SeaIceDensity;
-			if(EMS[Xdata.SoilNode].M + dM > Constants::eps2 && EMS[Xdata.SoilNode].L + dL > Constants::eps2) {
+			if(EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice * EMS[Xdata.SoilNode].L + dM > Constants::eps2) {
+				const double dL = dM / (EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice);
 				// Reduce element length
-				EMS[Xdata.SoilNode].updDensity();
+				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = EMS[Xdata.SoilNode].L + dL;
 				EMS[Xdata.SoilNode].M += dM;
-				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = EMS[Xdata.SoilNode].M / EMS[Xdata.SoilNode].Rho;
+				EMS[Xdata.SoilNode].updDensity();
+				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
+				dz += dL;
 				dM = 0.;
 			} else {
 				// Remove element
-				dM += EMS[Xdata.SoilNode].M;
+				dM += EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice * EMS[Xdata.SoilNode].L;
+				dz += -EMS[Xdata.SoilNode].L;
 				// TODO: put mass in SNOWPACK runoff!
-				if(nE > 1) {
+				// Add salinity to BottomSalFlux
+				BottomSalFlux += EMS[Xdata.SoilNode].salinity * -EMS[Xdata.SoilNode].L;
+				if(nE > Xdata.SoilNode) {
+					if(EMS[Xdata.SoilNode+1].VG.defined) {
+						if(EMS[Xdata.SoilNode+1].h > EMS[Xdata.SoilNode+1].VG.h_e) {
+							EMS[Xdata.SoilNode+1].h = EMS[Xdata.SoilNode].h;
+						}
+					}
 					// Shift all existing elements down in the domain
 					for(size_t ee = Xdata.SoilNode; ee < nE-1; ee++) {
 						EMS[ee]=EMS[ee+1];
