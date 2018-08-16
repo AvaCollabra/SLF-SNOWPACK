@@ -282,7 +282,7 @@ double SeaIce::findIceSurface(SnowStation& Xdata)
 void SeaIce::compFlooding(SnowStation& Xdata)
 {
 	size_t iN = 0;
-	while (Xdata.Ndata[iN].z < SeaLevel && iN < Xdata.getNumberOfElements()) {
+	while (iN < Xdata.getNumberOfElements() && Xdata.Ndata[iN].z + 0.5 * Xdata.Edata[iN].L < SeaLevel) {
 		const double dth_w = std::max(0., Xdata.Edata[iN].theta[AIR] * (Constants::density_ice / Constants::density_water) - Xdata.Edata[iN].theta[WATER] * (Constants::density_water / Constants::density_ice - 1.));
 		Xdata.Edata[iN].theta[WATER] += dth_w;
 		Xdata.Edata[iN].theta[AIR] -= dth_w;
