@@ -135,14 +135,17 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
 		{
 			for (size_t e = Xdata.SoilNode; e < nE; e++) {
 				Xdata.Edata[e].salinity = 35.;			// Default: 35 g/kg
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			/*size_t e = Xdata.SoilNode;
 			for (; e < IceSurfaceNode; e++) {
 				Xdata.Edata[e].salinity = 35.;			// Default: 35 g/kg
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			for (; e < nE; e++) {
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}*/
 			break;
@@ -162,6 +165,7 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
 						Xdata.Edata[e].salinity = 7.88 - 1.59 * Xdata.Ndata[e].z;
 					}
 				}
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			break;
@@ -172,7 +176,8 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
 			const double topSal = 1.;
 			const double botSal = 5.;
 			for (size_t e = Xdata.SoilNode; e < nE; e++) {
-				Xdata.Edata[e].salinity = ((topSal - botSal) / (Xdata.Ndata[IceSurfaceNode].z - Xdata.Ndata[0].z)) * 0.5 * (Xdata.Ndata[e].z + Xdata.Ndata[e+1].z);		// linear gradient between 1 psu (top) to 4 psu (bottom) 
+				Xdata.Edata[e].salinity = ((topSal - botSal) / (Xdata.Ndata[IceSurfaceNode].z - Xdata.Ndata[0].z)) * 0.5 * (Xdata.Ndata[e].z + Xdata.Ndata[e+1].z);		// linear gradient between 1 psu (top) to 4 psu (bottom)
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			break;
@@ -185,12 +190,14 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
 			// define salinity in ice
 			size_t e = Xdata.SoilNode;
 			for (; e <  IceSurfaceNode ; e++) {
-				Xdata.Edata[e].salinity = ((topSal - botSal) / (Xdata.Ndata[IceSurfaceNode].z - Xdata.Ndata[0].z)) * 0.5 * (Xdata.Ndata[e].z + Xdata.Ndata[e+1].z);		// linear gradient between 1 psu (top) to 4 psu (bottom) 
+				Xdata.Edata[e].salinity = ((topSal - botSal) / (Xdata.Ndata[IceSurfaceNode].z - Xdata.Ndata[0].z)) * 0.5 * (Xdata.Ndata[e].z + Xdata.Ndata[e+1].z);		// linear gradient between 1 psu (top) to 4 psu (bottom)
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			// define salinity in snow
 			for (; e <  nE ; e++) {
 				Xdata.Edata[e].salinity = 1;
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			break;
@@ -206,11 +213,13 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
 			size_t e = Xdata.SoilNode;
 			for (; e <  IceSurfaceNode ; e++) {
 				Xdata.Edata[e].salinity = ampSal* sin((Xdata.Ndata[e].z / (Xdata.Ndata[IceSurfaceNode].z - Xdata.Ndata[0].z))*PI+PI)+topSal;		// c shaped salinity profile in sea ice
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			// define salinity in snow
 			for (; e <  nE ; e++) {
 				Xdata.Edata[e].salinity = 1; // 8 after Massom et al. 1997
+				Xdata.Edata[e].updDensity();
 				calculateMeltingTemperature(Xdata.Edata[e]);
 			}
 			break;
