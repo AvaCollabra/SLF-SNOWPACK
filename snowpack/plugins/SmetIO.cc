@@ -362,7 +362,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		if (SSdata.Ldata[ll].depositionDate < prev_depositionDate) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 				   "Layer %d is younger (%s) than layer above (%s) !!!",
-				   ll, prev_depositionDate.toString(Date::ISO).c_str(), SSdata.profileDate.toString(Date::ISO).c_str());
+				   ll, prev_depositionDate.toString(Date::ISO).c_str(), SSdata.Ldata[ll].depositionDate.toString(Date::ISO).c_str());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
 		prev_depositionDate = SSdata.Ldata[ll].depositionDate;
