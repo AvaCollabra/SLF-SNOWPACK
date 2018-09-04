@@ -791,7 +791,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), dhf(0.), ID(in_ID) 
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), SlopeParFlux(0.), dhf(0.), ID(in_ID) 
 							 { }
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
@@ -856,6 +856,7 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
 	os.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
 	os.write(reinterpret_cast<const char*>(&data.lwc_source), sizeof(data.lwc_source));
+	os.write(reinterpret_cast<const char*>(&data.SlopeParFlux), sizeof(data.SlopeParFlux));
 	os.write(reinterpret_cast<const char*>(&data.dhf), sizeof(data.dhf));
 	os.write(reinterpret_cast<const char*>(&data.ID), sizeof(data.ID));
 	return os;
@@ -927,6 +928,7 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
 	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
+	is.read(reinterpret_cast<char*>(&data.SlopeParFlux), sizeof(data.SlopeParFlux));
 	is.read(reinterpret_cast<char*>(&data.dhf), sizeof(data.dhf));
 	is.read(reinterpret_cast<char*>(&data.ID), sizeof(data.ID));
 	return is;
