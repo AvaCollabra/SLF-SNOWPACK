@@ -414,7 +414,19 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
 			} else {
-				EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
+				if (e == nE-1) {
+					// The top layer will increase length due to deposition
+					const double dL = deltaM[e] / (Constants::density_ice * EMS[e].theta[ICE]);
+					const double L_old = EMS[e].L;
+					const double L_new = EMS[e].L + dL;
+					EMS[e].L = L_new;
+					EMS[e].theta[WATER] *= L_old / L_new;
+					EMS[e].theta[WATER_PREF] *= L_old / L_new;
+					NDS[e+1].z = NDS[e].z + EMS[e].L;
+					Xdata.cH = NDS[e+1].z + NDS[e+1].u;
+				} else {
+					EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
+				}
 			}
 		}
 		// Numerical rounding errors were found to lead to theta[AIR] < 0, so force the other components between [0,1]:
