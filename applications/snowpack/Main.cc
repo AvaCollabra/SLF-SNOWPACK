@@ -1127,14 +1127,14 @@ inline void real_main (int argc, char *argv[])
 				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumsum.precip, sn_Bdata, surfFluxes);
 				if (snowPrep) {
 					const unsigned short iso_week = current_date.getISOWeekNr();
-					if (iso_week>17 && iso_week<46) return;
-	
-					int hour, minute;
-					current_date.getTime(hour, minute);
-					if (hour==20 && minute==30){
-						snowpack.snowPreparation( vecXdata[slope.sector] );
+					if (iso_week<=17 || iso_week>=46) {	
+						int hour, minute;
+						current_date.getTime(hour, minute);
+						if (hour==20 && minute==30){
+							snowpack.snowPreparation( vecXdata[slope.sector] );
+						}
 					}
-				}					
+				}
 
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
 
