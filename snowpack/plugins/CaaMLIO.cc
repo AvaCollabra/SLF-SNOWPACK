@@ -259,7 +259,7 @@ bool CaaMLIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
  * @param Zdata
  */
 void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
+                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata, const bool&)
 {
 	std::string snofilename( getFilenamePrefix(i_snowfile, i_snowpath, false) );
 	std::string hazfilename(snofilename);
@@ -300,7 +300,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	SSdata.meta = xmlGetStationData(stationID);
 
 	//Snow-Soil properties: set to default if not available in file
-	setCustomSnowSoil(SSdata);
+	setCustomSnowSoil(SSdata, in_snowFilename);
 
 	//Read quantity profiles
 	std::list<std::string> xpaths;
@@ -461,19 +461,64 @@ int CaaMLIO::xmlSetVal(const string& xpath, const std::string& property, const i
 	return val;
 }
 
-void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
+void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& SSdata, const std::string& in_snowFilename)
 {
 	const std::string xpath( "/caaml:customData/snp" );
-	Xdata.Albedo = xmlSetVal(xpath,"Albedo",0.6);
-	Xdata.SoilAlb = xmlSetVal(xpath,"SoilAlb",0.2);
-	Xdata.BareSoil_z0 = xmlSetVal(xpath,"BareSoil_z0",0.02);
-	Xdata.Canopy_Height = xmlSetVal(xpath,"CanopyHeight",0.);
-	Xdata.Canopy_LAI = xmlSetVal(xpath,"CanopyLAI",0.);
-	Xdata.Canopy_BasalArea = xmlSetVal(xpath,"CanopyBasalArea",0.);
-	Xdata.Canopy_Direct_Throughfall = xmlSetVal(xpath,"CanopyDirectThroughfall",1.);
-	Xdata.WindScalingFactor = xmlSetVal(xpath,"WindScalingFactor",1.);
-	Xdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",0);
-	Xdata.TimeCountDeltaHS = xmlSetVal(xpath,"TimeCountDeltaHS",0.);
+
+
+	/// REQUIRED PARAMETERS, an error will be thrown if no parameter are provided
+
+	SSdata.Albedo = xmlSetVal(xpath,"Albedo",mio::IOUtils::nodata);
+	// if (SSdata.Albedo == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read Albedo in file "+in_snowFilename, AT);
+	// }
+	SSdata.SoilAlb = xmlSetVal(xpath,"SoilAlb",mio::IOUtils::nodata);
+	// if (SSdata.SoilAlb == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read SoilAlb in file "+in_snowFilename, AT);
+	// }
+	SSdata.BareSoil_z0 = xmlSetVal(xpath,"BareSoil_z0",mio::IOUtils::nodata);
+	// if (SSdata.BareSoil_z0 == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read BareSoil_z0 in file "+in_snowFilename, AT);
+	// }
+	SSdata.Canopy_Height = xmlSetVal(xpath,"CanopyHeight",mio::IOUtils::nodata);
+	// if (SSdata.Canopy_Height == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read CanopyHeight in file "+in_snowFilename, AT);
+	// }
+	SSdata.Canopy_LAI = xmlSetVal(xpath,"CanopyLAI",mio::IOUtils::nodata);
+	// if (SSdata.Canopy_LAI == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read CanopyLAI in file "+in_snowFilename, AT);
+	// }
+	SSdata.Canopy_BasalArea = xmlSetVal(xpath,"CanopyBasalArea",mio::IOUtils::nodata);
+	// if (SSdata.Canopy_BasalArea == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read CanopyBasalArea in file "+in_snowFilename, AT);
+	// }
+	SSdata.Canopy_Direct_Throughfall = xmlSetVal(xpath,"CanopyDirectThroughfall",mio::IOUtils::nodata);
+	// if (SSdata.Canopy_Direct_Throughfall == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read CanopyDirectThroughfall in file "+in_snowFilename, AT);
+	// }
+	SSdata.WindScalingFactor = xmlSetVal(xpath,"WindScalingFactor",mio::IOUtils::nodata);
+	// if (SSdata.WindScalingFactor == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read WindScalingFactor in file "+in_snowFilename, AT);
+	// }
+	SSdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",mio::IOUtils::nodata);
+	// if (SSdata.ErosionLevel == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read ErosionLevel in file "+in_snowFilename, AT);
+	// }
+	SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"TimeCountDeltaHS",mio::IOUtils::nodata);
+	// if (SSdata.TimeCountDeltaHS == mio::IOUtils::nodata) {
+	// 	throw InvalidFormatException("Can not read TimeCountDeltaHS in file "+in_snowFilename, AT);
+	// }
+
+	/// CANOPY OPTIONNAL PARAMETERS, a warning will be thrown in CANOPY::Initialze if no value is provided
+
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopySnowIntCapacity",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyAlbedoDry",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyAlbedoWet",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyAlbedoSnow",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyDiameter",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyFracLAIUpperLayer",mio::IOUtils::nodata);
+	// SSdata.TimeCountDeltaHS = xmlSetVal(xpath,"CanopyBasalArea",mio::IOUtils::nodata);
+
 }
 
 //Direction in which the layers should be read and stored in SSdata
@@ -835,6 +880,20 @@ void CaaMLIO::writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStati
 	xmlWriteElement(writer,(namespaceSNP+":CanopyBasalArea").c_str(),valueStr,"","");
 	sprintf(valueStr,"%.4f",Xdata.Cdata.throughfall);
 	xmlWriteElement(writer,(namespaceSNP+":CanopyDirectThroughfall").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.int_cap_snow);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopySnowIntCapacity").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.can_alb_dry);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyAlbedoDry").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.can_alb_wet);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyAlbedoWet").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.can_alb_snow);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyAlbedoSnow").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.can_diameter);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyDiameter").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.lai_frac_top_default);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyFracLAIUpperLayer").c_str(),valueStr,"","");
+	// sprintf(valueStr,"%.4f",Xdata.Cdata.BasalArea);
+	// xmlWriteElement(writer,(namespaceSNP+":CanopyBasalArea").c_str(),valueStr,"","");
 	sprintf(valueStr,"%.4f",Xdata.WindScalingFactor);
 	xmlWriteElement(writer,(namespaceSNP+":WindScalingFactor").c_str(),valueStr,"","");
 	sprintf(valueStr,"%d",static_cast<unsigned int>(Xdata.ErosionLevel));
@@ -874,14 +933,14 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 					xmlWriteElement(writer,(namespaceCAAML+":grainFormPrimary").c_str(),"MFcr","","");
 				}
 				xmlWriteElement(writer,(namespaceCAAML+":grainFormSecondary").c_str(),grainShape_valToAbbrev(b).c_str(),"","");
-				xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":grainSize").c_str());
-				xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uom",(const xmlChar*)"mm");
-				xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":Components").c_str());
-				sprintf(layerValStr,"%.3f",2.*Xdata.Edata[ii].rg);
-				xmlWriteElement(writer,(namespaceCAAML+":avg").c_str(),layerValStr,"","");
-				xmlTextWriterEndElement(writer);
-				xmlTextWriterEndElement(writer);
 			}
+			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":grainSize").c_str());
+			xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uom",(const xmlChar*)"mm");
+			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":Components").c_str());
+			sprintf(layerValStr,"%.3f",2.*Xdata.Edata[ii].rg);
+			xmlWriteElement(writer,(namespaceCAAML+":avg").c_str(),layerValStr,"","");
+			xmlTextWriterEndElement(writer);
+			xmlTextWriterEndElement(writer);
 			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":validFormationTime").c_str());
 			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":TimeInstant").c_str());
 			const double tz = Xdata.Edata[ii].depositionDate.getTimeZone();
@@ -907,8 +966,8 @@ void CaaMLIO::writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdat
 				xmlTextWriterEndElement(writer);
 				// sprintf(layerValStr,"%.2f",Xdata.Edata[ii].solute);
 				// xmlWriteElement(writer,(namespaceCAAML+":impurities").c_str(),layerValStr,"uom","");
-				xmlTextWriterEndElement(writer);
 			}
+			xmlTextWriterEndElement(writer);
 		}
 	}
 	xmlTextWriterEndElement(writer);
