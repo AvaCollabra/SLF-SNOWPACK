@@ -138,7 +138,7 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 	// HEAT FLUXES CANOPY (W m-2)
 	fout << "," << -Cdata->sensible;             // sensible heat flux to canopy (>0 towards canopy)
 	fout << "," << -Cdata->latentcorr;           // latent heat flux to canopy (>0 towards canopy)
-        fout << "," << Cdata->CondFluxCanop,         // biomass heat storage flux towards Canopy
+	fout << "," << Cdata->CondFluxCanop;         // biomass heat storage flux towards Canopy
 
 	// WATER FLUXES CANOPY (kg m-2)
 	fout << "," << Cdata->transp/cos_sl;         // transpiration
@@ -1723,7 +1723,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// local auxiliary variables
 	double canopyalb=IOUtils::nodata;
-	double h0, h1, ht0, ht1, le0, le1, let0, let1, HM0, HM1, HMt0, HMt1, TT0, TT1;
+	double h0, h1, ht0 = 0, ht1 = 0, le0, le1, let0, let1, HM0 = 0, HM1 = 0, HMt0 = 0, HMt1 = 0, TT0, TT1;
 	double r0, r1, r2, rt0, rt1, rt2;
 	double TC_previous_tstep = Xdata.Cdata.temp;
 	double Tt_previous_tstep = Xdata.Cdata.Ttrunk;

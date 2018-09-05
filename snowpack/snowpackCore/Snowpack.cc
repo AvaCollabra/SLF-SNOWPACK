@@ -67,8 +67,8 @@ void Snowpack::EL_INCID(const size_t &e, int Ie[]) {
 
 /// @brief Define the node to element temperature macro
 void Snowpack::EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] ) {
-	Te0[ 0 ] = T0[ Ie[ 0 ] ].T;
-	Te0[ 1 ] = T0[ Ie[ 1 ] ].T;
+	Te0[ 0 ] = T0[ static_cast<size_t>(Ie[ 0 ]) ].T;
+	Te0[ 1 ] = T0[ static_cast<size_t>(Ie[ 1 ]) ].T;
 	Tei[ 0 ] = Ti[ Ie[ 0 ] ];
 	Tei[ 1 ] = Ti[ Ie[ 1 ] ];
 }
@@ -1422,7 +1422,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 /**
  * @brief Introduce new snow elements as technical snow
  * @details When there is natural snow as well as man-made snow,
- * the whole snow fall will have the properties of man-made snow. 
+ * the whole snow fall will have the properties of man-made snow.
  * @param Mdata Meteorological data
  * @param Xdata Snow cover data
  * @param cumu_precip cumulated amount of precipitation (kg m-2)
@@ -1441,7 +1441,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	const double V_water = 100.;	// (l/min) average water supply by the snow guns
 	double LWC_max = 29.76 - 11.71 * log(abs(Tw)) + 1.07*T_water - 1.6 * v_wind;	// (%vol) liquid water content at 55 l/min
 	if (LWC_max < 0.) LWC_max = 0.;
-	const double LWC = (0.004 * V_water + 0.52) * 100 * (rho_hn/917.) / 36.3 * LWC_max * 0.4;	// (%vol) liquid water content (average value multiply by 0.5) 
+	const double LWC = (0.004 * V_water + 0.52) * 100 * (rho_hn/917.) / 36.3 * LWC_max * 0.4;	// (%vol) liquid water content (average value multiply by 0.5)
 	const double psum_snow_tech = Mdata.psum_tech * rho_w / rho_hn * (1. - tech_lost); 	// Technical snow production (mm) dependent from water loss and amount of provided water
 	const double precip_snow = psum_snow_tech + cumu_precip * (1. -  Mdata.psum_ph);	// (mm)
 	const double precip_rain = (Mdata.psum) * Mdata.psum_ph;			// (mm)
@@ -1492,23 +1492,23 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
 				const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 				fillNewSnowElement(Mdata, length, rho_hn, false, Xdata.number_of_solutes, EMS[e]);
-				
-				// Now give specific properties for technical snow, consider liquid water 
-				// Assume that the user does not specify unreasonably high liquid water contents. 
+
+				// Now give specific properties for technical snow, consider liquid water
+				// Assume that the user does not specify unreasonably high liquid water contents.
 				// This depends also on the density of the solid fraction - print a warning if it looks bad
 				EMS[e].theta[WATER] += th_w;
 
 				if ( (EMS[e].theta[WATER] + EMS[e].theta[ICE]) > 0.7)
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 				          "Too much liquid water specified or density too high! Dry density =%.3f kg m-3  Water Content = %.3f %", rho_hn, th_w);
-				          
+
 				EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
-				
+
 				if (EMS[e].theta[AIR] < 0.) {
 					prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Error in technical snow input - no void fraction left");
 					throw IOException("Runtime error in runSnowpackModel", AT);
 					}
-			
+
 				// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
 				// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
 				// Note that we use the same branching condition as in the function Snowpack::neumannBoundaryConditions(...)
@@ -1518,9 +1518,9 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 					EMS[e].theta[ICE]-=(2.*Constants::eps)*(Constants::density_water/Constants::density_ice);
 					EMS[e].theta[AIR]+=((Constants::density_water/Constants::density_ice)-1.)*(2.*Constants::eps);
 				}
-				
+
 				Xdata.ColdContent += EMS[e].coldContent(); //update cold content
-				
+
 				// Now adjust default new element values to technical snow (mk = 6)
 				EMS[e].mk = 6;
 				EMS[e].dd = 0.;
@@ -1558,7 +1558,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		compTechnicalSnow(Mdata, Xdata, cumu_precip);
 		return;
 	}
-	
+
 	bool add_element = false;
 	double delta_cH = 0.; // Actual enforced snow depth
 	double hn = 0.; //new snow amount
@@ -1979,7 +1979,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			sn_dt = 60.;
 			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
 		}
-		
+
 		Meteo M(cfg);
 		do {
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
@@ -2148,13 +2148,13 @@ void Snowpack::snowPreparation(SnowStation& Xdata)
 	const size_t nE = Xdata.getNumberOfElements();
 	double depth = 0.;
 	double rho_groom ;	// Density of the groomed snow
-	
+
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	for (size_t e=nE; e-- > Xdata.SoilNode; ) {
 		if (EMS[e].Rho > 430.) rho_groom = 430.;
 		else rho_groom = 12.152 * pow(448.78 - EMS[e].Rho, 1./2.) + 0.9963 * EMS[e].Rho - 35.41;
-			
+
 		const double L0 = EMS[e].L;
 		const double L1 = EMS[e].L * EMS[e].Rho / rho_groom;	// New lenght of the element after grooming
 		depth += L0;

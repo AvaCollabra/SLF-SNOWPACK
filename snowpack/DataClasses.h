@@ -225,7 +225,7 @@ class SN_SNOWSOIL_DATA {
 								     SoilAlb(mio::IOUtils::nodata), BareSoil_z0(mio::IOUtils::nodata),
                      Canopy_Height(mio::IOUtils::nodata), Canopy_LAI(mio::IOUtils::nodata),
 										 Canopy_Direct_Throughfall(mio::IOUtils::nodata),  WindScalingFactor(1.),
-										 ErosionLevel(mio::IOUtils::nodata), TimeCountDeltaHS(mio::IOUtils::nodata),
+										 ErosionLevel(static_cast<int>(mio::IOUtils::nodata)), TimeCountDeltaHS(mio::IOUtils::nodata),
 										 Canopy_BasalArea(mio::IOUtils::nodata), Canopy_diameter(mio::IOUtils::nodata),
 										 Canopy_lai_frac_top_default(mio::IOUtils::nodata),Canopy_int_cap_snow(mio::IOUtils::nodata),
 										 Canopy_alb_dry(mio::IOUtils::nodata),Canopy_alb_wet(mio::IOUtils::nodata),

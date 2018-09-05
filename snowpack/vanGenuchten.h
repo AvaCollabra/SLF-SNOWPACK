@@ -25,8 +25,6 @@
 
 #include <sstream>
 
-using namespace std;
-
 /**
  * @class vanGenuchten
  * @version 1.0
@@ -41,7 +39,7 @@ class vanGenuchten {
 	public:
 		vanGenuchten(ElementData &pEMS);
 		vanGenuchten(const vanGenuchten& c);
-		virtual ~vanGenuchten() {};
+		virtual ~vanGenuchten() {}
 		vanGenuchten& operator=(const vanGenuchten&); ///<Assignement operator
 		friend std::iostream& operator<<(std::iostream& os, const vanGenuchten& data);
 		friend std::iostream& operator>>(std::iostream& is, vanGenuchten& data);
