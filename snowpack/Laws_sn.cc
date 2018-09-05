@@ -74,7 +74,7 @@ std::vector<double> SnLaws::swa_fb; ///< fudge_bohren
  *  - none, assume saturation pressure and no extra resistance
  */
 //@{
-const SnLaws::soil_evap_model SnLaws::soil_evaporation = EVAP_RESISTANCE;
+const SnLaws::soil_evap_model SnLaws::soil_evaporation = EVAP_RESISTANCE; //EVAP_RELATIVE_HUMIDITY
 
 /// @brief Minimum soil surface resistance, 50 sm-1 (van den Hurk et al, 2000)
 const double SnLaws::rsoilmin = 50.0;

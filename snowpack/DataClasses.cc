@@ -852,32 +852,32 @@ std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 	os.write(reinterpret_cast<const char*>(&data.HMLeaves), sizeof(data.HMLeaves));
 	os.write(reinterpret_cast<const char*>(&data.HMTrunks), sizeof(data.HMTrunks));
 
-  os.write(reinterpret_cast< const char*>(&data.int_cap_snow), sizeof(data.int_cap_snow));
-  os.write(reinterpret_cast< const char*>(&data.int_cap_rain), sizeof(data.int_cap_rain));
-  os.write(reinterpret_cast< const char*>(&data.interception_timecoef), sizeof(data.interception_timecoef));
-  os.write(reinterpret_cast<const char*>(&data.can_alb_dry), sizeof(data.can_alb_dry));
-  os.write(reinterpret_cast<const char*>(&data.can_alb_wet), sizeof(data.can_alb_wet));
-  os.write(reinterpret_cast<const char*>(&data.can_alb_snow), sizeof(data.can_alb_snow));
-  os.write(reinterpret_cast<const char*>(&data.krnt_lai), sizeof(data.krnt_lai));
-  os.write(reinterpret_cast<const char*>(&data.can_diameter), sizeof(data.can_diameter));
-  os.write(reinterpret_cast<const char*>(&data.biomass_heat_capacity), sizeof(data.biomass_heat_capacity));
-  os.write(reinterpret_cast<const char*>(&data.lai_frac_top_default), sizeof(data.lai_frac_top_default));
-  os.write(reinterpret_cast<const char*>(&data.trunk_frac_height), sizeof(data.trunk_frac_height));
-  os.write(reinterpret_cast<const char*>(&data.trunkalb), sizeof(data.trunkalb));
-  os.write(reinterpret_cast<const char*>(&data.et), sizeof(data.et));
-  os.write(reinterpret_cast<const char*>(&data.canopy_stabilitycorrection), sizeof(data.canopy_stabilitycorrection));
-  os.write(reinterpret_cast<const char*>(&data.roughmom_to_canopyheight_ratio), sizeof(data.roughmom_to_canopyheight_ratio));
-  os.write(reinterpret_cast<const char*>(&data.displ_to_canopyheight_ratio), sizeof(data.displ_to_canopyheight_ratio));
-  os.write(reinterpret_cast<const char*>(&data.raincrease_snow), sizeof(data.raincrease_snow));
-  os.write(reinterpret_cast<const char*>(&data.canopytemp_maxchange_perhour), sizeof(data.canopytemp_maxchange_perhour));
-  os.write(reinterpret_cast<const char*>(&data.roughheat_to_roughmom_ratio), sizeof(data.roughheat_to_roughmom_ratio));
-  os.write(reinterpret_cast<const char*>(&data.can_ch0), sizeof(data.can_ch0));
-  os.write(reinterpret_cast<const char*>(&data.can_rs_mult), sizeof(data.can_rs_mult));
-  os.write(reinterpret_cast<const char*>(&data.rsmin), sizeof(data.rsmin));
-  os.write(reinterpret_cast<const char*>(&data.f3_gd), sizeof(data.f3_gd));
-  os.write(reinterpret_cast<const char*>(&data.rootdepth), sizeof(data.rootdepth));
-  os.write(reinterpret_cast<const char*>(&data.wp_fraction), sizeof(data.wp_fraction));
-  os.write(reinterpret_cast<const char*>(&data.h_wilt), sizeof(data.h_wilt));
+	os.write(reinterpret_cast< const char*>(&data.int_cap_snow), sizeof(data.int_cap_snow));
+	os.write(reinterpret_cast< const char*>(&data.int_cap_rain), sizeof(data.int_cap_rain));
+	os.write(reinterpret_cast< const char*>(&data.interception_timecoef), sizeof(data.interception_timecoef));
+	os.write(reinterpret_cast<const char*>(&data.can_alb_dry), sizeof(data.can_alb_dry));
+	os.write(reinterpret_cast<const char*>(&data.can_alb_wet), sizeof(data.can_alb_wet));
+	os.write(reinterpret_cast<const char*>(&data.can_alb_snow), sizeof(data.can_alb_snow));
+	os.write(reinterpret_cast<const char*>(&data.krnt_lai), sizeof(data.krnt_lai));
+	os.write(reinterpret_cast<const char*>(&data.can_diameter), sizeof(data.can_diameter));
+	os.write(reinterpret_cast<const char*>(&data.biomass_heat_capacity), sizeof(data.biomass_heat_capacity));
+	os.write(reinterpret_cast<const char*>(&data.lai_frac_top_default), sizeof(data.lai_frac_top_default));
+	os.write(reinterpret_cast<const char*>(&data.trunk_frac_height), sizeof(data.trunk_frac_height));
+	os.write(reinterpret_cast<const char*>(&data.trunkalb), sizeof(data.trunkalb));
+	os.write(reinterpret_cast<const char*>(&data.et), sizeof(data.et));
+	os.write(reinterpret_cast<const char*>(&data.canopy_stabilitycorrection), sizeof(data.canopy_stabilitycorrection));
+	os.write(reinterpret_cast<const char*>(&data.roughmom_to_canopyheight_ratio), sizeof(data.roughmom_to_canopyheight_ratio));
+	os.write(reinterpret_cast<const char*>(&data.displ_to_canopyheight_ratio), sizeof(data.displ_to_canopyheight_ratio));
+	os.write(reinterpret_cast<const char*>(&data.raincrease_snow), sizeof(data.raincrease_snow));
+	os.write(reinterpret_cast<const char*>(&data.canopytemp_maxchange_perhour), sizeof(data.canopytemp_maxchange_perhour));
+	os.write(reinterpret_cast<const char*>(&data.roughheat_to_roughmom_ratio), sizeof(data.roughheat_to_roughmom_ratio));
+	os.write(reinterpret_cast<const char*>(&data.can_ch0), sizeof(data.can_ch0));
+	os.write(reinterpret_cast<const char*>(&data.can_rs_mult), sizeof(data.can_rs_mult));
+	os.write(reinterpret_cast<const char*>(&data.rsmin), sizeof(data.rsmin));
+	os.write(reinterpret_cast<const char*>(&data.f3_gd), sizeof(data.f3_gd));
+	os.write(reinterpret_cast<const char*>(&data.rootdepth), sizeof(data.rootdepth));
+	os.write(reinterpret_cast<const char*>(&data.wp_fraction), sizeof(data.wp_fraction));
+	os.write(reinterpret_cast<const char*>(&data.h_wilt), sizeof(data.h_wilt));
 
 	return os;
 }
@@ -942,32 +942,32 @@ std::istream& operator>>(std::istream& is, CanopyData& data)
 	is.read(reinterpret_cast<char*>(&data.HMLeaves), sizeof(data.HMLeaves));
 	is.read(reinterpret_cast<char*>(&data.HMTrunks), sizeof(data.HMTrunks));
 
-  is.read(reinterpret_cast<char*>(&data.int_cap_snow), sizeof(data.int_cap_snow));
-  is.read(reinterpret_cast<char*>(&data.int_cap_rain), sizeof(data.int_cap_rain));
-  is.read(reinterpret_cast<char*>(&data.interception_timecoef), sizeof(data.interception_timecoef));
-  is.read(reinterpret_cast<char*>(&data.can_alb_dry), sizeof(data.can_alb_dry));
-  is.read(reinterpret_cast<char*>(&data.can_alb_wet), sizeof(data.can_alb_wet));
-  is.read(reinterpret_cast<char*>(&data.can_alb_snow), sizeof(data.can_alb_snow));
-  is.read(reinterpret_cast<char*>(&data.krnt_lai), sizeof(data.krnt_lai));
-  is.read(reinterpret_cast<char*>(&data.can_diameter), sizeof(data.can_diameter));
-  is.read(reinterpret_cast<char*>(&data.biomass_heat_capacity), sizeof(data.biomass_heat_capacity));
-  is.read(reinterpret_cast<char*>(&data.lai_frac_top_default), sizeof(data.lai_frac_top_default));
-  is.read(reinterpret_cast<char*>(&data.trunk_frac_height), sizeof(data.trunk_frac_height));
-  is.read(reinterpret_cast<char*>(&data.trunkalb), sizeof(data.trunkalb));
-  is.read(reinterpret_cast<char*>(&data.et), sizeof(data.et));
-  is.read(reinterpret_cast<char*>(&data.canopy_stabilitycorrection), sizeof(data.canopy_stabilitycorrection));
-  is.read(reinterpret_cast<char*>(&data.roughmom_to_canopyheight_ratio), sizeof(data.roughmom_to_canopyheight_ratio));
-  is.read(reinterpret_cast<char*>(&data.displ_to_canopyheight_ratio), sizeof(data.displ_to_canopyheight_ratio));
-  is.read(reinterpret_cast<char*>(&data.raincrease_snow), sizeof(data.raincrease_snow));
-  is.read(reinterpret_cast<char*>(&data.canopytemp_maxchange_perhour), sizeof(data.canopytemp_maxchange_perhour));
-  is.read(reinterpret_cast<char*>(&data.roughheat_to_roughmom_ratio), sizeof(data.roughheat_to_roughmom_ratio));
-  is.read(reinterpret_cast<char*>(&data.can_ch0), sizeof(data.can_ch0));
-  is.read(reinterpret_cast<char*>(&data.can_rs_mult), sizeof(data.can_rs_mult));
-  is.read(reinterpret_cast<char*>(&data.rsmin), sizeof(data.rsmin));
-  is.read(reinterpret_cast<char*>(&data.f3_gd), sizeof(data.f3_gd));
-  is.read(reinterpret_cast<char*>(&data.rootdepth), sizeof(data.rootdepth));
-  is.read(reinterpret_cast<char*>(&data.wp_fraction), sizeof(data.wp_fraction));
-  is.read(reinterpret_cast<char*>(&data.h_wilt), sizeof(data.h_wilt));
+	is.read(reinterpret_cast<char*>(&data.int_cap_snow), sizeof(data.int_cap_snow));
+	is.read(reinterpret_cast<char*>(&data.int_cap_rain), sizeof(data.int_cap_rain));
+	is.read(reinterpret_cast<char*>(&data.interception_timecoef), sizeof(data.interception_timecoef));
+	is.read(reinterpret_cast<char*>(&data.can_alb_dry), sizeof(data.can_alb_dry));
+	is.read(reinterpret_cast<char*>(&data.can_alb_wet), sizeof(data.can_alb_wet));
+	is.read(reinterpret_cast<char*>(&data.can_alb_snow), sizeof(data.can_alb_snow));
+	is.read(reinterpret_cast<char*>(&data.krnt_lai), sizeof(data.krnt_lai));
+	is.read(reinterpret_cast<char*>(&data.can_diameter), sizeof(data.can_diameter));
+	is.read(reinterpret_cast<char*>(&data.biomass_heat_capacity), sizeof(data.biomass_heat_capacity));
+ 	is.read(reinterpret_cast<char*>(&data.lai_frac_top_default), sizeof(data.lai_frac_top_default));
+	is.read(reinterpret_cast<char*>(&data.trunk_frac_height), sizeof(data.trunk_frac_height));
+ 	is.read(reinterpret_cast<char*>(&data.trunkalb), sizeof(data.trunkalb));
+ 	is.read(reinterpret_cast<char*>(&data.et), sizeof(data.et));
+ 	is.read(reinterpret_cast<char*>(&data.canopy_stabilitycorrection), sizeof(data.canopy_stabilitycorrection));
+	is.read(reinterpret_cast<char*>(&data.roughmom_to_canopyheight_ratio), sizeof(data.roughmom_to_canopyheight_ratio));
+	is.read(reinterpret_cast<char*>(&data.displ_to_canopyheight_ratio), sizeof(data.displ_to_canopyheight_ratio));
+	is.read(reinterpret_cast<char*>(&data.raincrease_snow), sizeof(data.raincrease_snow));
+	is.read(reinterpret_cast<char*>(&data.canopytemp_maxchange_perhour), sizeof(data.canopytemp_maxchange_perhour));
+	is.read(reinterpret_cast<char*>(&data.roughheat_to_roughmom_ratio), sizeof(data.roughheat_to_roughmom_ratio));
+	is.read(reinterpret_cast<char*>(&data.can_ch0), sizeof(data.can_ch0));
+	is.read(reinterpret_cast<char*>(&data.can_rs_mult), sizeof(data.can_rs_mult));
+	is.read(reinterpret_cast<char*>(&data.rsmin), sizeof(data.rsmin));
+	is.read(reinterpret_cast<char*>(&data.f3_gd), sizeof(data.f3_gd));
+	is.read(reinterpret_cast<char*>(&data.rootdepth), sizeof(data.rootdepth));
+	is.read(reinterpret_cast<char*>(&data.wp_fraction), sizeof(data.wp_fraction));
+	is.read(reinterpret_cast<char*>(&data.h_wilt), sizeof(data.h_wilt));
 
 	return is;
 }
@@ -986,7 +986,7 @@ const std::string CanopyData::toString() const
 	os << "\tz0m:                               " << z0m <<  "\n";
 	os << "\tz0h:                               " <<  z0h << "\n";
 	os << "\tzdispl:                            " << zdispl << "\n";
-  os << "_____________________________________" <<  "\n";
+	os << "_____________________________________" <<  "\n";
 	os << "\tra:                                " << ra << "\n";
 	os << "\trc:                                " <<  rc << "\n";
 	os << "\tdrs:                               " << rs << "\n";
@@ -997,7 +997,7 @@ const std::string CanopyData::toString() const
 	os << "\tintcapacity:                       " << intcapacity << "\n";
 	os << "\trswrac:                            " << rswrac << "\n";
 	os << "\tiswrac:                            " << iswrac << "\n";
-  os << "_____________________________________" <<  "\n";
+	os << "_____________________________________" <<  "\n";
 	os << "\tiswrbc:                            " << iswrbc << "\n";
 	os << "\tilwrac:                            " << ilwrac << "\n";
 	os << "\trlwrac:                            " << rlwrac << "\n";
@@ -1008,57 +1008,57 @@ const std::string CanopyData::toString() const
 	os << "\tsensible:                          " << sensible << "\n";
 	os << "\tlatent:                            " << latent << "\n";
 	os << "\tlatentcorr:                        " << latentcorr << "\n";
-  os << "_____________________________________" <<  "\n";
+	os << "_____________________________________" <<  "\n";
 	os << "\ttransp:                            " << transp << "\n";
 	os << "\tintevap:                           " << intevap << "\n";
 	os << "\tinterception:                      " << interception << "\n";
 	os << "\tthroughfall:                       " << throughfall << "\n";
 	os << "\tsnowunload:                        " << snowunload << "\n";
-  os << "\tint_cap_snow:                      " << int_cap_snow << "\n";
-  os << "\tint_cap_rain:                      " << int_cap_rain << "\n";
-  os << "\tinterception_timecoef:             " << interception_timecoef << "\n";
-  os << "\tcan_alb_dry:                       " << can_alb_dry << "\n";
-  os << "\tcan_alb_wet:                       " << can_alb_wet << "\n";
-  os << "_____________________________________" <<  "\n";
-  os << "\tcan_alb_snow:                      " << can_alb_snow << "\n";
-  os << "\tkrnt_lai:                          " << krnt_lai << "\n";
-  os << "\tcan_diameter:                      " << can_diameter << "\n";
-  os << "\tbiomass_heat_capacity:             " << biomass_heat_capacity << "\n";
-  os << "\tbiomass_density:                   " << biomass_density << "\n";
-  os << "\tlai_frac_top_default:              " << lai_frac_top_default << "\n";
-  os << "\ttrunk_frac_height:                 " << trunk_frac_height << "\n";
-  os << "\ttrunkalb:                          " << trunkalb << "\n";
-  os << "\tet:                                " << et << "\n";
-  os << "\tcanopy_stabilitycorrection:        " << canopy_stabilitycorrection << "\n";
-  os << "_____________________________________" <<  "\n";
-  os << "\troughmom_to_canopyheight_ratio:    " << roughmom_to_canopyheight_ratio << "\n";
-  os << "\tdispl_to_canopyheight_ratio:       " << displ_to_canopyheight_ratio << "\n";
-  os << "\traincrease_snow:                   " << raincrease_snow << "\n";
-  os << "\tcanopytemp_maxchange_perhour:      " << canopytemp_maxchange_perhour << "\n";
-  os << "\troughheat_to_roughmom_ratio:       " << roughheat_to_roughmom_ratio << "\n";
-  os << "\tcan_ch0:                           " << can_ch0 << "\n";
-  os << "\tcan_rs_mult:                       " << can_rs_mult << "\n";
-  os << "\trsmin:                             " << rsmin << "\n";
-  os << "\tf3_gd:                             " << f3_gd << "\n";
-  os << "\trootdepth:                         " << rootdepth << "\n";
-  os << "_____________________________________" <<  "\n";
-  os << "\twp_fraction:                       " << wp_fraction << "\n";
-  os << "\th_wilt:                            " << h_wilt << "\n";
-  os << "\tsnowfac:                           " << snowfac << "\n";
-  os << "\trainfac:                           " << rainfac << "\n";
-  os << "\tliquidfraction:                    " << liquidfraction << "\n";
-  os << "\tsigftrunk:                         " << sigftrunk << "\n";
-  os << "\tTtrunk:                            " << Ttrunk << "\n";
-  os << "\tCondFluxCanop:                     " << CondFluxCanop << "\n";
-  os << "\tCondFluxTrunks:                    " << CondFluxTrunks << "\n";
-  os << "\tLWnet_Trunks:                      " << LWnet_Trunks << "\n";
-  os << "_____________________________________" <<  "\n";
-  os << "\tSWnet_Trunks:                      " << SWnet_Trunks << "\n";
-  os << "\tQStrunks:                          " << QStrunks << "\n";
-  os << "\tforestfloor_alb:                   " << forestfloor_alb << "\n";
-  os << "\tBasalArea:                         " << BasalArea << "\n";
-  os << "\tHMLeaves:                          " << HMLeaves << "\n";
-  os << "\tHMTrunks:                          " << HMLeaves << "\n";
+	os << "\tint_cap_snow:                      " << int_cap_snow << "\n";
+  	os << "\tint_cap_rain:                      " << int_cap_rain << "\n";
+  	os << "\tinterception_timecoef:             " << interception_timecoef << "\n";
+	os << "\tcan_alb_dry:                       " << can_alb_dry << "\n";
+	os << "\tcan_alb_wet:                       " << can_alb_wet << "\n";
+	os << "_____________________________________" <<  "\n";
+	os << "\tcan_alb_snow:                      " << can_alb_snow << "\n";
+	os << "\tkrnt_lai:                          " << krnt_lai << "\n";
+	os << "\tcan_diameter:                      " << can_diameter << "\n";
+	os << "\tbiomass_heat_capacity:             " << biomass_heat_capacity << "\n";
+	os << "\tbiomass_density:                   " << biomass_density << "\n";
+	os << "\tlai_frac_top_default:              " << lai_frac_top_default << "\n";
+	os << "\ttrunk_frac_height:                 " << trunk_frac_height << "\n";
+	os << "\ttrunkalb:                          " << trunkalb << "\n";
+	os << "\tet:                                " << et << "\n";
+	os << "\tcanopy_stabilitycorrection:        " << canopy_stabilitycorrection << "\n";
+	os << "_____________________________________" <<  "\n";
+	os << "\troughmom_to_canopyheight_ratio:    " << roughmom_to_canopyheight_ratio << "\n";
+	os << "\tdispl_to_canopyheight_ratio:       " << displ_to_canopyheight_ratio << "\n";
+	os << "\traincrease_snow:                   " << raincrease_snow << "\n";
+	os << "\tcanopytemp_maxchange_perhour:      " << canopytemp_maxchange_perhour << "\n";
+	os << "\troughheat_to_roughmom_ratio:       " << roughheat_to_roughmom_ratio << "\n";
+	os << "\tcan_ch0:                           " << can_ch0 << "\n";
+	os << "\tcan_rs_mult:                       " << can_rs_mult << "\n";
+	os << "\trsmin:                             " << rsmin << "\n";
+	os << "\tf3_gd:                             " << f3_gd << "\n";
+	os << "\trootdepth:                         " << rootdepth << "\n";
+	os << "_____________________________________" <<  "\n";
+	os << "\twp_fraction:                       " << wp_fraction << "\n";
+	os << "\th_wilt:                            " << h_wilt << "\n";
+	os << "\tsnowfac:                           " << snowfac << "\n";
+	os << "\trainfac:                           " << rainfac << "\n";
+	os << "\tliquidfraction:                    " << liquidfraction << "\n";
+	os << "\tsigftrunk:                         " << sigftrunk << "\n";
+	os << "\tTtrunk:                            " << Ttrunk << "\n";
+	os << "\tCondFluxCanop:                     " << CondFluxCanop << "\n";
+	os << "\tCondFluxTrunks:                    " << CondFluxTrunks << "\n";
+	os << "\tLWnet_Trunks:                      " << LWnet_Trunks << "\n";
+	os << "_____________________________________" <<  "\n";
+	os << "\tSWnet_Trunks:                      " << SWnet_Trunks << "\n";
+	os << "\tQStrunks:                          " << QStrunks << "\n";
+	os << "\tforestfloor_alb:                   " << forestfloor_alb << "\n";
+	os << "\tBasalArea:                         " << BasalArea << "\n";
+	os << "\tHMLeaves:                          " << HMLeaves << "\n";
+	os << "\tHMTrunks:                          " << HMLeaves << "\n";
 
 	os << "</CanopyData>\n";
 	return os.str();
@@ -1454,7 +1454,7 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
  * (Richtwerte Baugrund), which once more proves that "nomen est omen".
  * If my name was "Schachtschabel", I would never ever be dealing with
  * wet soils and Baugrund.
- * For the USDA soil classes used in Richards equation, the field capacity is obtained using the Saxton formula (XXX) and defined in the VG class
+ * For the USDA soil classes used if Richards equation is used, the field capacity is obtained using the Saxton formula (K.E. Saxton et al., 1986, Estimating generalized soil-water characteristics from texture. Soil Sci. Soc. Amer. J. 50(4):1031-1036) and defined in the VG class
  * @author Michael Lehning & Adrien michel
  * @version 9Y.mm
  * @return Soil field capacity (-)
@@ -1462,11 +1462,11 @@ double ElementData::snowResidualWaterContent(const double& theta_i)
 double ElementData::soilFieldCapacity() const
 {
 	double fc;
-  //if (VG.defined == true)
-  //{
-  //  fc=VG.field_capacity;
-  //}
-  //else{
+  if (VG.defined == true)
+  {
+    fc=VG.field_capacity;
+  }
+  else{
   	if (!(rg > 0.)) {
   		fc = std::min(SnLaws::field_capacity_soil, (1. - theta[SOIL]) * 0.1);
   	} else {
@@ -1483,7 +1483,7 @@ double ElementData::soilFieldCapacity() const
   			}
   		}
   	}
-  //}
+  }
 	return std::min(1. - theta[SOIL], fc);		// Ensure that the field capacity does not exceed the pore space.
 }
 
