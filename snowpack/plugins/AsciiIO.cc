@@ -933,7 +933,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	// Check reference level: either a marked reference level, or, if non existent, the sea level (if sea ice module is used), otherwise 0:
 	const double ReferenceLevel = (  Xdata.findMarkedReferenceLayer()==IOUtils::nodata  )  ?  (  (Xdata.Seaice==NULL)?(0.):(Xdata.Seaice->SeaLevel)  )  :  (Xdata.findMarkedReferenceLayer()  - Xdata.Ground);
 	// Number of fill elements for offset (only 0 or 1 is supported now):
-	const int Noffset = (SeaIce)?(1):(0);
+	const size_t Noffset = (SeaIce)?(1):(0);
 
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
 	const size_t nz = (useSoilLayers)? nN : nE;
