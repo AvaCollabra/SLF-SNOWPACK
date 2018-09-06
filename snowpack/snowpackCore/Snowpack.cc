@@ -694,26 +694,27 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		size_t eAlbedo = nE-1;
 		const size_t marker = EMS[eAlbedo].mk % 10;
 
-		switch (marker) {
-			case 9: // WATER_LAYER
+		if(marker==9) // WATER_LAYER
+		{
 				if (eAlbedo > Xdata.SoilNode)
 					eAlbedo--;
-
-			case 8: // Ice layer within the snowpack
-				while ((eAlbedo > Xdata.SoilNode) && (marker == 8))
-					eAlbedo--;
-
-			default: // Snow, glacier ice, PLASTIC, or soil
-				if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
-					Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_NIED_av, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata, ageAlbedo);
-					if (useCanopyModel && (Xdata.Cdata.height > 3.5)) { //forest floor albedo
-						const double age = (forestfloor_alb) ? std::max(0., Mdata.date.getJulian() - Xdata.Edata[eAlbedo].depositionDate.getJulian()) : 0.; // day
-						Albedo = (Albedo -.3)* exp(-age/7.) + 0.3;
-					}
-				} else { // PLASTIC, or soil
-					Albedo = Xdata.SoilAlb;
-				}
 		}
+		else if (marker==8) // Ice layer within the snowpack
+ 		{
+				while (eAlbedo > Xdata.SoilNode)
+					eAlbedo--;
+		}
+
+		if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
+			Albedo = SnLaws::parameterizedSnowAlbedo(snow_albedo, albedo_parameterization, albedo_average_schmucki, albedo_NIED_av, albedo_fixedValue, EMS[eAlbedo], NDS[eAlbedo+1].T, Mdata, ageAlbedo);
+			if (useCanopyModel && (Xdata.Cdata.height > 3.5)) { //forest floor albedo
+				const double age = (forestfloor_alb) ? std::max(0., Mdata.date.getJulian() - Xdata.Edata[eAlbedo].depositionDate.getJulian()) : 0.; // day
+				Albedo = (Albedo -.3)* exp(-age/7.) + 0.3;
+			}
+		} else { // PLASTIC, or soil
+			Albedo = Xdata.SoilAlb;
+		}
+
 	}
 
 	//enforce albedo range
@@ -1959,7 +1960,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 		if (Xdata.Seaice != NULL) {
 			// Reinitialize and compute the initial meteo heat fluxes
-			memset((&Bdata), 0, sizeof(BoundCond));
+			Bdata.reset();
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 			// Run sea ice module
 			Xdata.Seaice->runSeaIceModule(Xdata, Mdata, Bdata, sn_dt);
@@ -1985,7 +1986,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
 			if (ii >= 1) M.compMeteo(Mdata, Xdata, false);
 			// Reinitialize and compute the initial meteo heat fluxes
-			memset((&Bdata), 0, sizeof(BoundCond));
+			Bdata.reset();
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 
 			// set the snow albedo

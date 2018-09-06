@@ -407,16 +407,20 @@ class NodeData {
  */
 class CanopyData {
 	public:
-		CanopyData() : storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), z0m(0.), z0h(0.), zdispl(0.),
-		     height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
-		     totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.),
-		     iswrbc(0.), ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.),
-		     sensible(0.), latent(0.), latentcorr(0.), transp(0.), intevap(0.),
-		     interception(0.), throughfall(0.), snowunload(0.),
-		     snowfac(0.), rainfac(0.),liquidfraction(0.),
-		     sigftrunk(0), Ttrunk(0.), CondFluxCanop(0.), CondFluxTrunks(0.),
-		     LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.),
-		     forestfloor_alb(0.), BasalArea(0), HMLeaves(0.), HMTrunks(0.) {}
+		CanopyData() : int_cap_snow(0.), int_cap_rain(0.),  interception_timecoef(0.), can_alb_dry(0.),
+		can_alb_wet(0.), can_alb_snow(0.), krnt_lai(0.), can_diameter(0.), biomass_heat_capacity(0.),
+		biomass_density(0.), lai_frac_top_default(0.), trunk_frac_height(0.), trunkalb(0.), et(0.),
+		canopy_stabilitycorrection(true), roughmom_to_canopyheight_ratio(0.), displ_to_canopyheight_ratio(0.),
+		raincrease_snow(0.), canopytemp_maxchange_perhour(0.), roughheat_to_roughmom_ratio(0.),
+		can_ch0(0.), can_rs_mult(0.), rsmin(0.), f3_gd(0.), rootdepth(0.), wp_fraction(0.),
+		h_wilt(0.), storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), z0m(0.), z0h(0.), zdispl(0.),
+		height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
+		totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.), iswrbc(0.),
+		ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.), sensible(0.), latent(0.),
+		latentcorr(0.), transp(0.), intevap(0.), interception(0.), throughfall(0.), snowunload(0.),
+		snowfac(0.), rainfac(0.), liquidfraction(0.), sigftrunk(0.), Ttrunk(0.), CondFluxCanop(0.),
+		CondFluxTrunks(0.), LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.), forestfloor_alb(0.),
+		BasalArea(0.), HMLeaves(0.), HMTrunks(0.) {}
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel);
 		void reset(const bool& cumsum_mass);
@@ -673,6 +677,7 @@ class BoundCond {
 	public:
 		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {}
 		const std::string toString() const;
+		void reset();
 
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation
