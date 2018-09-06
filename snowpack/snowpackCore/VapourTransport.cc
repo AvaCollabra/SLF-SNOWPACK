@@ -436,10 +436,11 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 		EMS[e].theta[WATER_PREF] = std::max(0., std::min(1., EMS[e].theta[WATER_PREF]));
 		// Update theta[AIR] and density:
 		EMS[e].theta[AIR] = (1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-		EMS[e].updDensity();
+    EMS[e].theta[AIR] = std::max(0., EMS[e].theta[AIR]);
+    EMS[e].updDensity();
 		assert(EMS[e].Rho > 0 || EMS[e].Rho==IOUtils::nodata); //density must be positive
 
-		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
+    if (EMS[e].Rho <= Constants::eps || (EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF] + EMS[e].theta[ICE] + EMS[e].theta[SOIL] + EMS[e].theta[AIR] - 1) > 1.e-12 )) {
 				prn_msg(__FILE__, __LINE__, "err", Date(),
 				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf air=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
 				throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
