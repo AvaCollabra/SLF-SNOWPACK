@@ -274,6 +274,10 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			MaximumPoreSize=0.005;
 			field_capacity=0.07;
 			break;
+
+		default:
+			throw mio::UnknownValueException("Unknown soil type", AT);
+
 	}
 
 	h_e=vanGenuchten::AirEntryPressureHead(MaximumPoreSize, 273.);
@@ -375,7 +379,7 @@ double vanGenuchten::dtheta_dh(const double h) {
  * @brief Initialize van Genuchten model for snow layers\n
  * @author Nander Wever
  * @param VGModelTypeSnow van Genuchten model parameterization to use
- * @param VGModelTypeSnow hydraulic conductivity parameterization to use
+ * @param K_PARAM hydraulic conductivity parameterization to use
  * @param matrix true: set parameters for matrix domain. false: set parameters for preferential flow domain
  */
 void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelTypeSnow, const K_Parameterizations K_PARAM, const bool& matrix)
@@ -411,7 +415,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 
 	switch ( VGModelTypeSnow ) {	//Set Van Genuchten parameters for snow, depending on the chosen model for snow.
 
-	case YAMAGUCHI2012:
+		case YAMAGUCHI2012:
 		{
 			//Calculate ratio density/grain size (see Yamaguchi (2012)):
 			double tmp_rho_d=(EMS->theta[ICE]*Constants::density_ice)/( (2.*EMS->rg) / 1000.);
@@ -422,7 +426,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			break;
 		}
 
-	case YAMAGUCHI2010:
+		case YAMAGUCHI2010:
 		{
 			//Limit grain size, to stay within the bounds of the Van Genuchten parameterizations for snow.
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
@@ -437,7 +441,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			break;
 		}
 
-	case YAMAGUCHI2010_ADAPTED:
+		case YAMAGUCHI2010_ADAPTED:
 		{
 			//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
@@ -452,7 +456,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			break;
 		}
 
-	case DAANEN:
+		case DAANEN:
 		{
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Equal to Yamaguchi adapted
 			const double GRAINRADIUSUPPERTHRESHOLD=4.0;		//Equal to Yamaguchi adapted
@@ -464,6 +468,9 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			n=0.800*(2.*EMS->rg)+3.;
 			break;
 		}
+		default:
+			throw mio::UnknownValueException("Unknown Van Genuchten parameter for snow", AT);
+
 	}
 
 
@@ -484,6 +491,8 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			//See: Calonne et al., 3-D image-based numerical computations of snow permeability: links to specific surface area, density, and microstructural anisotropy, TC, 2012.
 			ksat=0.75 * (EMS->ogs / 1000.)*(EMS->ogs / 1000.) * exp(-0.013 * EMS->theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
 			break;
+		default:
+			throw mio::UnknownValueException("Unknown hydraulic conductivity parameter", AT);
 		}
 	} else {									//For high density
 		// Eq. 5 in Golden, K. M., H. Eicken, A. L. Heaton, J. Miner, D. J. Pringle, and J. Zhu (2007), Thermal evolution of permeability and microstructure in sea ice, Geophys. Res. Lett., 34, L16501, doi:10.1029/2007GL030447:

@@ -1283,16 +1283,16 @@ double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& 
 	switch (model) {
 		case Sigrist: {//This is the parametrization by Sigrist, 2006
 			static const double A = 968.e6; //in Pa
-			const double E = A * pow( rho_slab/Constants::density_ice, 2.94 ); //in Pa
-			return E;
+			const double E_local = A * pow( rho_slab/Constants::density_ice, 2.94 ); //in Pa
+			return E_local;
 		}
 		case Pow: {
-			const double E = 5.07e9 * (pow((rho_slab/Constants::density_ice), 5.13));
-			return E;
+			const double E_local = 5.07e9 * (pow((rho_slab/Constants::density_ice), 5.13));
+			return E_local;
 		}
 		case Exp: {
-			const double E = 1.873e5 * exp(0.0149*(rho_slab));
-			return E;
+			const double E_local = 1.873e5 * exp(0.0149*(rho_slab));
+			return E_local;
 		}
 		default:
 			throw mio::UnknownValueException("Selected Young's modulus model has not been implemented", AT);
@@ -1601,7 +1601,7 @@ unsigned short int ElementData::getSnowType() const
 }
 
 unsigned short int ElementData::snowType(const double& dendricity, const double& sphericity,
-                          const double& grain_size, const unsigned short int& marker, const double& theta_w, const double& res_wat_cont)
+                          const double& grain_size, const unsigned short int& marker, const double& theta_w, const double& res_wat_cont_loc)
 {
 	int a=-1,b=-1,c=0;
 
@@ -1723,7 +1723,7 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 	}
 	// Now treat a couple of exceptions - note that the order is important
 	if (b < 0) b = a;
-	if ((marker >= 20) && (theta_w < 0.1 * res_wat_cont)) { // MFcr Melt-Freeze
+	if ((marker >= 20) && (theta_w < 0.1 * res_wat_cont_loc)) { // MFcr Melt-Freeze
 		c = 2;
 	}
 	switch (marker) {
@@ -1739,6 +1739,10 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 		case 7: case 8: case 17: case 18: case 27: case 28: // Glacier ice & IFil, that is, ice layers within the snowpack
 			a = 8; b = 8; c = 0;
 			break;
+    default: // do nothing sinc we take care of exceptions here
+      break;
+
+
 	}
 
 	return static_cast<unsigned short int>(a*100 + b*10 + c);

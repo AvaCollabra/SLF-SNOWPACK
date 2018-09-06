@@ -302,7 +302,7 @@ class ElementData {
 		void snowType();
 		unsigned short int getSnowType() const;
 		static unsigned short int snowType(const double& dendricity, const double& sphericity, const double& grain_dia, const unsigned short int& marker,
-                        const double& theta_w, const double& res_wat_cont);
+                        const double& theta_w, const double& res_wat_cont_loc);
 		static double getYoungModule(const double& rho_slab, const Young_Modulus& model);
 
 		const std::string toString() const;
