@@ -162,7 +162,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		SET(WARNINGS "-Wall -Wswitch -Weverything ${WARNINGS_OFF}") #obviously, we should try to fix the warnings! Keeping in mind that some of these W are half buggy...
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Rpass=.* for static analysis
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
-		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS ")
+		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS -flto")
 		IF(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "AMD64")
 			SET(ARCH_SAFE  "-march=nocona -mtune=nocona")
 		ENDIF()
