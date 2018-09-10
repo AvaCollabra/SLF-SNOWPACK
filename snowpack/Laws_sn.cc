@@ -981,6 +981,9 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 	} else if (i_hn_model == "PAHAUT") {
 		rho_hn = 109. + 6.*(IOUtils::C_TO_K(TA) - Constants::melting_tk) + 26.*sqrt(VW);
 
+	} else if (i_hn_model == "NIED") {
+		rho_hn = 62. + 3.6 * VW - 0.2 * TA;
+
 	} else {
 		prn_msg(__FILE__, __LINE__, "err", Date(),
 		        "New snow density parameterization '%s' not available",
