@@ -82,6 +82,7 @@ colSHF=`echo ${header} | sed 's/,/\n/g' | grep -nx "Sensible heat" | awk -F: '{p
 colLHF=`echo ${header} | sed 's/,/\n/g' | grep -nx "Latent heat" | awk -F: '{print $1}'`
 colOLWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Outgoing longwave radiation" | awk -F: '{print $1}'`
 colILWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming longwave radiation" | awk -F: '{print $1}'`
+colNetLWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Net absorbed longwave radiation" | awk -F: '{print $1}'`
 colRSWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Reflected shortwave radiation" | awk -F: '{print $1}'`
 colISWR=`echo ${header} | sed 's/,/\n/g' | grep -nx "Incoming shortwave radiation" | awk -F: '{print $1}'`
 colsoilheat=`echo ${header} | sed 's/,/\n/g' | grep -nx "Heat flux at ground surface" | awk -F: '{print $1}'`
@@ -117,6 +118,10 @@ if [ -z "${colOLWR}" ]; then
 fi
 if [ -z "${colILWR}" ]; then
 	echo "energybalancecheck.sh: ERROR: ILWR not found in one of the columns." > /dev/stderr
+	error=1
+fi
+if [ -z "${colNetLWR}" ]; then
+	echo "energybalancecheck.sh: ERROR: Net_LWR not found in one of the columns." > /dev/stderr
 	error=1
 fi
 if [ -z "${colRSWR}" ]; then
@@ -172,7 +177,7 @@ echo "#-    -    cm          cm          W_m-2   W_m-2  W_m-2  W_m-2  W_m-2  W_m
 sed '1,/\[DATA\]/d' ${met_file} | \
 #  -- Select all the energybalance terms, make them correct sign and correct units. Also makes sure some terms are only considered when they are a part of the SNOW energy balance (like SHF, which may also originate from soil).
 #     Note: some terms need a change of sign, others need to be converted from kJ/m^2 to W/m^2 and one needs an extra term to be added.
-awk -F, '{print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', ($'${colhsmodel}'==0)?($'${colSHF}'):0, ($'${colhsmodel}'==0)?($'${colLHF}'):0, ($'${colhsmodel}'==0)?-1.0*($'${colOLWR}'):0, ($'${colhsmodel}'==0)?($'${colILWR}'):0, ($'${colhsmodel}'==0)?-1.0*($'${colRSWR}'):0, ($'${colhsmodel}'==0)?($'${colISWR}'):0, ($'${colhsmodel}'>0.0)?(-1.0*$'${colsoilheat}'):0, $'${colbottomheat}', ($'${colhsmodel}'==0)?($'${colRainNRG}'):0, $'${colPhchEnergy}'*(1000.0/((24.0/'${nsamplesperday}')*3600)), ($'${colIntNRG}'!=-999.0)?(1000.0*$'${colIntNRG}'/((24.0/'${nsamplesperday}')*3600)):0}' | \
+awk -F, '{ILWR=($'${colhsmodel}'>0.0)?($'${colOLWR}')+($'${colNetLWR}'):0; print $'${coldatetime}', $'${colhsmeasured}', $'${colhsmodel}', ($'${colhsmodel}'==0)?($'${colSHF}'):0, ($'${colhsmodel}'==0)?($'${colLHF}'):0, ($'${colhsmodel}'==0)?-1.0*($'${colOLWR}'):0, ($'${colhsmodel}'==0)?(ILWR):0, ($'${colhsmodel}'==0)?-1.0*($'${colRSWR}'):0, ($'${colhsmodel}'==0)?($'${colISWR}'):0, ($'${colhsmodel}'>0.0)?(-1.0*$'${colsoilheat}'):0, $'${colbottomheat}', ($'${colhsmodel}'==0)?($'${colRainNRG}'):0, $'${colPhchEnergy}'*(1000.0/((24.0/'${nsamplesperday}')*3600)), ($'${colIntNRG}'!=-999.0)?(1000.0*$'${colIntNRG}'/((24.0/'${nsamplesperday}')*3600)):0}' | \
 #  -- Reformat time
 sed 's/\./ /'  | sed 's/\./ /' | sed 's/:/ /' | awk '{printf "%04d%02d%02d %02d%02d", $3, $2, $1, $4, $5; for(i=6; i<=NF; i++) {printf " %s", $i}; printf "\n"}' | \
 # Now select period
