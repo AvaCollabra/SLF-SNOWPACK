@@ -276,7 +276,7 @@ void BoundCond::reset()
   qs=0;      ///< sensible heat
   ql=0;      ///< latent heat
   qr=0;      ///< rain energy
-  qg=0;  
+  qg=0;
 }
 
 
@@ -988,7 +988,7 @@ const std::string CanopyData::toString() const
 {
 	std::ostringstream os;
 	os << "<CanopyData>" << "\n";
-	os << "\tstorage:                           " << os << storage << "\n";
+	os << "\tstorage:                           " << storage << "\n";
 	os << "\ttemp:                              " << temp << "\n";
 	os << "\tsigf:                              " <<  sigf << "\n";
 	os << "\tec:                                " << ec << "\n";
@@ -1003,7 +1003,7 @@ const std::string CanopyData::toString() const
 	os << "\trc:                                " <<  rc << "\n";
 	os << "\tdrs:                               " << rs << "\n";
 	os << "\trstransp:                          " << rstransp << "\n";
-	os << "\tcanopyalb:                         " << canopyalb <<
+	os << "\tcanopyalb:                         " << canopyalb << "\n";
 	os << "\ttotalalb:                          " << totalalb << "\n";
 	os << "\twetfraction:                       " << wetfraction << "\n";
 	os << "\tintcapacity:                       " << intcapacity << "\n";
