@@ -220,16 +220,14 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 				EMS[e].updDensity();
 				// Merge the element if it is a snow layer. This will take care of possible left over liquid water (will be put one layer down)
 				// Keep layer if it is a soil layer inside the snowpack (for example with snow farming)
-				if(e>Xdata.SoilNode) {
+				if(e>=Xdata.SoilNode) {
 					if(EMS[e].theta[SOIL]<Constants::eps) {
 						SnowStation::mergeElements(EMS[e-1], EMS[e], false, true);
 						// Now reduce the number of elements by one.
 						nE--;
-						Xdata.reduceNumberOfElements(nE);
 					}
-				} else {
 					//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
-					break;
+					if(e==Xdata.SoilNode) break;
 				}
 			} else {
 				// Not enough energy anymore to remove complete element, so we should break out of the loop.
@@ -246,7 +244,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 		}
 
 		// Now take care of left over solute mass.
-		if (e == 0) { // Add Solute Mass to Runoff TODO HACK CHECK
+		if (nE == Xdata.SoilNode) { // Add Solute Mass to Runoff TODO HACK CHECK
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += M_Solutes[ii]/S_TO_H(sn_dt);
 			}
@@ -265,6 +263,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 				}
 			}
 		}
+		Xdata.reduceNumberOfElements(nE);
 	}
 
 	// HACK: this code is under verification. The comment reads "surface hoar *is* destroyed, but the next line says surface hoar *may be* destroyed, depending on the sign of the latent heat flux.
@@ -415,7 +414,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
 			} else {
-				if (e == nE-1) {
+				if (e == nE-1 && e >= Xdata.SoilNode) {
 					// The top layer will increase length due to deposition
 					const double dL = deltaM[e] / (Constants::density_ice * EMS[e].theta[ICE]);
 					const double L_old = EMS[e].L;
@@ -431,19 +430,22 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 			}
 		}
 		// Numerical rounding errors were found to lead to theta[AIR] < 0, so force the other components between [0,1]:
-		EMS[e].theta[ICE] = std::max(0., std::min(1., EMS[e].theta[ICE]));
-		EMS[e].theta[WATER] = std::max(0., std::min(1., EMS[e].theta[WATER]));
+		EMS[e].theta[ICE] = std::max(0., std::min(1. - EMS[e].theta[SOIL], EMS[e].theta[ICE]));
+		EMS[e].theta[WATER] = std::max(0., std::min(1. - EMS[e].theta[SOIL], EMS[e].theta[WATER]));
 		EMS[e].theta[WATER_PREF] = std::max(0., std::min(1., EMS[e].theta[WATER_PREF]));
 		// Update theta[AIR] and density:
 		EMS[e].theta[AIR] = (1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-  //  EMS[e].theta[AIR] = std::max(0., EMS[e].theta[AIR]);
-    EMS[e].updDensity();
+		EMS[e].updDensity();
 		assert(EMS[e].Rho > 0 || EMS[e].Rho==IOUtils::nodata); //density must be positive
 
-    if (EMS[e].Rho <= Constants::eps || EMS[e].theta[AIR] < 0. ) {
+		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
+			if(EMS[e].theta[AIR] > -Constants::eps2) {
+                		EMS[e].theta[AIR] = 0.;
+		        } else {
 				prn_msg(__FILE__, __LINE__, "err", Date(),
-				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf air=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
+				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%le air=%le  soil=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].salinity);
 				throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
+			}
 		}
 	}
 
@@ -463,6 +465,9 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 	}
 
 	compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
+
+	// No snow (sublimation removed last snow element)
+	if (Xdata.getNumberOfNodes() == Xdata.SoilNode+1) return;
 
 	try {
 		WaterTransport::adjustDensity(Xdata);
