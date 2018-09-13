@@ -440,8 +440,8 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 
 		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
 			if(EMS[e].theta[AIR] > -Constants::eps2) {
-                		EMS[e].theta[AIR] = 0.;
-		        } else {
+				EMS[e].theta[AIR] = 0.;
+			} else {
 				prn_msg(__FILE__, __LINE__, "err", Date(),
 				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%le air=%le  soil=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].salinity);
 				throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
