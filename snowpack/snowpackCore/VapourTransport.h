@@ -29,8 +29,20 @@
 #include <snowpack/Laws_sn.h>
 #include <snowpack/snowpackCore/ReSolver1d.h>
 #include <snowpack/snowpackCore/WaterTransport.h>
+#include <snowpack/snowpackCore/Snowpack.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
+#include <snowpack/Meteo.h>
+#include <snowpack/Utils.h>
+#include <snowpack/snowpackCore/Solver.h>
+#include <snowpack/Constants.h>
+#include <snowpack/Laws_sn.h>
+#include <snowpack/SnowDrift.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
 
 #include <meteoio/MeteoIO.h>
+
+/// @brief The number of element incidences
+#define N_OF_INCIDENCES 2
 
 /**
  * @class VapourTransport
@@ -38,13 +50,25 @@
  * @brief This module contains water vapour transport routines for the 1d snowpack model
  */
 class VapourTransport : public WaterTransport {
-	public:
+	public: 
 		VapourTransport(const SnowpackConfig& cfg);
-		void compTransportMass(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void compTransportMass(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata, const double& surfaceVaporPressure);
 
-	private:
+	private: 
+		static void EL_INCID(const size_t &e, int Ie[]);
+		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
+		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
+		
+		bool compDensityProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
+                              const bool& ThrowAtNoConvergence, double& ql, const double& surfaceVaporPressure);
+		bool sn_ElementKtMatrix(ElementData &Edata, double dt, double T0[ N_OF_INCIDENCES ],
+								double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
+								const std::vector<double> factor_, const int index);
+		void neumannBoundaryConditions(double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ],
+                                       double Fe[ N_OF_INCIDENCES ],
+                                       double& X);								                             	 		
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
-		void LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql);
+		void LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql, const double& surfaceVaporPressure);
 
 		ReSolver1d RichardsEquationSolver1d;
 
@@ -56,8 +80,8 @@ class VapourTransport : public WaterTransport {
 		std::string watertransportmodel_soil;
 		double sn_dt;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
-		//double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
-		//double minimum_l_element;
+		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
+		double minimum_l_element;
 		bool useSoilLayers, water_layer;
 
 		bool enable_vapour_transport;

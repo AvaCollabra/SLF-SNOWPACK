@@ -404,8 +404,9 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 		EMS[e].L0 = EMS[e].L = (L0 + dL);
 		NDS[e+1].z = NDS[e].z + EMS[e].L;
 		EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
+		EMS[e].theta[AIR] = std::max(0., EMS[e].theta[AIR]);
 		EMS[e].updDensity();
-		if (EMS[e].Rho <= Constants::eps || EMS[e].theta[AIR] < 0.  ) {
+		if (EMS[e].Rho <= Constants::eps || (EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF] + EMS[e].theta[ICE] + EMS[e].theta[SOIL] + EMS[e].theta[AIR] - 1) > 1.e-12 ) {
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 			          "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf air=%le",
 			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR]);
@@ -1416,6 +1417,9 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	if (variant == "SEAICE" ) {
 		elem.salinity = SeaIce::InitSnowSalinity;
 	}
+	
+	double p_vapor = Atmosphere::vaporSaturationPressure(elem.Te);
+	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);//Jafari added	
 }
 
 
@@ -1792,6 +1796,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				NDS[nOldN-1].hoar = 0.0;
 				// Now fill nodal data for upper hoar node
 				NDS[nOldN].T = t_surf;              // The temperature of the new node
+				double p_vapor = Atmosphere::vaporSaturationPressure(NDS[nOldN].T);
+				NDS[nOldN].rhov = Atmosphere::waterVaporDensity(NDS[nOldN].T, p_vapor);
 				// The new nodal position;
 				NDS[nOldN].z = NDS[nOldN-1].z + NDS[nOldN-1].u + hoar/hoar_density_buried;
 				NDS[nOldN].u = 0.0;                 // Initial displacement is 0
@@ -1811,6 +1817,8 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
 			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
 				NDS[n].T = t_surf;                  // Temperature of the new node
+				double p_vapor = Atmosphere::vaporSaturationPressure(NDS[n].T);
+				NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);				
 				NDS[n].z = z0;                      // New nodal position
 				NDS[n].u = 0.0;                     // Initial displacement is 0
 				NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
@@ -2105,7 +2113,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		// and creep solution routines will not pick up the new mesh boolean.
 		double ql = Bdata.ql;	// Variable to keep track of how latent heat is used
 		watertransport.compTransportMass(Mdata, Xdata, Sdata, ql);
-		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata);
+		
+		const double surfaceVaporPressure = Atmosphere::vaporSaturationPressure(t_surf);
+		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata, surfaceVaporPressure);
 
 		// See if any SUBSURFACE phase changes are occuring due to updated water content (infiltrating rain/melt water in cold snow layers)
 		if(!useNewPhaseChange) {

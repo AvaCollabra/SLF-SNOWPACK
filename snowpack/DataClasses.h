@@ -363,6 +363,9 @@ class ElementData {
 
 		unsigned short int ID;    ///< Element ID used to track elements
 		static const unsigned short int noID;
+		
+		double rhov;                ///< vapor density...(kg/m^3)
+		double Qmm;                ///< Heat source/sink due to phase changes in the vapor transport (W/m^3)		
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
@@ -389,6 +392,9 @@ class NodeData {
 		double dsm;  ///< Dry snow metamorphism factor
 		double S_dsm;
 		double Sigdsm;
+		
+		double rhov;    /// < nodal vapor density in kg/m^3
+
 };
 
 /**
@@ -644,6 +650,7 @@ class SnowStation {
 		std::vector<NodeData> Ndata;    ///< pointer to nodal data array (e.g. T, z, u, etc..)
 		std::vector<ElementData> Edata; ///< pointer to element data array (e.g. Te, L, Rho, etc..)
 		void *Kt;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
+		void *Kt_vapor;                   ///< Pointer to pseudo-conductivity and stiffnes matrix
 		double ColdContent;         ///< Cold content of snowpack (J m-2)
 		double ColdContentSoil;     ///< Cold content of soil (J m-2)
 		double dIntEnergy;          ///< Internal energy change of snowpack (J m-2)

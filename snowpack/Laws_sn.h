@@ -134,6 +134,9 @@ class SnLaws {
 		                                 double TA, double TSS, double RH, double VW, double HH);
 		static double newSnowDensityEvent(const std::string& variant, const SnLaws::EventType& i_event,
                                           const CurrentMeteo& Mdata);
+		static double newSnowDensityEventModified(const std::string& variant, const SnLaws::EventType& i_event,
+                                          const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss);                                      
+
 		static double newSnowDensityHendrikx(const double ta, const double tss, const double rh, const double vw);
 		static double event_wind_highlim;
 		static EventType event;

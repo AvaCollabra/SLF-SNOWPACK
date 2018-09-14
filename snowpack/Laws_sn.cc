@@ -194,6 +194,14 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 	current_variant = variant;
 
 	if (current_variant == "ANTARCTICA" || current_variant == "POLAR") {
+		
+		//Maybe, the following if-block is not the case for POLAR version, but as Michi said we just want to try to see the effects of new density:
+		if (current_variant == "POLAR") {
+			event = event_wind;
+			event_wind_lowlim = 1.0;
+			event_wind_highlim = 7.0;
+		}		
+		
 		t_term = t_term_arrhenius_critical;
 		visc = visc_dflt;
 		visc_ice_fudge = 9.45;
@@ -1021,6 +1029,38 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 }
 
 /**
+ * @brief it is exactly the newSnowDensityEvent function, however a new object is passed into this function.
+ */
+double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnLaws::EventType& i_event,
+                                   const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss)
+{
+	static double rho;
+
+	if (variant != SnLaws::current_variant)
+		setStaticData(variant, "BUCKET");
+
+	switch (i_event) {
+		case event_wind: {
+			if ((Mdata.vw >= event_wind_lowlim) && (Mdata.vw <= event_wind_highlim)) {
+
+				static const double rho_0=361., rho_1=33.;
+				rho = rho_0*log10(Mdata.vw) + rho_1;
+				return rho;
+			} else
+				//return Constants::undefined;
+				rho = newSnowDensityPara("LEHNING_NEW", Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
+				return rho;
+				//return 220;
+		}
+		case event_none:
+		default:
+			prn_msg(__FILE__, __LINE__,"err", Date(),
+				"No new snow density parameterization for event type %d", i_event);
+			throw IOException("Event type not implemented yet!", AT);
+	}
+}
+
+/**
  * @brief Parameterized new-snow density
  * @param TA  Air temperature (K)
  * @param TSS Snow surface temperature (K)
@@ -1142,7 +1182,8 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
 		                         Xdata.meta.position.getAltitude());
 	} else if (i_hn_density == "EVENT") {
-		rho = newSnowDensityEvent(variant, event, Mdata);
+		//rho = newSnowDensityEvent(variant, event, Mdata);
+		rho = newSnowDensityEventModified(variant, event, Mdata, Xdata, tss);
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
