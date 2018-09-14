@@ -506,6 +506,7 @@ class SnowStation {
 		size_t sector;              ///< current slope sector of width 360./max(1, nSlopes-1)
 
 		CanopyData Cdata;           ///< Pointer to canopy data
+		static const void* Seaice;  ///< dummy pointer for compatibility with the dev version
 		double pAlbedo;             ///< Parameterized snow albedo
 		double Albedo;              ///< Snow albedo used by the model
 		double SoilAlb;             ///< Soil albedo

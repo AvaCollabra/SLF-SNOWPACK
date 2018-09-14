@@ -437,7 +437,7 @@ bool AsciiIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
  * @param Zdata
  */
 void AsciiIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
+                            SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata, const bool& /*read_salinity*/)
 {
 	string snofilename = getFilenamePrefix(i_snowfile, i_snowpath, false);
 	if (snofilename.rfind(".snoold") == string::npos) {

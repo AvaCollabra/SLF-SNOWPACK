@@ -56,6 +56,8 @@ const double SnowStation::comb_thresh_dd = 0.2;     ///< Dendricity (1)
 const double SnowStation::comb_thresh_sp = 0.05;    ///< Sphericity (1)
 const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 
+const void* SnowStation::Seaice = NULL;
+
 RunInfo::RunInfo()
             : version(SN_VERSION), computation_date(getRunDate()),
               compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
