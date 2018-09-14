@@ -1419,7 +1419,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	}
 	
 	double p_vapor = Atmosphere::vaporSaturationPressure(elem.Te);
-	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);//Jafari added	
+	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);
 }
 
 

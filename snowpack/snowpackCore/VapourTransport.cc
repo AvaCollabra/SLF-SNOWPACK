@@ -166,7 +166,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	{
 		double aaa = EMS[i].theta[AIR];
 		double nnn = 1.- EMS[i].theta[SOIL];
-		double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // Jafari added, based on jury1983
+		double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 		D[i] = factor_[i]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[i])*D_vapSoil;  	
 	}
 
@@ -303,7 +303,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			EMS[e].theta[ICE] += dTh_ice;
 			
 			EMS[e].Qmm += (dTh_water*Constants::density_water*Constants::lh_vaporization +
-							dTh_ice*Constants::density_ice*Constants::lh_sublimation)/sn_dt;// Jafari added [w/m^3]
+							dTh_ice*Constants::density_ice*Constants::lh_sublimation)/sn_dt;// [w/m^3]
 		
 			// If present at surface, surface hoar is sublimated away
 			if (e == nE-1 && deltaM[e]<0) {
@@ -312,10 +312,10 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		} else {		// Mass gain: add water in case temperature at or above melting point, ice otherwise
 			if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
-				EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;// Jafari added [w/m^3]
+				EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;// [w/m^3]
 			} else {
 				EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
-				EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;// Jafari added [w/m^3]
+				EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;// [w/m^3]
 			}
 		}
 
@@ -680,7 +680,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		// the upper B.C.
 		if(topDirichletBCtype){
 			double p_vapor = surfaceVaporPressure; //Mdata.rh * Atmosphere::vaporSaturationPressure( Mdata.ta );
-			NDS[nE].rhov = Atmosphere::waterVaporDensity(NDS[nE].T, p_vapor); //Jafari added vapor density of the new node
+			NDS[nE].rhov = Atmosphere::waterVaporDensity(NDS[nE].T, p_vapor); // vapor density of the new node
 			double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
@@ -696,10 +696,6 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 			EL_RGT_ASSEM( dU, Ie, Fe );
 			//std::cout << "---ql---abs(ql)----- " << ql << ' ' << std::abs(ql) << '\n';
 		}
-		// Jafari editted, if ql<0 it means we have sublimation and it decreases the mass and flux is upward(positive)
-		// hence, the d_rhov/dz decreases and it is negative, so there is no need to change the sign of ql.
-		// for neumann B.C. in this algorithm, we should put ql= D d_rhov/dX. However for
-		// OpenFOAM we just need to set d_rhov/dX to ql/K.
 						       
         // the lower B.C.
         /*
@@ -840,7 +836,7 @@ bool VapourTransport::sn_ElementKtMatrix(ElementData &Edata, double dt, double T
 
     double aaa = Edata.theta[AIR];
     double nnn = 1.- Edata.theta[SOIL];
-    double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // Jafari added, based on jury1983
+    double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 	double D = factor_[index]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[index])*D_vapSoil;  
 	D = D/Edata.L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
@@ -848,96 +844,21 @@ bool VapourTransport::sn_ElementKtMatrix(ElementData &Edata, double dt, double T
 	Se[0][0] = Se[1][1] = D;
 	Se[0][1] = Se[1][0] = -D;
 	
-	// Heat the element via short-wave radiation
-	// Fe[1] += Edata.sw_abs; // this is the body source term
-
-	//Jafari added- for energy equation is added to F[1]
-	// it seems for the phase change source/sink term we also should add it to F[1]
-	// sw_abs=(W/m^2)....as I understood, F sholud contain just kg, W,... per unit area
-	// it means if the kg, W, .. is per volume, we should multiply it by element length.
 	Fe[1] += 0.0; // this is the body source term
 
 	// Add the implicit time integration term to the right hand side
 	Fe[0] -= (Se[0][0] * T0[0] + Se[0][1] * T0[1]);
 	Fe[1] -= (Se[1][0] * T0[0] + Se[1][1] * T0[1]);
 
-	//const double c = Edata.c[TEMPERATURE] * Edata.L * Edata.Rho / (6. * dt); //Jafari added- heat capacity due to rho*c(T)*dT/dt in energy equation
-	const double c = 1. * Edata.L * 1. / (6. * dt); //Jafari added-  ? due to drho_v/dt in vapor mass conservation equation
+	const double c = 1. * Edata.L * 1. / (6. * dt); 
 	Se[0][0] += 2. * c;
 	Se[1][1] += 2. * c;
 	Se[0][1] += c;
 	Se[1][0] += c;
 
-	// Add the source/sink term resulting from phase changes
-	//Fe[0] += 0.5 * Edata.Qph * Edata.L;
-	//Fe[1] += 0.5 * Edata.Qph * Edata.L;
-
-	/*
-	//Jafari added- this also can be used for our phase change term
-	// Qph=(W/m^3) 
-	double saturationDensity=Atmosphere::waterVaporDensity(Edata.Te, Atmosphere::vaporSaturationPressure(Edata.Te));			
-	double phaseChangeTerm = -(Edata.rhov - saturationDensity)/ (1. * dt);
-	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	*/
-		
-	/*	
-    // Jafari added- Nivak 2012
-    double h = Edata.VG.fromTHETAtoH(Edata.theta[WATER], 0.0); //pressure head
- 	double d_ep = factor_[index]*0.000011664/h + (1.0-factor_[index])*0.000029774/h;// d_ep=0.000011664/h (m) is equivalent pore diameter size in snow and  d_ep=0.000011664/h is for soil (m)			
- 	double r_ep = (-0.5 * d_ep <= 1.e-6) ? (1.e-4) : 0.5 * d_ep;  			
-	double h_v = 3.0*D*Edata.theta[AIR]/(r_ep*r_ep);
-	double saturationDensity=Atmosphere::waterVaporDensity(Edata.Te, Atmosphere::vaporSaturationPressure(Edata.Te));			
-	double phaseChangeTerm = -h_v*(Edata.rhov - saturationDensity)/ (1. * dt);
-	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	std::cout<< "-------r_ep/h_v---------->  " << r_ep << ' ' <<  h_v << '\n';//Jafari added
-	*/	
-	
-	/*
-    // Jafari added- Massman 2015 version 1	
-	double etha = 1.0-Edata.theta[SOIL]-Edata.theta[ICE];
-	double Sw = Edata.theta[WATER]/etha;
-	double Awe = Sw*pow(1.-Sw,40.)+0.003*pow(Sw*(1.-Sw),1./8.);
-    double h = -Edata.VG.fromTHETAtoH(Edata.theta[WATER], 0.0); //pressure head
- 	double d_ep = factor_[index]*0.000011664/h + (1.0-factor_[index])*0.000029774/h;// d_ep=0.000011664/h (m) is equivalent pore diameter size in snow and  d_ep=0.000011664/h is for soil (m)			
- 	double r_ep = (0.5 * d_ep <= 1.e-4) ? (1.e-4) : 0.5 * d_ep;  			
-	double R_v = D/r_ep;
-	double saturationDensity=Atmosphere::waterVaporDensity(Edata.Te, Atmosphere::vaporSaturationPressure(Edata.Te));			
-	double phaseChangeTerm = -1.0*(Edata.rhov - saturationDensity);
-	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	std::cout<< "-------r_ep/h_v---------->  " << r_ep << ' ' <<  R_v << '\n';//Jafari added
-	*/
-	
-	/*
-    // Jafari added- Massman 2015 version 2	
-	double etha = 1.0-Edata.theta[SOIL]-Edata.theta[ICE];
-	double Sw = Edata.theta[WATER]/etha;
-	double Awe = Sw*pow(1.-Sw,40.)+0.003*pow(Sw*(1.-Sw),1./8.);
-    double h = -Edata.VG.fromTHETAtoH(Edata.theta[WATER], 0.0); //pressure head
-	double sie = -Constants::density_water*Constants::g*h;
-	double Mw = 18.01528e-3; 
-	double Kc = std::exp( (35e3-Mw*sie)*(1./Edata.Te-1./273.)/Constants::gas_constant_mol);
-	double saturationDensity=Atmosphere::waterVaporDensity(Edata.Te, Atmosphere::vaporSaturationPressure(Edata.Te));			
-	double phaseChangeTerm = -Awe*std::sqrt(Constants::gas_constant_mol*Edata.Te/Mw)*(Kc*Edata.rhov - saturationDensity)/(1. * dt);
-	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	std::cout<< "-------Kc/Awe*std::sqrt(Constants::gas_constant_mol*Edata.Te/Mw)---------->  " << Kc << ' ' <<  Awe*std::sqrt(Constants::gas_constant_mol*Edata.Te/Mw) << '\n';//Jafari added
-    */
-    
-    // Jafari added based on real calculation of snow/soil density change rate which we nee to convert it to vapor density change rate as 
-	double phaseChangeTerm = 0.0;
-	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;// in Michi version, it is zero
-	
-	/*
-    // Jafari added based on real calculation of snow/soil density change rate which we nee to convert it to vapor density change rate as 
-    double vaporDenChangeRate= -Edata.vapTrans_snowDenChangeRate*Edata.L/(Edata.theta[AIR]*Edata.L);			
-	double phaseChangeTerm = vaporDenChangeRate;
+    double phaseChangeTerm = 0.0;
 	Fe[0] += 0.5 * phaseChangeTerm * Edata.L;
 	Fe[1] += 0.5 * phaseChangeTerm * Edata.L;
-	*/
 	
 	return true;
 }
@@ -966,8 +887,6 @@ void VapourTransport::neumannBoundaryConditions(double Se[ N_OF_INCIDENCES ][ N_
 	// First zero out the interiour node contribution
 	Se[0][0] = Se[0][1] = Se[1][0] = Se[1][1] = Fe[0] = Fe[1] = 0.0;
 	Fe[1] += X;
-	// Jafari editted, if ql<0 it means we have sublimation and the flux is upward(positive)
-	// hence we have to change its sign to be adapted in that upward is positive.
 }
 
 /*
