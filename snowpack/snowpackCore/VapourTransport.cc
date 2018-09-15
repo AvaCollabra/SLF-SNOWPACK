@@ -268,18 +268,16 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			}
 			
 			deltaM[e] += dM;
-			if (e == nE-1) Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;			//update surface flux (minus when the flux is leaving the snowpack)
-			if (e == Xdata.SoilNode) Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM;	//update mass loss of snowpack due to water transport
-			}
-		} else {
-			compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
-			// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
-			const double topFlux = -ql_bcup / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
-			deltaM[nE-1] += std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
-			// HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
-			// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
 		}
+	} else {
+		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
+		// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
+		const double topFlux = -ql_bcup / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
+		deltaM[nE-1] += std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
+		// HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
+		// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
+		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
+	}
 
 	double dHoar = 0.;
 	
@@ -302,8 +300,13 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			EMS[e].theta[WATER] += dTh_water;
 			EMS[e].theta[ICE] += dTh_ice;
 			
+			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dTh_water * Constants::density_water * EMS[e].L; 
+			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dTh_ice * Constants::density_water * EMS[e].L;
+			EMS[e].M += dTh_water * Constants::density_water * EMS[e].L+dTh_ice * Constants::density_water * EMS[e].L;
+			assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
+			
 			EMS[e].Qmm += (dTh_water*Constants::density_water*Constants::lh_vaporization +
-							dTh_ice*Constants::density_ice*Constants::lh_sublimation)/sn_dt;// [w/m^3]
+							dTh_ice*Constants::density_ice*Constants::lh_sublimation)/sn_dt;//[w/m^3]
 		
 			// If present at surface, surface hoar is sublimated away
 			if (e == nE-1 && deltaM[e]<0) {
@@ -312,11 +315,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		} else {		// Mass gain: add water in case temperature at or above melting point, ice otherwise
 			if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
-				EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;// [w/m^3]
+				EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;//  [w/m^3]
+				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += deltaM[e]; // 
 			} else {
 				EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
 				EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;// [w/m^3]
+				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e]; //
 			}
+			EMS[e].M += deltaM[e];			
 		}
 
 		EMS[e].theta[AIR] = (1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
