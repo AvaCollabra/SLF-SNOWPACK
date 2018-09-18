@@ -1864,7 +1864,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	cH(c.cH), mH(c.mH), mass_sum(c.mass_sum), swe(c.swe), lwc_sum(c.lwc_sum), hn(c.hn), rho_hn(c.rho_hn), ErosionLevel(c.ErosionLevel), ErosionMass(c.ErosionMass),
 	S_class1(c.S_class1), S_class2(c.S_class2), S_d(c.S_d), z_S_d(c.z_S_d), S_n(c.S_n), z_S_n(c.z_S_n),
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
-	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
+	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL),Kt_vapor(NULL), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), windward(c.windward),
 	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
 	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {
@@ -1918,6 +1918,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		Ndata = source.Ndata;
 		Edata = source.Edata;
 		Kt = NULL;
+		Kt_vapor = NULL;
 		ColdContent = source.ColdContent;
 		ColdContentSoil = source.ColdContentSoil;
 		dIntEnergy = source.dIntEnergy;
@@ -1948,6 +1949,16 @@ SnowStation::~SnowStation()
 			ReleaseBlockMatrix(&pMat->Mat.Block);
 		}
 		free(pMat);
+	}
+	
+	SD_MATRIX_DATA* pMat_vapor = (SD_MATRIX_DATA*) Kt_vapor;
+	if (pMat_vapor != NULL) {
+		if ( pMat_vapor->State == ConMatrix ){
+			ReleaseConMatrix(&pMat_vapor->Mat.Con);
+		} else if ( pMat_vapor->State == BlockMatrix  ){
+			ReleaseBlockMatrix(&pMat_vapor->Mat.Block);
+		}
+		free(pMat_vapor);
 	}
 
 	if (Seaice != NULL) {
@@ -2237,6 +2248,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	Ndata.front().z = 0.;
 	Ndata.front().T = (SSdata.nLayers > 0)? SSdata.Ldata.front().tl : Constants::meltfreeze_tk;
 	Ndata.front().rhov = Atmosphere::waterVaporDensity(Ndata.front().T, Atmosphere::vaporSaturationPressure(Ndata.front().T));
+	//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Ndata.front().rhov << ' ' << Ndata.front().T << "\n";
 	Ndata.front().u = 0.;
 	Ndata.front().f = 0.;
 	Ndata.front().udot = 0.;
@@ -2259,7 +2271,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 		for (size_t le = 0; le < SSdata.Ldata[ll].ne; le++, n++ ) {
 			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / static_cast<double>(SSdata.Ldata[ll].ne);
 			Ndata[n].T = Ndata[n-1].T + dT;
-			Ndata[n].rhov = Atmosphere::waterVaporDensity(Ndata[n].T, Atmosphere::vaporSaturationPressure(Ndata[n].T));// Jafari added
+			Ndata[n].rhov = Atmosphere::waterVaporDensity(Ndata[n].T, Atmosphere::vaporSaturationPressure(Ndata[n].T));
+			//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Ndata[n].rhov << ' ' << Ndata[n].T << "\n";
 			Ndata[n].u = 0.;
 			Ndata[n].f = 0.;
 			Ndata[n].udot = 0.;
@@ -2280,7 +2293,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].depositionDate = Date::rnd(SSdata.Ldata[ll].depositionDate, 1.);
 			// Temperature data
 			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
-			Edata[e].rhov = Atmosphere::waterVaporDensity(Edata[e].Te, Atmosphere::vaporSaturationPressure(Edata[e].Te));// Jafari added
+			Edata[e].rhov = Atmosphere::waterVaporDensity(Edata[e].Te, Atmosphere::vaporSaturationPressure(Edata[e].Te));
+			//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Edata[e].rhov << ' ' << Edata[e].Te << "\n";
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
 			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T) / Edata[e].L;
 			// Creep data
@@ -2466,6 +2480,7 @@ void SnowStation::splitElement(const size_t& e)
 	Ndata[e+2]=Ndata[e+1];
 	Ndata[e+1].hoar=0.;
 	Ndata[e+1].T=Edata[e].Te;
+	Ndata[e+1].rhov=Edata[e].rhov;
 	// Position the new node correctly in the domain
 	Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
 	Ndata[e+2].u*=0.5;
@@ -2778,6 +2793,7 @@ std::istream& operator>>(std::istream& is, SnowStation& data)
 	for (size_t ii=0; ii<s_Edata; ii++) is >> data.Edata[ii];
 
 	data.Kt = NULL;
+	data.Kt_vapor = NULL;
 
 	is.read(reinterpret_cast<char*>(&data.ColdContent), sizeof(data.ColdContent));
 	is.read(reinterpret_cast<char*>(&data.ColdContentSoil), sizeof(data.ColdContentSoil));
@@ -2843,6 +2859,11 @@ const std::string SnowStation::toString() const
 		os << "Kt= NULL\n";
 	else
 		os << "Kt= " << hex << Kt << dec << "\n";
+		
+	if(Kt_vapor==NULL)
+		os << "Kt_vapor= NULL\n";
+	else
+		os << "Kt_vapor= " << hex << Kt_vapor << dec << "\n";
 	/*for (unsigned int ii=1; ii<Ndata.size(); ii++) {
 		os << Ndata[ii].toString();
 	}
