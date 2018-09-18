@@ -182,7 +182,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	double sumMassChange3=0.0;
     double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;	
     double ql_bcup = ql;
-    bool forcingMassBalance= false;	
+    bool forcingMassBalance= true;	
 	
 	if (enable_vapour_transport) {	
 
@@ -190,33 +190,18 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
         compDensityProfile(Mdata, Xdata, true, ql, surfaceVaporPressure);
        	ql = 0.; //Now that we used the remaining ql, put it to 0.      
 
-		std::vector<double> deltaJ(nE, 0.);
-		if(nE>=2)
-		{
-			// for elemnt 0
-			double D_ave = 0.0;
-			double botFlux = 0.0;
-			double topFlux = -D[0]*(NDS[1].rhov-NDS[0].rhov)/EMS[0].L;
-			deltaJ[0] = topFlux-botFlux;
-			for (int i=1; i<=nE-2; i++) {
-				D_ave=0.5*D[i+1]+0.5*D[i];
-				botFlux = topFlux;
-				topFlux = -D_ave*(EMS[i+1].rhov-EMS[i].rhov)/(0.5*EMS[i+1].L+0.5*EMS[i].L);
-				deltaJ[i] = topFlux-botFlux;	
-			}
-			// for element nE-1
-			botFlux = topFlux;
-			topFlux = -D[nE-1]*(NDS[nN-1].rhov-NDS[nN-2].rhov)/EMS[nE-1].L;
-			deltaJ[nE-1] = topFlux-botFlux;
+		//calculation of vapor diffusion flux
+		for (int i = 0; i < nE; i++) {
+			//double aaa = EMS[i].theta[AIR];
+			//double nnn = 1.- EMS[i].theta[SOIL];
+			//double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // Jafari added, based on jury1983
+			//double D = factor_[i]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[i])*D_vapSoil;
+			//double topSaturatedVapor=Atmosphere::waterVaporDensity(NDS[i+1].T, Atmosphere::vaporSaturationPressure(NDS[i+1].T)); 
+			//double botSaturatedVapor=Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T)); 
+			//EMS[i].vapTrans_fluxDiff =-D*(topSaturatedVapor-botSaturatedVapor)/EMS[i].L; 
+			EMS[i].vapTrans_fluxDiff =-D[i]*(NDS[i+1].rhov-NDS[i].rhov)/EMS[i].L; 
 		}
-		if(nE==1)		
-		{
-			// for elemnt 0
-			double botFlux = 0.0;
-			double topFlux = -D[0]*(NDS[1].rhov-NDS[0].rhov)/EMS[0].L;
-			deltaJ[0] = topFlux-botFlux;			
-		}
-		
+			
 		// scaling to force the mass to be conserved 
 		if(forcingMassBalance)
 		{
@@ -264,7 +249,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			// If there is no pore space, or, in fact, only so much pore space to accomodate the larger volume occupied by ice when all water freezes,
 			// we inhibit vapour flux. This is necessary to maintain saturated conditions when present, and this is in turn necessary for the stability in the Richards equation solver.
 			if(EMS[e].theta[AIR] < EMS[e].theta[WATER]*(Constants::density_water/Constants::density_ice - 1.) + Constants::eps) {
-				//dM = 0.;
+				dM = 0.;
 			}
 			
 			deltaM[e] += dM;
@@ -337,6 +322,10 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf air=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
 				throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
 		}
+
+		//some useful output in case of vapor transport
+		EMS[e].vapTrans_snowDenChangeRate = deltaM[e]/sn_dt/EMS[e].L;
+		EMS[e].vapTrans_cumulativeDenChange += deltaM[e]/EMS[e].L;		
 	}
 							   
 	Sdata.hoar += dHoar;

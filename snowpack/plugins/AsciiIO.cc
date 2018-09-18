@@ -322,7 +322,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), enable_pref_flow(false),
            avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
-           out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false)
+           out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false), enable_vapour_transport(false)
 {
 	//Defines how heights/depths of snow or/and soil temperatures are read in and output \n
 	// Snowpack section
@@ -367,6 +367,8 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
+	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport); //Enable vapour transport
+
 
 	i_snowpath = (in_snowpath.empty())? inpath : in_snowpath;
 	o_snowpath = (out_snowpath.empty())? outpath : out_snowpath;
@@ -1173,6 +1175,27 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		writeProfileProAddCalibration(Xdata, fout);
 	else
 		writeProfileProAddDefault(Xdata, fout);
+		
+	if(enable_vapour_transport)
+	{
+		// 0901: the rate of snow density change due to vapour transport (kg/m^3/s)
+		fout << "\n0901," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::scientific << std::setprecision(9) << EMS[e].vapTrans_snowDenChangeRate;
+		
+		// 0902: the vapour diffusion flux of the element (kg/m^2/s)
+		fout << "\n0902," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::scientific << std::setprecision(9) << EMS[e].vapTrans_fluxDiff;
+
+		// 0903: the cumulative density change due to vapour transport of the element (kg/m^3)
+		fout << "\n0903," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::scientific << std::setprecision(6) << EMS[e].vapTrans_cumulativeDenChange;	
+	}	
 
 	fout.close();
 }
@@ -2433,6 +2456,14 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0892,nElems,SNTHERM: settling rate due to metamorphism (% h-1)";
 		fout << "\n0893,nElems,SNTHERM: viscosity (GPa s)";
 	}
+	
+	if(enable_vapour_transport)
+	{
+		fout << "\n0901,nElems, the rate of snow density change due to vapour transport (kg/m^3/s)";
+		fout << "\n0902,nElems, the vapour diffusion flux of the element (kg/m^2/s)";		
+		fout << "\n0903,nElems, the cumulative density change due to vapour transport of the element (kg/m^3)";
+	}
+	
 	fout << "\n\n[DATA]";
 }
 

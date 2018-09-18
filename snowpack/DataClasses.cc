@@ -1129,7 +1129,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID),rhov(0.),Qmm(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID), rhov(0.), Qmm(0.), vapTrans_fluxDiff(0.), vapTrans_snowDenChangeRate(0.), vapTrans_cumulativeDenChange(0.)  {}
 
 ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
@@ -1140,7 +1140,7 @@ ElementData::ElementData(const ElementData& cc) :
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID), rhov(cc.rhov),Qmm(cc.Qmm) {}
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange)  {}
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
@@ -1213,6 +1213,9 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.ID), sizeof(data.ID));
 	os.write(reinterpret_cast<const char*>(&data.rhov), sizeof(data.rhov));
 	os.write(reinterpret_cast<const char*>(&data.Qmm), sizeof(data.Qmm));
+	os.write(reinterpret_cast<const char*>(&data.vapTrans_fluxDiff), sizeof(data.vapTrans_fluxDiff));
+	os.write(reinterpret_cast<const char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
+	os.write(reinterpret_cast<const char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
 	return os;
 }
 
@@ -1291,6 +1294,9 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.ID), sizeof(data.ID));
 	is.read(reinterpret_cast<char*>(&data.rhov), sizeof(data.rhov));
 	is.read(reinterpret_cast<char*>(&data.Qmm), sizeof(data.Qmm));
+	is.read(reinterpret_cast<char*>(&data.vapTrans_fluxDiff), sizeof(data.vapTrans_fluxDiff));
+	is.read(reinterpret_cast<char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
+	is.read(reinterpret_cast<char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
 	return is;
 }
 
@@ -2577,7 +2583,9 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.heatCapacity();
 	
 	EdataLower.rhov = (EdataUpper.rhov*L_upper + EdataLower.rhov*L_lower)/LNew;
-	
+	EdataLower.vapTrans_fluxDiff = EdataUpper.vapTrans_fluxDiff + EdataLower.vapTrans_fluxDiff;
+	EdataLower.vapTrans_snowDenChangeRate = (EdataUpper.vapTrans_snowDenChangeRate*L_upper + EdataLower.vapTrans_snowDenChangeRate*L_lower)/LNew;
+	EdataLower.vapTrans_cumulativeDenChange = (EdataUpper.vapTrans_cumulativeDenChange*L_upper + EdataLower.vapTrans_cumulativeDenChange*L_lower)/LNew;
 }
 
 /**
