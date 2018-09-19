@@ -133,8 +133,8 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 	}
 
     try {
-	    WaterTransport::adjustDensity(Xdata);
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
+	    WaterTransport::adjustDensity(Xdata);	    
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
@@ -257,11 +257,13 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	} else {
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
 		// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
-		const double topFlux = -ql_bcup / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
+		/*
+		const double topFlux = -ql / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
 		deltaM[nE-1] += std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
 		// HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
 		// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
 		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
+		*/
 	}
 
 	double dHoar = 0.;
@@ -569,6 +571,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	{
 		double sVapor = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
 		NDS[i].rhov=sVapor;
+		//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< NDS[i].rhov << ' ' << NDS[i].T << "\n";
 	}
 
 	if (Kt_vapor != NULL)
