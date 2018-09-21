@@ -134,7 +134,8 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 
     try {
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
-	    WaterTransport::adjustDensity(Xdata);	    
+	    WaterTransport::adjustDensity(Xdata);
+	    //WaterTransport::mergingElements(Xdata, Sdata);	    
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
@@ -182,7 +183,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	double sumMassChange3=0.0;
     double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;
     double ql_bcup = ql;
-    bool forcingMassBalance= true;
+    bool forcingMassBalance= false;
 
 	if (enable_vapour_transport) {
 
@@ -544,6 +545,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation& Xdata, const bool& ThrowAtNoConvergence, double& ql, const double& surfaceVaporPressure)
 {
 	bool topDirichletBCtype= false;
+	bool bottomDirichletBCtype= false;
 	//ChangingBoundaryToDirichlet: //label for goto to change B.C. to Dirichlet
 
 	int Ie[N_OF_INCIDENCES];                     // Element incidences
@@ -645,7 +647,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
 	unsigned int MaxItnTemp = 10000; // maximum 40 iterations for temperature field
-	double ControlTemp = 1.e-15;    // solution convergence to within 0.01 degC
+	double ControlTemp = 1.e-12;    // solution convergence to within 0.01 degC
 
 	// The temperature equation was found to show slow convergence with only 1 or 2 elements left.
 	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
@@ -684,7 +686,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		// the upper B.C.
 		if(topDirichletBCtype){
 			double p_vapor = surfaceVaporPressure; //Mdata.rh * Atmosphere::vaporSaturationPressure( Mdata.ta );
-			NDS[nE].rhov = Atmosphere::waterVaporDensity(NDS[nE].T, p_vapor); // vapor density of the new node
+			NDS[nE].rhov = Atmosphere::waterVaporDensity(NDS[nE].T, p_vapor); //Jafari added vapor density of the new node
 			double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
@@ -694,30 +696,30 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		if(!topDirichletBCtype){
 			EL_INCID(nE-1, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
-			double D_drhov_dn = ql/Constants::lh_sublimation;
+			double D_drhov_dn = ql/(0.5*Constants::lh_sublimation+0.5*Constants::lh_vaporization);
 			neumannBoundaryConditions(Se, Fe, D_drhov_dn);
 			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt_vapor, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
-			//std::cout << "---ql---abs(ql)----- " << ql << ' ' << std::abs(ql) << '\n';
-		}
-
+		}						       
         // the lower B.C.
-        /*
-		double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
-		double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(EMS[0].Te, Atmosphere::vaporSaturationPressure(EMS[0].Te));
-        NDS[0].rhov=elementSaturationVaporDensity;
-		// Bottom node
-		// Dirichlet BC at bottom: prescribed temperature value
-		// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
-		Ie[0] = 0;
-		ds_AssembleMatrix((SD_MATRIX_DATA*) Kt_vapor, 1, Ie, 1, &Big);
-		*/
-		EL_INCID(0, Ie);
-		EL_TEMP(Ie, T0, TN, NDS, U);
-		double zeroFlux =0.0;
-		neumannBoundaryConditions(Se, Fe, zeroFlux);
-		ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt_vapor, 2, Ie, 2,  (double*) Se );
-		EL_RGT_ASSEM( dU, Ie, Fe );
+        if(bottomDirichletBCtype){
+			double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
+			double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(EMS[0].Te, Atmosphere::vaporSaturationPressure(EMS[0].Te));		
+			NDS[0].rhov=elementSaturationVaporDensity;             
+			// Bottom node
+			// Dirichlet BC at bottom: prescribed temperature value
+			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
+			Ie[0] = 0;
+			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt_vapor, 1, Ie, 1, &Big);
+		}
+        if(!bottomDirichletBCtype){
+			EL_INCID(0, Ie);
+			EL_TEMP(Ie, T0, TN, NDS, U);
+			double zeroFlux =0.0;
+			neumannBoundaryConditions(Se, Fe, zeroFlux);
+			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt_vapor, 2, Ie, 2,  (double*) Se );
+			EL_RGT_ASSEM( dU, Ie, Fe );
+		}
 
 		/*
 		 * Solve the linear system of equation. The te_F vector is used first as right-
@@ -840,7 +842,7 @@ bool VapourTransport::sn_ElementKtMatrix(ElementData &Edata, double dt, double T
 
     double aaa = Edata.theta[AIR];
     double nnn = 1.- Edata.theta[SOIL];
-    double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
+    double D_vapSoil = Constants::diffusion_coefficient_in_air * std::max(pow(aaa,10./3.),pow(1.e-1,10./3.))/nnn/nnn; // based on jury1983
 	double D = factor_[index]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[index])*D_vapSoil;
 	D = D/Edata.L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
