@@ -289,8 +289,8 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			EMS[e].theta[ICE] += dTh_ice;
 
 			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dTh_water * Constants::density_water * EMS[e].L;
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dTh_ice * Constants::density_water * EMS[e].L;
-			EMS[e].M += dTh_water * Constants::density_water * EMS[e].L+dTh_ice * Constants::density_water * EMS[e].L;
+			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dTh_ice * Constants::density_ice * EMS[e].L;
+			EMS[e].M += dTh_water * Constants::density_water * EMS[e].L+dTh_ice * Constants::density_ice * EMS[e].L;
 			assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 
 			EMS[e].Qmm += (dTh_water*Constants::density_water*Constants::lh_vaporization +
