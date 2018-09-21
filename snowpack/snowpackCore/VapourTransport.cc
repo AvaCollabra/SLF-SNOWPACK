@@ -842,7 +842,7 @@ bool VapourTransport::sn_ElementKtMatrix(ElementData &Edata, double dt, double T
 
     double aaa = Edata.theta[AIR];
     double nnn = 1.- Edata.theta[SOIL];
-    double D_vapSoil = Constants::diffusion_coefficient_in_air * std::max(pow(aaa,10./3.),pow(1.e-1,10./3.))/nnn/nnn; // based on jury1983
+    double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 	double D = factor_[index]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[index])*D_vapSoil;
 	D = D/Edata.L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
