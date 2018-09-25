@@ -46,7 +46,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 
 {
 	//Format of initial snow profile:
-	const std::string in_snow = cfg.get("SNOW", "Input", IOUtils::nothrow);
+	const std::string in_snow = cfg.get("SNOW", "Input", "SMET");
 	if (in_snow == "SNOOLD") {
 		input_snow_as_ascii = true;
 	} else if (in_snow == "CAAML") {
@@ -76,7 +76,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 			throw InvalidArgumentException("Invalid output snow profile format '"+out_snow+"'. Please choose from SMET, CAAML, SNOOLD", AT);
 	}
 
-	std::vector<string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output", IOUtils::nothrow);
+	const std::vector<string> vecProfileFmt = cfg.get("PROF_FORMAT", "Output");
 	if (vecProfileFmt.size() > 3) {
 		throw InvalidArgumentException("The key PROF_FORMAT in [Output] can take three values at most", AT);
 	} else {
@@ -100,7 +100,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 	//Format of meteo time series:
 	const bool ts_out = cfg.get("TS_WRITE", "Output");
 	if (ts_out==true) {
-		const std::string ts_format = cfg.get("TS_FORMAT", "Output", IOUtils::nothrow);
+		const std::string ts_format = cfg.get("TS_FORMAT", "Output", "SMET");
 		if (ts_format=="SMET") {
 			output_ts_as_smet = true;
 			vecExtension.push_back("smet");	//Classical time series (meteo, snow temperatures, etc.)
