@@ -259,6 +259,7 @@ bool CaaMLIO::snowCoverExists(const std::string& i_snowfile, const std::string& 
  * @param stationID
  * @param SSdata
  * @param Zdata
+ * @param read_salinity
  */
 void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
                             SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata, const bool&)
