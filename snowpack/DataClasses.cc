@@ -2470,7 +2470,7 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
 {
 	maxNumberMeasTemperatures = cfg.get("MAX_NUMBER_MEAS_TEMPERATURES", "SnowpackAdvanced");
-	cfg.getValues("FIXED_POSITIONS", "SnowpackAdvanced", fixedPositions);
+	cfg.getValue("FIXED_POSITIONS", "SnowpackAdvanced", fixedPositions);
 	minDepthSubsurf = cfg.get("MIN_DEPTH_SUBSURF", "SnowpackAdvanced");
 	numberFixedRates = cfg.get("NUMBER_FIXED_RATES", "SnowpackAdvanced");
 }
