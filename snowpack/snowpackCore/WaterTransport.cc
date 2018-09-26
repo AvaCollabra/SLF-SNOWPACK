@@ -1089,6 +1089,10 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			}
 			Wres = std::max(0., Wres);
 
+			// Add excess water to the bottom element, such that it does not get lost
+			EMS[0].theta[WATER] += excess_water / EMS[0].L;
+			excess_water = 0.;
+
 			const double W0 = EMS[0].theta[WATER];
 			if ((W0 > Wres) // NOTE: if water_layer is set, do not drain water element on top of soil
 				&& !(water_layer && (EMS[0].theta[ICE] < Snowpack::min_ice_content)
