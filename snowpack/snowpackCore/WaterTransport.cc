@@ -510,7 +510,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					verify_top_element=true;
 				}
 			} else {										// We are dealing with first snow element above soil
-				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0.) {				// If at least one snow layer above AND this layer above is not marked to be removed yet.
+				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0. && EMS[eUpper+1].Rho > 0.) {	// If at least one snow layer above AND this layer above is not marked to be removed yet.
 					// In case it is the lowest snow element and there are snow elements above, join with the element above:
 					merged=true;
 					SnowStation::mergeElements(EMS[eUpper], EMS[eUpper+1], true, (eUpper==nE-1));
