@@ -35,8 +35,8 @@ MACRO (SET_COMPILER_OPTIONS)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
 		
-		SET(WARNINGS_OFF "-Wno-unknown-pragmas")
-		SET(WARNINGS "-Wall -Wno-long-long  -Wswitch ${WARNINGS_OFF}")
+		SET(WARNINGS_OFF "-Wno-long-long -Wno-unknown-pragmas -wd2015,11071")
+		SET(WARNINGS "-Wall -Wswitch ${WARNINGS_OFF}")
 		SET(DEEP_WARNINGS "-Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic ${DEEP_WARNINGS}")
 		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
@@ -82,7 +82,7 @@ MACRO (SET_COMPILER_OPTIONS)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
 		
-		SET(WARNINGS "-Wall -Wno-long-long  -Wswitch")
+		SET(WARNINGS "-Wall -Wno-long-long -Wswitch") #-Wno-unknown-pragmas
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
 		SET(OPTIM "-g -O3 -DNDEBUG -DNOSAFECHECKS")
