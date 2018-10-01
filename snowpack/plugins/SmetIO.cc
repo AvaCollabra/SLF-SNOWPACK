@@ -92,8 +92,8 @@ using namespace mio;
  * source           = WSL-SLF			;optional key
  * ProfileDate      = 2009-10-01T00:00		;when was the profile made, see explanations above
  * HS_Last          = 0.0000			;last measured snow height
- * SlopeAngle       = 38.0			
- * SlopeAzi         = 0.0			
+ * slope_angle       = 38.0
+ * slope_azi         = 0.0
  * nSoilLayerData   = 0				;number of soil layers
  * nSnowLayerData   = 1				;number of snow layers
  * SoilAlbedo       = 0.20				;albedo of the exposed soil
@@ -438,8 +438,11 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 		tmppos.setXY(easting, northing, alt);
 	}
 
-	const double slope_angle = get_doubleval(sno_reader, "SlopeAngle");
-	const double azi = get_doubleval(sno_reader, "SlopeAzi");
+	const double nodata = sno_reader.get_header_doublevalue("nodata");
+	double slope_angle = sno_reader.get_header_doublevalue("slope_angle");
+	if (slope_angle==IOUtils::nodata) slope_angle = get_doubleval(sno_reader, "SlopeAngle"); //old key
+	double azi = sno_reader.get_header_doublevalue("slope_azi");
+	if (azi==IOUtils::nodata) azi = get_doubleval(sno_reader, "SlopeAzi"); //old key
 	SSdata.meta.setStationData(tmppos, stationID, station_name);
 	SSdata.meta.setSlope(slope_angle, azi);
 
@@ -674,9 +677,9 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("latitude", Xdata.meta.position.getLat());
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
-	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
 	smet_writer.set_header_value("slope_angle", Xdata.meta.getSlopeAngle());
 	smet_writer.set_header_value("slope_azi", Xdata.meta.getAzimuth());
+	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
@@ -694,12 +697,6 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 	// Last checked calculated snow depth used for albedo control of next run
 	ss.str(""); ss << fixed << setprecision(6) << (Xdata.cH - Xdata.Ground);
 	smet_writer.set_header_value("HS_Last", ss.str());
-
-	// Slope metadata
-	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getSlopeAngle();
-	smet_writer.set_header_value("SlopeAngle", ss.str());
-	ss.str(""); ss << fixed << setprecision(2) << Xdata.meta.getAzimuth();
-	smet_writer.set_header_value("SlopeAzi", ss.str());
 
 	// Number of Soil Layer Data; in case of no soil used to store the erosion level
 	smet_writer.set_header_value("nSoilLayerData", static_cast<double>(Xdata.SoilNode));

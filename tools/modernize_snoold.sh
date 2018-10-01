@@ -69,6 +69,14 @@ convert2SMET() {
 		print HS_Last
 		next
 	}
+	/SlopeAngle/ {
+		split($0, str, "=")
+		printf("slope_angle = %s\n", str[2])
+	}
+	/SlopeAzi/ {
+		split($0, str, "=")
+		printf("slope_azi = %s\n", str[2])
+	}
 	/WindScalingFactor/ {
 		gsub("=", " = ", $0)
 		WindScalingFactor=$0
