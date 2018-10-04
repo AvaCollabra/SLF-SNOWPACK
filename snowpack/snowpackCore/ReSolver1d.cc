@@ -1275,9 +1275,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		}
 
 		// 2) Not too dry
-		if(EMS[SnowpackElement[i]].theta[SOIL]>Constants::eps2) {		//For soil
-			if(AllowDrySoilLayers==true) {
-				if(not( (EMS[SnowpackElement[i]].theta[WATER]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) < theta_r[i]) && (EMS[SnowpackElement[i]].theta[WATER]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) < theta_d[i]) {
+		if (EMS[SnowpackElement[i]].theta[SOIL]>Constants::eps2) {		//For soil
+			if (AllowDrySoilLayers==true) {
+				if (!( (EMS[SnowpackElement[i]].theta[WATER]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) < theta_r[i]) && (EMS[SnowpackElement[i]].theta[WATER]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) < theta_d[i]) {
 					wateroverflow[i]+=( (EMS[SnowpackElement[i]].theta[WATER]+(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water))) - theta_d[i]);
 					EMS[SnowpackElement[i]].theta[WATER]=theta_d[i]-(EMS[SnowpackElement[i]].theta[ICE]*(Constants::density_ice/Constants::density_water));
 					activelayer[i]=true;
@@ -1299,7 +1299,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		} else {
 			if(AllowDrySnowLayers==true) {
 				//For snow, we have to melt ice to create theta_r!!
-				if(not(EMS[SnowpackElement[i]].theta[WATER]<theta_r[i]) && EMS[SnowpackElement[i]].theta[WATER]<theta_d[i]) {
+				if(!(EMS[SnowpackElement[i]].theta[WATER]<theta_r[i]) && EMS[SnowpackElement[i]].theta[WATER]<theta_d[i]) {
 					const double tmp_missing_theta=(theta_d[i]-EMS[SnowpackElement[i]].theta[WATER]);	//Not too dry (original)
 
 					//Note: we do the book keeping for wateroverflow[i] not here, but afterwards, when we know how much water was used.
@@ -2163,15 +2163,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				//Note: because we want to be able to very accurately determine the flux over the snow-soil boundary (for MS_SNOW_RUNOFF) and model boundaries (for MS_SOIL_RUNOFF),
 				//we ALWAYS have to assess the accuracy in head in this region! If we don't do this, then in case of dry soil layers, the estimated pressure head can be quite
 				//inaccurate, leading to a completely wrong estimation of these fluxes!
-				if(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1) {
+				if (Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
-						if(fabs(delta_h[memstate%nmemstates][i])>track_accuracy_h) {
+						if (fabs(delta_h[memstate%nmemstates][i])>track_accuracy_h) {
 							track_trigger_layer_accuracy=i;
 							track_accuracy_h=fabs(delta_h[memstate%nmemstates][i]);
 						}
 						//Now check against convergence criterion:
-						if(fabs(delta_h[memstate%nmemstates][i])>REQUIRED_ACCURACY_H) {
+						if (fabs(delta_h[memstate%nmemstates][i])>REQUIRED_ACCURACY_H) {
 							trigger_layer_accuracy=i;
 							accuracy=fabs(delta_h[memstate%nmemstates][i]);
 						}
@@ -2180,11 +2180,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 				//Absolute accuracy in theta. This doesn't behave stable, especially during saturated soil conditions, when the accuracy is set too low.
 				//See Huang (1996), which proposes this, and also discusses the need for a higher accuracy:
-				//if(not(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver)) {
-				if(not(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1)) {
+				// if(!(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver)) {
+				if (!(Se[i]>convergencecriterionthreshold || i==nsoillayers_richardssolver-1 || i==nsoillayers_richardssolver || i==lowernode || i==lowernode-1)) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
-						if(fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water))>track_accuracy_theta) {
+						if (fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water))>track_accuracy_theta) {
 							track_trigger_layer_accuracy=i;
 							track_accuracy_theta=fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water));
 						}
@@ -2198,10 +2198,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 			//Apply boundary conditions
-			if(aTopBC==DIRICHLET) {
+			if (aTopBC==DIRICHLET) {
 				h_np1_mp1[uppernode]=htop;		//Dirichlet
 			}
-			if(aBottomBC==DIRICHLET) {
+			if (aBottomBC==DIRICHLET) {
 				h_np1_mp1[lowernode]=hbottom;		//Dirichlet
 			}
 
@@ -2211,12 +2211,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			//-- Determine top and bottom flux:
 			double tmp_mb_topflux=0.;
 			double tmp_mb_bottomflux=0.;
-			if(aTopBC==NEUMANN) {		//If we use Neumann, the massbalance should incorporate the applied TopFluxRate:
+			if (aTopBC==NEUMANN) {		//If we use Neumann, the massbalance should incorporate the applied TopFluxRate:
 				tmp_mb_topflux=TopFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the influx: (Note that basically with Dirichlet, the change of theta in the element is 0., so the influx in the model domain is equal to the flux from the upper element to the one below.)
 				tmp_mb_topflux=((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_mp1[uppernode]-h_np1_mp1[uppernode-1])/dz_down[uppernode])+cos_sl)*k_np1_m_im12[uppernode]*dt);
 			}
-			if(aBottomBC==NEUMANN) {	//If we use Neumann, the massbalance should incorporate the applied BottomFluxRate:
+			if (aBottomBC==NEUMANN) {	//If we use Neumann, the massbalance should incorporate the applied BottomFluxRate:
 				tmp_mb_bottomflux=BottomFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the outflux: (Note that basically with Dirichlet, the change of theta in the element is 0., so the outflux in the model domain is equal to the flux from the element above the lowest one to the lowest one.)
 				tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt));
@@ -2224,10 +2224,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			massbalanceerror+=tmp_mb_topflux;		//Add topflux (note: topflux>0. means influx)
 			massbalanceerror-=tmp_mb_bottomflux;		//Substract bottomflufx (note: bottomflux>0. means outflux)
 			massbalanceerror+=totalsourcetermflux*dt;	//Add the sink/source term flux.
-			if(WriteOutNumerics_Level2==true) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
+			if (WriteOutNumerics_Level2==true) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode])+cos_sl)*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
 
 			//Make sure to trigger a rewind by making max_delta_h very large in case the mass balance is violated or change in head are too large.
-			if(fabs(massbalanceerror)>1E-1 || max_delta_h>MAX_ALLOWED_DELTA_H) {
+			if (fabs(massbalanceerror)>1E-1 || max_delta_h>MAX_ALLOWED_DELTA_H) {
 				max_delta_h=2.*MAX_ALLOWED_DELTA_H;
 			}
 
@@ -2236,7 +2236,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 
-			if(WriteOutNumerics_Level1==true) printf("CONVERGENCE:  layer: %d/%d --- acc_h: %.10f acc_theta: %.10f acc: %.10f def_norm: %f converged? %s\n", track_trigger_layer_accuracy, trigger_layer_accuracy, track_accuracy_h, track_accuracy_theta, accuracy, deficit_vector_norm, (boolConvergence)?"yes":"no");
+			if (WriteOutNumerics_Level1==true) printf("CONVERGENCE:  layer: %d/%d --- acc_h: %.10f acc_theta: %.10f acc: %.10f def_norm: %f converged? %s\n", track_trigger_layer_accuracy, trigger_layer_accuracy, track_accuracy_h, track_accuracy_theta, accuracy, deficit_vector_norm, (boolConvergence)?"yes":"no");
 
 			//Copy solution, to prepare for next iteration
 			for (i = uppernode; i >= lowernode; i--) {
@@ -2246,7 +2246,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			}
 
 			//Rewind time step control: retry finding solution with smaller time step when MAX_ITER is exceeded. Also when max_delta_h is too large we do a rewind, else the model is starting to blow up.
-			if((niter>MAX_ITER || max_delta_h>MAX_ALLOWED_DELTA_H) && dt > MIN_VAL_TIMESTEP && boolConvergence==false) {
+			if ((niter>MAX_ITER || max_delta_h>MAX_ALLOWED_DELTA_H) && dt > MIN_VAL_TIMESTEP && boolConvergence==false) {
 
 				if(WriteOutNumerics_Level1==true) std::cout << "REWIND: timestep " << std::setprecision(20) << dt << std::setprecision(6) << " ---> ";
 
