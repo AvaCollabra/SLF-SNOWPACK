@@ -46,7 +46,7 @@ class Snowpack {
 
 		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
-		
+
 		/**
 		 * @brief Perform snow preparation (grooming, etc) on a given snowpack
 		 * @param Xdata snowpack to work on
@@ -68,6 +68,12 @@ class Snowpack {
 			NEUMANN_BC,
 			DIRICHLET_BC
 		};
+
+    typedef enum SOIL_EVAP_MODEL {
+			EVAP_RESISTANCE,
+			EVAP_RELATIVE_HUMIDITY,
+			EVAP_NONE
+		} soil_evap_model;
 
 		double getParameterizedAlbedo(const SnowStation& Xdata,
 		                              const CurrentMeteo& Mdata) const;
@@ -112,7 +118,7 @@ class Snowpack {
 		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
 
 		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);
-		
+
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                  SurfaceFluxes& Sdata);
 
@@ -151,6 +157,8 @@ class Snowpack {
 		double heat_begin, heat_end;
 		double temp_index_degree_day, temp_index_swr_factor;
 		bool forestfloor_alb;
+
+    soil_evap_model soil_evaporation;
 }; //end class Snowpack
 
 #endif

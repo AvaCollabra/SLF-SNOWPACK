@@ -97,7 +97,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             soil_flux(false), useSoilLayers(false), useNewPhaseChange(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
             enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.),
-            temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false)
+            temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false), soil_evaporation(EVAP_RELATIVE_HUMIDITY)
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -277,6 +277,26 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat, IOUtils::nothrow);
 	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin, IOUtils::nothrow);
 	cfg.getValue("HEAT_END", "SnowpackAdvanced", heat_end, IOUtils::nothrow);
+
+	// Get the soil evaporation model to be used
+	std::string soil_evap;
+	cfg.getValue("SOIL_EVAP_MODEL", "SnowpackAdvanced", soil_evap);
+	if(soil_evap=="RESISTANCE")
+	{
+		soil_evaporation = EVAP_RESISTANCE;
+	}
+	else if(soil_evap=="RELATIVE_HUMIDITY")
+	{
+		soil_evaporation = EVAP_RELATIVE_HUMIDITY;
+	}
+	else if(soil_evap=="NONE")
+	{
+		soil_evaporation = EVAP_NONE;
+	}
+	else
+	{
+		throw IOException("Unknown value for key SOIL_EVAP_MODEL in [SnowpackAdvanced]. Accepted values are \"RESISTANCE\", \"RELATIVE HUMIDITY\", and \"NONE\".", AT);
+	}
 }
 
 void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really needed?
@@ -535,7 +555,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 
 	Bdata.qs = alpha * (Tair - Tss);
 
-	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, actual_height_of_meteo_values);
+	Bdata.ql = SnLaws::compLatentHeat_Rh(soil_evaporation, Mdata, Xdata, actual_height_of_meteo_values);
 
 	if (Xdata.getNumberOfElements() > 0) {
 	  	// Limit fluxes in case of explicit treatment of boundary conditions
@@ -693,17 +713,11 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 	// Parameterized albedo (statistical model) including correct treatment of PLASTIC and WATER_LAYER
 	if (nE > Xdata.SoilNode) { //there are some non-soil layers
 		size_t eAlbedo = nE-1;
-		const size_t marker = EMS[eAlbedo].mk % 10;
+		size_t marker = EMS[eAlbedo].mk % 10;
 
-		if(marker==9) // WATER_LAYER
-		{
-				if (eAlbedo > Xdata.SoilNode)
-					eAlbedo--;
-		}
-		else if (marker==8) // Ice layer within the snowpack
- 		{
-				while (eAlbedo > Xdata.SoilNode)
-					eAlbedo--;
+		while ((marker==8 || marker==9) && eAlbedo > Xdata.SoilNode){ //If Water or ice layer, go one layer down
+			eAlbedo--;
+			marker = EMS[eAlbedo].mk % 10;
 		}
 
 		if (eAlbedo > Xdata.SoilNode && (EMS[eAlbedo].theta[SOIL] < Constants::eps2)) { // Snow, or glacier ice
@@ -1421,7 +1435,7 @@ void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& lengt
 	} else {
 		elem.meltfreeze_tk = Constants::meltfreeze_tk;
 	}
-	
+
 	double p_vapor = Atmosphere::vaporSaturationPressure(elem.Te);
 	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);
 }
@@ -1822,7 +1836,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
 				NDS[n].T = t_surf;                  // Temperature of the new node
 				double p_vapor = Atmosphere::vaporSaturationPressure(NDS[n].T);
-				NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);				
+				NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);
 				NDS[n].z = z0;                      // New nodal position
 				NDS[n].u = 0.0;                     // Initial displacement is 0
 				NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
@@ -2117,7 +2131,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		// and creep solution routines will not pick up the new mesh boolean.
 		double ql = Bdata.ql;	// Variable to keep track of how latent heat is used
 		watertransport.compTransportMass(Mdata, Xdata, Sdata, ql);
-		
+
 		const double surfaceVaporPressure = Atmosphere::vaporSaturationPressure(t_surf);
 		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata, surfaceVaporPressure);
 
