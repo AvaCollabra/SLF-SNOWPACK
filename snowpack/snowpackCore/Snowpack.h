@@ -69,7 +69,7 @@ class Snowpack {
 			DIRICHLET_BC
 		};
 
-    typedef enum SOIL_EVAP_MODEL {
+		typedef enum SOIL_EVAP_MODEL {
 			EVAP_RESISTANCE,
 			EVAP_RELATIVE_HUMIDITY,
 			EVAP_NONE
@@ -157,8 +157,7 @@ class Snowpack {
 		double heat_begin, heat_end;
 		double temp_index_degree_day, temp_index_swr_factor;
 		bool forestfloor_alb;
-
-    soil_evap_model soil_evaporation;
+		soil_evap_model soil_evaporation;
 }; //end class Snowpack
 
 #endif
