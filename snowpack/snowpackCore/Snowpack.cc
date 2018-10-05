@@ -60,15 +60,15 @@ const double Snowpack::min_snow_albedo = 0.3;
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
 
 /// @brief Define the assembly macro
-void Snowpack::EL_INCID(const size_t &e, int Ie[]) {
-	Ie[0] = static_cast<int>( e );
-	Ie[1] = static_cast<int>( e+1 );
+void Snowpack::EL_INCID(const int &e, int Ie[]) {
+	Ie[0] = e;
+	Ie[1] = e+1;
 }
 
 /// @brief Define the node to element temperature macro
 void Snowpack::EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] ) {
-	Te0[ 0 ] = T0[ static_cast<size_t>(Ie[ 0 ]) ].T;
-	Te0[ 1 ] = T0[ static_cast<size_t>(Ie[ 1 ]) ].T;
+	Te0[ 0 ] = T0[ Ie[ 0 ] ].T;
+	Te0[ 1 ] = T0[ Ie[ 1 ] ].T;
 	Tei[ 0 ] = Ti[ Ie[ 0 ] ];
 	Tei[ 1 ] = Ti[ Ie[ 1 ] ];
 }
@@ -868,7 +868,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 	if (Kt != NULL)
 		ds_Solve(ReleaseMatrixData, (SD_MATRIX_DATA*)Kt, 0);
-	ds_Initialize(nN, (SD_MATRIX_DATA**)&Kt);
+	ds_Initialize(static_cast<int>(nN), (SD_MATRIX_DATA**)&Kt);
 	/*
 	 * Define the structure of the matrix, i.e. its connectivity. For each element
 	 * we compute the element incidences and pass the incidences to the solver.
@@ -876,8 +876,8 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	 * equations specified by the incidence set are all connected to each other.
 	 * Initialize element data.
 	*/
-	for (size_t e = 0; e < nE; e++) {
-		int Nodes[2] = {(int)e, (int)e+1};
+	for (int e = 0; e < static_cast<int>(nE); e++) {
+		int Nodes[2] = {e, e+1};
 		ds_DefineConnectivity( (SD_MATRIX_DATA*)Kt, 2, Nodes , 1, 0 );
 	}
 
@@ -1083,7 +1083,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 					Xdata.Edata[e].meltfreeze_tk = -SeaIce::mu * BrineSal_new + Constants::meltfreeze_tk;
 				}
 			}
-			EL_INCID( e, Ie );
+			EL_INCID( static_cast<int>(e), Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Update the wind pumping velocity gradient
 			const double dvdz = SnLaws::compWindGradientSnow(EMS[e], v_pump);
@@ -1109,7 +1109,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		 */
 
 		if (surfaceCode == NEUMANN_BC) {
-			EL_INCID(nE-1, Ie);
+			EL_INCID(static_cast<int>(nE-1), Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			neumannBoundaryConditions(Mdata, Bdata, Xdata, T0[1], TN[1], Se, Fe);
 			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt, 2, Ie, 2,  (double*) Se );
@@ -1120,7 +1120,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		if (surfaceCode == DIRICHLET_BC) {
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
-			Ie[0] = static_cast<int>( nE );
+			Ie[0] = static_cast<int>(nE);
 			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt, 1, Ie, 1, &Big);
 		}
 		// Bottom node

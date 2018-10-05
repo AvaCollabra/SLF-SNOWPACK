@@ -88,7 +88,7 @@ class Snowpack {
 		BoundaryCondition surfaceCode;
 
  private:
-		static void EL_INCID(const size_t &e, int Ie[]);
+		static void EL_INCID(const int &e, int Ie[]);
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
 

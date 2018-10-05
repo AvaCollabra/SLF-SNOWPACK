@@ -32,9 +32,9 @@ using namespace std;
  * static section                                           *
  ************************************************************/
 /// @brief Define the assembly macro
-void VapourTransport::EL_INCID(const size_t &e, int Ie[]) {
-	Ie[0] = static_cast<int>( e );
-	Ie[1] = static_cast<int>( e+1 );
+void VapourTransport::EL_INCID(const int &e, int Ie[]) {
+	Ie[0] = e;
+	Ie[1] = e+1;
 }
 
 /// @brief Define the node to element temperature macro
@@ -135,7 +135,7 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
     try {
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
 	    WaterTransport::adjustDensity(Xdata);
-	    //WaterTransport::mergingElements(Xdata, Sdata);	    
+	    //WaterTransport::mergingElements(Xdata, Sdata);
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
@@ -157,13 +157,13 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	std::vector<double> vaporFluxDiv(nE, 0.);// store the vapor flux divergence
 
 	std::vector<double> factor_(nE, 1.);// this is for source term in vapor transport equation
-	for(int i=0; i<Xdata.SoilNode; i++)
+	for(size_t i=0; i<Xdata.SoilNode; i++)
 	{
 		factor_[i]=0.;
 	}
 
 	std::vector<double> D(nE, 0.);
-	for (int i=0; i<=nE-1; i++)
+	for (size_t i=0; i<=nE-1; i++)
 	{
 		double aaa = EMS[i].theta[AIR];
 		double nnn = 1.- EMS[i].theta[SOIL];
@@ -173,17 +173,17 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	// For snow, update theta_s (i.e., pore space)
 	if (nE > Xdata.SoilNode) {
-		for (size_t e = Xdata.SoilNode; e < nE; e++) {
-			EMS[e].VG.theta_s = (1. - EMS[e].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
+		for (size_t el = Xdata.SoilNode; el < nE; el++) {
+			EMS[e].VG.theta_s = (1. - EMS[el].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
 		}
 	}
 
 	double sumMassChange = 0.0;
 	double sumMassChange2 = 0.0;
 	double sumMassChange3=0.0;
-    double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;
-    double ql_bcup = ql;
-    bool forcingMassBalance= false;
+	double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;
+	//double ql_bcup = ql;
+	bool forcingMassBalance= false;
 
 	if (enable_vapour_transport) {
 
@@ -192,7 +192,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
        	ql = 0.; //Now that we used the remaining ql, put it to 0.
 
 		//calculation of vapor diffusion flux
-		for (int i = 0; i < nE; i++) {
+		for (size_t i = 0; i < nE; i++) {
 			//double aaa = EMS[i].theta[AIR];
 			//double nnn = 1.- EMS[i].theta[SOIL];
 			//double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // Jafari added, based on jury1983
@@ -206,20 +206,20 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		// scaling to force the mass to be conserved
 		if(forcingMassBalance)
 		{
-			for (int i=0; i<=nE-1; i++)
+			for (size_t i=0; i<=nE-1; i++)
 			{
 				double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 				totalMassChange[i] =(EMS[i].rhov -saturationVapor)*EMS[i].theta[AIR]*EMS[i].L; //total mass change, (kg m-2 )
 				sumMassChange=sumMassChange+std::abs(totalMassChange[i]);
 			}
-			for (int i=0; i<=nE-1; i++)
+			for (size_t i=0; i<=nE-1; i++)
 			{
 				totalMassChange[i]=(totalMassChange[i]/sumMassChange)*inletVapourMass;
 				sumMassChange2=sumMassChange2+totalMassChange[i];
 			}
 		}else
 		{
-			for (int i=0; i<=nE-1; i++)
+			for (size_t i=0; i<=nE-1; i++)
 			{
 				double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 				totalMassChange[i] =(EMS[i].rhov -saturationVapor)*EMS[i].theta[AIR]*EMS[i].L; //total mass change, (kg m-2 )
@@ -227,7 +227,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		}
 
 		// consider the mass change due to vapour transport in snow/soil
-		while (e-- > 0.) {
+		while (e-- > 0) {
 			const double massPhaseChange = totalMassChange[e];
 
 			double dM = 0.;	//mass change induced by vapor flux (kg m-2)
@@ -269,7 +269,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	double dHoar = 0.;
 
-	for (int i=0; i<=nE-1; i++)
+	for (size_t i=0; i<=nE-1; i++)
 	{
 		sumMassChange3=sumMassChange3+deltaM[i];
 	}
@@ -310,7 +310,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;// [w/m^3]
 				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e]; //
 			}
-			EMS[e].M += deltaM[e];			
+			EMS[e].M += deltaM[e];
 		}
 
     	EMS[e].theta[AIR] = std::max(1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL],0.);
@@ -565,20 +565,19 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	const size_t nE = Xdata.getNumberOfElements();
 
 	std::vector<double> factor_(nE, 1.);// this is for source term in vapor transport equation
-	for(int i=0; i<Xdata.SoilNode; i++)
+	for(size_t i=0; i<Xdata.SoilNode; i++)
 	{
 		factor_[i]=0.;
 	}
-	for(int i=0; i<nN; i++)// update the vapor saturarion density according to the current temperature
+	for(size_t i=0; i<nN; i++)// update the vapor saturarion density according to the current temperature
 	{
 		double sVapor = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
 		NDS[i].rhov=sVapor;
-		//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< NDS[i].rhov << ' ' << NDS[i].T << "\n";
 	}
 
 	if (Kt_vapor != NULL)
 		ds_Solve(ReleaseMatrixData, (SD_MATRIX_DATA*)Kt_vapor, 0);
-	ds_Initialize(nN, (SD_MATRIX_DATA**)&Kt_vapor);
+	ds_Initialize(static_cast<int>(nN), (SD_MATRIX_DATA**)&Kt_vapor);
 	/*
 	 * Define the structure of the matrix, i.e. its connectivity. For each element
 	 * we compute the element incidences and pass the incidences to the solver.
@@ -586,8 +585,8 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	 * equations specified by the incidence set are all connected to each other.
 	 * Initialize element data.
 	*/
-	for (size_t e = 0; e < nE; e++) {
-		int Nodes[2] = {(int)e, (int)e+1};
+	for (int e = 0; e < static_cast<int>(nE); e++) {
+		int Nodes[2] = {e, e+1};
 		ds_DefineConnectivity( (SD_MATRIX_DATA*)Kt_vapor, 2, Nodes , 1, 0 );
 	}
 
@@ -668,7 +667,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		}
 
 		// Assemble matrix
-		for(size_t e = nE; e -->0; ) {
+		for(int e = static_cast<int>(nE); e -->0; ) {
 			EL_INCID( e, Ie );
 			EL_TEMP( Ie, T0, TN, NDS, U );
 			// Now fill the matrix
@@ -690,29 +689,29 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 			double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
 			// Dirichlet BC at surface: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
-			Ie[0] = static_cast<int>( nE );
+			Ie[0] = static_cast<int>(nE);
 			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt_vapor, 1, Ie, 1, &Big);
 		}
 		if(!topDirichletBCtype){
-			EL_INCID(nE-1, Ie);
+			EL_INCID(static_cast<int>(nE-1), Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			double D_drhov_dn = ql/(0.5*Constants::lh_sublimation+0.5*Constants::lh_vaporization);
 			neumannBoundaryConditions(Se, Fe, D_drhov_dn);
 			ds_AssembleMatrix( (SD_MATRIX_DATA*)Kt_vapor, 2, Ie, 2,  (double*) Se );
 			EL_RGT_ASSEM( dU, Ie, Fe );
-		}						       
+		}
         // the lower B.C.
-        if(bottomDirichletBCtype){
+		if(bottomDirichletBCtype){
 			double Big = Constants::big;	// big number for DIRICHLET boundary conditions)
-			double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(EMS[0].Te, Atmosphere::vaporSaturationPressure(EMS[0].Te));		
-			NDS[0].rhov=elementSaturationVaporDensity;             
+			double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(EMS[0].Te, Atmosphere::vaporSaturationPressure(EMS[0].Te));
+			NDS[0].rhov=elementSaturationVaporDensity;
 			// Bottom node
 			// Dirichlet BC at bottom: prescribed temperature value
 			// NOTE Insert Big at this location to hold the temperature constant at the prescribed value.
 			Ie[0] = 0;
 			ds_AssembleMatrix((SD_MATRIX_DATA*) Kt_vapor, 1, Ie, 1, &Big);
 		}
-        if(!bottomDirichletBCtype){
+		if(!bottomDirichletBCtype){
 			EL_INCID(0, Ie);
 			EL_TEMP(Ie, T0, TN, NDS, U);
 			double zeroFlux =0.0;
@@ -755,7 +754,6 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 //			MaxItnTemp = std::max(MaxItnTemp, (unsigned)200); // NOTE originally 100;
 //		}
 		NotConverged = (MaxTDiff > ControlTemp);
-		//std::cout << "MaxTDiff/ControlTemp \n" <<  iteration << ' ' << MaxTDiff << ' ' << ControlTemp;
 
 		if (iteration > MaxItnTemp) {
 			if (ThrowAtNoConvergence) {
@@ -788,7 +786,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	} while ( NotConverged ); // end Convergence Loop
 
 	if (TempEqConverged) {
-		bool prn_date = true;
+		//bool prn_date = true;
 		for (size_t n = 0; n < nN; n++) {
 			if (U[n] > 0.) {
 				NDS[n].rhov = U[n];
@@ -840,9 +838,9 @@ bool VapourTransport::sn_ElementKtMatrix(ElementData &Edata, double dt, double T
 	//reset Fe_0 and Fe_1
 	Fe[0] = Fe[1] = 0.0;
 
-    double aaa = Edata.theta[AIR];
-    double nnn = 1.- Edata.theta[SOIL];
-    double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
+	double aaa = Edata.theta[AIR];
+	double nnn = 1.- Edata.theta[SOIL];
+	double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 	double D = factor_[index]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[index])*D_vapSoil;
 	D = D/Edata.L;   //Conductivity. Divide by the length to save from doing it during the matrix operations
 
