@@ -30,9 +30,9 @@ IF(APPLE)
 	#this is necessary for GUI exceptions
 	SET(EXTRA_LINKS "-framework CoreServices")
 ENDIF(APPLE)
-IF(UNIX)
+IF(UNIX AND NOT HAIKU)
 	SET(EXTRA_LINKS "dl;pthread")
-ENDIF(UNIX)
+ENDIF(UNIX AND NOT HAIKU)
 
 #Prepare executable
 SET(BINARY "snowpack.app")

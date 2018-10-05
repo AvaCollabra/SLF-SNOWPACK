@@ -440,9 +440,9 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 
 	const double nodata = sno_reader.get_header_doublevalue("nodata");
 	double slope_angle = sno_reader.get_header_doublevalue("slope_angle");
-	if (slope_angle==IOUtils::nodata) slope_angle = get_doubleval(sno_reader, "SlopeAngle"); //old key
+	if (slope_angle==nodata) slope_angle = get_doubleval(sno_reader, "SlopeAngle"); //old key
 	double azi = sno_reader.get_header_doublevalue("slope_azi");
-	if (azi==IOUtils::nodata) azi = get_doubleval(sno_reader, "SlopeAzi"); //old key
+	if (azi==nodata) azi = get_doubleval(sno_reader, "SlopeAzi"); //old key
 	SSdata.meta.setStationData(tmppos, stationID, station_name);
 	SSdata.meta.setSlope(slope_angle, azi);
 
