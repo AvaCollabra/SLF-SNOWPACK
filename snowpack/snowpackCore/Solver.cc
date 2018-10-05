@@ -1145,7 +1145,7 @@ n2300:
 static void MmdElimin(int mdeg_node, int *xadj, int *adjncy, int *head, int *forward, int *backward,
 				  int *qsize, int *list, int *marker, int maxint, int tag)
 {
-	int element, i, stop, istart, j,
+	int element, i, istop, istart, j,
 	    jstop, jstart, link,
 	    nabor, node, npv, nqnbrs, nxnode,
 	    pvnode, rlmt, rloc, rnode, xqnbr;

@@ -1045,10 +1045,11 @@ double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnL
 				static const double rho_0=361., rho_1=33.;
 				rho = rho_0*log10(Mdata.vw) + rho_1;
 				return rho;
-			} else
+			} else{
 				//return Constants::undefined;
 				rho = newSnowDensityPara("LEHNING_NEW", Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
 				return rho;
+			}
 				//return 220;
 		}
 		case event_none:
