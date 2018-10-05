@@ -363,19 +363,19 @@ class ElementData {
 
 		unsigned short int ID;    ///< Element ID used to track elements
 		static const unsigned short int noID;
-		
+
 		double rhov;                ///< vapor density...(kg/m^3)
-		double Qmm;                ///< Heat source/sink due to phase changes in the case of vapor transport (W/m^3)		
-		double vapTrans_fluxDiff;  ///< vapor dissusion flux in the case of vapor transport (W/m^2/s)		
-		double vapTrans_snowDenChangeRate;  ///< snow density change rate in the case of vapor transport (kg/m^3/s)		
-		double vapTrans_cumulativeDenChange;  ///< cumulative density change  in the case of vapor transport (kg/m^3)		
+		double Qmm;                ///< Heat source/sink due to phase changes in the case of vapor transport (W/m^3)
+		double vapTrans_fluxDiff;  ///< vapor dissusion flux in the case of vapor transport (W/m^2/s)
+		double vapTrans_snowDenChangeRate;  ///< snow density change rate in the case of vapor transport (kg/m^3/s)
+		double vapTrans_cumulativeDenChange;  ///< cumulative density change  in the case of vapor transport (kg/m^3)
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dsm(0.), S_dsm(0.), Sigdsm(0.) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.),rhov(0) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
@@ -395,7 +395,7 @@ class NodeData {
 		double dsm;  ///< Dry snow metamorphism factor
 		double S_dsm;
 		double Sigdsm;
-		
+
 		double rhov;    /// < nodal vapor density in kg/m^3
 
 };

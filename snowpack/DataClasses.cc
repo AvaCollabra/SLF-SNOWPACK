@@ -276,7 +276,7 @@ void BoundCond::reset()
   qs=0;      ///< sensible heat
   ql=0;      ///< latent heat
   qr=0;      ///< rain energy
-  qg=0;  
+  qg=0;
 }
 
 
@@ -1808,6 +1808,7 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
 	os.write(reinterpret_cast<const char*>(&data.S_dsm), sizeof(data.S_dsm));
 	os.write(reinterpret_cast<const char*>(&data.Sigdsm), sizeof(data.Sigdsm));
+	os.write(reinterpret_cast<const char*>(&data.rhov), sizeof(data.rhov));
 	return os;
 }
 
@@ -1826,6 +1827,7 @@ std::istream& operator>>(std::istream& is, NodeData& data)
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
 	is.read(reinterpret_cast<char*>(&data.S_dsm), sizeof(data.S_dsm));
 	is.read(reinterpret_cast<char*>(&data.Sigdsm), sizeof(data.Sigdsm));
+	is.read(reinterpret_cast<char*>(&data.rhov), sizeof(data.rhov));
 	return is;
 }
 
@@ -1837,6 +1839,7 @@ const std::string NodeData::toString() const
 	os << "\tz=" << z << " T=" << T << " hoar=" << hoar << "\n";
 	os << "\tCreep: u=" << u << " udot=" << udot << " f=" << f << "\n";
 	os << "\tStability: S_n=" << S_n << " S_s=" << S_s << " ssi=" << ssi << "\n";
+	os << "\rNodal vapor density: rhov=" << rhov << "\n";
 	os << "</NodeData>\n";
 	return os.str();
 }
@@ -1950,7 +1953,7 @@ SnowStation::~SnowStation()
 		}
 		free(pMat);
 	}
-	
+
 	SD_MATRIX_DATA* pMat_vapor = (SD_MATRIX_DATA*) Kt_vapor;
 	if (pMat_vapor != NULL) {
 		if ( pMat_vapor->State == ConMatrix ){
@@ -2596,7 +2599,7 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		EdataLower.mk += static_cast<short unsigned int>( (EdataUpper.mk/100)*100 );
 	}
 	EdataLower.heatCapacity();
-	
+
 	EdataLower.rhov = (EdataUpper.rhov*L_upper + EdataLower.rhov*L_lower)/LNew;
 	EdataLower.vapTrans_fluxDiff = EdataUpper.vapTrans_fluxDiff + EdataLower.vapTrans_fluxDiff;
 	EdataLower.vapTrans_snowDenChangeRate = (EdataUpper.vapTrans_snowDenChangeRate*L_upper + EdataLower.vapTrans_snowDenChangeRate*L_lower)/LNew;
@@ -2859,7 +2862,7 @@ const std::string SnowStation::toString() const
 		os << "Kt= NULL\n";
 	else
 		os << "Kt= " << hex << Kt << dec << "\n";
-		
+
 	if(Kt_vapor==NULL)
 		os << "Kt_vapor= NULL\n";
 	else
