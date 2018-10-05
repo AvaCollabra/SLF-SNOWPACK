@@ -59,8 +59,8 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
-                 hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
-                 minimum_l_element(IOUtils::nodata), useSoilLayers(false), water_layer(false), enable_vapour_transport(false)
+                 /*hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
+                 minimum_l_element(IOUtils::nodata),*/ useSoilLayers(false), water_layer(false), enable_vapour_transport(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -631,14 +631,14 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		U[n] = NDS[n].rhov;
 		dU[n] = 0.0;
 		ddU[n] = 0.0;
-		//if (!(U[n] > 0. && U[n] < 10.)) {
+		/*if (!(U[n] > 0. && U[n] < 10.)) {
 		if (0) {
 			prn_msg(__FILE__, __LINE__, "err", Mdata.date, "vapor density out of bound at beginning of iteration!");
 			prn_msg(__FILE__, __LINE__, "msg", Date(), "At node n=%d (nN=%d, SoilNode=%d): T=%.2lf", n, nN, Xdata.SoilNode, U[n]);
 
 			free(U); free(dU); free(ddU);
 			throw IOException("Runtime error in compDensityProfile", AT);
-		}
+		}*/
 	}
 
 	// Set the iteration counters, as well as the phase change boolean values

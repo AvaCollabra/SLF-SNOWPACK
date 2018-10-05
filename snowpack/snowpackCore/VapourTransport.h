@@ -80,8 +80,8 @@ class VapourTransport : public WaterTransport {
 		std::string watertransportmodel_soil;
 		double sn_dt;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
-		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
-		double minimum_l_element;
+		//double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
+		//double minimum_l_element;
 		bool useSoilLayers, water_layer;
 
 		bool enable_vapour_transport;
