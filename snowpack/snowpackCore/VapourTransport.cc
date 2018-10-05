@@ -174,7 +174,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	// For snow, update theta_s (i.e., pore space)
 	if (nE > Xdata.SoilNode) {
 		for (size_t el = Xdata.SoilNode; el < nE; el++) {
-			EMS[e].VG.theta_s = (1. - EMS[el].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
+			EMS[el].VG.theta_s = (1. - EMS[el].theta[ICE])*(Constants::density_ice/Constants::density_water);	// TODO: link to van Genuchten parameterisation
 		}
 	}
 
