@@ -37,11 +37,12 @@ bool SnowpackConfig::initStaticData()
 {
 	//[Snowpack] section
 	advancedConfig["SOIL_FLUX"] = "false";
-	
+
 	//[SnowpackAdvanced] section
 	advancedConfig["ADVECTIVE_HEAT"] = "false";
-	advancedConfig["ALPINE3D"] = "false";
 	advancedConfig["ALLOW_ADAPTIVE_TIMESTEPPING"] = "true";
+	advancedConfig["ALPINE3D"] = "false";
+	advancedConfig["ALPINE3D_PTS"] = "false";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
@@ -283,7 +284,7 @@ void SnowpackConfig::setDefaults()
 		string value; getValue(it->first, "Snowpack", value, IOUtils::nothrow);
 		if (value.empty()) addKey(it->first, "Snowpack", it->second);
 	}
-	
+
 	for(map<string,string>::const_iterator it = advancedConfig.begin(); it != advancedConfig.end(); ++it) {
 		//[SnowpackAdvanced] section
 		string value; getValue(it->first, "SnowpackAdvanced", value, IOUtils::nothrow);
