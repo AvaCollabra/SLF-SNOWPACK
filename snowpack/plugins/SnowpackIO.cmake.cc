@@ -58,7 +58,8 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 
 	//Format of transitional and final snow profile(s):
 	const bool snow_out = cfg.get("SNOW_WRITE", "Output");
-	if (snow_out) {
+	const bool a3d_pts = cfg.get("ALPINE3D_PTS", "SnowpackAdvanced");
+	if (snow_out || a3d_pts) {
 		const std::string out_snow = cfg.get("SNOW", "Output");
 		if (out_snow == "SNOOLD") {
 			output_snow_as_ascii = true;
@@ -110,7 +111,7 @@ SnowpackIO::SnowpackIO(const SnowpackConfig& cfg):
 		} else
 			throw InvalidArgumentException("The key TS_FORMAT in [Output] takes only SMET or MET as value", AT);
 	}
-	
+
 	vecExtension.push_back("ini");	//Record of run configuration
 
 	//set the "plugins" pointers
