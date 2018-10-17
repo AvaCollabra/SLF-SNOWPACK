@@ -135,9 +135,9 @@ class Snowpack {
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 		bool ageAlbedo; ///< use the age of snow in the albedo parametrizations? default: true
 
-		const static bool hydrometeor;
-		const static double snowfall_warning;
-		const static unsigned int new_snow_marker;
+		static const bool hydrometeor;
+		static const double snowfall_warning;
+		static const unsigned int new_snow_marker;
 		bool adjust_height_of_meteo_values;
 		bool advective_heat;
 		double heat_begin, heat_end;
