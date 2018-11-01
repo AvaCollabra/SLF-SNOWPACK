@@ -26,9 +26,14 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
+//#include <pugixml/pugixml.hpp>
+
+
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlwriter.h>
+
+
 
 /**
  * @class CaaMLIO
@@ -85,6 +90,8 @@ class CaaMLIO : public SnowpackIOInterface {
 		double caaml_nodata; //plugin specific no data value
 
 		xmlDocPtr in_doc;
+		//pugi::xml_document in_doc;
+
 		xmlXPathContextPtr in_xpathCtx;
 		xmlCharEncoding in_encoding;
 		static const xmlChar *xml_ns_caaml, *xml_ns_abrev_caaml;
@@ -102,8 +109,9 @@ class CaaMLIO : public SnowpackIOInterface {
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		bool getLayersDir();
 		LayerData xmlGetLayer(xmlNodePtr cur);
-		void getProfiles(const std::string path, std::vector<double> &depths, std::vector<double> &val);
-		void setProfileVal(std::vector<LayerData> &Layers, std::vector<std::vector<double> > depths, std::vector<std::vector<double> > val);
+		void getAndSetProfile(const std::string path, const std::string name,const bool directionTopDown,
+							  const bool isRangeMeasurement,std::vector<LayerData>& Layers);
+		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
 		void setCustomLayerData(LayerData &Layer);
 		void setDepositionDates(std::vector<LayerData> &Layers, const mio::Date);
 
@@ -123,6 +131,9 @@ class CaaMLIO : public SnowpackIOInterface {
 		void grainShape_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
 		std::string grainShape_valToAbbrev(const unsigned int var);
 		std::string grainShape_valToAbbrev_old(const double* var);
+		bool xmlDoesPathExist(const std::string& path);
+
+		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
 
 		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10], dateStr[30];
 
