@@ -113,7 +113,7 @@ class CaaMLIO : public SnowpackIOInterface {
 							  const bool isRangeMeasurement,std::vector<LayerData>& Layers);
 		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
 		void setCustomLayerData(LayerData &Layer);
-		void setDepositionDates(std::vector<LayerData> &Layers, const mio::Date);
+		void estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Layers, const mio::Date);
 
 		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
 		// void writeDate(const xmlTextWriterPtr writer, const mio::Date date);
@@ -135,7 +135,7 @@ class CaaMLIO : public SnowpackIOInterface {
 
 		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
 
-		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10], dateStr[30];
+		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10];
 
 };
 
