@@ -374,8 +374,9 @@ const std::string namespaceSNP = "snp";
 //Define paths in xml-file
 //const std::string CaaMLIO::TimeData_xpath = "/caaml:SnowProfile/caaml:validTime";
 const std::string CaaMLIO::TimeData_xpath = "/caaml:SnowProfile/caaml:timeRef/caaml:recordTime";
-//const std::string CaaMLIO::StationMetaData_xpath = "/caaml:SnowProfile/caaml:locRef/caaml:ObsPoint";
+
 const std::string CaaMLIO::StationMetaData_xpath = "/caaml:SnowProfile/caaml:locRef";
+
 const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfileResultsOf/caaml:SnowProfileMeasurements";
 
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
@@ -700,63 +701,22 @@ StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 	return metatmp;
 }
 
-double CaaMLIO::xmlSetVal(const string& xpath, const string& property, const double& dflt)
-{
-	const std::string path( SnowData_xpath+xpath+":"+property );
-	const xmlXPathObjectPtr xpathObj( xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx) );
-	double val = IOUtils::nodata;
-
-	if (xpathObj == NULL){
-		val = dflt;
-	}else if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
-		xmlXPathFreeObject(xpathObj);
-		val = dflt;
-	}else if (xpathObj->nodesetval->nodeNr > 0){
-		std::cout << "number of nodes: " << xpathObj->nodesetval->nodeNr << std::endl;
-		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%lf", &val);
-	}else
-		val = dflt;
-
-	xmlXPathFreeObject(xpathObj);
-	return val;
-}
-
-int CaaMLIO::xmlSetVal(const string& xpath, const std::string& property, const int& dflt)
-{
-	const std::string path( SnowData_xpath+xpath+":"+property );
-	const xmlXPathObjectPtr xpathObj( xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx) );
-	int val = IOUtils::inodata;
-
-	if (xpathObj == NULL){
-		val = dflt;
-	}else if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
-		xmlXPathFreeObject(xpathObj);
-		val = dflt;
-	}else if (xpathObj->nodesetval->nodeNr > 0){
-		std::cout << "number of nodes: " << xpathObj->nodesetval->nodeNr << std::endl;
-		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%d", &val);
-	}else
-		val = dflt;
-
-	xmlXPathFreeObject(xpathObj);
-	return val;
-}
 
 void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
 	const std::string xpath( "/caaml:metaData/caaml:customData/snp" );
 	if (xmlDoesPathExist(SnowData_xpath+xpath+":Albedo") == false)
 		std::cout << "There is no snowpack-custom-data in the caaml-file. Setting everything to default..." << std::endl;
-	Xdata.Albedo = xmlSetVal(xpath,"Albedo",0.6);
-	Xdata.SoilAlb = xmlSetVal(xpath,"SoilAlb",0.2);
-	Xdata.BareSoil_z0 = xmlSetVal(xpath,"BareSoil_z0",0.02);
-	Xdata.Canopy_Height = xmlSetVal(xpath,"CanopyHeight",0.);
-	Xdata.Canopy_LAI = xmlSetVal(xpath,"CanopyLAI",0.);
-	Xdata.Canopy_BasalArea = xmlSetVal(xpath,"CanopyBasalArea",0.);
-	Xdata.Canopy_Direct_Throughfall = xmlSetVal(xpath,"CanopyDirectThroughfall",1.);
-	Xdata.WindScalingFactor = xmlSetVal(xpath,"WindScalingFactor",1.);
-	Xdata.ErosionLevel = xmlSetVal(xpath,"ErosionLevel",0);
-	Xdata.TimeCountDeltaHS = xmlSetVal(xpath,"TimeCountDeltaHS",0.);
+	Xdata.Albedo = xmlReadValueFromPath(xpath,"Albedo",0.6);
+	Xdata.SoilAlb = xmlReadValueFromPath(xpath,"SoilAlb",0.2);
+	Xdata.BareSoil_z0 = xmlReadValueFromPath(xpath,"BareSoil_z0",0.02);
+	Xdata.Canopy_Height = xmlReadValueFromPath(xpath,"CanopyHeight",0.);
+	Xdata.Canopy_LAI = xmlReadValueFromPath(xpath,"CanopyLAI",0.);
+	Xdata.Canopy_BasalArea = xmlReadValueFromPath(xpath,"CanopyBasalArea",0.);
+	Xdata.Canopy_Direct_Throughfall = xmlReadValueFromPath(xpath,"CanopyDirectThroughfall",1.);
+	Xdata.WindScalingFactor = xmlReadValueFromPath(xpath,"WindScalingFactor",1.);
+	Xdata.ErosionLevel = xmlReadValueFromPath(xpath,"ErosionLevel",0);
+	Xdata.TimeCountDeltaHS = xmlReadValueFromPath(xpath,"TimeCountDeltaHS",0.);
 	std::cout << "Albedo: " << Xdata.Albedo << std::endl;
 }
 
@@ -767,27 +727,6 @@ bool CaaMLIO::getLayersDir()
 	const std::string direction( (const char*)xmlGetProp(xpathObj->nodesetval->nodeTab[0],(const xmlChar*)"dir") );
 
 	return (direction!="bottom up"); //standard direction -> false, otherwise "true" for Reverse direction
-}
-
-bool xmlSetValue (const xmlNode* curC, const std::string propertyName, double& variableToSet,
-				  const std::string unitOut = "",const std::string unitMeasured = "", const double factor=1.0 )
-{
-	const std::string fieldName( (const char*)curC->name );
-	if (fieldName == propertyName){
-		double temp;
-		sscanf((const char*) xmlNodeGetContent(curC),"%lf",&temp);
-		if (unitOut != ""){
-			char* unitOfMeasurement = (char*)unitMeasured.c_str();
-			if(unitMeasured==""){
-				unitOfMeasurement = (char*)xmlGetProp(curC,(const xmlChar*)"uom");
-			}
-			temp = unitConversion(temp,unitOfMeasurement,(char*) unitOut.c_str());
-		}
-		variableToSet = temp*factor;
-		std::cout << propertyName << ": " << variableToSet << unitOut << std::endl;
-		return true;
-	}
-	return false;
 }
 
 
@@ -802,48 +741,20 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 			std::cout << "iterating... " << std::endl;
 			if (cur_c->type != XML_TEXT_NODE) {
 				const std::string field_name( (const char*)cur_c->name );
-
-				//new:
 				if (field_name == "grainSize"){
 					std::cout << "reading grain size... " << std::endl;
 					//xmlDocPtr xmlDocGrainSize = cur_c.doc;
 					//xmlXPathContextPtr xPathGrainSize= xmlXPathNewContext(in_doc);
-
-					for (xmlNode *cur_cc = cur_c->children; cur_cc; cur_cc = cur_cc->next) {
-						if (cur_cc->type != XML_TEXT_NODE) {
-							for (xmlNode *cur_ccc = cur_cc->children; cur_ccc; cur_ccc = cur_ccc->next) {
-								if (cur_ccc->type != XML_TEXT_NODE) {
-									/*const std::string unitMeasured ((char*)xmlGetProp(cur_c,(const xmlChar*)"uom"));
-									if (xmlSetValue(cur_ccc,"avg",Layer.rg,"mm",unitMeasured,0.5)){
-										Layer.rb = Layer.rg/4.; //this value will be replaced if there is this value in the customData...
-										std::cout << "bond radius: " << Layer.rb << std::endl;
-									}*/
-									const std::string fieldNameGrainSize( (const char*)cur_ccc->name );
-									if (fieldNameGrainSize == "avg") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.rg);
-										Layer.rg = unitConversion(Layer.rg,(char*)xmlGetProp(cur_c,(const xmlChar*)"uom"),(char*)"mm")/2.;
-										Layer.rb = Layer.rg/4.; //this value will be replaced if there is this value in the customData...
-										std::cout << "grain radius: " << Layer.rg << std::endl;
-									}
-								}
-							}
-						}
+					xmlNode* curCTemp = xmlStepDown1Level(cur_c,"Components");
+					curCTemp = xmlStepDown1Level(curCTemp,"avg");
+					const std::string unitMeasured ((char*)xmlGetProp(cur_c,(const xmlChar*)"uom"));
+					if (xmlReadValueFromNode(curCTemp,"avg",Layer.rg,"mm",unitMeasured,0.5)){
+						Layer.rb = Layer.rg/4.; //this value will be replaced if there is this value in the customData...
+						std::cout << "bond radius: " << Layer.rb << std::endl;
 					}
 				}
-				if (field_name == "depthTop"){
-					//this value is not used! The depth will be calculated by integrating the thicknesses.
-					double z;
-					sscanf((const char*) xmlNodeGetContent(cur_c),"%lf",&z);
-					std::cout << "reading depth top.z: " << z << std::endl;
-				}
-				if (field_name == "thickness" ){
-					std::cout << "reading thickness. "  << std::endl;
-					double temp;
-					sscanf((const char*) xmlNodeGetContent(cur_c),"%lf",&temp);
-					const xmlChar* unit = (const xmlChar*) "uom";
-					Layer.hl = unitConversion(temp,(char*)xmlGetProp(cur_c,unit),(char*)"m");
+				if (xmlReadValueFromNode(cur_c,"thickness",Layer.hl,"m")){
 					Layer.ne = (size_t) ceil(Layer.hl/0.02); //make a constant for 0.02!!! Is this always 0.02???
-					std::cout << "thickness: " << Layer.hl << " meters." << std::endl;
 				}
 				if (field_name == "wetness"){ //this value will be replaced if a lwc-profile is in the caaml-file!!!
 					Layer.phiWater = lwc_codeToVal((char*) xmlNodeGetContent(cur_c));
@@ -855,81 +766,41 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 					std::cout << "primary grain form: " << code << " " << std::endl;
 				}
 				if (field_name == "validFormationTime"){
-					for (xmlNode *cur_cc = cur_c->children; cur_cc; cur_cc = cur_cc->next) {
-						if (cur_cc->type != XML_TEXT_NODE) {
-							for (xmlNode *cur_ccc = cur_cc->children; cur_ccc; cur_ccc = cur_ccc->next) {
-								if (cur_ccc->type != XML_TEXT_NODE) {
-									const std::string fieldNameFormationTime( (const char*)cur_ccc->name );
-									if (fieldNameFormationTime == "timePosition") {
-										const std::string date_str( (char*) xmlNodeGetContent(cur_c) );
-										Date date;
-										IOUtils::convertString(date, date_str, in_tz);
-										Layer.depositionDate = date;
-										std::cout << "snp:DepositionDate exists: " << date_str << std::endl;
-									}
-								}
-							}
-						}
+					xmlNode* curCTemp = xmlStepDown1Level(cur_c,"TimeInstant");
+					curCTemp = xmlStepDown1Level(curCTemp,"timePosition");
+					const std::string fieldNameFormationTime( (const char*)curCTemp->name );
+					if (fieldNameFormationTime == "timePosition") {
+						const std::string date_str( (char*) xmlNodeGetContent(curCTemp) );
+						Date date;
+						IOUtils::convertString(date, date_str, in_tz);
+						Layer.depositionDate = date;
+						std::cout << "snp:DepositionDate exists: " << date_str << std::endl;
 					}
 				}
 			}
 		}
 		std::cout << "loop on the children again to read in custom data (do this at the end to be sure to use these values, if available): " << std::endl;
-		for (xmlNode *cur_c = cur->children; cur_c; cur_c = cur_c->next) {
-			std::cout << "iterating... " << std::endl;
-			if (cur_c->type != XML_TEXT_NODE) {
-				const std::string field_name( (const char*)cur_c->name );
-				if (field_name=="metaData") {
-					//read in custom-snowpack-data: dendricity, marker,...
-					std::cout << "reading in custom snowpack data... " << std::endl;
-					for (xmlNode *cur_cc = cur_c->children; cur_cc; cur_cc = cur_cc->next) {
-						if (cur_cc->type != XML_TEXT_NODE) {
-							for (xmlNode *cur_ccc = cur_cc->children; cur_ccc; cur_ccc = cur_ccc->next) {
-								if (cur_ccc->type != XML_TEXT_NODE) {
-									const std::string fieldNameMetaData( (const char*)cur_ccc->name );
-									if (fieldNameMetaData == "dendricity") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.dd);
-										std::cout << "dendricity: " << Layer.dd << std::endl;
-									}
-									if (fieldNameMetaData == "sphericity") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.sp);
-										std::cout << "sphericity: " << Layer.sp << std::endl;
-									}
-									if (fieldNameMetaData == "marker") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%hu",&Layer.mk);
-										std::cout << "marker: " << Layer.mk << std::endl;
-									}
-									if (fieldNameMetaData == "bondSize") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.rb);
-										std::cout << "bondSize: " << Layer.rb << std::endl;
-									}
-									if (fieldNameMetaData == "phiSoil") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.phiSoil);
-										std::cout << "phiSoil: " << Layer.phiSoil << std::endl;
-									}
-									if (fieldNameMetaData == "SurfaceHoarMass") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.hr);
-										std::cout << "SurfaceHoarMass: " << Layer.hr << std::endl;
-									}
-									if (fieldNameMetaData == "StressRate") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.CDot);
-										std::cout << "StressRate: " << Layer.CDot << std::endl;
-									}
-									if (fieldNameMetaData == "Metamorphism") {
-										sscanf((const char*) xmlNodeGetContent(cur_ccc),"%lf",&Layer.metamo);
-										std::cout << "Metamorphism: " << Layer.metamo << std::endl;
-									}
-								}
-							}
-						}
-					}
+		xmlNode* curCTemp = xmlStepDown1Level(cur,"metaData");
+		curCTemp = xmlStepDown1Level(curCTemp,"customData");
+		for (xmlNode *cur_cc = curCTemp->children; cur_cc; cur_cc = cur_cc->next) {
+			if (cur_cc->type != XML_TEXT_NODE) {
+				const std::string fieldNameMetaData( (const char*)cur_cc->name );
+				xmlReadValueFromNode(cur_cc,"dendricity",Layer.dd);
+				xmlReadValueFromNode(cur_cc,"sphericity",Layer.sp);
+				xmlReadValueFromNode(cur_cc,"bondSize",Layer.rb);
+				xmlReadValueFromNode(cur_cc,"phiSoil",Layer.phiSoil);
+				xmlReadValueFromNode(cur_cc,"SurfaceHoarMass",Layer.hr);
+				xmlReadValueFromNode(cur_cc,"StressRate",Layer.CDot);
+				xmlReadValueFromNode(cur_cc,"Metamorphism",Layer.metamo);
+				if (fieldNameMetaData == "marker") {
+					sscanf((const char*) xmlNodeGetContent(cur_cc),"%hu",&Layer.mk);
+					std::cout << "marker: " << Layer.mk << std::endl;
 				}
 			}
 		}
 	} else {
 		cur = cur->next;
 	}
-
 	if (Layer.rg == 0.) {
 	    if (code=="IF") {
 			Layer.rg = 3./2.;
@@ -938,9 +809,38 @@ LayerData CaaMLIO::xmlGetLayer(xmlNodePtr cur)
 			throw IOException("Grain size missing for a non-ice layer!", AT);
 	    }
 	}
-
 	return Layer;
 }
+
+
+void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
+{
+	const xmlNodeSetPtr data( xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer") );
+
+	SSdata.nLayers = static_cast<size_t>( data->nodeNr );
+	std::cout << "n layers: " << SSdata.nLayers << std::endl;
+	SSdata.Ldata.resize(SSdata.nLayers, LayerData());
+
+	//Loop on the layer nodes to set their properties
+	size_t jj = 0;
+	if (SSdata.nLayers>0) {
+		const bool directionTopDown = getLayersDir(); //Read profile direction
+		if (!directionTopDown) {
+			std::cout << "profile direction: bottom up. reverse: " << directionTopDown << std::endl;
+			for (size_t ii = 0; ii < SSdata.nLayers; ii++, jj++)
+				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
+		} else {
+			std::cout << "profile direction: top down. reverse: " << directionTopDown << std::endl;
+			for (size_t ii = SSdata.nLayers; ii-- > 0; jj++){
+				std::cout << "layer: " << ii <<" jj: "<<jj << std::endl;
+				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
+			}
+		}
+		//Estimate depostion dates (in case it was not in the caaml-file):
+		estimateValidFormationTimesIfNotSetYet(SSdata.Ldata,SSdata.profileDate);
+	}
+}
+
 
 bool CaaMLIO::xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec)
 {
@@ -1033,10 +933,10 @@ void CaaMLIO::getAndSetProfile(const std::string path, const std::string name,
 
 void CaaMLIO::setCustomLayerData(LayerData &Layer) {
 	const std::string xpath( "/caaml:stratProfile/caaml:Layer/caaml:metaData/caaml:customData/snp" );
-	Layer.phiSoil = xmlSetVal(xpath,"phiSoil",0.);
-	Layer.hr = xmlSetVal(xpath,"SurfaceHoarMass",0.);
-	Layer.CDot = xmlSetVal(xpath,"StressRate",0.);
-	Layer.metamo = xmlSetVal(xpath,"Metamorphism",0.);
+	Layer.phiSoil = xmlReadValueFromPath(xpath,"phiSoil",0.);
+	Layer.hr = xmlReadValueFromPath(xpath,"SurfaceHoarMass",0.);
+	Layer.CDot = xmlReadValueFromPath(xpath,"StressRate",0.);
+	Layer.metamo = xmlReadValueFromPath(xpath,"Metamorphism",0.);
 	std::cout << "surface hoar mass: das klappt so noch nicht(immer der gleiche wert aus dem selben layer!!!) " << Layer.hr << std::endl;
 }
 
@@ -1061,8 +961,8 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 					Layers[ii].depositionDate = profileDate-(Date)2./2440638.;
 				}
 			}
+			std::cout << "snp:DepositionDate does not exist. Estimated value: " << Layers[ii].depositionDate.toString() << std::endl;
 		}
-		std::cout << "snp:DepositionDate does not exist. Estimated value: " << Layers[ii].depositionDate.toString() << std::endl;
 	}
 }
 
@@ -1426,16 +1326,17 @@ void CaaMLIO::writeStationData(const xmlTextWriterPtr writer, const SnowStation&
 				xmlTextWriterEndElement(writer);	//end AspectPosition
 			xmlTextWriterEndElement(writer);	//end validAspect
 
-			/* is this necessary??? problem with -999 value! Should be converted to "n/a"
 			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":validSlopeAngle").c_str());	//start validSlopeAngle
 				xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":SlopeAnglePosition").c_str());	//start SlopeAnglePosition
 					xmlTextWriterWriteAttribute(writer,(const xmlChar*)"uom",(const xmlChar*)"deg");
-					char slopStr[5];
-					sprintf(slopStr,"%.0f",Xdata.meta.getSlopeAngle());
-					xmlWriteElement(writer,(namespaceCAAML+":position").c_str(),slopStr,"","");
+					char slopeStr[4] = "n/a";
+					if(Xdata.meta.getSlopeAngle()!=-999){
+						sprintf(slopeStr,"%.0f",Xdata.meta.getSlopeAngle());
+					}
+					xmlWriteElement(writer,(namespaceCAAML+":position").c_str(),slopeStr,"","");
 				xmlTextWriterEndElement(writer);	//end SlopeAnglePosition
 			xmlTextWriterEndElement(writer);	//end validSlopeAngle
-			*/
+
 
 			xmlTextWriterStartElement(writer,(const xmlChar*)(namespaceCAAML+":pointLocation").c_str());	//start pointLocation
 				xmlTextWriterStartElement(writer,(const xmlChar*)"gml:Point");	//start gml:Point
@@ -1665,30 +1566,85 @@ bool CaaMLIO::xmlDoesPathExist(const std::string& path)
 	return true;
 }
 
-void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
+
+double CaaMLIO::xmlReadValueFromPath (const string& xpath, const string& property, const double& dflt)
 {
-	const xmlNodeSetPtr data( xmlGetData(SnowData_xpath+"/caaml:stratProfile/caaml:Layer") );
+	const std::string path( SnowData_xpath+xpath+":"+property );
+	const xmlXPathObjectPtr xpathObj( xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx) );
+	double val = IOUtils::nodata;
 
-	SSdata.nLayers = static_cast<size_t>( data->nodeNr );
-	std::cout << "n layers: " << SSdata.nLayers << std::endl;
-	SSdata.Ldata.resize(SSdata.nLayers, LayerData());
+	if (xpathObj == NULL){
+		val = dflt;
+	}else if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
+		xmlXPathFreeObject(xpathObj);
+		val = dflt;
+	}else if (xpathObj->nodesetval->nodeNr > 0){
+		std::cout << "number of nodes: " << xpathObj->nodesetval->nodeNr << std::endl;
+		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%lf", &val);
+	}else
+		val = dflt;
 
-	//Loop on the layer nodes to set their properties
-	size_t jj = 0;
-	if (SSdata.nLayers>0) {
-		const bool directionTopDown = getLayersDir(); //Read profile direction
-		if (!directionTopDown) {
-			std::cout << "profile direction: bottom up. reverse: " << directionTopDown << std::endl;
-			for (size_t ii = 0; ii < SSdata.nLayers; ii++, jj++)
-				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
-		} else {
-			std::cout << "profile direction: top down. reverse: " << directionTopDown << std::endl;
-			for (size_t ii = SSdata.nLayers; ii-- > 0; jj++){
-				std::cout << "layer: " << ii <<" jj: "<<jj << std::endl;
-				SSdata.Ldata[jj] = xmlGetLayer(data->nodeTab[ii]);
+	xmlXPathFreeObject(xpathObj);
+	return val;
+}
+
+int CaaMLIO::xmlReadValueFromPath (const string& xpath, const std::string& property, const int& dflt)
+{
+	const std::string path( SnowData_xpath+xpath+":"+property );
+	const xmlXPathObjectPtr xpathObj( xmlXPathEvalExpression((const xmlChar*)path.c_str(), in_xpathCtx) );
+	int val = IOUtils::inodata;
+
+	if (xpathObj == NULL){
+		val = dflt;
+	}else if (xmlXPathNodeSetIsEmpty(xpathObj->nodesetval)) {
+		xmlXPathFreeObject(xpathObj);
+		val = dflt;
+	}else if (xpathObj->nodesetval->nodeNr > 0){
+		std::cout << "number of nodes: " << xpathObj->nodesetval->nodeNr << std::endl;
+		sscanf((const char*)xmlNodeGetContent(xpathObj->nodesetval->nodeTab[0]), "%d", &val);
+	}else
+		val = dflt;
+
+	xmlXPathFreeObject(xpathObj);
+	return val;
+}
+
+bool CaaMLIO::xmlReadValueFromNode (const xmlNode* curC, const std::string propertyName, double& variableToSet,
+							        const std::string unitOut,const std::string unitMeasured, const double factor)
+{
+	if(curC==0)
+		return false;
+	const std::string fieldName( (const char*)curC->name );
+	if (fieldName == propertyName){
+		double temp;
+		sscanf((const char*) xmlNodeGetContent(curC),"%lf",&temp);
+		if (unitOut != ""){
+			char* unitOfMeasurement = (char*)unitMeasured.c_str();
+			if(unitMeasured==""){
+				unitOfMeasurement = (char*)xmlGetProp(curC,(const xmlChar*)"uom");
+			}
+			temp = unitConversion(temp,unitOfMeasurement,(char*) unitOut.c_str());
+		}
+		variableToSet = temp*factor;
+		std::cout << propertyName << ": " << variableToSet << unitOut << std::endl;
+		return true;
+	}
+	return false;
+}
+
+
+xmlNode* CaaMLIO::xmlStepDown1Level(const xmlNode* curCIn, const std::string propertyName)
+{
+	if(curCIn==0)
+		return 0;
+	for (xmlNode *cur_cc = curCIn->children; cur_cc; cur_cc = cur_cc->next) {
+		if (cur_cc->type != XML_TEXT_NODE) {
+			const std::string fieldName( (const char*)cur_cc->name );
+			if (fieldName == propertyName){
+				return cur_cc;
 			}
 		}
-		//Estimate depostion dates (in case it was not in the caaml-file):
-		estimateValidFormationTimesIfNotSetYet(SSdata.Ldata,SSdata.profileDate);
 	}
+	return 0;
 }
+

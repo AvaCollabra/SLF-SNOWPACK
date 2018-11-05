@@ -71,16 +71,55 @@ class CaaMLIO : public SnowpackIOInterface {
 	private:
 		void cleanup() throw();
 		void init(const SnowpackConfig& cfg);
-		void openIn_CAAML(const std::string& in_snowfile);
-		void closeIn_CAAML() throw();
+
 		void setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer) const;
 		void setSnoSmetHeader(const SnowStation& Xdata, const SN_SNOWSOIL_DATA& SSdata, const mio::Date& date, smet::SMETWriter& smet_writer) const;
 		void setFormatting(const size_t& nr_solutes, std::vector<int>& vec_width, std::vector<int>&  vec_precision) const;
-
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
+
+		//functions for reading caaml-files:
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
+		void openIn_CAAML(const std::string& in_snowfile);
+		void closeIn_CAAML() throw();
+		mio::Date xmlGetDate();
+		mio::StationData xmlGetStationData(const std::string& stationID);
+		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
+		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
+		LayerData xmlGetLayer(xmlNodePtr cur);
+		bool getLayersDir();
+		void getAndSetProfile(const std::string path, const std::string name,const bool directionTopDown,
+							  const bool isRangeMeasurement,std::vector<LayerData>& Layers);
+		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
+		void estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Layers, const mio::Date);
+		void setCustomLayerData(LayerData &Layer);
+
+		//functions for writing caaml-file:
 		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
 		                   const bool aggregate);
+		void writeDate(const xmlTextWriterPtr writer, const char* att_name, const char* att_val);
+		void writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeCustomLayerData(const xmlTextWriterPtr writer, const ElementData& Edata, const NodeData& Ndata);
+		void writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeStationData(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+
+		double lwc_codeToVal(const char* code);
+		std::string lwc_valToCode(const double val);
+		double hardness_codeToVal(char* code);
+		std::string hardness_valToCode(const double code);
+		void grainShape_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
+		std::string grainShape_valToAbbrev(const unsigned int var);
+		std::string grainShape_valToAbbrev_old(const double* var);
+
+		//xml functions:
+		xmlNodeSetPtr xmlGetData(const std::string& path);
+		double xmlReadValueFromPath(const std::string& xpath, const std::string& property, const double& dflt);
+		int xmlReadValueFromPath(const std::string& xpath, const std::string& property, const int& dflt);
+		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
+		bool xmlDoesPathExist(const std::string& path);
+		bool xmlReadValueFromNode(const xmlNode* curC, const std::string propertyName, double& variableToSet,
+						          const std::string unitOut = "",const std::string unitMeasured = "", const double factor=1.0);
+		xmlNode* xmlStepDown1Level(const xmlNode* curCIn, const std::string propertyName);
 
 		const RunInfo info;
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
@@ -101,42 +140,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		static const xmlChar *xml_ns_snp, *xml_ns_abrev_snp;
 		static const std::string TimeData_xpath, StationMetaData_xpath, SnowData_xpath;
 
-		xmlNodeSetPtr xmlGetData(const std::string& path);
-		mio::Date xmlGetDate();
-		mio::StationData xmlGetStationData(const std::string& stationID);
-		double xmlSetVal(const std::string& xpath, const std::string& property, const double& dflt);
-		int xmlSetVal(const std::string& xpath, const std::string& property, const int& dflt);
-		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
-		bool getLayersDir();
-		LayerData xmlGetLayer(xmlNodePtr cur);
-		void getAndSetProfile(const std::string path, const std::string name,const bool directionTopDown,
-							  const bool isRangeMeasurement,std::vector<LayerData>& Layers);
-		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
-		void setCustomLayerData(LayerData &Layer);
-		void estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Layers, const mio::Date);
-
-		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
-		// void writeDate(const xmlTextWriterPtr writer, const mio::Date date);
-		void writeDate(const xmlTextWriterPtr writer, const char* att_name, const char* att_val);
-		void writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeCustomLayerData(const xmlTextWriterPtr writer, const ElementData& Edata, const NodeData& Ndata);
-		void writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeStationData(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-
-		double lwc_codeToVal(const char* code);
-		std::string lwc_valToCode(const double val);
-		double hardness_codeToVal(char* code);
-		std::string hardness_valToCode(const double code);
-		void grainShape_codeToVal(const std::string& code, double &sp, double &dd, unsigned short int &mk);
-		std::string grainShape_valToAbbrev(const unsigned int var);
-		std::string grainShape_valToAbbrev_old(const double* var);
-		bool xmlDoesPathExist(const std::string& path);
-
-		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
-
 		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10];
-
 };
 
 #endif //End of CAAMLIO.h
