@@ -960,6 +960,8 @@ inline void real_main (int argc, char *argv[])
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
 			stringstream ss;
 			ss << "STATION" << i_stn+1;
+			if (cfg.keyExists(ss.str(), "Input"))
+				throw mio::InvalidArgumentException("Attempting to overwrite an Input::STATION key, you should probably not use the '-s' option", AT);
 			cfg.addKey(ss.str(), "Input", vecStationIDs[i_stn]);
 		}
 	}
