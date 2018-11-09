@@ -400,7 +400,6 @@ void Hazard::getHazardDataMainStation(ProcessDat& Hdata, ProcessInd& Hdata_ind,
 	Hdata.tot_lwc = Sdata.mass[SurfaceFluxes::MS_WATER];
 	// Runoff rate (kg m-2 h-1)
 	Hdata.runoff = Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] / cos_sl / S_TO_H(sn_dt * static_cast<double>(hazard_steps_between));
-	std::cout << Hdata.date.toString(mio::Date::ISO) << " " << Hdata.runoff << "\n";
 
 	// Profile type
 	if ((Xdata.S_class1 <= 10) && (Xdata.S_class1 >= 0))
