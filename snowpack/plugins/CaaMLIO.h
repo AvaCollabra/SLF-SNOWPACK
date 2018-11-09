@@ -26,14 +26,14 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
-//#include <pugixml/pugixml.hpp>
-
-
+#include <snowpack/plugins/pugixml/pugixml.hpp>
+/*
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
 #include <libxml/xmlwriter.h>
+*/
 
-
+typedef char xmlChar;
 
 /**
  * @class CaaMLIO
@@ -85,23 +85,22 @@ class CaaMLIO : public SnowpackIOInterface {
 		mio::StationData xmlGetStationData(const std::string& stationID);
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
-		LayerData xmlGetLayer(xmlNodePtr cur);
+		LayerData xmlGetLayer(pugi::xml_node nodeLayer);
 		bool getLayersDir();
 		void getAndSetProfile(const std::string path, const std::string name,const bool directionTopDown,
-							  const bool isRangeMeasurement,std::vector<LayerData>& Layers);
+		                      const bool isRangeMeasurement,std::vector<LayerData>& Layers);
 		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
 		void estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Layers, const mio::Date);
-		void setCustomLayerData(LayerData &Layer);
+		bool checkWhatWasReadIn(SN_SNOWSOIL_DATA& SSdata);
 
 		//functions for writing caaml-file:
 		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
 		                   const bool aggregate);
-		void writeDate(const xmlTextWriterPtr writer, const char* att_name, const char* att_val);
-		void writeCustomSnowSoil(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeLayers(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeCustomLayerData(const xmlTextWriterPtr writer, const ElementData& Edata, const NodeData& Ndata);
-		void writeProfiles(const xmlTextWriterPtr writer, const SnowStation& Xdata);
-		void writeStationData(const xmlTextWriterPtr writer, const SnowStation& Xdata);
+		void writeCustomSnowSoil(pugi::xml_node& node, const SnowStation& Xdata);
+		void writeLayers(pugi::xml_node& node, const SnowStation& Xdata);
+		void writeCustomLayerData(pugi::xml_node& node, const ElementData& Edata, const NodeData& Ndata);
+		void writeProfiles(pugi::xml_node& node, const SnowStation& Xdata);
+		void writeStationData(pugi::xml_node& root, const SnowStation& Xdata);
 
 		double lwc_codeToVal(const char* code);
 		std::string lwc_valToCode(const double val);
@@ -112,14 +111,13 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string grainShape_valToAbbrev_old(const double* var);
 
 		//xml functions:
-		xmlNodeSetPtr xmlGetData(const std::string& path);
 		double xmlReadValueFromPath(const std::string& xpath, const std::string& property, const double& dflt);
 		int xmlReadValueFromPath(const std::string& xpath, const std::string& property, const int& dflt);
-		void xmlWriteElement(const xmlTextWriterPtr writer, const char* name, const char* content, const char* att_name, const char* att_val);
+		void xmlWriteElement(pugi::xml_node& node, const char* name, const char* content, const char* att_name, const char* att_val);
 		bool xmlDoesPathExist(const std::string& path);
-		bool xmlReadValueFromNode(const xmlNode* curC, const std::string propertyName, double& variableToSet,
-						          const std::string unitOut = "",const std::string unitMeasured = "", const double factor=1.0);
-		xmlNode* xmlStepDown1Level(const xmlNode* curCIn, const std::string propertyName);
+		bool xmlReadValueFromNode(const pugi::xml_node node, const std::string propertyName, double& variableToSet,
+		                          const std::string unitOut = "",const std::string unitMeasured = "", const double factor=1.0);
+		std::string xmlReadAttributeFromPath (const std::string& path, const std::string& attributeName);
 
 		const RunInfo info;
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
@@ -128,11 +126,9 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 		double caaml_nodata; //plugin specific no data value
 
-		xmlDocPtr in_doc;
-		//pugi::xml_document in_doc;
+		pugi::xml_document inDoc;
 
-		xmlXPathContextPtr in_xpathCtx;
-		xmlCharEncoding in_encoding;
+		//xmlCharEncoding in_encoding;
 		static const xmlChar *xml_ns_caaml, *xml_ns_abrev_caaml;
 		static const xmlChar *xml_ns_gml, *xml_ns_abrev_gml;
 		static const xmlChar *xml_ns_xsi, *xml_ns_abrev_xsi;
