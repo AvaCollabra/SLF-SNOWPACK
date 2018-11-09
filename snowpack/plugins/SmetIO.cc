@@ -833,6 +833,7 @@ std::string SmetIO::getFieldsHeader() const
 
 void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, smet::SMETWriter& smet_writer) const
 {
+	//Note: please do not forget to edit both this method and getFieldsHeader() when adding/removing a field!
 	const std::string fields( getFieldsHeader() );
 	setBasicHeader(Xdata, fields, smet_writer);
 	smet_writer.set_header_value("tz", tz);
