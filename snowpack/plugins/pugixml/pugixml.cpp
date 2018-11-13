@@ -1093,10 +1093,8 @@ namespace pugi
 {
 	struct xml_attribute_struct
 	{
-		xml_attribute_struct(impl::xml_memory_page* page): name(0), value(0), prev_attribute_c(0), next_attribute(0)
-		{
-			header = PUGI__GETHEADER_IMPL(this, page, 0);
-		}
+		xml_attribute_struct(impl::xml_memory_page* page): header(PUGI__GETHEADER_IMPL(this, page, 0)), name(0), value(0), prev_attribute_c(0), next_attribute(0)
+		{}
 
 		uintptr_t header;
 
@@ -1109,10 +1107,8 @@ namespace pugi
 
 	struct xml_node_struct
 	{
-		xml_node_struct(impl::xml_memory_page* page, xml_node_type type): name(0), value(0), parent(0), first_child(0), prev_sibling_c(0), next_sibling(0), first_attribute(0)
-		{
-			header = PUGI__GETHEADER_IMPL(this, page, type);
-		}
+		xml_node_struct(impl::xml_memory_page* page, xml_node_type type): header(PUGI__GETHEADER_IMPL(this, page, type)), name(0), value(0), parent(0), first_child(0), prev_sibling_c(0), next_sibling(0), first_attribute(0)
+		{}
 
 		uintptr_t header;
 
@@ -3695,7 +3691,7 @@ PUGI__NS_BEGIN
 		xml_buffered_writer& operator=(const xml_buffered_writer&);
 
 	public:
-		xml_buffered_writer(xml_writer& writer_, xml_encoding user_encoding): writer(writer_), bufsize(0), encoding(get_write_encoding(user_encoding))
+		xml_buffered_writer(xml_writer& writer_, xml_encoding user_encoding): scratch(), writer(writer_), bufsize(0), encoding(get_write_encoding(user_encoding))
 		{
 			PUGI__STATIC_ASSERT(bufcapacity >= 8);
 		}
@@ -6602,7 +6598,7 @@ namespace pugi
 	}
 #endif
 
-	PUGI__FN xml_node_iterator::xml_node_iterator()
+	PUGI__FN xml_node_iterator::xml_node_iterator(): _wrap(0), _parent(0)
 	{
 	}
 
@@ -6663,7 +6659,7 @@ namespace pugi
 		return temp;
 	}
 
-	PUGI__FN xml_attribute_iterator::xml_attribute_iterator()
+	PUGI__FN xml_attribute_iterator::xml_attribute_iterator(): _wrap(0), _parent(0)
 	{
 	}
 
@@ -6724,7 +6720,7 @@ namespace pugi
 		return temp;
 	}
 
-	PUGI__FN xml_named_node_iterator::xml_named_node_iterator(): _name(0)
+	PUGI__FN xml_named_node_iterator::xml_named_node_iterator(): _wrap(0), _parent(),_name(0)
 	{
 	}
 
@@ -7648,7 +7644,7 @@ PUGI__NS_BEGIN
 		xpath_stack stack;
 		bool oom;
 
-		xpath_stack_data(): result(blocks + 0, &oom), temp(blocks + 1, &oom), oom(false)
+		xpath_stack_data(): result(blocks + 0, &oom), temp(blocks + 1, &oom), stack(), oom(false)
 		{
 			blocks[0].next = blocks[1].next = 0;
 			blocks[0].capacity = blocks[1].capacity = sizeof(blocks[0].data);
@@ -8343,7 +8339,7 @@ PUGI__NS_BEGIN
 		const char_t* prefix;
 		size_t prefix_length;
 
-		namespace_uri_predicate(const char_t* name)
+		namespace_uri_predicate(const char_t* name):prefix(0), prefix_length(0)
 		{
 			const char_t* pos = find_char(name, ':');
 
@@ -8559,7 +8555,7 @@ PUGI__NS_BEGIN
 
 	struct xpath_variable_node_set: xpath_variable
 	{
-		xpath_variable_node_set(): xpath_variable(xpath_type_node_set)
+		xpath_variable_node_set(): xpath_variable(xpath_type_node_set), value(xpath_node_set()), name()
 		{
 		}
 
@@ -8957,7 +8953,7 @@ PUGI__NS_BEGIN
 		lexeme_t _cur_lexeme;
 
 	public:
-		explicit xpath_lexer(const char_t* query): _cur(query)
+		explicit xpath_lexer(const char_t* query): _cur(query), _cur_lexeme_pos(), _cur_lexeme_contents()
 		{
 			next();
 		}
@@ -10119,6 +10115,8 @@ PUGI__NS_BEGIN
 
 			return ns;
 		}
+
+
 
 	public:
 		xpath_ast_node(ast_type_t type, xpath_value_type rettype_, const char_t* value):

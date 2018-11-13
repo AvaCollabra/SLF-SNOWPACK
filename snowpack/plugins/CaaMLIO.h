@@ -26,12 +26,10 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
 #include <snowpack/plugins/pugixml/pugixml.hpp>
-/*
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
-#include <libxml/xmlwriter.h>
-*/
+#pragma GCC diagnostic pop
 
 typedef char xmlChar;
 
