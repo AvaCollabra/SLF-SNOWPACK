@@ -120,6 +120,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		double caaml_nodata; //plugin specific no data value
 
 		pugi::xml_document inDoc;
+		pugi::xml_encoding inEncoding;
 
 		//charEncoding in_encoding;
 		static const char *xml_ns_caaml, *xml_ns_abrev_caaml;

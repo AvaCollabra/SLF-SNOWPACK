@@ -69,11 +69,7 @@ using namespace mio;
  * Normally, CAAML reads the file encoding in the file itself. If this does not work (one of the two cases given above), it is possible to force the
  * encoding of the input file by using the "XML_ENCODING" option. This option takes one of the following values
  * ("LE" stands for "Little Endian" and "BE" for "Big Endian"):
- *  - for UTF/UCS: UTF-8, UTF-16-LE, UTF-16-BE, UCS-4-LE, UCS-4-BE, UCS-4-2143, UCS-4-3412, UCS-2, EBCDIC
- *  - for ISO-8859: ISO-8859-1, ISO-8859-2, ISO-8859-3, ISO-8859-4, ISO-8859-5, ISO-8859-6, ISO-8859-7, ISO-8859-8, ISO-8859-9
- *  - for Japanses: ISO-2022-JP, SHIFT-JIS, EUC-JP
- *  - for ascii: ASCII
-
+ *  UTF-8, UTF-16-LE, UTF-16-BE, UTF-16, LATIN1, ISO-8859-1, UTF-32, UTF-32-LE, UTF-32-BE, WCHAR
  */
 
 /**
@@ -370,7 +366,7 @@ CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
              i_snowpath(), sw_mode(), o_snowpath(), experiment(),
              useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false), in_tz(),
              snow_prefix(), snow_ext(".caaml"), caaml_nodata(IOUtils::nodata),
-             inDoc()
+             inDoc(),inEncoding()
 {
 	init(cfg);
 }
@@ -405,34 +401,23 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 		o_snowpath = tmpstr;
 
 	//input encoding forcing, inherited from CosmoXMLIO
+	inEncoding=pugi::encoding_auto;
 	tmpstr.clear();
 	cfg.getValue("XML_ENCODING", "INPUT", tmpstr, IOUtils::nothrow);
-	/*if (!tmpstr.empty()) {
-		if (tmpstr=="UTF-8") in_encoding=XML_CHAR_ENCODING_UTF8;
-		else if (tmpstr=="UTF-16-LE") in_encoding=XML_CHAR_ENCODING_UTF16LE;
-		else if (tmpstr=="UTF-16-BE") in_encoding=XML_CHAR_ENCODING_UTF16BE;
-		else if (tmpstr=="UCS-4-LE") in_encoding=XML_CHAR_ENCODING_UCS4LE;
-		else if (tmpstr=="UCS-4-BE") in_encoding=XML_CHAR_ENCODING_UCS4BE;
-		else if (tmpstr=="EBCDIC") in_encoding=XML_CHAR_ENCODING_EBCDIC;
-		else if (tmpstr=="UCS-4-2143") in_encoding=XML_CHAR_ENCODING_UCS4_2143;
-		else if (tmpstr=="UCS-4-3412") in_encoding=XML_CHAR_ENCODING_UCS4_3412;
-		else if (tmpstr=="UCS-2") in_encoding=XML_CHAR_ENCODING_UCS2;
-		else if (tmpstr=="ISO-8859-1") in_encoding=XML_CHAR_ENCODING_8859_1;
-		else if (tmpstr=="ISO-8859-2") in_encoding=XML_CHAR_ENCODING_8859_2;
-		else if (tmpstr=="ISO-8859-3") in_encoding=XML_CHAR_ENCODING_8859_3;
-		else if (tmpstr=="ISO-8859-4") in_encoding=XML_CHAR_ENCODING_8859_4;
-		else if (tmpstr=="ISO-8859-5") in_encoding=XML_CHAR_ENCODING_8859_5;
-		else if (tmpstr=="ISO-8859-6") in_encoding=XML_CHAR_ENCODING_8859_6;
-		else if (tmpstr=="ISO-8859-7") in_encoding=XML_CHAR_ENCODING_8859_7;
-		else if (tmpstr=="ISO-8859-8") in_encoding=XML_CHAR_ENCODING_8859_8;
-		else if (tmpstr=="ISO-8859-9") in_encoding=XML_CHAR_ENCODING_8859_9;
-		else if (tmpstr=="ISO-2022-JP") in_encoding=XML_CHAR_ENCODING_2022_JP;
-		else if (tmpstr=="SHIFT-JIS") in_encoding=XML_CHAR_ENCODING_SHIFT_JIS;
-		else if (tmpstr=="EUC-JP") in_encoding=XML_CHAR_ENCODING_EUC_JP;
-		else if (tmpstr=="ASCII") in_encoding=XML_CHAR_ENCODING_ASCII;
+	if (!tmpstr.empty()) {
+		if (tmpstr=="UTF-8") inEncoding=pugi::encoding_utf8;
+		else if (tmpstr=="UTF-16-LE") inEncoding=pugi::encoding_utf16_le;
+		else if (tmpstr=="UTF-16-BE") inEncoding=pugi::encoding_utf16_be;
+		else if (tmpstr=="UTF-16") inEncoding=pugi::encoding_utf16;
+		else if (tmpstr=="LATIN1") inEncoding=pugi::encoding_latin1;
+		else if (tmpstr=="ISO-8859-1") inEncoding=pugi::encoding_latin1;
+		else if (tmpstr=="UTF-32") inEncoding=pugi::encoding_utf32;
+		else if (tmpstr=="UTF-32-LE") inEncoding=pugi::encoding_utf32_le;
+		else if (tmpstr=="UTF-32-BE") inEncoding=pugi::encoding_utf32_be;
+		else if (tmpstr=="WCHAR") inEncoding=pugi::encoding_wchar;
 		else
 			throw InvalidArgumentException("Encoding \""+tmpstr+"\" is not supported!", AT);
-	}*/
+	}
 }
 
 /**
@@ -442,7 +427,7 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 void CaaMLIO::openIn_CAAML(const std::string& in_snowfile)
 {
 	std::cout << "opening CAAML-file... " << std::endl;
-	const pugi::xml_parse_result result = inDoc.load_file(in_snowfile.c_str());
+	const pugi::xml_parse_result result = inDoc.load_file(in_snowfile.c_str(),pugi::parse_default,inEncoding);
 	if (result){
 		std::cout << "XML [" << in_snowfile << "] parsed without errors. " << std::endl;
 	}else{
@@ -973,7 +958,7 @@ void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, co
 	// Save XML tree to file.
 	// Remark: second optional param is indent string to be used;
 	// default indentation is tab character.
-	bool saveSucceeded = doc.save_file(snofilename.c_str(), PUGIXML_TEXT("  "));
+	bool saveSucceeded = doc.save_file(snofilename.c_str(), PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
 	if(saveSucceeded){
 		std::cout << snofilename << " was saved successfully." << std::endl;
 	}else{
