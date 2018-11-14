@@ -31,7 +31,6 @@ along with MeteoIO.  If not, see <http://www.gnu.org/licenses/>.
 #include <snowpack/plugins/pugixml/pugixml.hpp>
 #pragma GCC diagnostic pop
 
-typedef char xmlChar;
 
 /**
  * @class CaaMLIO
@@ -46,9 +45,6 @@ class CaaMLIO : public SnowpackIOInterface {
 	public:
 		CaaMLIO(const SnowpackConfig& i_cfg, const RunInfo& run_info);
 		CaaMLIO(const CaaMLIO&);
-		~CaaMLIO() throw();
-
-		CaaMLIO& operator=(const CaaMLIO&); ///<Assignement operator, required because of pointer member
 
 		virtual bool snowCoverExists(const std::string& i_snowfile, const std::string& stationID) const;
 
@@ -78,7 +74,6 @@ class CaaMLIO : public SnowpackIOInterface {
 		//functions for reading caaml-files:
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		void openIn_CAAML(const std::string& in_snowfile);
-		void closeIn_CAAML() throw();
 		mio::Date xmlGetDate();
 		mio::StationData xmlGetStationData(const std::string& stationID);
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
@@ -126,12 +121,12 @@ class CaaMLIO : public SnowpackIOInterface {
 
 		pugi::xml_document inDoc;
 
-		//xmlCharEncoding in_encoding;
-		static const xmlChar *xml_ns_caaml, *xml_ns_abrev_caaml;
-		static const xmlChar *xml_ns_gml, *xml_ns_abrev_gml;
-		static const xmlChar *xml_ns_xsi, *xml_ns_abrev_xsi;
-		static const xmlChar *xml_ns_slf, *xml_ns_abrev_slf;
-		static const xmlChar *xml_ns_snp, *xml_ns_abrev_snp;
+		//charEncoding in_encoding;
+		static const char *xml_ns_caaml, *xml_ns_abrev_caaml;
+		static const char *xml_ns_gml, *xml_ns_abrev_gml;
+		static const char *xml_ns_xsi, *xml_ns_abrev_xsi;
+		static const char *xml_ns_slf, *xml_ns_abrev_slf;
+		static const char *xml_ns_snp, *xml_ns_abrev_snp;
 		static const std::string TimeData_xpath, StationMetaData_xpath, SnowData_xpath;
 
 		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10];
