@@ -1219,7 +1219,7 @@ void CaaMLIO::writeStationData(pugi::xml_node& root, const SnowStation& Xdata)
 	pointNode.append_attribute("srsName") = "urn:ogc:def:crs:OGC:1.3:CRS84";
 	pointNode.append_attribute("srsDimension") = "2";
 	char posStr[30];
-	sprintf(posStr,"%f %f",Xdata.meta.position.getLat(),Xdata.meta.position.getLon());
+	sprintf(posStr,"%f %f",Xdata.meta.position.getLon(),Xdata.meta.position.getLat());
 	xmlWriteElement(pointNode,"gml:pos",posStr,"","");
 }
 
