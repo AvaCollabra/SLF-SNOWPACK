@@ -366,9 +366,10 @@ CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
              i_snowpath(), sw_mode(), o_snowpath(), experiment(),
              useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false), in_tz(),
              snow_prefix(), snow_ext(".caaml"), caaml_nodata(IOUtils::nodata),
-             inDoc(),inEncoding()
+             inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
+	grainForms.clear();
 }
 
 /**
@@ -418,6 +419,8 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 		else
 			throw InvalidArgumentException("Encoding \""+tmpstr+"\" is not supported!", AT);
 	}
+	//get density for surface hoar
+	cfg.getValue("HOAR_DENSITY_SURF", "SnowpackAdvanced", hoarDensitySurf); // Density of SH at surface node (kg m-3)
 }
 
 /**
@@ -535,15 +538,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 		//lwc data is optional. if not available, no problem:
 		getAndSetProfile("/caaml:lwcProfile/caaml:Layer","caaml:lwc",directionTopDown,true,SSdata.Ldata);
 
-		//Compute total number of elements (nodes), height and phiVoids
-		SSdata.nN = 1;
-		SSdata.Height = 0.;
-		for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
-			SSdata.nN += SSdata.Ldata[ii].ne;
-			SSdata.Height += SSdata.Ldata[ii].hl;
-			SSdata.Ldata[ii].phiVoids = 1. - SSdata.Ldata[ii].phiSoil - SSdata.Ldata[ii].phiWater - SSdata.Ldata[ii].phiIce;
-		}
-		SSdata.HS_last = SSdata.Height;
+		checkAllDataForConsistencyAndSetMissingValues(SSdata);
 	}
 	std::cout << "Finished reading CAAML-file... " << std::endl;
 	checkWhatWasReadIn(SSdata);
@@ -581,7 +576,7 @@ StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 
 	const std::string stationName = std::string( (const char*)stationNode.child("caaml:name").child_value() );
 	sscanf(stationNode.child("caaml:validElevation").child("caaml:ElevationPosition").child("caaml:position").child_value(),"%lf",&z);
-	azimuth = IOUtils::bearing( string(stationNode.child("caaml:validAspect").child("caaml:AspectPosition").child("caaml:position").child_value()) );
+	sscanf(stationNode.child("caaml:validAspect").child("caaml:AspectPosition").child("caaml:position").child_value(),"%lf",&azimuth);
 	sscanf(stationNode.child("caaml:validSlopeAngle").child("caaml:SlopeAnglePosition").child("caaml:position").child_value(),"%lf",&slopeAngle);
 	sscanf(stationNode.child("caaml:pointLocation").child("gml:Point").child("gml:pos").child_value(),"%lf %lf",&x,&y);
 
@@ -629,9 +624,9 @@ bool CaaMLIO::getLayersDir()
  * @param nodeLayer xml-node pointing to <caaml:Layer> in the caaml-file
  * @return data of one layer which was read in from the caaml-file
  */
-LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer)
+LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer, std::string& grainFormCode)
 {
-	std::string code="";
+	grainFormCode="";
 	LayerData Layer;
 	for (pugi::xml_node node = nodeLayer.first_child(); node; node = node.next_sibling()){
 		const std::string fieldName( node.name() );
@@ -652,8 +647,8 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer)
 			//std::cout << "hardness (we have no member (of Layer) we could set this value to!!!): " << hardness << " " << std::endl;
 		}
 		if (fieldName == "caaml:grainFormPrimary"){
-			code = std::string( (char*)node.child_value() );
-			grainShape_codeToVal(code, Layer.sp, Layer.dd, Layer.mk); // these values will be replaced if there are values in the custom-data
+			grainFormCode = std::string( (char*)node.child_value() );
+			grainShape_codeToVal(grainFormCode, Layer.sp, Layer.dd, Layer.mk); // these values will be replaced if there are values in the custom-snowpack-data
 		}
 		if (fieldName == "caaml:validFormationTime"){
 			const std::string date_str( (char*) node.child("caaml:TimeInstant").child("caaml:timePosition").child_value() );
@@ -662,6 +657,8 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer)
 			Layer.depositionDate = date;
 		}
 	}
+
+	//read custom-snowpack-data. do this at the end to be sure to use these values (if available)
 	for (pugi::xml_node node = nodeLayer.child("caaml:metaData").child("caaml:customData").first_child(); node; node = node.next_sibling())
 	{
 		xmlReadValueFromNode(node,"snp:dendricity",Layer.dd);
@@ -674,14 +671,6 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer)
 		const std::string fieldName( node.name() );
 		if (fieldName == "snp:marker") {
 			sscanf((const char*) node.child_value(),"%hu",&Layer.mk);
-		}
-	}
-	if (Layer.rg == 0.) {
-		if (code=="IF") {
-			Layer.rg = 3./2.;
-			Layer.rb = 3./8.;
-		} else {
-			throw IOException("Grain size missing for a non-ice layer!", AT);
 		}
 	}
 	return Layer;
@@ -707,19 +696,23 @@ void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
 	}
 	SSdata.nLayers=nLayers;
 	SSdata.Ldata.resize(SSdata.nLayers, LayerData());
+	grainForms.clear();
+	std::string grainForm="";
 	if (SSdata.nLayers>0) {
 		if (!directionTopDown) {
 			std::cout << "profile direction: bottom up. nLayers: " << nLayers << std::endl;
 			size_t ii=0;
 			for (pugi::xml_node node = nodeFirstLayer; node; node = node.next_sibling("caaml:Layer")){
-				SSdata.Ldata[ii] = xmlGetLayer(node);
+				SSdata.Ldata[ii] = xmlGetLayer(node,grainForm);
+				grainForms.push_back(grainForm);
 				ii++;
 			}
 		}else{
 			std::cout << "profile direction: top down. nLayers: " << nLayers << std::endl;
 			size_t ii=0;
 			for (pugi::xml_node node = nodeLastLayer; node; node = node.previous_sibling("caaml:Layer")){
-				SSdata.Ldata[ii] = xmlGetLayer(node);
+				SSdata.Ldata[ii] = xmlGetLayer(node,grainForm);
+				grainForms.push_back(grainForm);
 				ii++;
 			}
 		}
@@ -858,6 +851,62 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 			std::cout << "snp:DepositionDate does not exist in caaml-file. Estimated value: " << Layers[ii].depositionDate.toString(mio::Date::ISO) << std::endl;
 		}
 	}
+}
+
+void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& SSdata )
+{
+	//check station data:
+	double azimuth = SSdata.meta.getAzimuth();
+	if(azimuth==IOUtils::nodata){
+		double slopeAngle = SSdata.meta.getSlopeAngle();
+		if(slopeAngle==0){
+			azimuth=0;
+		}
+		if(slopeAngle ==IOUtils::nodata){
+			azimuth=0;
+			slopeAngle=0;
+		}
+		if(slopeAngle > 0){
+			throw NoDataException("No data found for 'caaml:validAspect'. If a slope-angle is given we also need the azimuth. ", AT);
+		}
+	}
+
+	//check layer data:
+	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
+		std::string grainFormCode = grainForms[ii];
+		if (grainFormCode=="SH"){ //set parameters for surface hoar
+			SSdata.Ldata[ii].phiWater=0;
+			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
+			SSdata.Ldata[ii].rg = M_TO_MM(SSdata.Ldata[ii].hl);
+			SSdata.Ldata[ii].rb = SSdata.Ldata[ii].rg/3.;
+			SSdata.Ldata[ii].dd = 0.;
+			SSdata.Ldata[ii].sp = 0.;
+			SSdata.Ldata[ii].mk = 3;
+		}
+		if (SSdata.Ldata[ii].rg == 0.) {
+			if (grainFormCode=="IF") {
+				SSdata.Ldata[ii].rg = 3./2.;
+				SSdata.Ldata[ii].rb = 3./8.;
+			} else throw IOException("Grain size missing for a non-ice layer!", AT);
+		}
+		// set temperature to 0°C if warmer than 0°C:
+		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
+			SSdata.Ldata[ii].tl = Constants::melting_tk;
+		}
+		// set lwc to 0 if colder than 0°C:
+		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
+			SSdata.Ldata[ii].phiWater = 0;
+		}
+	}
+	//Compute total number of elements (nodes), height and phiVoids
+	SSdata.nN = 1;
+	SSdata.Height = 0.;
+	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
+		SSdata.nN += SSdata.Ldata[ii].ne;
+		SSdata.Height += SSdata.Ldata[ii].hl;
+		SSdata.Ldata[ii].phiVoids = 1. - SSdata.Ldata[ii].phiSoil - SSdata.Ldata[ii].phiWater - SSdata.Ldata[ii].phiIce;
+	}
+	SSdata.HS_last = SSdata.Height;
 }
 
 /**

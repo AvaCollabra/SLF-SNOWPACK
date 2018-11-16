@@ -78,12 +78,13 @@ class CaaMLIO : public SnowpackIOInterface {
 		mio::StationData xmlGetStationData(const std::string& stationID);
 		void setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata);
 		void xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata);
-		LayerData xmlGetLayer(pugi::xml_node nodeLayer);
+		LayerData xmlGetLayer(pugi::xml_node nodeLayer, std::string& grainFormCode);
 		bool getLayersDir();
 		void getAndSetProfile(const std::string path, const std::string name,const bool directionTopDown,
 		                      const bool isRangeMeasurement,std::vector<LayerData>& Layers);
 		bool xmlGetProfile(const std::string path, const std::string name, std::vector<double>& zVec, std::vector<double>& valVec);
 		void estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Layers, const mio::Date);
+		void checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& SSdata );
 		bool checkWhatWasReadIn(SN_SNOWSOIL_DATA& SSdata);
 
 		//functions for writing caaml-file:
@@ -131,6 +132,8 @@ class CaaMLIO : public SnowpackIOInterface {
 		static const std::string TimeData_xpath, StationMetaData_xpath, SnowData_xpath;
 
 		char layerDepthTopStr[10], layerThicknessStr[10], layerValStr[10], valueStr[10];
+		double hoarDensitySurf;
+		std::vector<std::string> grainForms;
 };
 
 #endif //End of CAAMLIO.h
