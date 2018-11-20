@@ -576,6 +576,11 @@ StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 
 	const std::string stationName = std::string( (const char*)stationNode.child("caaml:name").child_value() );
 	sscanf(stationNode.child("caaml:validElevation").child("caaml:ElevationPosition").child("caaml:position").child_value(),"%lf",&z);
+	const char* azimuthStr = stationNode.child("caaml:validAspect").child("caaml:AspectPosition").child("caaml:position").child_value();
+	azimuth = IOUtils::bearing(azimuthStr);  //convert aspect-string to a bearing (0-360) if given as a char (N, NW, S,...)
+	if(azimuth == IOUtils::nodata){
+		sscanf(azimuthStr,"%lf",&azimuth);   //if aspect was given as a number, just convert aspect-string to double
+	}
 	sscanf(stationNode.child("caaml:validAspect").child("caaml:AspectPosition").child("caaml:position").child_value(),"%lf",&azimuth);
 	sscanf(stationNode.child("caaml:validSlopeAngle").child("caaml:SlopeAnglePosition").child("caaml:position").child_value(),"%lf",&slopeAngle);
 	sscanf(stationNode.child("caaml:pointLocation").child("gml:Point").child("gml:pos").child_value(),"%lf %lf",&x,&y);
@@ -853,23 +858,29 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 	}
 }
 
+/**
+ * @brief Check station- and layer-data for consistency. If possible set reasonable values, otherwise throw exceptions.
+ *        Furthermore determine some missing values (total number of elements (nodes), height and phiVoids).
+ * @param SSdata
+ */
 void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& SSdata )
 {
 	//check station data:
 	double azimuth = SSdata.meta.getAzimuth();
+	double slopeAngle = SSdata.meta.getSlopeAngle();
+	if(slopeAngle ==IOUtils::nodata){
+		//throw NoDataException("No data found for 'caaml:validSlopeAngle'. There is no slope-angle given in the caaml-file. ", AT);
+		slopeAngle=0;
+	}
 	if(azimuth==IOUtils::nodata){
-		double slopeAngle = SSdata.meta.getSlopeAngle();
 		if(slopeAngle==0){
 			azimuth=0;
 		}
-		if(slopeAngle ==IOUtils::nodata){
-			azimuth=0;
-			slopeAngle=0;
-		}
 		if(slopeAngle > 0){
-			throw NoDataException("No data found for 'caaml:validAspect'. If a slope-angle is given we also need the azimuth. ", AT);
+			throw NoDataException("No data found for 'caaml:validAspect'. If the slope-angle is >0°, we also need the azimuth. ", AT);
 		}
 	}
+	SSdata.meta.setSlope(slopeAngle,azimuth);
 
 	//check layer data:
 	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
@@ -1238,15 +1249,14 @@ void CaaMLIO::writeStationData(pugi::xml_node& root, const SnowStation& Xdata)
 	                                .append_child( (namespaceCAAML+":AspectPosition").c_str() );
 	xmlWriteElement(aspectNode,(namespaceCAAML+":position").c_str(),IOUtils::bearing(Xdata.meta.getAzimuth()).c_str(),"","");
 
-	/*pugi::xml_node slopeNode = node.append_child( (namespaceCAAML+":validSlopeAngle").c_str() )
-	                               .append_child( (namespaceCAAML+":SlopeAnglePosition").c_str() );
-	slopeNode.append_attribute("uom") = "deg";
-	char slopeStr[4] = "n/a";
-	if(Xdata.meta.getSlopeAngle()!=-999){
+	if(Xdata.meta.getSlopeAngle()!=IOUtils::nodata){
+		pugi::xml_node slopeNode = node.append_child( (namespaceCAAML+":validSlopeAngle").c_str() )
+		                               .append_child( (namespaceCAAML+":SlopeAnglePosition").c_str() );
+		slopeNode.append_attribute("uom") = "deg";
+		char slopeStr[4];
 		sprintf(slopeStr,"%.0f",Xdata.meta.getSlopeAngle());
+		xmlWriteElement(slopeNode,(namespaceCAAML+":position").c_str(),slopeStr,"","");
 	}
-	xmlWriteElement(slopeNode,(namespaceCAAML+":position").c_str(),slopeStr,"","");*/
-
 	pugi::xml_node pointNode = node.append_child( (namespaceCAAML+":pointLocation").c_str() )
 								   .append_child( (namespaceGML+":Point").c_str() );
 	pointNode.append_attribute("gml:id") = ("SLF_"+Xdata.meta.stationID+"_2").c_str();
