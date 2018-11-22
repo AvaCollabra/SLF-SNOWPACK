@@ -369,6 +369,8 @@ class ElementData {
 		double vapTrans_fluxDiff;  ///< vapor dissusion flux in the case of vapor transport (W/m^2/s)
 		double vapTrans_snowDenChangeRate;  ///< snow density change rate in the case of vapor transport (kg/m^3/s)
 		double vapTrans_cumulativeDenChange;  ///< cumulative density change  in the case of vapor transport (kg/m^3)
+		double vapTrans_snowDenChange;  ///< snow density change rate in the case of vapor transport (g/cm^3)
+
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
