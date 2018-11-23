@@ -72,7 +72,7 @@ SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
-SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
+SET(PLUGIN_CAAMLIO ON CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
 
 ###########################################################
 #finally, SET compile flags

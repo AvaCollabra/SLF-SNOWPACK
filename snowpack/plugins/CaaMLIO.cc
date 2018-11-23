@@ -1126,7 +1126,7 @@ void CaaMLIO::writeCustomLayerData(pugi::xml_node& node, const ElementData& Edat
 	xmlWriteElement(node,(namespaceSNP+":dendricity").c_str(),valueStr,"","");
 	sprintf(valueStr,"%.2f",Edata.sp);
 	xmlWriteElement(node,(namespaceSNP+":sphericity").c_str(),valueStr,"","");
-	sprintf(valueStr,"%4u",Edata.mk);
+	sprintf(valueStr,"%4u",static_cast<int>(Edata.mk));
 	xmlWriteElement(node,(namespaceSNP+":marker").c_str(),valueStr,"","");
 	sprintf(valueStr,"%.4f",Ndata.hoar);
 	xmlWriteElement(node,(namespaceSNP+":SurfaceHoarMass").c_str(),valueStr,"uom","kgm-2");
