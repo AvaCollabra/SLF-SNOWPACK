@@ -89,7 +89,7 @@
  *    the last command line it contains into a terminal). You can also manually run %Snowpack, by typing something like
  *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
- * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ * -# The results can be visualized using the \ref niViz "niViz tool" by opening the <b>.pro</b> file that was generated in \b output.
  *
  * @section Running_own_simulation Running your own simulation
  * Once you have been able to run an example simulation, you can try to run your own simulation. This involves the following steps:
@@ -102,7 +102,7 @@
  * -# Then, run the simulation from a terminal (after going to the directory where your simulation is) with a command line such as
  *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
- * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ * -# The results can be visualized using the \ref niViz "niViz tool" by opening the <b>.pro</b> file that was generated in \b output.
  *
  * @section model_workflow Simulation workflow
  * When running a simulation, it is important to keep in mind that the model is organized as several modules that interract together. It is possible to configure
@@ -412,17 +412,12 @@
  * but are usually viewed with a graphical application. Two such applications are currently available: the legacy SnGUI Java tool and the newly developed 
  * SnopViz javascript tool.
  * 
- * @section sngui_config The sngui tool
- * This java application can be  <a href="https://models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site.
- * \image html sngui_overview_small.png "sngui overview"
- * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
- *
- * @section snopviz The SnopViz tool
+ * @section niViz The niViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
  * Chrome >= 38). You can either use it <a href="https://models.slf.ch/snopviz">online</a> and then open your profile to visualize or you can 
- * <a href="https://models.slf.ch/snopviz">download</a> a pre-packaged version that can be installed for offline use on your computer.
- * \image html snopviz_small.png "SnopViz overview"
- * \image latex snopviz.eps "SnopVizi overview" width=0.9\textwidth
+ * <a href="https://models.slf.ch/niviz">download</a> a pre-packaged version that can be installed for offline use on your computer.
+ * \image html niviz.png "niViz overview"
+ * \image latex niviz.eps "niViz overview" width=0.9\textwidth
  * 
  */
 
