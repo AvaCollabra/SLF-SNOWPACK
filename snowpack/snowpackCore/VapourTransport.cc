@@ -133,9 +133,9 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 	}
 
     try {
-	    WaterTransport::adjustDensity(Xdata);
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
-	    //WaterTransport::mergingElements(Xdata, Sdata);
+	    WaterTransport::adjustDensity(Xdata);
+	    WaterTransport::mergingElements(Xdata, Sdata);
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
