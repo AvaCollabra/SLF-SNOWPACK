@@ -363,9 +363,8 @@ const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfil
 
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            : info(run_info),
-             i_snowpath(), sw_mode(), o_snowpath(), experiment(),
-             useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false), in_tz(),
-             snow_prefix(), snow_ext(".caaml"), caaml_nodata(IOUtils::nodata),
+             i_snowpath(), sw_mode(), o_snowpath(), experiment(), useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false),
+             i_max_element_thickness(IOUtils::nodata), in_tz(), snow_prefix(), snow_ext(".caaml"), caaml_nodata(IOUtils::nodata),
              inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
@@ -393,6 +392,7 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 	cfg.getValue("SNOWPATH", "Input", i_snowpath, IOUtils::nothrow);
 	if (i_snowpath.empty())
 		i_snowpath = tmpstr;
+	cfg.getValue("CAAML_MAX_ELEMENT_THICKNESS", "Input", i_max_element_thickness, IOUtils::nothrow);
 
 	cfg.getValue("AGGREGATE_CAAML", "Output", aggregate_caaml);
 	cfg.getValue("EXPERIMENT", "Output", experiment);
@@ -478,6 +478,7 @@ void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	read_snocaaml(snofilename, stationID, SSdata);
+	//read_zwischendata(hazfilename, Zdata);
 	Zdata.reset();
 }
 
@@ -497,6 +498,44 @@ std::string CaaMLIO::getFilenamePrefix(const std::string& fnam, const std::strin
 		filename_prefix += "_" + experiment;
 
 	return filename_prefix;
+}
+
+/**
+ * @brief This routine reads the haz file into Zdata
+ * @param filename filename of the haz file
+ * @param Zdata
+ */
+void CaaMLIO::read_zwischendata(const std::string& filename, ZwischenData& Zdata)
+{
+	std::cout << "reading zwischendata...." << std::endl;
+	Zdata.reset();
+	FILE *fin = fopen(filename.c_str(), "r");
+	if (fin == NULL)
+		throw IOException("Cannot open input profile "+filename, AT);
+	//skip the header
+	bool stop=false;
+	while(stop==false){
+		char temp[20];
+		fscanf(fin,"%s",temp);
+		std::cout << temp << std::endl;
+		std::string tempStr(temp);
+		if(tempStr=="[DATA]"){
+			stop=true;
+			std::cout << "Finished reading header." << std::endl;
+		}
+	}
+	// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
+	for (size_t ii = 0; ii < 144; ii++){
+		char temp[20];
+		double v1=0;
+		double v2=0;
+		fscanf(fin,"%s %lf %lf %lf %lf",temp,&v1,&v2,&Zdata.hn3[ii],&Zdata.hn24[ii]);
+		if(ii >= 96){
+			Zdata.hoar24[ii-96]=v1;
+			Zdata.drift24[ii-96]=v2;
+		}
+		std::cout << temp << " hn24: " << Zdata.hn24[ii] << std::endl;
+	}
 }
 
 /**
@@ -642,7 +681,11 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer, std::string& grainFormC
 			}
 		}
 		if (xmlReadValueFromNode(node,"caaml:thickness",Layer.hl,"m")){
-			Layer.ne = (size_t) ceil(Layer.hl/0.02); //make a constant for 0.02!!! Is this always 0.02???
+			if(i_max_element_thickness != IOUtils::nodata){
+				Layer.ne = (size_t) ceil(Layer.hl/i_max_element_thickness);
+			}else{
+				Layer.ne=1;
+			}
 		}
 		if (fieldName == "caaml:wetness"){ //this value will be replaced if a lwc-profile is in the caaml-file!!!
 			Layer.phiWater = lwc_codeToVal((char*) node.child_value());
@@ -801,8 +844,13 @@ void CaaMLIO::getAndSetProfile(const std::string path, const std::string name,
 		std::vector<double> zVecLayers;
 		double z=0.;
 		for (size_t ii=0; ii<Layers.size(); ii++) {
-			zVecLayers.push_back(z);
-			z += Layers[ii].hl;
+			if(isRangeMeasurement){
+				zVecLayers.push_back(z);
+				z += Layers[ii].hl;
+			}else{
+				z += Layers[ii].hl;
+				zVecLayers.push_back(z);
+			}
 		}
 		//resample the profile data
 		DataResampler resampler(zVec,valVec,zVecLayers,z,isRangeMeasurement,changeDirection);
@@ -885,7 +933,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 	//check layer data:
 	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
 		std::string grainFormCode = grainForms[ii];
-		if (grainFormCode=="SH"){ //set parameters for surface hoar
+		if (grainFormCode=="SH" && ii==SSdata.nLayers-1){ //set parameters for surface hoar (only at the surface, not buried)
 			SSdata.Ldata[ii].phiWater=0;
 			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
 			SSdata.Ldata[ii].rg = M_TO_MM(SSdata.Ldata[ii].hl);
@@ -902,11 +950,13 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		}
 		// set temperature to 0°C if warmer than 0°C:
 		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
-			SSdata.Ldata[ii].tl = Constants::melting_tk;
+			throw IOException("Layer temperature above 0°C!", AT);
+			//SSdata.Ldata[ii].tl = Constants::melting_tk;
 		}
 		// set lwc to 0 if colder than 0°C:
 		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
-			SSdata.Ldata[ii].phiWater = 0;
+			throw IOException("LWC > 0 but temperature below 0°C!", AT);
+			//SSdata.Ldata[ii].phiWater = 0;
 		}
 	}
 	//Compute total number of elements (nodes), height and phiVoids

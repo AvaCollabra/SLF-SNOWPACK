@@ -72,6 +72,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
 		//functions for reading caaml-files:
+		void read_zwischendata(const std::string& filename, ZwischenData& Zdata);
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		void openIn_CAAML(const std::string& in_snowfile);
 		mio::Date xmlGetDate();
@@ -116,6 +117,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		const RunInfo info;
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
 		bool useSoilLayers, perp_to_slope, aggregate_caaml;
+		double i_max_element_thickness;
 		/*static const*/ double in_tz; //plugin specific time zones
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 		double caaml_nodata; //plugin specific no data value
