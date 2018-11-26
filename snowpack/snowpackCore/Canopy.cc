@@ -432,11 +432,11 @@ double Canopy::IntCapacity(const CurrentMeteo& Mdata, const SnowStation& Xdata, 
 	                                                   hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
 
 	 if (!force_rain && rho_new_snow!=Constants::undefined && Mdata.psum_ph<1.) { //right conditions for snow
-		 const double density_of_mixed = rho_new_snow*(1.-Mdata.psum_ph) + 1000.*Mdata.psum_ph;
-                return (Canopy::int_cap_snow * Xdata.Cdata.lai * ( 0.27+46.0 / density_of_mixed ));
-        } else {
-                return (Canopy::int_cap_rain * Xdata.Cdata.lai);
-        }
+			const double density_of_mixed = rho_new_snow*(1.-Mdata.psum_ph) + Constants::density_water*Mdata.psum_ph;
+			return (Canopy::int_cap_snow * Xdata.Cdata.lai * ( 0.27 + 46.0 / density_of_mixed )); //Pomeroy, 1998
+		} else {
+			return (Canopy::int_cap_rain * Xdata.Cdata.lai);
+		}
 }
 
 /**
@@ -1586,15 +1586,13 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// 1.2 compute direct unload [mm timestep-1], update storage [mm]
 	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
-        double oldstorage = Xdata.Cdata.storage;
-        Xdata.Cdata.storage -= unload;
-	double liqmm_unload=0.0;
-        double icemm_unload=0.0;
+	double oldstorage = Xdata.Cdata.storage;
+	Xdata.Cdata.storage -= unload;
 	const double intcaprain = IntCapacity(Mdata, Xdata, true);
 	// determine liquid and frozen water unload
-	liqmm_unload = std::max(0.0,std::min(unload * Xdata.Cdata.liquidfraction,
-			oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
-	icemm_unload = std::max(unload - liqmm_unload,0.0);
+	const double liqmm_unload = std::max(0.0, std::min(unload * Xdata.Cdata.liquidfraction,
+			oldstorage * Xdata.Cdata.liquidfraction - intcaprain));
+	const double icemm_unload = std::max(unload - liqmm_unload, 0.0);
 	// Update liquid fraction
 	if (Xdata.Cdata.storage>0.) {
 		Xdata.Cdata.liquidfraction = std::max( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
@@ -1612,15 +1610,15 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	const double throughfall = Mdata.psum - interception + unload;
-	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
-	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
+	const double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
+	const double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
 	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 	
 	if (Xdata.Cdata.storage>0.) {
-		Xdata.Cdata.liquidfraction = std::max(0.0,std::min(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
+		Xdata.Cdata.liquidfraction = std::max(0.0, std::min(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
 	}
 	
 	// 2.1 prepare for canopy energy balance
@@ -1637,11 +1635,11 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		lai_frac_top = 1.;
 	}
 	Xdata.Cdata.sigf = CanopyTransmissivity(lai_frac_top*Xdata.Cdata.lai, Constants::pi / 2.0);
-        Xdata.Cdata.sigftrunk = CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Constants::pi / 2.0);
+	Xdata.Cdata.sigftrunk = CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Constants::pi / 2.0);
 
 	// Secondly, transmissivity of direct solar radiation
 	const double sigfdirect = (Canopy::canopytransmission)? CanopyTransmissivity(lai_frac_top*Xdata.Cdata.lai, Mdata.elev) : Xdata.Cdata.sigf;
-        const double sigftrunkdirect =(Canopy::canopytransmission)? CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Mdata.elev) : Xdata.Cdata.sigftrunk;
+	const double sigftrunkdirect =(Canopy::canopytransmission)? CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Mdata.elev) : Xdata.Cdata.sigftrunk;
 
 	/*
 	 * Reference Height [m above snow surface] for meteo input, at least 2 m above canopy height above snow surface
