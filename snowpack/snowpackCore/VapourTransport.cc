@@ -135,7 +135,7 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
     try {
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
 	    WaterTransport::adjustDensity(Xdata);
-	    WaterTransport::mergingElements(Xdata, Sdata);
+	    //WaterTransport::mergingElements(Xdata, Sdata);
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
@@ -287,13 +287,9 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			const double dTh_ice = ( deltaM[e] - (dTh_water * Constants::density_water * EMS[e].L) ) / (Constants::density_ice * EMS[e].L);
 			EMS[e].theta[WATER] += dTh_water;
 			EMS[e].theta[ICE] += dTh_ice;
-			
-			if(e>=Xdata.SoilNode)
-			{
-				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dTh_water * Constants::density_water * EMS[e].L;
-				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dTh_ice * Constants::density_ice * EMS[e].L;
-			}
-			
+
+			Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dTh_water * Constants::density_water * EMS[e].L;
+			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dTh_ice * Constants::density_ice * EMS[e].L;
 			EMS[e].M += dTh_water * Constants::density_water * EMS[e].L+dTh_ice * Constants::density_ice * EMS[e].L;
 			assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 
@@ -308,17 +304,11 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 				EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
 				EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;//  [w/m^3]
-				if(e>=Xdata.SoilNode)
-				{
-					Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += deltaM[e]; //
-				}
+				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += deltaM[e]; //
 			} else {
 				EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
 				EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;// [w/m^3]
-				if(e>=Xdata.SoilNode)
-				{
-					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e]; //
-				}
+				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e]; //
 			}
 			EMS[e].M += deltaM[e];
 		}
@@ -345,7 +335,6 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		//some useful output in case of vapor transport
 		EMS[e].vapTrans_snowDenChangeRate = deltaM[e]/sn_dt/EMS[e].L;
 		EMS[e].vapTrans_cumulativeDenChange += deltaM[e]/EMS[e].L;
-		EMS[e].vapTrans_snowDenChange = deltaM[e]/EMS[e].L;
 	}
 
 	Sdata.hoar += dHoar;
@@ -657,7 +646,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
 	unsigned int MaxItnTemp = 10000; // maximum 40 iterations for temperature field
-	double ControlTemp = 1.e-15;    // solution convergence to within 0.01 degC
+	double ControlTemp = 1.e-12;    // solution convergence to within 0.01 degC
 
 	// The temperature equation was found to show slow convergence with only 1 or 2 elements left.
 	// Likely, the reason is that the LW-radiation is only approximated as linear, but in reality it is not. When only 1 or 2 elements
