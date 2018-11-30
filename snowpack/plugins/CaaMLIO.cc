@@ -364,7 +364,7 @@ const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfil
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            : info(run_info),
              i_snowpath(), sw_mode(), o_snowpath(), experiment(), useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false),
-             i_max_element_thickness(IOUtils::nodata), in_tz(), snow_prefix(), snow_ext(".caaml"), caaml_nodata(IOUtils::nodata),
+             i_max_element_thickness(IOUtils::nodata), in_tz(), snow_prefix(), snow_ext(".caaml"),
              inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
@@ -639,7 +639,7 @@ void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
 	const std::string xpath( "/caaml:metaData/caaml:customData/snp" );
 	if (xmlDoesPathExist(SnowData_xpath+xpath+":Albedo") == false)
-		std::cout << "There is no snowpack-custom-data in the caaml-file. Setting everything to default..." << std::endl;
+		std::cout << "There is no snowpack-custom-data in the caaml-file. Setting all values (albedo, erosion level,...) to default..." << std::endl;
 	Xdata.Albedo = xmlReadValueFromPath(xpath,"Albedo",0.6);
 	Xdata.SoilAlb = xmlReadValueFromPath(xpath,"SoilAlb",0.2);
 	Xdata.BareSoil_z0 = xmlReadValueFromPath(xpath,"BareSoil_z0",0.02);
@@ -933,6 +933,11 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 	//check layer data:
 	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
 		std::string grainFormCode = grainForms[ii];
+		if (grainFormCode=="MF"){
+			if (SSdata.Ldata[ii].tl < Constants::melting_tk-0.05){
+				SSdata.Ldata[ii].mk = (unsigned short int) (SSdata.Ldata[ii].mk + 10);
+			}
+		}
 		if (grainFormCode=="SH" && ii==SSdata.nLayers-1){ //set parameters for surface hoar (only at the surface, not buried)
 			SSdata.Ldata[ii].phiWater=0;
 			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
@@ -955,9 +960,22 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		}
 		// set lwc to 0 if colder than 0°C:
 		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
-			throw IOException("LWC > 0 but temperature below 0°C!", AT);
-			//SSdata.Ldata[ii].phiWater = 0;
+			std::cout << "WARNING! Inconsistent input data: LWC: " << SSdata.Ldata[ii].phiWater
+			          << " temperature: " << SSdata.Ldata[ii].tl << " in layer: " << ii << std::endl;
+			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0°C." << std::endl;
+			//throw IOException("LWC > 0 but temperature below 0°C!", AT);
+			SSdata.Ldata[ii].phiWater = 0;
 		}
+		if (grainFormCode=="FC" && SSdata.Ldata[ii].rg>0.8){
+			std::cout << "WARNING! Inconsistent input data: Grain shape 'FC' and grain size > 1.5mm! Faceted crystals should be smaller than 1.5mm. "
+			          << std::endl;
+		}
+		if (grainFormCode=="DH" && SSdata.Ldata[ii].rg<0.7){
+			std::cout << "WARNING! Inconsistent input data: Grain shape 'DH' and grain size < 1.5mm! Depth hoar crystals should be larger than 1.5mm. "
+			          << std::endl;
+
+		}
+		std::cout << "layer: " << ii << " grainForm: " << grainFormCode << " marker: " << SSdata.Ldata[ii].mk << std::endl;
 	}
 	//Compute total number of elements (nodes), height and phiVoids
 	SSdata.nN = 1;
@@ -1417,20 +1435,20 @@ double CaaMLIO::hardness_codeToVal(char* code)
  */
 std::string CaaMLIO::hardness_valToCode(const double val)
 {
-	if (val == 1.0) return "F";
-	if (val == 1.5) return "F-4F";
-	if (val == 2.0) return "4F";
-	if (val == 2.5) return "4F-1F";
-	if (val == 3.0) return "1F";
-	if (val == 3.5) return "1F-P";
-	if (val == 4.0) return "P";
-	if (val == 4.5) return "P-K";
-	if (val == 5.0) return "K";
-	if (val == 5.5) return "K-I";
-	if (val == 6.0) return "I";
+	if (val <= 1.0) return "F";
+	if (val <= 1.5) return "F-4F";
+	if (val <= 2.0) return "4F";
+	if (val <= 2.5) return "4F-1F";
+	if (val <= 3.0) return "1F";
+	if (val <= 3.5) return "1F-P";
+	if (val <= 4.0) return "P";
+	if (val <= 4.5) return "P-K";
+	if (val <= 5.0) return "K";
+	if (val <= 5.5) return "K-I";
+	if (val <= 6.0) return "I";
 	if (val == IOUtils::nodata) return "n/a";
-
-	throw IOException("Unrecognized hardness value.", AT);
+	std::cout<< "Hardness value: " << val << std::endl;
+	throw IOException("Unrecognized hardness value: ", AT);
 }
 
 /**
@@ -1445,7 +1463,7 @@ void CaaMLIO::grainShape_codeToVal(const std::string& code, double &sp, double &
 {
 	//first check some special grain shapes (with 4 letters):
 	if (code=="PPgp") {
-		sp = 1.; dd = 0.; mk = 2;
+		sp = 1.; dd = 0.; mk = 4;
 	} else {
 		//otherwise take only the first two letters of the code
 		const std::string code2Letters = code.substr(0,2);
@@ -1454,17 +1472,17 @@ void CaaMLIO::grainShape_codeToVal(const std::string& code, double &sp, double &
 		} else if (code2Letters=="DF") {
 			sp = 0.5; dd = 0.5; mk = 0;
 		} else if (code2Letters=="RG") {
-			sp = 1.; dd = 0.; mk = 2;
+			sp = 1.; dd = 0.; mk = 2; //why marker=2?
 		} else if (code2Letters=="FC") {
-			sp = 0.; dd = 0.; mk = 1;
-		} else if (code2Letters=="DH") {
-			sp = 0.; dd = 0.; mk = 1;
+			sp = 0.2; dd = 0.; mk = 1;
+		} else if (code2Letters=="DH") { //FC or DH is distinguished by grain size. A message is given if there is DH with grain size < 1.5mm. or if FC with grain size > 1.5 mm!
+			sp = 0.2; dd = 0.; mk = 1;
 		} else if (code2Letters=="SH") {
-			sp = 0.; dd = 0.; mk = 1;
+			sp = 0.; dd = 0.; mk = 3;
 		} else if (code2Letters=="MF") {
-			sp = 1.; dd = 0.; mk = 2;
+			sp = 1.; dd = 0.; mk = 12;
 		} else if (code2Letters=="IF") {
-			sp = 1.; dd = 0.; mk = 2;
+			sp = 1.; dd = 0.; mk = 7;
 		} else if (code2Letters=="MM") {
 			sp = 1.; dd = 0.; mk = 2; //which values make sense here???
 		} else {
@@ -1472,6 +1490,7 @@ void CaaMLIO::grainShape_codeToVal(const std::string& code, double &sp, double &
 		}
 	}
 }
+
 
 /**
  * @brief Convert from grain shape value to code
