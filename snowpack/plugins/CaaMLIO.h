@@ -72,7 +72,6 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string getFilenamePrefix(const std::string& fnam, const std::string& path, const bool addexp=true) const;
 
 		//functions for reading caaml-files:
-		void read_zwischendata(const std::string& filename, ZwischenData& Zdata);
 		bool read_snocaaml(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata);
 		void openIn_CAAML(const std::string& in_snowfile);
 		mio::Date xmlGetDate();

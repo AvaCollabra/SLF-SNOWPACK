@@ -434,12 +434,11 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
  */
 void CaaMLIO::openIn_CAAML(const std::string& in_snowfile)
 {
-	std::cout << "opening CAAML-file... " << std::endl;
 	const pugi::xml_parse_result result = inDoc.load_file(in_snowfile.c_str(),pugi::parse_default,inEncoding);
 	if (result){
-		std::cout << "XML [" << in_snowfile << "] parsed without errors. " << std::endl;
+		std::cout << "CAAML [" << in_snowfile << "] parsed without errors. " << std::endl;
 	}else{
-		throw IOException("XML [" + in_snowfile + "] parsed with errors. Error description: " + result.description(), AT);
+		throw IOException("CAAML [" + in_snowfile + "] parsed with errors. Error description: " + result.description(), AT);
 	}
 }
 
@@ -483,8 +482,8 @@ void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	}
 
 	read_snocaaml(snofilename, stationID, SSdata);
-	//read_zwischendata(hazfilename, Zdata);
 	Zdata.reset();
+
 	if (caaml_writeout_as_readin){
 		SnowStation Xdata(true, false);
 		Xdata.initialize(SSdata,0);
@@ -513,44 +512,6 @@ std::string CaaMLIO::getFilenamePrefix(const std::string& fnam, const std::strin
 }
 
 /**
- * @brief This routine reads the haz file into Zdata
- * @param filename filename of the haz file
- * @param Zdata
- */
-void CaaMLIO::read_zwischendata(const std::string& filename, ZwischenData& Zdata)
-{
-	std::cout << "reading zwischendata...." << std::endl;
-	Zdata.reset();
-	FILE *fin = fopen(filename.c_str(), "r");
-	if (fin == NULL)
-		throw IOException("Cannot open input profile "+filename, AT);
-	//skip the header
-	bool stop=false;
-	while(stop==false){
-		char temp[20];
-		fscanf(fin,"%s",temp);
-		std::cout << temp << std::endl;
-		std::string tempStr(temp);
-		if(tempStr=="[DATA]"){
-			stop=true;
-			std::cout << "Finished reading header." << std::endl;
-		}
-	}
-	// Read the hoar, drift, and snowfall hazard data info (Zdata, needed for flat field only)
-	for (size_t ii = 0; ii < 144; ii++){
-		char temp[20];
-		double v1=0;
-		double v2=0;
-		fscanf(fin,"%s %lf %lf %lf %lf",temp,&v1,&v2,&Zdata.hn3[ii],&Zdata.hn24[ii]);
-		if(ii >= 96){
-			Zdata.hoar24[ii-96]=v1;
-			Zdata.drift24[ii-96]=v2;
-		}
-		std::cout << temp << " hn24: " << Zdata.hn24[ii] << std::endl;
-	}
-}
-
-/**
  * @brief This routine reads the caaml file into SSdata
  * @param in_snowFilename filename of the caaml file
  * @param stationID
@@ -563,25 +524,20 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 	openIn_CAAML(in_snowFilename);
 
 	//Read profile date
-	std::cout << "Read profile date... " << std::endl;
 	SSdata.profileDate = xmlGetDate();
 
 	//Read station metadata
-	std::cout << "read station metadata...  " << std::endl;
 	SSdata.meta = xmlGetStationData(stationID);
 
 	//Snow-Soil properties: set to default if not available in file
-	std::cout << "read snow-soil properties...  " << std::endl;
 	setCustomSnowSoil(SSdata);
 
 	//Read layers
-	std::cout << "read layers...  " << std::endl;
 	xmlReadLayerData(SSdata);
 
 	if (SSdata.nLayers>0) {
 		const bool directionTopDown = getLayersDir(); //Read profile direction
 		//Read quantity profiles (density, temperature and lwc)
-		std::cout << "Read and resample profiles (density, temperature and lwc (if available)...  " << std::endl;
 		//temperature data is needed. if not available an exception is thrown:
 		getAndSetProfile("/caaml:tempProfile/caaml:Obs","caaml:snowTemp",directionTopDown,false,SSdata.Ldata);
 		//density data is needed. if not available an exception is thrown:
@@ -592,7 +548,7 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 		checkAllDataForConsistencyAndSetMissingValues(SSdata);
 	}
 	std::cout << "Finished reading CAAML-file... " << std::endl;
-	checkWhatWasReadIn(SSdata);
+	//checkWhatWasReadIn(SSdata);
 	return true;
 }
 
@@ -768,7 +724,6 @@ void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
 	std::string grainForm="";
 	if (SSdata.nLayers>0) {
 		if (!directionTopDown) {
-			std::cout << "profile direction: bottom up. nLayers: " << nLayers << std::endl;
 			size_t ii=0;
 			for (pugi::xml_node node = nodeFirstLayer; node; node = node.next_sibling("caaml:Layer")){
 				SSdata.Ldata[ii] = xmlGetLayer(node,grainForm);
@@ -776,7 +731,6 @@ void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
 				ii++;
 			}
 		}else{
-			std::cout << "profile direction: top down. nLayers: " << nLayers << std::endl;
 			size_t ii=0;
 			for (pugi::xml_node node = nodeLastLayer; node; node = node.previous_sibling("caaml:Layer")){
 				SSdata.Ldata[ii] = xmlGetLayer(node,grainForm);
@@ -904,7 +858,8 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 {
 	for (size_t ii=0; ii<Layers.size(); ii++) {
 		if(Layers[ii].depositionDate.isUndef()){
-			const unsigned int snowType = ElementData::snowType(Layers[ii].dd,Layers[ii].sp,Layers[ii].rg,Layers[ii].mk,Layers[ii].phiWater,ElementData::snowResidualWaterContent(Layers[ii].phiIce));
+			const unsigned int snowType = ElementData::snowType(Layers[ii].dd,Layers[ii].sp,Layers[ii].rg,Layers[ii].mk,Layers[ii].phiWater,
+																ElementData::snowResidualWaterContent(Layers[ii].phiIce));
 			const unsigned int a = (unsigned int) (snowType/100.);
 			if (ii==0) {
 				if (a==6) {
@@ -921,7 +876,8 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 					Layers[ii].depositionDate = profileDate-(Date)2./2440638.;
 				}
 			}
-			std::cout << "snp:DepositionDate does not exist in caaml-file. Estimated value: " << Layers[ii].depositionDate.toString(mio::Date::ISO) << std::endl;
+			std::cout << "snp:DepositionDate does not exist in caaml-file. Estimated value for layer " << ii << ": "
+			          << Layers[ii].depositionDate.toString(mio::Date::ISO) << std::endl;
 		}
 	}
 }
@@ -944,7 +900,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 			azimuth=0;
 		}
 		if(slopeAngle > 0){
-			throw NoDataException("No data found for 'caaml:validAspect'. If the slope-angle is >0°, we also need the azimuth. ", AT);
+			throw NoDataException("No data found for 'caaml:validAspect'. If the slope-angle is >0 degree, we also need the azimuth. ", AT);
 		}
 	}
 	SSdata.meta.setSlope(slopeAngle,azimuth);
@@ -980,14 +936,15 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		}
 		// set temperature to 0°C if warmer than 0°C:
 		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
-			throw IOException("Layer temperature above 0°C!", AT);
-			//SSdata.Ldata[ii].tl = Constants::melting_tk;
+			std::cout << "WARNING! Inconsistent input data: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::melting_tk
+			          << " degree Celsius. Temperature above 0 degree Celsius not possible! Setting temperature to 0 degree Celsius." << std::endl;
+			SSdata.Ldata[ii].tl = Constants::melting_tk;
 		}
 		// set lwc to 0 if colder than 0°C:
 		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
 			std::cout << "WARNING! Inconsistent input data: LWC: " << SSdata.Ldata[ii].phiWater
 			          << " temperature: " << SSdata.Ldata[ii].tl << " in layer: " << ii << std::endl;
-			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0°C." << std::endl;
+			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0 degree Celsius." << std::endl;
 			//throw IOException("LWC > 0 but temperature below 0°C!", AT);
 			SSdata.Ldata[ii].phiWater = 0;
 		}
@@ -998,9 +955,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		if (grainFormCode=="DH" && SSdata.Ldata[ii].rg<0.7){
 			std::cout << "WARNING! Inconsistent input data: Grain shape 'DH' and grain size < 1.5mm! Depth hoar crystals should be larger than 1.5mm. "
 			          << std::endl;
-
 		}
-		std::cout << "layer: " << ii << " grainForm: " << grainFormCode << " marker: " << SSdata.Ldata[ii].mk << std::endl;
 	}
 	//Compute total number of elements (nodes), height and phiVoids
 	SSdata.nN = 1;
