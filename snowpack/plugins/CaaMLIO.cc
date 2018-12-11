@@ -690,6 +690,8 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer, std::string& grainFormC
 			const std::string unitMeasured( node.attribute("uom").as_string() );
 			if (xmlReadValueFromNode(node.child("caaml:Components").child("caaml:avg"),"caaml:avg",Layer.rg,"mm",unitMeasured,0.5)){
 				Layer.rb = Layer.rg/4.; //this value will be replaced if there is this value in the customData...
+			}else if(xmlReadValueFromNode(node.child("caaml:Components").child("caaml:avgMax"),"caaml:avgMax",Layer.rg,"mm",unitMeasured,0.5)){
+				Layer.rb = Layer.rg/4.; //this value will be replaced if there is this value in the customData...
 			}
 		}
 		if (xmlReadValueFromNode(node,"caaml:thickness",Layer.hl,"m")){
@@ -958,7 +960,13 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		if (grainFormCode=="SH" && ii==SSdata.nLayers-1){ //set parameters for surface hoar (only at the surface, not buried)
 			SSdata.Ldata[ii].phiWater=0;
 			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
-			SSdata.Ldata[ii].rg = M_TO_MM(SSdata.Ldata[ii].hl/2.0);
+			double grainRadius = M_TO_MM(SSdata.Ldata[ii].hl/2.0);
+			if(grainRadius != SSdata.Ldata[ii].rg){
+				std::cout << "WARNING! Inconsistent input data: Grain size for surface-hoar-layer should be about the same value as the "
+				          << "surface-hoar-layer-thickness (" << grainRadius*2 << " mm). Adjusting grain size from: "
+				          << SSdata.Ldata[ii].rg*2 << " mm to " << grainRadius*2 << " mm." << std::endl;
+				SSdata.Ldata[ii].rg = grainRadius;
+			}
 			SSdata.Ldata[ii].rb = SSdata.Ldata[ii].rg/3.;
 			SSdata.Ldata[ii].dd = 0.;
 			SSdata.Ldata[ii].sp = 0.;
