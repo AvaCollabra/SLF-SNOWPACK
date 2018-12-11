@@ -48,6 +48,10 @@ using namespace mio;
  * - IMIS_STATIONS: if set to true, all station IDs provided above will be stripped of their number (to match MeteoCH naming scheme)
  * - USE_MODEL_LOC: if set to false, the true station location (lat, lon, altitude) is used. Otherwise, it uses the model location (default)
  * - XML_ENCODING: force the input file encoding, overriding the file's own encoding declaration (optional, see \ref caaml_encoding "XML encoding" below)
+ * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to one
+ *                                stratigraphic layer. Specified in the [Input] section
+ * - CAAML_WRITEOUT_AS_READIN: if set to true, a caaml will be written just after reading in, to check if the reading of the caaml was correct.
+ *                             Specified in the [Input] section
  *
  * If no SNOWFILE is provided, all "*.caaml" files in the SNOWPATH directory will be read, if they match the SNOW_PREFIX and SNOW_EXT.
  * They <i>must</i> contain the date of the first data formatted as ISO8601 numerical UTC date in their file name. For example, a file containing simulated
@@ -364,7 +368,7 @@ const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfil
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            : info(run_info),
              i_snowpath(), sw_mode(), o_snowpath(), experiment(), useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false),
-             i_max_element_thickness(IOUtils::nodata), in_tz(), snow_prefix(), snow_ext(".caaml"),
+             i_max_element_thickness(IOUtils::nodata), caaml_writeout_as_readin(false), in_tz(), snow_prefix(), snow_ext(".caaml"),
              inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
@@ -393,6 +397,7 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 	if (i_snowpath.empty())
 		i_snowpath = tmpstr;
 	cfg.getValue("CAAML_MAX_ELEMENT_THICKNESS", "Input", i_max_element_thickness, IOUtils::nothrow);
+	cfg.getValue("CAAML_WRITEOUT_AS_READIN", "Input", caaml_writeout_as_readin, IOUtils::nothrow);
 
 	cfg.getValue("AGGREGATE_CAAML", "Output", aggregate_caaml);
 	cfg.getValue("EXPERIMENT", "Output", experiment);
@@ -480,6 +485,13 @@ void CaaMLIO::readSnowCover(const std::string& i_snowfile, const std::string& st
 	read_snocaaml(snofilename, stationID, SSdata);
 	//read_zwischendata(hazfilename, Zdata);
 	Zdata.reset();
+	if (caaml_writeout_as_readin){
+		SnowStation Xdata(true, false);
+		Xdata.initialize(SSdata,0);
+		mio::Date now;
+		now.setFromSys();
+		writeSnowCover(now,Xdata,Zdata,true);
+	}
 }
 
 /**
@@ -731,8 +743,14 @@ LayerData CaaMLIO::xmlGetLayer(pugi::xml_node nodeLayer, std::string& grainFormC
 void CaaMLIO::xmlReadLayerData(SN_SNOWSOIL_DATA& SSdata)
 {
 	const bool directionTopDown = getLayersDir(); //Read profile direction
+
+	std::string path = SnowData_xpath+"/caaml:snowPackCond/caaml:hS/caaml:Components/caaml:height";
+	const pugi::xml_node nodeHS =  inDoc.first_element_by_path( (char*) path.c_str() );
+	SSdata.HS_last=IOUtils::nodata;
+	xmlReadValueFromNode(nodeHS,"caaml:height",SSdata.HS_last,"m");
+
 	size_t nLayers=0;
-	std::string path = SnowData_xpath+"/caaml:stratProfile/caaml:Layer";
+	path = SnowData_xpath+"/caaml:stratProfile/caaml:Layer";
 	const pugi::xml_node nodeFirstLayer =  inDoc.first_element_by_path( (char*) path.c_str() );
 	if(nodeFirstLayer.empty()){
 		throw NoDataException("Layer data not found in caaml-file. Expected path: '"+path+"'", AT);
@@ -907,7 +925,7 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 }
 
 /**
- * @brief Check station- and layer-data for consistency. If possible set reasonable values, otherwise throw exceptions.
+ * @brief Check station- and layer-data for consistency. If possible set reasonable values, otherwise throw exceptions or write warnings.
  *        Furthermore determine some missing values (total number of elements (nodes), height and phiVoids).
  * @param SSdata
  */
@@ -917,7 +935,6 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 	double azimuth = SSdata.meta.getAzimuth();
 	double slopeAngle = SSdata.meta.getSlopeAngle();
 	if(slopeAngle ==IOUtils::nodata){
-		//throw NoDataException("No data found for 'caaml:validSlopeAngle'. There is no slope-angle given in the caaml-file. ", AT);
 		slopeAngle=0;
 	}
 	if(azimuth==IOUtils::nodata){
@@ -941,7 +958,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		if (grainFormCode=="SH" && ii==SSdata.nLayers-1){ //set parameters for surface hoar (only at the surface, not buried)
 			SSdata.Ldata[ii].phiWater=0;
 			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
-			SSdata.Ldata[ii].rg = M_TO_MM(SSdata.Ldata[ii].hl);
+			SSdata.Ldata[ii].rg = M_TO_MM(SSdata.Ldata[ii].hl/2.0);
 			SSdata.Ldata[ii].rb = SSdata.Ldata[ii].rg/3.;
 			SSdata.Ldata[ii].dd = 0.;
 			SSdata.Ldata[ii].sp = 0.;
@@ -985,6 +1002,14 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		SSdata.Height += SSdata.Ldata[ii].hl;
 		SSdata.Ldata[ii].phiVoids = 1. - SSdata.Ldata[ii].phiSoil - SSdata.Ldata[ii].phiWater - SSdata.Ldata[ii].phiIce;
 	}
+
+	if (SSdata.HS_last != IOUtils::nodata){
+		if(SSdata.HS_last > SSdata.Height+0.0005 || SSdata.HS_last < SSdata.Height-0.0005){
+			std::cout << "WARNING! Inconsistent input data: Snow-height given in caaml:snowPackCond (" << SSdata.HS_last
+			          << " m) is different from the sum of the layer-thicknesses (" << SSdata.Height
+			          << " m)! For the simulation the sum of the layer-thicknesses will be used." << std::endl;
+		}
+	}
 	SSdata.HS_last = SSdata.Height;
 }
 
@@ -998,15 +1023,9 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
                              const ZwischenData& Zdata, const bool& forbackup)
 {
-	std::string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".caaml" );
-	std::string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
-
-	if (forbackup) {
-		stringstream ss;
-		ss << (int)(date.getJulian() + 0.5); //HACK
-		snofilename += ss.str();
-		hazfilename += ss.str();
-	}
+	const std::string bak = (forbackup)? "_" + date.toString(mio::Date::NUM) : "";
+	std::string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + bak + ".caaml" );
+	std::string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + bak + ".haz" );
 
 	writeSnowFile(snofilename, date, Xdata, aggregate_caaml);
 	SmetIO::writeHazFile(hazfilename, date, Xdata, Zdata);

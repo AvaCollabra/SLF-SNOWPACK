@@ -118,6 +118,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string i_snowpath, sw_mode, o_snowpath, experiment;
 		bool useSoilLayers, perp_to_slope, aggregate_caaml;
 		double i_max_element_thickness;
+		bool caaml_writeout_as_readin;
 		/*static const*/ double in_tz; //plugin specific time zones
 		std::string snow_prefix, snow_ext; //for the file naming scheme
 
