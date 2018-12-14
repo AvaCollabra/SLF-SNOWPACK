@@ -1522,11 +1522,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			r_mpfd = AssembleRHS(lowernode, uppernode, h_np1_m, theta_n, theta_np1_m, theta_i_n, theta_i_np1_m, s, dt, rho, k_np1_m_im12, k_np1_m_ip12, aTopBC, TopFluxRate, aBottomBC, BottomFluxRate, Xdata, Salinity, SALINITY_MIXING);
 			r_mpfd2 = r_mpfd;			// We make a copy for use with DGTSV and TDMA solvers.
 
-			if(SalinityTransportSolver==SalinityTransport::EXPLICIT && Salinity.VerifyCFL(dt)==false) {
+			if(variant=="SEAICE" && SalinityTransportSolver==SalinityTransport::EXPLICIT && Salinity.VerifyCFL(dt)==false) {
 				printf("CFL failed for dt=%.10f\n", dt);
 				solver_result=-1;
 			}
-			if((SalinityTransportSolver==SalinityTransport::IMPLICIT || SalinityTransportSolver==SalinityTransport::IMPLICIT2) && Salinity.VerifyImplicitDt(dt)==false) {
+			if(variant=="SEAICE" && (SalinityTransportSolver==SalinityTransport::IMPLICIT || SalinityTransportSolver==SalinityTransport::IMPLICIT2) && Salinity.VerifyImplicitDt(dt)==false) {
 				printf("ImplicitLimit failed for dt=%.10f\n", dt);
 				solver_result=-1;
 			}
