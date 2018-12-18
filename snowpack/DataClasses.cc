@@ -198,7 +198,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
 	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
-
+	
 	// Generate the profile data from the element data (1 layer = 1 element)
 	unsigned char snowloc = 0;
 	string mystation = Xdata.meta.getStationID();
@@ -217,7 +217,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 		Pdata[ll].stationname = mystation;
 		Pdata[ll].loc_for_snow = snowloc;
 		Pdata[ll].loc_for_wind = 1;
-
+		
 		// Write snow layer data
 		if (ll < nE) {
 			Pdata[ll].generateLayer(EMS[e], NDS[e+1]);
@@ -619,7 +619,7 @@ std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 	os.write(reinterpret_cast<const char*>(&data.interception), sizeof(data.interception));
 	os.write(reinterpret_cast<const char*>(&data.throughfall), sizeof(data.throughfall));
 	os.write(reinterpret_cast<const char*>(&data.snowunload), sizeof(data.snowunload));
-
+	
 	os.write(reinterpret_cast<const char*>(&data.snowfac), sizeof(data.snowfac));
 	os.write(reinterpret_cast<const char*>(&data.rainfac), sizeof(data.rainfac));
 	os.write(reinterpret_cast<const char*>(&data.liquidfraction), sizeof(data.liquidfraction));
@@ -681,7 +681,7 @@ std::istream& operator>>(std::istream& is, CanopyData& data)
 	is.read(reinterpret_cast<char*>(&data.interception), sizeof(data.interception));
 	is.read(reinterpret_cast<char*>(&data.throughfall), sizeof(data.throughfall));
 	is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
-
+	
 	is.read(reinterpret_cast<char*>(&data.snowfac), sizeof(data.snowfac));
 	is.read(reinterpret_cast<char*>(&data.rainfac), sizeof(data.rainfac));
 	is.read(reinterpret_cast<char*>(&data.liquidfraction), sizeof(data.liquidfraction));
@@ -793,7 +793,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), SlopeParFlux(0.), dhf(0.), ID(in_ID)
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), SlopeParFlux(0.), dhf(0.), ID(in_ID) 
 							 { }
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
@@ -1616,7 +1616,7 @@ void SnowStation::resize(const size_t& number_of_elements)
 	} catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
-
+	
 	if (number_of_elements>nEdata_old) {
 		for(size_t ii=nEdata_old; ii<Edata.size(); ii++) {
 			if (Edata[ii].ID==ElementData::noID) Edata[ii].ID = ++maxElementID;
@@ -1672,7 +1672,6 @@ bool SnowStation::hasSoilLayers() const
  */
 void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements)
 {
-	std::cout << "SnowStation::combineElements1" << std::endl;
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
 	}
@@ -1694,7 +1693,6 @@ void SnowStation::combineElements(const size_t& i_number_top_elements, const boo
 
 void SnowStation::combineElements(const size_t& i_number_top_elements, const bool& reduce_n_elements, const size_t& cond)
 {
-	std::cout << "SnowStation::combineElements2" << std::endl;
 	if (nElems - SoilNode < i_number_top_elements+1) {
 		return;
 	}
@@ -1707,11 +1705,9 @@ void SnowStation::combineElements(const size_t& i_number_top_elements, const boo
 				merge = (combineCondition(Edata[eLower], Edata[eUpper], cH-Ndata[eUpper].z, reduce_n_elements));
 				break;
 			case 2:	// aggregate first round
-				std::cout << "join similar layers" << std::endl;
 				merge = (Aggregate::joinSimilarLayers(Edata[eUpper], Edata[eLower]));
 				break;
 			case 3:	// aggregate second round
-				std::cout << "mergeThinLayer" << std::endl;
 				merge = (Aggregate::mergeThinLayer(Edata[eUpper], Edata[eLower]));
 				break;
 			default:
@@ -1743,7 +1739,6 @@ void SnowStation::combineElements(const size_t& i_number_top_elements, const boo
  */
 void SnowStation::reduceNumberOfElements(const size_t& rnE)
 {
-	std::cout << "SnowStation::reduceNumberOfElements" << std::endl;
 	size_t eNew = SoilNode; // New element index
 	double dL=0.;
 
@@ -1881,7 +1876,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			}
 			Edata[e].Rho = Edata[e].theta[ICE]*Constants::density_ice +
 				Edata[e].theta[WATER]*Constants::density_water + Edata[e].theta[SOIL]*Edata[e].soil[SOIL_RHO];
-			//std::cout << "Edata: " << Edata[e].toString() << std::endl;
 			assert(Edata[e].Rho >= 0. || Edata[e].Rho==IOUtils::nodata); //we want positive density
 			// conductivities, specific heat and moisture content
 			Edata[e].k[TEMPERATURE] = Edata[e].k[SEEPAGE] = Edata[e].k[SETTLEMENT] = 0.;
@@ -1908,7 +1902,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].CDot = SSdata.Ldata[ll].CDot;
 			Edata[e].metamo = SSdata.Ldata[ll].metamo;
 			Edata[e].S_dr = INIT_STABILITY;
-			Edata[e].hard = IOUtils::nodata;  //we could read in hardness from caaml and create new member: SSdata.Ldata[ll].hard!???
+			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
 			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive
 		} // end of element layer for
@@ -2146,7 +2140,6 @@ void SnowStation::splitElements()
  */
 void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& EdataUpper, const bool& merge, const bool& topElement)
 {
-	std::cout << "SnowStation::mergeElements" << std::endl;
 	const double L_lower = EdataLower.L; //Thickness of lower element
 	const double L_upper = EdataUpper.L; //Thickness of upper element
 	double LNew = L_lower;               //Thickness of "new" element
