@@ -1056,7 +1056,8 @@ void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, co
 	pugi::xml_node srcNode = root.append_child( (namespaceCAAML+":srcRef").c_str() )
 	                             .append_child( (namespaceCAAML+":Operation").c_str() );
 	srcNode.append_attribute("gml:id") = "OPERATION_ID";
-	xmlWriteElement(srcNode,(namespaceCAAML+":name").c_str(),"SNOWPACK","","");
+	const std::string snowpackString = "SNOWPACK v"+info.version+" compiled on "+info.compilation_date+". user: "+info.user;
+	xmlWriteElement(srcNode,(namespaceCAAML+":name").c_str(),snowpackString.c_str(),"","");
 
 	// Write station data locRef
 	writeStationData(root,Xdata);
