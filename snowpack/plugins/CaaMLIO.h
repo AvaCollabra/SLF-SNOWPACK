@@ -119,7 +119,6 @@ class CaaMLIO : public SnowpackIOInterface {
 		double i_max_element_thickness;
 		bool caaml_writeout_as_readin;
 		/*static const*/ double in_tz; //plugin specific time zones
-		std::string snow_prefix, snow_ext; //for the file naming scheme
 
 		pugi::xml_document inDoc;
 		pugi::xml_encoding inEncoding;

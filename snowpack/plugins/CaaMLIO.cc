@@ -31,33 +31,65 @@ using namespace mio;
 /**
  * @page caaml CAAML
  * @section caaml_format Format
- * This plugin reads the CAAML files as generated according <A HREF="http://caaml.org/">CAAML V5.0</A>'s
- * <A HREF="http://caaml.org/Schemas/V5.0/Profiles/SnowProfileIACS">specification</A>. In order to validate
- * a CAAML file, download the <A HREF="http://caaml.org/Schemas/V5.0/Profiles/SnowProfileIACS/CAAMLv5_SnowProfileIACS.xsd">xsd</A>
+ * This plugin reads the CAAML files as generated according <A HREF="http://caaml.org/">CAAML V6.0.3</A>'s
+ * <A HREF="http://caaml.org/Schemas/SnowProfileIACS/v6.0.3">specification</A>. In order to validate
+ * a CAAML file, download the <A HREF="http://caaml.org/Schemas/SnowProfileIACS/v6.0.3/CAAMLv6_SnowProfileIACS.xsd">xsd</A>
  * file and use either an online XML validator or an offline tool (such as Notepad++'s XML tool).
  *
  * @section caaml_keywords Keywords
  * This plugin uses the following keywords:
  * - COORDSYS:  input coordinate system (see Coords) specified in the [Input] section
  * - SNOW:     specify COSMOCAAML for [Input] section
- * - SNOWPATH: string containing the path to the xml files to be read, specified in the [Input] section
- * - SNOWFILE: specify the xml file to read the data from (optional)
- * - SNOW_PREFIX: file name prefix appearing before the date (optional)
- * - SNOW_EXT: file extension (default: ".xml", give "none" to get an empty string)
- * - STATION#: ID of the station to read
- * - IMIS_STATIONS: if set to true, all station IDs provided above will be stripped of their number (to match MeteoCH naming scheme)
- * - USE_MODEL_LOC: if set to false, the true station location (lat, lon, altitude) is used. Otherwise, it uses the model location (default)
+ * - SNOWPATH: string containing the path to the caaml files to be read, specified in the [Input] section
+ * - SNOWFILE: specify the caaml file to read the data from (optional)
  * - XML_ENCODING: force the input file encoding, overriding the file's own encoding declaration (optional, see \ref caaml_encoding "XML encoding" below)
  * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to one
  *                                stratigraphic layer. Specified in the [Input] section
  * - CAAML_WRITEOUT_AS_READIN: if set to true, a caaml will be written just after reading in, to check if the reading of the caaml was correct.
  *                             Specified in the [Input] section
  *
- * If no SNOWFILE is provided, all "*.caaml" files in the SNOWPATH directory will be read, if they match the SNOW_PREFIX and SNOW_EXT.
- * They <i>must</i> contain the date of the first data formatted as ISO8601 numerical UTC date in their file name. For example, a file containing simulated
- * meteorological fields from 2014-03-03T12:00 until 2014-03-05T00:00 could be named such as "cosmo_201403031200.xml"
- * If some numbers appear <i>before</i> the numerical date, they must be provided as part of SNOW_PREFIX so the plugin can
- * properly extract the date (for MeteoSwiss, this must be set to "VNMH49").
+ * @section caaml_reading Reading a caaml-file
+ * Data which is important for a snowpack-simulation but usually not given in a caaml-file (like dendricity for example), can be included in a caaml-file
+ * as snowpack-custom-data with the prefix "snp". A caaml-file written out by this plugin will contain this data. However, if this data is not available,
+ * the corresponding values will be estimated or set to default values:
+ * - snowpack-custom-data for the whole snowpack (like Albedo, WindScalingFactor,...) will be set to default values.
+ * - layer-custom-data (like dendricity, sphericity, maker,...) will be estimated from primary grain form, grain size and temperature.
+ * - the formation time of a layer will be estimated depending on snow type and layer location.
+ *
+ * The liquid water content (lwc) of a layer will be read in from the lwc-profile. If there is no lwc-profile in the caaml-file, the lwc will be estimated
+ * from the wetness-codes (D, M, W,...) given in the stratigraphic profile.
+ *
+ * Besides the lwc-profile the density- and temperature-profile are read in from the caaml-file. The lwc-profile is optional, but the temperature- and
+ * density-profile have to be given in the caaml-file.
+ *
+ * <b>Consistency checks</b>
+ *
+ * When reading in a caaml-file, the data will be checked for consistency. If there is an inconsistency a warning will be printed and values will be adjusted,
+ * if possible. Otherwise an exception is thrown.
+ *
+ * Warnings:
+ * - total snow height given in <caaml:snowPackCond> is different from the sum of the layer-thicknesses. The snow height given in <caaml:snowPackCond> will be
+ *   ignored.
+ * - grain size of a surface-hoar-layer differs from the surface-hoar-layer-thickness. Adjustment: Grain size will be set to layer thickness.
+ * - temperature of a layer is above 0&deg;C. Adjustment: Set temperature to 0&deg;C.
+ * - liquid water content (lwc) is greater than 0 and temperature is below 0&deg;C. Adjustment: Set lwc to 0.
+ * - grain form is "FC" and grain size is above 1.6 mm. Adjustment: nothing.
+ * - grain form is "DH" and grain size is below 1.4 mm. Adjustment: nothing.
+ *
+ * Exceptions:
+ * - grain size is 0 and grain form is not "IF"
+ * - slope angle is > 0&deg; and no azimuth is given. (If the slope angle is not given, the slope angle is set to 0&deg;.)
+ * - missing data / wrong camml-version ( != 6.0.3)
+ * - wrong syntax in caaml-file (pointy brackets, matching quotes,...)
+ *
+ * @section caaml_writing Writing a caaml-file
+ * Following profiles will be written:
+ * - stratigraphic profile
+ * - temperature profile
+ * - density profile
+ * - lwc profile
+ * - specific surface area profile
+ * - strength profile
  *
  * Example:
  * @code
@@ -368,7 +400,7 @@ const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfil
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            : info(run_info),
              i_snowpath(), sw_mode(), o_snowpath(), experiment(), useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false),
-             i_max_element_thickness(IOUtils::nodata), caaml_writeout_as_readin(false), in_tz(), snow_prefix(), snow_ext(".caaml"),
+             i_max_element_thickness(IOUtils::nodata), caaml_writeout_as_readin(false), in_tz(),
              inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
@@ -383,15 +415,11 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 {
 	std::string tmpstr;
 
-	//LIBXML_TEST_VERSION //check lib versions and call xmlInitParser()
-
 	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("TIME_ZONE", "Input", in_tz);
 
-	cfg.getValue("SNOW_EXT", "INPUT", snow_ext, IOUtils::nothrow);
-	//	if ( IOUtils::strToUpper(snow_ext)=="NONE" ) snow_ext="";
 	cfg.getValue("METEOPATH", "Input", tmpstr, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Input", i_snowpath, IOUtils::nothrow);
 	if (i_snowpath.empty())
@@ -435,9 +463,7 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 void CaaMLIO::openIn_CAAML(const std::string& in_snowfile)
 {
 	const pugi::xml_parse_result result = inDoc.load_file(in_snowfile.c_str(),pugi::parse_default,inEncoding);
-	if (result){
-		std::cout << "CAAML [" << in_snowfile << "] parsed without errors. " << std::endl;
-	}else{
+	if (!result){
 		throw IOException("CAAML [" + in_snowfile + "] parsed with errors. Error description: " + result.description(), AT);
 	}
 }
@@ -547,7 +573,6 @@ bool CaaMLIO::read_snocaaml(const std::string& in_snowFilename, const std::strin
 
 		checkAllDataForConsistencyAndSetMissingValues(SSdata);
 	}
-	std::cout << "Finished reading CAAML-file... " << std::endl;
 	//checkWhatWasReadIn(SSdata);
 	return true;
 }
@@ -561,7 +586,7 @@ Date CaaMLIO::xmlGetDate()
 	pugi::xml_node dateNode =  inDoc.first_element_by_path(TimeData_xpath.c_str());
 	const std::string dateStr( (char*)dateNode.child_value() );
 	if (dateStr==""){
-		throw NoDataException("No data found for '"+TimeData_xpath+"'", AT);
+		throw NoDataException("No data found for '"+TimeData_xpath+"'. Please check the version of the caaml-file. Only caaml-version 6 is supported. ", AT);
 	}
 	IOUtils::convertString(date, dateStr, in_tz);
 	return date;
@@ -606,8 +631,8 @@ StationData CaaMLIO::xmlGetStationData(const std::string& stationID)
 void CaaMLIO::setCustomSnowSoil(SN_SNOWSOIL_DATA& Xdata)
 {
 	const std::string xpath( "/caaml:metaData/caaml:customData/snp" );
-	if (xmlDoesPathExist(SnowData_xpath+xpath+":Albedo") == false)
-		std::cout << "There is no snowpack-custom-data in the caaml-file. Setting all values (albedo, erosion level,...) to default..." << std::endl;
+	//if (xmlDoesPathExist(SnowData_xpath+xpath+":Albedo") == false)
+		//std::cout << "There is no snowpack-custom-data in the caaml-file. Setting all values (albedo, erosion level,...) to default..." << std::endl;
 	Xdata.Albedo = xmlReadValueFromPath(xpath,"Albedo",0.6);
 	Xdata.SoilAlb = xmlReadValueFromPath(xpath,"SoilAlb",0.2);
 	Xdata.BareSoil_z0 = xmlReadValueFromPath(xpath,"BareSoil_z0",0.02);
@@ -758,7 +783,7 @@ bool CaaMLIO::xmlGetProfile(const std::string path, const std::string name, std:
 	//check if data exists:
 	if( !xmlDoesPathExist(SnowData_xpath+path)){
 		if(name == "caaml:lwc"){
-			std::cout << "No lwc-profile in the caaml-file. lwc will be estimated from the wetness in the stratigraphic profile. " << std::endl;
+			//std::cout << "No lwc-profile in the caaml-file. lwc will be estimated from the wetness in the stratigraphic profile. " << std::endl;
 			return false;
 		}else{
 			throw NoDataException("Invalid path for: '"+name+"'-profile. path: '"+path+"'", AT);
@@ -876,8 +901,6 @@ void CaaMLIO::estimateValidFormationTimesIfNotSetYet(std::vector<LayerData> &Lay
 					Layers[ii].depositionDate = profileDate-(Date)2./2440638.;
 				}
 			}
-			std::cout << "snp:DepositionDate does not exist in caaml-file. Estimated value for layer " << ii << ": "
-			          << Layers[ii].depositionDate.toString(mio::Date::ISO) << std::endl;
 		}
 	}
 }
@@ -918,7 +941,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 			SSdata.Ldata[ii].phiIce = hoarDensitySurf/Constants::density_ice;
 			double grainRadius = M_TO_MM(SSdata.Ldata[ii].hl/2.0);
 			if(grainRadius != SSdata.Ldata[ii].rg){
-				std::cout << "WARNING! Inconsistent input data: Grain size for surface-hoar-layer should be about the same value as the "
+				std::cout << "WARNING! Inconsistent input data in caaml-file: Grain size for surface-hoar-layer should be about the same value as the "
 				          << "surface-hoar-layer-thickness (" << grainRadius*2 << " mm). Adjusting grain size from: "
 				          << SSdata.Ldata[ii].rg*2 << " mm to " << grainRadius*2 << " mm." << std::endl;
 				SSdata.Ldata[ii].rg = grainRadius;
@@ -936,25 +959,25 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 		}
 		// set temperature to 0°C if warmer than 0°C:
 		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
-			std::cout << "WARNING! Inconsistent input data: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::melting_tk
+			std::cout << "WARNING! Inconsistent input data in caaml-file: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::melting_tk
 			          << " degree Celsius. Temperature above 0 degree Celsius not possible! Setting temperature to 0 degree Celsius." << std::endl;
 			SSdata.Ldata[ii].tl = Constants::melting_tk;
 		}
 		// set lwc to 0 if colder than 0°C:
 		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
-			std::cout << "WARNING! Inconsistent input data: LWC: " << SSdata.Ldata[ii].phiWater
+			std::cout << "WARNING! Inconsistent input data in caaml-file: LWC: " << SSdata.Ldata[ii].phiWater
 			          << " temperature: " << SSdata.Ldata[ii].tl << " in layer: " << ii << std::endl;
 			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0 degree Celsius." << std::endl;
 			//throw IOException("LWC > 0 but temperature below 0°C!", AT);
 			SSdata.Ldata[ii].phiWater = 0;
 		}
 		if (grainFormCode=="FC" && SSdata.Ldata[ii].rg>0.8){
-			std::cout << "WARNING! Inconsistent input data: Grain shape 'FC' and grain size > 1.5mm! Faceted crystals should be smaller than 1.5mm. "
-			          << std::endl;
+			std::cout << "WARNING! Inconsistent input data in caaml-file: Grain shape 'FC' and grain size > 1.5mm! "
+			          << "Faceted crystals should be smaller than 1.5mm. " << std::endl;
 		}
 		if (grainFormCode=="DH" && SSdata.Ldata[ii].rg<0.7){
-			std::cout << "WARNING! Inconsistent input data: Grain shape 'DH' and grain size < 1.5mm! Depth hoar crystals should be larger than 1.5mm. "
-			          << std::endl;
+			std::cout << "WARNING! Inconsistent input data in caaml-file: Grain shape 'DH' and grain size < 1.5mm! "
+			          << "Depth hoar crystals should be larger than 1.5mm. " << std::endl;
 		}
 	}
 	//Compute total number of elements (nodes), height and phiVoids
@@ -968,7 +991,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 
 	if (SSdata.HS_last != IOUtils::nodata){
 		if(SSdata.HS_last > SSdata.Height+0.0005 || SSdata.HS_last < SSdata.Height-0.0005){
-			std::cout << "WARNING! Inconsistent input data: Snow-height given in caaml:snowPackCond (" << SSdata.HS_last
+			std::cout << "WARNING! Inconsistent input data in caaml-file: Snow-height given in caaml:snowPackCond (" << SSdata.HS_last
 			          << " m) is different from the sum of the layer-thicknesses (" << SSdata.Height
 			          << " m)! For the simulation the sum of the layer-thicknesses will be used." << std::endl;
 		}
@@ -1069,9 +1092,7 @@ void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, co
 	// Remark: second optional param is indent string to be used;
 	// default indentation is tab character.
 	bool saveSucceeded = doc.save_file(snofilename.c_str(), PUGIXML_TEXT("  "), pugi::format_default, pugi::encoding_utf8);
-	if(saveSucceeded){
-		std::cout << snofilename << " was saved successfully." << std::endl;
-	}else{
+	if(!saveSucceeded){
 		std::cout << "Something went wrong with saving the caaml-file: " << snofilename << std::endl;
 	}
 }
