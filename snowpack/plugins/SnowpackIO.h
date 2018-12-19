@@ -58,9 +58,9 @@
  * - the current state of its hazard relevant data in <i>".haz"</i> files;
  * - a time serie of snow profiles;
  * - a time serie of the meteorological data and fluxes as used in the model.
- * 
- * Depending on the chosen output format, 1) and 2) might be provided as one file or two files. Moreover, since %Snowpack pre-processes all the 
- * meteorological input data with <A HREF="https://models.slf.ch/p/meteoio">MeteoIO</A>, the forcing data that is seen in the core of the model might be different than 
+ *
+ * Depending on the chosen output format, 1) and 2) might be provided as one file or two files. Moreover, since %Snowpack pre-processes all the
+ * meteorological input data with <A HREF="https://models.slf.ch/p/meteoio">MeteoIO</A>, the forcing data that is seen in the core of the model might be different than
  * the provided input data. In order to better fine tune the parameters of this pre-processing, it is possible to request a copy of the
  * pre-processed meteorological data by setting the key WRITE_PROCESSED_METEO to TRUE in the [Output] section.
  *
@@ -71,13 +71,13 @@
  * <center><table border="1">
  * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
  * <tr><td>\subpage smet "SMET"</td><td>SMET based profile (including the hazard data), recommended</td><td></td></tr>
- * <tr><td>\subpage caaml "CAAML"</td><td>CAAML profile</td><td><A HREF="http://xmlsoft.org/">libxml</A></td></tr>
+ * <tr><td>\subpage caaml "CAAML"</td><td><A HREF="http://caaml.org">CAAML</A> profile</td><td></td></tr>
  * <tr><td>\subpage snoold_format "SNOOLD"</td><td>legacy %Snowpack profile (including the hazard data)</td><td></td></tr>
  * </table></center>
  *
  * @section available_profile_ts_plugins Snow profiles time series
  * The %Snowpack specific data are supported directly in %Snowpack and the formats listed in the table below
- * are available for output of snow profiles time series with the <b>"PROF_FORMAT"</b> keyword. Note that the 
+ * are available for output of snow profiles time series with the <b>"PROF_FORMAT"</b> keyword. Note that the
  * keys AGGREGATE_PRO and AGGREGATE_PRF will allow to aggregate model layers to a smaller number.
  * Please read the documentation for each plugin in order to know the plugin-specific keywords!
  * <center><table border="1">
@@ -120,7 +120,7 @@ class SnowpackIO : public SnowpackIOInterface {
                                      const std::vector<ProcessInd>& Hdata_ind, const size_t& num);
 
 		std::vector<std::string> getExtensions();
-		
+
 		SnowpackIO& operator=(const SnowpackIO& source);
 
 	private:

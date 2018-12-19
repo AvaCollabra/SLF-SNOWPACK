@@ -37,16 +37,15 @@ using namespace mio;
  * file and use either an online XML validator or an offline tool (such as Notepad++'s XML tool).
  *
  * @section caaml_keywords Keywords
- * This plugin uses the following keywords:
- * - COORDSYS:  input coordinate system (see Coords) specified in the [Input] section
- * - SNOW:     specify COSMOCAAML for [Input] section
- * - SNOWPATH: string containing the path to the caaml files to be read, specified in the [Input] section
- * - SNOWFILE: specify the caaml file to read the data from (optional)
+ * This plugin uses the following keywords (all specified in the [Input] section):
+ * - COORDSYS:  input coordinate system (see Coords)
+ * - SNOW:     specify CAAML to read in a caaml file
+ * - SNOWPATH: string containing the path to the caaml files to be read
+ * - SNOWFILE: specify the caaml file to read the data from
  * - XML_ENCODING: force the input file encoding, overriding the file's own encoding declaration (optional, see \ref caaml_encoding "XML encoding" below)
  * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to one
- *                                stratigraphic layer. Specified in the [Input] section
+ *                                stratigraphic layer
  * - CAAML_WRITEOUT_AS_READIN: if set to true, a caaml will be written just after reading in, to check if the reading of the caaml was correct.
- *                             Specified in the [Input] section
  *
  * @section caaml_reading Reading a caaml-file
  * Data which is important for a snowpack-simulation but usually not given in a caaml-file (like dendricity for example), can be included in a caaml-file
@@ -82,8 +81,34 @@ using namespace mio;
  * - missing data / wrong camml-version ( != 6.0.3)
  * - wrong syntax in caaml-file (pointy brackets, matching quotes,...)
  *
+ * @subsection caaml_encoding XML encoding
+ * Each XML document should specify its encoding. However this information might sometimes be missing or even worse, be false. This makes the XML document non-compliant.
+ * Normally, CAAML reads the file encoding in the file itself. If this does not work (one of the two cases given above), it is possible to force the
+ * encoding of the input file by using the "XML_ENCODING" option. This option takes one of the following values
+ * ("LE" stands for "Little Endian" and "BE" for "Big Endian"):
+ *  UTF-8, UTF-16-LE, UTF-16-BE, UTF-16, LATIN1, ISO-8859-1, UTF-32, UTF-32-LE, UTF-32-BE, WCHAR
+ *
  * @section caaml_writing Writing a caaml-file
- * Following profiles will be written:
+ * This is an example of a caaml-file written with this plugin:
+ * @code
+ *<?xml version="1.0" encoding="UTF-8"?>
+ * <caaml:SnowProfile gml:id="SLF_WFJ2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml" xmlns:caaml="http://caaml.org/Schemas/SnowProfileIACS/v6.0.3" xmlns:snp="http://www.slf.ch/snowpack/1.0" xmlns:slf="http://www.slf.ch/snowprofile/1.0">
+ *   <caaml:timeRef>
+ *     <caaml:recordTime>
+ *       <caaml:TimeInstant>
+ *         <caaml:timePosition>2008-05-16T09:00:00+02:00</caaml:timePosition>
+ *       </caaml:TimeInstant>
+ *     </caaml:recordTime>
+ *     <caaml:dateTimeReport>2018-12-18T17:38:41+01:00</caaml:dateTimeReport>
+ *   </caaml:timeRef>
+ *   <caaml:srcRef>
+ *     <caaml:Operation gml:id="OPERATION_ID">
+ *       <caaml:name>SNOWPACK v3.45 compiled on Dec 10 2018, 15:45:05. user: theile</caaml:name>
+ *     </caaml:Operation>
+ *   </caaml:srcRef>
+ *...
+ * @endcode
+ * Furthermore some data about the profile location and following profiles will be written:
  * - stratigraphic profile
  * - temperature profile
  * - density profile
@@ -91,21 +116,16 @@ using namespace mio;
  * - specific surface area profile
  * - strength profile
  *
- * Example:
+ * @section caaml_example Example
  * @code
  * [Input]
  * COORDSYS	= CH1903
  * SNOW	= CAAML
  * SNOWPATH	= ./input/snowCAAMLdata
  * SNOWFILE	= 5WJ_20120229.caaml
+ * CAAML_MAX_ELEMENT_THICKNESS = 0.002
  * @endcode
  *
- * @subsection caaml_encoding XML encoding
- * Each XML document should specify its encoding. However this information might sometimes be missing or even worse, be false. This makes the XML document non-compliant.
- * Normally, CAAML reads the file encoding in the file itself. If this does not work (one of the two cases given above), it is possible to force the
- * encoding of the input file by using the "XML_ENCODING" option. This option takes one of the following values
- * ("LE" stands for "Little Endian" and "BE" for "Big Endian"):
- *  UTF-8, UTF-16-LE, UTF-16-BE, UTF-16, LATIN1, ISO-8859-1, UTF-32, UTF-32-LE, UTF-32-BE, WCHAR
  */
 
 /**
