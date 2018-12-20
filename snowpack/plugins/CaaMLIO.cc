@@ -43,8 +43,8 @@ using namespace mio;
  * - SNOWPATH: string containing the path to the caaml files to be read
  * - SNOWFILE: specify the caaml file to read the data from
  * - XML_ENCODING: force the input file encoding, overriding the file's own encoding declaration (optional, see \ref caaml_encoding "XML encoding" below)
- * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to one
- *                                stratigraphic layer
+ * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to
+ *                                one stratigraphic layer. Recommendation: set this value to 0.002 (= 2 mm)
  * - CAAML_WRITEOUT_AS_READIN: if set to true, a caaml will be written just after reading in, to check if the reading of the caaml was correct.
  *
  * @section caaml_reading Reading a caaml-file
@@ -418,10 +418,8 @@ const std::string CaaMLIO::StationMetaData_xpath = "/caaml:SnowProfile/caaml:loc
 const std::string CaaMLIO::SnowData_xpath = "/caaml:SnowProfile/caaml:snowProfileResultsOf/caaml:SnowProfileMeasurements";
 
 CaaMLIO::CaaMLIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-           : info(run_info),
-             i_snowpath(), sw_mode(), o_snowpath(), experiment(), useSoilLayers(false), perp_to_slope(false), aggregate_caaml(false),
-             i_max_element_thickness(IOUtils::nodata), caaml_writeout_as_readin(false), in_tz(),
-             inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
+           : info(run_info), i_snowpath(), o_snowpath(), experiment(), i_max_element_thickness(IOUtils::nodata),
+             caaml_writeout_as_readin(false), in_tz(), inDoc(),inEncoding(),hoarDensitySurf(0),grainForms()
 {
 	init(cfg);
 	grainForms.clear();
@@ -435,9 +433,6 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 {
 	std::string tmpstr;
 
-	cfg.getValue("SW_MODE", "Snowpack", sw_mode);
-	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
-	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("TIME_ZONE", "Input", in_tz);
 
 	cfg.getValue("METEOPATH", "Input", tmpstr, IOUtils::nothrow);
@@ -447,7 +442,6 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 	cfg.getValue("CAAML_MAX_ELEMENT_THICKNESS", "Input", i_max_element_thickness, IOUtils::nothrow);
 	cfg.getValue("CAAML_WRITEOUT_AS_READIN", "Input", caaml_writeout_as_readin, IOUtils::nothrow);
 
-	cfg.getValue("AGGREGATE_CAAML", "Output", aggregate_caaml);
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", tmpstr, IOUtils::nothrow);
 	cfg.getValue("SNOWPATH", "Output", o_snowpath, IOUtils::nothrow);
@@ -1033,7 +1027,7 @@ void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
 	std::string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + bak + ".caaml" );
 	std::string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + bak + ".haz" );
 
-	writeSnowFile(snofilename, date, Xdata, aggregate_caaml);
+	writeSnowFile(snofilename, date, Xdata);
 	SmetIO::writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
@@ -1044,8 +1038,7 @@ void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
  * @param Xdata data structure containing all the data describing a snow-profile (which will be written to
  *              the caaml-file)
  */
-void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, const SnowStation& Xdata,
-                            const bool /*aggregate*/)
+void CaaMLIO::writeSnowFile(const std::string& snofilename, const Date& date, const SnowStation& Xdata)
 {
 	pugi::xml_document doc;
 	// Generate XML declaration

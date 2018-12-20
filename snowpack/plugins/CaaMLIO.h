@@ -88,8 +88,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		bool checkWhatWasReadIn(SN_SNOWSOIL_DATA& SSdata);
 
 		//functions for writing caaml-file:
-		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-		                   const bool aggregate);
+		void writeSnowFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata);
 		void writeCustomSnowSoil(pugi::xml_node& node, const SnowStation& Xdata);
 		void writeLayers(pugi::xml_node& node, const SnowStation& Xdata);
 		void writeCustomLayerData(pugi::xml_node& node, const ElementData& Edata, const NodeData& Ndata);
@@ -114,8 +113,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		std::string xmlReadAttributeFromPath (const std::string& path, const std::string& attributeName);
 
 		const RunInfo info;
-		std::string i_snowpath, sw_mode, o_snowpath, experiment;
-		bool useSoilLayers, perp_to_slope, aggregate_caaml;
+		std::string i_snowpath, o_snowpath, experiment;
 		double i_max_element_thickness;
 		bool caaml_writeout_as_readin;
 		/*static const*/ double in_tz; //plugin specific time zones
