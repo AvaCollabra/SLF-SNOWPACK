@@ -43,7 +43,7 @@ using namespace mio;
  * - SNOWPATH: string containing the path to the caaml files to be read
  * - SNOWFILE: specify the caaml file to read the data from
  * - XML_ENCODING: force the input file encoding, overriding the file's own encoding declaration (optional, see \ref caaml_encoding "XML encoding" below)
- * - CAAML_MAX_ELEMENT_THICKNESS: if set, the thickness of the elements will be set to this value, otherwise each element will correspond to
+ * - CAAML_MAX_ELEMENT_THICKNESS: if set (and non-zero), the thickness of the elements will be set to this value, otherwise each element will correspond to
  *                                one stratigraphic layer. Recommendation: set this value to 0.002 (= 2 mm)
  * - CAAML_WRITEOUT_AS_READIN: if set to true, a caaml will be written just after reading in, to check if the reading of the caaml was correct.
  *
@@ -86,7 +86,7 @@ using namespace mio;
  * Normally, CAAML reads the file encoding in the file itself. If this does not work (one of the two cases given above), it is possible to force the
  * encoding of the input file by using the "XML_ENCODING" option. This option takes one of the following values
  * ("LE" stands for "Little Endian" and "BE" for "Big Endian"):
- *  UTF-8, UTF-16-LE, UTF-16-BE, UTF-16, LATIN1, ISO-8859-1, UTF-32, UTF-32-LE, UTF-32-BE, WCHAR
+ *  UTF-8, UTF-16, UTF-16-LE, UTF-16-BE, UTF-32, UTF-32-LE, UTF-32-BE, LATIN1, ISO-8859-1, WCHAR
  *
  * @section caaml_writing Writing a caaml-file
  * This is an example of a caaml-file written with this plugin:
@@ -440,6 +440,7 @@ void CaaMLIO::init(const SnowpackConfig& cfg)
 	if (i_snowpath.empty())
 		i_snowpath = tmpstr;
 	cfg.getValue("CAAML_MAX_ELEMENT_THICKNESS", "Input", i_max_element_thickness, IOUtils::nothrow);
+	if (i_max_element_thickness==0.) i_max_element_thickness=IOUtils::nodata; //so inishell can expose it
 	cfg.getValue("CAAML_WRITEOUT_AS_READIN", "Input", caaml_writeout_as_readin, IOUtils::nothrow);
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
@@ -971,18 +972,18 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 				SSdata.Ldata[ii].rb = 3./8.;
 			} else throw IOException("Grain size missing for a non-ice layer!", AT);
 		}
-		// set temperature to 0캜 if warmer than 0캜:
+		// set temperature to 0째C if warmer than 0째C:
 		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
 			std::cout << "WARNING! Inconsistent input data in caaml-file: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::melting_tk
 			          << " degree Celsius. Temperature above 0 degree Celsius not possible! Setting temperature to 0 degree Celsius." << std::endl;
 			SSdata.Ldata[ii].tl = Constants::melting_tk;
 		}
-		// set lwc to 0 if colder than 0캜:
+		// set lwc to 0 if colder than 0째C:
 		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
 			std::cout << "WARNING! Inconsistent input data in caaml-file: LWC: " << SSdata.Ldata[ii].phiWater
 			          << " temperature: " << SSdata.Ldata[ii].tl << " in layer: " << ii << std::endl;
 			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0 degree Celsius." << std::endl;
-			//throw IOException("LWC > 0 but temperature below 0캜!", AT);
+			//throw IOException("LWC > 0 but temperature below 0째C!", AT);
 			SSdata.Ldata[ii].phiWater = 0;
 		}
 		if (grainFormCode=="FC" && SSdata.Ldata[ii].rg>0.8){

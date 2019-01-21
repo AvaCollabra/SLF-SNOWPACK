@@ -48,7 +48,9 @@
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
  * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation (for the last official release, it is available
  * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats.
- * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
+ * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use. In this case, 
+ * you should also consider providing 1) as SMET for a simulation starting without snow on the ground (have a look at the files provided in the examples) or as
+ * CAAML for a simulation starting with snow on the ground (have a look at <A HREF="https:niviz.org">niViz</A> to create a CAAML snow profile).
  *
  * Please also check the \ref requirements "Data requirements" page.
  *
