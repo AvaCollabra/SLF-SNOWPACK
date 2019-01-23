@@ -109,9 +109,11 @@ ENDIF(PROFEVAL)
 #for the install target
 FILE(GLOB hfiles "snowpack/*.h")
 FILE(GLOB hpluginfiles "snowpack/plugins/*.h")
+FILE(GLOB pugifiles "snowpack/plugins/pugixml/pugi*.?pp")
 FILE(GLOB hcorefiles "snowpack/snowpackCore/*.h")
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT headers)
+INSTALL(FILES ${pugifiles} DESTINATION include/snowpack/plugins/pugixml COMPONENT headers)
 INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
 
 ADD_CUSTOM_TARGET(distclean make clean
