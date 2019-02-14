@@ -1894,7 +1894,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		pAlbedo = source.pAlbedo;
 		Albedo = source.Albedo;
 		SoilAlb = source.SoilAlb;
-    SoilEmissivity = source.SoilEmissivity;
+		SoilEmissivity = source.SoilEmissivity;
 		BareSoil_z0 = source.BareSoil_z0;
 		SoilNode = source.SoilNode;
 		Ground = source.Ground;
@@ -2234,7 +2234,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	SoilAlb = SSdata.SoilAlb;
 	BareSoil_z0 = SSdata.BareSoil_z0;
 
-  SoilEmissivity = (SSdata.Emissivity_soil == mio::IOUtils::nodata) ? Constants::emissivity_soil : SSdata.Emissivity_soil;
+	SoilEmissivity = (SSdata.Emissivity_soil == mio::IOUtils::nodata) ? Constants::emissivity_soil : SSdata.Emissivity_soil;
 
 	WindScalingFactor = SSdata.WindScalingFactor;
 	TimeCountDeltaHS = SSdata.TimeCountDeltaHS;
@@ -2705,7 +2705,7 @@ std::ostream& operator<<(std::ostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.pAlbedo), sizeof(data.pAlbedo));
 	os.write(reinterpret_cast<const char*>(&data.Albedo), sizeof(data.Albedo));
 	os.write(reinterpret_cast<const char*>(&data.SoilAlb), sizeof(data.SoilAlb));
-  os.write(reinterpret_cast<const char*>(&data.SoilEmissivity), sizeof(data.SoilEmissivity));
+	os.write(reinterpret_cast<const char*>(&data.SoilEmissivity), sizeof(data.SoilEmissivity));
 	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	os.write(reinterpret_cast<const char*>(&data.SoilNode), sizeof(data.SoilNode));
 	os.write(reinterpret_cast<const char*>(&data.Ground), sizeof(data.Ground));
@@ -2785,7 +2785,7 @@ std::istream& operator>>(std::istream& is, SnowStation& data)
 	is.read(reinterpret_cast<char*>(&data.pAlbedo), sizeof(data.pAlbedo));
 	is.read(reinterpret_cast<char*>(&data.Albedo), sizeof(data.Albedo));
 	is.read(reinterpret_cast<char*>(&data.SoilAlb), sizeof(data.SoilAlb));
-  is.read(reinterpret_cast<char*>(&data.SoilEmissivity), sizeof(data.SoilEmissivity));
+	is.read(reinterpret_cast<char*>(&data.SoilEmissivity), sizeof(data.SoilEmissivity));
 	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	is.read(reinterpret_cast<char*>(&data.SoilNode), sizeof(data.SoilNode));
 	is.read(reinterpret_cast<char*>(&data.Ground), sizeof(data.Ground));
@@ -3236,13 +3236,13 @@ std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data)
 	os.write(reinterpret_cast<const char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_lai_frac_top_default), sizeof(data.Canopy_lai_frac_top_default));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_int_cap_snow), sizeof(data.Canopy_int_cap_snow));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_alb_dry), sizeof(data.Canopy_alb_dry));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_alb_wet), sizeof(data.Canopy_alb_wet));
-  os.write(reinterpret_cast<const char*>(&data.Canopy_alb_snow), sizeof(data.Canopy_alb_snow));
-  os.write(reinterpret_cast<const char*>(&data.Emissivity_soil), sizeof(data.Emissivity_soil));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_lai_frac_top_default), sizeof(data.Canopy_lai_frac_top_default));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_int_cap_snow), sizeof(data.Canopy_int_cap_snow));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_alb_dry), sizeof(data.Canopy_alb_dry));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_alb_wet), sizeof(data.Canopy_alb_wet));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_alb_snow), sizeof(data.Canopy_alb_snow));
+	os.write(reinterpret_cast<const char*>(&data.Emissivity_soil), sizeof(data.Emissivity_soil));
 	os.write(reinterpret_cast<const char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
 	os.write(reinterpret_cast<const char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
@@ -3270,13 +3270,13 @@ std::istream& operator>>(std::istream& is, SN_SNOWSOIL_DATA& data)
 	is.read(reinterpret_cast<char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
 	is.read(reinterpret_cast<char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
-  is.read(reinterpret_cast<char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
-  is.read(reinterpret_cast<char*>(&data.Canopy_lai_frac_top_default), sizeof(data.Canopy_lai_frac_top_default));
-  is.read(reinterpret_cast<char*>(&data.Canopy_int_cap_snow), sizeof(data.Canopy_int_cap_snow));
-  is.read(reinterpret_cast<char*>(&data.Canopy_alb_dry), sizeof(data.Canopy_alb_dry));
-  is.read(reinterpret_cast<char*>(&data.Canopy_alb_wet), sizeof(data.Canopy_alb_wet));
-  is.read(reinterpret_cast<char*>(&data.Canopy_alb_snow), sizeof(data.Canopy_alb_snow));
-  is.read(reinterpret_cast<char*>(&data.Emissivity_soil), sizeof(data.Emissivity_soil));
+	is.read(reinterpret_cast<char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
+	is.read(reinterpret_cast<char*>(&data.Canopy_lai_frac_top_default), sizeof(data.Canopy_lai_frac_top_default));
+	is.read(reinterpret_cast<char*>(&data.Canopy_int_cap_snow), sizeof(data.Canopy_int_cap_snow));
+	is.read(reinterpret_cast<char*>(&data.Canopy_alb_dry), sizeof(data.Canopy_alb_dry));
+	is.read(reinterpret_cast<char*>(&data.Canopy_alb_wet), sizeof(data.Canopy_alb_wet));
+	is.read(reinterpret_cast<char*>(&data.Canopy_alb_snow), sizeof(data.Canopy_alb_snow));
+	is.read(reinterpret_cast<char*>(&data.Emissivity_soil), sizeof(data.Emissivity_soil));
 	is.read(reinterpret_cast<char*>(&data.WindScalingFactor), sizeof(data.WindScalingFactor));
 	is.read(reinterpret_cast<char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
 	is.read(reinterpret_cast<char*>(&data.TimeCountDeltaHS), sizeof(data.TimeCountDeltaHS));
@@ -3304,13 +3304,13 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 	os << "Canopy_Height:                " << Canopy_Height << "\n";
 	os << "Canopy_LAI:                   " << Canopy_LAI << "\n";
 	os << "Canopy_BasalArea:             " << Canopy_BasalArea << "\n";
-  os << "Canopy_diameter:              " << Canopy_diameter << "\n";
-  os << "Canopy_lai_frac_top_default:  " << Canopy_lai_frac_top_default << "\n";
-  os << "Canopy_int_cap_snow:          " << Canopy_int_cap_snow << "\n";
-  os << "Canopy_alb_dry:               " << Canopy_alb_dry << "\n";
-  os << "Canopy_alb_wet:               " << Canopy_alb_wet << "\n";
-  os << "Canopy_alb_snow:              " << Canopy_alb_snow << "\n";
-  os << "Soil_Emissivity:              " << Emissivity_soil << "\n";
+	os << "Canopy_diameter:              " << Canopy_diameter << "\n";
+	os << "Canopy_lai_frac_top_default:  " << Canopy_lai_frac_top_default << "\n";
+	os << "Canopy_int_cap_snow:          " << Canopy_int_cap_snow << "\n";
+	os << "Canopy_alb_dry:               " << Canopy_alb_dry << "\n";
+	os << "Canopy_alb_wet:               " << Canopy_alb_wet << "\n";
+	os << "Canopy_alb_snow:              " << Canopy_alb_snow << "\n";
+	os << "Soil_Emissivity:              " << Emissivity_soil << "\n";
 	os << "WindScalingFactor:            " << WindScalingFactor << "\n";
 	os << "ErosionLevel:                 " << ErosionLevel << "\n";
 	os << "TimeCountDeltaHS:             " << TimeCountDeltaHS << "\n";
