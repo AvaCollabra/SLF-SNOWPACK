@@ -180,7 +180,7 @@ void Slope::setSlope(const unsigned int slope_sequence, vector<SnowStation>& vec
 			luv = lee = 0;
 		}
 		sector = mainStation;
-		mainStationDriftIndex = ((nSlopes == 1) && snow_erosion);
+		mainStationDriftIndex = (((nSlopes == 1) || (!snow_redistribution)) && snow_erosion); // ml: Changed spring 2019 to allow drift index to be calculated for multiple stations with no snow redistribution
 		break;
 	case 1:
 		sector = luv;
