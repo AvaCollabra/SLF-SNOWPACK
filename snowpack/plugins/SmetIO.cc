@@ -900,7 +900,7 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 		os << " ";*/
 
 	if (Xdata.Seaice != NULL)
-		os << "Total_thickness Ice_thickness Snow_thickness Snow_thickness_wrt_reference Freeboard Sea_level Bulk_salinity Avg_bulk_salinity Brine_salinity Avg_brine_salinity Bottom_salinity_flux Top_salinity_flux" << " ";
+		os << "Total_thickness Ice_thickness Snow_thickness Snow_thickness_wrt_reference Freeboard Sea_level Bulk_salinity Avg_bulk_salinity Avg_brine_salinity Bottom_salinity_flux Top_salinity_flux" << " ";
 
 	return os.str();
 }
