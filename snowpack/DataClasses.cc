@@ -2350,6 +2350,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].CDot = SSdata.Ldata[ll].CDot;
 			Edata[e].metamo = SSdata.Ldata[ll].metamo;
 			Edata[e].salinity = SSdata.Ldata[ll].salinity;
+			Edata[e].h = SSdata.Ldata[ll].h;
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
@@ -2381,12 +2382,27 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	// Sea ice initializations
 	if (Seaice != NULL) {
 		Seaice->updateFreeboard(*this);
-		for(size_t e = nElems; e -->0; ) {
+		for (size_t e = nElems; e -->0; ) {
 			const double br_sal = (Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF] == 0.) ? (0.) : (Edata[e].salinity / (Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]));
-			if(Edata[e].salinity > 0.) {
+			if (Edata[e].salinity > 0.) {
 				Edata[e].meltfreeze_tk = -SeaIce::mu * br_sal + Constants::meltfreeze_tk;
 			}
-			Edata[e].h = Seaice->SeaLevel - .5 * (Ndata[e].z + Ndata[e+1].z);
+			if (Edata[e].h == Constants::undefined) {
+				Edata[e].h = Seaice->SeaLevel - .5 * (Ndata[e].z + Ndata[e+1].z);
+			} else {
+				// Initialize 
+				if (e >= SoilNode) {		//Snow
+					Edata[e].VG.SetVGParamsSnow(vanGenuchten::YAMAGUCHI2012, vanGenuchten::CALONNE, true);
+				} else {			//Soil
+					Edata[e].VG.SetVGParamsSoil();
+				}
+				// If pressure head indicates full saturation, make sure no rounding errors exists from writing/reading sno files.
+				if (Edata[e].h >= Edata[e].VG.h_e) {
+					Edata[e].theta[WATER] = (1. - Edata[e].theta[ICE] - Edata[e].theta[SOIL]) * (Constants::density_ice / Constants::density_water) - Edata[e].theta[WATER_PREF];
+					Edata[e].theta[AIR] = 1. - Edata[e].theta[ICE] - Edata[e].theta[WATER] - Edata[e].theta[WATER_PREF] - Edata[e].theta[SOIL];
+					Edata[e].updDensity();
+				}
+			}
 		}
 	}
 
@@ -3352,7 +3368,7 @@ LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
                      phiSoil(0.), phiIce(0.), phiWater(0.), phiWaterPref(0.), phiVoids(0.),
                      cSoil(SnowStation::number_of_solutes), cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
-                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.), salinity(0.)
+                     rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.), salinity(0.), h(Constants::undefined)
 {
 }
 
@@ -3397,6 +3413,7 @@ std::ostream& operator<<(std::ostream& os, const LayerData& data)
 	os.write(reinterpret_cast<const char*>(&data.CDot), sizeof(data.CDot));
 	os.write(reinterpret_cast<const char*>(&data.metamo), sizeof(data.metamo));
 	os.write(reinterpret_cast<const char*>(&data.salinity), sizeof(data.salinity));
+	os.write(reinterpret_cast<const char*>(&data.h), sizeof(data.h));
 	return os;
 }
 
@@ -3445,6 +3462,7 @@ std::istream& operator>>(std::istream& is, LayerData& data)
 	is.read(reinterpret_cast<char*>(&data.CDot), sizeof(data.CDot));
 	is.read(reinterpret_cast<char*>(&data.metamo), sizeof(data.metamo));
 	is.read(reinterpret_cast<char*>(&data.salinity), sizeof(data.salinity));
+	is.read(reinterpret_cast<char*>(&data.h), sizeof(data.h));
 	return is;
 }
 
