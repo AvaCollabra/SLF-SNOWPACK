@@ -55,7 +55,7 @@ using namespace mio;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-const double ReSolver1d::max_theta_ice = 0.998;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+const double ReSolver1d::max_theta_ice = 0.97;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 
 //Setting convergence criteria and numerical limits
 const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-8;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
@@ -1011,7 +1011,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Now copy the EMS water content into the working arrays to solve Richards-equation (so this is the important part were this function is coupled to the rest of SNOWPACK).
 		if(EMS[i].theta[SOIL]<Constants::eps2) {		//For snow
 			h_n[i]=EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, theta_i_n[i]);
-			if(variant=="SEAICE" && ((NDS[i].z < Xdata.Seaice->SeaLevel && fabs(EMS[i].theta[WATERINDEX]-EMS[i].VG.theta_s) < Constants::eps2 && EMS[i].h>EMS[i].VG.h_e-Constants::eps2) || (h_n[i]>EMS[i].VG.h_e-Constants::eps2 && EMS[i].h>EMS[i].VG.h_e-Constants::eps2)) && i>0) {
+			if(variant=="SEAICE" && ((NDS[i].z < Xdata.Seaice->SeaLevel && fabs(EMS[i].theta[WATERINDEX]-EMS[i].VG.theta_s) < Constants::eps2) || (h_n[i]>EMS[i].VG.h_e-Constants::eps2 && EMS[i].h>EMS[i].VG.h_e-Constants::eps2)) && i>0 && h_n[i-1]>EMS[i].VG.h_e-Constants::eps2) {
 				h_n[i]=EMS[i].h;
 			}
 		} else {
@@ -1373,6 +1373,17 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				BottomFluxRate=k_np1_m_im12[lowernode];
 			} else if (BottomBC==SEAICE) {
 				aBottomBC=DIRICHLET;
+				if(niter==1) {
+					// For a new iteration, do a quick update of sea ice mass and the lower boundary
+					for (i = lowernode; i <= uppernode; i++) {
+						EMS[i].theta[WATERINDEX]=theta_np1_m[i];
+						EMS[i].updDensity();
+						EMS[i].M=EMS[i].L*EMS[i].Rho;
+					}
+					Xdata.Seaice->updateFreeboard(Xdata);
+					hbottom=std::min((Xdata.Seaice->SeaLevel - NDS[lowernode].z - .5 * EMS[lowernode].L), NDS[uppernode+1].z); // Keep hbottom smaller than depth of simulation domain.
+				}
+				h_n[lowernode] = hbottom;
 				BottomFluxRate=0.;
 				theta_np1_m[lowernode]=theta_n[lowernode];
 			} else if (BottomBC==LIMITEDFLUX) {
@@ -2119,8 +2130,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				Salinity.BottomSalinity = (Xdata.Seaice->OceanSalinity);
 				Salinity.TopSalinity = (0.);
 				if(SalinityTransportSolver==SalinityTransport::IMPLICIT2 || SalinityTransportSolver==SalinityTransport::IMPLICIT) {
-					//Salinity.BottomSalinity = (Salinity.flux_down[0] > 0.) ? (Salinity.BrineSal[0]) : (Xdata.Seaice->OceanSalinity);
-					//Salinity.TopSalinity = (Salinity.flux_up[nE-1] < 0.) ? (Salinity.BrineSal[nE-1]) : (0.);
+					Salinity.BottomSalinity = (Salinity.flux_down[0] > 0.) ? (Salinity.BrineSal[0]) : (Xdata.Seaice->OceanSalinity);
+					Salinity.TopSalinity = (Salinity.flux_up[nE-1] < 0.) ? (Salinity.BrineSal[nE-1]) : (0.);
 				} /*else if(SalinityTransportSolver==SalinityTransport::IMPLICIT) {
 					if(Salinity.flux_down[0] > 0.) {
 						Salinity.BottomSalinity = Salinity.BrineSal[0] - ((Salinity.BrineSal[1] - Salinity.BrineSal[0]) / dz_up[0]) * dz_down[0];
@@ -2194,7 +2205,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							EMS[i].salinity = tol;
 						}
 					}
-					Xdata.Edata[i].meltfreeze_tk = -SeaIce::mu * Salinity.BrineSal[i] + Constants::meltfreeze_tk;
+					EMS[i].meltfreeze_tk = -SeaIce::mu * Salinity.BrineSal[i] + Constants::meltfreeze_tk;
+					EMS[i].updDensity();
+					EMS[i].M=EMS[i].L*EMS[i].Rho;
 				}
 
 

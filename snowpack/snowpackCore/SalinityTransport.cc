@@ -437,7 +437,7 @@ bool SalinityTransport::VerifyCFL(const double dt)
  */
 bool SalinityTransport::VerifyImplicitDt(const double dt)
 {
-	const double limit = 0.999;
+	const double limit = 0.49; // Note: 0.999 is real upper limit
 	for(size_t i = 0; i < NumberOfElements; i++) {
 		// Check advection
 		//if (std::max( fabs(flux_up[i]) , fabs(flux_down[i]) ) * (dt / (std::min(dz_up[i], dz_down[i]))) > 0.5 * limit) {printf("FAIL4A@%d ", int(i)); return false;}

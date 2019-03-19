@@ -1060,7 +1060,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 			RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, dummy_ql);
 		}else
 		{
-			RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, (isTopLayerSolvedByREQ && isSurfaceMelting) ? (ql) : (dummy_ql));//Jafari added
+			RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, ((isTopLayerSolvedByREQ && isSurfaceMelting) || variant == "SEAICE") ? (ql) : (dummy_ql));//Jafari added
 		}
 		
 		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql);	// Matrix flow will take care of potential evaporation/condensation, provided by ql, so send dummy_ql for preferential flow
