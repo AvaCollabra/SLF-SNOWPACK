@@ -424,7 +424,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			//Calculate ratio density/grain size (see Yamaguchi (2012)):
 			double tmp_rho_d=(EMS->theta[ICE]*Constants::density_ice)/( (2.*EMS->rg) / 1000.);
 			//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
-			tmp_rho_d=std::max(2000., tmp_rho_d);
+			tmp_rho_d=std::max(60000., tmp_rho_d);
 			alpha=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
 			n=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
 			break;
