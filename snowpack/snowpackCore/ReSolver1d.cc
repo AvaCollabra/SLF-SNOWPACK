@@ -2039,7 +2039,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					boolConvergence=false;				//Of course, when we need to rewind, we have had no convergence.
 					DoRewindFlag=true;				//Set DoRewindFlag to true, to quit the iteration loop.
 					StopLoop=false;					//In case StopLoop was set true (last time step), we set it back to false. It might be that the smaller time step won't match the SNOWPACK time step any longer.
-					mass1=0.;					//Because we fiddle around with theta, we should update mass1 (mass at beginning of time step)
 					if(seq_safemode==1 && totalsourcetermflux!=0.) {
 						for (i = lowernode; i <= uppernode; i++) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 							// The first time a safe mode is required, set source/sink terms to 0.
@@ -2053,6 +2052,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 					} else {
 						if(seq_safemode==3) {
+							mass1=0.;					//Because we will fiddle around with theta, we should update mass1 (mass at beginning of time step)
 							for (i = lowernode; i <= uppernode; i++) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 								// Update the SafeMode mass balance error tracking variable by "removing" all water
 								SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
@@ -2096,7 +2096,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							//Deal with the TopFluxRate:
 							SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
 							printf("    --> set surfacefluxrate from %G ", surfacefluxrate);
-							surfacefluxrate/=2.;
+							if(seq_safemode==2) {
+								surfacefluxrate=0.;
+							} else {
+								surfacefluxrate/=2.;
+							}
 							printf("to %G.\n", surfacefluxrate);
 						}
 					}
