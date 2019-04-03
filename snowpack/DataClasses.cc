@@ -2527,6 +2527,11 @@ void SnowStation::splitElement(const size_t& e)
 	Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
 	Ndata[e+2].u*=0.5;
 	Ndata[e+1].u*=0.5;
+	// Correct pressure head in case of saturation
+	if(Edata[e].h > Edata[e].VG.h_e) {
+		Edata[e].h+=.5*Edata[e].L;
+		Edata[e+1].h-=.5*Edata[e+1].L;
+	}
 }
 
 /**
