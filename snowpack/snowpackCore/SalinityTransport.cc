@@ -26,7 +26,7 @@
 static const bool ZeroFluxLowerBoundary_diffusion = true;
 static const bool ZeroFluxUpperBoundary_diffusion = true;
 static const bool ZeroFluxLowerBoundary_advection = false;
-static const bool ZeroFluxUpperBoundary_advection = true;
+static const bool ZeroFluxUpperBoundary_advection = false;
 
 #ifdef CLAPACK
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
