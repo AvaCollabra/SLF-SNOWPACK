@@ -55,7 +55,7 @@ using namespace mio;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-const double ReSolver1d::max_theta_ice = 0.97;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+const double ReSolver1d::max_theta_ice = 0.99;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 
 //Setting convergence criteria and numerical limits
 const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-6;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
@@ -917,7 +917,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				EMS[i].theta[AIR]=1.-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
 			}
 
-			EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix);
+			EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix, variant=="SEAICE");
 
 			// Recheck pref flow area: some processes in SNOWPACK may change pore space and water contents, such that the pref flow area is not consistent to store all water.
 			const double tmpPoreSpace = (1. - EMS[i].theta[ICE]) * (Constants::density_ice / Constants::density_water);
@@ -1003,7 +1003,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					std::cout << "WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << "  theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
 				EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
 				EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
-				EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix);    // Update the van Genuchten parameters
+				EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix, variant=="SEAICE");    // Update the van Genuchten parameters
 			}
 		}
 
@@ -2133,23 +2133,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 				Salinity.BottomSalinity = (Xdata.Seaice->OceanSalinity);
 				Salinity.TopSalinity = (0.);
-				if(SalinityTransportSolver==SalinityTransport::IMPLICIT2 || SalinityTransportSolver==SalinityTransport::IMPLICIT) {
-					Salinity.BottomSalinity = (Salinity.flux_down[0] > 0.) ? (Salinity.BrineSal[0]) : (Xdata.Seaice->OceanSalinity);
-					Salinity.TopSalinity = (Salinity.flux_up[nE-1] < 0.) ? (Salinity.BrineSal[nE-1]) : (0.);
-				} /*else if(SalinityTransportSolver==SalinityTransport::IMPLICIT) {
-					if(Salinity.flux_down[0] > 0.) {
-						Salinity.BottomSalinity = Salinity.BrineSal[0] - ((Salinity.BrineSal[1] - Salinity.BrineSal[0]) / dz_up[0]) * dz_down[0];
-					} else {
-						Salinity.BottomSalinity = Xdata.Seaice->OceanSalinity;
-					}
-					if(Salinity.flux_up[nE-1] < 0.) {
-						Salinity.TopSalinity = Salinity.BrineSal[nE-1] + ((Salinity.BrineSal[nE-1] - Salinity.BrineSal[nE-2]) / dz_down[nE-1]) * dz_up[nE-1];
-					} else {
-						Salinity.TopSalinity = 0.;
-					}
-					Salinity.BottomSalinity = std::max(0., Salinity.BottomSalinity);
-					Salinity.TopSalinity = std::max(0., Salinity.TopSalinity);
-				}*/
 
 				// Solve the transport equation
 				if(SalinityTransportSolver==SalinityTransport::EXPLICIT) {

@@ -2392,7 +2392,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			} else {
 				// Initialize 
 				if (e >= SoilNode) {		//Snow
-					Edata[e].VG.SetVGParamsSnow(vanGenuchten::YAMAGUCHI2012, vanGenuchten::CALONNE, true);
+					Edata[e].VG.SetVGParamsSnow(vanGenuchten::YAMAGUCHI2012, vanGenuchten::CALONNE, true, true);
 				} else {			//Soil
 					Edata[e].VG.SetVGParamsSoil();
 				}
