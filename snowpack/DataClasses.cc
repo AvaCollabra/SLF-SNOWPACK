@@ -1761,10 +1761,11 @@ unsigned short int ElementData::snowType(const double& dendricity, const double&
 		case 7: case 8: case 17: case 18: case 27: case 28: // Glacier ice & IFil, that is, ice layers within the snowpack
 			a = 8; b = 8; c = 0;
 			break;
-    default: // do nothing sinc we take care of exceptions here
-      break;
-
-
+		case 9: // water layer
+			a = 0; b = 0; c = 0;
+			break;
+		default: // do nothing since we take care of exceptions here
+			break;
 	}
 
 	return static_cast<unsigned short int>(a*100 + b*10 + c);
