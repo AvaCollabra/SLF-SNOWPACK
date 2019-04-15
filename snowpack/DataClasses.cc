@@ -1326,7 +1326,7 @@ double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& 
  * @version 11.01
  * @return sum of volumetric contents (1)
  */
-bool ElementData::checkVolContent() const
+bool ElementData::checkVolContent()
 {
 	bool ret = true;
 	/*if(fabs(L*Rho - M) > 0.001) {
@@ -1338,7 +1338,7 @@ bool ElementData::checkVolContent() const
 	for (unsigned int i = 0; i < N_COMPONENTS; i++) {
 		sum += theta[i];
 	}
-	if (sum <= 0.99 || sum >= 1.01) {
+	if (sum <= 1. - Constants::eps || sum >= 1. + Constants::eps) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.4f", sum);
 		ret = false;
 	}
@@ -1357,6 +1357,24 @@ bool ElementData::checkVolContent() const
 	if(theta[AIR] < -Constants::eps) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative AIR volumetric content: %1.4f", theta[AIR]);
 		ret = false;
+	}
+
+	// Take care of small rounding errors, in case large rounding errors do not exist.
+	if (ret == true) {
+		theta[ICE] = std::min(1., std::max(0., theta[ICE]));
+		theta[WATER] = std::min(1., std::max(0., theta[WATER]));
+		theta[WATER_PREF] = std::min(1., std::max(0., theta[WATER_PREF]));
+		theta[AIR] = (1. - theta[ICE] - theta[WATER] - theta[WATER_PREF] - theta[SOIL]);
+		if (theta[AIR] < 0.) {
+			if (theta[ICE] > 1. - Constants::eps) {
+				theta[ICE] += theta[AIR];
+			} else if (theta[WATER] > 1. - Constants::eps) {
+				theta[WATER] += theta[AIR];
+			} else {
+				prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.20f, theta[ICE] = %.20f, theta[WATER] = %.20f, theta[WATER_PREF] = %.20f, theta[SOIL] = %.20f, theta[AIR] = %.20f", sum, theta[ICE], theta[WATER], theta[WATER_PREF], theta[SOIL], theta[AIR]);
+			}
+			theta[AIR] = 0.;
+		}
 	}
 
 	return ret;

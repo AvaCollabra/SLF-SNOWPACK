@@ -286,7 +286,7 @@ class ElementData {
 		ElementData(const unsigned short int& in_ID);
 		ElementData(const ElementData& cc); //required to get the correct back-reference in vanGenuchten object
 
-		bool checkVolContent() const;
+		bool checkVolContent();
 		void heatCapacity();
 		double coldContent() const;
 		void updDensity();
