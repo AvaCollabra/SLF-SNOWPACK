@@ -1349,6 +1349,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 				          "Too much liquid water specified or density too high! Dry density =%.3f kg m-3  Water Content = %.3f %", rho_hn, th_w);
 
+				//EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 				EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 
 				if (EMS[e].theta[AIR] < 0.) {
@@ -1934,7 +1935,47 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 	}
 }
 
-void Snowpack::snowPreparation(SnowStation& /*Xdata*/)
+void Snowpack::snowPreparation(SnowStation& Xdata)
 {
-	
+	const size_t nE = Xdata.getNumberOfElements();
+	double depth = 0.;
+	double rho_groom ;	// Density of the groomed snow
+
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	for (size_t e=nE; e-- > Xdata.SoilNode; ) {
+		if (EMS[e].Rho > 430.) rho_groom = 430.;
+		else rho_groom = 12.152 * pow(448.78 - EMS[e].Rho, 1./2.) + 0.9963 * EMS[e].Rho - 35.41;
+
+		const double L0 = EMS[e].L;
+		const double L1 = EMS[e].L * EMS[e].Rho / rho_groom;	// New lenght of the element after grooming
+		depth += L0;
+		if ( rho_groom <= 430. ) {
+			EMS[e].L0 = L1;
+			EMS[e].L = L1;
+			EMS[e].Rho = rho_groom;
+			EMS[e].theta[WATER] *= L0 / L1;
+			//EMS[e].theta[WATER_PREF] *= L0 / L1;
+			EMS[e].theta[ICE]   *= L0 / L1;
+			EMS[e].dd = 0.;
+			EMS[e].sp = 1.;
+			EMS[e].rg = 0.2; // Have to adapt after some tests
+			EMS[e].rb = EMS[e].rg/3.;
+			NDS[e+1].z = NDS[e].z + EMS[e].L;
+			//EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
+			EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
+			/*if ( !(EMS[e].theta[AIR]>=0.1) ) {
+				prn_msg(__FILE__, __LINE__, "err", Date(),
+			          "Error in Slope Preparation (Densification) Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf air=%le",
+			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR]);*/
+			if ( !(EMS[e].theta[AIR]>=0.1) ) {
+				prn_msg(__FILE__, __LINE__, "err", Date(),
+			          "Error in Slope Preparation (Densification) Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf air=%le",
+			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[AIR]);
+			throw IOException("Runtime Error in snowPreparation()", AT);
+			}
+			Xdata.cH = NDS[nE].z + NDS[nE].u;		// Update computed snow depth
+		if (depth > 0.4) break;		// Grooming has only an influence on the upper 40 cm
+		}
+	}
 }
