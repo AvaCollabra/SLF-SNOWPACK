@@ -25,6 +25,7 @@ SET(snowpacklib_sources
 	Stability.cc
 	Hazard.cc
 	SnowDrift.cc
+	TechnicalSnow.cc
 	${plugins_sources}
 	${core_sources}
 )
