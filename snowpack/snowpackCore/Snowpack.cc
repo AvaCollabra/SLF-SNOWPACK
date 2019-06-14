@@ -1337,7 +1337,6 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
 				          "Too much liquid water specified or density too high! Dry density =%.3f kg m-3  Water Content = %.3f %", rho_hn, theta_w);
 
-				//EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 				EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 
 				if (EMS[e].theta[AIR] < 0.) {

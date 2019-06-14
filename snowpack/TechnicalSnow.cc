@@ -105,19 +105,13 @@ void TechSnow::preparation(SnowStation& Xdata)
 			EMS[e].L = L1;
 			EMS[e].Rho = rho_groom;
 			EMS[e].theta[WATER] *= L0 / L1;
-			//EMS[e].theta[WATER_PREF] *= L0 / L1;
 			EMS[e].theta[ICE]   *= L0 / L1;
 			EMS[e].dd = 0.;
 			EMS[e].sp = 1.;
 			EMS[e].rg = 0.2; // Have to adapt after some tests
 			EMS[e].rb = EMS[e].rg/3.;
 			NDS[e+1].z = NDS[e].z + EMS[e].L;
-			//EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
 			EMS[e].theta[AIR] = 1.0 - EMS[e].theta[WATER] - EMS[e].theta[ICE] - EMS[e].theta[SOIL];
-			/*if ( !(EMS[e].theta[AIR]>=0.1) ) {
-				prn_msg(__FILE__, __LINE__, "err", Date(),
-			          "Error in Slope Preparation (Densification) Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf air=%le",
-			            e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR]);*/
 			if ( !(EMS[e].theta[AIR]>=0.1) ) {
 				prn_msg(__FILE__, __LINE__, "err", Date(),
 			          "Error in Slope Preparation (Densification) Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf air=%le",
