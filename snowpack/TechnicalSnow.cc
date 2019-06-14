@@ -80,10 +80,14 @@ void TechSnow::productionPpt(const CurrentMeteo& Mdata, const double& cumu_preci
 
 /**
  * @brief Perform technical snow preparation
+ * @details The densification is done with a fit on the data found in Wolfsperger, F., H. Rhyner, and M. Schneebeli, 
+ * <i><"Pistenpräparation und Pistenpflege. Das Handbuch für den Praktiker."</i>, Davos: WSL-Institut für Schnee-und Lawineforschung SLF, (2018).
  * @param Xdata Snow profile to prepare (grooming, etc)
  */
 void TechSnow::preparation(SnowStation& Xdata)
 {
+	static const double max_grooming_density = 450.; //this is the maximum value of rho_groom (see equation below) and also a realistic achievable upper value
+	static const double original_density_threshold = 415.; //this is EMS[e].Rho that produces the maximum value of rho_groom (see equation below)
 	static const double max_depth = 0.4; //maximum depth of snow influenced by grooming
 	const size_t nE = Xdata.getNumberOfElements();
 	double depth = 0.;
@@ -91,11 +95,11 @@ void TechSnow::preparation(SnowStation& Xdata)
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	for (size_t e=nE; e-- > Xdata.SoilNode; ) {
-		const double rho_groom = (EMS[e].Rho > 430.)? 430. : 12.152 * sqrt(448.78 - EMS[e].Rho) + 0.9963 * EMS[e].Rho - 35.41; // Density of the groomed snow
 		const double L0 = EMS[e].L;
 		depth += L0;
 		
-		if (rho_groom <= 430.) { //HACK this criteria should probably be on EMS[e].Rho instead
+		if (EMS[e].Rho <= max_grooming_density) { //no grooming for snow that is already denser than what is achievable
+			const double rho_groom = (EMS[e].Rho > original_density_threshold)? max_grooming_density : 12.152 * sqrt(448.78 - EMS[e].Rho) + 0.9963 * EMS[e].Rho - 35.41; // Density of the groomed snow, fit done on "Pistenpräparation und Pistenpflege. Das Handbuch für den Praktiker.", F Wolfsperger, H Rhyner, M Schneebeli, 2018
 			const double L1 = EMS[e].L * EMS[e].Rho / rho_groom;	// New lenght of the element after grooming
 			EMS[e].L0 = L1;
 			EMS[e].L = L1;
