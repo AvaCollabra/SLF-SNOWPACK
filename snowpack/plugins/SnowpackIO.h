@@ -100,6 +100,7 @@
  * <tr><td>5</td><td>Depth hoar (DH)</td><td></td><td></td></tr>
  * </table></center>
  * 
+ * In case of Melt-freeze crust (MFcr), it is marked by using the \em 772 code.
  *
  * @section available_met_ts Fluxes time series
  * %Snowpack computes various meteorological parameters as well as fluxes and can write them out as time series.
