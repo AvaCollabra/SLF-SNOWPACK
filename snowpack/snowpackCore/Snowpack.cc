@@ -1279,10 +1279,10 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
 	const double cos_sl = Xdata.cos_sl; //slope cosinus
-	
+
 	double Tw, rho_hn, delta_cH, theta_w;
 	TechSnow::productionPpt(Mdata, cumu_precip, Tw, rho_hn, delta_cH, theta_w);
-	
+
 	// Now determine whether the increase in snow depth is large enough.
 	double hn = 0.; //new snow amount
 	if ( (delta_cH >= height_new_elem * cos_sl) ) {
@@ -1390,7 +1390,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 		compTechnicalSnow(Mdata, Xdata, cumu_precip);
 		return;
 	}
-	
+
 	bool add_element = false;
 	double delta_cH = 0.; // Actual enforced snow depth
 	double hn = 0.; //new snow amount
@@ -1752,6 +1752,9 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
 	WaterTransport watertransport(cfg);
 	phasechange.reset();
+	// ADJUST_HEIGHT_OF_METEO_VALUES is checked at each call to allow different 
+	// cfg values for different pixels in Alpine3D
+	cfg.getValue("ADJUST_HEIGHT_OF_METEO_VALUES", "SnowpackAdvanced", adjust_height_of_meteo_values);
 
 	try {
 		//since precipitation phase is a little less intuitive than other, measured parameters, make sure it is provided
@@ -1794,7 +1797,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			sn_dt = 60.;
 			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
 		}
-		
+
 		Meteo M(cfg);
 		do {
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
