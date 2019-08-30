@@ -1675,7 +1675,7 @@ bool AsciiIO::appendFile(const std::string& filename, const mio::Date& startdate
 	// is newer than the last one in the file, appending is possible
 	ifstream fin;
 	ofstream fout; //for the tmp file
-	const string filename_tmp = filename + ".tmp";
+	const string filename_tmp( filename + ".tmp" );
 
 	fin.open (filename.c_str());
 	fout.open(filename_tmp.c_str());
