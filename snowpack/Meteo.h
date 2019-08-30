@@ -65,14 +65,15 @@ class Meteo {
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 		static void RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref,
 		                                const double& vw, const double& z_ratio, double &ustar, double &psi_s);
-		static void MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, 
+		static void MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf,
 		                                       const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m);
-		
+
 		Canopy canopy;
 		double roughness_length, height_of_wind_value;
 		bool adjust_height_of_wind_value;
 		ATM_STABILITY stability;
 		bool research_mode, useCanopyModel;
+		const SnowpackConfig& cfg;
 };
 
 #endif //END of Meteo.h
