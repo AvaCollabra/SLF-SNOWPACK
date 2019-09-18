@@ -1176,13 +1176,13 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		 * (see neumannBoundaryConditions)
 		 */
 		if (U[nE] + ddU[nE] > EMS[nE-1].meltfreeze_tk || EMS[nE-1].theta[WATER] > 0.) {
-			ControlTemp = 0.007;
+			ControlTemp = (variant == "SEAICE") ? (0.0007) : (0.007);
 			MaxItnTemp = std::max(MaxItnTemp, (unsigned)200); // NOTE originally 100;
 		}
 		if(useNewPhaseChange) {
 			// With new phase change, we want at least one iteration extra, to account for possible phase changes,
 			// and we want an additional constraint of maximum change in phase change amount
-			NotConverged = (MaxTDiff > ControlTemp || iteration == 1 || maxd > 0.0001);
+			NotConverged = (MaxTDiff > ControlTemp || iteration == 1 || maxd > (variant == "SEAICE") ? (1.E-6) : (0.0001));
 		} else {
 			NotConverged = (MaxTDiff > ControlTemp);
 		}
