@@ -26,7 +26,8 @@
 static const bool ZeroFluxLowerBoundary_diffusion = true;
 static const bool ZeroFluxUpperBoundary_diffusion = true;
 static const bool ZeroFluxLowerBoundary_advection = false;
-static const bool ZeroFluxUpperBoundary_advection = false;
+static const bool ZeroFluxUpperBoundary_advection_in = false;	// For incoming flux: set to false would reflect fresh water influx in case of rain or condensation
+static const bool ZeroFluxUpperBoundary_advection_out = true;	// For outgoing flux: set to true would reflect that evaporation would only consist of fresh water
 
 #ifdef CLAPACK
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
@@ -124,7 +125,8 @@ bool SalinityTransport::SolveSalinityTransportEquationImplicit(const double dt, 
 	std::vector<double> adl(NumberOfElements-1, 0.);	// Matrix lower diagonal
 	std::vector<double> b(NumberOfElements, 0.);		// Vector
 
-	if(ZeroFluxUpperBoundary_advection) flux_up[NumberOfElements-1] = 0.;
+	if((ZeroFluxUpperBoundary_advection_in && flux_up[NumberOfElements-1] > 0.)
+		|| (ZeroFluxUpperBoundary_advection_out && flux_up[NumberOfElements-1] < 0.)) flux_up[NumberOfElements-1] = 0.;
 	if(ZeroFluxLowerBoundary_advection) flux_down[0] = 0.;
 
 	// Fill matrix and r.h.s. vector
@@ -358,7 +360,8 @@ bool SalinityTransport::SolveSalinityTransportEquationExplicit(const double dt, 
 	// Declare vectors
 	std::vector<double> b(NumberOfElements, 0.);		// Solution vector
 
-	if(ZeroFluxUpperBoundary_advection) flux_up[NumberOfElements-1] = 0.;
+	if((ZeroFluxUpperBoundary_advection_in && flux_up[NumberOfElements-1] > 0.)
+		|| (ZeroFluxUpperBoundary_advection_out && flux_up[NumberOfElements-1] < 0.)) flux_up[NumberOfElements-1] = 0.;
 	if(ZeroFluxLowerBoundary_advection) flux_down[0] = 0.;
 
 	// Fill matrix and r.h.s. vector
