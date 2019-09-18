@@ -1182,7 +1182,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		if(useNewPhaseChange) {
 			// With new phase change, we want at least one iteration extra, to account for possible phase changes,
 			// and we want an additional constraint of maximum change in phase change amount
-			NotConverged = (MaxTDiff > ControlTemp || iteration == 1 || maxd > (variant == "SEAICE") ? (1.E-6) : (0.0001));
+			NotConverged = (MaxTDiff > ControlTemp || iteration == 1 || maxd > ((variant == "SEAICE") ? (1.E-6) : (0.0001)));
 		} else {
 			NotConverged = (MaxTDiff > ControlTemp);
 		}
