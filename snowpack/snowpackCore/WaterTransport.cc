@@ -487,6 +487,12 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					// In this case, we would prefer to keep the eUpper-1 element density constant, which is done in SnowStation::mergeElements(...)
 					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
 					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
+						if (variant == "SEAICE") {
+							const double removed_water = ((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L);
+							for(size_t ii=0; ii<rnE; ii++) {
+								EMS[ii].h -= removed_water / (Constants::density_water + SeaIce::betaS * SeaIce::OceanSalinity);
+							}
+						}
 						RichardsEquationSolver1d_matrix.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
 						// We remove water from the element, which is now in surfacefluxrate
 						EMS[eUpper].theta[AIR]+=(EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF]);
@@ -612,7 +618,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		if (verify_top_element && rnE > 0 && rnE > Xdata.SoilNode) {
 			// Note: we have to check for the SoilNode, because verify_top_element may have been set to true, but multiple element removals may have
 			// set rnE to the upper soil element, in case we should inhibit element splitting.
-			if (.5 * (EMS[Xdata.getNumberOfElements()-1].L) > comb_thresh_l) {
+			if (EMS[Xdata.getNumberOfElements()-1].L > comb_thresh_l) {
 				Xdata.splitElement(Xdata.getNumberOfElements()-1);
 			}
 		}
