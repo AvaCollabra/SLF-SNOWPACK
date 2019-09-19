@@ -486,13 +486,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if ( (eUpper == rnE-1) && (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) ) {
 					// In this case, we would prefer to keep the eUpper-1 element density constant, which is done in SnowStation::mergeElements(...)
 					// In case we solve snow with Richards equation AND we remove the top element, we apply the water in the top layer as a Neumann boundary flux in the RE
-					if (iwatertransportmodel_snow == RICHARDSEQUATION) {
-						if (variant == "SEAICE") {
-							const double removed_water = ((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L);
-							for(size_t ii=0; ii<rnE; ii++) {
-								EMS[ii].h -= removed_water / (Constants::density_water + SeaIce::betaS * SeaIce::OceanSalinity);
-							}
-						}
+					if (iwatertransportmodel_snow == RICHARDSEQUATION && variant != "SEAICE") {
 						RichardsEquationSolver1d_matrix.surfacefluxrate+=((EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF])*EMS[eUpper].L)/(sn_dt);
 						// We remove water from the element, which is now in surfacefluxrate
 						EMS[eUpper].theta[AIR]+=(EMS[eUpper].theta[WATER]+EMS[eUpper].theta[WATER_PREF]);
@@ -512,7 +506,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 
 				// After dealing with all possibilities, now finally do the merge:
 				if(!merged) removedMass += EMS[eUpper].M;
-				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
+				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1 && variant != "SEAICE"));
 
 				// The upper element may grow too much in length by subsequent element merging, limit this! Note that this has the desired effect of averaging the two top elements.
 				if(eUpper==rnE-1 && merged==true) {
@@ -522,7 +516,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				if (rnE-1 > Xdata.SoilNode && EMS[eUpper+1].L > 0. && EMS[eUpper+1].Rho > 0.) {	// If at least one snow layer above AND this layer above is not marked to be removed yet.
 					// In case it is the lowest snow element and there are snow elements above, join with the element above:
 					merged=true;
-					SnowStation::mergeElements(EMS[eUpper], EMS[eUpper+1], true, (eUpper==nE-1));
+					SnowStation::mergeElements(EMS[eUpper], EMS[eUpper+1], true, (eUpper==nE-1 && variant != "SEAICE"));
 					UpperJoin=true;
 				} else {									// Else we remove element
 					merged=false;
@@ -550,7 +544,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						if (iwatertransportmodel_soil != RICHARDSEQUATION) {
 							if (Xdata.SoilNode > 0) {
 								// Only move water into soil when we don't run richardssolver for soil ...
-								SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1));
+								SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1 && variant != "SEAICE"));
 							}
 						} else {
 							// ... otherwise put it in surfacefluxrate
