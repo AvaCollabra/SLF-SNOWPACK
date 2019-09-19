@@ -2553,6 +2553,8 @@ void SnowStation::splitElement(const size_t& e)
 	Ndata[e+1].z=(Ndata[e+2].z+Ndata[e].z)/2.;
 	Ndata[e+2].u*=0.5;
 	Ndata[e+1].u*=0.5;
+	// Remove "marked layer" mk from lower layer
+	if(int(Edata[e].mk/1000) == 9) Edata[e].mk-=static_cast<short unsigned int>(9000);
 	// Correct pressure head in case of saturation
 	if(Edata[e].h > Edata[e].VG.h_e) {
 		Edata[e].h+=.5*Edata[e].L;
