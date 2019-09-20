@@ -220,21 +220,25 @@ bool SalinityTransport::SolveSalinityTransportEquationImplicit(const double dt, 
 			// No flux upper boundary for diffusion (mirroring the i-1 node)
 			if(ZeroFluxUpperBoundary_diffusion) {
 				if(NumberOfElements>1) {
-					b[i] += + (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_down[i] * (dz_up[i] + dz_down[i]))
-					        - (1. - f) * (2. * D[i-1] * theta1[i-1] * BrineSal[i-1]) / (dz_down[i] * (dz_up[i] + dz_down[i]));
+					b[i] += - (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_down[i] * (dz_up[i] + dz_down[i]))
+					        + (1. - f) * (2. * D[i-1] * theta1[i-1] * BrineSal[i-1]) / (dz_down[i] * (dz_up[i] + dz_down[i]));
 				}
 			} else {
-				b[i] += (1. - f) * 2. * D[i] * theta1[i] * TopSalinity / (dz_up[i] * (dz_up[i] + dz_down[i]));
+				b[i] +=  (1. - f) * (2. * D[i-1] * theta1[i-1] * BrineSal[i-1]) / (dz_down[i] * (dz_up[i] + dz_down[i]))
+				     -   (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_up[i] * dz_down[i])
+				     +   (1. - f) * (2. * D[i] * theta1[i+1] * TopSalinity) / (dz_up[i] * (dz_up[i] + dz_down[i]));
 			}
 		} else if(i==0) {
 			// No flux lower boundary for diffusion (mirroring the i+1 node)
 			if(ZeroFluxLowerBoundary_diffusion) {
 				if(NumberOfElements>1) {
-					b[i] += + (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_up[i] * (dz_up[i] + dz_down[i]))
-					        - (1. - f) * (2. * D[i+1] * theta1[i+1] * BrineSal[i+1]) / (dz_up[i] * (dz_up[i] + dz_down[i]));
+					b[i] += - (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_up[i] * (dz_up[i] + dz_down[i]))
+					        + (1. - f) * (2. * D[i+1] * theta1[i+1] * BrineSal[i+1]) / (dz_up[i] * (dz_up[i] + dz_down[i]));
 				}
 			} else {
-				b[i] += (1. - f) * 2. * D[i] * theta1[i] * BottomSalinity / (dz_down[i] * (dz_up[i] + dz_down[i]));
+				b[i] += (1. - f) * 2. * D[i] * theta1[i] * BottomSalinity / (dz_down[i] * (dz_up[i] + dz_down[i]))
+				     -  (1. - f) * (2. * D[i] * theta1[i] * BrineSal[i]) / (dz_up[i] * dz_down[i])
+				     +  (1. - f) * (2. * D[i+1] * theta1[i+1] * BrineSal[i+1]) / (dz_up[i] * (dz_up[i] + dz_down[i]));
 			}
 		} else {
 			b[i] +=  (1. - f) * (2. * D[i-1] * theta1[i-1] * BrineSal[i-1]) / (dz_down[i] * (dz_up[i] + dz_down[i]))
