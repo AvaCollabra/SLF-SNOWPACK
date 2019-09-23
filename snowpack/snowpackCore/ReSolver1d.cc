@@ -1005,7 +1005,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Now copy the EMS water content into the working arrays to solve Richards-equation (so this is the important part were this function is coupled to the rest of SNOWPACK).
 		if(EMS[i].theta[SOIL]<Constants::eps2) {		//For snow
 			h_n[i]=EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, theta_i_n[i]);
-			if(variant=="SEAICE" && h_n[i]>EMS[i].VG.h_e-Constants::eps && EMS[i].h>EMS[i].VG.h_e-Constants::eps) {
+			if(variant=="SEAICE" && h_n[i]>EMS[i].VG.h_e-Constants::eps && EMS[i].h>EMS[i].VG.h_e-Constants::eps && NDS[i+1].z < Xdata.Seaice->SeaLevel) {
 				h_n[i]=EMS[i].h;
 			}
 		} else {
