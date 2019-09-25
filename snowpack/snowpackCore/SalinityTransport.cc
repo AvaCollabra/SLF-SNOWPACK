@@ -23,7 +23,7 @@
 #include <snowpack/Utils.h>
 #include <stdio.h>
 
-static const bool ZeroFluxLowerBoundary_diffusion = true;
+static const bool ZeroFluxLowerBoundary_diffusion = false;
 static const bool ZeroFluxUpperBoundary_diffusion = true;
 static const bool ZeroFluxLowerBoundary_advection = false;
 static const bool ZeroFluxUpperBoundary_advection_in = false;	// For incoming flux: set to false would reflect fresh water influx in case of rain or condensation
