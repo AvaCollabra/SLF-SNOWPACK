@@ -81,7 +81,8 @@ class SmetIO : public SnowpackIOInterface {
 
 	private:
 		std::vector<double> fixedPositions;
-		std::string outpath, o_snowpath, experiment, inpath, i_snowpath, sw_mode;
+		std::string outpath, o_snowpath, experiment, inpath, i_snowpath;
+		std::string metamorphism_model, variant, sw_mode;
 		const RunInfo info;
 		std::map<std::string, smet::SMETWriter*> tsWriters; ///< for each filename, we keep an associated SMETWriter
 		double in_dflt_TZ;

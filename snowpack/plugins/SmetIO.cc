@@ -142,8 +142,8 @@ using namespace mio;
  * the profile date.
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-        : fixedPositions(), outpath(), o_snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info), tsWriters(),
+        : fixedPositions(), outpath(), o_snowpath(), experiment(), inpath(), i_snowpath(),
+          metamorphism_model(), variant(), sw_mode(), info(run_info), tsWriters(),
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), useReferenceLayer(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
@@ -157,6 +157,9 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, IOUtils::nothrow);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
+	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
+	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
@@ -181,7 +184,6 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("USEREFERENCELAYER", "Output", useReferenceLayer, IOUtils::nothrow);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
-	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 }
 
 SmetIO::~SmetIO()
