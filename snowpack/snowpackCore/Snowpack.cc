@@ -112,6 +112,11 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("TEMP_INDEX_SWR_FACTOR", "SnowpackAdvanced", temp_index_swr_factor, IOUtils::nothrow);
 	cfg.getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization);
 	cfg.getValue("HN_DENSITY_FIXEDVALUE", "SnowpackAdvanced", hn_density_fixedValue);
+    
+    //Define keys for new snow information  
+    cfg.getValue("RIME_INDEX", "SnowpackAdvanced", rime_index); 
+    cfg.getValue("NEWSNOW_LWC", "SnowpackAdvanced", newsnow_lwc); 
+    cfg.getValue("READ_DSM", "SnowpackAdvanced", read_dsm); 
 
 	//Define keys for snow albedo computation
 	cfg.getValue("SNOW_ALBEDO", "SnowpackAdvanced", snow_albedo);
