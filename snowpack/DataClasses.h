@@ -136,8 +136,8 @@ class CurrentMeteo {
 		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)
 		std::vector<double> conc;  ///< Solute concentrations in precipitation
 		double rho_hn;             ///< Measured new snow density (kg m-3)
-        double rime_hn;            ///< riming index of new snow  
-        double lwc_hn;             ///< liquid water content of new snow  
+		double rime_hn;            ///< riming index of new snow  
+		double lwc_hn;             ///< liquid water content of new snow  
 
 	private:
 		size_t getNumberMeasTemperatures(const mio::MeteoData& md);
@@ -214,7 +214,7 @@ class LayerData {
 		double metamo;              ///< keep track of metamorphism
 		double salinity;            ///< salinity (kg/kg)
 		double h;                   ///< capillary pressure head (m)
-        double dsm;                 ///< dry snow metamorphism factor
+		double dsm;                 ///< dry snow metamorphism factor
 };
 
 /**
@@ -265,8 +265,8 @@ class SN_SNOWSOIL_DATA {
 		double Canopy_alb_dry;  // Albedo of dry canopy (calibr: 0.09, Alptal)
 		double Canopy_alb_wet;  // Albedo of wet canopy (calibr: 0.09, Alptal)
 		double Canopy_alb_snow;  // Albedo of snow covered albedo (calibr: 0.35, Alptal)
-    /// OPTIONNAL PARAMETERS, if not provided Constants::emissivity_soil will be used
-    double Emissivity_soil;
+		/// OPTIONNAL PARAMETERS, if not provided Constants::emissivity_soil will be used
+		double Emissivity_soil;
 
 
 };
@@ -367,7 +367,7 @@ class ElementData {
 		double Qph_down;           ///< Heat source/sink due to phase changes for the heat equation (W/m^3), at the lower node of the element
 		//NIED (H. Hirashima)
 		double dsm;                ///< Dry snow metamorphism factor
-        double rime;               ///< Rime index
+		double rime;               ///< Rime index
 
 		unsigned short int ID;    ///< Element ID used to track elements
 		static const unsigned short int noID;
@@ -383,7 +383,7 @@ class ElementData {
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dsm(0.), S_dsm(0.), Sigdsm(0.),rhov(0) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), rhov(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
@@ -403,7 +403,7 @@ class NodeData {
 		double dsm;  ///< Dry snow metamorphism factor
 		double S_dsm;
 		double Sigdsm;
-        double rime;  
+		double rime;  
 
 		double rhov;    /// < nodal vapor density in kg/m^3
 
@@ -646,7 +646,7 @@ class SnowStation {
 		double lwc_sum;             ///< Total liquid water in snowpack
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
-        double rime_hn;              ///< rime of new snow to be used on slopes
+		double rime_hn;              ///< rime of new snow to be used on slopes
 		size_t ErosionLevel;        ///< Element where snow erosion stopped previously for the drift index
 		double ErosionMass;         ///< Eroded mass either real or virtually (storage if less than one element)
 		char S_class1;               ///< Stability class based on hand hardness, grain class ...
