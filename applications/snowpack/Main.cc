@@ -224,7 +224,7 @@ inline void Usage(const string& programname)
 		<< "\t[-s, --stations=<comma delimited stationnames>] (e.g. DAV2,WFJ2)\n"
 		<< "\t[-v, --version] Print the version number\n"
 		<< "\t[-h, --help] Print help message and version information\n\n";
-	cout << "\tPlease not that the operational mode should only be used within SLF\n";
+	cout << "\tPlease note that the operational mode should only be used within SLF\n";
 
 	cout << "Example: " << programname << " -c io.ini -e 1996-06-17T00:00\n\n";
 }
@@ -657,10 +657,11 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
                    vector<SnowStation> &vecXdata, ZwischenData &sn_Zdata, CurrentMeteo& Mdata,
                    double &wind_scaling_factor, double &time_count_deltaHS)
 {
-	string snowfile;
+	std::string snowfile;
 	stringstream ss;
 	ss << "SNOWFILE" << i_stn+1;
 	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
+	const bool meta_from_sno = cfg.get("METADATA_FROM_SNO", "Input", true);
 
 	//Read SSdata for every "slope" referred to as sector where sector 0 corresponds to the main station
 	for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
@@ -678,8 +679,8 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				snowpackio.readSnowCover(snowfile, vecStationIDs[i_stn], vecSSdata[slope.mainStation], sn_Zdata, false);
 				prn_msg(__FILE__, __LINE__, "msg-", mio::Date(), "Reading snow cover data for station %s",
 				        vecStationIDs[i_stn].c_str());
-				// NOTE (Is it a HACK?) Reading station meta data provided in meteo data and prebuffering those data
-				vector<mio::MeteoData> vectmpmd;
+				// Reading station meta data provided in meteo data and prebuffering those data
+				std::vector<mio::MeteoData> vectmpmd;
 				if (current_date.isUndef()) //either force the start date or take it from the sno file
 					current_date = Date::rnd(vecSSdata[slope.mainStation].profileDate, 1);
 				else
@@ -689,8 +690,10 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 					                       + current_date.toString(mio::Date::ISO), AT);
 				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
-				vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
-				                                vecSSdata[slope.mainStation].meta);
+				if (meta_from_sno) //either get the metadata from the sno file or from the meteo data
+					vecSSdata[slope.mainStation].meta = mio::StationData::merge(vecSSdata[slope.mainStation].meta, vectmpmd[i_stn].meta);
+				else
+					vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta, vecSSdata[slope.mainStation].meta);
 			} else {
 				std::stringstream sec_snowfile;
 				sec_snowfile << snowfile << sector;
@@ -893,6 +896,7 @@ inline void printStartInfo(const SnowpackConfig& cfg, const std::string& name)
 inline void real_main (int argc, char *argv[])
 {
 	setbuf(stdout, NULL); //always flush stdout
+	setbuf(stderr, NULL); //always flush stderr
 #ifdef DEBUG_ARITHM
 	feenableexcept(FE_DIVBYZERO | FE_INVALID | FE_OVERFLOW ); //for halting the process at arithmetic exceptions, see also ReSolver1d
 #endif
