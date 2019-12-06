@@ -111,6 +111,67 @@
  *
  * \image html simulation_workflow.png "Simulation workflow"
  * \image latex simulation_workflow.eps "Simulation workflow" width=0.9\textwidth
+ * 
+ * @section virtual_stations Spatial resampling
+ * Through MeteoIO, it is possible to force Snowpack with data that has not been measured locally. The forcings are then extracted for example from gridded data (such as the outputs of
+ * weather forecasting models or reanalysis models) or by spatially interpolating stations' data to the point of interest. For the data extraction or interpolation, please
+ * refer to MeteoIO's documentation section "Spatial resampling" (see for example the current stable release 
+ * <a href="https://models.slf.ch/docserver/meteoio/html/spatial_resampling.html">documentation</a>). 
+ * 
+ * \image html virtual_stations.png "Spatial resampling"
+ * \image latex virtual_stations.eps "Spatial resampling" width=0.9\textwidth
+ * 
+ * The METADATA_FROM_SNO configuration key in the [Input] section
+ * controls wether the metadata (such as exact location, slope, azimuth) should be provided by the sno file (ie manually provided by the user) or provided by
+ * the meteorological data (in such a case, automatically extracted from either the gridded data or from the DEM used for the spatial interpolations). When relying on 
+ * spatially interpolated values, it is often necessary to first run Snowpack at the real forcing locations in order to generate easier to interpolate fields 
+ * (such as ISWR, ILWR, PSUM) and then run the virtual stations by spatially interpolating the computed variables. In this case, it is recommended to run the first set
+ * of simulations with the following set of keys:
+ * @code
+ * [Output]
+ * TS_WRITE        = TRUE
+ * TS_FORMAT       = SMET
+ * TS_DAYS_BETWEEN = 0.04166667	;so we get hourly values
+ *
+ * OUT_CANOPY = FALSE
+ * OUT_HAZ    = FALSE
+ * OUT_SOILEB = FALSE
+ * OUT_HEAT   = FALSE
+ * OUT_T      = FALSE
+ * OUT_STAB   = FALSE
+ * OUT_LW     = TRUE
+ * OUT_SW     = TRUE
+ * OUT_MASS   = TRUE
+ * OUT_METEO  = TRUE
+ *
+ * AVGSUM_TIME_SERIES = TRUE
+ * CUMSUM_MASS        = FALSE
+ * PRECIP_RATES       = FALSE
+ * @endcode
+ * 
+ * And the second set of simulations (ie the ones relying on spatially interpolated forcings) with this set of keys:
+ * @code
+ * [Input]
+ * METEO      = SMET
+ *
+ * PSUM_S::MOVE = MS_Snow
+ * PSUM_L::MOVE = MS_Rain
+ * HS::MOVE    = HS_meas	;so we can still compare measured vs modelled snow height
+ * TSG::MOVE   = T_bottom	;so we can compare the ground temperatures
+ * TSS::MOVE   = TSS_meas	;so we can compare the surface temperatures
+ *
+ * WFJ2::KEEP = TA TSS TSG RH ISWR ILWR HS VW DW PSUM_S PSUM_L PSUM PSUM_PH	;so we do not keep all kind of unnecessary parameters
+ *
+ * PSUM_PH::create     = PRECSPLITTING
+ * PSUM_PH::PRECSPLITTING::type   = THRESH
+ * PSUM_PH::PRECSPLITTING::snow   = 274.35
+ * PSUM::create     = PRECSPLITTING
+ * PSUM::PRECSPLITTING::type   = THRESH
+ * PSUM::PRECSPLITTING::snow   = 274.35
+ *
+ * [SNOWPACK]
+ * ENFORCE_MEASURED_SNOW_HEIGHTS = FALSE
+ * @endcode
  */
 
 /**
