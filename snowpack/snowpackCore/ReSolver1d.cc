@@ -707,7 +707,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 
 	//Setting some program flow variables
-	const bool SafeMode=false;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
+	const bool SafeMode=true;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
 
 	const bool WriteDebugOutputput=false;		//true: debugging output is printed
 
@@ -1665,10 +1665,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 					//Calculate theta
 					theta_np1_mp1[i]=EMS[i].VG.fromHtoTHETAforICE(h_np1_mp1[i], theta_i_np1_m[i]);
-					/*if(h_np1_mp1[i] < EMS[i].VG.h_e) {
-						h_np1_mp1[i]=EMS[i].VG.fromTHETAtoHforICE(theta_np1_mp1[i], h_d, theta_i_np1_m[i]);
-						delta_h[memstate%nmemstates][i]=h_np1_mp1[i]-h_np1_m[i];
-					}*/
 
 					//Calculate temperature change of soil layers to reflect heat advected by the flowing water
 					if(i<Xdata.SoilNode) {

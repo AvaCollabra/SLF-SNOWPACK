@@ -257,7 +257,7 @@ class SN_SNOWSOIL_DATA {
 		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
 		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
 		double TimeCountDeltaHS;          ///< Time counter tracking erroneous settlement in operational mode
-		/// OPTIONAL PARAMETERS, a warning will be thrown in CANOPY::Initialze if no value is provided
+		/// OPTIONAL PARAMETERS, a warning will be thrown in CANOPY::Initialize if no value is provided
 		double Canopy_BasalArea;          ///< Canopy Basal Area in m2 m-2
 		double Canopy_diameter;						///< Average canopy (tree) diameter [m], parameter in the new radiation transfer model
 		double Canopy_lai_frac_top_default;	///< fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
