@@ -403,7 +403,7 @@ class NodeData {
 		double dsm;  ///< Dry snow metamorphism factor
 		double S_dsm;
 		double Sigdsm;
-		double rime;  
+		double rime;
 
 		double rhov;    /// < nodal vapor density in kg/m^3
 
