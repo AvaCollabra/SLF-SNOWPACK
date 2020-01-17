@@ -121,10 +121,12 @@
  * \image html virtual_stations.png "Spatial resampling"
  * \image latex virtual_stations.eps "Spatial resampling" width=0.9\textwidth
  * 
- * The METADATA_FROM_SNO configuration key in the [Input] section
- * controls wether the metadata (such as exact location, slope, azimuth) should be provided by the sno file (ie manually provided by the user) or provided by
- * the meteorological data (in such a case, automatically extracted from either the gridded data or from the DEM used for the spatial interpolations). When relying on 
- * spatially interpolated values, it is often necessary to first run Snowpack at the real forcing locations in order to generate easier to interpolate fields 
+ * The SLOPE_FROM_SNO configuration key in the [Input] section controls whether slope angle and azimuth are taken from the sno file or from
+ * the meteorological forcings (in this case, automatically extracted from either the gridded data or from the DEM used for the spatial interpolations).
+ * Please note that this won't change the meteorological forcings (they are always only valid for their associated coordinates on flat field) but will allow 
+ * Snowpack to reproject the precipitation and radiation fields on the slope (angle and azimuth) of your choice.
+ * 
+ * When relying on spatially interpolated values, it is often necessary to first run Snowpack at the real forcing locations in order to generate easier to interpolate fields 
  * (such as ISWR, ILWR, PSUM) and then run the virtual stations by spatially interpolating the computed variables. In this case, it is recommended to run the first set
  * of simulations with the following set of keys:
  * @code

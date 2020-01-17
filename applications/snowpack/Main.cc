@@ -661,7 +661,7 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 	stringstream ss;
 	ss << "SNOWFILE" << i_stn+1;
 	cfg.getValue(ss.str(), "Input", snowfile, mio::IOUtils::nothrow);
-	const bool meta_from_sno = cfg.get("METADATA_FROM_SNO", "Input", true);
+	const bool slope_from_sno = cfg.get("SLOPE_FROM_SNO", "Input", true);
 
 	//Read SSdata for every "slope" referred to as sector where sector 0 corresponds to the main station
 	for (size_t sector=slope.mainStation; sector<slope.nSlopes; sector++) {
@@ -690,10 +690,13 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 					                       + current_date.toString(mio::Date::ISO), AT);
 				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
-				if (meta_from_sno) //either get the metadata from the sno file or from the meteo data
-					vecSSdata[slope.mainStation].meta = mio::StationData::merge(vecSSdata[slope.mainStation].meta, vectmpmd[i_stn].meta);
-				else
-					vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta, vecSSdata[slope.mainStation].meta);
+				
+				//either get the slope metadata from the sno file or from the meteo data
+				if (slope_from_sno) { //position from the meteo forcings, slope and name from the sno file
+					vecSSdata[slope.mainStation].meta.position = vectmpmd[i_stn].meta.position;
+				} else { //all metadata from the meteo forcings
+					vecSSdata[slope.mainStation].meta = vectmpmd[i_stn].meta;
+				}
 			} else {
 				std::stringstream sec_snowfile;
 				sec_snowfile << snowfile << sector;
