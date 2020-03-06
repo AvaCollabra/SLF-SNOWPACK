@@ -342,8 +342,10 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 	if (md(MeteoData::RH) == mio::IOUtils::nodata)
 		miss_rh=true;
 	if ((variant != "ANTARCTICA")
-	        && ((md(MeteoData::ISWR) == mio::IOUtils::nodata) && (md(MeteoData::RSWR) == mio::IOUtils::nodata)))
-		miss_rad=true;
+	        && ((md(MeteoData::ISWR) == mio::IOUtils::nodata) && (md(MeteoData::RSWR) == mio::IOUtils::nodata))) {
+		if (md.param_exists("NET_SW") && md("NET_SW")!=mio::IOUtils::nodata) miss_rad=false; //net shortwave must be called NET_SW
+		else miss_rad=true;
+	}
 	if (enforce_snow_height && (md(MeteoData::HS) == mio::IOUtils::nodata))
 		miss_hs=true;
 	if (!enforce_snow_height && (md(MeteoData::PSUM) == mio::IOUtils::nodata) )
@@ -382,7 +384,7 @@ inline bool validMeteoData(const mio::MeteoData& md, const string& StationName, 
 }
 
 inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
-                   const double prevailing_wind_dir, const double wind_scaling_factor)
+                   const double& prevailing_wind_dir, const double& wind_scaling_factor, bool &iswr_is_net)
 {
 	Mdata.date   = Date::rnd(md.date, 1);
 	Mdata.ta     = md(MeteoData::TA);
@@ -435,6 +437,12 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	// Add advective heat (for permafrost) if available
 	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");
+	
+	// Temporarly copy Net_SW to iswr, the real iswr/rswr will be computed in setShortWave()
+	if (md.param_exists("NET_SW")) {
+		Mdata.iswr = md("NET_SW");
+		iswr_is_net = true;
+	}
 }
 
 inline double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
@@ -468,8 +476,6 @@ inline void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bo
 	else
 		Mdata.mAlbedo = Constants::undefined;
 
-	const double cAlbedo = Xdata.Albedo;
-
 	if (iswr_is_net) {
 		const double netSW = Mdata.iswr;
 		if(netSW==0.) { //this should only happen at night
@@ -477,6 +483,7 @@ inline void setShortWave(CurrentMeteo& Mdata, const SnowStation& Xdata, const bo
 			Mdata.rswr = 0.;
 			return;
 		}
+		const double cAlbedo = Xdata.Albedo;
 		Mdata.iswr = netSW / (1. - cAlbedo);
 		Mdata.rswr = netSW / (1./cAlbedo - 1.);
 		return;
@@ -495,13 +502,12 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
                             SunObject &sun,
                             double& precip, const double& lw_in, const double hs_a3hl6,
                             double& tot_mass_in,
-                            const std::string& variant)
+                            const std::string& variant, const bool& iswr_is_net)
 {
 	SnowStation &currentSector = vecXdata[slope.sector]; //alias: the current station
 	const bool isMainStation = (slope.sector == slope.mainStation);
 	const bool useCanopyModel = cfg.get("CANOPY", "Snowpack");
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
-	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
 	if (Mdata.tss == mio::IOUtils::nodata) {
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
@@ -1107,13 +1113,14 @@ inline void real_main (int argc, char *argv[])
 				SnowpackConfig tmpcfg(cfg);
 
 				//fill Snowpack internal structure with forcing data
-				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor);
+				bool iswr_is_net = false;
+				copyMeteoData(vecMyMeteo[i_stn], Mdata, slope.prevailing_wind_dir, wind_scaling_factor, iswr_is_net);
 				Mdata.copySnowTemperatures(vecMyMeteo[i_stn], slope_sequence);
 				Mdata.copySolutes(vecMyMeteo[i_stn], SnowStation::number_of_solutes);
 				slope.setSlope(slope_sequence, vecXdata, Mdata.dw_drift);
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
                                        sun, cumsum.precip, lw_in, hs_a3hl6,
-                                       tot_mass_in, variant);
+                                       tot_mass_in, variant, iswr_is_net);
 
 				// Notify user every fifteen days of date being processed
 				const double notify_start = floor(vecSSdata[slope.mainStation].profileDate.getJulian()) + 15.5;

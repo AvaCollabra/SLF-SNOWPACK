@@ -349,7 +349,7 @@
  * - air temperature (TA)
  * - relative humidity (RH)
  * - wind speed (VW)
- * - incoming short wave radiation (ISWR) <i>and/or</i> reflected short wave radiation (RSWR)
+ * - incoming short wave radiation (ISWR) <i>and/or</i> reflected short wave radiation (RSWR) <i>or</i> net short wave radiation (it must be called NET_SW in Smet files).
  * - incoming long wave radiation (ILWR) <i>and/or</i> surface temperature (TSS)
  * - precipitation (PSUM) <i>and/or</i> snow height (HS)
  * - ground temperature (TSG, if available. Otherwise, you will have to use <a href="https://models.slf.ch">MeteoIO</A>'s 
