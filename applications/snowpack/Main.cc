@@ -251,7 +251,7 @@ inline void parseCmdLine(int argc, char **argv, string& begin_date_str, string& 
 		exit(1);
 	}
 
-	while ((opt=getopt_long( argc, argv, ":b:e:m:c:s:v:h", long_options, &longindex)) != -1) {
+	while ((opt=getopt_long( argc, argv, ":b:e:m:c:s:vh", long_options, &longindex)) != -1) {
 		switch (opt) {
 		case 0:
 			break;
