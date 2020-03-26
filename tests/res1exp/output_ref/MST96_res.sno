@@ -9,7 +9,6 @@ nodata           = -999
 tz               = 1
 slope_angle      = 0
 slope_azi        = 0
-creator          = Snowpack 3.40 run by "itadmin"
 ProfileDate      = 1996-06-17T00:00:00
 HS_Last          = 0.000000
 nSoilLayerData   = 0
