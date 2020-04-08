@@ -478,8 +478,8 @@ std::vector<double> ReSolver1d::AssembleRHS( const size_t& lowernode,
 			drho_up = (rho[i+1] - rho[i]) / (dz_up[i]);
 		}
 		if(i==lowernode) {
-			rho_down = 0.5 * (rho[i] + Constants::density_water + SeaIce::betaS * Xdata.Seaice->OceanSalinity);
-			drho_down = (rho[i] - Constants::density_water + SeaIce::betaS * Xdata.Seaice->OceanSalinity) / dz_down[i];
+			rho_down = 0.5 * (rho[i] + Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.)));
+			drho_down = (rho[i] - Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.))) / dz_down[i];
 		} else {
 			rho_down = 0.5 * (rho[i] + rho[i-1]);
 			drho_down = (rho[i] - rho[i-1]) / (dz_down[i]);
@@ -1187,7 +1187,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 
 				//Update liquid density and brine salinity
-				rho[i] = Constants::density_water + SeaIce::betaS * EMS[i].salinity;
+				rho[i] = Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * EMS[i].salinity):(0.));
 
 				if(WriteDebugOutputput) std::cout << "HYDPROPS: i=" << i << std::scientific << " Se=" << Se[i] << " C=" << C[i] << " K=" << K[i] << " rho=" << rho[i] << " sal=" << EMS[i].salinity << ".\n" << std::fixed;
 			}
@@ -1447,7 +1447,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					rho_up = 0.5 * (rho[i] + rho[i+1]);
 				}
 				if(i==lowernode) {
-					rho_down = 0.5 * (rho[i] + Constants::density_water + SeaIce::betaS * Xdata.Seaice->OceanSalinity);
+					rho_down = 0.5 * (rho[i] + Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.)));
 				} else {
 					rho_down = 0.5 * (rho[i] + rho[i-1]);
 				}
@@ -2614,7 +2614,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	if(matrix==true) {
 		for (i = lowernode; i <= uppernode; i++) {
 			if(EMS[i].theta[SOIL]<Constants::eps2) {
-				EMS[i].meltfreeze_tk=Constants::meltfreeze_tk;
+				EMS[i].meltfreeze_tk=((Xdata.Seaice!=NULL)?(-SeaIce::mu*EMS[i].salinity+Constants::meltfreeze_tk):(Constants::meltfreeze_tk));
 			} else {
 				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
 				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
