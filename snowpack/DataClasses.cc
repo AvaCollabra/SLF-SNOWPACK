@@ -270,7 +270,7 @@ const std::string BoundCond::toString() const
 	return os.str();
 }
 
-void BoundCond::clear()
+void BoundCond::reset()
 {
 	lw_out = 0.;
 	lw_net = 0.;
