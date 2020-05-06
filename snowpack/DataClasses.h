@@ -571,6 +571,7 @@ class BoundCond {
 	public:
 		BoundCond() : lw_out(0.), lw_net(0.), qs(0.), ql(0.), qr(0.), qg(Constants::undefined) {}
 		const std::string toString() const;
+		void clear();
 
 		double lw_out;  ///< outgoing longwave radiation
 		double lw_net;  ///< net longwave radiation

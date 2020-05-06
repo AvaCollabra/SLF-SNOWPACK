@@ -270,6 +270,16 @@ const std::string BoundCond::toString() const
 	return os.str();
 }
 
+void BoundCond::clear()
+{
+	lw_out = 0.;
+	lw_net = 0.;
+	qs = 0.;
+	ql = 0.;
+	qr = 0.;
+	qg = 0.;
+}
+
 SurfaceFluxes::SurfaceFluxes()
   : lw_in(0.), lw_out(0.), lw_net(0.), qs(0.), ql(0.), hoar(0.), qr(0.), qg(0.), qg0(0.), sw_hor(0.),
     sw_in(0.), sw_out(0.), qw(0.), sw_dir(0.), sw_diff(0.), pAlbedo(0.), mAlbedo(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
@@ -938,6 +948,8 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 
 double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& model)
 {
+	if (rho_slab<=0.) throw mio::InvalidArgumentException("Evaluating Young's module on an element with negative density", AT);
+		
 	switch (model) {
 		case Sigrist: {//This is the parametrization by Sigrist, 2006
 			static const double A = 968.e6; //in Pa
