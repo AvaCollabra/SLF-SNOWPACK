@@ -1803,7 +1803,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
 			if (ii >= 1) M.compMeteo(Mdata, Xdata, false);
 			// Reinitialize and compute the initial meteo heat fluxes
-			memset((&Bdata), 0, sizeof(BoundCond));
+			Bdata.clear();
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
 
 			// set the snow albedo
