@@ -949,7 +949,7 @@ inline void real_main (int argc, char *argv[])
 
 	//Interval between profile backups (*.sno\<JulianDate\>) (d)
 	double backup_days_between = 400.;
-	cfg.getValue("BACKUP_DAYS_BETWEEN", "Output", backup_days_between, mio::IOUtils::nothrow);
+	cfg.getValue("SNOW_DAYS_BETWEEN", "Output", backup_days_between, mio::IOUtils::nothrow);
 	//First additional profile backup (*.sno\<JulianDate\>) since start of simulation (d)
 	double first_backup = 0.;
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
