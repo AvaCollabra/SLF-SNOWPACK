@@ -110,10 +110,16 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["CANOPY_HEAT_MASS"] = "true";
 	advancedConfig["CANOPY_TRANSMISSION"] = "true";
 	advancedConfig["FORESTFLOOR_ALB"] = "true";
-	//temporary keys for Stability until we decide for a permanent solution
+	advancedConfig["SNOW_PREPARATION"] = "false";
+	advancedConfig["GROOMING_WEEK_START"] = "40";
+	advancedConfig["GROOMING_WEEK_END"] = "17";
+	advancedConfig["GROOMING_HOUR"] = "21";
+	advancedConfig["GROOMING_DEPTH_START"] = "0.4";
+	advancedConfig["GROOMING_DEPTH_IMPACT"] = "0.4";
+		//temporary keys for Stability until we decide for a permanent solution
 	advancedConfig["MULTI_LAYER_SK38"] = "false";
 	advancedConfig["SSI_IS_RTA"] = "false";
-	advancedConfig["SNOW_PREPARATION"] = "false";
+
 
 	//[Input] section
 	inputConfig["METEOPATH"] = "./input";

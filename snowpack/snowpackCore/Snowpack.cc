@@ -1752,7 +1752,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
 	WaterTransport watertransport(cfg);
 	phasechange.reset();
-	// ADJUST_HEIGHT_OF_METEO_VALUES is checked at each call to allow different 
+	// ADJUST_HEIGHT_OF_METEO_VALUES is checked at each call to allow different
 	// cfg values for different pixels in Alpine3D
 	cfg.getValue("ADJUST_HEIGHT_OF_METEO_VALUES", "SnowpackAdvanced", adjust_height_of_meteo_values);
 
@@ -1925,7 +1925,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 	}
 }
 
-void Snowpack::snowPreparation(SnowStation& Xdata)
+void Snowpack::snowPreparation(const SnowpackConfig& cfg, SnowStation& Xdata)
 {
-	TechSnow::preparation(Xdata);
+	TechSnow::preparation(cfg, Xdata);
 }

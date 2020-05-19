@@ -46,12 +46,12 @@ class Snowpack {
 
 		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
-		
+
 		/**
 		 * @brief Perform snow preparation (grooming, etc) on a given snowpack
 		 * @param Xdata snowpack to work on
 		 */
-		static void snowPreparation(SnowStation& Xdata);
+		static void snowPreparation( const SnowpackConfig& cfg, SnowStation& Xdata);
 
 		void setUseSoilLayers(const bool& value);
 		const static double new_snow_albedo, min_ice_content;
@@ -66,7 +66,7 @@ class Snowpack {
 			NEUMANN_BC,
 			DIRICHLET_BC
 		};
-		
+
 		static void EL_INCID(const size_t &e, int Ie[]);
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
@@ -90,7 +90,7 @@ class Snowpack {
 
 		double getParameterizedAlbedo(const SnowStation& Xdata, const CurrentMeteo& Mdata) const;
 		double getModelAlbedo(const SnowStation& Xdata, CurrentMeteo& Mdata) const;
-		
+
 		bool compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xdata, BoundCond& Bdata, const bool& ThrowAtNoConvergence);
 
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
@@ -102,7 +102,7 @@ class Snowpack {
 		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
 
 		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);
-		
+
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                  SurfaceFluxes& Sdata);
 
