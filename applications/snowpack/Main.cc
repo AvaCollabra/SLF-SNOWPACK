@@ -437,7 +437,7 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	// Add advective heat (for permafrost) if available
 	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");
-	
+
 	// Temporarly copy Net_SW to iswr, the real iswr/rswr will be computed in setShortWave()
 	if (md.param_exists("NET_SW")) {
 		Mdata.iswr = md("NET_SW");
@@ -696,7 +696,7 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 					throw mio::IOException("No data found for station " + vecStationIDs[i_stn] + " on "
 					                       + current_date.toString(mio::Date::ISO), AT);
 				Mdata.setMeasTempParameters(vectmpmd[i_stn]);
-				
+
 				//either get the slope metadata from the sno file or from the meteo data
 				if (slope_from_sno) { //position from the meteo forcings, slope and name from the sno file
 					vecSSdata[slope.mainStation].meta.position = vectmpmd[i_stn].meta.position;
@@ -832,7 +832,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("HS_A3H::arg1::min_pts", "Filters", "6"); //TODO change # data required to 1
 		cfg.addKey("HS_A3H::arg1::min_span", "Filters", "10740");
 	}
-	
+
 	//warn the user if the precipitation miss proper re-accumulation
 	const bool HS_driven = cfg.get("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack");
 	if (mode != "OPERATIONAL" && !HS_driven) {
@@ -857,7 +857,7 @@ inline void writeForcing(Date d1, const Date& d2, const double& Tstep, IOManager
 	const std::string experiment = io.getConfig().get("EXPERIMENT", "Output");
 	std::map<std::string, size_t> mapIDs; //over a large time range, the number of stations might change... this is the way to make it work
 	std::vector<MeteoData> Meteo; //we need some intermediate storage, for storing data sets for 1 timestep
-	
+
 	for(; d1<=d2; d1+=Tstep) { //time loop
 		io.getMeteoData(d1, Meteo); //read 1 timestep at once, forcing resampling to the timestep
 		for(size_t ii=0; ii<Meteo.size(); ii++) {
@@ -1073,7 +1073,7 @@ inline void real_main (int argc, char *argv[])
 			writeForcing(current_date, dateEnd, calculation_step_length/1440, io);
 			write_forcing = false; //no need to call it again for the other stations
 		}
-		
+
 		// START TIME INTEGRATION LOOP
 		do {
 			current_date += calculation_step_length/1440;
@@ -1136,8 +1136,9 @@ inline void real_main (int argc, char *argv[])
 				Snowpack snowpack(tmpcfg); //the snowpack model to use
 				Stability stability(tmpcfg, classify_profile);
 				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumsum.precip, sn_Bdata, surfFluxes);
-				if (snowPrep && TechSnow::prepare(current_date))
-					snowpack.snowPreparation( vecXdata[slope.sector] );
+
+				if (snowPrep && TechSnow::prepare(cfg, current_date))
+					snowpack.snowPreparation(cfg, vecXdata[slope.sector] );
 
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
 
