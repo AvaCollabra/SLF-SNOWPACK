@@ -105,7 +105,7 @@ void TechSnow::preparation(const SnowpackConfig& cfg, SnowStation& Xdata)
 	static const double original_density_threshold = 415.; //this is EMS[e].Rho that produces the maximum value of rho_groom (see equation below)
 	const size_t nE = Xdata.getNumberOfElements();
 	double depth = 0.;
-	const double snow_height = Xdata.cH;
+	const double snow_height = Xdata.cH - Xdata.Ground;
 
 	if (snow_height < min_depth) return;		// Grooming only if there is enough snow
 
