@@ -1137,8 +1137,8 @@ inline void real_main (int argc, char *argv[])
 				Stability stability(tmpcfg, classify_profile);
 				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumsum.precip, sn_Bdata, surfFluxes);
 
-				if (grooming && TechSnow::prepare(cfg, current_date))
-					snowpack.snowPreparation(cfg, vecXdata[slope.sector] );
+				if (grooming)
+					snowpack.snowPreparation(current_date, vecXdata[slope.sector] );
 
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
 

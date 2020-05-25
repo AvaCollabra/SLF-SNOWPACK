@@ -82,7 +82,7 @@ void Snowpack::EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]) {
  ************************************************************/
 
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
-          : cfg(i_cfg), metamorphism(i_cfg), phasechange(i_cfg), snowdrift(i_cfg), surfaceCode(),
+          : cfg(i_cfg), metamorphism(i_cfg), phasechange(i_cfg), snowdrift(i_cfg), surfaceCode(), techsnow(i_cfg), 
             variant(), viscosity_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), albedo_average_schmucki(), sw_absorption_scheme(),
             atm_stability_model(), allow_adaptive_timestepping(false), albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
@@ -1925,7 +1925,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 	}
 }
 
-void Snowpack::snowPreparation(const SnowpackConfig& cfg, SnowStation& Xdata)
+void Snowpack::snowPreparation(const mio::Date& currentDate, SnowStation& Xdata) const
 {
-	TechSnow::preparation(cfg, Xdata);
+	if (techsnow.prepare(currentDate))
+		techsnow.preparation(Xdata);
 }

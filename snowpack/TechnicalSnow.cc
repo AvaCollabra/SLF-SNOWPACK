@@ -31,19 +31,21 @@
 using namespace std;
 using namespace mio;
 
+TechSnow::TechSnow(const SnowpackConfig& cfg) 
+        : grooming_week_start(cfg.get("GROOMING_WEEK_START", "TechSnow")), grooming_week_end(cfg.get("GROOMING_WEEK_END", "TechSnow")),
+          grooming_hour(cfg.get("GROOMING_HOUR", "TechSnow")), min_depth( cfg.get("GROOMING_DEPTH_START", "TechSnow")),
+          max_depth( cfg.get("GROOMING_DEPTH_IMPACT", "TechSnow"))
+{}
+
 /**
  * @brief Defined time when the slope preparation happens (default: 9:00PM) and only for the winter season (default: week < 17 && week > 46).
  * @details Returns true if snow should be prepared
- * @param[in] cfg is used to get 'TechSnow' conditions for grooming, especially the periode and hour of grooming
  * @param[in] current_date current date
  * @return true if the snow should be prepared, false otherwise
  */
-bool TechSnow::prepare(const mio::Config& cfg, const mio::Date& current_date)
+bool TechSnow::prepare(const mio::Date& current_date) const
 {
 	const unsigned short iso_week = current_date.getISOWeekNr();
-	const double grooming_week_start = cfg.get("GROOMING_WEEK_START", "TechSnow");
-	const double grooming_week_end = cfg.get("GROOMING_WEEK_END", "TechSnow");
-	const double grooming_hour = cfg.get("GROOMING_HOUR", "TechSnow");
 
 	if (iso_week>grooming_week_end && iso_week<grooming_week_start) return false;
 
@@ -94,13 +96,10 @@ void TechSnow::productionPpt(const CurrentMeteo& Mdata, const double& cumu_preci
  * @brief Perform technical snow preparation. The technical snow preparation has only an influence on the upper 40 cm (default) and started with minimum snow depth of 40 cm (default). The maximum preparation density is 450 kg/m3.
  * @details The densification is done with a fit on the data found in Wolfsperger, F., H. Rhyner, and M. Schneebeli,
  * <i>"Pistenpräparation und Pistenpflege. Das Handbuch für den Praktiker."</i>, Davos: WSL-Institut für Schnee-und Lawineforschung SLF, (2018).
- * @param[in] cfg is used to get 'TechSnow' conditions for grooming impact on the snowpack
  * @param[in] Xdata Snow profile to prepare (grooming, etc)
  */
-void TechSnow::preparation(const SnowpackConfig& cfg, SnowStation& Xdata)
+void TechSnow::preparation(SnowStation& Xdata) const
 {
-	const double min_depth = cfg.get("GROOMING_DEPTH_START", "TechSnow"); //minimum depth of snow for grooming
-	const double max_depth = cfg.get("GROOMING_DEPTH_IMPACT", "TechSnow"); //maximum depth of snow influenced by grooming
 	static const double max_grooming_density = 450.; //this is the maximum value of rho_groom (see equation below) and also a realistic achievable upper value
 	static const double original_density_threshold = 415.; //this is EMS[e].Rho that produces the maximum value of rho_groom (see equation below)
 	const size_t nE = Xdata.getNumberOfElements();

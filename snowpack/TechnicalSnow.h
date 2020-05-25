@@ -29,10 +29,15 @@
 
 class TechSnow {
 	public:
-		TechSnow(const SnowpackConfig& /*i_cfg*/) {}
+		TechSnow(const SnowpackConfig& cfg);
 
-		static bool prepare(const mio::Config& cfg, const mio::Date& current_date);
-		static void preparation(const SnowpackConfig& cfg, SnowStation& Xdata);
+		bool prepare(const mio::Date& current_date) const;
+		void preparation(SnowStation& Xdata) const;
 		static void productionPpt(const CurrentMeteo& Mdata, const double& cumu_precip, double &Tw, double &rho_hn, double &delta_cH, double &theta_w);
+		
+	private:
+		double grooming_week_start, grooming_week_end;
+		double grooming_hour;
+		double min_depth, max_depth; //minimum depth of snow for grooming, maximum depth affected by grooming
 };
 #endif
