@@ -102,14 +102,14 @@ void TechSnow::preparation(SnowStation& Xdata) const
 {
 	static const double max_grooming_density = 450.; //this is the maximum value of rho_groom (see equation below) and also a realistic achievable upper value
 	static const double original_density_threshold = 415.; //this is EMS[e].Rho that produces the maximum value of rho_groom (see equation below)
-	const size_t nE = Xdata.getNumberOfElements();
-	double depth = 0.;
 	const double snow_height = Xdata.cH - Xdata.Ground;
 
 	if (snow_height < min_depth) return;		// Grooming only if there is enough snow
 
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
+	const size_t nE = Xdata.getNumberOfElements();
+	double depth = 0.;
 	for (size_t e=nE; e-- > Xdata.SoilNode; ) {
 		const double L0 = EMS[e].L;
 		depth += L0;
