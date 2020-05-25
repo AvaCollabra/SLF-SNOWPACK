@@ -156,7 +156,7 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["TS_START"] = "0";
 	outputConfig["WRITE_PROCESSED_METEO"] = "false";
 	
-	TechSnowConfig["SNOW_PREPARATION"] = "false";
+	TechSnowConfig["SNOW_GROOMING"] = "false";
 	TechSnowConfig["GROOMING_WEEK_START"] = "40";
 	TechSnowConfig["GROOMING_WEEK_END"] = "17";
 	TechSnowConfig["GROOMING_HOUR"] = "21";

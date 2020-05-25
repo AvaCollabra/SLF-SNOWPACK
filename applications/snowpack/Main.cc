@@ -954,7 +954,7 @@ inline void real_main (int argc, char *argv[])
 	double first_backup = 0.;
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
 
-	const bool snowPrep = cfg.get("SNOW_PREPARATION", "TechSnow");
+	const bool grooming = cfg.get("SNOW_GROOMING", "TechSnow");
 	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output");
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
 	const double profstart = cfg.get("PROF_START", "Output");
@@ -1137,7 +1137,7 @@ inline void real_main (int argc, char *argv[])
 				Stability stability(tmpcfg, classify_profile);
 				snowpack.runSnowpackModel(Mdata, vecXdata[slope.sector], cumsum.precip, sn_Bdata, surfFluxes);
 
-				if (snowPrep && TechSnow::prepare(cfg, current_date))
+				if (grooming && TechSnow::prepare(cfg, current_date))
 					snowpack.snowPreparation(cfg, vecXdata[slope.sector] );
 
 				stability.checkStability(Mdata, vecXdata[slope.sector]);
