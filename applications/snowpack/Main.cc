@@ -954,7 +954,7 @@ inline void real_main (int argc, char *argv[])
 	double first_backup = 0.;
 	cfg.getValue("FIRST_BACKUP", "Output", first_backup, mio::IOUtils::nothrow);
 
-	const bool snowPrep = cfg.get("SNOW_PREPARATION", "SnowpackAdvanced");
+	const bool snowPrep = cfg.get("SNOW_PREPARATION", "TechSnow");
 	const bool classify_profile = cfg.get("CLASSIFY_PROFILE", "Output");
 	const bool profwrite = cfg.get("PROF_WRITE", "Output");
 	const double profstart = cfg.get("PROF_START", "Output");

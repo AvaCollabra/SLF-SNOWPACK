@@ -34,22 +34,22 @@ using namespace mio;
 /**
  * @brief Defined time when the slope preparation happens (default: 9:00PM) and only for the winter season (default: week < 17 && week > 46).
  * @details Returns true if snow should be prepared
- * @param[in] cfg is used to get 'SnowpackAdvanced' conditions for grooming, especially the periode and hour of grooming
+ * @param[in] cfg is used to get 'TechSnow' conditions for grooming, especially the periode and hour of grooming
  * @param[in] current_date current date
  * @return true if the snow should be prepared, false otherwise
  */
 bool TechSnow::prepare(const mio::Config& cfg, const mio::Date& current_date)
 {
 	const unsigned short iso_week = current_date.getISOWeekNr();
-	const double grooming_week_start = cfg.get("GROOMING_WEEK_START", "SnowpackAdvanced");
-	const double grooming_week_end = cfg.get("GROOMING_WEEK_END", "SnowpackAdvanced");
-	const double grooming_hour = cfg.get("GROOMING_HOUR", "SnowpackAdvanced");
+	const double grooming_week_start = cfg.get("GROOMING_WEEK_START", "TechSnow");
+	const double grooming_week_end = cfg.get("GROOMING_WEEK_END", "TechSnow");
+	const double grooming_hour = cfg.get("GROOMING_HOUR", "TechSnow");
 
 	if (iso_week>grooming_week_end && iso_week<grooming_week_start) return false;
 
 	int hour, minute;
 	current_date.getTime(hour, minute);
-	if (hour==grooming_hour && minute==00) return true;
+	if (hour==grooming_hour && minute==0) return true;
 
 	return false;
 }
@@ -74,7 +74,7 @@ void TechSnow::productionPpt(const CurrentMeteo& Mdata, const double& cumu_preci
 	static const double v_wind = 1.5;		// (m/s) Average wind condition for snow production
 	static const double V_water = 100.;	// (l/min) average water supply by the snow guns
 
-	Tw = (IOUtils::K_TO_C(Mdata.ta)) * atan(0.151977 * pow(Mdata.rh*100. + 8.313659, 0.5)) + atan(IOUtils::K_TO_C(Mdata.ta) + Mdata.rh*100.) - atan(Mdata.rh*100. - 1.676331) + 0.00391838 * pow(Mdata.rh*100, 1.5) * atan(0.023101 * Mdata.rh*100) - 4.686035; // (°C) Wet-bulb temperature
+	Tw = IOUtils::K_TO_C(Mdata.ta) * atan(0.151977 * sqrt(Mdata.rh*100. + 8.313659)) + atan(IOUtils::K_TO_C(Mdata.ta) + Mdata.rh*100.) - atan(Mdata.rh*100. - 1.676331) + 0.00391838 * pow(Mdata.rh*100, 1.5) * atan(0.023101 * Mdata.rh*100) - 4.686035; // (°C) Wet-bulb temperature
 	rho_hn = 1.7261 * Optim::pow2(Tw) + 37.484 * Tw + 505.05; // (kg/m3) density of technical snow (kg/m3) dependent from the wet-bulb temperature
 
 	double LWC_max = 29.76 - 11.71 * log(abs(Tw)) + 1.07*T_water - 1.6 * v_wind;	// (%vol) liquid water content at 55 l/min
@@ -94,13 +94,13 @@ void TechSnow::productionPpt(const CurrentMeteo& Mdata, const double& cumu_preci
  * @brief Perform technical snow preparation. The technical snow preparation has only an influence on the upper 40 cm (default) and started with minimum snow depth of 40 cm (default). The maximum preparation density is 450 kg/m3.
  * @details The densification is done with a fit on the data found in Wolfsperger, F., H. Rhyner, and M. Schneebeli,
  * <i>"Pistenpräparation und Pistenpflege. Das Handbuch für den Praktiker."</i>, Davos: WSL-Institut für Schnee-und Lawineforschung SLF, (2018).
- * @param[in] cfg is used to get 'SnowpackAdvanced' conditions for grooming impact on the snowpack
+ * @param[in] cfg is used to get 'TechSnow' conditions for grooming impact on the snowpack
  * @param[in] Xdata Snow profile to prepare (grooming, etc)
  */
 void TechSnow::preparation(const SnowpackConfig& cfg, SnowStation& Xdata)
 {
-	const double min_depth = cfg.get("GROOMING_DEPTH_START", "SnowpackAdvanced"); //minimum depth of snow for grooming
-	const double max_depth = cfg.get("GROOMING_DEPTH_IMPACT", "SnowpackAdvanced"); //maximum depth of snow influenced by grooming
+	const double min_depth = cfg.get("GROOMING_DEPTH_START", "TechSnow"); //minimum depth of snow for grooming
+	const double max_depth = cfg.get("GROOMING_DEPTH_IMPACT", "TechSnow"); //maximum depth of snow influenced by grooming
 	static const double max_grooming_density = 450.; //this is the maximum value of rho_groom (see equation below) and also a realistic achievable upper value
 	static const double original_density_threshold = 415.; //this is EMS[e].Rho that produces the maximum value of rho_groom (see equation below)
 	const size_t nE = Xdata.getNumberOfElements();
