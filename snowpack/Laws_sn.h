@@ -69,12 +69,12 @@ class SnLaws {
 
 		static double compSensibleHeatCoefficient(const CurrentMeteo& Mdata, const SnowStation& Xdata,
 		                                          const double& height_of_meteo_values);
-		static double compLatentHeat_Rh(const CurrentMeteo& Mdata, SnowStation& Xdata,
-		                                const double& height_of_meteo_values);
-		static double compLatentHeat(const CurrentMeteo& Mdata, SnowStation& Xdata,
-		                             const double& height_of_meteo_values);
+		static double compLatentHeat_Rh(const std::string soil_evaporation, const CurrentMeteo& Mdata,
+		                                SnowStation& Xdata, const double& height_of_meteo_values);
+		static double compLatentHeat(const std::string soil_evaporation, const CurrentMeteo& Mdata,
+		                             SnowStation& Xdata, const double& height_of_meteo_values);
 
-		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz);
+		static double compSoilThermalConductivity(const ElementData& Edata, const double& dvdz, const std::string& soil_thermal_conductivity);
 		static double compSnowThermalConductivity(const ElementData& Edata, const double& dvdz, const bool& show_warnings=true);
 
 		static double compEnhanceWaterVaporTransportSnow(const SnowStation& Xdata, const size_t& i_e);
@@ -101,7 +101,7 @@ class SnLaws {
 		static double loadingRateStressCALIBRATION(ElementData& Edata, const mio::Date& date);
 		static double snowViscosityFudgeDEFAULT(const ElementData& Edata);
 		static double snowViscosityFudgeCALIBRATION(const ElementData& Edata, const mio::Date& date);
-		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, const std::string& i_watertransport_model, 
+		static double compSnowViscosity(const std::string& variant, const std::string& i_viscosity_model, const std::string& i_watertransport_model,
 		                                ElementData& Edata, const mio::Date& date);
 		static double snowViscosityDEFAULT(ElementData& Edata);
 		static double snowViscosityKOJIMA(const ElementData& Edata);
@@ -121,7 +121,7 @@ class SnLaws {
 			EVAP_RELATIVE_HUMIDITY,
 			EVAP_NONE
 		} soil_evap_model;
-		
+
 		static bool setStaticData(const std::string& variant, const std::string& watertransportmodel);
 
 		static double newSnowDensityPara(const std::string& i_hn_model,

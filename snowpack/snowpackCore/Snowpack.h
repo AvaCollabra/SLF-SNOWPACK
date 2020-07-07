@@ -145,6 +145,7 @@ class Snowpack {
 		double heat_begin, heat_end;
 		double temp_index_degree_day, temp_index_swr_factor;
 		bool forestfloor_alb;
+		std::string soil_evaporation,soil_thermal_conductivity;
 }; //end class Snowpack
 
 #endif

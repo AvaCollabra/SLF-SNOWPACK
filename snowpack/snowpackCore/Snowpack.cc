@@ -82,7 +82,7 @@ void Snowpack::EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]) {
  ************************************************************/
 
 Snowpack::Snowpack(const SnowpackConfig& i_cfg)
-          : cfg(i_cfg), metamorphism(i_cfg), phasechange(i_cfg), snowdrift(i_cfg), surfaceCode(), techsnow(i_cfg), 
+          : cfg(i_cfg), metamorphism(i_cfg), phasechange(i_cfg), snowdrift(i_cfg), surfaceCode(), techsnow(i_cfg),
             variant(), viscosity_model(), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
             hn_density(), hn_density_parameterization(), sw_mode(), snow_albedo(), albedo_parameterization(), albedo_average_schmucki(), sw_absorption_scheme(),
             atm_stability_model(), allow_adaptive_timestepping(false), albedo_fixedValue(Constants::glacier_albedo), hn_density_fixedValue(SnLaws::min_hn_density),
@@ -95,7 +95,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
             enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.),
-            temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false)
+            temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false), soil_evaporation(), soil_thermal_conductivity()
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -267,6 +267,18 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	cfg.getValue("ADVECTIVE_HEAT", "SnowpackAdvanced", advective_heat, IOUtils::nothrow);
 	cfg.getValue("HEAT_BEGIN", "SnowpackAdvanced", heat_begin, IOUtils::nothrow);
 	cfg.getValue("HEAT_END", "SnowpackAdvanced", heat_end, IOUtils::nothrow);
+
+	/* Get the soil evaporation model to be used
+	 *  - EVAP_RESISTANCE: Resistance Approach, see Laws_sn.c
+	 *  - RELATIVE_HUMIDITY: Relative Humidity Approach, see Snowpack.cc
+	 *  - NONE: none, assume saturation pressure and no extra resistance */
+	cfg.getValue("SOIL_EVAP_MODEL", "SnowpackAdvanced", soil_evaporation);
+
+  /* Get the soil thermal conductivity model to be used
+	 *  - FITTED: Use fit values for soil thermal conductivity, see snLaws::compSoilThermalConductivity()
+	 *  - RAW: Use simply Edata.soil[SOIL_K] + Edata.theta[WATER] * SnLaws::conductivity_water(Edata.Te)
+                      + Edata.theta[ICE] * SnLaws::conductivity_ice(Edata.Te) */
+	cfg.getValue("SOIL_THERMAL_CONDUCTIVITY", "SnowpackAdvanced", soil_thermal_conductivity);
 }
 
 void Snowpack::setUseSoilLayers(const bool& value) { //NOTE is this really needed?
@@ -438,7 +450,7 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	// Find the conductivity of the element TODO: check thresholds
 	double Keff;    // the effective thermal conductivity
 	if (Edata.theta[SOIL] > 0.0) {
-		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz);
+		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz, soil_thermal_conductivity);
 	} else if (Edata.theta[ICE] > 0.55 || Edata.theta[ICE] < min_ice_content) {
 		Keff = Edata.theta[AIR] * Constants::conductivity_air + Edata.theta[ICE] * Constants::conductivity_ice +
 		           Edata.theta[WATER] * Constants::conductivity_water + Edata.theta[SOIL] * Edata.soil[SOIL_K];
@@ -517,7 +529,7 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 
 	Bdata.qs = alpha * (Tair - Tss);
 
-	Bdata.ql = SnLaws::compLatentHeat_Rh(Mdata, Xdata, actual_height_of_meteo_values);
+	Bdata.ql = SnLaws::compLatentHeat_Rh(soil_evaporation, Mdata, Xdata, actual_height_of_meteo_values);
 
 	if (Xdata.getNumberOfElements() > 0) {
 	  	// Limit fluxes in case of explicit treatment of boundary conditions
