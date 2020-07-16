@@ -145,7 +145,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), experiment(), inpath(), i_snowpath(),
           metamorphism_model(), variant(), sw_mode(), info(run_info), tsWriters(),
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
-          avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), useReferenceLayer(false),
+          avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), haz_write(true), useReferenceLayer(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
           out_load(false), out_stab(false), out_canopy(false), out_soileb(false), enable_pref_flow(false), read_dsm(false)
 {
@@ -171,6 +171,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("SNOWPATH", "Input", i_snowpath, IOUtils::nothrow);
 	if (i_snowpath.empty()) i_snowpath = inpath;
 
+	cfg.getValue("HAZ_WRITE", "Output", haz_write, IOUtils::nothrow);
 	cfg.getValue("OUT_CANOPY", "Output", out_canopy);
 	cfg.getValue("OUT_HAZ", "Output", out_haz);
 	cfg.getValue("OUT_HEAT", "Output", out_heat);
@@ -600,7 +601,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	}
 
 	writeSnoFile(snofilename, date, Xdata, Zdata, enable_pref_flow);
-	writeHazFile(hazfilename, date, Xdata, Zdata);
+	if (haz_write) writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
 /*
