@@ -185,6 +185,11 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	if (write_acdd) {
 		acdd.setEnabled(true);
 		acdd.setUserConfig(cfg, "Output", false); //do not allow multi-line keys
+		if (out_haz) { // HACK To avoid troubles in A3D
+			mio::Date now; 
+			now.setFromSys();
+			acdd.addAttribute("history", now.toString(mio::Date::ISO_Z) + ", " + info.user + "@" + info.hostname + ", Snowpack-" + info.version);
+		}
 	}
 }
 
@@ -845,11 +850,6 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 	const std::string fields( getFieldsHeader() );
 	setBasicHeader(Xdata, fields, smet_writer);
 	smet_writer.set_header_value("tz", tz);
-	if (out_haz) { // HACK To avoid troubles in A3D
-		ostringstream ss;
-		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
-		smet_writer.set_header_value("creator", ss.str());
-	}
 
 	std::ostringstream units_offset, units_multiplier;
 	units_offset << "0 "; units_multiplier << "1 ";

@@ -60,11 +60,11 @@ const void* SnowStation::Seaice = NULL;
 
 RunInfo::RunInfo()
             : version(SN_VERSION), computation_date(getRunDate()),
-              compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
+              compilation_date(getCompilationDate()), user(IOUtils::getLogName()), hostname(IOUtils::getHostName()) {}
 
 RunInfo::RunInfo(const RunInfo& orig)
             : version(orig.version), computation_date(orig.computation_date),
-              compilation_date(orig.compilation_date), user(orig.user) {}
+              compilation_date(orig.compilation_date), user(orig.user), hostname(orig.hostname) {}
 
 mio::Date RunInfo::getRunDate()
 {
