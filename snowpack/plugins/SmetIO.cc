@@ -181,7 +181,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
 	
 	bool write_acdd = false;
-	cfg.getValue("ACDD_WRITE", "Output", write_acdd, IOUtils::nothrow);
+	cfg.getValue("ACDD_WRITE", "Output", write_acdd);
 	if (write_acdd) {
 		acdd.setEnabled(true);
 		acdd.setUserConfig(cfg, "Output", false); //do not allow multi-line keys
