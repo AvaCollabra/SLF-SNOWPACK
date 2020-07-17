@@ -142,7 +142,7 @@ using namespace mio;
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
         : fixedPositions(), outpath(), o_snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info), tsWriters(),
+          info(run_info), tsWriters(), acdd(false),
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
@@ -179,6 +179,13 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("OUT_T", "Output", out_t);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
+	
+	bool write_acdd = false;
+	cfg.getValue("ACDD_WRITE", "Output", write_acdd, IOUtils::nothrow);
+	if (write_acdd) {
+		acdd.setEnabled(true);
+		acdd.setUserConfig(cfg, "Output", false); //do not allow multi-line keys
+	}
 }
 
 SmetIO::~SmetIO()
@@ -202,6 +209,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		sw_mode = source.sw_mode;
 		//info = source.info;
 		tsWriters = std::map<std::string, smet::SMETWriter*>(); //it will have to be re-allocated for thread safety
+		acdd = source.acdd;
 
 		in_dflt_TZ = source.in_dflt_TZ;
 		calculation_step_length = source.calculation_step_length;
@@ -600,7 +608,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 		vec_data.push_back( Zdata.hn3[143-ii] );  //Print out the 3 hour new snowfall hazard data info
 		vec_data.push_back( Zdata.hn24[143-ii] ); //Print out the 24 hour new snowfall hazard data info
 	}
-	haz_writer.write(vec_timestamp, vec_data);
+	haz_writer.write(vec_timestamp, vec_data, mio::ACDD(false));
 }
 
 /*
@@ -662,7 +670,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		}
 	}
 
-	sno_writer.write(vec_timestamp, vec_data);
+	sno_writer.write(vec_timestamp, vec_data, mio::ACDD(false));
 }
 
 void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
@@ -1078,7 +1086,7 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 
 	/*if (out_canopy)
 		os << " ";*/
-	smet_writer.write(timestamp, data);
+	smet_writer.write(timestamp, data, acdd);
 }
 
 void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
