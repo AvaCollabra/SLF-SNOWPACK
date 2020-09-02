@@ -30,6 +30,7 @@ map<string,string> SnowpackConfig::snowpackConfig;
 map<string,string> SnowpackConfig::advancedConfig;
 map<string,string> SnowpackConfig::inputConfig;
 map<string,string> SnowpackConfig::outputConfig;
+map<string,string> SnowpackConfig::TechSnowConfig;
 
 const bool SnowpackConfig::__init = SnowpackConfig::initStaticData();
 
@@ -120,13 +121,11 @@ bool SnowpackConfig::initStaticData()
 	//temporary keys for Stability until we decide for a permanent solution
 	advancedConfig["MULTI_LAYER_SK38"] = "false";
 	advancedConfig["SSI_IS_RTA"] = "false";
-	advancedConfig["SNOW_PREPARATION"] = "false";
-    
+
 	// followings are for input
 	advancedConfig["RIME_INDEX"] = "false";
 	advancedConfig["NEWSNOW_LWC"] = "false";
 	advancedConfig["READ_DSM"] = "false";
-
 
 	//[Input] section
 	inputConfig["METEOPATH"] = "./input";
@@ -167,7 +166,15 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["TS_FORMAT"] = "MET";
 	outputConfig["TS_DAYS_BETWEEN"] = "1";
 	outputConfig["TS_START"] = "0";
+	outputConfig["ACDD_WRITE"] = "false";
 	outputConfig["WRITE_PROCESSED_METEO"] = "false";
+	
+	TechSnowConfig["SNOW_GROOMING"] = "false";
+	TechSnowConfig["GROOMING_WEEK_START"] = "40";
+	TechSnowConfig["GROOMING_WEEK_END"] = "17";
+	TechSnowConfig["GROOMING_HOUR"] = "21";
+	TechSnowConfig["GROOMING_DEPTH_START"] = "0.4";
+	TechSnowConfig["GROOMING_DEPTH_IMPACT"] = "0.4";
 
 	return true;
 }
@@ -307,6 +314,12 @@ void SnowpackConfig::setDefaults()
 		//[Output] section
 		string value; getValue(it->first, "Output", value, IOUtils::nothrow);
 		if (value.empty()) addKey(it->first, "Output", it->second);
+	}
+	
+	for(map<string,string>::const_iterator it = TechSnowConfig.begin(); it != TechSnowConfig.end(); ++it) {
+		//[TechSnow] section
+		string value; getValue(it->first, "TechSnow", value, IOUtils::nothrow);
+		if (value.empty()) addKey(it->first, "TechSnow", it->second);
 	}
 
 	/**

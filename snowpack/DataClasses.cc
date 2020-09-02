@@ -59,11 +59,11 @@ const double SnowStation::comb_thresh_rg = 0.125;   ///< Grain radius (mm)
 
 RunInfo::RunInfo()
             : version(SN_VERSION), computation_date(getRunDate()),
-              compilation_date(getCompilationDate()), user(IOUtils::getLogName()) {}
+              compilation_date(getCompilationDate()), user(IOUtils::getLogName()), hostname(IOUtils::getHostName()) {}
 
 RunInfo::RunInfo(const RunInfo& orig)
             : version(orig.version), computation_date(orig.computation_date),
-              compilation_date(orig.compilation_date), user(orig.user) {}
+              compilation_date(orig.compilation_date), user(orig.user), hostname(orig.hostname) {}
 
 mio::Date RunInfo::getRunDate()
 {
@@ -1455,6 +1455,11 @@ double ElementData::extinction() const
 	//return(Edata->Rho/7.  + 75. - 0.0*Edata->theta[WATER]);
 }
 
+void ElementData::snowResidualWaterContent()
+{
+	res_wat_cont = snowResidualWaterContent(theta[ICE]);
+}
+
 /**
  * @brief Estimate the residual water content RWC by Vol \n
  * From work by Coleou and Lesaffre, 1998, Ann. Glaciol., 26, 64-68. \n
@@ -1464,13 +1469,9 @@ double ElementData::extinction() const
  * - RWC by Mass 0.049 to 0.029
  * @note That function will limit range to 0.0264 to 0.08 RWC by Vol
  * @version 11.01
+ * @param[in] theta_i ice volumetric fraction
  * @return residual water content of snow element (1)
  */
-void ElementData::snowResidualWaterContent()
-{
-	res_wat_cont = snowResidualWaterContent(theta[ICE]);
-}
-
 double ElementData::snowResidualWaterContent(const double& theta_i)
 {
 	double resWatCont;
@@ -1628,6 +1629,11 @@ double ElementData::neck2VolumetricStrain() const
 	return (Ln / (2. * rg + Ln));
 }
 
+void ElementData::snowType()
+{
+	type = snowType(dd, sp, 2.*rg, static_cast<unsigned short int>(mk%100), theta[WATER], res_wat_cont);
+}
+
 /**
  * @brief Determine the type of snow \n
  * First revisited by Fierz and Bellaire 2006 and 2007
@@ -1635,12 +1641,6 @@ double ElementData::neck2VolumetricStrain() const
  * @version 11.11
  * @return snow type code according to old-fashioned Swiss tradition
  */
-
-void ElementData::snowType()
-{
-	type = snowType(dd, sp, 2.*rg, static_cast<unsigned short int>(mk%100), theta[WATER], res_wat_cont);
-}
-
 unsigned short int ElementData::getSnowType() const
 {
 	return snowType(dd, sp, 2.*rg, static_cast<unsigned short int>(mk%100), theta[WATER], res_wat_cont);
