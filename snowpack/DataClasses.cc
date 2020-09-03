@@ -1128,6 +1128,7 @@ const unsigned short int ElementData::noID = static_cast<unsigned short int>(-1)
 ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0(0.), L(0.),
                              Te(0.), gradT(0.), meltfreeze_tk(Constants::meltfreeze_tk),
                              theta((size_t)N_COMPONENTS), h(Constants::undefined), conc((size_t)N_COMPONENTS, SnowStation::number_of_solutes), k((size_t)N_SN_FIELDS), c((size_t)N_SN_FIELDS), soil((size_t)N_SOIL_FIELDS),
+                             theta_i_reservoir(0.), theta_i_reservoir_cumul(0.), theta_w_transfer(0.),
                              Rho(0.), M(0.), sw_abs(0.),
                              rg(0.), dd(0.), sp(0.), ogs(0.), rb(0.), N3(0.), mk(0),
                              type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
@@ -1139,6 +1140,7 @@ ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
                              Te(cc.Te), gradT(cc.gradT), meltfreeze_tk(cc.meltfreeze_tk),
                              theta(cc.theta), h(cc.h), conc(cc.conc), k(cc.k), c(cc.c), soil(cc.soil),
+                             theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul), theta_w_transfer(cc.theta_w_transfer),
                              Rho(cc.Rho), M(cc.M), sw_abs(cc.sw_abs),
                              rg(cc.rg), dd(cc.dd), sp(cc.sp), ogs(cc.ogs), rb(cc.rb), N3(cc.N3), mk(cc.mk),
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
@@ -1172,6 +1174,10 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 	const size_t s_soil = data.soil.size();
 	os.write(reinterpret_cast<const char*>(&s_soil), sizeof(size_t));
 	os.write(reinterpret_cast<const char*>(&data.soil[0]), static_cast<streamsize>(s_soil*sizeof(data.soil[0])));
+
+	os.write(reinterpret_cast<const char*>(&data.theta_i_reservoir), sizeof(data.theta_i_reservoir));
+	os.write(reinterpret_cast<const char*>(&data.theta_i_reservoir_cumul), sizeof(data.theta_i_reservoir_cumul));
+	os.write(reinterpret_cast<const char*>(&data.theta_w_transfer), sizeof(data.theta_w_transfer));
 
 	os.write(reinterpret_cast<const char*>(&data.Rho), sizeof(data.Rho));
 	os.write(reinterpret_cast<const char*>(&data.M), sizeof(data.M));
@@ -1253,6 +1259,10 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&s_soil), sizeof(size_t));
 	data.soil.resize(s_soil);
 	is.read(reinterpret_cast<char*>(&data.soil[0]), static_cast<streamsize>(s_soil*sizeof(data.soil[0])));
+
+	is.read(reinterpret_cast<char*>(&data.theta_i_reservoir), sizeof(data.theta_i_reservoir));
+	is.read(reinterpret_cast<char*>(&data.theta_i_reservoir_cumul), sizeof(data.theta_i_reservoir_cumul));
+	is.read(reinterpret_cast<char*>(&data.theta_w_transfer), sizeof(data.theta_w_transfer));
 
 	is.read(reinterpret_cast<char*>(&data.Rho), sizeof(data.Rho));
 	is.read(reinterpret_cast<char*>(&data.M), sizeof(data.M));
@@ -2340,6 +2350,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].theta[SOIL]  = SSdata.Ldata[ll].phiSoil;
 			Edata[e].theta[AIR]   = SSdata.Ldata[ll].phiVoids;
 			Edata[e].theta[ICE]   = SSdata.Ldata[ll].phiIce;
+			Edata[e].theta_i_reservoir = SSdata.Ldata[ll].phiIceReservoir;
+			Edata[e].theta_i_reservoir_cumul = SSdata.Ldata[ll].phiIceReservoirCumul;
 			Edata[e].theta[WATER] = SSdata.Ldata[ll].phiWater;
 			Edata[e].theta[WATER_PREF] = SSdata.Ldata[ll].phiWaterPref;
 			Edata[e].soil[SOIL_RHO] = SSdata.Ldata[ll].SoilRho;
@@ -2644,6 +2656,8 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.L0 = EdataLower.L = LNew;
 	EdataLower.M += EdataUpper.M;
 	EdataLower.theta[ICE] = (L_upper*EdataUpper.theta[ICE] + L_lower*EdataLower.theta[ICE]) / LNew;
+	EdataLower.theta_i_reservoir = (L_upper*EdataUpper.theta_i_reservoir + L_lower*EdataLower.theta_i_reservoir) / LNew; // Also merge the ice reservoirs
+	EdataLower.theta_i_reservoir_cumul = (L_upper*EdataUpper.theta_i_reservoir_cumul + L_lower*EdataLower.theta_i_reservoir_cumul) / LNew; // Also merge the cumulated ice reservoirs
 	EdataLower.theta[WATER] = (L_upper*EdataUpper.theta[WATER] + L_lower*EdataLower.theta[WATER]) / LNew;
 	EdataLower.theta[WATER_PREF] = (L_upper*EdataUpper.theta[WATER_PREF] + L_lower*EdataLower.theta[WATER_PREF]) / LNew;
 	EdataLower.theta[AIR] = 1.0 - EdataLower.theta[WATER] - EdataLower.theta[WATER_PREF] - EdataLower.theta[ICE] - EdataLower.theta[SOIL];
@@ -2653,12 +2667,14 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 		// Note: we can only do this for the uppermost snow element, as otherwise it is not possible to adapt the element length.
 		// If there is not enough space, adjust element length:
 		EdataLower.theta[AIR] = (EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF])*((Constants::density_water/Constants::density_ice)-1.);
-		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF];
+		const double tmpsum = EdataLower.theta[AIR]+EdataLower.theta[ICE]+EdataLower.theta[WATER]+EdataLower.theta[WATER_PREF]; // Not adding ice reservoirs here
 		// Ensure that the element does not become larger than the sum of lengths of the original ones (no absolute element "growth")!
 		LNew = std::min(LNew * tmpsum, L_lower + L_upper);
 		EdataLower.L0 = EdataLower.L = LNew;
 		EdataLower.theta[AIR] /= tmpsum;
 		EdataLower.theta[ICE] /= tmpsum;
+		EdataLower.theta_i_reservoir /= tmpsum; // Recalculate ice reservoir
+		EdataLower.theta_i_reservoir_cumul /= tmpsum; // Recalculate cumulated ice reservoir
 		EdataLower.theta[WATER] /= tmpsum;
 		EdataLower.theta[WATER_PREF] /= tmpsum;
 	}
@@ -3407,7 +3423,7 @@ const std::string SurfaceFluxes::toString() const
 }
 
 LayerData::LayerData() : depositionDate(), hl(0.), ne(0), tl(0.),
-                     phiSoil(0.), phiIce(0.), phiWater(0.), phiWaterPref(0.), phiVoids(0.),
+                     phiSoil(0.), phiIce(0.), phiIceReservoir(0.), phiIceReservoirCumul(0.), phiWater(0.), phiWaterPref(0.), phiVoids(0.),
                      cSoil(SnowStation::number_of_solutes), cIce(SnowStation::number_of_solutes), cWater(SnowStation::number_of_solutes), cVoids(SnowStation::number_of_solutes),
                      SoilRho(0.), SoilK(0.), SoilC(0.),
                      rg(0.), sp(0.), dd(0.), rb(0.), mk(0), hr(0.), CDot(0.), metamo(0.), salinity(0.), h(Constants::undefined), dsm(0.)
@@ -3422,6 +3438,8 @@ std::ostream& operator<<(std::ostream& os, const LayerData& data)
 	os.write(reinterpret_cast<const char*>(&data.tl), sizeof(data.tl));
 	os.write(reinterpret_cast<const char*>(&data.phiSoil), sizeof(data.phiSoil));
 	os.write(reinterpret_cast<const char*>(&data.phiIce), sizeof(data.phiIce));
+	os.write(reinterpret_cast<const char*>(&data.phiIceReservoir), sizeof(data.phiIceReservoir));
+	os.write(reinterpret_cast<const char*>(&data.phiIceReservoirCumul), sizeof(data.phiIceReservoirCumul));
 	os.write(reinterpret_cast<const char*>(&data.phiWater), sizeof(data.phiWater));
 	os.write(reinterpret_cast<const char*>(&data.phiWaterPref), sizeof(data.phiWaterPref));
 	os.write(reinterpret_cast<const char*>(&data.phiVoids), sizeof(data.phiVoids));
@@ -3468,6 +3486,8 @@ std::istream& operator>>(std::istream& is, LayerData& data)
 	is.read(reinterpret_cast<char*>(&data.tl), sizeof(data.tl));
 	is.read(reinterpret_cast<char*>(&data.phiSoil), sizeof(data.phiSoil));
 	is.read(reinterpret_cast<char*>(&data.phiIce), sizeof(data.phiIce));
+	is.read(reinterpret_cast<char*>(&data.phiIceReservoir), sizeof(data.phiIceReservoir));
+	is.read(reinterpret_cast<char*>(&data.phiIceReservoirCumul), sizeof(data.phiIceReservoirCumul));
 	is.read(reinterpret_cast<char*>(&data.phiWater), sizeof(data.phiWater));
 	is.read(reinterpret_cast<char*>(&data.phiWaterPref), sizeof(data.phiWaterPref));
 	is.read(reinterpret_cast<char*>(&data.phiVoids), sizeof(data.phiVoids));

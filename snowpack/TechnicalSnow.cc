@@ -123,6 +123,8 @@ void TechSnow::preparation(SnowStation& Xdata) const
 			EMS[e].theta[WATER] *= L0 / L1;
 			EMS[e].theta[WATER_PREF] *= L0 / L1;
 			EMS[e].theta[ICE]   *= L0 / L1;
+			EMS[e].theta_i_reservoir = 0.0;
+			EMS[e].theta_i_reservoir_cumul = 0.0;
 			EMS[e].dd = 0.;
 			EMS[e].sp = 1.;
 			EMS[e].rg = 0.2; // Have to adapt after some tests
