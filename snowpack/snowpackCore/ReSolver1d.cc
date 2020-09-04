@@ -2503,7 +2503,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// Check for first wetting to set microstructural marker correctly only if not ice reservoir
 					if (!enable_ice_reservoir) {
 						// Check for first wetting to set microstructural marker correctly
-						if ((EMS[i].theta[WATER] > 5E-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
+						if ((EMS[i].theta[WATER] > 5e-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
 							EMS[i].mk += 10;
 						}
 					}

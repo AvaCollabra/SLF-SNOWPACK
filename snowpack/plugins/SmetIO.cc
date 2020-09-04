@@ -392,12 +392,9 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		SSdata.Ldata[ll].phiIce = vec_data[current_index++];
 		if (enable_ice_reservoir) {
 			SSdata.Ldata[ll].phiIceReservoir = vec_data[current_index++];
-		} else {
-			SSdata.Ldata[ll].phiIceReservoir = 0.;
-		}
-		if (enable_ice_reservoir) {
 			SSdata.Ldata[ll].phiIceReservoirCumul = vec_data[current_index++];
 		} else {
+			SSdata.Ldata[ll].phiIceReservoir = 0.;
 			SSdata.Ldata[ll].phiIceReservoirCumul = 0.;
 		}
 		SSdata.Ldata[ll].phiWater = vec_data[current_index++];

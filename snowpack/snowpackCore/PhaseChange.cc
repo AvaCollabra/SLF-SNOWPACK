@@ -291,11 +291,11 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 		// Treat here the ice reservoir
 		if (enable_ice_reservoir) {
 			if (-dth_w >= Edata.theta_w_transfer) { // The water frozen comes from both PF transfer and matrix water
-				double theta_i_transfer = (Constants::density_water / Constants::density_ice) * Edata.theta_w_transfer; // Volumetric content of ice formed, coming from the PF transfer
+				const double theta_i_transfer = (Constants::density_water / Constants::density_ice) * Edata.theta_w_transfer; // Volumetric content of ice formed, coming from the PF transfer
 				Edata.theta[ICE] -= theta_i_transfer; // Take away the PF ice from matrix ice
 				Edata.theta_i_reservoir += theta_i_transfer; // Add the PF ice to the ice reservoir
 			} else { // All water from PF transfer does not freeze
-				double theta_i_transfer = (Constants::density_water / Constants::density_ice) * (-dth_w); // Volumetric content of ice formed, coming from the PF transfer
+				const double theta_i_transfer = (Constants::density_water / Constants::density_ice) * (-dth_w); // Volumetric content of ice formed, coming from the PF transfer
 				Edata.theta[ICE] -= theta_i_transfer; // Take away the PF ice from matrix ice
 				Edata.theta_i_reservoir += theta_i_transfer; // Add the PF ice to the ice reservoir
 			}
