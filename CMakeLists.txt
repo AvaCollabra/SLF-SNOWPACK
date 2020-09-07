@@ -179,6 +179,21 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	SET(ALL_RX_PERM OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 	SET(ALL_RO_PERM OWNER_READ GROUP_READ WORLD_READ)
+	
+	#standard libraries must be installed for gcc on Windows
+	IF(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
+		SET(CPACK_BUNDLE_STDLIBS ON CACHE BOOL "Pack all necessary standard libs for a standalone release")
+		IF(CPACK_BUNDLE_STDLIBS)
+			FILE(GLOB winpthreads "${CMAKE_SOURCE_DIR}/bin/libwinpthread*.dll")
+			FILE(GLOB stdlibs "${CMAKE_SOURCE_DIR}/bin/libstdc++*.dll")
+			FILE(GLOB libgcc "${CMAKE_SOURCE_DIR}/bin/libgcc_s_seh*.dll")
+			IF("${stdlibs}" STREQUAL "")
+ 		        MESSAGE("STDLIBS not found! Please make sure they are in ${CMAKE_SOURCE_DIR}/bin")
+			ENDIF("${stdlibs}" STREQUAL "")
+			INSTALL(FILES ${winpthreads} ${stdlibs} ${libgcc} DESTINATION bin PERMISSIONS ${ALL_RX_PERM} COMPONENT exe)
+		ENDIF(CPACK_BUNDLE_STDLIBS)
+	ENDIF(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
+	
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
 	IF(BUILD_SHARED_LIBS) #consider that if STATIC, we don't need the libs
