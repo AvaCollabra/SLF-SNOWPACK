@@ -70,7 +70,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-FIND_PACKAGE(MeteoIO)
+FIND_PACKAGE(MeteoIO REQUIRED)
 
 ###########################################################
 #plugins and applications
@@ -192,6 +192,7 @@ IF(CPACK_BUNDLE_ALL)
 		INSTALL(FILES ${meteoio_bins} DESTINATION bin PERMISSIONS ${ALL_RX_PERM} COMPONENT exe)
 	ENDIF(BUILD_SHARED_LIBS)
 	IF(INSTALL_DOC)
+		#meteoio's documentation
 		IF(WIN32)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/doc")
 			SET(METEOIO_DOC ${DOC_PATH}/meteoio)
@@ -320,12 +321,13 @@ ELSE(UNIX)
 		SET(CPACK_NSIS_MODIFY_PATH ON)
 		
 		#Main links (they can get overwritten later)
-		SET(MENU_LINKS_NIVIZ "https://run.niviz.org" "NIVIZ online visualization" )
+		SET(MENU_LINKS_NIVIZ "https://run.niviz.org" "niViz online visualization" )
 		SET(MENU_LINKS_SNOWPACK "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
 		IF(INSTALL_DOC)
-			LIST(APPEND MENU_LINKS_SNOWPACK
+			SET(MENU_LINKS_SNOWPACK
 			"${DOC_PATH}/Snowpack_doc.html" "SNOWPACK documentation"
 			"${DOC_PATH}/examples" "SNOWPACK examples"
+			"https://models.slf.ch/p/snowpack/" "SNOWPACK Home page"
 			)
 		ENDIF(INSTALL_DOC)
 		
