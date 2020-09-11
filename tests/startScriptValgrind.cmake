@@ -19,8 +19,9 @@ set(CTEST_CMAKE_GENERATOR "Unix Makefiles")
 
 #Configure valgrind
 SET(CTEST_MEMORYCHECK_COMMAND "/usr/bin/valgrind")
-#SET(CTEST_MEMORYCHECK_COMMAND_OPTIONS ) # activate this if would specivie other then default valgrind options
-#SET(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE) # to say, what valgrind should not "test" ;-), filter out the false positive errors of valgrind
+#SET(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-reachable=yes --error-limit=no --gen-suppressions=all --log-file=suppressions.log")
+SET(CTEST_MEMORYCHECK_COMMAND_OPTIONS "--leak-check=full --show-reachable=yes --error-limit=no")
+SET(CTEST_MEMORYCHECK_SUPPRESSIONS_FILE "${CTEST_SOURCE_DIRECTORY}/tests/bash_suppressions.txt")
 
 #set cMake command to be used
 SET(CTEST_CMAKE_COMMAND "\"${CMAKE_EXECUTABLE_NAME}\"")
