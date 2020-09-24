@@ -16,7 +16,6 @@ SN_ROOT=`pwd`
 
 #run the tests
 log_echo "Starting SNOWPACK testing with SN_ROOT=${SN_ROOT}"
-cd ${SN_ROOT}
 
 make distclean
 /usr/bin/ctest -DCMAKE_SN_ROOT=${SN_ROOT} -S ${SN_ROOT}/tests/startScriptCoverage.cmake -V > ${SN_ROOT}/tests/startScriptCoverage.log 2>&1
