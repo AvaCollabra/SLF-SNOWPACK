@@ -161,6 +161,7 @@ const bool AsciiIO::t_gnd = false;
  * 0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)
  * 0502,nElems,element density (kg m-3)
  * 0503,nElems,element temperature (degC)
+ * 0504,nElems,element ID
  * 0506,nElems,liquid water content by volume (%)
  * 0507,nElems,liquid preferential flow water content by volume (%)
  * 0508,nElems,dendricity (1)
