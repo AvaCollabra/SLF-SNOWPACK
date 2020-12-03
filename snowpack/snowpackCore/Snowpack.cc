@@ -726,7 +726,8 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		size_t eAlbedo = nE-1;
 		size_t marker = EMS[eAlbedo].mk % 10;
 
-		while ((marker==8 || marker==9) && eAlbedo > Xdata.SoilNode){ //If Water or ice layer, go one layer down
+		const bool tmp_isGlacier = Xdata.isGlacier(false);
+		while ((marker==8 || marker==9) && eAlbedo > Xdata.SoilNode && !tmp_isGlacier){ //If Water or ice layer (but not glacier), go one layer down
 			eAlbedo--;
 			marker = EMS[eAlbedo].mk % 10;
 		}
