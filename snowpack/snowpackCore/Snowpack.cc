@@ -584,9 +584,9 @@ void Snowpack::updateBoundHeatFluxes(BoundCond& Bdata, SnowStation& Xdata, const
 		Bdata.qr = 0.;
 	}
 
-  const double emmisivity = (Xdata.getNumberOfElements() > Xdata.SoilNode) ? Constants::emissivity_snow : Xdata.SoilEmissivity;
+	const double emmisivity = (Xdata.getNumberOfElements() > Xdata.SoilNode) ? Constants::emissivity_snow : Xdata.SoilEmissivity;
 
-	const double lw_in  = emmisivity * Constants::stefan_boltzmann * Mdata.ea * Optim::pow4(Tair);
+	const double lw_in  = emmisivity * Atmosphere::blkBody_Radiation(Mdata.ea, Tair);
 	Bdata.lw_out = emmisivity * Constants::stefan_boltzmann * Optim::pow4(Tss);
 	Bdata.lw_net = lw_in - Bdata.lw_out;
 
@@ -726,8 +726,7 @@ double Snowpack::getParameterizedAlbedo(const SnowStation& Xdata, const CurrentM
 		size_t eAlbedo = nE-1;
 		size_t marker = EMS[eAlbedo].mk % 10;
 
-		const bool tmp_isGlacier = Xdata.isGlacier(false);
-		while ((marker==8 || marker==9) && eAlbedo > Xdata.SoilNode && !tmp_isGlacier){ //If Water or ice layer (but not glacier), go one layer down
+		while ((marker==8 || marker==9) && eAlbedo > Xdata.SoilNode && !Xdata.isGlacier(false)){ //If Water or ice layer (but not glacier), go one layer down
 			eAlbedo--;
 			marker = EMS[eAlbedo].mk % 10;
 		}
