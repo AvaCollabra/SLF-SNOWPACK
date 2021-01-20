@@ -1,4 +1,4 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.1)
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 PROJECT(snowpack)
@@ -21,6 +21,8 @@ ENDIF(WIN32)
 
 ###########################################################
 #set compiler flags according to the detected compiler and user options
+SET(CMAKE_CXX_STANDARD 11)
+SET(CMAKE_CXX_STANDARD_REQUIRED True)
 INCLUDE("${CMAKE_SOURCE_DIR}/tools/cmake/SetCompilerOptions.cmake")
 SET_COMPILER_OPTIONS()
 
