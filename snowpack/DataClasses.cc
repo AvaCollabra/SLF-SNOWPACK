@@ -198,7 +198,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 	const vector<ElementData>& EMS = Xdata.Edata;
 	const double cos_sl = Xdata.cos_sl;
 	const bool surf_hoar = (NDS[nE].hoar > (hoar_density_surf * MM_TO_M(hoar_min_size_surf)));
-	
+
 	// Generate the profile data from the element data (1 layer = 1 element)
 	unsigned char snowloc = 0;
 	string mystation = Xdata.meta.getStationID();
@@ -217,7 +217,7 @@ std::vector<SnowProfileLayer> SnowProfileLayer::generateProfile(const mio::Date&
 		Pdata[ll].stationname = mystation;
 		Pdata[ll].loc_for_snow = snowloc;
 		Pdata[ll].loc_for_wind = 1;
-		
+
 		// Write snow layer data
 		if (ll < nE) {
 			Pdata[ll].generateLayer(EMS[e], NDS[e+1]);
@@ -629,7 +629,7 @@ std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 	os.write(reinterpret_cast<const char*>(&data.interception), sizeof(data.interception));
 	os.write(reinterpret_cast<const char*>(&data.throughfall), sizeof(data.throughfall));
 	os.write(reinterpret_cast<const char*>(&data.snowunload), sizeof(data.snowunload));
-	
+
 	os.write(reinterpret_cast<const char*>(&data.snowfac), sizeof(data.snowfac));
 	os.write(reinterpret_cast<const char*>(&data.rainfac), sizeof(data.rainfac));
 	os.write(reinterpret_cast<const char*>(&data.liquidfraction), sizeof(data.liquidfraction));
@@ -691,7 +691,7 @@ std::istream& operator>>(std::istream& is, CanopyData& data)
 	is.read(reinterpret_cast<char*>(&data.interception), sizeof(data.interception));
 	is.read(reinterpret_cast<char*>(&data.throughfall), sizeof(data.throughfall));
 	is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
-	
+
 	is.read(reinterpret_cast<char*>(&data.snowfac), sizeof(data.snowfac));
 	is.read(reinterpret_cast<char*>(&data.rainfac), sizeof(data.rainfac));
 	is.read(reinterpret_cast<char*>(&data.liquidfraction), sizeof(data.liquidfraction));
@@ -803,7 +803,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), SlopeParFlux(0.), dhf(0.), ID(in_ID) 
+                             s_strength(0.), hard(IOUtils::nodata), S_dr(0.), crit_cut_length(Constants::undefined), theta_r(0.), lwc_source(0.), SlopeParFlux(0.), dhf(0.), ID(in_ID)
 							 { }
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
@@ -949,7 +949,7 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& model)
 {
 	if (rho_slab<=0.) throw mio::InvalidArgumentException("Evaluating Young's module on an element with negative density", AT);
-		
+
 	switch (model) {
 		case Sigrist: {//This is the parametrization by Sigrist, 2006
 			static const double A = 968.e6; //in Pa
@@ -1436,16 +1436,20 @@ const std::string NodeData::toString() const
 	return os.str();
 }
 
-SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers) :
+SnowStation::SnowStation(const bool i_useCanopyModel, const bool i_useSoilLayers, const bool i_isAlpine3D):
 	meta(), cos_sl(1.), sector(0), Cdata(), pAlbedo(0.), Albedo(0.),
 	SoilAlb(0.), BareSoil_z0(0.), SoilNode(0), Ground(0.),
 	cH(0.), mH(0.), mass_sum(0.), swe(0.), lwc_sum(0.), hn(0.), rho_hn(0.), ErosionLevel(0), ErosionMass(0.),
 	S_class1(0), S_class2(0), S_d(0.), z_S_d(0.), S_n(0.), z_S_n(0.),
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
-	Ndata(), Edata(), Kt(NULL), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
+	Ndata(), Edata(), Kt(NULL), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.),
+	meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
-	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers) {}
+	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers)
+	{
+		(void)i_isAlpine3D; //Slient compilation warning, variale here for dav and A3D campatibility
+}
 
 SnowStation::SnowStation(const SnowStation& c) :
 	meta(c.meta), cos_sl(c.cos_sl), sector(c.sector), Cdata(c.Cdata), pAlbedo(c.pAlbedo), Albedo(c.Albedo),
@@ -1631,7 +1635,7 @@ void SnowStation::resize(const size_t& number_of_elements)
 	} catch(const exception& e){
 		throw IOException(e.what(), AT); //this will catch all allocation exceptions
 	}
-	
+
 	if (number_of_elements>nEdata_old) {
 		for(size_t ii=nEdata_old; ii<Edata.size(); ii++) {
 			if (Edata[ii].ID==ElementData::noID) Edata[ii].ID = ++maxElementID;

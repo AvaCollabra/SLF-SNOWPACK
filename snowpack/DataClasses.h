@@ -82,7 +82,7 @@ class CurrentMeteo {
 	public:
 		CurrentMeteo();
 		CurrentMeteo(const SnowpackConfig& i_cfg);
-		
+
 		void reset(const SnowpackConfig& i_cfg);
 		void setMeasTempParameters(const mio::MeteoData& md);
 		size_t getNumberMeasTemperatures() const;
@@ -256,9 +256,9 @@ class ElementData {
 			    Pow, ///< another power law
 		            Exp ///< exponential law
 		} Young_Modulus;
-		
+
 		ElementData(const unsigned short int& in_ID);
-		
+
 		bool checkVolContent() const;
 		void heatCapacity();
 		double coldContent() const;
@@ -331,7 +331,7 @@ class ElementData {
 		double SlopeParFlux;       ///< Slope parallel flux (m^3/m^3 * m / timestep)
 		//NIED (H. Hirashima)
 		double dhf;
-		
+
 		unsigned short int ID;    ///< Element ID used to track elements
 		static const unsigned short int noID;
 };
@@ -441,7 +441,7 @@ class CanopyData {
 		double interception;
 		double throughfall;
 		double snowunload;
-		
+
 		double snowfac;     ///< snowfall above canopy
 		double rainfac;     ///< rainfall above canopy
 		double liquidfraction;
@@ -467,7 +467,8 @@ class CanopyData {
  */
 class SnowStation {
 	public:
-		explicit SnowStation(const bool& i_useCanopyModel=true, const bool& i_useSoilLayers=true);
+		explicit SnowStation(const bool i_useCanopyModel=true, const bool i_useSoilLayers=true,
+                         const bool i_isAlpine3D = false );
 		SnowStation(const SnowStation& c);
 
 		~SnowStation();
@@ -556,7 +557,7 @@ class SnowStation {
 
 	private:
 		static double flexibleMaxElemLength(const double& depth); ///< When using REDUCE_N_ELEMENTS, this function determines the max element length, depending on depth inside the snowpack.
-		
+
 		size_t nNodes;                      ///< Actual number of nodes; different for each exposition
 		size_t nElems;                      ///< Actual number of elements (nElems=nNodes-1)
 		unsigned short int maxElementID;    ///< maximum ElementID currently used (so each element can get a unique ID)
