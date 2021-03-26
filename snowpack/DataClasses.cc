@@ -531,10 +531,10 @@ std::istream& operator>>(std::istream& is, SurfaceFluxes& data)
  * @author Adrien Michel
  */
 
-void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel){
+void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel, const bool isAlpine3D){
 
   int_cap_snow = SSdata.Canopy_int_cap_snow; //iMax in Gouttevin,2015
-  if(useCanopyModel &&  (int_cap_snow < 0.0 || int_cap_snow == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (int_cap_snow < 0.0 || int_cap_snow == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopySnowIntCapacity(" << int_cap_snow << ") in soil file is not valid, the default value of 5.9 sill be used.";
@@ -552,7 +552,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 
   /// RADIATION BALANCE
   can_alb_dry = SSdata.Canopy_alb_dry;  // Albedo of dry canopy (calibr: 0.09, Alptal)
-  if(useCanopyModel &&  (can_alb_dry < 0.0 || can_alb_dry> 1.0 || can_alb_dry == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (can_alb_dry < 0.0 || can_alb_dry> 1.0 || can_alb_dry == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopyAlbedoDry (" << can_alb_dry << ") in soil file is not valid, the default value of 0.11 will be used.";
@@ -561,7 +561,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
   }
 
   can_alb_wet = SSdata.Canopy_alb_wet;  // Albedo of wet canopy (calibr: 0.09, Alptal)
-  if(useCanopyModel &&  (can_alb_wet < 0.0 || can_alb_wet > 1.0 ||  can_alb_wet == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (can_alb_wet < 0.0 || can_alb_wet > 1.0 ||  can_alb_wet == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopyAlbedoWet (" << can_alb_wet << ") in soil file is not valid, the default value of 0.11 will be used.";
@@ -570,7 +570,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
   }
 
   can_alb_snow = SSdata.Canopy_alb_snow;  // Albedo of snow covered albedo (calibr: 0.35, Alptal)
-  if(useCanopyModel &&  (can_alb_snow < 0.0 || can_alb_snow > 1.0 || can_alb_snow == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (can_alb_snow < 0.0 || can_alb_snow > 1.0 || can_alb_snow == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopyAlbedoSnow (" << can_alb_snow << ") in soil file is not valid, the default value of 0.35 will be used.";
@@ -581,7 +581,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
   krnt_lai = .75;       // Radiation transmissivity parameter, in the range 0.4-0.8 if the true LAI is used; higher if optical LAI is used.
                                             // (calibrated on Alptal)
   can_diameter = SSdata.Canopy_diameter;  // average canopy (tree) diameter [m], parameter in the new radiation transfer model
-  if(useCanopyModel &&  (can_diameter < 0.0 || can_diameter == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (can_diameter < 0.0 || can_diameter == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopyDiameter (" << can_diameter << ") in soil file is not valid, the default value of 1.0 will be used.";
@@ -595,7 +595,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
   biomass_density = 900.;		// from Linroth et al., 2013 (Kg m-3)
 
   lai_frac_top_default = SSdata.Canopy_lai_frac_top_default;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
-  if(useCanopyModel &&  (lai_frac_top_default < 0.0 || lai_frac_top_default > 1.0 || lai_frac_top_default == mio::IOUtils::nodata ))
+  if(!isAlpine3D && useCanopyModel &&  (lai_frac_top_default < 0.0 || lai_frac_top_default > 1.0 || lai_frac_top_default == mio::IOUtils::nodata ))
   {
     std::stringstream msg;
     msg << "Value provided for CanopyFracLAIUpperLayer (" << lai_frac_top_default << ") in soil file is not valid, the default value of 0.5 will be used.";
@@ -1146,7 +1146,7 @@ ElementData::ElementData(const ElementData& cc) :
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), 
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea),
                              theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul),
                              SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), rime(cc.rime), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange)  {}
 
@@ -1319,7 +1319,7 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 double ElementData::getYoungModule(const double& rho_slab, const Young_Modulus& model)
 {
 	if (rho_slab<=0.) throw mio::InvalidArgumentException("Evaluating Young's module on an element with negative density", AT);
-		
+
 	switch (model) {
 		case Sigrist: {//This is the parametrization by Sigrist, 2006
 			static const double A = 968.e6; //in Pa
@@ -1881,7 +1881,8 @@ const std::string NodeData::toString() const
 	return os.str();
 }
 
-SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLayers, const bool& i_useSeaIceModule) :
+SnowStation::SnowStation(const bool i_useCanopyModel, const bool i_useSoilLayers, const bool i_isAlpine3D,
+                         const bool i_useSeaIceModule) :
 	meta(), cos_sl(1.), sector(0), Cdata(), Seaice(NULL), pAlbedo(0.), Albedo(0.),
 	SoilAlb(0.), SoilEmissivity(0.), BareSoil_z0(0.), SoilNode(0), Ground(0.),
 	cH(0.), mH(0.), mass_sum(0.), swe(0.), lwc_sum(0.), hn(0.), rho_hn(0.), rime_hn(0.), ErosionLevel(0), ErosionMass(0.),
@@ -1890,7 +1891,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	Ndata(), Edata(), Kt(NULL),Kt_vapor(NULL), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
-	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers)
+	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers), isAlpine3D(i_isAlpine3D)
 {
 	if (i_useSeaIceModule)
 		Seaice = new SeaIce;
@@ -1907,7 +1908,7 @@ SnowStation::SnowStation(const SnowStation& c) :
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL),Kt_vapor(NULL), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), windward(c.windward),
 	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
-	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers) {
+	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers), isAlpine3D(c.isAlpine3D) {
 	if (c.Seaice != NULL) {
 		// Deep copy pointer to sea ice object
 		Seaice = new SeaIce(*c.Seaice);
@@ -1976,6 +1977,7 @@ SnowStation& SnowStation::operator=(const SnowStation& source) {
 		maxElementID = source.maxElementID;
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
+		isAlpine3D = source.isAlpine3D;
 	}
 	return *this;
 }
@@ -2434,7 +2436,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			if (Edata[e].h == Constants::undefined) {
 				Edata[e].h = Seaice->SeaLevel - .5 * (Ndata[e].z + Ndata[e+1].z);
 			} else {
-				// Initialize 
+				// Initialize
 				if (e >= SoilNode) {		//Snow
 					Edata[e].VG.SetVGParamsSnow(vanGenuchten::YAMAGUCHI2012, vanGenuchten::CALONNE, /*matrix*/ true, /*seaice*/ true);
 				} else {			//Soil
@@ -2455,7 +2457,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	compSoilInternalEnergyChange(900.); // Time (900 s) will not matter as Qmf == 0. for all layers
 	compSnowpackMasses();
 
-	Cdata.initialize(SSdata, useCanopyModel);
+	Cdata.initialize(SSdata, useCanopyModel, isAlpine3D);
 
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
 	ReSolver_dt = -1.;
@@ -2788,7 +2790,7 @@ std::ostream& operator<<(std::ostream& os, const SnowStation& data)
 	os.write(reinterpret_cast<const char*>(&data.lwc_sum), sizeof(data.lwc_sum));
 	os.write(reinterpret_cast<const char*>(&data.hn), sizeof(data.hn));
 	os.write(reinterpret_cast<const char*>(&data.rho_hn), sizeof(data.rho_hn));
-	os.write(reinterpret_cast<const char*>(&data.rime_hn), sizeof(data.rime_hn)); 
+	os.write(reinterpret_cast<const char*>(&data.rime_hn), sizeof(data.rime_hn));
 	os.write(reinterpret_cast<const char*>(&data.ErosionLevel), sizeof(data.ErosionLevel));
 	os.write(reinterpret_cast<const char*>(&data.ErosionMass), sizeof(data.ErosionMass));
 	os.write(reinterpret_cast<const char*>(&data.S_class1), sizeof(data.S_class1));
@@ -3183,7 +3185,7 @@ std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data)
 
 	os.write(reinterpret_cast<const char*>(&data.rho_hn), sizeof(data.rho_hn));
 	os.write(reinterpret_cast<const char*>(&data.rime_hn), sizeof(data.rime_hn));
-    
+
 	const size_t s_fixedPositions = data.fixedPositions.size();
 	os.write(reinterpret_cast<const char*>(&s_fixedPositions), sizeof(size_t));
 	for (size_t ii=0; ii<s_fixedPositions; ii++) os << data.fixedPositions[ii];
