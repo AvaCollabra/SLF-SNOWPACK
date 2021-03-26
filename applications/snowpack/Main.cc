@@ -568,9 +568,10 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 			meteo.projectPrecipitations(currentSector.meta.getSlopeAngle(), Mdata.psum, Mdata.hs);
 		}
 	}
-
+	bool adjust_height_of_wind_value;
+	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 	// Find the Wind Profile Parameters, w/ or w/o canopy; take care of canopy
-	meteo.compMeteo(Mdata, currentSector, true);
+	meteo.compMeteo(Mdata, currentSector, true, adjust_height_of_wind_value);
 
 	if (isMainStation) {
 		// Update precipitation memory of main station

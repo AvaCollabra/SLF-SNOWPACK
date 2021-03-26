@@ -52,7 +52,8 @@ class Meteo {
 
 		static void projectPrecipitations(const double& SlopeAngle, double& precips, double& hs);
 		static bool compHSrate(CurrentMeteo& Mdata, const SnowStation& vecXdata, const double& hs_a3hl6);
-		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel);
+		void compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool runCanopyModel,
+		               const bool adjust_height_of_wind_value);
 		static void compRadiation(const SnowStation &station, mio::SunObject &sun, SnowpackConfig &cfg, CurrentMeteo &Mdata);
 		static void radiationOnSlope(const SnowStation &sector, const mio::SunObject &sun, CurrentMeteo &Mdata, SurfaceFluxes &surfFluxes);
 		void setStability(const ATM_STABILITY& i_stability);
@@ -65,9 +66,9 @@ class Meteo {
 		                                  const mio::Date& current_date, const int& time_span, const int& increment);
 		static void RichardsonStability(const double& ta_v, const double& t_surf_v, const double& zref,
 		                                const double& vw, const double& z_ratio, double &ustar, double &psi_s);
-		static void MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf, 
+		static void MOStability(const ATM_STABILITY& use_stability, const double& ta_v, const double& t_surf_v, const double& t_surf,
 		                                       const double& zref, const double& vw, const double& z_ratio, double &ustar, double &psi_s, double &psi_m);
-		
+
 		Canopy canopy;
 		double roughness_length, height_of_wind_value;
 		bool adjust_height_of_wind_value;
