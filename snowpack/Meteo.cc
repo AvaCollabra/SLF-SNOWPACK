@@ -52,7 +52,6 @@ Meteo::Meteo(const SnowpackConfig& cfg_in)
 
 	//Define the heights of the meteo measurements above ground (m). Required for surface energy exchange computation and for drifting and blowing snow.
 	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
-	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
 }
@@ -344,12 +343,12 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * @param Mdata meteorological forcing
  * @param Xdata snow profile data
  * @param runCanopyModel should the canopy module also be called?
+ * @param adjust_height_of_wind_value should the height of wind values be adjusted?
  */
-void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool& runCanopyModel)
-{
-	// ADJUST_HEIGHT_OF_WIND_VALUE is checked at each call to allow different 
+ void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool runCanopyModel,
+                      const bool adjust_height_of_wind_value){
+	// ADJUST_HEIGHT_OF_WIND_VALUE is checked at each call to allow different
 	// cfg values for different pixels in Alpine3D
-	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 	bool canopy_status = true;
 	if (useCanopyModel && runCanopyModel) {	// The canopy model should not necessarily be called at every call to compMeteo
 		canopy_status = canopy.runCanopyModel(Mdata, Xdata, roughness_length, height_of_wind_value, adjust_height_of_wind_value);

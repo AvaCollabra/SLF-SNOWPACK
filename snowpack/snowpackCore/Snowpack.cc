@@ -94,7 +94,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true), advective_heat(false), heat_begin(0.), heat_end(0.),
+            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true),
+            adjust_height_of_wind_value(false), advective_heat(false), heat_begin(0.), heat_end(0.),
             temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false), soil_evaporation(), soil_thermal_conductivity()
 {
 	cfg.getValue("ALPINE3D", "SnowpackAdvanced", alpine3d);
@@ -161,7 +162,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	 * Required for surface energy exchange computation and for drifting and blowing snow.
 	 */
 	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Snowpack", height_of_meteo_values);
-
+	cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
 	/* Defines what shortwave radiation flux(es) to use
 	 * - "INCOMING" (downwelling) SW radiation is used
 	 * - "REFLECTED" SW radiation is used
@@ -1813,7 +1814,12 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		Meteo M(cfg);
 		do {
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
-			if (ii >= 1) M.compMeteo(Mdata, Xdata, false);
+			if (ii >= 1){
+				// ADJUST_HEIGHT_OF_WIND_VALUE is checked at each call to allow different␊
+				// cfg values for different pixels in Alpine3D
+				cfg.getValue("ADJUST_HEIGHT_OF_WIND_VALUE", "SnowpackAdvanced", adjust_height_of_wind_value);
+				M.compMeteo(Mdata, Xdata, false, adjust_height_of_wind_value);
+			} 
 			// Reinitialize and compute the initial meteo heat fluxes
 			Bdata.reset();
 			updateBoundHeatFluxes(Bdata, Xdata, Mdata);
