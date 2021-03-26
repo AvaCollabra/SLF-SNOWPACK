@@ -533,210 +533,224 @@ std::istream& operator>>(std::istream& is, SurfaceFluxes& data)
 
 void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel, const bool isAlpine3D){
 
-  int_cap_snow = SSdata.Canopy_int_cap_snow; //iMax in Gouttevin,2015
-  if(!isAlpine3D && useCanopyModel &&  (int_cap_snow < 0.0 || int_cap_snow == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopySnowIntCapacity(" << int_cap_snow << ") in soil file is not valid, the default value of 5.9 sill be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    int_cap_snow = 5.9;
-  }
+	int_cap_snow = SSdata.Canopy_int_cap_snow; //iMax in Gouttevin,2015
+	if(useCanopyModel && (int_cap_snow < 0.0 || int_cap_snow == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopySnowIntCapacity(" << int_cap_snow << ") in soil file is not valid, the default value of 5.9 sill be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		int_cap_snow = 5.9;
+	}
 
-  /// Specific interception capacity for rain (I_LAI) (mm/LAI)
-  int_cap_rain = 0.3;
-  /** Coef in interception function, see (Pomeroy et al,1998) where a value of 0.7 was
-   * found to be appropriate for hourly time-step, but smaller time steps require smaller
-   * values, 0.5 was found reasoanble by using the SnowMIP2 data (2007-12-09)
-  */
-  interception_timecoef = 0.5;
+	/// Specific interception capacity for rain (I_LAI) (mm/LAI)
+	int_cap_rain = 0.3;
+	/** Coef in interception function, see (Pomeroy et al,1998) where a value of 0.7 was
+	 * found to be appropriate for hourly time-step, but smaller time steps require smaller
+	 * values, 0.5 was found reasoanble by using the SnowMIP2 data (2007-12-09)
+	*/
+	interception_timecoef = 0.5;
 
-  /// RADIATION BALANCE
-  can_alb_dry = SSdata.Canopy_alb_dry;  // Albedo of dry canopy (calibr: 0.09, Alptal)
-  if(!isAlpine3D && useCanopyModel &&  (can_alb_dry < 0.0 || can_alb_dry> 1.0 || can_alb_dry == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyAlbedoDry (" << can_alb_dry << ") in soil file is not valid, the default value of 0.11 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    can_alb_dry = 0.11;
-  }
+	/// RADIATION BALANCE
+	can_alb_dry = SSdata.Canopy_alb_dry;  // Albedo of dry canopy (calibr: 0.09, Alptal)
+	if(useCanopyModel &&  (can_alb_dry < 0.0 || can_alb_dry> 1.0 || can_alb_dry == mio::IOUtils::nodata ))
+{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyAlbedoDry (" << can_alb_dry << ") in soil file is not valid, the default value of 0.11 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		can_alb_dry = 0.11;
+	}
 
-  can_alb_wet = SSdata.Canopy_alb_wet;  // Albedo of wet canopy (calibr: 0.09, Alptal)
-  if(!isAlpine3D && useCanopyModel &&  (can_alb_wet < 0.0 || can_alb_wet > 1.0 ||  can_alb_wet == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyAlbedoWet (" << can_alb_wet << ") in soil file is not valid, the default value of 0.11 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    can_alb_wet = 0.11;
-  }
+	can_alb_wet = SSdata.Canopy_alb_wet;  // Albedo of wet canopy (calibr: 0.09, Alptal)
+	if(useCanopyModel &&  (can_alb_wet < 0.0 || can_alb_wet > 1.0 ||  can_alb_wet == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyAlbedoWet (" << can_alb_wet << ") in soil file is not valid, the default value of 0.11 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		can_alb_wet = 0.11;
+	}
 
-  can_alb_snow = SSdata.Canopy_alb_snow;  // Albedo of snow covered albedo (calibr: 0.35, Alptal)
-  if(!isAlpine3D && useCanopyModel &&  (can_alb_snow < 0.0 || can_alb_snow > 1.0 || can_alb_snow == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyAlbedoSnow (" << can_alb_snow << ") in soil file is not valid, the default value of 0.35 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    can_alb_snow = 0.35;
-  }
+	can_alb_snow = SSdata.Canopy_alb_snow;  // Albedo of snow covered albedo (calibr: 0.35, Alptal)
+	if(useCanopyModel &&  (can_alb_snow < 0.0 || can_alb_snow > 1.0 || can_alb_snow == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyAlbedoSnow (" << can_alb_snow << ") in soil file is not valid, the default value of 0.35 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		can_alb_snow = 0.35;
+	}
 
-  krnt_lai = .75;       // Radiation transmissivity parameter, in the range 0.4-0.8 if the true LAI is used; higher if optical LAI is used.
-                                            // (calibrated on Alptal)
-  can_diameter = SSdata.Canopy_diameter;  // average canopy (tree) diameter [m], parameter in the new radiation transfer model
-  if(!isAlpine3D && useCanopyModel &&  (can_diameter < 0.0 || can_diameter == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyDiameter (" << can_diameter << ") in soil file is not valid, the default value of 1.0 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    can_diameter = 1.0;
-  }
+	krnt_lai = .75;       // Radiation transmissivity parameter, in the range 0.4-0.8 if the true LAI is used; higher if optical LAI is used.
+	// (calibrated on Alptal)
+	can_diameter = SSdata.Canopy_diameter;  // average canopy (tree) diameter [m], parameter in the new radiation transfer model
+	if(!isAlpine3D && useCanopyModel &&  (can_diameter < 0.0 || can_diameter == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyDiameter (" << can_diameter << ") in soil file is not valid, the default value of 1.0 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		can_diameter = 1.0;
+	}
 
-  ///  ENERGY BALANCE
-  /// parameters for HeatMass and 2layercanopy
-  biomass_heat_capacity = 2800.;	// from Linroth et al., 2013 (J Kg-1 K-1)
-  biomass_density = 900.;		// from Linroth et al., 2013 (Kg m-3)
+	// ENERGY BALANCE
+	// parameters for HeatMass and 2layercanopy
+	biomass_heat_capacity = 2800.;	// from Linroth et al., 2013 (J Kg-1 K-1)
+	biomass_density = 900.;		// from Linroth et al., 2013 (Kg m-3)
 
-  lai_frac_top_default = SSdata.Canopy_lai_frac_top_default;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
-  if(!isAlpine3D && useCanopyModel &&  (lai_frac_top_default < 0.0 || lai_frac_top_default > 1.0 || lai_frac_top_default == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyFracLAIUpperLayer (" << lai_frac_top_default << ") in soil file is not valid, the default value of 0.5 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    lai_frac_top_default = 0.5;
-  }
+	lai_frac_top_default = SSdata.Canopy_lai_frac_top_default;	// fraction of total LAI that is attributed to the uppermost layer. Here calibrated for Alptal.
+	if(!isAlpine3D && useCanopyModel &&  (lai_frac_top_default < 0.0 || lai_frac_top_default > 1.0 || lai_frac_top_default == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyFracLAIUpperLayer (" << lai_frac_top_default << ") in soil file is not valid, the default value of 0.5 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		lai_frac_top_default = 0.5;
+	}
 
-  trunk_frac_height = 0.2;		// (optional) fraction of total tree height occupied by trunks,
-                                    // used to calculate direct solar insolation of trunks.
-  trunkalb = 0.09;			// trunk albedo
-  et = 1.;				// trunk emissivity
-  ///  TURBULENT HEAT EXCHANGE
-  /// Stab. corr. aerodyn. resist. above and below canopy: 0=off and 1=on (Monin-Obukhov formulation)
-  canopy_stabilitycorrection = true;
-  /// Ratio between canopy height and roughness length
-  roughmom_to_canopyheight_ratio = 0.10;
-  /// As above for displacement height
-  displ_to_canopyheight_ratio = 0.6667;
-  /**
-   * Fractional increase of aerodynamic resistance for evaporation of intercepted snow.
-   * - 10.0 from Koivusalo and Kokkonen (2002)
-   * - 8.0 calibration with Alptal data
-   */
-  raincrease_snow = 10.0;
+	trunk_frac_height = 0.2;  // (optional) fraction of total tree height occupied by trunks,
+	// used to calculate direct solar insolation of trunks.
+	trunkalb = 0.09;  // trunk albedo
+	et = 1.;  // trunk emissivity
+	///  TURBULENT HEAT EXCHANGE
+	/// Stab. corr. aerodyn. resist. above and below canopy: 0=off and 1=on (Monin-Obukhov formulation)
+	canopy_stabilitycorrection = true;
+	/// Ratio between canopy height and roughness length
+	roughmom_to_canopyheight_ratio = 0.10;
+	/// As above for displacement height
+	displ_to_canopyheight_ratio = 0.6667;
+	/**
+	* Fractional increase of aerodynamic resistance for evaporation of intercepted snow.
+	* - 10.0 from Koivusalo and Kokkonen (2002)
+	* - 8.0 calibration with Alptal data
+	*/
+	raincrease_snow = 10.0;
 
-  /// @brief Maximum allowed canopy temperature change (K hr-1)
-  canopytemp_maxchange_perhour = 7.0;
-  /// @brief (~=1, but Not allowed to be exactly 1)
-  roughheat_to_roughmom_ratio = 0.9999;
-  /// @brief minimum heat exchange (Wm-2K-1) at zero wind
-  can_ch0 = 3.;
-  /// @brief 1+CAN_RS_MULT = maximum factor to increase Cdata->rs below canopy
-  can_rs_mult = 3.0;
-  /// @brief TRANSPIRATION
-  /// @brief Minimum canopy surface resistance, 500 (sm-1) is for needle leaf treas van den Hurk et al (2000) *75% Gustafsson et al (2003)
-  rsmin = 375.0;
-  /**
-   * @brief gd (Pa-1) parameter for canopy surface resistance response to vapour pressure:
-   * - 0.0003 = trees (needle or broadleafs)
-   * - 0=crops, grass, tundra etc
-   */
-  f3_gd = 0.0003;
-  /// @brief Root depth, determining the soil layers influenced by root water uptake
-  rootdepth = 1.0;
-  /// @brief Wilting point, defined as a fraction of water content at field capacity (-)
-  wp_fraction = 0.17;
-  /// @brief Wilting point pressure head, when using Richards equation for soil.
-  h_wilt = -1.55E6;
-  //@}
+	/// @brief Maximum allowed canopy temperature change (K hr-1)
+	canopytemp_maxchange_perhour = 7.0;
+	/// @brief (~=1, but Not allowed to be exactly 1)
+	roughheat_to_roughmom_ratio = 0.9999;
+	/// @brief minimum heat exchange (Wm-2K-1) at zero wind
+	can_ch0 = 3.;
+	/// @brief 1+CAN_RS_MULT = maximum factor to increase Cdata->rs below canopy
+	can_rs_mult = 3.0;
+	/// @brief TRANSPIRATION
+	/// @brief Minimum canopy surface resistance, 500 (sm-1) is for needle leaf treas van den Hurk et al (2000) *75% Gustafsson et al (2003)
+	rsmin = 375.0;
+	/**
+	 * @brief gd (Pa-1) parameter for canopy surface resistance response to vapour pressure:
+	 * - 0.0003 = trees (needle or broadleafs)
+	 * - 0=crops, grass, tundra etc
+	 */
+	f3_gd = 0.0003;
+	/// @brief Root depth, determining the soil layers influenced by root water uptake
+	rootdepth = 1.0;
+	/// @brief Wilting point, defined as a fraction of water content at field capacity (-)
+	wp_fraction = 0.17;
+	/// @brief Wilting point pressure head, when using Richards equation for soil.
+	h_wilt = -1.55E6;
+	//@}
 
-  // INITIALIZE CANOPY DATA
-  // State variable
-  temp = 273.15; // temperature (K)
-  storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)  temp;        ///< temperature (K)
-  ec = 1.0;          ///< longwave emissivity (1)
-  // parameters
-  lai = SSdata.Canopy_LAI;
-  if(useCanopyModel &&  (lai < 0.0 || lai == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for LAI (" << lai << ") in soil file is not valid.";
+	// INITIALIZE CANOPY DATA
+	// State variable
+	temp = 273.15; // temperature (K)
+	storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
+	ec = 1.0; ///< longwave emissivity (1)
+// parameters
+	lai = SSdata.Canopy_LAI;
+	if(useCanopyModel && (lai < 0.0 || lai == mio::IOUtils::nodata ))
+	{
+		std::stringstream msg;
+		msg << "Value provided for LAI (" << lai << ") in soil file is not valid.";
 		throw UnknownValueException(msg.str(), AT);
-  }
+	}
 
-  z0m = height*0.1;
-  z0h = z0m*0.1;
-  zdispl = height*0.66;
+	z0m = height*0.1;
+	z0h = z0m*0.1;
+	zdispl = height*0.66;
 
-  height =  SSdata.Canopy_Height;
-  if(useCanopyModel &&  (height < 0.0 || height == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for height (" << height << ") in soil file is not ialid.";
+	height = SSdata.Canopy_Height;
+	if(useCanopyModel && (height < 0.0 || height == mio::IOUtils::nodata ))
+	{
+		std::stringstream msg;
+		msg << "Value provided for height (" << height << ") in soil file is not ialid.";
 		throw UnknownValueException(msg.str(), AT);
-  }
+	}
 
-  direct_throughfall = SSdata.Canopy_Direct_Throughfall;
-  if(useCanopyModel &&  (direct_throughfall < 0.0 || direct_throughfall >1.0 || direct_throughfall == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for direct throughfall (" << direct_throughfall << ") in soil file is not valid.";
+	direct_throughfall = SSdata.Canopy_Direct_Throughfall;
+	if(useCanopyModel && (direct_throughfall < 0.0 || direct_throughfall >1.0 || direct_throughfall == mio::IOUtils::nodata ))
+	{
+		std::stringstream msg;
+		msg << "Value provided for direct throughfall (" << direct_throughfall << ") in soil file is not valid.";
 		throw UnknownValueException(msg.str(), AT);
-  }
+	}
 
-  sigf= 1.-exp(-krnt_lai * (lai));;        ///< radiation transmissivity (1)
+	sigf= 1.-exp(-krnt_lai * (lai));; ///< radiation transmissivity (1)
 
-  // aerodynamic resistances
-  ra = 0.;          ///< from canopy air to reference height
-  rc = 0.;          ///< from canopy to canopy air
-  rs = 0.;          ///< from subsurface to canpopy air
-  rstransp = 0.;    ///< stomatal surface resistance for transpiration
-  // Averaged variables
-  canopyalb = can_alb_dry;  ///< canopy albedo [-]
-  totalalb=0;    ///< total albedo above canopy and snow/soil surface [-]
-  wetfraction = 0.; ///< fraction of canopy covered by interception [-]
-  intcapacity = 0.; ///< maximum interception storage [mm]
-  // Radiations
-  rswrac = 0.;      ///< upward shortwave above canopy
-  iswrac = 0.;	    ///< downward shortwave radiation above canopy
-  rswrbc = 0.;      ///< upward shortwave below canopy
-  iswrbc = 0.;      ///< downward shortwave radiation below canopy
-  ilwrac = 0.;      ///< downward longwave radiation ABOVE canopy
-  rlwrac = 0.;      ///< upward longwave radiation ABOVE canopy
-  ilwrbc = 0.;      ///< downward longwave radiation BELOW canopy
-  rlwrbc = 0.;      ///< upward longwave radiation BELOW canopy
-  rsnet = 0.;       ///< net shortwave radiation
-  rlnet = 0.;       ///< net longwave radiation
-  // Turbulent fluxes
-  sensible = 0.;
-  latent = 0.;
-  latentcorr = 0.;
-  // Evap fluxes
-  transp = 0.;
-  intevap = 0.;
-  // Mass fluxes
-  interception = 0.;
-  throughfall = 0.;
-  snowunload = 0.;
+	// aerodynamic resistances
+	ra = 0.; ///< from canopy air to reference height
+	rc = 0.; ///< from canopy to canopy air
+	rs = 0.; ///< from subsurface to canpopy air
+	rstransp = 0.; //< stomatal surface resistance for transpiration
+	// Averaged variables
+	canopyalb = can_alb_dry; ///< canopy albedo [-]
+	totalalb=0; ///< total albedo above canopy and snow/soil surface [-]
+	wetfraction = 0.; ///< fraction of canopy covered by interception [-]
+	intcapacity = 0.; ///< maximum interception storage [mm]
+	// Radiations
+	rswrac = 0.; ///< upward shortwave above canopy
+	iswrac = 0.; ///< downward shortwave radiation above canopy
+	rswrbc = 0.; ///< upward shortwave below canopy
+	iswrbc = 0.; ///< downward shortwave radiation below canopy
+	ilwrac = 0.; ///< downward longwave radiation ABOVE canopy
+	rlwrac = 0.; ///< upward longwave radiation ABOVE canopy
+	ilwrbc = 0.; ///< downward longwave radiation BELOW canopy
+	rlwrbc = 0.; ///< upward longwave radiation BELOW canopy
+	rsnet = 0.; ///< net shortwave radiation
+	rlnet = 0.; ///< net longwave radiation
+	// Turbulent fluxes
+	sensible = 0.;
+	latent = 0.;
+	latentcorr = 0.;
+	// Evap fluxes
+	transp = 0.;
+	intevap = 0.;
+	// Mass fluxes
+	interception = 0.;
+	throughfall = 0.;
+	snowunload = 0.;
 
-  snowfac = 0.;     ///< snowfall above canopy
-  rainfac = 0.;     ///< rainfall above canopy
-  liquidfraction = 0.;
-  sigftrunk = 0.;   ///< radiation interception cross section for trunk layer ()
-  Ttrunk = 273.15; // trunk temperature (K)
-  CondFluxCanop = 0.; ///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)
-  CondFluxTrunks = 0.; ///< biomass heat storage flux towards Trunks (if 2L)
-  LWnet_Trunks = 0.; ///< net LW to trunks (>0 towards trunks)
-  SWnet_Trunks= 0.; ///< net SW to trunks (>0 towards trunks)
-  QStrunks = 0.;      ///< sensible heat flux from trunks (>0 if heat lost from trunk)
-  forestfloor_alb = 0.; ///< albedo of the forest floor
-  BasalArea =  SSdata.Canopy_BasalArea; ///< basal area of trees on the stand
-  if(useCanopyModel &&  (BasalArea < 0.0 || BasalArea == mio::IOUtils::nodata ))
-  {
-    std::stringstream msg;
-    msg << "Value provided for CanopyBasalArea (" << BasalArea << ") in soil file is not valid, the default value of 0.004 will be used.";
-    prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
-    BasalArea=0.004;
-  }
+	snowfac = 0.; ///< snowfall above canopy
+	rainfac = 0.; ///< rainfall above canopy
+	liquidfraction = 0.;
+	sigftrunk = 0.; ///< radiation interception cross section for trunk layer ()
+	Ttrunk = 273.15; // trunk temperature (K)
+	CondFluxCanop = 0.; ///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)
+	CondFluxTrunks = 0.; ///< biomass heat storage flux towards Trunks (if 2L)
+	LWnet_Trunks = 0.; ///< net LW to trunks (>0 towards trunks)
+	SWnet_Trunks= 0.; ///< net SW to trunks (>0 towards trunks)
+	QStrunks = 0.; ///< sensible heat flux from trunks (>0 if heat lost from trunk)
+	forestfloor_alb = 0.; ///< albedo of the forest floor
+	BasalArea = SSdata.Canopy_BasalArea; ///< basal area of trees on the stand
+	if(useCanopyModel && (BasalArea < 0.0 || BasalArea == mio::IOUtils::nodata ))
+	{
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for CanopyBasalArea (" << BasalArea << ") in soil file is not valid, the default value of 	0.004 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		BasalArea=0.004;
+	}
 
-  HMLeaves=3.*4190.;     ///< Leaves heat mass (J K-1 /m2 ground surface)
-  HMTrunks=30.*4190.;     ///< Trunks heat mass (J K-1 /m2 ground surface)
+	HMLeaves=3.*4190.; ///< Leaves heat mass (J K-1 /m2 ground surface)
+	HMTrunks=30.*4190.; ///< Trunks heat mass (J K-1 /m2 ground surface)
 }
 
 void CanopyData::reset(const bool& cumsum_mass)
