@@ -1436,7 +1436,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 			//Solve equation
-			std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
+			if(ActiveSolver==DGESVD || AllowSwitchSolver==true) std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
 			for (i = lowernode; i <= uppernode; i++) {
 				j=i;	//As matrix A is tridiagonal, it can be filled very efficiently. The notation of i and j is kept for clarity of the structure of A. However, only evaluating when i==j is required.
 
@@ -1457,43 +1457,47 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 
 
-				//This part is for the DGESVD/DGESDD solver, which uses full matrix a (ainv). We always need them, because in case DGTSV fails, we should be able to fall back on DGESVD/DGESDD:
-				if(i==j) {
-					//Set up the matrix diagonal
-					ainv[j*(uppernode+1)+i]=(1./dt)*(C[i]/rho[i]);
+				//This part is for the DGESVD/DGESDD solver, which uses full matrix inversion of matrix A (ainv).
+				if(ActiveSolver==DGESVD || AllowSwitchSolver==true) {
+					// For DGESVD, i indexes rows, j index columns, both starting at 0.
+					if(i==j) {
+						size_t i_d=j*(uppernode+1)+i;		// The index for the main diagonal
+						size_t i_u=(j+1)*(uppernode+1)+i;	// The index for the upper diagonal
+						size_t i_l=(j-1)*(uppernode+1)+i;	// The index for the lower diagonal
 
-					//The following two lines assume Neumann boundary conditions (for upper and lowernode, one of the terms drop out). If Dirichlet is used, this will be corrected later.
-					if(i!=lowernode) ainv[j*(uppernode+1)+i]+=(1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
-					if(i!=uppernode) ainv[j*(uppernode+1)+i]+=(1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
+						//Set up the matrix diagonal
+						ainv[i_d]=(1./dt)*(C[i]/rho[i]);
 
-					//Correct diagonal in case of Dirichlet
-					if(aTopBC==DIRICHLET && i==uppernode) {
-						ainv[i*(uppernode+1)+i]=1.;
-					}
-					if(aBottomBC==DIRICHLET && i==lowernode) {
-						ainv[i*(uppernode+1)+i]=1.;
-					}
+						//The following two lines assume Neumann boundary conditions (for upper and lowernode, one of the terms drop out). If Dirichlet is used, this will be corrected later.
+						if(i!=lowernode) ainv[i_d]+=(1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) ainv[i_d]+=(1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
 
-					//Set up the matrix upper and lower diagonals
-					if(i!=lowernode) ainv[i*(uppernode+1)+(i-1)]=(-1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
-					if(i!=uppernode) ainv[i*(uppernode+1)+(i+1)]=(-1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
-
-					if(uppernode>0) {
-						//Correct upper and lower diagonals in case of Dirichlet
-						//HACK/TODO: check if this piece of code is actually correct. Why is condition uppernode>0 necessary here, but not when using DGTSV or TDMA solvers?
+						//Correct diagonal in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
-							ainv[(i-1)*(uppernode+1)+i]=0.;
-							ainv[i*(uppernode+1)+(i-1)]=0.;
+							ainv[i_d]=1.;
 						}
 						if(aBottomBC==DIRICHLET && i==lowernode) {
-							ainv[(i+1)*(uppernode+1)+i]=0.;
-							ainv[i*(uppernode+1)+(i+1)]=0.;
+							ainv[i_d]=1.;
+						}
+
+						//Set up the matrix upper and lower diagonals
+						if(i!=lowernode) ainv[i_l]=(-1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) ainv[i_u]=(-1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
+
+						//Correct upper and lower diagonals in case of Dirichlet
+						if(aTopBC==DIRICHLET && i==uppernode) {
+							ainv[i_u]=0.;
+							ainv[i_l]=0.;
+						}
+						if(aBottomBC==DIRICHLET && i==lowernode) {
+							ainv[i_u]=0.;
+							ainv[i_l]=0.;
 						}
 					}
 				}
 
 				//This part is for the DGTSV or TDMA solver, that uses the fact that A is a tridiagonal matrix, so we only have to specify the diagonals and subdiagonals.
-				if(ActiveSolver==DGTSV || ActiveSolver==TDMA ) {
+				if(ActiveSolver==DGTSV || ActiveSolver==TDMA) {
 					if(i==j) {
 						//Set up the matrix diagonal
 						ad[i]=(1./dt)*(C[i]/rho[i]);
@@ -1525,9 +1529,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 					}
 				}
-
-				//We copy here the matrix to the ainv, which is passed to the SVD-routine later on. This ainv is altered externally, that's why we need a copy.
-				//ainv[j*(uppernode+1)+i]=a[i][j];
 			}
 
 			r_mpfd = AssembleRHS(lowernode, uppernode, h_np1_m, theta_n, theta_np1_m, theta_i_n, theta_i_np1_m, s, dt, rho, k_np1_m_im12, k_np1_m_ip12, aTopBC, TopFluxRate, aBottomBC, BottomFluxRate, Xdata, Salinity, SALINITY_MIXING);
