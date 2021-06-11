@@ -1461,9 +1461,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				if(ActiveSolver==DGESVD || AllowSwitchSolver==true) {
 					// For DGESVD, i indexes rows, j index columns, both starting at 0.
 					if(i==j) {
-						size_t i_d=j*(uppernode+1)+i;		// The index for the main diagonal
-						size_t i_u=(j+1)*(uppernode+1)+i;	// The index for the upper diagonal
-						size_t i_l=(j-1)*(uppernode+1)+i;	// The index for the lower diagonal
+						size_t LDA=(uppernode+1);
+						size_t i_d=j*LDA+i;		// The index for the main diagonal
+						size_t i_u=(j+1)*LDA+i;		// The index for the upper diagonal
+						size_t i_l=(j-1)*LDA+i;		// The index for the lower diagonal
 
 						//Set up the matrix diagonal
 						ainv[i_d]=(1./dt)*(C[i]/rho[i]);
@@ -1486,12 +1487,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 						//Correct upper and lower diagonals in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
-							ainv[i_u]=0.;
 							ainv[i_l]=0.;
 						}
 						if(aBottomBC==DIRICHLET && i==lowernode) {
 							ainv[i_u]=0.;
-							ainv[i_l]=0.;
+						}
+
+						// Prevent degenerate case
+						if(ainv[i_d]==0. && ainv[i_l]==0. && ainv[i_u]==0.) {
+							ainv[i_d]=1.;
 						}
 					}
 				}
@@ -1520,12 +1524,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 						//Correct diagonals in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
-							adu[i-1]=0.;
 							adl[i-1]=0.;
 						}
 						if(aBottomBC==DIRICHLET && i==lowernode) {
 							adu[i]=0.;
-							adl[i]=0.;
+						}
+
+						// Prevent degenerate case
+						if(ad[i]==0. && adl[i-1]==0. && adu[i]==0.) {
+							ad[i]=1.;
 						}
 					}
 				}
