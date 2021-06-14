@@ -341,13 +341,11 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 	//Calculate pseudo-inverse: Step 1: U.S':
 	for (i = m-1; i >= 0; i--) {
 		for (j = n-1; j >= 0; j--) {
-			//dinv[j*m+i]=0.;							//This line is not necessary anymore, as we reset array to zero where it is declared.
-			for (k = n-1; k >= 0; k--) {						//Do matrix multiplications
-				if (j==k) {							//j==k: this is because s is actually a diagonal matrix, and therefore, represented as a vector.
-					if(s[k]!=0.) {						//NANDER TODO HACK: I'm not happy with this solution, but how to circumvent underflow? I just want 0. in that case.
-						dinv[j*m+i]+=(vt[i*n+k]*(double(1.)/s[k]));	//Note: vt needs to be transposed AND is in FORTRAN matrix notation, therefore, the indices appear normal again.
-					}
-				}
+			k=j;							//This works because s is a diagonal matrix
+			if(s[k]!=0.) {
+				dinv[j*m+i]+=(vt[i*n+k]*(double(1.)/s[k]));	//Note: vt needs to be transposed AND is in FORTRAN matrix notation, therefore, the indices appear normal again.
+			} else {
+				return -1;
 			}
 		}
 	}
