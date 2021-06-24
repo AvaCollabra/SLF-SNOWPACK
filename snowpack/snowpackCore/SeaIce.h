@@ -74,6 +74,7 @@ class SeaIce {
 		double BottomSalFlux, TopSalFlux;	//Bottom and top salt flux
 		double TotalFloodingBucket;		//Total flooding with Bucket scheme (kg / m^2)
 
+		bool check_initial_conditions;
 		enum salinityprofiles{NONE, CONSTANT, COXANDWEEKS, LINEARSAL, LINEARSAL2, SINUSSAL};
 		salinityprofiles salinityprofile;
 

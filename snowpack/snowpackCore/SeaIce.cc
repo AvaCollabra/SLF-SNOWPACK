@@ -60,7 +60,7 @@ const double SeaIce::InitSnowSalinity = 0.;
  ************************************************************/
 
 SeaIce::SeaIce():
-	SeaLevel(0.), ForcedSeaLevel(IOUtils::nodata), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), salinityprofile(SINUSSAL) {}
+	SeaLevel(0.), ForcedSeaLevel(IOUtils::nodata), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), check_initial_conditions(false), salinityprofile(SINUSSAL) {}
 
 SeaIce& SeaIce::operator=(const SeaIce& source) {
 	if(this != &source) {
@@ -77,8 +77,9 @@ SeaIce& SeaIce::operator=(const SeaIce& source) {
 SeaIce::~SeaIce() {}
 
 void SeaIce::ConfigSeaIce(const SnowpackConfig& i_cfg) {
+	// Read salinity profile
 	std::string tmp_salinityprofile;
-	i_cfg.getValue("SALINITYPROFILE", "SnowpackSeaice", tmp_salinityprofile);
+	i_cfg.getValue("SALINITYPROFILE", "SnowpackSeaice", tmp_salinityprofile, mio::IOUtils::nothrow);
 	if (tmp_salinityprofile=="NONE") {
 		salinityprofile=NONE;
 	} else if (tmp_salinityprofile=="CONSTANT") {
@@ -95,6 +96,9 @@ void SeaIce::ConfigSeaIce(const SnowpackConfig& i_cfg) {
 		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown salinity profile (key: SALINITYPROFILE).");
 		throw;
 	}
+
+	// Read whether or not to check the initial conditions
+	i_cfg.getValue("CHECK_INITIAL_CONDITIONS", "SnowpackSeaice", check_initial_conditions, mio::IOUtils::nothrow);
 	return;
 }
 
@@ -666,7 +670,7 @@ double SeaIce::getTotSalinity(const SnowStation& Xdata)
 void SeaIce::InitSeaIce(SnowStation& Xdata)
 {
 	const size_t nE = Xdata.getNumberOfElements();
-	if (nE==0) return;	// Nothing to do...
+	if (nE==0 || !check_initial_conditions) return;	// Nothing to do...
 
 	double totM = 0.;	// Tracks total mass
 
