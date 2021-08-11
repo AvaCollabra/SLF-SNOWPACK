@@ -164,6 +164,8 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	std::vector<double> D(nE, 0.);
 	for (size_t i=0; i<=nE-1; i++) {
 		double aaa = EMS[i].theta[AIR];
+		if (aaa>-1.e-6 && aaa<0.) aaa = 0.;
+		
 		const double nnn = 1. - EMS[i].theta[SOIL];
 		const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 		D[i] = factor_[i]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[i])*D_vapSoil;
