@@ -148,7 +148,7 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql, const double& surfaceVaporPressure)
  {
 	const size_t nN = Xdata.getNumberOfNodes();
-	size_t nE = nN-1;
+	const size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	size_t e = nE;
@@ -157,17 +157,15 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	std::vector<double> vaporFluxDiv(nE, 0.);// store the vapor flux divergence
 
 	std::vector<double> factor_(nE, 1.);// this is for source term in vapor transport equation
-	for(size_t i=0; i<Xdata.SoilNode; i++)
-	{
-		factor_[i]=0.;
+	for(size_t i=0; i<Xdata.SoilNode; i++) {
+		factor_[i] = 0.;
 	}
 
 	std::vector<double> D(nE, 0.);
-	for (size_t i=0; i<=nE-1; i++)
-	{
+	for (size_t i=0; i<=nE-1; i++) {
 		double aaa = EMS[i].theta[AIR];
-		double nnn = 1.- EMS[i].theta[SOIL];
-		double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
+		const double nnn = 1. - EMS[i].theta[SOIL];
+		const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 		D[i] = factor_[i]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[i])*D_vapSoil;
 	}
 
@@ -180,16 +178,16 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	double sumMassChange = 0.0;
 	double sumMassChange2 = 0.0;
-	double sumMassChange3=0.0;
-	double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;
+	double sumMassChange3 = 0.0;
+	const double inletVapourMass = std::abs(ql)/Constants::lh_sublimation*sn_dt;
 	//double ql_bcup = ql;
 	bool forcingMassBalance= false;
 
 	if (enable_vapour_transport) {
 
-        // compute vapor density profile
-        compDensityProfile(Mdata, Xdata, true, ql, surfaceVaporPressure);
-       	ql = 0.; //Now that we used the remaining ql, put it to 0.
+		// compute vapor density profile
+		compDensityProfile(Mdata, Xdata, true, ql, surfaceVaporPressure);
+		ql = 0.; //Now that we used the remaining ql, put it to 0.
 
 		//calculation of vapor diffusion flux
 		for (size_t i = 0; i < nE; i++) {
@@ -204,24 +202,19 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		}
 
 		// scaling to force the mass to be conserved
-		if(forcingMassBalance)
-		{
-			for (size_t i=0; i<=nE-1; i++)
-			{
-				double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
+		if(forcingMassBalance) {
+			for (size_t i=0; i<=nE-1; i++) {
+				const double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 				totalMassChange[i] =(EMS[i].rhov -saturationVapor)*EMS[i].theta[AIR]*EMS[i].L; //total mass change, (kg m-2 )
 				sumMassChange=sumMassChange+std::abs(totalMassChange[i]);
 			}
-			for (size_t i=0; i<=nE-1; i++)
-			{
+			for (size_t i=0; i<=nE-1; i++) {
 				totalMassChange[i]=(totalMassChange[i]/sumMassChange)*inletVapourMass;
 				sumMassChange2=sumMassChange2+totalMassChange[i];
 			}
-		}else
-		{
-			for (size_t i=0; i<=nE-1; i++)
-			{
-				double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
+		} else {
+			for (size_t i=0; i<=nE-1; i++) {
+				const double saturationVapor = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 				totalMassChange[i] =(EMS[i].rhov -saturationVapor)*EMS[i].theta[AIR]*EMS[i].L; //total mass change, (kg m-2 )
 			}
 		}
@@ -269,8 +262,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	double dHoar = 0.;
 
-	for (size_t i=0; i<=nE-1; i++)
-	{
+	for (size_t i=0; i<=nE-1; i++) {
 		sumMassChange3=sumMassChange3+deltaM[i];
 	}
 
@@ -315,10 +307,9 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
     	EMS[e].theta[AIR] = std::max(1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL],0.);
 
-	    if(std::fabs(EMS[e].theta[AIR])<1.e-15)
-    	{
-       		EMS[e].theta[AIR]=0;
-    	}
+	    if(std::fabs(EMS[e].theta[AIR])<1.e-15) {
+			EMS[e].theta[AIR]=0;
+		}
 
 		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice)
 			      + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF]) * Constants::density_water)
