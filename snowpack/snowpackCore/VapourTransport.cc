@@ -135,7 +135,6 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
     try {
 	    LayerToLayer(Mdata, Xdata, Sdata, ql, surfaceVaporPressure);
 	    WaterTransport::adjustDensity(Xdata);
-	    //WaterTransport::mergingElements(Xdata, Sdata);
     } catch(const exception&)
     {
 	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
@@ -261,7 +260,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
 		*/
 	}
-
+	WaterTransport::mergingElements(Xdata, Sdata);
 	double dHoar = 0.;
 
 	for (size_t i=0; i<=nE-1; i++) {
@@ -446,7 +445,6 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 						if (e>0) SnowStation::mergeElements(EMS[e-1], EMS[e], false, true);
 						// Now reduce the number of elements by one.
 						nE--;
-						Xdata.reduceNumberOfElements(nE);
 					}
 					//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
 					if(e==Xdata.SoilNode) break;
