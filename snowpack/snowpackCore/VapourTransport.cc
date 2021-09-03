@@ -165,7 +165,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	for (size_t i=0; i<=nE-1; i++) {
 		double aaa = EMS[i].theta[AIR];
 		if (aaa>-1.e-6 && aaa<0.) aaa = 0.;
-		
+
 		const double nnn = 1. - EMS[i].theta[SOIL];
 		const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 		D[i] = factor_[i]*Constants::diffusion_coefficient_in_snow + (1.0-factor_[i])*D_vapSoil;
@@ -446,6 +446,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 						if (e>0) SnowStation::mergeElements(EMS[e-1], EMS[e], false, true);
 						// Now reduce the number of elements by one.
 						nE--;
+						Xdata.reduceNumberOfElements(nE);
 					}
 					//In case e==Xdata.SoilNode, we removed the last snow element and we should break out of the loop.
 					if(e==Xdata.SoilNode) break;
