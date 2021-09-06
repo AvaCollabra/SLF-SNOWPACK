@@ -260,7 +260,6 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
 		*/
 	}
-	WaterTransport::mergingElements(Xdata, Sdata);
 	double dHoar = 0.;
 
 	for (size_t i=0; i<=nE-1; i++) {
@@ -317,12 +316,12 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			      + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
 		assert(EMS[e].Rho > 0 || EMS[e].Rho==IOUtils::nodata); //density must be positive
 
-		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
-				prn_msg(__FILE__, __LINE__, "err", Date(),
-				    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf soil=%lf air=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE],
-                        EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[SOIL], EMS[e].theta[AIR]);
-				throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
-		}
+		// if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
+		// 		prn_msg(__FILE__, __LINE__, "err", Date(),
+		// 		    "Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%lf soil=%lf air=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE],
+    //                     EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[SOIL], EMS[e].theta[AIR]);
+		// 		throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
+		// }
 
 		//some useful output in case of vapor transport
 		EMS[e].vapTrans_snowDenChangeRate = deltaM[e]/sn_dt/EMS[e].L;
@@ -334,6 +333,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	if (NDS[nN-1].hoar < 0.) {
 		NDS[nN-1].hoar = 0.;
 	}
+	WaterTransport::mergingElements(Xdata, Sdata);
 }
 
 void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata)
