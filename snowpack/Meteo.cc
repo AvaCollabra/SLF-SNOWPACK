@@ -165,11 +165,11 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			case MO_STEARNS: {
 			// Stearns & Weidner, 1993
 			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
-			psi_m = log(1. + dummy1) * log(1. + dummy1) + log(1. + Optim::pow2(dummy1))
-					- 2. * atan(dummy1) - 1.3333;
+			psi_m = log(Optim::pow2(1. + dummy1)) + log(1. + Optim::pow2(dummy1))
+					- 2. * atan(dummy1) - 4./3. * Optim::pow3(dummy1) + 0.8247;
 			const double dummy2 = Optim::pow2(dummy1);
-			psi_s = log(1. + dummy2) * log(1. + dummy2)
-					- 2. * dummy2 - 0.66667 * Optim::pow3(dummy2) + 1.2804;
+			psi_s = log(Optim::pow2(1. + dummy2))
+					- 2. * dummy2 - 2./3. * Optim::pow3(dummy2) + 1.2804;
 			return;
 			}
 
@@ -220,8 +220,8 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
 				- 2. * atan(dummy1) + 0.5 * Constants::pi;
 		// Stearns & Weidner, 1993, for scalars
-		const double dummy2 = pow((1. - 22.5 * stab_ratio), 0.33333);
-		psi_s = pow(log(1. + dummy2 + Optim::pow2(dummy2)), 1.5) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
+		const double dummy2 = pow((1. - 22.5 * stab_ratio), 1./3.);
+		psi_s = log(pow(1. + dummy2 + Optim::pow2(dummy2), 1.5)) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 	}
 }
 
@@ -348,7 +348,7 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * @param Mdata meteorological forcing
  * @param Xdata snow profile data
  * @param runCanopyModel should the canopy module also be called?
- * @param adjust_height_of_wind_value should the height of wind values be adjusted?
+ * @param runCanopyModel should the height of wind values be adjusted?
  */
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool runCanopyModel,
                      const bool adjust_height_of_wind_value)
