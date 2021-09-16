@@ -39,7 +39,7 @@ using namespace mio;
 
 Meteo::Meteo(const SnowpackConfig& cfg)
        : canopy(cfg), roughness_length(0.), height_of_wind_value(0.),
-         stability(MO_MICHLMAYR), research_mode(false), useCanopyModel(false)
+         stability(MO_HOLTSLAG), research_mode(false), useCanopyModel(false)
 {
 	const std::string stability_model = cfg.get("ATMOSPHERIC_STABILITY", "Snowpack");
 	stability = getStability(stability_model);
