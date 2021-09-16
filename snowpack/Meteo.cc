@@ -163,10 +163,11 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 			}
 
 			case MO_STEARNS: {
-			// Stearns & Weidner, 1993
+			// Stearns & Weidner, 1993, eq (9), note ln x^2 in the paper is ln(x^2) not ln^2(x)
 			const double dummy1 = pow((1. + 5. * stab_ratio), 0.25);
 			psi_m = log(Optim::pow2(1. + dummy1)) + log(1. + Optim::pow2(dummy1))
 					- 2. * atan(dummy1) - 4./3. * Optim::pow3(dummy1) + 0.8247;
+			// Stearns & Weidner, 1993, eq (10), note ln x^2 in the paper is ln(x^2) not ln^2(x)
 			const double dummy2 = Optim::pow2(dummy1);
 			psi_s = log(Optim::pow2(1. + dummy2))
 					- 2. * dummy2 - 2./3. * Optim::pow3(dummy2) + 1.2804;
@@ -219,7 +220,7 @@ void Meteo::MOStability(const ATM_STABILITY& use_stability, const double& ta_v, 
 		const double dummy1 = pow((1. - 15. * stab_ratio), 0.25);
 		psi_m = 2. * log(0.5 * (1. + dummy1)) + log(0.5 * (1. + Optim::pow2(dummy1)))
 				- 2. * atan(dummy1) + 0.5 * Constants::pi;
-		// Stearns & Weidner, 1993, for scalars
+		// Stearns & Weidner, 1993, eq (8) for scalars, note ln x^2 in the paper is ln(x^2) not ln^2(x)
 		const double dummy2 = pow((1. - 22.5 * stab_ratio), 1./3.);
 		psi_s = log(pow(1. + dummy2 + Optim::pow2(dummy2), 1.5)) - 1.732 * atan(0.577 * (1. + 2. * dummy2)) + 0.1659;
 	}
