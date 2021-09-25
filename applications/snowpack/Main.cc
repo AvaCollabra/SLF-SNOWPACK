@@ -780,7 +780,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("*::edit998", "InputEditing", "COPY");
 		cfg.addKey("*::arg998::dest", "InputEditing", "RH_AVG");
 		cfg.addKey("*::arg998::src", "InputEditing", "RH");
-
+		
 		cfg.addKey("VW_AVG::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("VW_AVG::arg1::type", "Filters", "MEAN");
 		cfg.addKey("VW_AVG::arg1::soft", "Filters", "true");
@@ -822,21 +822,27 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	if (detect_grass) {
 		// we need various average values of tss and hs, all for "past" windows (left)
 		// Require at least one value per 3 hours
-		cfg.addKey("TSS_A24H::COPY", "Input", "TSS");
+		cfg.addKey("*::edit899", "InputEditing", "COPY");
+		cfg.addKey("*::arg899::dest", "InputEditing", "TSS_A24H");
+		cfg.addKey("*::arg899::src", "InputEditing", "TSS");
 		cfg.addKey("TSS_A24H::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("TSS_A24H::arg1::type", "Filters", "MEAN");
 		cfg.addKey("TSS_A24H::arg1::centering", "Filters", "left");
 		cfg.addKey("TSS_A24H::arg1::min_pts", "Filters", "48"); //TODO change # data required to 4
 		cfg.addKey("TSS_A24H::arg1::min_span", "Filters", "86340");
 
-		cfg.addKey("TSS_A12H::COPY", "Input", "TSS");
+		cfg.addKey("*::edit890", "InputEditing", "COPY");
+		cfg.addKey("*::arg890::dest", "InputEditing", "TSS_A12H");
+		cfg.addKey("*::arg890::src", "InputEditing", "TSS");
 		cfg.addKey("TSS_A12H::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("TSS_A12H::arg1::type", "Filters", "MEAN");
 		cfg.addKey("TSS_A12H::arg1::centering", "Filters", "left");
 		cfg.addKey("TSS_A12H::arg1::min_pts", "Filters", "24"); //TODO change # data required to 2
 		cfg.addKey("TSS_A12H::arg1::min_span", "Filters", "43140");
 
-		cfg.addKey("HS_A3H::COPY", "Input", "HS");
+		cfg.addKey("*::edit880", "InputEditing", "COPY");
+		cfg.addKey("*::arg880::dest", "InputEditing", "HS_A3H");
+		cfg.addKey("*::arg880::src", "InputEditing", "HS");
 		cfg.addKey("HS_A3H::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("HS_A3H::arg1::type", "Filters", "MEAN");
 		cfg.addKey("HS_A3H::arg1::centering", "Filters", "left");
