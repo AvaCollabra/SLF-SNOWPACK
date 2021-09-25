@@ -936,7 +936,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 	unsigned int iteration = 0;   // iteration counter (not really required)
 	bool NotConverged = true;     // true if iteration did not converge
 	// Set the default solution routine convergence parameters
-	unsigned int MaxItnTemp = 40; // maximum 40 iterations for temperature field
+	unsigned int MaxItnTemp = 200; // maximum 40 iterations for temperature field
 	double ControlTemp = 0.01;    // solution convergence to within 0.01 degC
 	// Determine the displacement depth d_pump and the wind pumping speed at the surface
 	const double d_pump = SnLaws::compWindPumpingDisplacement(Xdata);
