@@ -486,8 +486,6 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		mass_corr = forcedErosion(mH, Xdata);
 		if (prn_check) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected, measured_hs=%lf m computed_hs=%lf m mass_corr=%lf cm", mH, cH, mass_corr);
-			/*prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
-			        mH, cH);*/
 		}
 	} else if (cH > Constants::eps) { // assume settling error
 		double factor_corr=0., sum_total_correction=0.;
@@ -547,10 +545,6 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		}
 		if (prn_check) {
 			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Correction due to assumed settling error, measured_hs=%lf m computed_hs=%lf m mass_corr=%lf cm", mH, cH, mass_corr);
-			/*prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
-			          "Small correction due to assumed settling error");
-			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			          "Enforced Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);*/
 		}
 		
 		// Update the overall height
