@@ -290,6 +290,7 @@ class ElementData {
 
 		ElementData(const unsigned short int& in_ID);
 		ElementData(const ElementData& cc); //required to get the correct back-reference in vanGenuchten object
+		ElementData& operator=(const ElementData&) = default; ///<Assignement operator
 
 		bool checkVolContent();
 		void heatCapacity();
