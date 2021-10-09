@@ -1012,16 +1012,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		ds_Solve(ResetMatrixData, (SD_MATRIX_DATA*)Kt, 0);
 		for (size_t n = 0; n < nN; n++) {
 			ddU[n] = dU[n];
-			dU[n] = 0.0;
-		}
-
-		if(coupled_phase_changes) {
-			// Initialize the change in ice contents due to phase changes based on the energy source/sink terms at the adjacent nodes
-			for(size_t e = nE; e -->0; ) {
-				dth_i_up[e] = Xdata.Edata[e].Qph_up / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
-				dth_i_down[e] = Xdata.Edata[e].Qph_down / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
-				Xdata.Edata[e].Qph_up = Xdata.Edata[e].Qph_down = 0.;
-			}
+			dU[n] = 0.;
 		}
 
 		// Assemble matrix
@@ -1029,6 +1020,11 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 		double maxd = 0.;		// Tracks max. change in ice contents in domain (convergence criterion)
 		for(size_t e = nE; e -->0; ) {
 			if(coupled_phase_changes) {
+				// Initialize the change in ice contents due to phase changes based on the energy source/sink terms at the adjacent nodes
+				dth_i_up[e] = Xdata.Edata[e].Qph_up / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
+				dth_i_down[e] = Xdata.Edata[e].Qph_down / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
+				Xdata.Edata[e].Qph_up = Xdata.Edata[e].Qph_down = 0.;
+
 				// Calculate the melting/freezing associated with the current temperature state
 				const double max_ice = ReSolver1d::max_theta_ice;
 				const double A = (Xdata.Edata[e].c[TEMPERATURE] * Xdata.Edata[e].Rho) / ( Constants::density_ice * Constants::lh_fusion );
