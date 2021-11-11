@@ -505,7 +505,6 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 				}
 
 				// After dealing with all possibilities, now finally do the merge:
-				if(!merged) removedMass += EMS[eUpper].M;
 				SnowStation::mergeElements(EMS[eUpper-1], EMS[eUpper], merged, (eUpper==rnE-1 && variant != "SEAICE"));
 
 				// The upper element may grow too much in length by subsequent element merging, limit this! Note that this has the desired effect of averaging the two top elements.
@@ -616,6 +615,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 			// set rnE to the upper soil element, in case we should inhibit element splitting.
 			if (EMS[Xdata.getNumberOfElements()-1].L > 2.*comb_thresh_l) {
 				Xdata.splitElement(Xdata.getNumberOfElements()-1);
+				rnE++;
 			}
 		}
 	}
