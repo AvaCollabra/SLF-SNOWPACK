@@ -758,7 +758,7 @@ void CaaMLIO::writeSnowCover(const Date& date, const SnowStation& Xdata,
 
 	if (forbackup) {
 		stringstream ss;
-		ss << (int)(date.getJulian() + 0.5); //HACK
+		ss << (date.toString(Date::NUM));
 		snofilename += ss.str();
 		hazfilename += ss.str();
 	}
