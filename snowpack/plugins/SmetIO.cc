@@ -617,7 +617,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 
 	if (forbackup){
 		std::stringstream ss;
-		ss << (int)(date.getJulian() + 0.5);
+		ss << (date.toString(Date::NUM));
 		snofilename += ss.str();
 		hazfilename += ss.str();
 	}
