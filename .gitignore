@@ -13,7 +13,7 @@ install_manifest.txt
 #generated files
 /doc/html/*
 /snowpack/plugins/SnowpackIO.cc
-lib/*.so*
+lib/*
 /bin/*
 *.aux
 *.log
