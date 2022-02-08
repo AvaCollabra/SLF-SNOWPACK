@@ -17,6 +17,9 @@ lib/*
 /bin/*
 *.aux
 *.log
+Testing
+CTest*
+Dart*
 
 #example files and binaries:
 /doc/examples/output/*
