@@ -31,9 +31,9 @@
  /**
  * @mainpage Table of content
  * -# External Links
- *    -# <A HREF="https://models.slf.ch/p/snowpack/">Snowpack's home page</A>
- *          -# <A HREF="https://models.slf.ch/p/snowpack/page/Getting-started/">Installation, compilation</A>
- *          -# <A HREF="https://models.slf.ch/p/snowpack/page/GettingHelp/">Getting help</A>
+ *    -# <A HREF="https://gitlabext.wsl.ch/snow-models/snowpack/-/wikis/home">Snowpack's home page</A>
+ *          -# <A HREF="https://gitlabext.wsl.ch/snow-models/snowpack/-/wikis/Getting-started">Installation, compilation</A>
+ *          -# <A HREF="https://gitlabext.wsl.ch/snow-models/snowpack/-/wikis/GettingHelp">Getting help</A>
  * -# End User documentation
  *    -# \subpage getting_started "Getting Started"
  *    -# Model principles
