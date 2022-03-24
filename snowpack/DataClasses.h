@@ -127,8 +127,6 @@ class CurrentMeteo {
 		double psum;     ///< precipitation sum over the current timestep (mm)
 		double psum_ph;  ///< precipitation phase for the current timestep (between 0 and 1, 0 is fully solid while 1 is fully liquid).
 		double psum_tech;///< Equivalent precipitation water sum for technical snow over the current timestep (mm)
-		double psum_unload;///< Equivalent precipitation water sum for unloading from canopy (mm)
-		mio::Date psum_unload_date;///< Timestep of the begining of an unload event
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
@@ -447,7 +445,7 @@ class CanopyData {
 		latentcorr(0.), transp(0.), intevap(0.), interception(0.), throughfall(0.), snowunload(0.),
 		snowfac(0.), rainfac(0.), liquidfraction(0.), sigftrunk(0.), Ttrunk(0.), CondFluxCanop(0.),
 		CondFluxTrunks(0.), LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.), forestfloor_alb(0.),
-		BasalArea(0.), HMLeaves(0.), HMTrunks(0.) {}
+		BasalArea(0.), HMLeaves(0.), HMTrunks(0.), psum_unload(0), psum_unload_date() {}
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel, const bool isAlpine3D);
 		void reset(const bool& cumsum_mass);
@@ -590,6 +588,9 @@ class CanopyData {
 		double BasalArea;    	///< basal area of trees on the stand
 		double HMLeaves;     	///< Leaves heat mass (J K-1 /m2 ground surface)
 		double HMTrunks;     	///< Trunks heat mass (J K-1 /m2 ground surface)
+
+		double psum_unload;///< Equivalent precipitation water sum for unloading from canopy (mm)
+		mio::Date psum_unload_date;///< Timestep of the begining of an unload event
 };
 
 /**

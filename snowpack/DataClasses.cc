@@ -1377,8 +1377,12 @@ bool ElementData::checkVolContent()
 		sum += theta[i];
 	}
 	if (sum <= 1. - Constants::eps || sum >= 1. + Constants::eps) {
-		//prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.20f", sum);
-		ret = false;
+		if( sum >= 1. + Constants::eps){
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "theta[ICE] reduced from: %1.5f to %1.5f", theta[ICE]-(sum-1));
+			theta[ICE]=theta[ICE]-(sum-1);
+		} else {
+			ret = false;
+		}
 	}
 	if(theta[SOIL] < -Constants::eps) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative SOIL volumetric content: %1.4f", theta[SOIL]);
@@ -3006,8 +3010,7 @@ CurrentMeteo::CurrentMeteo()
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), lw_net(IOUtils::nodata), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), psum_unload(IOUtils::nodata),
-          psum_unload_date(), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata),
+          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.), rime_hn(0.), lwc_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()

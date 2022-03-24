@@ -45,7 +45,7 @@ class Snowpack {
  public:
 		Snowpack(const SnowpackConfig& i_cfg);
 
-		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
 		/**
@@ -110,7 +110,7 @@ class Snowpack {
 
 		void setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &EMS);
 
-		void addUnloadLayers(CurrentMeteo& Mdata, SnowStation& Xdata);
+		void addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		void fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
                               const unsigned short& number_of_solutes, ElementData &elem);
@@ -123,7 +123,7 @@ class Snowpack {
 
 		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);
 
-		void compSnowFall(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                  SurfaceFluxes& Sdata);
 
 		const SnowpackConfig& cfg;

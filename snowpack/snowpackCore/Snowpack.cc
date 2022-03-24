@@ -1570,7 +1570,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
  * @param Xdata Snow cover data
  * @param cumu_precip cumulated amount of precipitation (kg m-2)
  */
-void Snowpack::compSnowFall(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                             SurfaceFluxes& Sdata)
 {
 	if (Mdata.psum_tech!=Constants::undefined && Mdata.psum_tech > 0.) {
@@ -1893,12 +1893,12 @@ void Snowpack::compSnowFall(CurrentMeteo& Mdata, SnowStation& Xdata, double& cum
 	}
 }
 
-void Snowpack::addUnloadLayers(CurrentMeteo& Mdata, SnowStation& Xdata){
+void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
 	const double rho_hn = 250;
 	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
 
-	const double hn = Mdata.psum_unload/rho_hn;
+	const double hn = Xdata.Cdata.psum_unload/rho_hn;
 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
@@ -1912,11 +1912,11 @@ void Snowpack::addUnloadLayers(CurrentMeteo& Mdata, SnowStation& Xdata){
 
 	const double Ln = (hn / (double)nAddE); // New snow element length
 
-	const double snowAge = Mdata.date.getJulian()-Mdata.psum_unload_date.getJulian();
+	const double snowAge = Mdata.date.getJulian()-Xdata.Cdata.psum_unload_date.getJulian();
 
 	// Check if the layer is thick enough, or if the unload stacked snow is not older than 1 day, if not return
 	if(Ln < newLayerThreshold && snowAge < 1){
-		std::cout <<  "[I] Layer of " << Ln*1000 << "mm discared, snow in memory " << Mdata.psum_unload << " kg/m2"<< std::endl;
+		std::cout <<  "[I] Layer of " << Ln*1000 << " mm discarded, snow in memory " << Xdata.Cdata.psum_unload << " kg/m2"<< std::endl;
 		std::cout <<  "[I] Snow is stored since " << snowAge << std::endl;
 		return;
 	}
@@ -1927,7 +1927,7 @@ void Snowpack::addUnloadLayers(CurrentMeteo& Mdata, SnowStation& Xdata){
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	//Consume the snow we stored
-	Mdata.psum_unload=0;
+	Xdata.Cdata.psum_unload=0;
 
 //Fill nodal data
 	double z0 = NDS[nOldN-1].z + NDS[nOldN-1].u + Ln; // Position of lowest new node
@@ -2160,7 +2160,7 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &e
  * @param Bdata
  * @param Sdata
  */
-void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
                                 BoundCond& Bdata, SurfaceFluxes& Sdata)
 {
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
@@ -2195,9 +2195,8 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
-
 		// Add layer of unload snow
-		if(useCanopyModel && Mdata.psum_unload > Constants::eps2) {
+		if(useCanopyModel && Xdata.Cdata.psum_unload > Constants::eps2) {
 			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
 			addUnloadLayers(Mdata, Xdata);
 		}

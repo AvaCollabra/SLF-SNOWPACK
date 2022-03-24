@@ -1637,12 +1637,12 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
-	// Sorte date of new unload event
-	if(Mdata.psum_unload < Constants::eps2 && icemm_unload > Constants::eps2) {
-		Mdata.psum_unload_date = Mdata.date;
+	// Store date of new unload event
+	if(Xdata.Cdata.psum_unload < Constants::eps2 && icemm_unload > Constants::eps2) {
+		Xdata.Cdata.psum_unload_date = Mdata.date;
 		std::cout << "[I] Unload date updated at " << Mdata.date.toString(mio::Date::ISO) << std::endl;
 	}
-	Mdata.psum_unload += icemm_unload;
+	Xdata.Cdata.psum_unload += icemm_unload;
 
 
 	if (Xdata.Cdata.storage>0.) {
