@@ -1409,7 +1409,7 @@ bool ElementData::checkVolContent()
 	if(theta[AIR] < -Constants::eps) {
 		printf("[W] Before: air=%f ice=%f soil=%f water=%f water_pref=%f\n",theta[AIR], theta[ICE], theta[SOIL],theta[WATER], theta[WATER_PREF]);
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "Negative AIR volumetric content: %1.4f", theta[AIR]);
-		theta[ICE] -= theta[AIR];
+		theta[ICE] += theta[AIR];
 		theta[AIR]=0;
 		printf("[W] After: air=%f ice=%f soil=%f water=%f water_pref=%f\n",theta[AIR], theta[ICE], theta[SOIL],theta[WATER], theta[WATER_PREF]);
 		// ret = false;
