@@ -110,8 +110,16 @@ class Snowpack {
 
 		void setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &EMS);
 
+		void addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata);
+
+		void fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
+                              const unsigned short& number_of_solutes, ElementData &elem);
+
 		void fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
 		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
+
+		void setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &EMS);
+
 
 		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);
 

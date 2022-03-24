@@ -60,7 +60,7 @@ static double get_double(const SnowpackConfig& cfg, const std::string& key, cons
 	return value;
 }
 
-static double get_sn_dt(const SnowpackConfig& cfg) 
+static double get_sn_dt(const SnowpackConfig& cfg)
 {
 	//Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
@@ -132,7 +132,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 {
 	const double T_melt=Edata.meltfreeze_tk;		// Retrieve melting temperature from ElementData
 
-	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
+	//if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Now see if any melting is going on -- this implies that (1) the temperature of the element
 	 * is above the melting temperature (2) there is something to melt and (3) there is enough
@@ -235,7 +235,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 {
 	const double T_freeze=Edata.meltfreeze_tk;	// Retrieve melting temperature from ElementData
 
-	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
+	//if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen
@@ -438,9 +438,9 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (verbose && !EMS[e].checkVolContent()) {
-				prn_msg(__FILE__, __LINE__, "msg+", date_in,
-				        "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Water_pref %f, Air %f, Soil %f",
-				        e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
+				//prn_msg(__FILE__, __LINE__, "msg+", date_in,
+				 //       "Phase Change Begin: Element=%d, nE=%d  ICE %f, Water %f, Water_pref %f, Air %f, Soil %f",
+				  //      e, nE, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].theta[SOIL]);
 			}
 
 			double i_Te = EMS[e].Te;
@@ -655,7 +655,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 						EMS[e_CIR].theta[ICE] += EMS[e_CIR].theta_i_reservoir_cumul - reservoir_residual_ice; // Transfer ice from the cumulated ice reservoir to the matrix at lowest layer
 						EMS[e_CIR].theta[AIR] = 1. - (EMS[e_CIR].theta[ICE]+EMS[e_CIR].theta[WATER]+EMS[e_CIR].theta[WATER_PREF]+EMS[e_CIR].theta[SOIL]);
 						EMS[e_CIR].theta_i_reservoir = reservoir_residual_ice; // Leave only potential residual ice in the reservoir
-						cout << "TRANSFER OF RESERVOIR ICE";
+						//cout << "TRANSFER OF RESERVOIR ICE";
 					}
 				}
 			} else { // Case CIR_to_fill==false
@@ -721,4 +721,3 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 
 	return retTopNodeT;
 }
-

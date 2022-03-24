@@ -1888,8 +1888,218 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 		}
 	}
+
+	// Add here the layers from snow unload
+	if(useCanopyModel && Mdata.psum_unload > 0) {
+		std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
+		addUnloadLayers(Mdata, Xdata);
+	}
 }
 
+void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
+
+	const double rho_hn = 900;
+	const double hn = Mdata.psum_unload/rho_hn;
+
+	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
+	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
+
+	const double cos_sl = Xdata.cos_sl; //slope cosinus
+	size_t nAddE = 1; //(size_t)(hn / (height_new_elem*cos_sl));
+
+	const size_t nNewN = nOldN + nAddE;
+	const size_t nNewE = nOldE + nAddE;
+
+	Xdata.resize(nNewE);
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+
+	//Fill nodal data
+	const double Ln = (hn / (double)nAddE); // New snow element length
+	double z0 = NDS[nOldN-1].z + NDS[nOldN-1].u + Ln; // Position of lowest new node
+	for (size_t n = nOldN; n < nNewN; n++) { //loop over the nodes
+		NDS[n].T = t_surf;                  // Temperature of the new node
+		double p_vapor = Atmosphere::vaporSaturationPressure(NDS[n].T);
+		NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);
+		NDS[n].z = z0;                      // New nodal position
+		NDS[n].u = 0.0;                     // Initial displacement is 0
+		NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
+		NDS[n].udot = 0.0;                  // Settlement rate is also 0
+		NDS[n].f = 0.0;                     // Unbalanced forces are 0
+		NDS[n].S_n = INIT_STABILITY;
+		NDS[n].S_s = INIT_STABILITY;
+		z0 += Ln;
+	}
+
+	for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
+		const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
+		std::cout << "[I] New unload element of "<< length*1000 << " mm " << std::endl;
+
+		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e]);
+	 	// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
+	 	// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
+	 	// Note that we use the same branching condition as in the function Snowpack::neumannBoundaryConditions(...)
+	 	const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+	 	if(nOldE > 0 && EMS[nOldE-1].theta[WATER] > theta_r + Constants::eps && EMS[nOldE-1].theta[ICE] > Constants::eps) {
+			EMS[e].theta[WATER]+=(2.*Constants::eps);
+			EMS[e].theta[ICE]-=(2.*Constants::eps)*(Constants::density_water/Constants::density_ice);
+			EMS[e].theta[AIR]+=((Constants::density_water/Constants::density_ice)-1.)*(2.*Constants::eps);
+		}
+		Xdata.ColdContent += EMS[e].coldContent(); //update cold content
+	}   // End elements
+
+	// Finally, update the computed snowpack height
+	Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
+	Xdata.ErosionLevel = nNewE-1;
+}
+
+void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
+                                    const unsigned short& number_of_solutes, ElementData &elem)
+{
+
+	//basic parameters
+	elem.depositionDate = Mdata.date;
+	elem.Te = t_surf;
+	elem.L0 = elem.L = length;
+	elem.Rho = density;
+	elem.M = elem.L0*elem.Rho; // Mass
+
+	// Volumetric components
+	elem.theta[SOIL]  = 0.0;
+	elem.theta[ICE]   = elem.Rho/Constants::density_ice;
+	elem.theta_i_reservoir = 0.0;
+	elem.theta_i_reservoir_cumul = 0.0;
+	elem.theta[WATER] = 0.0;
+	elem.theta[WATER_PREF] = 0.0;
+	elem.theta[AIR]   = 1. - elem.theta[ICE];
+	for (unsigned short ii = 0; ii < number_of_solutes; ii++) {
+		elem.conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
+		elem.conc[WATER][ii] = Mdata.conc[ii];
+		elem.conc[AIR][ii]   = 0.0;
+		elem.conc[SOIL][ii]  = 0.0;
+	}
+
+	// Coordination number based on Bob's empirical function
+	elem.N3 = Metamorphism::getCoordinationNumberN3(elem.Rho);
+
+	// Constitutive Parameters
+	elem.k[TEMPERATURE] = elem.k[SEEPAGE] = elem.k[SETTLEMENT]= 0.0;
+	elem.heatCapacity();
+	elem.c[SEEPAGE] = elem.c[SETTLEMENT]= 0.0;
+	elem.soil[SOIL_RHO] = elem.soil[SOIL_K] = elem.soil[SOIL_C] = 0.0;
+	elem.snowResidualWaterContent();
+
+	// Phase change variables:
+	elem.sw_abs = 0.0; //initial short wave radiation
+	elem.dth_w=0.0; // change of water content
+	elem.Qmf=0.0;   // change of energy due to phase changes
+	// Total element strain (GREEN'S strains -- TOTAL LAGRANGIAN FORMULATION.
+	elem.E = elem.dEps = elem.Eps = elem.Eps_e = elem.Eps_v = 0.0;
+	elem.Eps_Dot = elem.Eps_vDot=0.0; // Total Strain Rate (Simply E/sn_dt)
+	elem.S=0.0; // Total Element Stress
+	elem.CDot = 0.; // loadRate
+
+	//new snow micro-structure
+	setUnloadMicrostructure(Mdata, elem);
+	elem.snowType(); // Snow classification
+
+	//Initialise the Stability Index for ml_st_CheckStability routine
+	elem.S_dr = INIT_STABILITY;
+	elem.hard = IOUtils::nodata;
+
+	elem.h = Constants::undefined;	//Pressure head not initialized yet
+
+	//Initial snow salinity
+	if (variant == "SEAICE" ) {
+		elem.salinity = SeaIce::InitSnowSalinity;
+		const double BrineSal_new = (elem.theta[WATER] == 0.) ? (0.) : (elem.salinity / elem.theta[WATER]);
+		elem.meltfreeze_tk = -SeaIce::mu * BrineSal_new + Constants::meltfreeze_tk;
+	} else {
+		elem.meltfreeze_tk = Constants::meltfreeze_tk;
+	}
+
+	double p_vapor = Atmosphere::vaporSaturationPressure(elem.Te);
+	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);
+}
+
+/**
+ * @brief Set the microstructure parameters for the current element according to the type of precipitation meteor.
+ * @param Mdata Meteorological data
+ * @param is_surface_hoar is this layer a layer of surface hoar?
+ * @param EMS Element to set
+ */
+void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &elem)
+{
+	const double TA = IOUtils::K_TO_C(Mdata.ta);
+	const double RH = Mdata.rh*100.;
+	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
+	const double value = exp(logit)/(1.+exp(logit));
+
+	// Distinguish between Graupel and New Snow
+	if (value > 1.0) { // Graupel
+		elem.mk = 4;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 110.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
+		elem.theta[AIR] = 1. - elem.theta[ICE];  // void content
+	} else { // no Graupel
+		elem.mk = Snowpack::new_snow_marker;
+		if (SnLaws::jordy_new_snow && (Mdata.vw > 2.9)
+			&& ((hn_density_parameterization == "LEHNING_NEW") || (hn_density_parameterization == "LEHNING_OLD"))) {
+			elem.dd = std::max(0.5, std::min(1.0, Optim::pow2(1.87 - 0.04*Mdata.vw)) );
+			elem.sp = new_snow_sp;
+			static const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
+			static const double delta = -0.117, eta=0.0011, phi=-0.0034;
+			elem.rg = std::min(0.5*new_snow_grain_size, std::max(0.15*new_snow_grain_size,
+				alpha + beta*TA + gamma*RH + delta*Mdata.vw
+				+ eta*RH*Mdata.vw + phi*TA*Mdata.vw));
+			elem.rb = 0.4*elem.rg;
+		} else {
+			elem.dd = new_snow_dd;
+			elem.sp = new_snow_sp;
+			// Adapt dd and sp for blowing snow
+			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA" || variant == "POLAR")
+			|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
+			|| (hn_density_parameterization == "LEHNING_NEW"))))) {
+				elem.dd = new_snow_dd_wind;
+				elem.sp = new_snow_sp_wind;
+			} else if (vw_dendricity && ((hn_density_parameterization == "BELLAIRE")
+				|| (hn_density_parameterization == "ZWART"))) {
+				const double vw = std::max(0.05, Mdata.vw);
+				elem.dd = (1. - pow(vw/10., 1.57));
+				elem.dd = std::max(0.2, elem.dd);
+			}
+			if (Snowpack::hydrometeor) { // empirical
+				static const double alpha=1.4, beta=-0.08, gamma=-0.15;
+				static const double delta=-0.02;
+				elem.rg = 0.5*(alpha + beta*TA + gamma*Mdata.vw + delta*TA*Mdata.vw);
+				elem.rb = 0.25*elem.rg;
+			} else {
+				elem.rg = new_snow_grain_size/2.;
+				elem.rb = new_snow_bond_size/2.;
+				if (((Mdata.vw_avg >= SnLaws::event_wind_lowlim) && (Mdata.rh_avg >= rh_lowlim))) {
+					elem.rb = std::min(bond_factor_rh*elem.rb, Metamorphism::max_grain_bond_ratio*elem.rg);
+				}
+			}
+		}
+	} // end no Graupel
+
+	//DUMMY values by Adrien
+	elem.mk = 8;
+	elem.dd = 0.;
+	elem.sp = 1.;
+	elem.rg = 3;
+	elem.rb = 3;
+
+	elem.opticalEquivalentGrainSize();
+	elem.metamo = 0.;
+}
 /**
  * @brief The near future (s. below) has arrived on Wednesday Feb. 6, when it was finally snowing
  * in Davos and Sergey, Michael and Perry were working furiously on SNOWPACK again. Michael
