@@ -1412,7 +1412,7 @@ bool ElementData::checkVolContent()
 		theta[ICE] -= theta[AIR];
 		theta[AIR]=0;
 		printf("[W] After: air=%f ice=%f soil=%f water=%f water_pref=%f\n",theta[AIR], theta[ICE], theta[SOIL],theta[WATER], theta[WATER_PREF]);
-		ret = false;
+		// ret = false;
 	}
 
 	// Take care of small rounding errors, in case large rounding errors do not exist.
