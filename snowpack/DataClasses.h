@@ -128,6 +128,7 @@ class CurrentMeteo {
 		double psum_ph;  ///< precipitation phase for the current timestep (between 0 and 1, 0 is fully solid while 1 is fully liquid).
 		double psum_tech;///< Equivalent precipitation water sum for technical snow over the current timestep (mm)
 		double psum_unload;///< Equivalent precipitation water sum for unloading from canopy (mm)
+		mio::Date psum_unload_date;///< Timestep of the begining of an unload event
 		double hs;       ///< The measured height of snow (m)
 		double hs_a3h;   ///< Snow depth averaged over 3 past hours
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)

@@ -1570,7 +1570,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
  * @param Xdata Snow cover data
  * @param cumu_precip cumulated amount of precipitation (kg m-2)
  */
-void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
+void Snowpack::compSnowFall(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                             SurfaceFluxes& Sdata)
 {
 	if (Mdata.psum_tech!=Constants::undefined && Mdata.psum_tech > 0.) {
@@ -1622,8 +1622,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 						add_element = true;
 					}
 				}
-			} else
+			} else {
 				return;
+			}
 		} else {
 			// This is now very important to make sure that rain will not accumulate
 			cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
@@ -1632,8 +1633,9 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	} else { // HS driven, correct for a possible offset in measured snow height provided by a marked reference layer
 		delta_cH = Xdata.mH - Xdata.cH + ( (Xdata.findMarkedReferenceLayer() == Constants::undefined) ? (0.) : (Xdata.findMarkedReferenceLayer() - Xdata.Ground) );
 	}
-	if (rho_hn == Constants::undefined)
+	if (rho_hn == Constants::undefined){
 		return;
+	}
 
 	// Let's check for the solid precipitation thresholds:
 	// -> check relative humidity as well as difference between air and snow surface temperatures,
@@ -1749,123 +1751,124 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				} else {
 					Xdata.hn = 0.;
 					Xdata.rho_hn = Constants::undefined;
-					return;
 				}
 			}
-
-			// Check whether surface hoar could be buried
-			size_t nHoarE;
-			double hoar = Xdata.Ndata[nOldN-1].hoar;
-			if (nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < Constants::eps2) {
-				// W.E. of surface hoar must be larger than a threshold to be buried
-				if (hoar > 1.5*MM_TO_M(hoar_min_size_buried)*hoar_density_surf) {
-					nHoarE = 1;
-				} else if (!(change_bc && meas_tss) /*Flux BC (NEUMANN) typically produce less SH*/
-				               && (hoar > MM_TO_M(hoar_min_size_buried)*hoar_density_surf)) {
-					nHoarE = 1;
-				} else {
+			//Continue only if new snow is required
+			if(nAddE>0) {
+				// Check whether surface hoar could be buried
+				size_t nHoarE;
+				double hoar = Xdata.Ndata[nOldN-1].hoar;
+				if (nOldE > 0 && Xdata.Edata[nOldE-1].theta[SOIL] < Constants::eps2) {
+					// W.E. of surface hoar must be larger than a threshold to be buried
+					if (hoar > 1.5*MM_TO_M(hoar_min_size_buried)*hoar_density_surf) {
+						nHoarE = 1;
+					} else if (!(change_bc && meas_tss) /*Flux BC (NEUMANN) typically produce less SH*/
+					               && (hoar > MM_TO_M(hoar_min_size_buried)*hoar_density_surf)) {
+						nHoarE = 1;
+					} else {
+						nHoarE = 0;
+					}
+				} else { // Add surface hoar on ground to first new snow element(s)
 					nHoarE = 0;
+					hn += hoar/rho_hn;
+					Xdata.Ndata[nOldN-1].hoar = 0.;
 				}
-			} else { // Add surface hoar on ground to first new snow element(s)
-				nHoarE = 0;
-				hn += hoar/rho_hn;
-				Xdata.Ndata[nOldN-1].hoar = 0.;
-			}
 
-			Xdata.Albedo = Constants::max_albedo;
+				Xdata.Albedo = Constants::max_albedo;
 
-			const size_t nNewN = nOldN + nAddE + nHoarE;
-			const size_t nNewE = nOldE + nAddE + nHoarE;
-			Xdata.resize(nNewE);
-			vector<NodeData>& NDS = Xdata.Ndata;
-			vector<ElementData>& EMS = Xdata.Edata;
+				const size_t nNewN = nOldN + nAddE + nHoarE;
+				const size_t nNewE = nOldE + nAddE + nHoarE;
+				Xdata.resize(nNewE);
+				vector<NodeData>& NDS = Xdata.Ndata;
+				vector<ElementData>& EMS = Xdata.Edata;
 
-			// Create hoar layer
-			if (nHoarE > 0) {
-				// Since mass of hoar was already added to element below, substract....
-				// Make sure you don't try to extract more than is there
-				hoar = std::max(0.,std::min(EMS[nOldE-1].M - 0.1,hoar));
-				const double L0 = EMS[nOldE-1].L;
-				const double dL = -hoar/(EMS[nOldE-1].Rho);
-				EMS[nOldE-1].L0 = EMS[nOldE-1].L = L0 + dL;
+				// Create hoar layer
+				if (nHoarE > 0) {
+					// Since mass of hoar was already added to element below, substract....
+					// Make sure you don't try to extract more than is there
+					hoar = std::max(0.,std::min(EMS[nOldE-1].M - 0.1,hoar));
+					const double L0 = EMS[nOldE-1].L;
+					const double dL = -hoar/(EMS[nOldE-1].Rho);
+					EMS[nOldE-1].L0 = EMS[nOldE-1].L = L0 + dL;
 
-				EMS[nOldE-1].E = EMS[nOldE-1].Eps = EMS[nOldE-1].dEps = EMS[nOldE-1].Eps_e = EMS[nOldE-1].Eps_v = EMS[nOldE-1].S = 0.0;
-				const double Theta0 = EMS[nOldE-1].theta[ICE];
-				EMS[nOldE-1].theta[ICE] *= L0/EMS[nOldE-1].L;
-				EMS[nOldE-1].theta[ICE] += -hoar/(Constants::density_ice*EMS[nOldE-1].L);
-				EMS[nOldE-1].theta[ICE] = std::max(EMS[nOldE-1].theta[ICE],0.);
-				EMS[nOldE-1].theta_i_reservoir = 0.0;
-				EMS[nOldE-1].theta_i_reservoir_cumul = 0.0;
-				EMS[nOldE-1].theta[WATER] *= L0/EMS[nOldE-1].L;
-				EMS[nOldE-1].theta[WATER_PREF] *= L0/EMS[nOldE-1].L;
-				for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++)
-					EMS[nOldE-1].conc[ICE][ii] *= L0*Theta0/(EMS[nOldE-1].theta[ICE]*EMS[nOldE-1].L);
-				EMS[nOldE-1].M -= hoar;
-				assert(EMS[nOldE-1].M>=0.); //the mass must be positive
-				EMS[nOldE-1].theta[AIR] = std::max(0., 1.0 - EMS[nOldE-1].theta[WATER] - EMS[nOldE-1].theta[WATER_PREF]
-				                                - EMS[nOldE-1].theta[ICE] - EMS[nOldE-1].theta[SOIL]);
-				EMS[nOldE-1].updDensity();
-				assert(EMS[nOldE-1].Rho>=0. || EMS[nOldE-1].Rho==IOUtils::nodata); //we want positive density
-				// Take care of old surface node
-				NDS[nOldN-1].z += dL + NDS[nOldN-1].u;
-				NDS[nOldN-1].u = 0.0;
-				NDS[nOldN-1].hoar = 0.0;
-				// Now fill nodal data for upper hoar node
-				NDS[nOldN].T = t_surf;              // The temperature of the new node
-				double p_vapor = Atmosphere::vaporSaturationPressure(NDS[nOldN].T);
-				NDS[nOldN].rhov = Atmosphere::waterVaporDensity(NDS[nOldN].T, p_vapor);
-				// The new nodal position;
-				NDS[nOldN].z = NDS[nOldN-1].z + NDS[nOldN-1].u + hoar/hoar_density_buried;
-				NDS[nOldN].u = 0.0;                 // Initial displacement is 0
-				NDS[nOldN].hoar = hoar / hoar_density_buried;         // Surface hoar initial size
-				NDS[nOldN].udot = 0.0;               // Settlement rate is also 0
-				NDS[nOldN].f = 0.0;                 // Unbalanced forces is 0
-				NDS[nOldN].S_n = INIT_STABILITY;
-				NDS[nOldN].S_s = INIT_STABILITY;
-			} else { // Make sure top node surface hoar mass is removed
-				NDS[nOldN-1].hoar = 0.0;
-			}
-
-			// Fill the nodal data
-			if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode)) // New snow on bare ground w/o soil
-				NDS[nOldN-1].T = 0.5*(t_surf + Mdata.ta);
-			const double Ln = (hn / (double)nAddE);               // New snow element length
-			double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
-			for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
-				NDS[n].T = t_surf;                  // Temperature of the new node
-				double p_vapor = Atmosphere::vaporSaturationPressure(NDS[n].T);
-				NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);
-				NDS[n].z = z0;                      // New nodal position
-				NDS[n].u = 0.0;                     // Initial displacement is 0
-				NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
-				NDS[n].udot = 0.0;                  // Settlement rate is also 0
-				NDS[n].f = 0.0;                     // Unbalanced forces are 0
-				NDS[n].S_n = INIT_STABILITY;
-				NDS[n].S_s = INIT_STABILITY;
-				z0 += Ln;
-			}
-
-			// Fill the element data
-			for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
-				const bool is_surface_hoar = (nHoarE && (e == nOldE));
-				const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
-				const double density = (is_surface_hoar)? hoar_density_buried : rho_hn;
-				fillNewSnowElement(Mdata, length, density, is_surface_hoar, Xdata.number_of_solutes, EMS[e]);
-				// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
-				// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
-				// Note that we use the same branching condition as in the function Snowpack::neumannBoundaryConditions(...)
-				const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
-				if(nOldE > 0 && EMS[nOldE-1].theta[WATER] > theta_r + Constants::eps && EMS[nOldE-1].theta[ICE] > Constants::eps) {
-					EMS[e].theta[WATER]+=(2.*Constants::eps);
-					EMS[e].theta[ICE]-=(2.*Constants::eps)*(Constants::density_water/Constants::density_ice);
-					EMS[e].theta[AIR]+=((Constants::density_water/Constants::density_ice)-1.)*(2.*Constants::eps);
+					EMS[nOldE-1].E = EMS[nOldE-1].Eps = EMS[nOldE-1].dEps = EMS[nOldE-1].Eps_e = EMS[nOldE-1].Eps_v = EMS[nOldE-1].S = 0.0;
+					const double Theta0 = EMS[nOldE-1].theta[ICE];
+					EMS[nOldE-1].theta[ICE] *= L0/EMS[nOldE-1].L;
+					EMS[nOldE-1].theta[ICE] += -hoar/(Constants::density_ice*EMS[nOldE-1].L);
+					EMS[nOldE-1].theta[ICE] = std::max(EMS[nOldE-1].theta[ICE],0.);
+					EMS[nOldE-1].theta_i_reservoir = 0.0;
+					EMS[nOldE-1].theta_i_reservoir_cumul = 0.0;
+					EMS[nOldE-1].theta[WATER] *= L0/EMS[nOldE-1].L;
+					EMS[nOldE-1].theta[WATER_PREF] *= L0/EMS[nOldE-1].L;
+					for (unsigned int ii = 0; ii < Xdata.number_of_solutes; ii++)
+						EMS[nOldE-1].conc[ICE][ii] *= L0*Theta0/(EMS[nOldE-1].theta[ICE]*EMS[nOldE-1].L);
+					EMS[nOldE-1].M -= hoar;
+					assert(EMS[nOldE-1].M>=0.); //the mass must be positive
+					EMS[nOldE-1].theta[AIR] = std::max(0., 1.0 - EMS[nOldE-1].theta[WATER] - EMS[nOldE-1].theta[WATER_PREF]
+					                                - EMS[nOldE-1].theta[ICE] - EMS[nOldE-1].theta[SOIL]);
+					EMS[nOldE-1].updDensity();
+					assert(EMS[nOldE-1].Rho>=0. || EMS[nOldE-1].Rho==IOUtils::nodata); //we want positive density
+					// Take care of old surface node
+					NDS[nOldN-1].z += dL + NDS[nOldN-1].u;
+					NDS[nOldN-1].u = 0.0;
+					NDS[nOldN-1].hoar = 0.0;
+					// Now fill nodal data for upper hoar node
+					NDS[nOldN].T = t_surf;              // The temperature of the new node
+					double p_vapor = Atmosphere::vaporSaturationPressure(NDS[nOldN].T);
+					NDS[nOldN].rhov = Atmosphere::waterVaporDensity(NDS[nOldN].T, p_vapor);
+					// The new nodal position;
+					NDS[nOldN].z = NDS[nOldN-1].z + NDS[nOldN-1].u + hoar/hoar_density_buried;
+					NDS[nOldN].u = 0.0;                 // Initial displacement is 0
+					NDS[nOldN].hoar = hoar / hoar_density_buried;         // Surface hoar initial size
+					NDS[nOldN].udot = 0.0;               // Settlement rate is also 0
+					NDS[nOldN].f = 0.0;                 // Unbalanced forces is 0
+					NDS[nOldN].S_n = INIT_STABILITY;
+					NDS[nOldN].S_s = INIT_STABILITY;
+				} else { // Make sure top node surface hoar mass is removed
+					NDS[nOldN-1].hoar = 0.0;
 				}
-				Xdata.ColdContent += EMS[e].coldContent(); //update cold content
-			}   // End elements
 
-			// Finally, update the computed snowpack height
-			Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
-			Xdata.ErosionLevel = nNewE-1;
+				// Fill the nodal data
+				if (!useSoilLayers && (nOldN-1 == Xdata.SoilNode)) // New snow on bare ground w/o soil
+					NDS[nOldN-1].T = 0.5*(t_surf + Mdata.ta);
+				const double Ln = (hn / (double)nAddE);               // New snow element length
+				double z0 = NDS[nOldN-1+nHoarE].z + NDS[nOldN-1+nHoarE].u + Ln; // Position of lowest new node
+				for (size_t n = nOldN+nHoarE; n < nNewN; n++) { //loop over the nodes
+					NDS[n].T = t_surf;                  // Temperature of the new node
+					double p_vapor = Atmosphere::vaporSaturationPressure(NDS[n].T);
+					NDS[n].rhov = Atmosphere::waterVaporDensity(NDS[n].T, p_vapor);
+					NDS[n].z = z0;                      // New nodal position
+					NDS[n].u = 0.0;                     // Initial displacement is 0
+					NDS[n].hoar = 0.0;                  // The new snow surface hoar is set to zero
+					NDS[n].udot = 0.0;                  // Settlement rate is also 0
+					NDS[n].f = 0.0;                     // Unbalanced forces are 0
+					NDS[n].S_n = INIT_STABILITY;
+					NDS[n].S_s = INIT_STABILITY;
+					z0 += Ln;
+				}
+
+				// Fill the element data
+				for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
+					const bool is_surface_hoar = (nHoarE && (e == nOldE));
+					const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
+					const double density = (is_surface_hoar)? hoar_density_buried : rho_hn;
+					fillNewSnowElement(Mdata, length, density, is_surface_hoar, Xdata.number_of_solutes, EMS[e]);
+					// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
+					// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
+					// Note that we use the same branching condition as in the function Snowpack::neumannBoundaryConditions(...)
+					const double theta_r = ((watertransportmodel_snow=="RICHARDSEQUATION" && Xdata.getNumberOfElements()>Xdata.SoilNode) || (watertransportmodel_soil=="RICHARDSEQUATION" && Xdata.getNumberOfElements()==Xdata.SoilNode)) ? (PhaseChange::RE_theta_threshold) : (PhaseChange::theta_r);
+					if(nOldE > 0 && EMS[nOldE-1].theta[WATER] > theta_r + Constants::eps && EMS[nOldE-1].theta[ICE] > Constants::eps) {
+						EMS[e].theta[WATER]+=(2.*Constants::eps);
+						EMS[e].theta[ICE]-=(2.*Constants::eps)*(Constants::density_water/Constants::density_ice);
+						EMS[e].theta[AIR]+=((Constants::density_water/Constants::density_ice)-1.)*(2.*Constants::eps);
+					}
+					Xdata.ColdContent += EMS[e].coldContent(); //update cold content
+				}   // End elements
+
+				// Finally, update the computed snowpack height
+				Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
+				Xdata.ErosionLevel = nNewE-1;
+			}
 		}
 	} else { // No snowfall
 		if (detect_grass && ((Xdata.Cdata.height < ThresholdSmallCanopy) || (useCanopyModel == false))) {
@@ -1888,34 +1891,45 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			}
 		}
 	}
-
-	// Add here the layers from snow unload
-	if(useCanopyModel && Mdata.psum_unload > 0) {
-		std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
-		addUnloadLayers(Mdata, Xdata);
-	}
 }
 
-void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
+void Snowpack::addUnloadLayers(CurrentMeteo& Mdata, SnowStation& Xdata){
 
-	const double rho_hn = 900;
+	const double rho_hn = 250;
+	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
+
 	const double hn = Mdata.psum_unload/rho_hn;
 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
 
 	const double cos_sl = Xdata.cos_sl; //slope cosinus
+	// For now add everything in a single layer
 	size_t nAddE = 1; //(size_t)(hn / (height_new_elem*cos_sl));
 
 	const size_t nNewN = nOldN + nAddE;
 	const size_t nNewE = nOldE + nAddE;
 
+	const double Ln = (hn / (double)nAddE); // New snow element length
+
+	const double snowAge = Mdata.date.getJulian()-Mdata.psum_unload_date.getJulian();
+
+	// Check if the layer is thick enough, or if the unload stacked snow is not older than 1 day, if not return
+	if(Ln < newLayerThreshold && snowAge < 1){
+		std::cout <<  "[I] Layer of " << Ln*1000 << "mm discared, snow in memory " << Mdata.psum_unload << " kg/m2"<< std::endl;
+		std::cout <<  "[I] Snow is stored since " << snowAge << std::endl;
+		return;
+	}
+
+
 	Xdata.resize(nNewE);
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 
-	//Fill nodal data
-	const double Ln = (hn / (double)nAddE); // New snow element length
+	//Consume the snow we stored
+	Mdata.psum_unload=0;
+
+//Fill nodal data
 	double z0 = NDS[nOldN-1].z + NDS[nOldN-1].u + Ln; // Position of lowest new node
 	for (size_t n = nOldN; n < nNewN; n++) { //loop over the nodes
 		NDS[n].T = t_surf;                  // Temperature of the new node
@@ -1934,6 +1948,7 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 	for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
 		const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 		std::cout << "[I] New unload element of "<< length*1000 << " mm " << std::endl;
+		std::cout <<  "[I] Snow was stored since " << snowAge << std::endl;
 
 		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e]);
 	 	// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
@@ -2090,13 +2105,6 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &e
 		}
 	} // end no Graupel
 
-	//DUMMY values by Adrien
-	elem.mk = 8;
-	elem.dd = 0.;
-	elem.sp = 1.;
-	elem.rg = 3;
-	elem.rb = 3;
-
 	elem.opticalEquivalentGrainSize();
 	elem.metamo = 0.;
 }
@@ -2152,7 +2160,7 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &e
  * @param Bdata
  * @param Sdata
  */
-void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
+void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
                                 BoundCond& Bdata, SurfaceFluxes& Sdata)
 {
 	// HACK -> couldn't the following objects be created once in init ?? (with only a reset method ??)
@@ -2187,6 +2195,12 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
+
+		// Add layer of unload snow
+		if(useCanopyModel && Mdata.psum_unload > Constants::eps2) {
+			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
+			addUnloadLayers(Mdata, Xdata);
+		}
 
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this
