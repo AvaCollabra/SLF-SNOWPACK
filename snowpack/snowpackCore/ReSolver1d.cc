@@ -2558,8 +2558,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			throw;
 		}
 		if(sum > 1.+Constants::eps2) {
-			printf("ERROR in [%d] at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", (matrix)?(1):(0), int(i), sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);
-			throw;
+			//printf("ERROR in [%d] at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", (matrix)?(1):(0), int(i), sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);
+			//throw;
 		}
 		if(sum < 1.-Constants::eps2) {
 			printf("ERROR in [%d] at layer %d: sum=%f air=%f ice=%f soil=%f water=%f water_pref=%f\n", (matrix)?(1):(0), int(i), sum, EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF]);

@@ -132,7 +132,7 @@ void PhaseChange::compSubSurfaceMelt(ElementData& Edata, const unsigned int nSol
 {
 	const double T_melt=Edata.meltfreeze_tk;		// Retrieve melting temperature from ElementData
 
-	//if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
+	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Now see if any melting is going on -- this implies that (1) the temperature of the element
 	 * is above the melting temperature (2) there is something to melt and (3) there is enough
@@ -235,7 +235,7 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 {
 	const double T_freeze=Edata.meltfreeze_tk;	// Retrieve melting temperature from ElementData
 
-	//if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
+	if(!Edata.checkVolContent()) prn_msg(__FILE__, __LINE__, "wrn", Date(), "wrong volumetric content");
 	/*
 	 * Freezing within the snowpack can occur if (1) the temperature of the element is below freezing
 	 * and if water is present to be refrozen
@@ -274,10 +274,10 @@ void PhaseChange::compSubSurfaceFrze(ElementData& Edata, const unsigned int nSol
 
 		// Make sure the sum of all volumetric contents is near 1, and take care of rounding errors
 		if (!Edata.checkVolContent()) {
-			prn_msg(__FILE__, __LINE__, "err", date_in, "Sum theta[I,W,A,S] > 1");
-			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			        "Ice: %f, Water: %f, Water_pref: %f, Air: %f Soil: %f",
-			        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[WATER_PREF], Edata.theta[AIR], Edata.theta[SOIL]);
+			//prn_msg(__FILE__, __LINE__, "err", date_in, "Sum theta[I,W,A,S] > 1");
+			//prn_msg(__FILE__, __LINE__, "msg-", Date(),
+			//        "Ice: %f, Water: %f, Water_pref: %f, Air: %f Soil: %f",
+			//        Edata.theta[ICE], Edata.theta[WATER], Edata.theta[WATER_PREF], Edata.theta[AIR], Edata.theta[SOIL]);
 			throw IOException("In compSubSurfaceFrze!", AT);
 		}
 		dT = dth_i / A;	// Recalculate temperature change, as phase change may be limited

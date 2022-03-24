@@ -1378,10 +1378,21 @@ bool ElementData::checkVolContent()
 	}
 	if (sum <= 1. - Constants::eps || sum >= 1. + Constants::eps) {
 		if( sum >= 1. + Constants::eps){
-			prn_msg(__FILE__, __LINE__, "wrn", Date(), "theta[ICE] reduced from: %1.5f to %1.5f", theta[ICE]-(sum-1));
-			theta[ICE]=theta[ICE]-(sum-1);
+			if(theta[AIR] < -Constants::eps){
+				sum += -theta[AIR];
+				theta[AIR]=0;
+				prn_msg(__FILE__, __LINE__, "wrn", Date(), "Elem: %d theta[AIR] corrected, now %1.5f", ID, theta[AIR]);
+			}
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Elem: %d theta[ICE] reduced from: %1.5f to %1.5f", ID, theta[ICE], theta[ICE]-(sum-1));
+			theta[ICE]-=(sum-1);
+			for (unsigned int i = 0; i < N_COMPONENTS; i++) {
+				sum += theta[i];
+			}
+			prn_msg(__FILE__, __LINE__, "wrn", Date(), "Elem: %d Sum is now: %1.12f ", ID, sum);
+
 		} else {
-			ret = false;
+			//prn_msg(__FILE__, __LINE__, "wrn", Date(), "Elem: %d theta[ICE] increased from: %1.5f to %1.5f", ID, theta[ICE], theta[ICE]-(sum-1));
+			theta[ICE]-=(sum-1);
 		}
 	}
 	if(theta[SOIL] < -Constants::eps) {
