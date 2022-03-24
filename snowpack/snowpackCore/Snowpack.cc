@@ -2045,65 +2045,66 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
  */
 void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &elem)
 {
+	//Here  eventually add a function of isothermal metamorphism for the intercepted snow that defines its properties before it unloads
 	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
 	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
 	const double value = exp(logit)/(1.+exp(logit));
 
-	// Distinguish between Graupel and New Snow
-	if (value > 1.0) { // Graupel
-		elem.mk = 4;
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
 		elem.dd = 0.;
 		elem.sp = 1.;
 		elem.rg = 0.6;
 		elem.rb = 0.2;
 		// Because density and volumetric contents are already defined, redo it here
-		elem.Rho = 110.;
+		elem.Rho = 250.;
 		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
 		elem.theta_i_reservoir = 0.0;
 		elem.theta_i_reservoir_cumul = 0.0;
 		elem.theta[AIR] = 1. - elem.theta[ICE];  // void content
-	} else { // no Graupel
-		elem.mk = Snowpack::new_snow_marker;
-		if (SnLaws::jordy_new_snow && (Mdata.vw > 2.9)
-			&& ((hn_density_parameterization == "LEHNING_NEW") || (hn_density_parameterization == "LEHNING_OLD"))) {
-			elem.dd = std::max(0.5, std::min(1.0, Optim::pow2(1.87 - 0.04*Mdata.vw)) );
-			elem.sp = new_snow_sp;
-			static const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
-			static const double delta = -0.117, eta=0.0011, phi=-0.0034;
-			elem.rg = std::min(0.5*new_snow_grain_size, std::max(0.15*new_snow_grain_size,
-				alpha + beta*TA + gamma*RH + delta*Mdata.vw
-				+ eta*RH*Mdata.vw + phi*TA*Mdata.vw));
-			elem.rb = 0.4*elem.rg;
-		} else {
-			elem.dd = new_snow_dd;
-			elem.sp = new_snow_sp;
-			// Adapt dd and sp for blowing snow
-			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA" || variant == "POLAR")
-			|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
-			|| (hn_density_parameterization == "LEHNING_NEW"))))) {
-				elem.dd = new_snow_dd_wind;
-				elem.sp = new_snow_sp_wind;
-			} else if (vw_dendricity && ((hn_density_parameterization == "BELLAIRE")
-				|| (hn_density_parameterization == "ZWART"))) {
-				const double vw = std::max(0.05, Mdata.vw);
-				elem.dd = (1. - pow(vw/10., 1.57));
-				elem.dd = std::max(0.2, elem.dd);
-			}
-			if (Snowpack::hydrometeor) { // empirical
-				static const double alpha=1.4, beta=-0.08, gamma=-0.15;
-				static const double delta=-0.02;
-				elem.rg = 0.5*(alpha + beta*TA + gamma*Mdata.vw + delta*TA*Mdata.vw);
-				elem.rb = 0.25*elem.rg;
-			} else {
-				elem.rg = new_snow_grain_size/2.;
-				elem.rb = new_snow_bond_size/2.;
-				if (((Mdata.vw_avg >= SnLaws::event_wind_lowlim) && (Mdata.rh_avg >= rh_lowlim))) {
-					elem.rb = std::min(bond_factor_rh*elem.rb, Metamorphism::max_grain_bond_ratio*elem.rg);
-				}
-			}
-		}
-	} // end no Graupel
+//	} //else { // no Graupel
+	//	elem.mk = Snowpack::new_snow_marker;
+	//	if (SnLaws::jordy_new_snow && (Mdata.vw > 2.9)
+	//		&& ((hn_density_parameterization == "LEHNING_NEW") || (hn_density_parameterization == "LEHNING_OLD"))) {
+	//		elem.dd = std::max(0.5, std::min(1.0, Optim::pow2(1.87 - 0.04*Mdata.vw)) );
+	//		elem.sp = new_snow_sp;
+	//		static const double alpha = 0.9, beta = 0.015, gamma = -0.0062;
+	//		static const double delta = -0.117, eta=0.0011, phi=-0.0034;
+	//		elem.rg = std::min(0.5*new_snow_grain_size, std::max(0.15*new_snow_grain_size,
+	//			alpha + beta*TA + gamma*RH + delta*Mdata.vw
+	//			+ eta*RH*Mdata.vw + phi*TA*Mdata.vw));
+	//		elem.rb = 0.4*elem.rg;
+	//	} else {
+	//		elem.dd = new_snow_dd;
+	//		elem.sp = new_snow_sp;
+	//		// Adapt dd and sp for blowing snow
+	//		if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA" || variant == "POLAR")
+	//		|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
+	//		|| (hn_density_parameterization == "LEHNING_NEW"))))) {
+	//			elem.dd = new_snow_dd_wind;
+	//			elem.sp = new_snow_sp_wind;
+	//		} else if (vw_dendricity && ((hn_density_parameterization == "BELLAIRE")
+	//			|| (hn_density_parameterization == "ZWART"))) {
+	//			const double vw = std::max(0.05, Mdata.vw);
+	//			elem.dd = (1. - pow(vw/10., 1.57));
+	//			elem.dd = std::max(0.2, elem.dd);
+	//		}
+	//		if (Snowpack::hydrometeor) { // empirical
+	//			static const double alpha=1.4, beta=-0.08, gamma=-0.15;
+	//			static const double delta=-0.02;
+	//			elem.rg = 0.5*(alpha + beta*TA + gamma*Mdata.vw + delta*TA*Mdata.vw);
+	//			elem.rb = 0.25*elem.rg;
+	//		} else {
+	//			elem.rg = new_snow_grain_size/2.;
+	//			elem.rb = new_snow_bond_size/2.;
+	//			if (((Mdata.vw_avg >= SnLaws::event_wind_lowlim) && (Mdata.rh_avg >= rh_lowlim))) {
+	//				elem.rb = std::min(bond_factor_rh*elem.rb, Metamorphism::max_grain_bond_ratio*elem.rg);
+	//			}
+	//		}
+	//	}
+	//} // end no Graupel
 
 	elem.opticalEquivalentGrainSize();
 	elem.metamo = 0.;
