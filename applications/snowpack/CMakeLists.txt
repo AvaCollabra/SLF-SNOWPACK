@@ -34,6 +34,9 @@ IF(UNIX)
 	SET(EXTRA_LINKS "dl;pthread")
 ENDIF(UNIX)
 
+IF(PROFILING)
+	SET(EXTRA_LINKS "${EXTRA_LINKS} -lprofiler") #add ${PROFILING} to the CFLAGS when necessary
+ENDIF()
 #Prepare executable
 SET(BINARY "snowpack.app")
 ADD_EXECUTABLE(${BINARY} ${snowpack-app_sources})

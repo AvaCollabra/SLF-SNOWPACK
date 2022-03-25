@@ -39,7 +39,7 @@ IF(UNIX)
 	ELSE(APPLE)
 		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,'$ORIGIN',-rpath,'$ORIGIN'/../lib")
 	ENDIF(APPLE)
-	
+
 	# add the automatically determined parts of the RPATH
 	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 	# the RPATH to be used when installing, but only if it's not a system directory
@@ -78,6 +78,7 @@ FIND_PACKAGE(MeteoIO)
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")
 SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
+SET(PROFILING OFF CACHE BOOL "Link the profiler library")
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
@@ -305,7 +306,7 @@ ELSE(UNIX)
 		SET(CPACK_PACKAGE_INSTALL_DIRECTORY "${CPACK_PACKAGE_NAME}")
 		SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${CPACK_PACKAGE_NAME}")
 		SET(CPACK_NSIS_MODIFY_PATH ON)
-		
+
 		#Main links (they can get overwritten later)
 		SET(MENU_LINKS_NIVIZ "https://run.niviz.org" "NIVIZ online visualization" )
 		SET(MENU_LINKS_SNOWPACK "https://models.slf.ch/p/snowpack/" "SNOWPACK Home page")
@@ -315,7 +316,7 @@ ELSE(UNIX)
 			"${DOC_PATH}/examples" "SNOWPACK examples"
 			)
 		ENDIF(INSTALL_DOC)
-		
+
 		#all other links: inishell, meteoio
 		IF(CPACK_BUNDLE_ALL)
 # 			SET(MENU_LINKS_INISHELL "bin/inishell.exe" "SNOWPACK's Inishell")
@@ -327,9 +328,9 @@ ELSE(UNIX)
 				)
 			ENDIF(INSTALL_DOC)
 		ENDIF(CPACK_BUNDLE_ALL)
-		
+
 		SET(CPACK_NSIS_MENU_LINKS ${MENU_LINKS_SNOWPACK} ${MENU_LINKS_INISHELL} ${MENU_LINKS_NIVIZ} ${MENU_LINKS_METEOIO})
-		
+
 		#info for the add/uninstall software administration
 		SET(CPACK_NSIS_DISPLAY_NAME "${CPACK_PACKAGE_NAME}-${VERSION}")
 		SET(CPACK_NSIS_INSTALLED_ICON_NAME "doc\\\\icon.ico")

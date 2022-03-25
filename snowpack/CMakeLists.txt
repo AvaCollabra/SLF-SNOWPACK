@@ -14,6 +14,10 @@ IF(ENABLE_LAPACK)
 	SET(extra_libs ${extra_libs} ${Lapack_LIBRARIES} ${Blas_LIBRARIES})
 ENDIF(ENABLE_LAPACK)
 
+#IF(PROFILING)
+	#SET(extra_libs "${extra_libs} -lprofiler") #add ${PROFILING} to the CFLAGS when necessary
+#ENDIF()
+
 SET(snowpacklib_sources
 	DataClasses.cc
 	vanGenuchten.cc

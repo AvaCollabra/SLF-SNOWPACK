@@ -13,7 +13,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} /EHa")
 		ENDIF(DEBUG_ARITHM)
-		
+
 		#SET(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs"  FORCE)
 		SET(WARNINGS "/W4 /D_CRT_SECURE_NO_WARNINGS /EHsc") #Za: strict ansi EHsc: handle c++ exceptions /w35045: inform about Spectre mitigation
 		#SET(EXTRA_WARNINGS "/Wp64") #/Wall
@@ -25,7 +25,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 		SET(DEBUG "/Z7 /Od /D__DEBUG /MDd")
 		SET(_VERSION "/D_VERSION=${_versionString}")
-		
+
 	###########################################################
 	ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL Intel)
 		IF(ENABLE_LAPACK)
@@ -34,7 +34,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
-		
+
 		SET(WARNINGS_OFF "-Wno-long-long -Wno-unknown-pragmas -wd2015,11071")
 		SET(WARNINGS "-Wall -Wswitch ${WARNINGS_OFF}")
 		SET(DEEP_WARNINGS "-Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization") #-Wfloat-equal -Wpadded
@@ -46,7 +46,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")
 		SET(_VERSION "-D_VERSION=${_versionString}")
-		
+
 	###########################################################
 	ELSEIF(CMAKE_CXX_COMPILER_ID STREQUAL Cray)
 		IF(ENABLE_LAPACK)
@@ -55,7 +55,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
-		
+
 		SET(WARNINGS "-hlist=m -h negmsgs -h msglevel_3 -h nomessage=870") #870: accept multibyte chars
 		#SET(EXTRA_WARNINGS "-h msglevel_2")
 		SET(OPTIM "-O3 -hfp3 -h msglevel_4 -DNDEBUG -DNOSAFECHECKS")
@@ -69,7 +69,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 		SET(DEBUG "-g -D__DEBUG")
 		SET(_VERSION "-D_VERSION=${_versionString}")
-	
+
 	###########################################################
 	ELSEIF(CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
 		#we consider that all other compilers support "-" options and silently ignore what they don't know
@@ -82,7 +82,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
-		
+
 		SET(WARNINGS "-Wall -Wno-long-long  -Wswitch -Wno-unknown-pragmas")
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Wfloat-equal -Wpadded
 		SET(EXTRA_WARNINGS "-Wextra -pedantic -Weffc++ ${DEEP_WARNINGS}")
@@ -92,8 +92,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")
 		SET(_VERSION "-D_VERSION=${_versionString}")
-		
-		SET(PROFILING "-pg -fprofile-arcs") #add ${PROFILING} to the CFLAGS when necessary
+
 		SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -Wunsafe-loop-optimizations -Wwrite-strings")
 		IF(NOT ANDROID)
 			SET(EXTRA_WARNINGS "${EXTRA_WARNINGS} -ansi")
@@ -115,7 +114,7 @@ MACRO (SET_COMPILER_OPTIONS)
 				FIND_PROGRAM(CMAKE_GCC_RANLIB NAMES ${_CMAKE_TOOLCHAIN_PREFIX}gcc-ranlib HINTS ${_CMAKE_TOOLCHAIN_LOCATION})
 
 				IF( CMAKE_GCC_AR AND CMAKE_GCC_NM AND CMAKE_GCC_RANLIB )
-					SET(OPTIM "${OPTIM} -flto") 
+					SET(OPTIM "${OPTIM} -flto")
 					SET( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto -fno-fat-lto-objects" )
 					SET( CMAKE_AR "${CMAKE_GCC_AR}" )
 					SET( CMAKE_NM "${CMAKE_GCC_NM}" )
@@ -154,7 +153,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		IF(DEBUG_ARITHM)
 			SET(EXTRA "${EXTRA} -DDEBUG_ARITHM")
 		ENDIF(DEBUG_ARITHM)
-		
+
 		SET(WARNINGS_OFF "-Wno-long-long -Wno-float-equal -Wno-documentation -Wno-documentation-unknown-command -Wno-old-style-cast -Wno-padded -Wno-missing-noreturn -Wno-weak-vtables -Wno-switch-enum -Wno-covered-switch-default -Wno-global-constructors -Wno-exit-time-destructors -Wno-unknown-pragmas -Wno-format-nonliteral -Wno-date-time -Wno-unused-template")
 		SET(WARNINGS "-Wall -Wswitch -Weverything ${WARNINGS_OFF}") #obviously, we should try to fix the warnings! Keeping in mind that some of these W are half buggy...
 		SET(DEEP_WARNINGS "-Wunused-value -Wshadow -Wpointer-arith -Wconversion -Winline -Wdisabled-optimization -Wctor-dtor-privacy") #-Rpass=.* for static analysis
@@ -165,7 +164,7 @@ MACRO (SET_COMPILER_OPTIONS)
 		ENDIF()
 		SET(DEBUG "-g3 -O0 -D__DEBUG")
 		SET(_VERSION "-D_VERSION=${_versionString}")
-		
+
 		SET(PROFILING "-pg") #add ${PROFILING} to the CFLAGS when necessary
 		SET(EXTRA "${EXTRA} -fcolor-diagnostics") #-fapple-pragma-pack does not seems necessary; -ftrapv should be replaced by sanitize=integer
 		SET(LEAKS_CHECK OFF CACHE BOOL "Set to ON to dynamically check for memory corruption (and do the same for applications linked with MeteoIO)")
@@ -174,7 +173,7 @@ MACRO (SET_COMPILER_OPTIONS)
 			ENDIF(LEAKS_CHECK)
 		SET(ARCH_OPTIM  "-march=native")
 	ENDIF()
-	
+
 	###########################################################
 	#targets providing SETs of compiler options
 	IF(NOT DEST)
