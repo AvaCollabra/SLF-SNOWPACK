@@ -307,7 +307,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
 	double age = (ageAlbedo)? Mdata.date.getJulian() - Edata.depositionDate.getJulian() : 0.;
-
+	std::cout << Edata.mk << std::endl;
 	if (i_snow_albedo == "FIXED") {
 		Alb = i_albedo_fixedValue;
 	} else if ((ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
@@ -433,6 +433,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Albedo parameterization %s not implemented yet!", i_albedo_parameterization.c_str());
 		throw IOException("The required snow albedo model is not implemented yet!", AT);
 	}
+	std::cout << Alb << std::endl;
 
 	return(Alb);
 }
