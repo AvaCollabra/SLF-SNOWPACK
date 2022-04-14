@@ -739,6 +739,9 @@ class SurfaceFluxes {
 			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
 			MS_SNOWPACK_RUNOFF,///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
+			MS_SOIL_RUNOFF1,   ///< Virtual lysimeter 1
+			MS_SOIL_RUNOFF2,   ///< Virtual lysimeter 2
+			MS_SOIL_RUNOFF3,   ///< Virtual lysimeter 3
 			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
