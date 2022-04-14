@@ -740,6 +740,9 @@ class SurfaceFluxes {
 			MS_SNOWPACK_RUNOFF,///< The mass loss of snowpack from snow melt due to water transport (virtual lysimeter)
 			MS_SURFACE_RUNOFF, ///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
+			MS_SOIL_RUNOFF1,   ///< Virtual lysimeter 1
+			MS_SOIL_RUNOFF2,   ///< Virtual lysimeter 2
+			MS_SOIL_RUNOFF3,   ///< Virtual lysimeter 3
 			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
