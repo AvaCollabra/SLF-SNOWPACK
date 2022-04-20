@@ -2055,11 +2055,6 @@ void SnowStation::compSnowpackMasses()
 		swe += Edata[e].L * Edata[e].Rho;
 		lwc_sum += Edata[e].L * ((Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]) * Constants::density_water);
 	}
-	for (size_t e = SoilNode; e < nElems; e++) {
-		mass_sum += Edata[e].M;
-		swe += Edata[e].L * Edata[e].Rho;
-		lwc_sum += Edata[e].L * ((Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]) * Constants::density_water);
-	}
 }
 
 /**
