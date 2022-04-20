@@ -390,7 +390,7 @@ class ElementData {
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), rhov(0.) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), soil_lysimeter(0.), rhov(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
@@ -412,7 +412,9 @@ class NodeData {
 		double Sigdsm;
 		double rime;
 
-		double rhov;    /// < nodal vapor density in kg/m^3
+		double soil_lysimeter; ///< Water flowing through the node
+
+		double rhov;    ///< nodal vapor density in kg/m^3
 
 };
 
@@ -630,6 +632,8 @@ class SnowStation {
 
 		size_t find_tag(const size_t& tag) const;
 
+		void reset_lysimeters();
+
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const SnowStation& data);
 		friend std::istream& operator>>(std::istream& is, SnowStation& data);
@@ -739,9 +743,6 @@ class SurfaceFluxes {
 			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
 			MS_SNOWPACK_RUNOFF,///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
-			MS_SOIL_RUNOFF1,   ///< Virtual lysimeter 1
-			MS_SOIL_RUNOFF2,   ///< Virtual lysimeter 2
-			MS_SOIL_RUNOFF3,   ///< Virtual lysimeter 3
 			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};

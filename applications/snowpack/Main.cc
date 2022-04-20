@@ -531,7 +531,11 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 		surfFluxes.reset(cumsum_mass);
 		if (useCanopyModel)
 			currentSector.Cdata.reset(cumsum_mass);
-
+			if(!cumsum_mass) {
+				for(auto station:vecXdata) {
+					station.reset_lysimeters();
+				}
+			}
 		const bool mass_balance = cfg.get("MASS_BALANCE", "SnowpackAdvanced");
 		if (mass_balance) {
 			// Do an initial mass balance check
@@ -784,7 +788,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 		cfg.addKey("*::edit998", "InputEditing", "COPY");
 		cfg.addKey("*::arg998::dest", "InputEditing", "RH_AVG");
 		cfg.addKey("*::arg998::src", "InputEditing", "RH");
-		
+
 		cfg.addKey("VW_AVG::filter1", "Filters", "AGGREGATE");
 		cfg.addKey("VW_AVG::arg1::type", "Filters", "MEAN");
 		cfg.addKey("VW_AVG::arg1::soft", "Filters", "true");
@@ -1239,17 +1243,17 @@ inline void real_main (int argc, char *argv[])
 								cumsum.erosion[slope.mainStation] = -surfFluxes.mass[SurfaceFluxes::MS_WIND];
 						}
 					}
-					
+
 					const size_t i_hz = mn_ctrl.HzStep;
 					if (mode == "OPERATIONAL" && !cumsum_mass) { // Cumulate flat field runoff in operational mode
 						qr_Hdata.at(i_hz).runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
 						cumsum.runoff += surfFluxes.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
 					}
-					
+
 					//check if inflate-deflate is required and perform it if necessary
 					if (enforce_snow_height && allow_inflate)
 						deflateInflate(vecXdata[slope.mainStation], qr_Hdata, time_count_deltaHS, Mdata, sn_dt, i_hz, prn_check);
-					
+
 					if (mn_ctrl.HzDump) { // Save hazard data ...
 						qr_Hdata.at(i_hz).stat_abbrev = vecStationIDs[i_stn];
 						if (mode == "OPERATIONAL") {

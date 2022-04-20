@@ -1865,6 +1865,7 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
 	os.write(reinterpret_cast<const char*>(&data.S_dsm), sizeof(data.S_dsm));
 	os.write(reinterpret_cast<const char*>(&data.Sigdsm), sizeof(data.Sigdsm));
+	os.write(reinterpret_cast<const char*>(&data.soil_lysimeter), sizeof(data.soil_lysimeter));
 	os.write(reinterpret_cast<const char*>(&data.rhov), sizeof(data.rhov));
 	return os;
 }
@@ -1884,6 +1885,7 @@ std::istream& operator>>(std::istream& is, NodeData& data)
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
 	is.read(reinterpret_cast<char*>(&data.S_dsm), sizeof(data.S_dsm));
 	is.read(reinterpret_cast<char*>(&data.Sigdsm), sizeof(data.Sigdsm));
+	is.read(reinterpret_cast<char*>(&data.soil_lysimeter), sizeof(data.soil_lysimeter));
 	is.read(reinterpret_cast<char*>(&data.rhov), sizeof(data.rhov));
 	return is;
 }
@@ -1896,6 +1898,7 @@ const std::string NodeData::toString() const
 	os << "\tz=" << z << " T=" << T << " hoar=" << hoar << "\n";
 	os << "\tCreep: u=" << u << " udot=" << udot << " f=" << f << "\n";
 	os << "\tStability: S_n=" << S_n << " S_s=" << S_s << " ssi=" << ssi << "\n";
+	os << "\tSoil lysimeter: S_n=" << soil_lysimeter << "\n";
 	os << "\rNodal vapor density: rhov=" << rhov << "\n";
 	os << "</NodeData>\n";
 	return os.str();
@@ -2042,6 +2045,11 @@ void SnowStation::compSnowpackMasses()
 		swe += Edata[e].L * Edata[e].Rho;
 		lwc_sum += Edata[e].L * ((Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]) * Constants::density_water);
 	}
+	for (size_t e = SoilNode; e < nElems; e++) {
+		mass_sum += Edata[e].M;
+		swe += Edata[e].L * Edata[e].Rho;
+		lwc_sum += Edata[e].L * ((Edata[e].theta[WATER] + Edata[e].theta[WATER_PREF]) * Constants::density_water);
+	}
 }
 
 /**
@@ -2175,6 +2183,12 @@ size_t SnowStation::find_tag(const size_t& tag) const
 bool SnowStation::hasSoilLayers() const
 {
 	return useSoilLayers;
+}
+
+void SnowStation::reset_lysimeters() {
+	for(size_t i=0; i <= SoilNode; i++){
+		Ndata[i].soil_lysimeter = 0;
+	}
 }
 
 /**

@@ -823,15 +823,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double actualbottomflux=0;			//Stores the actual flux through the bottom (positive is outflow).
 	double snowsoilinterfaceflux=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
 	double totalsourcetermflux=0.;			//Stores the total applied source term flux (it's a kind of boundary flux, but then in the middle of the domain).
-	double virtual_lysimeter_flux1=0.;		//Virtual lysimeter flux 1
-	double virtual_lysimeter_flux2=0.;		//Virtual lysimeter flux 2
-	double virtual_lysimeter_flux3=0.;		//Virtual lysimeter flux 3
-	const double virtual_lysimeter_height1=0.02;	//2 cm depth for lysimeter 1
-	const double virtual_lysimeter_height2=0.30;	//30 cm depth for lysimeter 2
-	const double virtual_lysimeter_height3=0.60;	//60 cm depth for lysimeter 3
-	size_t virtual_lysimeter_layer1=0.;		//Layer associated with the virtual lysimeter 1
-	size_t virtual_lysimeter_layer2=0.;		//Layer associated with the virtual lysimeter 2
-	size_t virtual_lysimeter_layer3=0.;		//Layer associated with the virtual lysimeter 3
+
+	std::vector<double> soil_lysimeters(Xdata.SoilNode+1, 0.);
 
 	//Declare all numerical arrays and matrices:
 	std::vector< std::vector<double> > delta_h(nmemstates, std::vector<double> (nE,0.));	//Change in pressure head per iteration
@@ -914,18 +907,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	// Grid initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
 	InitializeGrid(EMS, lowernode, uppernode);
-
-	// Initialize virtual lysimeters
-	double totalheight = 0.;
-	i = Xdata.SoilNode;
-	while (i-- > lowernode) {
-		if (i>0) {	// Note that we calculate the flux between this layer and the layer below, so i should be larger than 0
-			totalheight+=EMS[i].L;
-			if(totalheight>=virtual_lysimeter_height1 && virtual_lysimeter_layer1==0) virtual_lysimeter_layer1=i;
-			if(totalheight>=virtual_lysimeter_height2 && virtual_lysimeter_layer2==0) virtual_lysimeter_layer2=i;
-			if(totalheight>=virtual_lysimeter_height3 && virtual_lysimeter_layer3==0) virtual_lysimeter_layer3=i;
-		}
-	}
 
 	//Now set hydraulic properties for each layer
 	h_d=0.;							//Set definition of pressure head of completely dry to zero, we will determine it in the next loop.
@@ -2301,10 +2282,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			massbalanceerror_sum+=massbalanceerror;
 			if(WriteDebugOutput) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
 
-			//Determine virtual lysimeter fluxes:
-			virtual_lysimeter_flux1+=(1./rho[virtual_lysimeter_layer1])*((((h_n[virtual_lysimeter_layer1]*rho[virtual_lysimeter_layer1]-h_n[virtual_lysimeter_layer1-1]*rho[virtual_lysimeter_layer1-1])/dz_up[virtual_lysimeter_layer1-1])+Xdata.cos_sl*rho[virtual_lysimeter_layer1])*k_np1_m_ip12[virtual_lysimeter_layer1-1]*dt);
-			virtual_lysimeter_flux2+=(1./rho[virtual_lysimeter_layer2])*((((h_n[virtual_lysimeter_layer2]*rho[virtual_lysimeter_layer2]-h_n[virtual_lysimeter_layer2-1]*rho[virtual_lysimeter_layer2-1])/dz_up[virtual_lysimeter_layer2-1])+Xdata.cos_sl*rho[virtual_lysimeter_layer2])*k_np1_m_ip12[virtual_lysimeter_layer2-1]*dt);
-			virtual_lysimeter_flux3+=(1./rho[virtual_lysimeter_layer3])*((((h_n[virtual_lysimeter_layer3]*rho[virtual_lysimeter_layer3]-h_n[virtual_lysimeter_layer3-1]*rho[virtual_lysimeter_layer3-1])/dz_up[virtual_lysimeter_layer3-1])+Xdata.cos_sl*rho[virtual_lysimeter_layer3])*k_np1_m_ip12[virtual_lysimeter_layer3-1]*dt);
+
+			if(Xdata.SoilNode > 0) {
+				for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
+					soil_lysimeters[node_i] += (1./rho[node_i])*((((h_n[node_i]*rho[node_i]-h_n[node_i-1]*rho[node_i-1])/dz_up[node_i-1])+Xdata.cos_sl*rho[node_i])*k_np1_m_ip12[node_i-1]*dt);
+				}
+			}
 
 			//Determine flux at soil snow interface (note: postive=flux upward, negative=flux downward):
 			if (Xdata.SoilNode<nE) {	//We have snow layers
@@ -2636,9 +2619,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
 
 	// Deal with the virtual lysimeters
-	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF1] += virtual_lysimeter_flux1*Constants::density_water;
-	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF2] += virtual_lysimeter_flux2*Constants::density_water;
-	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF3] += virtual_lysimeter_flux3*Constants::density_water;
+	Xdata.Ndata[0].soil_lysimeter += actualbottomflux*Constants::density_water;
+	if(Xdata.SoilNode > 0) {
+		// See comment above, to be sure we take all contibutions, we take MS_SNOWPACK_RUNOFF
+		Xdata.Ndata[Xdata.SoilNode].soil_lysimeter = Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
+		for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
+			Xdata.Ndata[node_i].soil_lysimeter += soil_lysimeters[node_i]*Constants::density_water;
+		}
+	}
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {
