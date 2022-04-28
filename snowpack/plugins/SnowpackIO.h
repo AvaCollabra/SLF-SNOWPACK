@@ -46,7 +46,7 @@
  * -# the intial state of the various soil and snow layers
  *
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
- * handled by <a href="https://models.slf.ch/p/meteoio">MeteoIO</a>, so please check its documentation (for the last official release, it is available
+ * handled by <a href="https://gitlabext.wsl.ch/snow-models/meteoio/-/wikis/Home">MeteoIO</a>, so please check its documentation (for the last official release, it is available
  * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats.
  * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
  *
@@ -60,7 +60,7 @@
  * - a time serie of the meteorological data and fluxes as used in the model.
  * 
  * Depending on the chosen output format, 1) and 2) might be provided as one file or two files. Moreover, since %Snowpack pre-processes all the 
- * meteorological input data with <A HREF="https://models.slf.ch/p/meteoio">MeteoIO</A>, the forcing data that is seen in the core of the model might be different than 
+ * meteorological input data with <A HREF="https://gitlabext.wsl.ch/snow-models/meteoio/-/wikis/Home">MeteoIO</A>, the forcing data that is seen in the core of the model might be different than 
  * the provided input data. In order to better fine tune the parameters of this pre-processing, it is possible to request a copy of the
  * pre-processed meteorological data by setting the key WRITE_PROCESSED_METEO to TRUE in the [Output] section.
  *
