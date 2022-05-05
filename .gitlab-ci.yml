@@ -14,8 +14,8 @@ stages:
 build meteoio:
   stage: dependency_build
   script:
-    - cd ~
-    - git clone https://gitlabext.wsl.ch/snow-models/meteoio.git
+    # TODO: siwtch to master branch
+    - git clone -b feature/pipeline https://gitlabext.wsl.ch/snow-models/meteoio.git
     - cd meteoio
     - echo "Building from commit $(git rev-parse HEAD)"
     - cmake -S . -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=OFF
@@ -25,13 +25,13 @@ build meteoio:
   artifacts:
     expire_in: 1h
     paths:
-      - ./*.deb
+      - ./meteoio/*.deb
 
 build:
   stage: build
   script:
     # Install meteoio
-    - METEO_IO_DEB=$(find . -maxdepth 1 -type f -name "MeteoIO-*.deb")
+    - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
     # Build snowpack
     - mkdir build && cd build
@@ -46,11 +46,68 @@ build:
     paths:
       - build.tar.gz
 
+.test_base:
+  stage: test
+  script:
+    # Install meteoio
+    - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
+    - dpkg -i $METEO_IO_DEB
+    # Run tests and coverage
+    - tar -xzvf build.tar.gz # unpack the built test files and the necessary files for ctest
+    - cp -r tests build # copy the required test files into the tests folder
+    - cd build
+    - ctest -R ${TEST_NAME}
+
+res1exp:
+  extends: .test_base
+  variables:
+    TEST_NAME: res1exp.smoke
+
+res5exp:
+  extends: .test_base
+  variables:
+    TEST_NAME: res5exp.smoke
+
+basics_1exp:
+  extends: .test_base
+  variables:
+    TEST_NAME: basics_1exp.smoke
+
+basics_5exp_N:
+  extends: .test_base
+  variables:
+    TEST_NAME: basics_5exp_N.smoke
+
+basics_5exp_S:
+  extends: .test_base
+  variables:
+    TEST_NAME: basics_5exp_S.smoke
+
+massbalance_check_simple:
+  extends: .test_base
+  variables:
+    TEST_NAME: massbalance_check_simple.smoke
+
+energybalance_check_simple:
+  extends: .test_base
+  variables:
+    TEST_NAME: energybalance_check_simple.smoke
+
+linearsolver:
+  extends: .test_base
+  variables:
+    TEST_NAME: linearsolver.smoke
+
+implicitsolver:
+  extends: .test_base
+  variables:
+    TEST_NAME: implicitsolver.smoke
+
 running times and coverage:
   stage: test_coverage
   script:
     # Install meteoio
-    - METEO_IO_DEB=$(find . -maxdepth 1 -type f -name "MeteoIO-*.deb")
+    - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
     # Run tests and coverage
     - tar -xzvf build.tar.gz # unpack the built test files and the necessary files for ctest
