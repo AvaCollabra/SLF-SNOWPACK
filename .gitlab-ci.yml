@@ -1,0 +1,59 @@
+default:
+  image: gcc # official gcc image, based on debian, see https://hub.docker.com/_/gcc/
+  before_script:
+  - apt-get update && apt-get -y install cmake
+
+stages:
+  - dependency_build
+  - build
+  - test
+  - test_coverage
+  - release_build
+  - release
+
+build meteoio:
+  stage: dependency_build
+  script:
+    - cd ~
+    - git clone https://gitlabext.wsl.ch/snow-models/meteoio.git
+    - cd meteoio
+    - echo "Building from commit $(git rev-parse HEAD)"
+    - cmake -S . -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=OFF
+      -D USE_LTO_OPTIMIZATIONS:BOOL=ON -D INSTALL_DOC:BOOL=OFF -D CPACK_BUNDLE_ALL:BOOL=ON -D CPACK_GENERATOR:STRING="DEB"
+    - make -j 2
+    - cpack
+  artifacts:
+    expire_in: 1h
+    paths:
+      - ./*.deb
+
+build:
+  stage: build
+  script:
+    # Install meteoio
+    - METEO_IO_DEB=$(find . -maxdepth 1 -type f -name "MeteoIO-*.deb")
+    - dpkg -i $METEO_IO_DEB
+    # Build snowpack
+    - mkdir build && cd build
+    - cmake -S .. -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=ON
+      -D BUILD_TESTING_WITH_COVERAGE:BOOL=ON -D METEOIO_TIMESERIES:BOOL=OFF -D CPACK_BUNDLE_ALL:BOOL=ON
+    - make -j 2
+    # Cleanup and compress to avoid limits in GitLab
+    - find . -name "*.o" -type f -delete
+    - cd .. && tar -czvf build.tar.gz build lib
+  artifacts:
+    expire_in: 1h
+    paths:
+      - build.tar.gz
+
+running times and coverage:
+  stage: test_coverage
+  script:
+    # Install meteoio
+    - METEO_IO_DEB=$(find . -maxdepth 1 -type f -name "MeteoIO-*.deb")
+    - dpkg -i $METEO_IO_DEB
+    # Run tests and coverage
+    - tar -xzvf build.tar.gz # unpack the built test files and the necessary files for ctest
+    - cp -r tests build # copy the required test files into the tests folder
+    - cd build
+    - ctest && ctest -D NightlyCoverage
