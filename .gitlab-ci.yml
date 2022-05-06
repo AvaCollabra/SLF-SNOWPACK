@@ -14,8 +14,7 @@ stages:
 build meteoio:
   stage: dependency_build
   script:
-    # TODO: siwtch to master branch
-    - git clone -b feature/pipeline https://gitlabext.wsl.ch/snow-models/meteoio.git
+    - git clone -b master https://gitlabext.wsl.ch/snow-models/meteoio.git
     - cd meteoio
     - echo "Building from commit $(git rev-parse HEAD)"
     - cmake -S . -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=OFF
@@ -36,7 +35,7 @@ build:
     # Build snowpack
     - mkdir build && cd build
     - cmake -S .. -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=ON
-      -D BUILD_TESTING_WITH_COVERAGE:BOOL=ON -D METEOIO_TIMESERIES:BOOL=OFF -D CPACK_BUNDLE_ALL:BOOL=ON
+      -D BUILD_TESTING_WITH_COVERAGE:BOOL=ON -D CPACK_BUNDLE_ALL:BOOL=ON
     - make -j 2
     # Cleanup and compress to avoid limits in GitLab
     - find . -name "*.o" -type f -delete
@@ -114,3 +113,38 @@ running times and coverage:
     - cp -r tests build # copy the required test files into the tests folder
     - cd build
     - ctest && ctest -D NightlyCoverage
+
+Debian release build:
+  stage: release_build
+  rules:
+    - if: $CI_COMMIT_TAG # Run this job when a tag is created manually
+  dependencies: []
+  script:
+    - apt-get -y install doxygen graphviz jq # both doxygen and graphviz are required for cmake "FindDoxygen"
+    # Download newest meteoio release
+    - 'JSON_RESPONSE=$(curl "https://gitlabext.wsl.ch/api/v4/projects/30/releases" --header "JOB-TOKEN: $CI_JOB_TOKEN")'
+    - 'echo "MeteoIO Releases: ${JSON_RESPONSE}"'
+    - RELEASE_URL=$(echo $JSON_RESPONSE | jq -r '.[0].assets.links[] | select(.name=="Linux Debian DEB binary package") | .url')
+    - 'echo "MeteoIO Release URL: ${RELEASE_URL}"'
+    - 'curl ${RELEASE_URL} --output meteoio.deb'
+    - dpkg -i meteoio.deb
+    # Build snowpack
+    - export SNOWPACK_VERSION=${CI_COMMIT_TAG#*-}
+    - export VERSION_MAJOR=`echo $SNOWPACK_VERSION | cut -d. -f1`
+    - export VERSION_MINOR=`echo $SNOWPACK_VERSION | cut -d. -f2`
+    - export VERSION_PATCH=`echo $SNOWPACK_VERSION | cut -d. -f3`
+    - echo VERSION_MAJOR=$VERSION_MAJOR - VERSION_MINOR=$VERSION_MINOR - VERSION_PATCH=$VERSION_PATCH
+    - cmake -S . -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=OFF -D BUILD_TESTING:BOOL=OFF
+      -D INSTALL_DOC:BOOL=ON -D CPACK_BUNDLE_ALL:BOOL=ON -D CPACK_GENERATOR:STRING="DEB;TGZ"
+    - make -j 2
+    - make doc
+    - cpack
+    # Documentation only package
+    - mv doc Snowpack-${SNOWPACK_VERSION}-doc
+    - tar -czvf Snowpack-${SNOWPACK_VERSION}-doc.tar.gz Snowpack-${SNOWPACK_VERSION}-doc
+  artifacts:
+    expire_in: 1h
+    paths:
+      - Snowpack-${CI_COMMIT_TAG#*-}-x86_64.tar.gz
+      - Snowpack-${CI_COMMIT_TAG#*-}-x86_64.deb
+      - Snowpack-${CI_COMMIT_TAG#*-}-doc.tar.gz
