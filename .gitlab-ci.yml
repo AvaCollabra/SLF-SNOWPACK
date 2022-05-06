@@ -49,7 +49,7 @@ build:
 .test_base:
   stage: test
   script:
-    - apt-get -y numdiff
+    - apt-get -y install numdiff
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
@@ -57,7 +57,7 @@ build:
     - tar -xzvf build.tar.gz # unpack the built test files and the necessary files for ctest
     - cp -r tests build # copy the required test files into the tests folder
     - cd build
-    - ctest -R "^${TEST_NAME}$"
+    - ctest --verbose -R "^${TEST_NAME}$"
 
 res1exp:
   extends: .test_base
@@ -107,7 +107,7 @@ implicitsolver:
 running times and coverage:
   stage: test coverage
   script:
-    - apt-get -y numdiff
+    - apt-get -y install numdiff
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
