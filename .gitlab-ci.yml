@@ -49,6 +49,7 @@ build:
 .test_base:
   stage: test
   script:
+    - apt-get -y numdiff
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
@@ -106,6 +107,7 @@ implicitsolver:
 running times and coverage:
   stage: test coverage
   script:
+    - apt-get -y numdiff
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
