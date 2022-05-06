@@ -36,6 +36,7 @@ build:
     - mkdir build && cd build
     - cmake -S .. -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=ON
       -D BUILD_TESTING_WITH_COVERAGE:BOOL=ON -D CPACK_BUNDLE_ALL:BOOL=ON
+      -D METEOIO_INCLUDE_DIR=/usr/include -D METEOIO_LIBRARY=/usr/lib/libmeteoio.so
     - make -j 2
     # Cleanup and compress to avoid limits in GitLab
     - find . -name "*.o" -type f -delete
