@@ -56,7 +56,7 @@ build:
     - tar -xzvf build.tar.gz # unpack the built test files and the necessary files for ctest
     - cp -r tests build # copy the required test files into the tests folder
     - cd build
-    - ctest -R ${TEST_NAME}
+    - ctest -R "^${TEST_NAME}$"
 
 res1exp:
   extends: .test_base
