@@ -4,15 +4,15 @@ default:
   - apt-get update && apt-get -y install cmake
 
 stages:
-  - dependency_build
+  - dependency build
   - build
   - test
-  - test_coverage
-  - release_build
+  - test coverage
+  - release build
   - release
 
 build meteoio:
-  stage: dependency_build
+  stage: dependency build
   script:
     - git clone -b master https://gitlabext.wsl.ch/snow-models/meteoio.git
     - cd meteoio
@@ -103,7 +103,7 @@ implicitsolver:
     TEST_NAME: implicitsolver.smoke
 
 running times and coverage:
-  stage: test_coverage
+  stage: test coverage
   script:
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
@@ -115,7 +115,7 @@ running times and coverage:
     - ctest && ctest -D NightlyCoverage
 
 Debian release build:
-  stage: release_build
+  stage: release build
   rules:
     - if: $CI_COMMIT_TAG # Run this job when a tag is created manually
   dependencies: []
@@ -150,7 +150,7 @@ Debian release build:
       - Snowpack-${CI_COMMIT_TAG#*-}-doc.tar.gz
 
 Fedora release build:
-  stage: release_build
+  stage: release build
   image: fedora
   rules:
     - if: $CI_COMMIT_TAG # Run this job when a tag is created manually
