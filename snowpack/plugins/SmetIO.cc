@@ -161,7 +161,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
-	cfg.getValue("READ_DSM", "SnowpackAdvanced", read_dsm); 
+	cfg.getValue("READ_DSM", "SnowpackAdvanced", read_dsm);
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
@@ -187,14 +187,14 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("USEREFERENCELAYER", "Output", useReferenceLayer, IOUtils::nothrow);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
-	
+
 	bool write_acdd = false;
 	cfg.getValue("ACDD_WRITE", "Output", write_acdd);
 	if (write_acdd) {
 		acdd.setEnabled(true);
 		acdd.setUserConfig(cfg, "Output", false); //do not allow multi-line keys
 		if (out_haz) { // HACK To avoid troubles in A3D
-			mio::Date now; 
+			mio::Date now;
 			now.setFromSys();
 			acdd.addAttribute("history", now.toString(mio::Date::ISO_Z) + ", " + info.user + "@" + info.hostname + ", Snowpack-" + info.version);
 		}
@@ -428,7 +428,7 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 
 		SSdata.Ldata[ll].CDot = vec_data[current_index++];
 		SSdata.Ldata[ll].metamo = vec_data[current_index++];
-        
+
 		if ((metamorphism_model == "NIED") && (read_dsm)) {
 			SSdata.Ldata[ll].dsm = vec_data[current_index++];
 		}
@@ -940,7 +940,7 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 	if (out_soileb)
 		os << "dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " ";
 	if (out_mass)
-		os << "SWE MS_Water MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap" << " "; // 34-39: SWE (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
+		os << "SWE MS_Water MS_Water_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap" << " "; // 34-39: SWE (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
 														// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
 	if (out_load)
 		os << "load "; // 50: Solute load at ground surface
@@ -1042,12 +1042,12 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_max << "" << " ";
 	}
 	if (out_mass) {
-		//"SWE MS_Water MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
-		plot_description << "snow_water_equivalent  total_amount_of_water  erosion_mass_loss  rain_rate  virtual_lysimeter  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
-		plot_units << "kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2" << " ";
-		units_offset << "0 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
+		//"SWE MS_Water MS_WATER_SOIL MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
+		plot_description << "snow_water_equivalent total_amount_of_water_snow total_amount_of_water_soil  erosion_mass_loss  rain_rate  virtual_lysimeter  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
+		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0x3300FF 0x0000FF 0x00FF00 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -1191,6 +1191,7 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 	if (out_mass) {
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SWE]/cos_sl );
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl );
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_WATER_SOIL]/cos_sl );
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl );
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_RAIN] );
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF]/cos_sl );

@@ -1198,7 +1198,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		writeProfileProAddCalibration(Xdata, fout);
 	else
 		writeProfileProAddDefault(Xdata, fout);
-		
+
 	if(enable_vapour_transport)
 	{
 		// 0901: the rate of snow density change due to vapour transport (kg/m^3/s)
@@ -1206,7 +1206,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
 			fout << "," << std::scientific << std::setprecision(9) << EMS[e].vapTrans_snowDenChangeRate;
-		
+
 		// 0902: the vapour diffusion flux of the element (kg/m^2/s)
 		fout << "\n0902," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
@@ -1217,8 +1217,8 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		fout << "\n0903," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
-			fout << "," << std::scientific << std::setprecision(6) << EMS[e].vapTrans_cumulativeDenChange;	
-	}	
+			fout << "," << std::scientific << std::setprecision(6) << EMS[e].vapTrans_cumulativeDenChange;
+	}
 
 	fout.close();
 }
@@ -2021,12 +2021,12 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(Mdata.hs)/cos_sl << std::setprecision(6);
 		else
 			fout << ",";
-		// 52: LWC (kg m-2); see also 34-39
+		// 52-53: LWC (kg m-2); see also 34-39
 		if (out_mass)
-			fout << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl;
+			fout << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl  << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER_SOIL]/cos_sl;
 		else
 			fout << ",";
-		// 53-64: Stability Time Series, heights in cm
+		// 54-65: Stability Time Series, heights in cm
 		if (out_stab) {
 			fout << "," << +Xdata.S_class1 << "," << +Xdata.S_class2 << std::fixed; //profile type and stability class, force printing type char as numerica value
 			fout << "," << std::setprecision(1) << M_TO_CM(Xdata.z_S_d/cos_sl) << "," << std::setprecision(2) << Xdata.S_d;
@@ -2038,7 +2038,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		} else {
 			fout << ",,,,,,,,,,,,";
 		}
-		// 65-92 (28 columns)
+		// 66-93 (28 columns)
 		if (out_canopy && useCanopyModel)
 			Canopy::DumpCanopyData(fout, &Xdata.Cdata, &Sdata, cos_sl);
 		else {
@@ -2077,7 +2077,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	} else {
 		fout << ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,";
 	}
-	// 93[94]-100 (8 or 7 free columns)
+	// 94-101 (8 or 7 free columns)
 	size_t nCalcSteps = 1;
 	double crust = 0., dhs_corr = 0., mass_corr = 0.;
 	if (!avgsum_time_series)
@@ -2289,7 +2289,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	}
 	fout << ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)";
 	if (maxNumberMeasTemperatures == 5) {
-		fout << ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5";
+		fout << ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Liquid Water Content (of soil),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5";
 		if (useCanopyModel && out_canopy) {
 			Canopy::DumpCanopyHeader(fout);
 		} else {
@@ -2482,14 +2482,14 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0892,nElems,SNTHERM: settling rate due to metamorphism (% h-1)";
 		fout << "\n0893,nElems,SNTHERM: viscosity (GPa s)";
 	}
-	
+
 	if(enable_vapour_transport)
 	{
 		fout << "\n0901,nElems, the rate of snow density change due to vapour transport (kg/m^3/s)";
-		fout << "\n0902,nElems, the vapour diffusion flux of the element (kg/m^2/s)";		
+		fout << "\n0902,nElems, the vapour diffusion flux of the element (kg/m^2/s)";
 		fout << "\n0903,nElems, the cumulative density change due to vapour transport of the element (kg/m^3)";
 	}
-	
+
 	fout << "\n\n[DATA]";
 }
 
