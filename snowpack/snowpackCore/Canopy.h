@@ -208,6 +208,8 @@ class Canopy {
 		bool Twolayercanopy, Twolayercanopy_user;
 		bool canopytransmission;
 		bool forestfloor_alb;
+		bool useUnload;
+
 };
 
 #endif

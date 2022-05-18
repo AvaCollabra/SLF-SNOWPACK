@@ -121,6 +121,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SOIL_EVAP_MODEL"] = "EVAP_RESISTANCE";
 	advancedConfig["SOIL_THERMAL_CONDUCTIVITY"] = "FITTED";
 
+	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
+
 	//temporary keys for Stability until we decide for a permanent solution
 	advancedConfig["MULTI_LAYER_SK38"] = "false";
 	advancedConfig["SSI_IS_RTA"] = "false";
