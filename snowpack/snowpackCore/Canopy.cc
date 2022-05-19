@@ -1636,7 +1636,11 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	if(useUnload){
 		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?icemm_unload:0);
 	} else {
+<<<<<<< HEAD
 		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
+=======
+		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload
+>>>>>>> 5e168c9126caf26b3e031693cc8248466381b83e
 	}
 	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
