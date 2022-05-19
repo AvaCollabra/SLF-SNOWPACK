@@ -1633,7 +1633,11 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
 	// unload, and psum_ph also based on them. icemm_unload is strored in psum_unload and treated differently in the snow // layers creation
-	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?icemm_unload:0);
+	if(useUnload){
+		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?icemm_unload:0);
+	} else {
+		const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
+	}
 	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
