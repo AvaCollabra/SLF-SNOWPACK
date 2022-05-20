@@ -2055,13 +2055,13 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &e
 
 	// Tests for unloaded snow [Benji]
 //	if (value > 1.0) { // Graupel
-		elem.mk = 2;
-		elem.dd = 0.;
-		elem.sp = 1.;
-		elem.rg = 0.6;
-		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
 		// Because density and volumetric contents are already defined, redo it here
-		elem.Rho = 250.;
+		elem.Rho = 50.;
 		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
 		elem.theta_i_reservoir = 0.0;
 		elem.theta_i_reservoir_cumul = 0.0;
