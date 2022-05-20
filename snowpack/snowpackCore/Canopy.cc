@@ -1628,14 +1628,13 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
-	const double throughfall = Mdata.psum - interception + unload;
+	const double throughfall = Mdata.psum - interception + (useUnload?0:unload);
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
 	// unload, and psum_ph also based on them. icemm_unload is strored in psum_unload and treated differently in the snow // layers creation
 	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?0:icemm_unload);
-	//const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + icemm_unload;
-	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
+	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + (useUnload?0:liqmm_unload);
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
