@@ -167,7 +167,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	if (windward || alpine3d || erosion || (forced_massErode < -Constants::eps2)) {
 		double massErode=0.; // Mass loss due to erosion
 		if (alpine3d) {
-			
+
 			//V1:
 			//massErode = (-Sdata.mass[SurfaceFluxes::MS_HNW]); //(-Sdata.mass[SurfaceFluxes::MS_HNW]);
 			//cout << " masserode is : " << massErode << endl;
@@ -175,11 +175,11 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			massErode = (-Mdata.psum);
 			cout << " masserode is : " << massErode << endl;
 
-			//cout << "psum is " << Mdata.psum << endl;
-			//cout << "mshnw is " << Sdata.mass[SurfaceFluxes::MS_HNW] << endl;
+			cout << "psum is " << Mdata.psum << endl;
+			cout << "mshnw is " << Sdata.mass[SurfaceFluxes::MS_HNW] << endl;
+		}
 			//cout << "mswind is " << Sdata.mass[SurfaceFluxes::MS_WIND] << endl;
 			//cout << "mstotalmass is " << Sdata.mass[SurfaceFluxes::MS_TOTALMASS] << endl;
-
 		  else {
 			const double ustar_max = (Mdata.vw>0.1) ? Mdata.ustar * Mdata.vw_drift / Mdata.vw : 0.; // Scale Mdata.ustar
 			try {
@@ -232,7 +232,8 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 
 			//cumu_precip = 0. ;
 		} else {
-			Xdata.ErosionMass += 0.;
+			//Xdata.ErosionMass += 0.;
+			Xdata.ErosionMass = 0.;
 		}
 		if (nErode > 0)
 			Xdata.resize(nE);
