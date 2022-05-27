@@ -39,7 +39,7 @@ class SnowDrift {
 	public:
 		SnowDrift(const SnowpackConfig& i_cfg);
 
-		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& cumu_psum) const;
+		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& forced_massErode) const;
 
 		static const double schmidt_drift_fudge;
 
@@ -54,4 +54,3 @@ class SnowDrift {
 }; //End class SnowDrift
 
 #endif
-
