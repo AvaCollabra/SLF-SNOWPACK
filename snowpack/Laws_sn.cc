@@ -1107,11 +1107,7 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		} else if (jordy_new_snow && (VW > 2.9)) {
 			rho_hn = newSnowDensityHendrikx(TA, TSS, RH, VW);
 		}
-  } else if (i_hn_model == "KEENAN2021") {
-		static const double alpha = 70., beta = 6.5, gamma = 7.5, delta = 0.26, eta = 13., phi = 4.5, mu = 0.65, nu = 0.17, om = 0.06;
-		rho_hn = alpha + beta*TA + gamma*TSS + delta*RH + eta*VW - phi*TA*TSS - mu*TA*VW - nu*RH*VW + om*TA*TSS*RH;
-
-	} else if (i_hn_model == "VANKAMPENHOUT") {
+  }  else if (i_hn_model == "VANKAMPENHOUT") {
 		//rho_hn = 70 + 6.5*TA + 7.5*TSS + 0.26*RH + 13*U10 − 4.5*TA*TSS − 0.65*TA*U10 − 0.17*RH*U10 + 0.06*TA*TSS*RH;
 		static const double alpha = 50., beta = 1.7, gamma = 17., delta = 3.8328, eta = 0.0333, mu = 266.861, phi = 8.8, nu = 5., om = 1.;
 		if (TA > 2.) {

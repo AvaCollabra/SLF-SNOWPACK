@@ -1347,7 +1347,6 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 			if ((Mdata.vw > 5.) && ((variant == "ANTARCTICA" || variant == "POLAR")
 			|| (!SnLaws::jordy_new_snow && ((hn_density_parameterization == "BELLAIRE")
 			|| (hn_density_parameterization == "VANKAMPENHOUT")
-			|| (hn_density_parameterization == "KEENAN2021")
 			|| (hn_density_parameterization == "LEHNING_NEW"))))) {
 				elem.dd = new_snow_dd_wind;
 				elem.sp = new_snow_sp_wind;
