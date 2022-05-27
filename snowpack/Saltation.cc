@@ -63,7 +63,7 @@ const double Saltation::salt_height = 0.07;
  * non-static section                                       *
  ************************************************************/
 
-static std::string get_model(const SnowpackConfig& cfg) 
+static std::string get_model(const SnowpackConfig& cfg)
 {
 	std::string model;
 	cfg.getValue("SALTATION_MODEL", "SnowpackAdvanced", model);
@@ -403,7 +403,12 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 		const double ustar = sqrt(tauS / Constants::density_air);
 		const double ustar_thresh = sqrt(tau_th / Constants::density_air);
 		if (ustar > ustar_thresh) {
-			massflux = 0.0014 * Constants::density_air * ustar * (ustar - ustar_thresh) * (ustar + 7.6*ustar_thresh + 205.);
+			//Sorensen (2004), parameters from Vionnet et al. (2014)
+			massflux = Constants::density_air / Constants::g * Optim::pow3(ustar) * (1. - Optim::pow2(ustar_thresh / ustar)) * (2.6 + 2.5 * Optim::pow2(ustar_thresh / ustar) + 2. * ustar_thresh / ustar);
+
+			//Sorensen (1991) with the wrong units
+			//massflux = 0.0014 * Constants::density_air * ustar * (ustar - ustar_thresh) * (ustar + 7.6*ustar_thresh + 205.);
+
 			c_salt = massflux / ustar*0.001; // Arbitrary Scaling to match Doorschot concentration
 		} else {
 			massflux = 0.;
@@ -480,4 +485,3 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 
 	return true;
 }
-

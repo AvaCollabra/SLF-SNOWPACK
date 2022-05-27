@@ -161,11 +161,11 @@ bool   SnLaws::setfix = false;
  */
 //@{
 SnLaws::EventType SnLaws::event = SnLaws::event_none;
-double SnLaws::event_wind_lowlim = 0.0;
-double SnLaws::event_wind_highlim = 0.0;
+double SnLaws::event_wind_lowlim = 0 ; //200.0;
+double SnLaws::event_wind_highlim = 0 ; //450.0;
 //@}
-double SnLaws::min_hn_density = 30.;
-double SnLaws::max_hn_density = 250.0;
+double SnLaws::min_hn_density = 50.;
+double SnLaws::max_hn_density = 450.0;
 
 const bool SnLaws::__init = SnLaws::setStaticData("DEFAULT", "BUCKET");
 
@@ -185,8 +185,8 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 		//Maybe, the following if-block is not the case for POLAR version, but as Michi said we just want to try to see the effects of new density:
 		if (current_variant == "POLAR") {
 			event = event_wind;
-			event_wind_lowlim = 1.0;
-			event_wind_highlim = 7.0;
+			event_wind_lowlim = 5.0;
+			event_wind_highlim = 15.0;
 		}
 
 		t_term = t_term_arrhenius_critical;
@@ -307,6 +307,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 	double Alb = Constants::min_albedo;
 	const double Ta = Mdata.ta;
 	double age = (ageAlbedo)? Mdata.date.getJulian() - Edata.depositionDate.getJulian() : 0.;
+
 	if (i_snow_albedo == "FIXED") {
 		Alb = i_albedo_fixedValue;
 	} else if ((ageAlbedo && (age > 365.)) || (Edata.mk % 10 == 7)) {
@@ -432,6 +433,7 @@ double SnLaws::parameterizedSnowAlbedo(const std::string& i_snow_albedo, const s
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Albedo parameterization %s not implemented yet!", i_albedo_parameterization.c_str());
 		throw IOException("The required snow albedo model is not implemented yet!", AT);
 	}
+
 	return(Alb);
 }
 
@@ -1007,7 +1009,8 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 	switch (i_event) {
 		case event_wind: {
 			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
-				static const double rho_0=361., rho_1=33.;
+				//static const double rho_0=361., rho_1=33.;
+				static const double rho_0=250., rho_1=33.;
 				return (rho_0*log10(Mdata.vw_avg) + rho_1);
 			} else
 				return Constants::undefined;
@@ -1035,7 +1038,8 @@ double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnL
 		case event_wind: {
 			if ((Mdata.vw >= event_wind_lowlim) && (Mdata.vw <= event_wind_highlim)) {
 
-				static const double rho_0=361., rho_1=33.;
+				//static const double rho_0=361., rho_1=33.;
+				static const double rho_0=250., rho_1=33.;
 				rho = rho_0*log10(Mdata.vw) + rho_1;
 				return rho;
 			} else{
@@ -1062,10 +1066,20 @@ double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnL
  * @param HH  Altitude a.s.l. (m)
  * @param model Parameterization to be used
  * @return New snow density (kg m-3)
+
+ David Wagner, 10 May 2022:
+ ALPINE3D new snow density only computes density isolated for each SNOWPACK cell,
+ i.e. there might be high average wind speed for the domain, but low wind speeds in the
+ lee zones of ridges --> low computed density in the lee areas although density
+ should be > 200 kg/m3 due to small rounded grains / drifting snow particles.
+ --> When running ALPINE3D, we must compute density at each cell based on the domain-average wind speed. Should we?
+
  */
 double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
                                   double TA, double TSS, double RH, double VW, double HH)
 {
+	double rho_T;
+	double rho_vw;
 	double rho_hn;
 
 	TA  = IOUtils::K_TO_C(TA);
@@ -1093,9 +1107,29 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 		} else if (jordy_new_snow && (VW > 2.9)) {
 			rho_hn = newSnowDensityHendrikx(TA, TSS, RH, VW);
 		}
+  } else if (i_hn_model == "KEENAN2021") {
+		static const double alpha = 70., beta = 6.5, gamma = 7.5, delta = 0.26, eta = 13., phi = 4.5, mu = 0.65, nu = 0.17, om = 0.06;
+		rho_hn = alpha + beta*TA + gamma*TSS + delta*RH + eta*VW - phi*TA*TSS - mu*TA*VW - nu*RH*VW + om*TA*TSS*RH;
+
+	} else if (i_hn_model == "VANKAMPENHOUT") {
+		//rho_hn = 70 + 6.5*TA + 7.5*TSS + 0.26*RH + 13*U10 − 4.5*TA*TSS − 0.65*TA*U10 − 0.17*RH*U10 + 0.06*TA*TSS*RH;
+		static const double alpha = 50., beta = 1.7, gamma = 17., delta = 3.8328, eta = 0.0333, mu = 266.861, phi = 8.8, nu = 5., om = 1.;
+		if (TA > 2.) {
+		  //double rho_T = alpha + beta*pow(3/2, gamma);
+			rho_hn = alpha + beta*pow(3/2, gamma) + mu * pow(phi,(0.5 * (om *tanh(VW/nu))));
+		} else if ((-15. < TA) && (TA <= 2.)){
+			//double rho_T = alpha + beta*pow(3/2, TA + 15.);
+			rho_hn = alpha + beta*pow(3/2, TA + 15.) + mu * pow(phi,(0.5 * (om *tanh(VW/nu))));
+		} else if (TA <= -15.) {
+			//double rho_T = -delta * TA - eta * pow(2., TA);
+			rho_hn = -delta * TA - eta * pow(2., TA) + mu * pow(phi,(0.5 * (om *tanh(VW/nu))));
+		}
+		//double rho_vw = mu * pow(phi,(0.5 * (om *tanh(VW/nu))));
+		//rho_hn = rho_T + rho_vw;
 
 	} else if (i_hn_model == "BELLAIRE") {
 		static const double alpha=3.946, beta=0.07703, zeta=0.0001701, eta=0.02222, mu=-0.05371;
+		//static const double alpha=3.946, beta=0.07703, zeta=0.0001701, eta=0.04444, mu=-0.05371;
 		// Transformations based on natural logarithm!!!
 		VW = std::max(1., VW);
 		const double arg = alpha + beta*TA + zeta*HH + eta*log(VW) + mu*TA*log(VW);
@@ -1151,6 +1185,7 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  *              worked out by J. Hendrikx => set jordy_new_snow in Laws_sn.cc}
  * 	- BELLAIRE: Sascha Bellaire's model (elaborated 2007; used summer/fall 2007)
  * 	- PAHAUT: Edmond Pahaut's model, introduced Sep 1995 in CROCUS by G. Giraud
+ *  - VANKAMPENHOUT: Model from Van Kampenhout et al. (2017). Recommendable for Polar snow.
  * - EVENT: Driven by event type, that is,
  * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
  * - MEASURED: Use measured new snow density read from meteo input

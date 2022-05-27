@@ -42,8 +42,8 @@ bool SnowpackConfig::initStaticData()
 	//[SnowpackAdvanced] section
 	advancedConfig["ADVECTIVE_HEAT"] = "false";
 	advancedConfig["ALLOW_ADAPTIVE_TIMESTEPPING"] = "true";
-	advancedConfig["ALPINE3D"] = "false";
-	advancedConfig["ALPINE3D_PTS"] = "false";
+	advancedConfig["ALPINE3D"] = "TRUE";
+	advancedConfig["ALPINE3D_PTS"] = "TRUE";
 	advancedConfig["DETECT_GRASS"] = "false";
 	advancedConfig["ALBEDO_FIXEDVALUE"] = "-999.";
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
@@ -56,7 +56,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["HARDNESS_PARAMETERIZATION"] = "MONTI";
 	advancedConfig["HEIGHT_NEW_ELEM"] = "0.02";
 	advancedConfig["HN_DENSITY"] = "PARAMETERIZED";
-	advancedConfig["HN_DENSITY_FIXEDVALUE"] = "100.";
+	advancedConfig["HN_DENSITY_FIXEDVALUE"] = "280.";
 	advancedConfig["HN_DENSITY_PARAMETERIZATION"] = "LEHNING_NEW";
 	advancedConfig["HOAR_DENSITY_BURIED"] = "125.";
 	advancedConfig["HOAR_DENSITY_SURF"] = "100.";
@@ -82,9 +82,9 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["PREVAILING_WIND_DIR"] = "0.";
 	advancedConfig["RESEARCH"] = "true";
 	advancedConfig["SNOW_ALBEDO"] = "PARAMETERIZED";
-	advancedConfig["SNOW_EROSION"] = "false";
-	advancedConfig["SNOW_REDISTRIBUTION"] = "false";
-	advancedConfig["SALTATION_MODEL"] = "SORENSEN";
+	advancedConfig["SNOW_EROSION"] = "TRUE";
+	advancedConfig["SNOW_REDISTRIBUTION"] = "TRUE";
+	advancedConfig["SALTATION_MODEL"] = "DOORSCHOT";
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
 	advancedConfig["FORCE_SW_MODE"] = "false";
