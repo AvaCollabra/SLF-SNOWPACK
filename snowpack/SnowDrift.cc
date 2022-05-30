@@ -218,9 +218,8 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			Xdata.ErosionMass += massErode;
 			forced_massErode = 0.;
 			std::cout << "[SNP] partial layer removal forced_massErode after " << std::setprecision(12) << forced_massErode << std::endl;
-		} else {
-			Xdata.ErosionMass = 0.;
 		}
+
 		if (nErode > 0)
 			Xdata.resize(nE);
 		if (!alpine3d && SnowDrift::msg_erosion) { //messages on demand but not in Alpine3D
