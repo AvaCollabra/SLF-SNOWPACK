@@ -51,6 +51,7 @@ class SnowDrift {
 		const bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
 		const double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		static const bool msg_erosion;
+		bool print_snowdrift_debug;
 }; //End class SnowDrift
 
 #endif
