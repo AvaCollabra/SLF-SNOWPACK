@@ -1627,7 +1627,11 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				return;
 		} else {
 			// This is now very important to make sure that rain will not accumulate
-			cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
+			// But we want to keep negative psum with ph < 1, which are forced erosion
+			// in A3D from the snowdrift module
+			if(Mdata.psum>0. || Mdata.psum_ph==1.) {
+				cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
+			}
 			return;
 		}
 	} else { // HS driven, correct for a possible offset in measured snow height provided by a marked reference layer
