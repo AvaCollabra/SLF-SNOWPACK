@@ -161,9 +161,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		if (forced_massErode < -Constants::eps2) {
 			massErode = std::max(0., -forced_massErode); //negative mass is erosion
 
-			cout << "[SNP] PSUM erode : " << std::setprecision(12) << -Mdata.psum << endl;
-			cout << "[SNP] Legacy Erod : " << std::setprecision(12) << -forced_massErode << endl;
-			cout << "[SNP] Mass Erod : " << std::setprecision(12) << massErode << endl;
+			cout << "[SNP] forced_massErode entering: " << std::setprecision(12) << forced_massErode << endl;
 
 		} else {
 			const double ustar_max = (Mdata.vw>0.1) ? Mdata.ustar * Mdata.vw_drift / Mdata.vw : 0.; // Scale Mdata.ustar
@@ -181,7 +179,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		unsigned int nErode=0; // number of eroded elements
 		// REmove as many full layers as necessary
 		while (massErode >= 0.95 * EMS[nE-1].M) {
-			std::cout << "[SNP] full layer removal forced_massErode before " << std::setprecision(12) << forced_massErode << std::endl;
+			std::cout << "[SNP] full layer removal forced_massErode before: " << std::setprecision(12) << forced_massErode << std::endl;
 			// Erode at most one element with a maximal error of +- 5 % on mass ...
 			if (windward)
 				Xdata.rho_hn = EMS[nE-1].Rho;
@@ -193,7 +191,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			nErode++;
 			massErode -= EMS[nE].M;
 			forced_massErode = -massErode;
-			std::cout << "[SNP] full layer removal forced_massErode after " << std::setprecision(12) << forced_massErode << std::endl;
+			std::cout << "[SNP] full layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << std::endl;
 		}
 		// Remove part of layers with remaining snow
 		if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
@@ -202,7 +200,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
 				assert(EMS[nE-1].M>=0.); //mass must be positive
 			}
-			std::cout << "[SNP] partial layer removal forced_massErode before" << std::setprecision(12) << forced_massErode << std::endl;
+			std::cout << "[SNP] partial layer removal forced_massErode before: " << std::setprecision(12) << forced_massErode << std::endl;
 
 			if (windward)
 				Xdata.rho_hn = EMS[nE-1].Rho; // Density of drifting snow on virtual luv slope
@@ -217,7 +215,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			assert(EMS[nE-1].M>=0.); //mass must be positive
 			Xdata.ErosionMass += massErode;
 			forced_massErode = 0.;
-			std::cout << "[SNP] partial layer removal forced_massErode after " << std::setprecision(12) << forced_massErode << std::endl;
+			std::cout << "[SNP] partial layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << std::endl;
 		}
 
 		if (nErode > 0)
