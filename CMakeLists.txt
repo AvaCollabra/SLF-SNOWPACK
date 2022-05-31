@@ -3,9 +3,15 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/tools/cmake/")
 
 PROJECT(snowpack)
 # Version of library
-SET(VERSION_MAJOR 3 CACHE INTERNAL "")
-SET(VERSION_MINOR 6 CACHE INTERNAL "")
-SET(VERSION_PATCH 0 CACHE INTERNAL "")
+IF(DEFINED ENV{VERSION_MAJOR} AND DEFINED ENV{VERSION_MINOR} AND DEFINED ENV{VERSION_PATCH})
+	SET(VERSION_MAJOR $ENV{VERSION_MAJOR} CACHE INTERNAL "Major version")
+	SET(VERSION_MINOR $ENV{VERSION_MINOR} CACHE INTERNAL "Minor version")
+	SET(VERSION_PATCH $ENV{VERSION_PATCH} CACHE INTERNAL "Patch version")
+ELSE()
+	SET(VERSION_MAJOR 3 CACHE INTERNAL "Major version")
+	SET(VERSION_MINOR 0 CACHE INTERNAL "Minor version")
+	SET(VERSION_PATCH 0 CACHE INTERNAL "Patch version")
+ENDIF()
 
 SET(LIBPREFIX "lib") #make sure ALL plugins are libXXX for ALL plateforms
 SET(CMAKE_IMPORT_LIBRARY_PREFIX "lib") #for Visual C++ import libraries
@@ -30,24 +36,31 @@ SET_COMPILER_OPTIONS()
 # __linux, __GNUC__, __CYGWIN__, _WIN32, __MINGW32__, __APPLE__
 IF(UNIX)
 	SET(LIB_DEST "lib")
-	#set a full rpath for both build & install tree
-	SET(CMAKE_SKIP_BUILD_RPATH FALSE)
-	SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
-	# add the directory of the binary to the rpath
-	IF(APPLE)
-		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,'@executable_path',-rpath,'@executable_path/../lib'")
-		SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
-	ELSE(APPLE)
-		SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,'$ORIGIN',-rpath,'$ORIGIN'/../lib")
-	ENDIF(APPLE)
-	
-	# add the automatically determined parts of the RPATH
-	SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-	# the RPATH to be used when installing, but only if it's not a system directory
-	LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
-	IF("${isSystemDir}" STREQUAL "-1")
-		SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
-	ENDIF("${isSystemDir}" STREQUAL "-1")
+
+	OPTION(USE_RPATH "Use rpath (not recommended for Fedora)" ON)
+	MARK_AS_ADVANCED(FORCE USE_RPATH)
+	if(USE_RPATH)
+		#set a full rpath for both build & install tree
+		SET(CMAKE_SKIP_BUILD_RPATH FALSE)
+		SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+		# add the directory of the binary to the rpath
+		IF(APPLE)
+			SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,'@executable_path',-rpath,'@executable_path/../lib'")
+			SET(CMAKE_OSX_DEPLOYMENT_TARGET "10.13" CACHE STRING "Minimum OS X deployment version")
+		ELSE(APPLE)
+			SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath,'$ORIGIN',-rpath,'$ORIGIN'/../lib")
+		ENDIF(APPLE)
+		
+		# add the automatically determined parts of the RPATH
+		SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+		# the RPATH to be used when installing, but only if it's not a system directory
+		LIST(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+		IF("${isSystemDir}" STREQUAL "-1")
+			SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+		ENDIF("${isSystemDir}" STREQUAL "-1")
+	ELSE(USE_RPATH)
+		SET(CMAKE_SKIP_BUILD_RPATH TRUE)
+	ENDIF(USE_RPATH)
 
 	IF(APPLE)
 		SET(DLL_EXT "dylib")
@@ -276,7 +289,8 @@ IF(UNIX)
 		INSTALL(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink bin/snowpack /usr/bin/snowpack)")
 	ELSE(APPLE)
 		SET(CPACK_ARCHIVE_COMPONENT_INSTALL OFF)
-		SET(CPACK_GENERATOR "DEB;RPM;TGZ")
+		SET(CPACK_GENERATOR "DEB;RPM;TGZ" CACHE STRING "Which packages to build")
+		MARK_AS_ADVANCED(FORCE CPACK_GENERATOR)
 		SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 		SET(CPACK_DEBIAN_PACKAGE_NAME "snowpack")
 		SET(CPACK_DEBIAN_PACKAGE_SECTION "science")
@@ -294,7 +308,7 @@ IF(UNIX)
 		ENDIF("${CPACK_ARCH}" STREQUAL "x86_64")
 		SET(CPACK_RPM_PACKAGE_NAME "snowpack")
 		SET(CPACK_RPM_PACKAGE_LICENSE "LPGLv3")
-		SET(CPACK_RPM_PACKAGE_REQUIRES "libstdc++6, meteoio")
+		SET(CPACK_RPM_PACKAGE_REQUIRES "libstdc++, meteoio")
 		SET(CPACK_RPM_PACKAGE_ARCHITECTURE "${CPACK_ARCH}")
 		SET(CPACK_RPM_PACKAGE_GROUP "Applications/Science")
 	ENDIF(APPLE)
