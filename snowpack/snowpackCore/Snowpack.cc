@@ -1629,7 +1629,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 			// This is now very important to make sure that rain will not accumulate
 			// But we want to keep negative psum with ph < 1, which are forced erosion
 			// in A3D from the snowdrift module
-			if(Mdata.psum>0. || Mdata.psum_ph==1.) {
+			if(Mdata.psum>0.) {
 				cumu_precip -= Mdata.psum; //if there is no precip, this does nothing
 			}
 			return;
