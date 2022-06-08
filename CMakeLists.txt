@@ -164,7 +164,7 @@ ADD_CUSTOM_TARGET(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/c
 INCLUDE(FindDoxygen)
 FIND_PACKAGE(Doxygen)
 IF(DOXYGEN_FOUND)
-	ADD_CUSTOM_TARGET(doc "doxygen" ${PROJECT_SOURCE_DIR}/snowpack/config.dox)
+	ADD_CUSTOM_TARGET(doc COMMAND ${CMAKE_COMMAND} -E env SN_VERSION="${_versionString}" "doxygen" ${PROJECT_SOURCE_DIR}/snowpack/config.dox)
 ENDIF(DOXYGEN_FOUND)
 #Install the documentation if the user desires it
 SET(INSTALL_DOC OFF CACHE BOOL "Install documentation ON or OFF")
