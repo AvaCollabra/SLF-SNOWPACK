@@ -115,7 +115,7 @@ class CaaMLIO : public SnowpackIOInterface {
 		const RunInfo info;
 		std::string i_snowpath, o_snowpath, experiment;
 		double i_max_element_thickness;
-		bool caaml_writeout_as_readin;
+		bool caaml_writeout_as_readin, haz_write;
 		/*static const*/ double in_tz; //plugin specific time zones
 
 		pugi::xml_document inDoc;
