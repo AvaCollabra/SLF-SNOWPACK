@@ -947,7 +947,7 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 	for (size_t ii = 0; ii < SSdata.nLayers; ii++) {
 		std::string grainFormCode = grainForms[ii];
 		if (grainFormCode=="MF"){
-			if (SSdata.Ldata[ii].tl < Constants::melting_tk-0.05){
+			if (SSdata.Ldata[ii].tl < Constants::meltfreeze_tk-0.05){
 				SSdata.Ldata[ii].mk = (unsigned short int) (SSdata.Ldata[ii].mk + 10);
 			}
 		}
@@ -973,13 +973,13 @@ void CaaMLIO::checkAllDataForConsistencyAndSetMissingValues( SN_SNOWSOIL_DATA& S
 			} else throw IOException("Grain size missing for a non-ice layer!", AT);
 		}
 		// set temperature to 0°C if warmer than 0°C:
-		if (SSdata.Ldata[ii].tl > Constants::melting_tk){
-			std::cout << "WARNING! Inconsistent input data in caaml-file: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::melting_tk
+		if (SSdata.Ldata[ii].tl > Constants::meltfreeze_tk){
+			std::cout << "WARNING! Inconsistent input data in caaml-file: Temperature in layer " << ii << ": " << SSdata.Ldata[ii].tl-Constants::meltfreeze_tk
 			          << " degree Celsius. Temperature above 0 degree Celsius not possible! Setting temperature to 0 degree Celsius." << std::endl;
-			SSdata.Ldata[ii].tl = Constants::melting_tk;
+			SSdata.Ldata[ii].tl = Constants::meltfreeze_tk;
 		}
 		// set lwc to 0 if colder than 0°C:
-		if (SSdata.Ldata[ii].tl < Constants::melting_tk && SSdata.Ldata[ii].phiWater > 0 ){
+		if (SSdata.Ldata[ii].tl < Constants::meltfreeze_tk && SSdata.Ldata[ii].phiWater > 0 ){
 			std::cout << "WARNING! Inconsistent input data in caaml-file: LWC: " << SSdata.Ldata[ii].phiWater
 			          << " temperature: " << SSdata.Ldata[ii].tl << " in layer: " << ii << std::endl;
 			std::cout << "Setting lwc to 0! Since liquid water is not possible in snow below 0 degree Celsius." << std::endl;

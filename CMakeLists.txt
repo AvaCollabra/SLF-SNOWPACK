@@ -86,7 +86,7 @@ IF(NOT CMAKE_BUILD_TYPE)
 	SET(CMAKE_CONFIGURATION_TYPES ${CMAKE_BUILD_TYPE})
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
-FIND_PACKAGE(MeteoIO)
+FIND_PACKAGE(MeteoIO REQUIRED)
 
 ###########################################################
 #plugins and applications
@@ -95,7 +95,7 @@ SET(PROFEVAL OFF CACHE BOOL "Compilation PROFEVAL ON or OFF")
 
 SET(ENABLE_LAPACK OFF CACHE BOOL "Compile with the CLAPACK library?")
 SET(PLUGIN_IMISIO OFF CACHE BOOL "Compilation IMISDBIO ON or OFF - only relevant for SLF")
-SET(PLUGIN_CAAMLIO OFF CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
+SET(PLUGIN_CAAMLIO ON CACHE BOOL "Compilation CAAMLIO ON or OFF to read CAAML profiles")
 
 ###########################################################
 #finally, SET compile flags
@@ -132,9 +132,11 @@ ENDIF(PROFEVAL)
 #for the install target
 FILE(GLOB hfiles "snowpack/*.h")
 FILE(GLOB hpluginfiles "snowpack/plugins/*.h")
+FILE(GLOB pugifiles "snowpack/plugins/pugixml/pugi*.?pp")
 FILE(GLOB hcorefiles "snowpack/snowpackCore/*.h")
 INSTALL(FILES ${hfiles} DESTINATION include/snowpack COMPONENT headers)
 INSTALL(FILES ${hpluginfiles} DESTINATION include/snowpack/plugins COMPONENT headers)
+INSTALL(FILES ${pugifiles} DESTINATION include/snowpack/plugins/pugixml COMPONENT headers)
 INSTALL(FILES ${hcorefiles} DESTINATION include/snowpack/snowpackCore COMPONENT headers)
 
 ADD_CUSTOM_TARGET(distclean make clean
@@ -193,6 +195,21 @@ SET(CPACK_BUNDLE_ALL OFF CACHE BOOL "Pack all necessary libs and tools for a sta
 IF(CPACK_BUNDLE_ALL)
 	SET(ALL_RX_PERM OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
 	SET(ALL_RO_PERM OWNER_READ GROUP_READ WORLD_READ)
+	
+	#standard libraries must be installed for gcc on Windows
+	IF(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
+		SET(CPACK_BUNDLE_STDLIBS ON CACHE BOOL "Pack all necessary standard libs for a standalone release")
+		IF(CPACK_BUNDLE_STDLIBS)
+			FILE(GLOB winpthreads "${CMAKE_SOURCE_DIR}/bin/libwinpthread*.dll")
+			FILE(GLOB stdlibs "${CMAKE_SOURCE_DIR}/bin/libstdc++*.dll")
+			FILE(GLOB libgcc "${CMAKE_SOURCE_DIR}/bin/libgcc_s_seh*.dll")
+			IF("${stdlibs}" STREQUAL "")
+ 		        MESSAGE("STDLIBS not found! Please make sure they are in ${CMAKE_SOURCE_DIR}/bin")
+			ENDIF("${stdlibs}" STREQUAL "")
+			INSTALL(FILES ${winpthreads} ${stdlibs} ${libgcc} DESTINATION bin PERMISSIONS ${ALL_RX_PERM} COMPONENT exe)
+		ENDIF(CPACK_BUNDLE_STDLIBS)
+	ENDIF(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "^GNU$")
+	
 	#bundle MeteoIO
 	FIND_PACKAGE(MeteoIO REQUIRED)
 	IF(BUILD_SHARED_LIBS) #consider that if STATIC, we don't need the libs
@@ -211,6 +228,7 @@ IF(CPACK_BUNDLE_ALL)
 		        PATTERN "jnative" EXCLUDE)
 	ENDIF(BUILD_SHARED_LIBS)
 	IF(INSTALL_DOC)
+		#meteoio's documentation
 		IF(WIN32)
 			SET(METEOIO_INSTALLED_DOC "${METEOIO_ROOT}/doc")
 			SET(METEOIO_DOC ${DOC_PATH}/meteoio)

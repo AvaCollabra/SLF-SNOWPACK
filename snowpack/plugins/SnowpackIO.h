@@ -48,7 +48,10 @@
  * Very often, 1) and 2) are provided together. But this depends ultimately on the file format that is used ot provide such data (SMET, INP, etc). These two points are
  * handled by <a href="https://gitlabext.wsl.ch/snow-models/meteoio/-/wikis/Home">MeteoIO</a>, so please check its documentation (for the last official release, it is available
  * <A HREF="https://models.slf.ch/docserver/meteoio/html/index.html">online</A>), in the <i>"Available plugins and usage"</i> section for the relevant formats.
- * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use.
+ * It is recommended to prepare the data in the <A HREF="https://models.slf.ch/docserver/meteoio/html/smetio.html">SMET</A> file format for its ease of use. 
+ * In this case, you should also consider providing 1) as SMET for a simulation starting without snow on the ground (have a look at the files provided 
+ * in the examples) or as CAAML for a simulation starting with snow on the ground (have a look at <A HREF="https:niviz.org">niViz</A> to create a 
+ * CAAML snow profile).
  *
  * Please also check the \ref requirements "Data requirements" page.
  *
@@ -71,7 +74,7 @@
  * <center><table border="1">
  * <tr><th>Key</th><th>Description</th><th>Extra requirements</th></tr>
  * <tr><td>\subpage smet "SMET"</td><td>SMET based profile (including the hazard data), recommended</td><td></td></tr>
- * <tr><td>\subpage caaml "CAAML"</td><td>CAAML profile</td><td><A HREF="http://xmlsoft.org/">libxml</A></td></tr>
+ * <tr><td>\subpage caaml "CAAML"</td><td><A HREF="http://caaml.org">CAAML</A> profile</td><td></td></tr>
  * <tr><td>\subpage snoold_format "SNOOLD"</td><td>legacy %Snowpack profile (including the hazard data)</td><td></td></tr>
  * </table></center>
  *
@@ -86,6 +89,18 @@
  * <tr><td>\subpage prf_format "PRF"</td><td>tabular profile time series</td><td></td></tr>
  * <tr><td>\subpage profile_imis "IMIS"</td><td>write profile time series to the IMIS database</td><td><A HREF="http://docs.oracle.com/cd/B12037_01/appdev.101/b10778/introduction.htm">Oracle's OCCI library</A></td></tr>
  * </table></center>
+ * When the snow grain shapes are provided as <b>Swiss Code</b>, it means the following: the code is made of three decimal numbers, noted as <i>F1F2F3</i>. Here <i>F1</i> 
+ * represents the primary grain shape and <i>F2</i> the secondary grain shape. The grain shapes can be any of the following:
+ * <center><table border="1">
+ * <tr><th>Code</th><th>Grain shape</th><th>Code</th><th>Grain shape</th></tr>
+ * <tr><td>1</td><td>Precipitation particules (PP)</td><td>6</td><td>Surface hoar (SH)</td></tr>
+ * <tr><td>2</td><td>Decomposing fragmented PP (DF)</td><td>7</td><td>Melt forms (MF)</td></tr>
+ * <tr><td>3</td><td>Rounded grains (RG)</td><td>8</td><td>Ice formations (IF)</td></tr>
+ * <tr><td>4</td><td>Faceted crystals (FC)</td><td>9</td><td>Rounding faceted particules (FCxr)</td></tr>
+ * <tr><td>5</td><td>Depth hoar (DH)</td><td></td><td></td></tr>
+ * </table></center>
+ * 
+ * In case of Melt-freeze crust (MFcr), it is marked by using the \em 772 code.
  *
  * @section available_met_ts Fluxes time series
  * %Snowpack computes various meteorological parameters as well as fluxes and can write them out as time series.
