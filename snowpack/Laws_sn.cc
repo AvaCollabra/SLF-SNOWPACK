@@ -1155,7 +1155,7 @@ double SnLaws::newSnowDensityHendrikx(const double ta, const double tss, const d
  * 	- event_wind: Implemented 2009 by Christine Groot Zwaaftink for Antarctic variant
  * - MEASURED: Use measured new snow density read from meteo input
  * 	-Note: Set HN_DENSITY_FIXEDVALUE to 1. to use surface snow density as a "measured" value in case of missing values
- * - FIXED: Use a fixed new snow density by assigning HN_DENSITY-FIXEDVALUE a value (default: 100 kg m-3, at least min_hn_density)
+ * - FIXED: Use a fixed new snow density by assigning HN_DENSITY_FIXEDVALUE a value (default: 100 kg m-3, at least min_hn_density)
  * @param i_hn_density type of density computation
  * @param i_hn_density_parameterization to use
  * @param i_hn_density_fixedValue to use
@@ -1190,9 +1190,11 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		} else {
 			rho = Constants::undefined;
 		}
-	} else { // "FIXED"
+	} else if (i_hn_density == "FIXED") {
 		rho = (i_hn_density_fixedValue != Constants::undefined) ? i_hn_density_fixedValue : Xdata.Edata[Xdata.getNumberOfElements()-1].Rho;
 		rho = std::max(min_hn_density, rho);
+	} else {
+		throw UnknownValueException("Unknown new snow density option (HN_DENSITY) selected!", AT);
 	}
 
 	return rho;
