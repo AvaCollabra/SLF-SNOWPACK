@@ -434,7 +434,7 @@ double PhaseChange::compPhaseChange(SnowStation& Xdata, const mio::Date& date_in
 			if (!(EMS[e].Rho > Constants::eps && EMS[e].Rho <= (1.-EMS[e].theta[SOIL])*Constants::density_water + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]))) {
 				prn_msg(__FILE__, __LINE__, "err", date_in, "Phase Change Begin: volume contents: e:%d nE:%d rho:%lf ice:%lf wat:%lf wat_pref:%lf air:%le", e, EMS[e].Rho,
 									    e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR]);
-				throw IOException("Run-time error in compPhaseChange()", AT);
+				//throw IOException("Run-time error in compPhaseChange()", AT);
 			}
 			// and make sure the sum of all volumetric contents is near 1 (Can make a 1% error)
 			if (verbose && !EMS[e].checkVolContent()) {

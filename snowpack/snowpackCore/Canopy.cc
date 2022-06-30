@@ -1316,6 +1316,24 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
 
 	//2. aerodynamic resistances simple approach (Blyth, 1999)
 	//2.1 roughness length for scalars (heat and vapour)
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 250.;
+		elem.Rho = 50.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
 	const double zohc = Xdata.Cdata.roughheat_to_roughmom_ratio * zomc;
 	const double zohg = Xdata.Cdata.roughheat_to_roughmom_ratio * zomg;
 	// update Cdata variables
@@ -1348,6 +1366,24 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
 	const double ra_e = 1. / ch_e;
 
 	// 2.6 CANOPY TO CANOPY LEVEL RESISTANCE
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 250.;
+		elem.Rho = 50.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
 	if ( log(zomc / zohc) > 0.0 ) {
 		Xdata.Cdata.rc = (log(zomc/zohc))/(karman * ustar );
 	} else {
@@ -1430,6 +1466,24 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double& re
  * @brief Computes upward and downward radiation below and above canopy
  * @param Xdata
  * @param Mdata
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 250.;
+		elem.Rho = 50.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
  * @param ac
  * @param *iswrac
  * @param *rswrac
@@ -1531,6 +1585,24 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
 		ilwrbc = ilwrbc * CanopyClosureDiffuse + ilwrac * (1.0 - CanopyClosureDiffuse);
 		rlwrbc = rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
 
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 250.;
+		elem.Rho = 50.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
 		// radiations to trunks
 		Xdata.Cdata.SWnet_Trunks = (1.0 - RadFracDirect) * iswrac * (1. -sigf) * (1.-trunkalb)*(1-attfactor_SW) * CanopyClosureDiffuse
 				+ CanClosDirLeaves * RadFracDirect *iswrac * (1. -sigfdirect) * (1.-trunkalb)*(1. - attfactor_SWdir)
@@ -1547,6 +1619,24 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
 		rswrac += (rswrac_loc2 * CanopyClosureDirect + iswrac * ag * (1.0 - CanopyClosureDirect)) * RadFracDirect;
 		iswrbc += (iswrbc_loc2 * CanopyClosureDirect + iswrac * (1.0 - CanopyClosureDirect)) * RadFracDirect;
 		rswrbc += (rswrbc_loc2 * CanopyClosureDirect + iswrac * ag * (1.0 - CanopyClosureDirect)) *RadFracDirect;
+	// Tests for unloaded snow [Benji]
+//	if (value > 1.0) { // Graupel
+		elem.mk = 2;
+		elem.dd = 0.;
+		elem.sp = 1.;
+		elem.rg = 0.6;
+		elem.rb = 0.2;
+		elem.mk = 0;
+		elem.dd = 1.;
+		elem.sp = 0.5;
+		elem.rg = 1.0;
+		elem.rb = elem.rg/3.;
+		// Because density and volumetric contents are already defined, redo it here
+		elem.Rho = 250.;
+		elem.Rho = 50.;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.theta_i_reservoir = 0.0;
+		elem.theta_i_reservoir_cumul = 0.0;
 
 		// Longwave fluxes (treat as diffuse)
 		rlwrac = rlwrac * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
@@ -1628,7 +1718,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
-	const double throughfall = Mdata.psum - interception + unload;
+	const double throughfall = Mdata.psum - interception + (useUnload?0:unload);
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
@@ -1895,7 +1985,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	// modifs for SnowMIP version
 	// NOTE: in the standard version (PSUM version), water do not unload since intcaprain does not evolve in time.
 	//       => all unload is therefore snow.
-	Xdata.Cdata.snowunload += icemm_unload;
+	Xdata.Cdata.snowunload += icemm_unload + liqmm_unload;
 
 	// Canopy auxiliaries
 	Xdata.Cdata.wetfraction = wetfrac;
