@@ -66,6 +66,8 @@ void Canopy::DumpCanopyHeader(std::ofstream &fout)
 	fout << ",Interception rate";
 	fout << ",Throughfall";
 	fout << ",Snow unload";
+	fout << ",Liquid unload";
+	fout << ",Rho new snow";
 
 	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
 	fout << ",Longwave radiation up above canopy";
@@ -104,7 +106,7 @@ void Canopy::DumpCanopyUnits(std::ofstream &fout)
 	fout << ",W m-2,W m-2,W m-2";
 
 	// WATER FLUXES CANOPY (kg m-2)
-	fout << ",kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep";
+	fout << ",kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep, kg m-3";
 
 	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
 	fout << ",W m-2,W m-2,W m-2,W m-2,-,W m-2,degC,-,kg m-2 per timestep,kg m-2 per timestep,kg m-2 per timestep";
@@ -122,8 +124,10 @@ void Canopy::DumpCanopyUnits(std::ofstream &fout)
 void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const SurfaceFluxes *Sdata, const double cos_sl)
 {
 	// PRIMARY "STATE" VARIABLES
-	fout << "," << Cdata->storage/cos_sl;        // intercepted water (mm or kg m-2)
-	fout << "," << IOUtils::K_TO_C(Cdata->temp); // temperature (degC)
+	fout << "," << Cdata->storage/cos_sl;        			// intercepted water (mm or kg m-2)
+	//fout << "," << Cdata->storage_rain/cos_sl;        // intercepted liquid water (mm or kg m-2)
+	//fout << "," << Cdata->storage_snow/cos_sl;        // intercepted solid water (mm or kg m-2)
+	fout << "," << IOUtils::K_TO_C(Cdata->temp); 			// temperature (degC)
 
 	// SECONDARY "STATE" VARIABLES
 	fout << "," << Cdata->canopyalb;             // albedo (1)
@@ -144,8 +148,12 @@ void Canopy::DumpCanopyData(std::ofstream &fout, const CanopyData *Cdata, const 
 	fout << "," << Cdata->transp/cos_sl;         // transpiration
 	fout << "," << Cdata->intevap/cos_sl;        // interception evaporation
 	fout << "," << Cdata->interception/cos_sl;   // interception
+	//fout << "," << Cdata->interception_rain/cos_sl;   // interception of rain
+	//fout << "," << Cdata->interception_snow/cos_sl;   // interception of snow
 	fout << "," << Cdata->throughfall/cos_sl;    // throughfall
+	fout << "," << Cdata->newsnowdensity;    // throughfall
 	fout << "," << Cdata->snowunload/cos_sl;     // unload of snow
+	fout << "," << Cdata->liquidunload/cos_sl;   // unload of liquid water
 
 	// TOTAL SURFACE FLUXES,EVAPORATION; ETC
 	fout << "," << Cdata->rlwrac;                // upward longwave radiation ABOVE canopy
@@ -489,7 +497,6 @@ double Canopy::IntRate(const double& capacity, const double& storage, const doub
 
 	return interception;
 }
-
 
 double Canopy::CanopyAlbedo(const double& tair, const double& wetfrac, const SnowStation& Xdata)
 {
@@ -1589,8 +1596,22 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
  * take into account the snow height decreasing the sensor height above the surface)
  * @return true if the canopy module could be used, false if not (canopy under the snow, etc)
  */
+
+
 bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const double& roughness_length, const double& height_of_wind_val, const bool& adjust_VW_height)
 {
+
+	/////// ADDITION BY BEN ///////
+	// Addition by Ben for having the new snow density as an output
+	double rho_new_snow = 0.0;
+	rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
+																						hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
+
+	double density_new_snow;
+	density_new_snow = rho_new_snow; // On crée l'object density new snow afin de l'avoir dans les outputs en .smet
+	/////// ADDITION BY BEN ///////
+
+
 	Twolayercanopy = Twolayercanopy_user; //so we can temporarily overwrite the user's choice if needed
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
@@ -1607,6 +1628,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	if ( Xdata.Cdata.temp < 203.15 ) {
 		Xdata.Cdata.temp = 273.15;
 	}
+
 	if ( Xdata.Cdata.storage < 0.0 ) {
 		Xdata.Cdata.storage = 0.0;
 	}
@@ -1621,7 +1643,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
         double oldstorage = Xdata.Cdata.storage;
         Xdata.Cdata.storage -= unload;
-	double liqmm_unload=0.0;
+				double liqmm_unload=0.0;
         double icemm_unload=0.0;
 	const double intcaprain = IntCapacity(Mdata, Xdata, true);
 	// determine liquid and frozen water unload
@@ -1643,8 +1665,36 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
+
+	/////// ADDITION BY BEN ///////
+	const double rain_max = Xdata.Cdata.int_cap_rain * Xdata.Cdata.lai; // crée la valeur de rain max (constante) pour savoir quand la neige s'accumule
+
+	if (Xdata.Cdata.storage > rain_max){
+		// si le storage post-interception est plus grand que la capacité pour la pluie, on va chercher ce qu'il y avait avant: 0, si le storage avant interception était inferieur à rain_max et la différence entre les deux si on avait déjà dépassé le rain max
+		Xdata.Cdata.inistorage = std::max(0.0, (oldstorage - rain_max)); //nouvel output créé --> storage supérieur à rain_max avant interception
+		// si l'interception est plus grande que 0, on indique la neige qui a été  été ajouté et qui dépasse le rain_max.
+		if (interception > 0){
+			Xdata.Cdata.finstorage = std::min(interception,(Xdata.Cdata.storage - rain_max)); //nouvel output créé --> masse de neige qui vient de tomber
+		}
+	}
+
+/**
+	// Cette partie de code ne fonctionne pas...
+	if (Xdata.Cdata.inistorage <= 0 &  Xdata.Cdata.finstorage > 0){
+		const double intage = 1; //si on a de l'interception mais qu'il n'y avait pas de neige avant, l'age de la neige intercepté est de 1 pas-de-temps
+		Xdata.Cdata.intage = intage; // on store la pas de temps dans le Cdata
+	} else if (Xdata.Cdata.inistorage > 0){
+		++intage; // si il y avait déjà de la neige dans l'arbre , peu importe si on on a de l'interception ou non, on incérmente de 1 l'age de la de neige interceptée.
+		Xdata.Cdata.intage = intage;
+	} else {
+		Xdata.Cdata.intage = 0; //s'il n'y a pas de neige interceptée, on remet l,age à 0
+	}
+	*/
+	/////// ADDITION BY BEN ///////
+
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
-	const double throughfall = Mdata.psum - interception + (useUnload?0:unload);
+	// UPDATE : We removed the unloading from the computation of the throughfall
+	const double throughfall = Mdata.psum - interception; //+ (useUnload?0:unload);
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
@@ -1862,7 +1912,6 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	// final adjustment of interception storage due to evaporation
 	Xdata.Cdata.storage = Xdata.Cdata.storage - INTEVAP;
 
-
 	/*
 	 * Preparation of output variables using += sign to allow for cumulated or averaged output
 	 * (remember to reset these variables to 0 in Main.c before next integration step)
@@ -1911,7 +1960,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	// modifs for SnowMIP version
 	// NOTE: in the standard version (PSUM version), water do not unload since intcaprain does not evolve in time.
 	//       => all unload is therefore snow.
+	Xdata.Cdata.newsnowdensity = density_new_snow; //nouvel output créé --> densité de la neige fraîche
 	Xdata.Cdata.snowunload += icemm_unload;
+	Xdata.Cdata.liquidunload += liqmm_unload;
 
 	// Canopy auxiliaries
 	Xdata.Cdata.wetfraction = wetfrac;

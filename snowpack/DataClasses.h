@@ -432,7 +432,7 @@ class NodeData {
  */
 class CanopyData {
 	public:
-		CanopyData() : int_cap_snow(0.), int_cap_rain(0.),  interception_timecoef(0.), can_alb_dry(0.),
+		CanopyData() : int_cap_snow(0.), int_cap_rain(0.), interception_timecoef(0.), can_alb_dry(0.),
 		can_alb_wet(0.), can_alb_snow(0.), krnt_lai(0.), can_diameter(0.), biomass_heat_capacity(0.),
 		biomass_density(0.), lai_frac_top_default(0.), trunk_frac_height(0.), trunkalb(0.), et(0.),
 		canopy_stabilitycorrection(true), roughmom_to_canopyheight_ratio(0.), displ_to_canopyheight_ratio(0.),
@@ -442,7 +442,7 @@ class CanopyData {
 		height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
 		totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.), iswrbc(0.),
 		ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.), sensible(0.), latent(0.),
-		latentcorr(0.), transp(0.), intevap(0.), interception(0.), throughfall(0.), snowunload(0.),
+		latentcorr(0.), transp(0.), intevap(0.), interception(0.),inistorage(0.), finstorage(0.), intage(0.), throughfall(0.),newsnowdensity(0.) ,snowunload(0.),liquidunload(0.),
 		snowfac(0.), rainfac(0.), liquidfraction(0.), sigftrunk(0.), Ttrunk(0.), CondFluxCanop(0.),
 		CondFluxTrunks(0.), LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.), forestfloor_alb(0.),
 		BasalArea(0.), HMLeaves(0.), HMTrunks(0.), psum_unload(0), psum_unload_date() {}
@@ -571,12 +571,17 @@ class CanopyData {
 		double intevap;
 		// Mass fluxes
 		double interception;
+		double inistorage;
+		double finstorage;
+		double intage;
 		double throughfall;
+		double newsnowdensity;
 		double snowunload;
+		double liquidunload;
 
 		double snowfac;     	///< snowfall above canopy
 		double rainfac;     	///< rainfall above canopy
-		double liquidfraction;
+		double liquidfraction; /// fraction of the intercepted mass into liquid water
 		double sigftrunk;   	///< radiation interception cross section for trunk layer ()
 		double Ttrunk;      	///< trunk temperature (K)
 		double CondFluxCanop; 	///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)

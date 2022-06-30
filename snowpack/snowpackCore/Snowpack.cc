@@ -1897,7 +1897,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
-	const double rho_hn = 250;
+	const double rho_hn = 200.;
 	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
 
 	const double hn = Xdata.Cdata.psum_unload/rho_hn;
@@ -2047,7 +2047,6 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
  */
 void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &elem)
 {
-	//Here  eventually add a function of isothermal metamorphism for the intercepted snow that defines its properties before it unloads
 	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
 	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
@@ -2055,17 +2054,19 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &e
 
 	// Tests for unloaded snow [Benji]
 //	if (value > 1.0) { // Graupel
-		elem.mk = 0;
-		elem.dd = 1.;
-		elem.sp = 0.5;
-		elem.rg = 1.0;
+		elem.mk = 1;
+		elem.dd = 0.;
+		elem.sp = 0;
+		elem.rg = 0.1;
 		elem.rb = elem.rg/3.;
 		// Because density and volumetric contents are already defined, redo it here
-		elem.Rho = 50.;
-		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
+		elem.Rho = 200.;
+		//elem.theta[WATER] = 0.05;
+		elem.theta[ICE] = elem.Rho / Constants::density_ice; //-
+		                  //elem.theta[WATER]*Constants::density_water/Constants::density_ice;  // ice content
 		elem.theta_i_reservoir = 0.0;
 		elem.theta_i_reservoir_cumul = 0.0;
-		elem.theta[AIR] = 1. - elem.theta[ICE];  // void content
+		elem.theta[AIR] = 1. - elem.theta[ICE] - elem.theta[WATER]; // void content
 //	} //else { // no Graupel
 	//	elem.mk = Snowpack::new_snow_marker;
 	//	if (SnLaws::jordy_new_snow && (Mdata.vw > 2.9)
