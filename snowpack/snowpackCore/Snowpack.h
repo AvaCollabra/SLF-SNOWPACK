@@ -84,13 +84,13 @@ class Snowpack {
 		BoundaryCondition surfaceCode;
 
  private:
-		static void EL_INCID(const int &e, int Ie[]);
-		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
+		static void EL_INCID(const int e, int Ie[]);
+		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData>& T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
 
 		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
-		bool sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
+		bool sn_ElementKtMatrix(ElementData& Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
 		                        const double VaporEnhance);
 
@@ -108,17 +108,17 @@ class Snowpack {
 		void assignSomeFluxes(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& mAlb,
 		                      SurfaceFluxes& Sdata);
 
-		void setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &EMS);
+		void setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData& EMS);
 
 		void addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata);
 
 		void fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
-                              const unsigned short& number_of_solutes, ElementData &elem);
+                              const unsigned short& number_of_solutes, ElementData& elem, ElementData& unloadedSnow);
 
 		void fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
-		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
+		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData& elem);
 
-		void setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &EMS);
+		void setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& EMS);
 
 
 		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);

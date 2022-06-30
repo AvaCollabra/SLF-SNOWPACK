@@ -205,7 +205,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 /**
  * @brief multiplicative increase of canopy surface resistance as
  * a function of downward solar radiation (van den Burk et al (2000):
- * Offline validation of the ERA40 surface scheme, ECMWF Tech.Mem.295)
+ * Offline validation of the ERA40 surface scheme,  11.6569 mm ECMWF Tech.Mem.295)
  * @param ris
  * @return double
  */
@@ -1679,12 +1679,33 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
 	if(useUnload){
-		// Store date of new unload event
+		if(icemm_interception > 0){
+			std::cout << "Storing M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho " << Xdata.Cdata.snowStored.Rho << std::endl;
+			Xdata.Cdata.snowStored.M += icemm_interception;
+			Xdata.Cdata.snowStored.L += icemm_interception/density_new_snow;
+			Xdata.Cdata.snowStored.Rho = Xdata.Cdata.snowStored.M/Xdata.Cdata.snowStored.L;
+		}
+
+		// Update unload element and remaining storage
 		if(Xdata.Cdata.psum_unload < Constants::eps2 && icemm_unload > Constants::eps2) {
+
+			Xdata.Cdata.psum_unload += icemm_unload;
 			Xdata.Cdata.psum_unload_date = Mdata.date;
 			std::cout << "[I] Unload date updated at " << Mdata.date.toString(mio::Date::ISO) << std::endl;
+
+			// reset and update unloaded snow element
+			Xdata.Cdata.unloadedSnow = ElementData(0);
+			Xdata.Cdata.unloadedSnow.Rho = Xdata.Cdata.snowStored.Rho;
+			Xdata.Cdata.unloadedSnow.M = icemm_unload;
+			Xdata.Cdata.unloadedSnow.L = icemm_unload/Xdata.Cdata.snowStored.Rho;
+			std::cout << "Unloadin M " << Xdata.Cdata.unloadedSnow.M << " L " << Xdata.Cdata.unloadedSnow.L << " Rho " << Xdata.Cdata.unloadedSnow.Rho << std::endl;
+
+			// update remaining snow Stored
+			Xdata.Cdata.snowStored.M -= icemm_unload;
+			Xdata.Cdata.snowStored.L -= icemm_unload/Xdata.Cdata.snowStored.Rho ;
+			std::cout << "Remaining M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho " << Xdata.Cdata.snowStored.Rho << std::endl;
+
 		}
-		Xdata.Cdata.psum_unload += icemm_unload;
 	}
 
 

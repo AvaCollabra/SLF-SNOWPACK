@@ -61,13 +61,13 @@ const unsigned int Snowpack::new_snow_marker = 0;
 const double Snowpack::min_ice_content = SnLaws::min_hn_density / Constants::density_ice;
 
 /// @brief Define the assembly macro
-void Snowpack::EL_INCID(const int &e, int Ie[]) {
+void Snowpack::EL_INCID(const int e, int Ie[]) {
 	Ie[0] = e;
 	Ie[1] = e+1;
 }
 
 /// @brief Define the node to element temperature macro
-void Snowpack::EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] ) {
+void Snowpack::EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData>& T0, const double Ti[] ) {
 	Te0[ 0 ] = T0[ Ie[ 0 ] ].T;
 	Te0[ 1 ] = T0[ Ie[ 1 ] ].T;
 	Tei[ 0 ] = Ti[ Ie[ 0 ] ];
@@ -379,7 +379,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
 			const double dv = Mdata.vw - Metamorphism::wind_slab_vw;
 			if ((EMS[e].theta[WATER] < SnowStation::thresh_moist_snow)
 			      && (Mdata.vw > Metamorphism::wind_slab_vw)
-			        && ((dz < Metamorphism::wind_slab_depth) || (e == nE-1))) {
+			      && ((dz < Metamorphism::wind_slab_depth) || (e == nE-1))) {
 				if (Snowpack::enhanced_wind_slab) { //NOTE tested with Antarctic variant: effects heavily low density snow
 					// fits original parameterization at Metamorphism::wind_slab_vw + 0.6 m/s
 					wind_slab += 2.7 * Metamorphism::wind_slab_enhance
@@ -459,7 +459,7 @@ void Snowpack::compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata)
  * @param VaporEnhance Vapor transport enhancement factor
  * @return false on error, true if no error occurred
  */
-bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], const double VaporEnhance)
+bool Snowpack::sn_ElementKtMatrix(ElementData& Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ], double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ], const double VaporEnhance)
 {
 	if (Edata.L < 0.0) {
 		prn_msg(__FILE__, __LINE__, "err", Date(), "Negative length L=%e", Edata.L);
@@ -1310,7 +1310,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
  * @param is_surface_hoar is this layer a layer of surface hoar?
  * @param EMS Element to set
  */
-void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData &elem)
+void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const bool& is_surface_hoar, ElementData& elem)
 {
 	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
@@ -1385,7 +1385,7 @@ void Snowpack::setHydrometeorMicrostructure(const CurrentMeteo& Mdata, const boo
 }
 
 void Snowpack::fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
-                                  const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem)
+                                  const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData& elem)
 {
 	//basic parameters
 	elem.depositionDate = Mdata.date;
@@ -1517,7 +1517,7 @@ void Snowpack::compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, 
 				fillNewSnowElement(Mdata, length, rho_hn, false, Xdata.number_of_solutes, EMS[e]);
 
 				// Now give specific properties for technical snow, consider liquid water
-				// Assume that the user does not specify unreasonably high liquid water contents.
+				// Assume that the ufillNewSnowElementser does not specify unreasonably high liquid water contents.
 				// This depends also on the density of the solid fraction - print a warning if it looks bad
 				EMS[e].theta[WATER] += theta_w;
 
@@ -1897,10 +1897,13 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
-	const double rho_hn = 200.;
+	// Get unloaded snow properties
+	ElementData unloadedSnow = Xdata.Cdata.unloadedSnow;
+
+	const double rho_hn = unloadedSnow.Rho;
 	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
 
-	const double hn = Xdata.Cdata.psum_unload/rho_hn;
+	const double hn =  unloadedSnow.L;
 
 	const size_t nOldN = Xdata.getNumberOfNodes(); //Old number of nodes
 	const size_t nOldE = Xdata.getNumberOfElements(); //Old number of elements
@@ -1914,7 +1917,7 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
 	const double Ln = (hn / (double)nAddE); // New snow element length
 
-	const double snowAge = Mdata.date.getJulian()-Xdata.Cdata.psum_unload_date.getJulian();
+	const double snowAge = Mdata.date.getJulian()-Xdata.Cdata.psum_unload_date.getJulian();//-unloadedSnow.depositionDate.getJulian();
 
 	// Check if the layer is thick enough, or if the unload stacked snow is not older than 1 day, if not return
 	if(Ln < newLayerThreshold && snowAge < 1){
@@ -1923,13 +1926,13 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 		return;
 	}
 
+	//Consume the snow we stored
+	Xdata.Cdata.psum_unload=0;
+	Xdata.Cdata.unloadedSnow = ElementData(0);
 
 	Xdata.resize(nNewE);
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-
-	//Consume the snow we stored
-	Xdata.Cdata.psum_unload=0;
 
 //Fill nodal data
 	double z0 = NDS[nOldN-1].z + NDS[nOldN-1].u + Ln; // Position of lowest new node
@@ -1952,7 +1955,7 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 		std::cout << "[I] New unload element of "<< length*1000 << " mm " << std::endl;
 		std::cout <<  "[I] Snow was stored since " << snowAge << std::endl;
 
-		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e]);
+		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e], unloadedSnow);
 	 	// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
 	 	// when new snow falls on top of wet snow or melting soil. This can be done by putting a tiny amount of liquid water in the new snow layers.
 	 	// Note that we use the same branching condition as in the function Snowpack::neumannBoundaryConditions(...)
@@ -1971,7 +1974,7 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 }
 
 void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
-                                    const unsigned short& number_of_solutes, ElementData &elem)
+                                    const unsigned short& number_of_solutes, ElementData& elem, ElementData& unloadedSnow)
 {
 
 	//basic parameters
@@ -2045,7 +2048,7 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
  * @param is_surface_hoar is this layer a layer of surface hoar?
  * @param EMS Element to set
  */
-void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData &elem)
+void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& elem)
 {
 	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
