@@ -177,7 +177,7 @@ void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *C
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
-          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true)
+          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true), useUnload(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -191,6 +191,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("TWO_LAYER_CANOPY", "SnowpackAdvanced", Twolayercanopy_user);
 	Twolayercanopy = Twolayercanopy_user;
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
+	cfg.getValue("UNLOAD_MICROSTRUCTURE", "SnowpackAdvanced", useUnload);
 }
 
 /**
@@ -1632,17 +1633,19 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
 	// unload, and psum_ph also based on them. icemm_unload is strored in psum_unload and treated differently in the snow // layers creation
-	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception;
+	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?icemm_unload:0);
 	const double ground_liquid_precip = Mdata.psum * Mdata.psum_ph - liqmm_interception + liqmm_unload;
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
-	// Store date of new unload event
-	if(Xdata.Cdata.psum_unload < Constants::eps2 && icemm_unload > Constants::eps2) {
-		Xdata.Cdata.psum_unload_date = Mdata.date;
-		std::cout << "[I] Unload date updated at " << Mdata.date.toString(mio::Date::ISO) << std::endl;
+	if(useUnload){
+		// Store date of new unload event
+		if(Xdata.Cdata.psum_unload < Constants::eps2 && icemm_unload > Constants::eps2) {
+			Xdata.Cdata.psum_unload_date = Mdata.date;
+			std::cout << "[I] Unload date updated at " << Mdata.date.toString(mio::Date::ISO) << std::endl;
+		}
+		Xdata.Cdata.psum_unload += icemm_unload;
 	}
-	Xdata.Cdata.psum_unload += icemm_unload;
 
 
 	if (Xdata.Cdata.storage>0.) {

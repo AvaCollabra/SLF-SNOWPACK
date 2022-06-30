@@ -97,7 +97,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
             allow_adaptive_timestepping(false), research_mode(false), useCanopyModel(false), enforce_measured_snow_heights(false), detect_grass(false),
             soil_flux(false), useSoilLayers(false), coupled_phase_changes(false), combine_elements(false), reduce_n_elements(false),
             change_bc(false), meas_tss(false), vw_dendricity(false),
-            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), adjust_height_of_meteo_values(true),
+            enhanced_wind_slab(false), alpine3d(false), ageAlbedo(true), useUnload(false), adjust_height_of_meteo_values(true),
             adjust_height_of_wind_value(false), advective_heat(false), heat_begin(0.), heat_end(0.),
             temp_index_degree_day(0.), temp_index_swr_factor(0.), forestfloor_alb(false), rime_index(false), newsnow_lwc(false), read_dsm(false), soil_evaporation(), soil_thermal_conductivity()
 {
@@ -128,6 +128,8 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 		albedo_NIED_av=Constants::undefined;
 	cfg.getValue("ALBEDO_FIXEDVALUE", "SnowpackAdvanced", albedo_fixedValue);
 	cfg.getValue("ALBEDO_AGING", "SnowpackAdvanced", ageAlbedo);
+
+	cfg.getValue("UNLOAD_MICROSTRUCTURE", "SnowpackAdvanced", useUnload);
 
 	//Defines whether a multiband model is used for short wave radiation absorption
 	cfg.getValue("SW_ABSORPTION_SCHEME", "SnowpackAdvanced", sw_absorption_scheme);
@@ -2197,7 +2199,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
 		// Add layer of unload snow
-		if(useCanopyModel && Xdata.Cdata.psum_unload > Constants::eps2) {
+		if(useCanopyModel && Xdata.Cdata.psum_unload > Constants::eps2 && useUnload) {
 			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
 			addUnloadLayers(Mdata, Xdata);
 		}
