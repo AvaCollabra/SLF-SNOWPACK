@@ -957,7 +957,7 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 		os << "Interception_storage Liquid_fraction Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " "; //7
 		os << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " "; //4
 		os << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " "; //3
-		os << "Interception_rate Initial_storage Final_storage Interception_age Throughfall New_snow_density Snow_unload Liquid_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //10
+		os << "Interception_rate Throughfall New_snow_density Snow_unload Liquid_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //10
 		os << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " "; //3
 		os << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " "; //2
 		os << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " "; //4
@@ -1087,14 +1087,14 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_description << "Interception_storage Liquid_fraction Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " "; //7
 		plot_description << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " "; //4
 		plot_description << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " "; //3
-		plot_description << "Interception_rate Initial_storage Final_storage Interception_age Throughfall New_snow_density Snow_unload Liquid_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //10
+		plot_description << "Interception_rate Throughfall New_snow_density Snow_unload Liquid_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //10
 		plot_description << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " "; //3
 		plot_description << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " "; //2
 		plot_description << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " "; //4
 		plot_units << "kg/m2 - degC  - - kg/m2 W/m2 W/m2 W/m2 W/m2 W/m2 W/m2 kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep timesteps kg/m2/timestep kg/m3 kg/m2/timestep kg/m2/timestep W/m2" << " "; //28
 		plot_units << "W/m2 W/m2 W/m2 - W/m2 degC - kg/m2/timestep kg/m2/timestep kg/m2/timestep" << " "; //10
-		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" << " ";
 		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
 		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
@@ -1258,13 +1258,10 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back(  Xdata.Cdata.transp/cos_sl );         // transpiration
 		data.push_back(  Xdata.Cdata.intevap/cos_sl );        // interception evaporation
 		data.push_back(  Xdata.Cdata.interception/cos_sl );   // interception
-    data.push_back(  Xdata.Cdata.inistorage/cos_sl);      // initial storage
-    data.push_back(  Xdata.Cdata.finstorage/cos_sl);      // final storage
-    data.push_back(  Xdata.Cdata.intage);                 // age of intercepted snow (in time stamp)
 		data.push_back(  Xdata.Cdata.throughfall/cos_sl );    // throughfall
-    data.push_back(  Xdata.Cdata.newsnowdensity );        // density of falling snow
-    data.push_back(  Xdata.Cdata.snowunload/cos_sl );     // unload of snow
-    data.push_back(  Xdata.Cdata.liquidunload/cos_sl );   // unload of liquid water
+		data.push_back(  Xdata.Cdata.newsnowdensity );        // density of falling snow
+		data.push_back(  Xdata.Cdata.snowunload/cos_sl );     // unload of snow
+		data.push_back(  Xdata.Cdata.liquidunload/cos_sl );   // unload of liquid water
 
 		// TOTAL SURFACE FLUXES,EVAPORATION; ETC
 		data.push_back(  Xdata.Cdata.rlwrac );                // upward longwave radiation ABOVE canopy

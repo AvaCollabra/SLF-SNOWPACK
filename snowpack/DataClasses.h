@@ -442,7 +442,7 @@ class CanopyData {
 		height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
 		totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.), iswrbc(0.),
 		ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.), sensible(0.), latent(0.),
-		latentcorr(0.), transp(0.), intevap(0.), interception(0.),inistorage(0.), finstorage(0.), intage(0.), throughfall(0.),newsnowdensity(0.) ,snowunload(0.),liquidunload(0.),
+		latentcorr(0.), transp(0.), intevap(0.), interception(0.), throughfall(0.),newsnowdensity(0.) ,snowunload(0.),liquidunload(0.),
 		snowfac(0.), rainfac(0.), liquidfraction(0.), sigftrunk(0.), Ttrunk(0.), CondFluxCanop(0.),
 		CondFluxTrunks(0.), LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.), forestfloor_alb(0.),
 		BasalArea(0.), HMLeaves(0.), HMTrunks(0.), psum_unload(0), psum_unload_date() {}
@@ -571,9 +571,6 @@ class CanopyData {
 		double intevap;
 		// Mass fluxes
 		double interception;
-		double inistorage;
-		double finstorage;
-		double intage;
 		double throughfall;
 		double newsnowdensity;
 		double snowunload;

@@ -1641,10 +1641,10 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// 1.2 compute direct unload [mm timestep-1], update storage [mm]
 	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
-        double oldstorage = Xdata.Cdata.storage;
-        Xdata.Cdata.storage -= unload;
-				double liqmm_unload=0.0;
-        double icemm_unload=0.0;
+	double oldstorage = Xdata.Cdata.storage;
+	Xdata.Cdata.storage -= unload;
+	double liqmm_unload=0.0;
+	double icemm_unload=0.0;
 	const double intcaprain = IntCapacity(Mdata, Xdata, true);
 	// determine liquid and frozen water unload
 	liqmm_unload = std::max(0.0,std::min(unload * Xdata.Cdata.liquidfraction,
@@ -1665,32 +1665,6 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
-
-	/////// ADDITION BY BEN ///////
-	const double rain_max = Xdata.Cdata.int_cap_rain * Xdata.Cdata.lai; // crée la valeur de rain max (constante) pour savoir quand la neige s'accumule
-
-	if (Xdata.Cdata.storage > rain_max){
-		// si le storage post-interception est plus grand que la capacité pour la pluie, on va chercher ce qu'il y avait avant: 0, si le storage avant interception était inferieur à rain_max et la différence entre les deux si on avait déjà dépassé le rain max
-		Xdata.Cdata.inistorage = std::max(0.0, (oldstorage - rain_max)); //nouvel output créé --> storage supérieur à rain_max avant interception
-		// si l'interception est plus grande que 0, on indique la neige qui a été  été ajouté et qui dépasse le rain_max.
-		if (interception > 0){
-			Xdata.Cdata.finstorage = std::min(interception,(Xdata.Cdata.storage - rain_max)); //nouvel output créé --> masse de neige qui vient de tomber
-		}
-	}
-
-/**
-	// Cette partie de code ne fonctionne pas...
-	if (Xdata.Cdata.inistorage <= 0 &  Xdata.Cdata.finstorage > 0){
-		const double intage = 1; //si on a de l'interception mais qu'il n'y avait pas de neige avant, l'age de la neige intercepté est de 1 pas-de-temps
-		Xdata.Cdata.intage = intage; // on store la pas de temps dans le Cdata
-	} else if (Xdata.Cdata.inistorage > 0){
-		++intage; // si il y avait déjà de la neige dans l'arbre , peu importe si on on a de l'interception ou non, on incérmente de 1 l'age de la de neige interceptée.
-		Xdata.Cdata.intage = intage;
-	} else {
-		Xdata.Cdata.intage = 0; //s'il n'y a pas de neige interceptée, on remet l,age à 0
-	}
-	*/
-	/////// ADDITION BY BEN ///////
 
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	// UPDATE : We removed the unloading from the computation of the throughfall

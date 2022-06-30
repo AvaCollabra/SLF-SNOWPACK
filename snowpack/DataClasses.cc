@@ -731,13 +731,10 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 	intevap = 0.;
 	// Mass fluxes
 	interception = 0.;
-  inistorage = 0.;
-  finstorage = 0.;
-  intage = 0.;
 	throughfall = 0.;
-  newsnowdensity = 0.;
+	newsnowdensity = 0.;
 	snowunload = 0.;
-  liquidunload = 0.;
+	liquidunload = 0.;
 
 	snowfac = 0.; ///< snowfall above canopy
 	rainfac = 0.; ///< rainfall above canopy
@@ -876,9 +873,6 @@ std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 	os.write(reinterpret_cast<const char*>(&data.intevap), sizeof(data.intevap));
 
 	os.write(reinterpret_cast<const char*>(&data.interception), sizeof(data.interception));
-  os.write(reinterpret_cast<const char*>(&data.inistorage), sizeof(data.inistorage));
-  os.write(reinterpret_cast<const char*>(&data.finstorage), sizeof(data.finstorage));
-  os.write(reinterpret_cast<const char*>(&data.intage), sizeof(data.intage));
 	os.write(reinterpret_cast<const char*>(&data.throughfall), sizeof(data.throughfall));
   os.write(reinterpret_cast<const char*>(&data.newsnowdensity), sizeof(data.newsnowdensity));
 	os.write(reinterpret_cast<const char*>(&data.snowunload), sizeof(data.snowunload));
@@ -971,13 +965,10 @@ std::istream& operator>>(std::istream& is, CanopyData& data)
 	is.read(reinterpret_cast<char*>(&data.intevap), sizeof(data.intevap));
 
 	is.read(reinterpret_cast<char*>(&data.interception), sizeof(data.interception));
-  is.read(reinterpret_cast<char*>(&data.inistorage), sizeof(data.inistorage));
-  is.read(reinterpret_cast<char*>(&data.finstorage), sizeof(data.finstorage));
-  is.read(reinterpret_cast<char*>(&data.intage), sizeof(data.intage));
 	is.read(reinterpret_cast<char*>(&data.throughfall), sizeof(data.throughfall));
-  is.read(reinterpret_cast<char*>(&data.newsnowdensity), sizeof(data.newsnowdensity));
-  is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
-  is.read(reinterpret_cast<char*>(&data.liquidunload), sizeof(data.liquidunload));
+	is.read(reinterpret_cast<char*>(&data.newsnowdensity), sizeof(data.newsnowdensity));
+	is.read(reinterpret_cast<char*>(&data.snowunload), sizeof(data.snowunload));
+	is.read(reinterpret_cast<char*>(&data.liquidunload), sizeof(data.liquidunload));
 
 	is.read(reinterpret_cast<char*>(&data.snowfac), sizeof(data.snowfac));
 	is.read(reinterpret_cast<char*>(&data.rainfac), sizeof(data.rainfac));
@@ -1064,16 +1055,13 @@ const std::string CanopyData::toString() const
 	os << "\ttransp:                            " << transp << "\n";
 	os << "\tintevap:                           " << intevap << "\n";
 	os << "\tinterception:                      " << interception << "\n";
-  os << "\tinistorage:                        " << inistorage << "\n";
-  os << "\tfinstorage:                        " << finstorage << "\n";
-  os << "\tintage:                            " << intage << "\n";
 	os << "\tthroughfall:                       " << throughfall << "\n";
-  os << "\tnewsnowdensity:                    " << newsnowdensity << "\n";
+	os << "\tnewsnowdensity:                    " << newsnowdensity << "\n";
 	os << "\tsnowunload:                        " << snowunload << "\n";
-  os << "\tliquidunload:                      " << liquidunload << "\n";
+	os << "\tliquidunload:                      " << liquidunload << "\n";
 	os << "\tint_cap_snow:                      " << int_cap_snow << "\n";
-  os << "\tint_cap_rain:                      " << int_cap_rain << "\n";
-  os << "\tinterception_timecoef:             " << interception_timecoef << "\n";
+	os << "\tint_cap_rain:                      " << int_cap_rain << "\n";
+	os << "\tinterception_timecoef:             " << interception_timecoef << "\n";
 	os << "\tcan_alb_dry:                       " << can_alb_dry << "\n";
 	os << "\tcan_alb_wet:                       " << can_alb_wet << "\n";
 	os << "_____________________________________" << "\n";
@@ -1154,13 +1142,10 @@ void CanopyData::initializeSurfaceExchangeData()
 	transp = 0.0;
 	intevap = 0.0;
 	interception = 0.0;
-  inistorage = 0.0;
-  finstorage = 0.0;
-  intage = 0;
 	throughfall = 0.0;
-  newsnowdensity = 0.0;
+	newsnowdensity = 0.0;
 	snowunload = 0.0;
-  liquidunload = 0.0;
+	liquidunload = 0.0;
 	snowfac = 0.0; // snowfall above canopy
 	rainfac = 0.0; // rainfall above canopy
 	// auxiliaries
