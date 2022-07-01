@@ -1906,7 +1906,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 			ce_transpiration, ce_interception, ce_condensation);
 		}
 
-		data.Cdata.temp = (Xdata.Cdata.temp+TC_OLD)*0.5;
+		Xdata.Cdata.temp = (Xdata.Cdata.temp+TC_OLD)*0.5;
 		wetfrac = (Xdata.Cdata.wetfraction+wetfrac)*0.5;
 	} // End of Energy Balance Loop
 
