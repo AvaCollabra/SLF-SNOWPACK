@@ -489,6 +489,11 @@ double Canopy::IntUnload(const double capacity, const double storage) const
 double Canopy::StochasticUnload(const CurrentMeteo& Mdata, const double storage, const double solidfraction) const
 {
 	const double snowContent = storage * solidfraction;
+	int hours, minutes;
+	Mdata.date.getTime(hours,minutes);
+	if((int)Mdata.date.getJulian()%10 == 0 && hours%12 == 0){
+		return(snowContent/5);
+	}
 	return(0);
 }
 
@@ -512,7 +517,6 @@ void Canopy::updateStorageAndUnloadElements(const double unload, ElementData& un
 	std::cout << "[I] Remaining M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << std::endl;
 }
 
-
 /**
  * @brief interception rate according to exponential function from Ashton ()
  * as formulated by i.e. Pomeroy and Hedstrom (1998)
@@ -532,6 +536,48 @@ double Canopy::IntRate(const double capacity, const double storage, const double
 
 	return interception;
 }
+
+/**
+ * @brief Update the interception layer
+ * as formulated by i.e. Pomeroy and Hedstrom (1998)
+ * @param interception
+ * @param snowStored
+ * @param predensity_new_snowc
+ * @param Mdata
+ */
+void Canopy::updateInterceptionLayer(double interception, ElementData& snowStored, double density_new_snow,
+                                     CurrentMeteo& Mdata)
+{
+	if(interception > 0){
+		//Compute the age
+		if(snowStored.M < Constants::eps2) {
+			snowStored.depositionDate = Mdata.date;
+		}
+		else{
+			const double age_diff = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
+			snowStored.depositionDate += age_diff*interception/snowStored.M;
+		}
+		const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
+		// Add snow
+		snowStored.M += interception;
+		snowStored.L += interception/density_new_snow;
+		snowStored.Rho = snowStored.M/snowStored.L;
+		std::cout << "[D] Stored M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << " age " << age << std::endl;
+	}
+	// Compute compaction
+	if(snowStored.M > Constants::eps2) {
+		const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
+		compactStoredSnow(snowStored, age);
+	}
+}
+
+void Canopy::compactStoredSnow(ElementData& snowStored, double age)
+{
+	snowStored.Rho *= (1-age/1000.);
+	snowStored.L += snowStored.M/snowStored.Rho;
+}
+
+
 
 double Canopy::CanopyAlbedo(const double tair, const double wetfrac, const SnowStation& Xdata) const
 {
@@ -1693,9 +1739,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	if ( unload < 0.0 ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Negative unloading!!!");
 	}
-
 	Xdata.Cdata.unload_from_threshold = icemm_unload;
 	if(Xdata.Cdata.unload_from_threshold > Constants::eps2 && useUnload) {
+		std::cout << "[D] Storage unload" << std::endl;
 		updateStorageAndUnloadElements(Xdata.Cdata.unload_from_threshold, Xdata.Cdata.unloadedSnowStorageThreshold,
 		                              Xdata.Cdata.snowStored);
 	}
@@ -1713,7 +1759,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		}
 		Xdata.Cdata.unload_from_stochastic = stochastic_unload;
 		if(Xdata.Cdata.unload_from_stochastic > Constants::eps2 && useUnload) {
-			std::cout << "[I] Stochastic unload" << std::endl;
+			std::cout << "[D] Stochastic unload" << std::endl;
 			updateStorageAndUnloadElements(Xdata.Cdata.unload_from_stochastic, Xdata.Cdata.unloadedSnowStochastic, Xdata.Cdata.snowStored);
 		}
 	} else {
@@ -1738,35 +1784,10 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
+	// Add intercepted snow in layer
 	if(useUnload){
-		// Add intercepted snow in layer
-		ElementData& snowStored = Xdata.Cdata.snowStored;
-		//updateInterceptionLayer(icemm_interception, Xdata.Cdata.snowStored, density_new_snow, Mdata)
-
-		if(icemm_interception > 0){
-
-			//Compute the age
-			if(snowStored.M < Constants::eps2) {
-				snowStored.depositionDate = Mdata.date;
-			}
-			else{
-				const double age_diff = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
-				snowStored.depositionDate += age_diff*icemm_interception/snowStored.M;
-			}
-			const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
-			// Add snow
-			snowStored.M += icemm_interception;
-			snowStored.L += icemm_interception/density_new_snow;
-			snowStored.Rho = snowStored.M/snowStored.L;
-			std::cout << "Stored M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << " age " << age << std::endl;
-		}
-		// Compute compaction
-		if(snowStored.M > Constants::eps2) {
-			const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
-			//compactStoredSnow(snowStored, age);
-		}
+		updateInterceptionLayer(icemm_interception, Xdata.Cdata.snowStored, density_new_snow, Mdata);
 	}
-
 
 	if (Xdata.Cdata.storage>0.) {
 		Xdata.Cdata.liquidfraction = std::max(0.0,std::min(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));

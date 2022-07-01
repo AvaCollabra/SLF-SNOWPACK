@@ -116,12 +116,17 @@ class Canopy {
 		void updateStorageAndUnloadElements(const double unload, ElementData& unloadedSnow, ElementData& snowStored);
 
 		double IntRate(const double capacity, const double storage, const double prec,
-		                  const double direct, const double interception_timecoef) const;
+		               const double direct, const double interception_timecoef) const;
+
+		void updateInterceptionLayer(double interception, ElementData& snowStored, double density_new_snow,
+		                             CurrentMeteo& Mdata);
 
 		double CanopyAlbedo(const double tair, const double wetfrac, const SnowStation& Xdata) const;
 
 		double TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
-		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect) const;
+		                   double CanopyClosureDirect, double RadFracDirect, double sigfdirect) const;
+
+		void compactStoredSnow(ElementData& snowStored, double age);
 
 		double CanopyShadeSoilCover(const double height, const double cover, const double elev, const double can_diameter) const;
 

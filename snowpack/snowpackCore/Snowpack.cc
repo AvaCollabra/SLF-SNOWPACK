@@ -1946,8 +1946,8 @@ void Snowpack::addCanopyUnloadTopLayers(const CurrentMeteo& Mdata, SnowStation& 
 
 	for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
 		const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
-		std::cout << "[I] New unload element of "<< length*1000 << " mm " << std::endl;
-		std::cout <<  "[I] Snow was stored since " << unloadedSnow.depositionDate.toString(mio::Date::ISO) << std::endl;
+		std::cout << "[D] New unload element of "<< length*1000 << " mm " << std::endl;
+		std::cout <<  "[D] Snow was stored since " << unloadedSnow.depositionDate.toString(mio::Date::ISO) << std::endl;
 
 		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e], unloadedSnow);
 	 	// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
@@ -2212,7 +2212,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 
 		// Add snow unloaded from canopy on top of the snowpack
 		if(useCanopyModel  && useUnload && (Xdata.Cdata.unloadedSnowStorageThreshold.M > Constants::eps2 || Xdata.Cdata.unloadedSnowStochastic.M > Constants::eps2)) {
-			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
+			std::cout << "[D] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
 			addCanopyUnloadLayers(Mdata, Xdata);
 		}
 
