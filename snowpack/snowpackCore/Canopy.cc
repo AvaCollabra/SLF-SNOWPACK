@@ -510,11 +510,11 @@ void Canopy::updateStorageAndUnloadElements(const double unload, ElementData& un
 	unloadedSnow.M = unload;
 	unloadedSnow.L = unload/snowStored.Rho;
 	unloadedSnow.depositionDate = snowStored.depositionDate;
-	std::cout << "[I] Unloading M " << unloadedSnow.M << " L " << unloadedSnow.L << " Rho " << unloadedSnow.Rho << std::endl;
+	std::cout << "[D] Unloading M " << unloadedSnow.M << " L " << unloadedSnow.L << " Rho " << unloadedSnow.Rho << std::endl;
 	// update remaining snow Stored
 	snowStored.M -= unload;
 	snowStored.L -= unload/snowStored.Rho ;
-	std::cout << "[I] Remaining M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << std::endl;
+	std::cout << "[D] Remaining M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << std::endl;
 }
 
 /**
@@ -555,7 +555,7 @@ void Canopy::updateInterceptionLayer(double interception, ElementData& snowStore
 		}
 		else{
 			const double age_diff = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
-			snowStored.depositionDate += age_diff*interception/snowStored.M;
+			snowStored.depositionDate += age_diff*interception/(snowStored.M+interception);
 		}
 		const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
 		// Add snow
@@ -571,10 +571,21 @@ void Canopy::updateInterceptionLayer(double interception, ElementData& snowStore
 	}
 }
 
+
+/**
+ * @brief Cumpute snow compaction
+ * @param snowStored ElementData of snow stored
+ * @param snowStored
+ * @param predensity_new_snowc
+ * @param Mdata
+ */
 void Canopy::compactStoredSnow(ElementData& snowStored, double age)
 {
-	snowStored.Rho *= (1-age/1000.);
-	snowStored.L += snowStored.M/snowStored.Rho;
+	snowStored.Rho *= (1.+pow(age/100000.,1/2.));
+
+	// Set an upper limit
+	snowStored.Rho = snowStored.Rho > 900 ? 900 : snowStored.Rho;
+	snowStored.L = snowStored.M/snowStored.Rho;
 }
 
 
@@ -1218,7 +1229,7 @@ void Canopy::CanopyEvaporationComponents2L(const double ceCanopy,
 	} else {
 		transpiration = CanopyEvaporation * ceTranspiration * (1.0 - wetfraction) / ceCanopy;
 		intevap = CanopyEvaporation - transpiration;
-                if ( intevap > i ) {
+		if ( intevap > i ) {
 			intevap = i;
 			CanopyEvaporation = intevap + transpiration;
 			if ( ta > Constants::meltfreeze_tk ) {
@@ -1517,24 +1528,6 @@ void Canopy::CanopyTurbulentExchange(const CurrentMeteo& Mdata, const double ref
  * @brief Computes upward and downward radiation below and above canopy
  * @param Xdata
  * @param Mdata
-	// Tests for unloaded snow [Benji]
-//	if (value > 1.0) { // Graupel
-		elem.mk = 2;
-		elem.dd = 0.;
-		elem.sp = 1.;
-		elem.rg = 0.6;
-		elem.rb = 0.2;
-		elem.mk = 0;
-		elem.dd = 1.;
-		elem.sp = 0.5;
-		elem.rg = 1.0;
-		elem.rb = elem.rg/3.;
-		// Because density and volumetric contents are already defined, redo it here
-		elem.Rho = 250.;
-		elem.Rho = 50.;
-		elem.theta[ICE] = elem.Rho / Constants::density_ice;  // ice content
-		elem.theta_i_reservoir = 0.0;
-		elem.theta_i_reservoir_cumul = 0.0;
  * @param ac
  * @param *iswrac
  * @param *rswrac
@@ -1730,6 +1723,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	liqmm_unload = std::max(0.0,std::min(unload * Xdata.Cdata.liquidfraction,
 			oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
 	icemm_unload = std::max(unload - liqmm_unload,0.0);
+
+	Xdata.Cdata.solid_storage -= icemm_unload;
 	// Update liquid fraction
 	if (Xdata.Cdata.storage>0.) {
 		Xdata.Cdata.liquidfraction = std::max( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
@@ -1743,7 +1738,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	if(Xdata.Cdata.unload_from_threshold > Constants::eps2 && useUnload) {
 		std::cout << "[D] Storage unload" << std::endl;
 		updateStorageAndUnloadElements(Xdata.Cdata.unload_from_threshold, Xdata.Cdata.unloadedSnowStorageThreshold,
-		                              Xdata.Cdata.snowStored);
+		                               Xdata.Cdata.snowStored);
 	}
 
 	// 1.2.1 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
@@ -1752,6 +1747,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		const double stochastic_unload = StochasticUnload(Mdata, Xdata.Cdata.storage, 1. - Xdata.Cdata.liquidfraction);
 		oldstorage = Xdata.Cdata.storage;
 		Xdata.Cdata.storage -= stochastic_unload;
+		Xdata.Cdata.solid_storage -= stochastic_unload;
+
 		if (Xdata.Cdata.storage>0.) {
 			Xdata.Cdata.liquidfraction = std::max( 0.0, oldstorage*Xdata.Cdata.liquidfraction / Xdata.Cdata.storage );
 		} else {
@@ -1761,6 +1758,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		if(Xdata.Cdata.unload_from_stochastic > Constants::eps2 && useUnload) {
 			std::cout << "[D] Stochastic unload" << std::endl;
 			updateStorageAndUnloadElements(Xdata.Cdata.unload_from_stochastic, Xdata.Cdata.unloadedSnowStochastic, Xdata.Cdata.snowStored);
+			std::cout <<  "[D] " << Xdata.Cdata.storage << " " <<  Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction ) << " " << Xdata.Cdata.snowStored.M << " " << Xdata.Cdata.solid_storage << std::endl;
 		}
 	} else {
 		Xdata.Cdata.unload_from_stochastic = 0;
@@ -1777,6 +1775,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	const double throughfall = Mdata.psum - interception; //+ (useUnload?0:unload);
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
+
+	Xdata.Cdata.solid_storage += icemm_interception;
+
 	// UPDATE: remove icemm_unload from solid precip and store it separately. So psum is snowfall + rainffall + liquid
 	// unload, and psum_ph also based on them. icemm_unload is strored in psum_unload and treated differently in the snow // layers creation
 	const double ground_solid_precip = Mdata.psum * (1.-Mdata.psum_ph) - icemm_interception + (useUnload?icemm_unload:0);
