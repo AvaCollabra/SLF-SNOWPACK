@@ -1898,7 +1898,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
 	// Get unloaded snow properties
-	ElementData unloadedSnow = Xdata.Cdata.unloadedSnow;
+	ElementData& unloadedSnow = Xdata.Cdata.unloadedSnow;
 
 	const double rho_hn = unloadedSnow.Rho;
 	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
@@ -1917,18 +1917,6 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
 	const double Ln = (hn / (double)nAddE); // New snow element length
 
-	const double snowAge = Mdata.date.getJulian()-Xdata.Cdata.psum_unload_date.getJulian();//-unloadedSnow.depositionDate.getJulian();
-
-	// Check if the layer is thick enough, or if the unload stacked snow is not older than 1 day, if not return
-	if(Ln < newLayerThreshold && snowAge < 1){
-		std::cout <<  "[I] Layer of " << Ln*1000 << " mm discarded, snow in memory " << Xdata.Cdata.psum_unload << " kg/m2"<< std::endl;
-		std::cout <<  "[I] Snow is stored since " << snowAge << std::endl;
-		return;
-	}
-
-	//Consume the snow we stored
-	Xdata.Cdata.psum_unload=0;
-	Xdata.Cdata.unloadedSnow = ElementData(0);
 
 	Xdata.resize(nNewE);
 	vector<NodeData>& NDS = Xdata.Ndata;
@@ -1953,7 +1941,7 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 	for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
 		const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 		std::cout << "[I] New unload element of "<< length*1000 << " mm " << std::endl;
-		std::cout <<  "[I] Snow was stored since " << snowAge << std::endl;
+		std::cout <<  "[I] Snow was stored since " << unloadedSnow.depositionDate.toString(mio::Date::ISO) << std::endl;
 
 		fillNewUnloadElement(Mdata, length, rho_hn, Xdata.number_of_solutes, EMS[e], unloadedSnow);
 	 	// To satisfy the energy balance, we should trigger an explicit treatment of the top boundary condition of the energy equation
@@ -1968,9 +1956,13 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 		Xdata.ColdContent += EMS[e].coldContent(); //update cold content
 	}   // End elements
 
-	// Finally, update the computed snowpack height
+	// update the computed snowpack height
 	Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
 	Xdata.ErosionLevel = nNewE-1;
+
+	// Finally, consume the snow we stored
+	Xdata.Cdata.psum_unload = 0;
+	unloadedSnow = ElementData(0);
 }
 
 void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& length, const double& density,
@@ -2203,7 +2195,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
 		// Add layer of unload snow
-		if(useCanopyModel && Xdata.Cdata.psum_unload > Constants::eps2 && useUnload) {
+		if(useCanopyModel && Xdata.Cdata.unloadedSnow.M > Constants::eps2 && useUnload) {
 			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
 			addUnloadLayers(Mdata, Xdata);
 		}

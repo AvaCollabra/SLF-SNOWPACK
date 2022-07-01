@@ -122,6 +122,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SOIL_THERMAL_CONDUCTIVITY"] = "FITTED";
 
 	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
+	advancedConfig["MINIMUM_UNLOAD_CANOPY"] = "0.01";
+
 
 	//temporary keys for Stability until we decide for a permanent solution
 	advancedConfig["MULTI_LAYER_SK38"] = "false";
