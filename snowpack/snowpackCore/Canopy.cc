@@ -548,12 +548,12 @@ double Canopy::IntRate(const double capacity, const double storage, const double
 void Canopy::updateInterceptionLayer(double interception, ElementData& snowStored, double density_new_snow,
                                      CurrentMeteo& Mdata)
 {
-	if(interception > 0){
+	if(std::abs(interception) > Constants::eps2){
 		//Compute the age
 		if(snowStored.M < Constants::eps2) {
 			snowStored.depositionDate = Mdata.date;
 		}
-		else{
+		else if(interception > 0){ //Interception can be < 0 in case of evap, if so don't update age
 			const double age_diff = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
 			snowStored.depositionDate += age_diff*interception/(snowStored.M+interception);
 		}
@@ -562,12 +562,6 @@ void Canopy::updateInterceptionLayer(double interception, ElementData& snowStore
 		snowStored.M += interception;
 		snowStored.L += interception/density_new_snow;
 		snowStored.Rho = snowStored.M/snowStored.L;
-		std::cout << "[D] Stored M " << snowStored.M << " L " << snowStored.L << " Rho " << snowStored.Rho << " age " << age << std::endl;
-	}
-	// Compute compaction
-	if(snowStored.M > Constants::eps2) {
-		const double age = Mdata.date.getJulian() - snowStored.depositionDate.getJulian();
-		compactStoredSnow(snowStored, age);
 	}
 }
 
@@ -1726,10 +1720,10 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	Xdata.Cdata.solid_storage -= icemm_unload;
 	// Update liquid fraction
-	if (Xdata.Cdata.storage>0.) {
+	if (Xdata.Cdata.storage > 0.) {
 		Xdata.Cdata.liquidfraction = std::max( 0.0, (oldstorage*Xdata.Cdata.liquidfraction-liqmm_unload)/Xdata.Cdata.storage );
 	} else {
-		Xdata.Cdata.liquidfraction = 0.0;
+		Xdata.Cdata.liquidfraction = 1.0;
 	}
 	if ( unload < 0.0 ) {
 		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Negative unloading!!!");
@@ -1739,6 +1733,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		std::cout << "[D] Storage unload" << std::endl;
 		updateStorageAndUnloadElements(Xdata.Cdata.unload_from_threshold, Xdata.Cdata.unloadedSnowStorageThreshold,
 		                               Xdata.Cdata.snowStored);
+		std::cout <<  "[D] storage old " <<Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction) << " storage new " <<
+		              Xdata.Cdata.snowStored.M << " storage no evap " << Xdata.Cdata.solid_storage << std::endl;
+
 	}
 
 	// 1.2.1 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
@@ -1749,16 +1746,16 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		Xdata.Cdata.storage -= stochastic_unload;
 		Xdata.Cdata.solid_storage -= stochastic_unload;
 
-		if (Xdata.Cdata.storage>0.) {
+		if (Xdata.Cdata.storage > 0.) {
 			Xdata.Cdata.liquidfraction = std::max( 0.0, oldstorage*Xdata.Cdata.liquidfraction / Xdata.Cdata.storage );
 		} else {
-			Xdata.Cdata.liquidfraction = 0.0;
+			Xdata.Cdata.liquidfraction = 1.0;
 		}
 		Xdata.Cdata.unload_from_stochastic = stochastic_unload;
 		if(Xdata.Cdata.unload_from_stochastic > Constants::eps2 && useUnload) {
 			std::cout << "[D] Stochastic unload" << std::endl;
 			updateStorageAndUnloadElements(Xdata.Cdata.unload_from_stochastic, Xdata.Cdata.unloadedSnowStochastic, Xdata.Cdata.snowStored);
-			std::cout <<  "[D] " << Xdata.Cdata.storage << " " <<  Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction ) << " " << Xdata.Cdata.snowStored.M << " " << Xdata.Cdata.solid_storage << std::endl;
+			std::cout <<  "[D] storage old " <<Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction) << " storage new " << Xdata.Cdata.snowStored.M << " storage no evap " << Xdata.Cdata.solid_storage << std::endl;
 		}
 	} else {
 		Xdata.Cdata.unload_from_stochastic = 0;
@@ -1785,12 +1782,24 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Mdata.psum = ground_solid_precip + ground_liquid_precip;
 	Mdata.psum_ph = (Mdata.psum>0)? ground_liquid_precip / Mdata.psum : 1.;
 
-	// Add intercepted snow in layer
 	if(useUnload){
-		updateInterceptionLayer(icemm_interception, Xdata.Cdata.snowStored, density_new_snow, Mdata);
+		// Add intercepted snow in layer
+		if(icemm_interception > Constants::eps2) {
+			updateInterceptionLayer(icemm_interception, Xdata.Cdata.snowStored, density_new_snow, Mdata);
+		}
+		// Compute compaction
+		if(Xdata.Cdata.snowStored.M > Constants::eps2) {
+			compactStoredSnow(Xdata.Cdata.snowStored, Mdata.date.getJulian() -
+			                                          Xdata.Cdata.snowStored.depositionDate.getJulian());
+		}
+		if(icemm_interception > Constants::eps2) {
+			std::cout << "[D] Stored M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho " <<
+		               Xdata.Cdata.snowStored.Rho << " age " << Mdata.date.getJulian() -
+		               Xdata.Cdata.snowStored.depositionDate.getJulian() << std::endl;
+		}
 	}
 
-	if (Xdata.Cdata.storage>0.) {
+	if (Xdata.Cdata.storage > 0.) {
 		Xdata.Cdata.liquidfraction = std::max(0.0,std::min(1.0,(oldstorage*Xdata.Cdata.liquidfraction+liqmm_interception)/Xdata.Cdata.storage));
 	}
 
@@ -1808,7 +1817,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		lai_frac_top = 1.;
 	}
 	Xdata.Cdata.sigf = CanopyTransmissivity(lai_frac_top*Xdata.Cdata.lai, Constants::pi / 2.0, Xdata.Cdata.krnt_lai );
-	Xdata.Cdata.sigftrunk = CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Constants::pi / 2.0, Xdata.Cdata.krnt_lai );
+	Xdata.Cdata.sigftrunk = CanopyTransmissivity((1-lai_frac_top)*Xdata.Cdata.lai, Constants::pi / 2.0,
+ 	                                             Xdata.Cdata.krnt_lai);
 
 	// Secondly, transmissivity of direct solar radiation
 	const double sigfdirect = (canopytransmission)? CanopyTransmissivity(lai_frac_top*Xdata.Cdata.lai, Mdata.elev,Xdata.Cdata.krnt_lai ) : Xdata.Cdata.sigf;
@@ -1834,7 +1844,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	*/
 	double chCanopy, ceTranspiration, ceInterception, ceCanopy, ceCondensation;
 	CanopyTurbulentExchange(Mdata, zref, z0m_ground, wetfrac, Xdata, chCanopy, ceCanopy,
-	                           ceTranspiration, ceInterception, ceCondensation);
+	                        ceTranspiration, ceInterception, ceCondensation);
 
 	/*
 	 * 2.2 Energy balance of the canopy
@@ -1966,10 +1976,16 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 						wetfrac, hm0, hm1);
 		}
 
-		const double newstorage = Xdata.Cdata.storage - intevap;
+		// final adjustment of interception storage due to evaporation
+		Xdata.Cdata.storage = Xdata.Cdata.storage - intevap;
+		// Add remove evaporation
+		if(useUnload && std::abs(intevap) > Constants::eps2 && (1-Xdata.Cdata.liquidfraction) > Constants::eps2) {
+			updateInterceptionLayer(-intevap*(1-Xdata.Cdata.liquidfraction), Xdata.Cdata.snowStored,
+			                        Xdata.Cdata.snowStored.Rho, Mdata);
+		}
 
 		// wet surface fraction
-		wetfrac = CanopyWetFraction(intcapacity, newstorage);
+		wetfrac = CanopyWetFraction(intcapacity, Xdata.Cdata.storage);
 		// Changes of temperature induce changes in stability correction.
 		// re-computation of turbulent exchange coefficient is needed in case of big changes in TC.
 		if (fabs(Xdata.Cdata.temp - tc_old) > Xdata.Cdata.canopytemp_maxchange_perhour * M_TO_H(calculation_step_length)) {
@@ -1981,12 +1997,11 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		wetfrac = (Xdata.Cdata.wetfraction+wetfrac)*0.5;
 	} // End of Energy Balance Loop
 
-	// Now REDUCE WaterContent in the Soil Elements --- Could also be part of WaterTransport.c
-	if (useSoilLayers)
+	// Now REDUCE WaterContent in the Soil Elements --- Could also be part of WaterTransport.cc
+	if (useSoilLayers) {
 		SoilWaterUptake(Xdata.SoilNode, transpiration, &Xdata.Edata[0], Xdata.Cdata.wp_fraction, Xdata.Cdata.rootdepth, Xdata.Cdata.h_wilt);
+	}
 
-	// final adjustment of interception storage due to evaporation
-	Xdata.Cdata.storage = Xdata.Cdata.storage - intevap;
 
 	/*
 	 * Preparation of output variables using += sign to allow for cumulated or averaged output

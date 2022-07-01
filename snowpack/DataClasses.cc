@@ -738,7 +738,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 
 	snowfac = 0.; ///< snowfall above canopy
 	rainfac = 0.; ///< rainfall above canopy
-	liquidfraction = 0.;
+	liquidfraction = 1.;
 	sigftrunk = 0.; ///< radiation interception cross section for trunk layer ()
 	Ttrunk = 273.15; // trunk temperature (K)
 	CondFluxCanop = 0.; ///< biomass heat storage flux towards Canopy (if 1L) towards Leaves (if 2L). (>0 towards canopy)
