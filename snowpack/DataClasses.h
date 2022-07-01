@@ -445,8 +445,8 @@ class CanopyData {
 		latentcorr(0.), transp(0.), intevap(0.), interception(0.), throughfall(0.), newsnowdensity(0.),
 		snowunload(0.),liquidunload(0.), snowfac(0.), rainfac(0.), liquidfraction(0.), sigftrunk(0.),
 		Ttrunk(0.), CondFluxCanop(0.), CondFluxTrunks(0.), LWnet_Trunks(0.), SWnet_Trunks(0.), QStrunks(0.),
-		forestfloor_alb(0.), BasalArea(0.), HMLeaves(0.), HMTrunks(0.), psum_unload(0),
-		snowStored(0), unloadedSnow(0) {}
+		forestfloor_alb(0.), BasalArea(0.), HMLeaves(0.), HMTrunks(0.), unload_from_threshold(0), unload_from_stochastic(0),
+		snowStored(0), unloadedSnowStorageThreshold(0), unloadedSnowStochastic(0) {}
 
 		void initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopyModel, const bool isAlpine3D);
 		void reset(const bool& cumsum_mass);
@@ -592,10 +592,12 @@ class CanopyData {
 		double HMLeaves;     	///< Leaves heat mass (J K-1 /m2 ground surface)
 		double HMTrunks;     	///< Trunks heat mass (J K-1 /m2 ground surface)
 
-		double psum_unload;///< Equivalent precipitation water sum for unloading from canopy (mm)
+		double unload_from_threshold;///< Equivalent precipitation water sum for unloading from canopy (mm), used for output
+		double unload_from_stochastic;///< Equivalent precipitation water sum for unloading from canopy (mm), used for output
 
 		ElementData snowStored;
-		ElementData unloadedSnow;
+		ElementData unloadedSnowStorageThreshold;
+		ElementData unloadedSnowStochastic;
 
 };
 

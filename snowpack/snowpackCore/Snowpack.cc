@@ -1895,10 +1895,16 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 	}
 }
 
-void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
+void Snowpack::addCanopyUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 
-	// Get unloaded snow properties
-	ElementData& unloadedSnow = Xdata.Cdata.unloadedSnow;
+	if( Xdata.Cdata.unloadedSnowStorageThreshold.M >0) {
+		addCanopyUnloadTopLayers(Mdata, Xdata, Xdata.Cdata.unloadedSnowStorageThreshold);
+	} else if(Xdata.Cdata.unloadedSnowStochastic.M > 0) {
+		mergeTopAndCanopyLayers(Mdata, Xdata);
+	}
+}
+
+void Snowpack::addCanopyUnloadTopLayers(const CurrentMeteo& Mdata, SnowStation& Xdata, ElementData& unloadedSnow){
 
 	const double rho_hn = unloadedSnow.Rho;
 	const double newLayerThreshold = 0.01; //1cm minimum for a new layer, othewise the snow is kept for max 24h, then unloaded
@@ -1961,7 +1967,6 @@ void Snowpack::addUnloadLayers(const CurrentMeteo& Mdata, SnowStation& Xdata){
 	Xdata.ErosionLevel = nNewE-1;
 
 	// Finally, consume the snow we stored
-	Xdata.Cdata.psum_unload = 0;
 	unloadedSnow = ElementData(0);
 }
 
@@ -2033,6 +2038,19 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
 	double p_vapor = Atmosphere::vaporSaturationPressure(elem.Te);
 	elem.rhov = Atmosphere::waterVaporDensity(elem.Te, p_vapor);
 }
+
+void Snowpack::mergeTopAndCanopyLayers(const CurrentMeteo& Mdata, SnowStation& Xdata)
+{
+	//test if we should merge layers
+	if(false){
+		// Add unloaded mass to top layer (s) and change their properties
+		// Comsume the snow stored
+		Xdata.Cdata.unloadedSnowStochastic = ElementData(0);
+	} else { //fallback to normal layer addition
+		addCanopyUnloadTopLayers(Mdata, Xdata, Xdata.Cdata.unloadedSnowStochastic);
+	}
+}
+
 
 /**
  * @brief Set the microstructure parameters for the current element according to the type of precipitation meteor.
@@ -2192,13 +2210,16 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			}
 		}
 
+		// Add snow unloaded from canopy on top of the snowpack
+		if(useCanopyModel  && useUnload && (Xdata.Cdata.unloadedSnowStorageThreshold.M > Constants::eps2 || Xdata.Cdata.unloadedSnowStochastic.M > Constants::eps2)) {
+			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
+			addCanopyUnloadLayers(Mdata, Xdata);
+		}
+
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
 		compSnowFall(Mdata, Xdata, cumu_precip, Sdata);
 		// Add layer of unload snow
-		if(useCanopyModel && Xdata.Cdata.unloadedSnow.M > Constants::eps2 && useUnload) {
-			std::cout << "[I] "<<  Mdata.date.toString(Date::FORMATS::ISO) << " Unload of snow!" << std::endl;
-			addUnloadLayers(Mdata, Xdata);
-		}
+
 
 		// Check to see if snow is DRIFTING, compute a simple snowdrift index and erode layers if
 		// neccessary. Note that also the very important friction velocity is computed in this

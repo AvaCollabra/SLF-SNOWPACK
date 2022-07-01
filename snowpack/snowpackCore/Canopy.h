@@ -109,15 +109,19 @@ class Canopy {
 		double IntCapacity(const CurrentMeteo& Mdata, const SnowStation& Xdata,
                         const bool force_rain=false) const;
 
-		double IntUnload(const double capacity, const double storage);
+		double IntUnload(const double capacity, const double storage) const;
+
+		double StochasticUnload(const CurrentMeteo& Mdata, const double storage, const double solidfraction) const;
+
+		void updateStorageAndUnloadElements(const double unload, ElementData& unloadedSnow, ElementData& snowStored);
 
 		double IntRate(const double capacity, const double storage, const double prec,
-		                  const double direct, const double interception_timecoef);
+		                  const double direct, const double interception_timecoef) const;
 
-		double CanopyAlbedo(const double tair, const double wetfrac, const SnowStation& Xdata);
+		double CanopyAlbedo(const double tair, const double wetfrac, const SnowStation& Xdata) const;
 
 		double TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
-		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect);
+		                      double CanopyClosureDirect, double RadFracDirect, double sigfdirect) const;
 
 		double CanopyShadeSoilCover(const double height, const double cover, const double elev, const double can_diameter) const;
 
