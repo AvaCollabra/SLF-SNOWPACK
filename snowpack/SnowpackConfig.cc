@@ -123,6 +123,7 @@ bool SnowpackConfig::initStaticData()
 
 	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
 	advancedConfig["MINIMUM_UNLOAD_CANOPY"] = "0.01";
+	advancedConfig["STOCHASTIC_UNLOAD"] = "false";
 
 
 	//temporary keys for Stability until we decide for a permanent solution

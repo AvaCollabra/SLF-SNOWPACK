@@ -185,7 +185,7 @@ void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *C
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
-          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true), useUnload(false), min_unload(0.01)
+          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true), useUnload(false), min_unload(0.01), stochastic_unload(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -201,6 +201,8 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 	cfg.getValue("UNLOAD_MICROSTRUCTURE", "SnowpackAdvanced", useUnload);
 	cfg.getValue("MINIMUM_UNLOAD_CANOPY", "SnowpackAdvanced", min_unload);
+	cfg.getValue("STOCHASTIC_UNLOAD", "SnowpackAdvanced", stochastic_unload);
+
 }
 
 /**
@@ -1679,6 +1681,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	/////// ADDITION BY BEN ///////
 
 
+	auto init_storage = Xdata.Cdata.storage;
+
 	Twolayercanopy = Twolayercanopy_user; //so we can temporarily overwrite the user's choice if needed
 	const double hs = Xdata.cH - Xdata.Ground;
 	const size_t nE = Xdata.getNumberOfElements();
@@ -1740,7 +1744,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// 1.2.1 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
 	// Only if no threshold unload already
-	if( icemm_unload < Constants::eps2 && useUnload){
+	if( icemm_unload < Constants::eps2 && useUnload && stochastic_unload){
 		const double stochastic_unload = StochasticUnload(Mdata, Xdata.Cdata.storage, 1. - Xdata.Cdata.liquidfraction);
 		oldstorage = Xdata.Cdata.storage;
 		Xdata.Cdata.storage -= stochastic_unload;
@@ -1761,7 +1765,6 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		Xdata.Cdata.unload_from_stochastic = 0;
 	}
 
-
 	// 1.3 compute the interception [mm timestep-1] and update storage [mm]
 	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
 	oldstorage = Xdata.Cdata.storage;
@@ -1769,7 +1772,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	// UPDATE : We removed the unloading from the computation of the throughfall
-	const double throughfall = Mdata.psum - interception; //+ (useUnload?0:unload);
+	const double throughfall = Mdata.psum - interception + unload;
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
 
@@ -1898,6 +1901,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// calculate Canopy Heat Mass based on canopy basal area and LAI
 	CalculateHeatMass(Xdata.Cdata.height, Xdata.Cdata.BasalArea, Xdata.Cdata.lai, Xdata.Cdata.HMLeaves, Xdata.Cdata.HMTrunks, Xdata.Cdata.biomass_density, Xdata.Cdata.biomass_heat_capacity);
+	auto storage_2 = Xdata.Cdata.storage;
 
 	for (int ebalitt = 0; ebalitt < 7; ebalitt++ ) {
 		const double tc_old = Xdata.Cdata.temp; // Cdata.temp is updated in the iteration...
@@ -1912,10 +1916,10 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		// compute properties r0 and r1 in eq (2) (and downward lw and sw for snowpack model)
 		if (Twolayercanopy) {
 			LineariseNetRadiation2L(Mdata, Xdata.Cdata, Xdata, iswrac, rsnet, ilwrac, r0, r1, r2, rt0, rt1, rt2,
-					canopyalb, canopyclosuredirect, radfracdirect, sigfdirect,sigftrunkdirect, r1p, r2p);
+			                        canopyalb, canopyclosuredirect, radfracdirect, sigfdirect,sigftrunkdirect, r1p, r2p);
 		} else {
 			LineariseNetRadiation(Mdata, Xdata.Cdata, Xdata, iswrac, rsnet, ilwrac, r0, r1,
-						canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
+			                      canopyalb, canopyclosuredirect, radfracdirect, sigfdirect, r1p);
 			r2 = 1. ; rt0=0.; rt1 = 0.; rt2 = 0. ; r2p =0.;
 		}
 
@@ -1929,7 +1933,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		}
 
 		// compute properties le0 and le1 in eq (4)
-		LineariseLatentHeatFlux(ceCanopy, Xdata.Cdata.temp, Mdata.rh*Atmosphere::vaporSaturationPressure(Mdata.ta), le0, le1, Xdata.Cdata.sigf*(1. - Xdata.Cdata.direct_throughfall));
+		LineariseLatentHeatFlux(ceCanopy, Xdata.Cdata.temp, Mdata.rh*Atmosphere::vaporSaturationPressure(Mdata.ta), le0,
+		                        le1, Xdata.Cdata.sigf*(1. - Xdata.Cdata.direct_throughfall));
 		// NOTE: for the moment trunks do not exchange latent heat (no interception, no transpiration)
 		let1= 0. ; let0 = 0. ;
 
@@ -1945,47 +1950,36 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 			tt1 = -r2 * rt2 /(rt1 - ht1 -let1 -HMt1);
 			Xdata.Cdata.Ttrunk = (ht0 + let0 + HMt0 - rt0) / (rt1 - ht1 -let1 -HMt1) - rt2 /(rt1 - ht1 -let1 -HMt1) * Xdata.Cdata.temp ;
 
-			CanopyEnergyBalance2L(h0, h1, le0, le1, hm0, hm1, tt0, tt1,
-					ceCanopy, ceCondensation,
-					r0, r1, r2, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, RnCanopy, HCanopy, LECanopy);
+			CanopyEnergyBalance2L(h0, h1, le0, le1, hm0, hm1, tt0, tt1, ceCanopy, ceCondensation, r0, r1, r2,
+			                      Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, RnCanopy, HCanopy, LECanopy);
 		} else {
 			LineariseConductiveHeatFlux(TC_previous_tstep, Xdata.Cdata.HMTrunks, hm0, hm1, M_TO_H(calculation_step_length),  1.);
 			//final canopy energy balance
 			tt0 = 0. ;
 			tt1 = 0. ;
 
-			CanopyEnergyBalance(h0, h1, le0, le1, hm0, hm1,
-					ceCanopy, ceCondensation,
-					r0, r1, Xdata.Cdata.temp, RnCanopy, HCanopy, LECanopy);
+			CanopyEnergyBalance(h0, h1, le0, le1, hm0, hm1, ceCanopy, ceCondensation, r0, r1, Xdata.Cdata.temp, RnCanopy,
+			                    HCanopy, LECanopy);
 		}
 
 		// Partition latent heat flux on interception and transpiration
 		// and correct energy balance for overestimated interception evaporation
 		if (Twolayercanopy) {
-			CanopyEvaporationComponents2L(ceCanopy, ceTranspiration, LECanopy, Mdata.ta,
-						Xdata.Cdata.storage,
-						M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
-						RnCanopy, HCanopy, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk,
-						tt0, tt1, r0, r1, r2, h0, h1, LECanopyCorr,
-						wetfrac, hm0, hm1);
+			CanopyEvaporationComponents2L(ceCanopy, ceTranspiration, LECanopy, Mdata.ta, Xdata.Cdata.storage,
+			                              M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
+			                              RnCanopy, HCanopy, Xdata.Cdata.temp, Xdata.Cdata.Ttrunk, tt0, tt1, r0, r1, r2, h0,
+			                              h1, LECanopyCorr, wetfrac, hm0, hm1);
 		} else {
-			CanopyEvaporationComponents(ceCanopy, ceTranspiration, LECanopy, Mdata.ta,
-						Xdata.Cdata.storage,
-						M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
-						RnCanopy, HCanopy, Xdata.Cdata.temp, r0, r1, h0, h1, LECanopyCorr,
-						wetfrac, hm0, hm1);
+			CanopyEvaporationComponents(ceCanopy, ceTranspiration, LECanopy, Mdata.ta, Xdata.Cdata.storage,
+			                              M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
+			                              RnCanopy, HCanopy, Xdata.Cdata.temp, r0, r1, h0, h1, LECanopyCorr, wetfrac, hm0,
+			                              hm1);
 		}
 
-		// final adjustment of interception storage due to evaporation
-		Xdata.Cdata.storage = Xdata.Cdata.storage - intevap;
-		// Add remove evaporation
-		if(useUnload && std::abs(intevap) > Constants::eps2 && (1-Xdata.Cdata.liquidfraction) > Constants::eps2) {
-			updateInterceptionLayer(-intevap*(1-Xdata.Cdata.liquidfraction), Xdata.Cdata.snowStored,
-			                        Xdata.Cdata.snowStored.Rho, Mdata);
-		}
+		const double storage_tmp = Xdata.Cdata.storage - intevap;
 
 		// wet surface fraction
-		wetfrac = CanopyWetFraction(intcapacity, Xdata.Cdata.storage);
+		wetfrac = CanopyWetFraction(intcapacity, storage_tmp);
 		// Changes of temperature induce changes in stability correction.
 		// re-computation of turbulent exchange coefficient is needed in case of big changes in TC.
 		if (fabs(Xdata.Cdata.temp - tc_old) > Xdata.Cdata.canopytemp_maxchange_perhour * M_TO_H(calculation_step_length)) {
@@ -2002,6 +1996,12 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		SoilWaterUptake(Xdata.SoilNode, transpiration, &Xdata.Edata[0], Xdata.Cdata.wp_fraction, Xdata.Cdata.rootdepth, Xdata.Cdata.h_wilt);
 	}
 
+	// final adjustment of interception storage due to evaporation
+	Xdata.Cdata.storage = Xdata.Cdata.storage - intevap;
+	if(useUnload && std::abs(intevap) > Constants::eps2 && (1-Xdata.Cdata.liquidfraction) > Constants::eps2) {
+		updateInterceptionLayer(-intevap*(1-Xdata.Cdata.liquidfraction), Xdata.Cdata.snowStored,
+		                        Xdata.Cdata.snowStored.Rho, Mdata);
+	}
 
 	/*
 	 * Preparation of output variables using += sign to allow for cumulated or averaged output
@@ -2067,6 +2067,12 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	if (Twolayercanopy) {
 		Xdata.Cdata.CondFluxTrunks += HMt0 + HMt1 * Xdata.Cdata.Ttrunk;
 		Xdata.Cdata.QStrunks += ht0 + ht1 * Xdata.Cdata.Ttrunk;
+	}
+
+	// Mass ablance check
+	auto diff_storage = Xdata.Cdata.storage - init_storage;
+	if( std::abs(diff_storage - (interception - unload - intevap)) > Constants::eps2){
+		std::cout << "[W] Mass Balance problem. Storage entering runCanopy "<<init_storage << " \t storage leaving runCanopy" <<  Xdata.Cdata.storage  << " \t difference" << diff_storage << " \t interception" <<  interception << " \t unload" << unload << " \t " << intevap << " \t evaporation" << std::endl;
 	}
 
 	return true;

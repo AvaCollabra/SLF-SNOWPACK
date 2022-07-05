@@ -219,6 +219,7 @@ class Canopy {
 		bool forestfloor_alb;
 		bool useUnload;
 		double min_unload;
+		bool stochastic_unload;
 
 };
 
