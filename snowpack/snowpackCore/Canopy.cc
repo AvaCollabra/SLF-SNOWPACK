@@ -832,7 +832,6 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 		CanopyClosureDirect = CanopyShadeSoilCover(Cdata.height, CanopyClosure, elev, Cdata.can_diameter);
 		CanClosDirLeaves= CanopyClosureDirect ;
 		CanClosDirTrunks=0.;
-
 		// below (optional): if uncommented, allows direct solar insolation of the trunks
 		//CanClosDirLeaves = CanopyShadeSoilCover(Cdata.height*(1. - trunk_frac_height), CanopyClosure, elev);
 		//CanClosDirTrunks = CanopyClosureDirect - CanClosDirLeaves;
@@ -854,7 +853,8 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 	// net absorbed by canopy
 	// first only diffuse fraction
 	rsnet = RadFracDiffuse * iswrac * (1. - canopyalb) * sigf *
-		(1. + ag * (1. - sigf) / (1. - sigf * ag * canopyalb)* attfactor_SW + (1. - sigf) * sigftrunk * Cdata.trunkalb);
+	        (1. + ag * (1. - sigf) / (1. - sigf * ag * canopyalb)* attfactor_SW + (1. - sigf) * sigftrunk *
+	        Cdata.trunkalb);
 
 	// 1.2. LW
 	// Longwave radiation above canopy:
@@ -888,10 +888,11 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 	r2 *= CanopyClosure;
 
 	// Now, add the direct component with different CanopyClosure
-	const double rsnetdir = CanClosDirLeaves * RadFracDirect * iswrac *
-		(1. - canopyalb) * sigfdirect * (1. + ag * (1. - sigfdirect) *attfactor_SWdir / (1. - sigfdirect * ag * canopyalb) + (1. - sigfdirect) * sigftrunkdirect * Cdata.trunkalb)
-		+ CanClosDirTrunks * RadFracDirect * iswrac * (1. - canopyalb) * sigfdirect * ag *attfactor_SWdir/(1. - sigfdirect * ag * canopyalb);
-
+	const double rsnetdir = CanClosDirLeaves * RadFracDirect * iswrac * (1. - canopyalb) * sigfdirect *
+	                        (1. + ag * (1. - sigfdirect) *attfactor_SWdir / (1. - sigfdirect * ag * canopyalb) +
+	                        (1. - sigfdirect) * sigftrunkdirect * Cdata.trunkalb) + CanClosDirTrunks * RadFracDirect *
+	                        iswrac * (1. - canopyalb) * sigfdirect * ag *attfactor_SWdir /
+	                        (1. - sigfdirect * ag * canopyalb);
 	rsnet += rsnetdir;
 	r0 += rsnetdir;
 
@@ -917,8 +918,9 @@ void Canopy::LineariseNetRadiation2L(const CurrentMeteo& Mdata, const CanopyData
 	rt2 *= CanopyClosure;
 
 	// 2.3. SW direct & NetRad to Trunks
-	const double rsnettrunkdir = CanClosDirLeaves * RadFracDirect * iswrac * (1. -sigfdirect) * (1. - attfactor_SWdir)*(1.-Cdata.trunkalb)
-				+ CanClosDirTrunks *  RadFracDirect * iswrac * (1. - attfactor_SWdir) *(1.-Cdata.trunkalb);
+	const double rsnettrunkdir = CanClosDirLeaves * RadFracDirect * iswrac * (1. -sigfdirect) *
+	                             (1. - attfactor_SWdir)*(1.-Cdata.trunkalb) + CanClosDirTrunks *  RadFracDirect *
+	                             iswrac * (1. - attfactor_SWdir) *(1.-Cdata.trunkalb);
 	rsnettrunk += rsnettrunkdir;
 	rt0 += rsnettrunkdir;
 }
@@ -957,7 +959,8 @@ double Canopy::DSaturationPressureDT(const double lh, const double temperature)
 		c3 = 272.440 ;
 	}
 
-	const double dpdt =  Atmosphere::vaporSaturationPressure(temperature) * c2 * c3 / ((c3 + IOUtils::K_TO_C(temperature)) * (c3 + IOUtils::K_TO_C(temperature)));
+	const double dpdt =  Atmosphere::vaporSaturationPressure(temperature) * c2 * c3 /
+	                     ((c3 + IOUtils::K_TO_C(temperature)) * (c3 + IOUtils::K_TO_C(temperature)));
 
 	return(dpdt);
 }
@@ -1796,9 +1799,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 			                                          Xdata.Cdata.snowStored.depositionDate.getJulian());
 		}
 		if(icemm_interception > Constants::eps2) {
-			std::cout << "[D] Stored M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho " <<
-		               Xdata.Cdata.snowStored.Rho << " age " << Mdata.date.getJulian() -
-		               Xdata.Cdata.snowStored.depositionDate.getJulian() << std::endl;
+			std::cout << "[D] Stored M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho "
+			          << Xdata.Cdata.snowStored.Rho << " age "
+			          << Mdata.date.getJulian() - Xdata.Cdata.snowStored.depositionDate.getJulian() << std::endl;
 		}
 	}
 
@@ -1971,9 +1974,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 			                              h1, LECanopyCorr, wetfrac, hm0, hm1);
 		} else {
 			CanopyEvaporationComponents(ceCanopy, ceTranspiration, LECanopy, Mdata.ta, Xdata.Cdata.storage,
-			                              M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
-			                              RnCanopy, HCanopy, Xdata.Cdata.temp, r0, r1, h0, h1, LECanopyCorr, wetfrac, hm0,
-			                              hm1);
+			                            M_TO_H(calculation_step_length), CanopyEvaporation, intevap, transpiration,
+			                            RnCanopy, HCanopy, Xdata.Cdata.temp, r0, r1, h0, h1, LECanopyCorr, wetfrac, hm0,
+			                            hm1);
 		}
 
 		const double storage_tmp = Xdata.Cdata.storage - intevap;
@@ -2008,8 +2011,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	 * (remember to reset these variables to 0 in Main.c before next integration step)
 	*/
 	// radiation above and below canopy
-	CanopyRadiationOutput(Xdata, Mdata, canopyalb, iswrac, rswrac, iswrbc, rswrbc, ilwrac,
-	                         rlwrac, ilwrbc, rlwrbc,canopyclosuredirect,radfracdirect,sigfdirect,sigftrunkdirect);
+	CanopyRadiationOutput(Xdata, Mdata, canopyalb, iswrac, rswrac, iswrbc, rswrbc, ilwrac, rlwrac, ilwrbc,
+	                      rlwrbc,canopyclosuredirect,radfracdirect,sigfdirect,sigftrunkdirect);
 
 	// longwave and shortwave radiation components
 	Xdata.Cdata.iswrac = iswrac;
@@ -2061,7 +2064,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	Xdata.Cdata.canopyalb = canopyalb;
 	const double albedo = (nE>Xdata.SoilNode)? Xdata.Albedo : Xdata.SoilAlb;
 	Xdata.Cdata.totalalb = TotalAlbedo(canopyalb, Xdata.Cdata.sigf, albedo,
-	                                    Xdata.Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
+	                                   Xdata.Cdata.direct_throughfall, canopyclosuredirect, radfracdirect, sigfdirect);
 	// modifs for HeatMass and 2layercanopy: new fluxes, to be updated here for EB closure reasons
 	Xdata.Cdata.CondFluxCanop += hm0 + hm1 * Xdata.Cdata.temp;
 	if (Twolayercanopy) {
@@ -2072,7 +2075,10 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	// Mass ablance check
 	auto diff_storage = Xdata.Cdata.storage - init_storage;
 	if( std::abs(diff_storage - (interception - unload - intevap)) > Constants::eps2){
-		std::cout << "[W] Mass Balance problem. Storage entering runCanopy "<<init_storage << " \t storage leaving runCanopy" <<  Xdata.Cdata.storage  << " \t difference" << diff_storage << " \t interception" <<  interception << " \t unload" << unload << " \t " << intevap << " \t evaporation" << std::endl;
+		std::cout << "[W] Mass Balance problem. Storage entering runCanopy "<<init_storage
+		          << " \t storage leaving runCanopy" <<  Xdata.Cdata.storage  << " \t difference" << diff_storage
+		          << " \t interception" <<  interception << " \t unload" << unload << " \t " << intevap
+		          << " \t evaporation" << std::endl;
 	}
 
 	return true;
