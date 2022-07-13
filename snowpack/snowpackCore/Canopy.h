@@ -126,7 +126,7 @@ class Canopy {
 		double TotalAlbedo(double CanAlb, double sigf, double SurfAlb, double DirectThroughfall,
 		                   double CanopyClosureDirect, double RadFracDirect, double sigfdirect) const;
 
-		void compactStoredSnow(ElementData& snowStored, double age);
+		void compactStoredSnow(ElementData& snowStored, double age, const CurrentMeteo& Mdata);
 
 		double CanopyShadeSoilCover(const double height, const double cover, const double elev, const double can_diameter) const;
 

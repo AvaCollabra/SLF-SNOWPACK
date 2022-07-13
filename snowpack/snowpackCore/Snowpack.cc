@@ -2017,7 +2017,7 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
 	elem.CDot = 0.; // loadRate
 
 	//new snow micro-structure
-	setUnloadMicrostructure(Mdata, elem);
+	setUnloadMicrostructure(Mdata, elem, unloadedSnow);
 	elem.snowType(); // Snow classification
 
 	//Initialise the Stability Index for ml_st_CheckStability routine
@@ -2058,21 +2058,44 @@ void Snowpack::mergeTopAndCanopyLayers(const CurrentMeteo& Mdata, SnowStation& X
  * @param is_surface_hoar is this layer a layer of surface hoar?
  * @param EMS Element to set
  */
-void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& elem)
+void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& elem, ElementData& unloadedSnow)
 {
 	const double TA = IOUtils::K_TO_C(Mdata.ta);
 	const double RH = Mdata.rh*100.;
 	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
 	const double value = exp(logit)/(1.+exp(logit));
 
-	elem.mk = Snowpack::new_snow_marker;
-	elem.dd = new_snow_dd;
-	elem.sp = new_snow_sp;
-	elem.rg = new_snow_grain_size/2.;
-	elem.rb = new_snow_bond_size/2.;
+	if (unloadedSnow.Rho <= 175){ //Precipitation particles
+		elem.mk = Snowpack::new_snow_marker;
+		elem.dd = new_snow_dd;
+		elem.sp = new_snow_sp;
+		elem.rg = new_snow_grain_size/2.;
+		elem.rb = new_snow_bond_size/2.;
 
-	elem.opticalEquivalentGrainSize();
-	elem.metamo = 0.;
+		elem.opticalEquivalentGrainSize();
+		elem.metamo = 0.;
+
+	} else if (unloadedSnow.Rho > 175 & unloadedSnow.Rho <= 250){ //rounded grains
+		elem.mk = 2;
+		elem.dd = 0;
+		elem.sp = 1;
+		elem.rg = 0.2/2.;
+		elem.rb = elem.rg/3.;
+
+		elem.opticalEquivalentGrainSize();
+		elem.metamo = 0.;
+
+	} else if (unloadedSnow.Rho > 250){ //faceted crystals
+		elem.mk = 1;
+		elem.dd = 0;
+		elem.sp = 0;
+		elem.rg = 0.2/2.;
+		elem.rb = elem.rg/3.;
+
+		elem.opticalEquivalentGrainSize();
+		elem.metamo = 0.;
+	}
+
 }
 /**
  * @brief The near future (s. below) has arrived on Wednesday Feb. 6, when it was finally snowing

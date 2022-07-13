@@ -575,12 +575,20 @@ void Canopy::updateInterceptionLayer(double interception, ElementData& snowStore
  * @param predensity_new_snowc
  * @param Mdata
  */
-void Canopy::compactStoredSnow(ElementData& snowStored, double age)
+void Canopy::compactStoredSnow(ElementData& snowStored, double age, const CurrentMeteo& Mdata)
 {
-	snowStored.Rho *= (1.+pow(age/100000.,1/2.));
+//	if (age <= 0){
+//		snowStored.iniRho = snowStored.Rho;
+//	}
+	if (age > 0){
+		snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133))); // Age only
+		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(266.2/Mdata.ta)))); // Age and temperature
+		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(303/snowStored.Rho)))); // Age and snow density dependency
+		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(266.2/Mdata.ta)*(303/snowStored.Rho)))); // Age, air temp. and snow density dependency
+	}
 
 	// Set an upper limit
-	snowStored.Rho = snowStored.Rho > 900 ? 900 : snowStored.Rho;
+	//snowStored.Rho = snowStored.Rho > 900 ? 900 : snowStored.Rho;
 	snowStored.L = snowStored.M/snowStored.Rho;
 }
 
@@ -1796,13 +1804,19 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		// Compute compaction
 		if(Xdata.Cdata.snowStored.M > Constants::eps2) {
 			compactStoredSnow(Xdata.Cdata.snowStored, Mdata.date.getJulian() -
-			                                          Xdata.Cdata.snowStored.depositionDate.getJulian());
-		}
+			                                          Xdata.Cdata.snowStored.depositionDate.getJulian(),Mdata);
+		} else {
+			Xdata.Cdata.snowStored.Rho = 0;
+			Xdata.Cdata.snowStored.L = 0;
+	}
 		if(icemm_interception > Constants::eps2) {
+
 			std::cout << "[D] Stored M " << Xdata.Cdata.snowStored.M << " L " << Xdata.Cdata.snowStored.L << " Rho "
 			          << Xdata.Cdata.snowStored.Rho << " age "
-			          << Mdata.date.getJulian() - Xdata.Cdata.snowStored.depositionDate.getJulian() << std::endl;
+			          << Mdata.date.getJulian() - Xdata.Cdata.snowStored.depositionDate.getJulian() << " Date "
+								<< Mdata.date.getJulian() << std::endl;
 		}
+
 	}
 
 	if (Xdata.Cdata.storage > 0.) {

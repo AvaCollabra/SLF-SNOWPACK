@@ -668,6 +668,7 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 	// State variable
 	temp = 273.15; // temperature (K)
 	storage = 0.0; // intercepted water (kg m-2 or mm Water Equivalent)
+  solid_storage = 0.0;
 	ec = 1.0; ///< longwave emissivity (1)
 // parameters
 	lai = SSdata.Canopy_LAI;
@@ -834,6 +835,7 @@ void CanopyData::multiplyFluxes(const double& factor)
 std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 {
 	os.write(reinterpret_cast<const char*>(&data.storage), sizeof(data.storage));
+  os.write(reinterpret_cast<const char*>(&data.solid_storage), sizeof(data.solid_storage));
 	os.write(reinterpret_cast<const char*>(&data.temp), sizeof(data.temp));
 	os.write(reinterpret_cast<const char*>(&data.sigf), sizeof(data.sigf));
 	os.write(reinterpret_cast<const char*>(&data.ec), sizeof(data.ec));
@@ -926,6 +928,7 @@ std::ostream& operator<<(std::ostream& os, const CanopyData& data)
 std::istream& operator>>(std::istream& is, CanopyData& data)
 {
 	is.read(reinterpret_cast<char*>(&data.storage), sizeof(data.storage));
+  is.read(reinterpret_cast<char*>(&data.solid_storage), sizeof(data.solid_storage));
 	is.read(reinterpret_cast<char*>(&data.temp), sizeof(data.temp));
 	is.read(reinterpret_cast<char*>(&data.sigf), sizeof(data.sigf));
 	is.read(reinterpret_cast<char*>(&data.ec), sizeof(data.ec));
@@ -1020,6 +1023,7 @@ const std::string CanopyData::toString() const
 	std::ostringstream os;
 	os << "<CanopyData>" << "\n";
 	os << "\tstorage:                           " << storage << "\n";
+  os << "\tsolid_storage:                           " << solid_storage << "\n";
 	os << "\ttemp:                              " << temp << "\n";
 	os << "\tsigf:                              " << sigf << "\n";
 	os << "\tec:                                " << ec << "\n";
