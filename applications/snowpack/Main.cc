@@ -1143,6 +1143,12 @@ inline void real_main (int argc, char *argv[])
 			vector<mio::MeteoData> vecMyMeteo;
 			meteoRead_timer.start();
 			io.getMeteoData(current_date, vecMyMeteo);
+			if (vecMyMeteo.empty()) {
+				prn_msg(__FILE__, __LINE__, "msg-", current_date, "No forcing data provided for [%s]",
+				        current_date.toString(mio::Date::ISO).c_str());
+				current_date -= calculation_step_length/1440;
+				break;
+			}
 			if(meteo_step_length<0.) {
 				std::stringstream ss2;
 				meteo_step_length = io.getAvgSamplingRate();
