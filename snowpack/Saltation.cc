@@ -41,14 +41,14 @@ const double Saltation::hs_frac = 1.0;
 const double Saltation::karman = 0.4; ///< Von Karman constant
 const double Saltation::elas = 0.5;   ///< Coefficient of Elasticity 0.5
 
-const double Saltation::angle_ej = 25.; ///< ejection angle (deg)
-const double Saltation::ratio_ve_ustar = 3.1; ///< Original Value by Judith: 2.9
+const double Saltation::angle_ej = 25.; ///< ejection angle (deg) (25 orig)
+const double Saltation::ratio_ve_ustar = 2.9 ;//3.1; ///< Original Value by Judith: 2.9
 
 const int Saltation::strong = 1;
 const int Saltation::weak = 0;
 
 ///Saltation Z0 Preliminary values will be changed later Judith original: 0.00098
-const double Saltation::z0_salt = 0.0017;
+const double Saltation::z0_salt = 0.00005; //0.0007; //before: 0.00098; 0.0017;
 const double Saltation::salt_height = 0.07;
 
 /*
@@ -278,12 +278,20 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const double& slope_angle, const double& dg,
                                  const double& tau_th, double& flux, double& z_max, double& ubar, double& cs)
 {
+
+	static const double C_ae = 1.5; // entrainment coefficient (1.5)
 	// Initialize mass, entrainment number and surface shear stress
 	const double mass = Constants::density_ice * 4. / 3. * Constants::pi * Optim::pow3(.5*dg);
 	const double angle_e_rad = Saltation::angle_ej*mio::Cst::to_rad;
 	//  n_ae = 1./(1.09*mass*sqrt(tauS/DENSITY_AIR));
 	//const double n_ae  = 0.5 / 8. / Constants::pi / dg / dg;
-	const double n_ae = 1. / (2. * 8. * Constants::pi * Optim::pow2(dg));
+	// n_ae [N^-1 s^-1] is the entrainment coefficient computed with the expression proposed
+	// by Doorschot and Lehning (2002):
+	// old (state May 29, 2022)
+	//const double n_ae = 1. / (2. * 8. * Constants::pi * Optim::pow2(dg)); // David: where does the 2 come from ????
+	// David: Let's try with Groot Zwaaftink et al., 2014: 1.5 / (8 * pi * d^2):
+	const double n_ae = C_ae / (8. * Constants::pi * Optim::pow2(dg));
+	//const double n_ae = 1. / (2. * 8. * Constants::pi * Optim::pow2(dg));
 
 	// Compute trajectories until stationary
 	//  u0 = 0.63/sin(angle_e_rad)*sqrt(tauS/DENSITY_AIR);
@@ -303,6 +311,10 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 			return tauS;
 		}
 		tauA_old = tauA;
+
+		// The number of grains entrained per unit area per unit time, defined as the aerodynamic entrainment rate
+		// Nae [m^-2 s^⁻1]
+		// is computed using the expression proposed by Anderson and Haff (1991):
 		Nae = n_ae * (tauA - tau_th);
 		tauA = tauS - Nae *mass * (u_i * cos(angle_i_rad) - u0 * cos(angle_e_rad)) / t_i;
 		//    tauA = tauS - Nae*mass*(u_i*cos(angle_i_rad) - u0*cos(angle_e_rad));

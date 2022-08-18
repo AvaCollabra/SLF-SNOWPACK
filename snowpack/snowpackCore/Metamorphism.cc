@@ -110,7 +110,7 @@ const double Metamorphism::max_grain_bond_ratio = 0.95;
 ///@name Thresholds for wind slab formation
 //@
 ///For no action, set strength factor for wind slab formation to 0.0
-const double Metamorphism::wind_slab_enhance = 5.;
+const double Metamorphism::wind_slab_enhance = 0.;
 
 ///Wind slab forms for winds stronger than Metamorphism::wind_slab_vw (m s-1)
 const double Metamorphism::wind_slab_vw = 5.;
