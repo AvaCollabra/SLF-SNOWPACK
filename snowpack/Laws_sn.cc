@@ -1103,7 +1103,7 @@ double SnLaws::newSnowDensityPara(const std::string& i_hn_model,
 			rho_hn = std::min(rho_hn, alpha*(1. + 0.05*(TA + 10.)));
 		// Increase snow density under snow transport conditions
 		if ((!jordy_new_snow) && (VW > 5.)) {
-			rho_hn = rho_hn * VW * 1.5;  //90. + (rho_hn - 30.)*0.9; //rho_hn * VW;
+			rho_hn = 90. + (rho_hn - 30.)*0.9; //try--> rho_hn * VW * 1.5;
 		} else if (jordy_new_snow && (VW > 2.9)) {
 			rho_hn = newSnowDensityHendrikx(TA, TSS, RH, VW);
 		}
