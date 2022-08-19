@@ -941,8 +941,8 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 		os << "dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " ";
 	if (out_mass)
 		os << "SWE MS_Water MS_Water_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap" << " ";
-		// 34-40: SWE (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
-														// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
+		// 34-40: SWE (kg m-2), LWC (kg m-2),  LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
+		// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
 	if (out_load)
 		os << "load "; // 50: Solute load at ground surface
 	if (out_t && !fixedPositions.empty()) {
@@ -1043,7 +1043,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_max << "" << " ";
 	}
 	if (out_mass) {
-		//"SWE MS_Water MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
+		//"SWE MS_Water MS_Water_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
 		plot_description << "snow_water_equivalent  total_amount_of_water  total_amount_of_water_soil erosion_mass_loss  rain_rate  virtual_lysimeter_surface_snow_only virtual_lysimeter_surface_total_water  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
 		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2 kg/m2" << " ";
 		units_offset << "0 0 0 0 0 0 0 0 0 0" << " ";
