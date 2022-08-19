@@ -61,7 +61,7 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	 * - r242: HOAR_THRESH_VW set to 3.5
 	 */
 	cfg.getValue("HOAR_THRESH_VW", "SnowpackAdvanced", hoar_thresh_vw);
-	
+
 	/**
 	 * @brief No surface hoar will form at air temperatures above threshold (m s-1)
 	 * - Originaly, using THRESH_RAIN
@@ -129,7 +129,7 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
 	} else if (watertransportmodel_soil=="RICHARDSEQUATION") {
 		iwatertransportmodel_soil=RICHARDSEQUATION;
 	}
-	
+
 	//Enable vapour transport
 	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport);
 
@@ -330,7 +330,7 @@ void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& 
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
 		double ql2 = ql; // Dummy of ql. We want to mimick the effect of evaporation from deeper layers, if the energy flux is so large, that complete elements disappear.
-				 // But, since we now have separate locations for water and ice evaporation respectively sublimation, we need to calculate already here the 
+				 // But, since we now have separate locations for water and ice evaporation respectively sublimation, we need to calculate already here the
 				 // sublimation of ice to decide whether any water is evaporated from the next element below. So, ql2 also keeps track of sublimation, which is not
 				 // applied here, but later in VapourTransport.
 		while ((e > 0) && (ql2 < (-Constants::eps2))) {  // While energy is available
@@ -476,7 +476,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		const bool do_merge = (EMS[eUpper].theta[ICE] < Snowpack::min_ice_content) || enforce_merge;
 		const bool is_snow_layer = (EMS[eUpper].theta[SOIL] < Constants::eps2) && (EMS[eUpper].mk % 100 != 9); //exclude plastic or water_layer
 		const bool wet_layer_exception = (eUpper > 0 && eUpper == nE-1 && EMS[eUpper].theta[ICE] > 0.2 * Snowpack::min_ice_content && EMS[eUpper].L > 0.2 * minimum_l_element && EMS[eUpper-1].theta[SOIL] < Constants::eps && EMS[eUpper].theta[ICE] > Constants::eps && EMS[eUpper].theta[WATER] < theta_r + Constants::eps && EMS[eUpper-1].theta[WATER] > theta_r + Constants::eps); // Don't merge a dry surface snow layer with a wet one below, as the surface node may then experience a sudden increase in temperature, destroying energy balance.
-		
+
 		if (do_merge && is_snow_layer && !wet_layer_exception) {
 			bool UpperJoin=false;			// Default is joining with elements below
 			bool merged = true;			// true: element is finally merged, false: element is finally removed.
@@ -1068,14 +1068,14 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 		const double meltfreeze_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].meltfreeze_tk : Constants::meltfreeze_tk;
 		const bool isSurfaceMelting = !(NDS[nE].T < meltfreeze_tk);
 
-		if(enable_vapour_transport)	
+		if(enable_vapour_transport)
 		{
 			RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, dummy_ql, Mdata.date);
 		}else
 		{
 			RichardsEquationSolver1d_matrix.SolveRichardsEquation(Xdata, Sdata, ((isTopLayerSolvedByREQ && isSurfaceMelting) || (variant == "SEAICE" && ql < 0.)) ? (ql) : (dummy_ql), Mdata.date);//Jafari added
 		}
-		
+
 		if(Xdata.getNumberOfElements() > Xdata.SoilNode && enable_pref_flow) RichardsEquationSolver1d_pref.SolveRichardsEquation(Xdata, Sdata, dummy_ql, Mdata.date);	// Matrix flow will take care of potential evaporation/condensation, provided by ql, so send dummy_ql for preferential flow
 	}
 
@@ -1125,6 +1125,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					Sdata.load[ii] +=  (EMS[0].conc[WATER][ii] * dM / S_TO_H(sn_dt));
 				}
+			}
+			// If no snow, add rain in MS_SURFACE_RUNOFF
+			if(Xdata.swe < Constants::eps2 ) {
+				Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Sdata.mass[SurfaceFluxes::MS_RAIN] -
+				                                                Sdata.mass[SurfaceFluxes::MS_EVAPORATION];
 			}
 		}
 	}
@@ -1206,6 +1211,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata,
 			double precip_rain = Mdata.psum * Mdata.psum_ph;
 			Sdata.mass[SurfaceFluxes::MS_RAIN] += precip_rain;
 			Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += precip_rain;
+			Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += precip_rain;
 			for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 				Sdata.load[ii] += Mdata.conc[ii] * precip_rain /*/ S_TO_H(sn_dt)*/;
 			}
@@ -1215,7 +1221,7 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata,
 
 	if (!enable_vapour_transport) {
 		compTopFlux(ql, Xdata, Sdata);
-	}	
+	}
 	mergingElements(Xdata, Sdata);
 
 	try {
