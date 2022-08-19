@@ -824,6 +824,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double snowsoilinterfaceflux=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
 	double totalsourcetermflux=0.;			//Stores the total applied source term flux (it's a kind of boundary flux, but then in the middle of the domain).
 
+	std::vector<double> soil_lysimeters(Xdata.SoilNode+1, 0.);
+
 	//Declare all numerical arrays and matrices:
 	std::vector< std::vector<double> > delta_h(nmemstates, std::vector<double> (nE,0.));	//Change in pressure head per iteration
 	std::vector<double> delta_h_dt(nE, 0.);		//Change in pressure head per time step.
@@ -2281,6 +2283,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(WriteDebugOutput) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
 
 
+			if(Xdata.SoilNode > 0) {
+				for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
+					soil_lysimeters[node_i] += (1./rho[node_i])*((((h_n[node_i]*rho[node_i]-h_n[node_i-1]*rho[node_i-1])/dz_up[node_i-1])+Xdata.cos_sl*rho[node_i])*k_np1_m_ip12[node_i-1]*dt);
+				}
+			}
+
 			//Determine flux at soil snow interface (note: postive=flux upward, negative=flux downward):
 			if (Xdata.SoilNode<nE) {	//We have snow layers
 				if(uppernode+1==Xdata.SoilNode) {	//We run RE-solver only for soil layers AND have snow layers in the model (meaning TopFluxRate is coming from snow)
@@ -2609,6 +2617,16 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m^2 (almost equal to mm/m^2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
+
+	// Deal with the virtual lysimeters
+	Xdata.Ndata[0].soil_lysimeter += actualbottomflux*Constants::density_water;
+	if(Xdata.SoilNode > 0) {
+		// See comment above, to be sure we take all contibutions, we take MS_SNOWPACK_RUNOFF
+		Xdata.Ndata[Xdata.SoilNode].soil_lysimeter = Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF];
+		for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
+			Xdata.Ndata[node_i].soil_lysimeter += soil_lysimeters[node_i]*Constants::density_water;
+		}
+	}
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {

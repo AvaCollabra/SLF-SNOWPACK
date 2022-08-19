@@ -390,7 +390,7 @@ class ElementData {
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), rhov(0.) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), soil_lysimeter(0.), rhov(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
@@ -412,7 +412,9 @@ class NodeData {
 		double Sigdsm;
 		double rime;
 
-		double rhov;    /// < nodal vapor density in kg/m^3
+		double soil_lysimeter; ///< Water flowing through the node
+
+		double rhov;    ///< nodal vapor density in kg/m^3
 
 };
 
@@ -630,6 +632,8 @@ class SnowStation {
 
 		size_t find_tag(const size_t& tag) const;
 
+		void reset_lysimeters();
+
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const SnowStation& data);
 		friend std::istream& operator>>(std::istream& is, SnowStation& data);
@@ -652,6 +656,7 @@ class SnowStation {
 		double mass_sum;            ///< Total mass summing mass of snow elements
 		double swe;                 ///< Total mass summing snow water equivalent of elements
 		double lwc_sum;             ///< Total liquid water in snowpack
+		double lwc_sum_soil;        ///< Total liquid water in soil
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		double rime_hn;              ///< rime of new snow to be used on slopes
@@ -732,6 +737,7 @@ class SurfaceFluxes {
 			MS_TOTALMASS,      ///< This of course is the total mass of the snowpack at the present time
 			MS_SWE,            ///< This too, of course, but summing rho*L
 			MS_WATER,          ///< The total amount of water in the snowpack at the present time
+			MS_WATER_SOIL,     ///< The total amount of water in the soil at the present time
 			MS_HNW,            ///< Solid precipitation rate
 			MS_RAIN,           ///< Rain rate
 			MS_WIND,           ///< Mass loss rate due to wind erosion

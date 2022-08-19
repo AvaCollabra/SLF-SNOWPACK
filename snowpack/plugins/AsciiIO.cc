@@ -2022,9 +2022,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			fout << "," << std::fixed << std::setprecision(2) << M_TO_CM(Mdata.hs)/cos_sl << std::setprecision(6);
 		else
 			fout << ",";
-		// 53: LWC (kg m-2); see also 34-39
+		// 52-53: LWC (kg m-2); see also 34-39
 		if (out_mass)
-			fout << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl;
+			fout << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl  << "," <<  Sdata.mass[SurfaceFluxes::MS_WATER_SOIL]/cos_sl;
 		else
 			fout << ",";
 		// 54-65: Stability Time Series, heights in cm
@@ -2290,7 +2290,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	}
 	fout << ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)";
 	if (maxNumberMeasTemperatures == 5) {
-		fout << ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5";
+		fout << ",Solute load at soil surface,Measured snow depth HS,Liquid Water Content (of snowpack),Liquid Water Content (of soil),Profile type,Stability class,z_Sdef,Deformation rate stability index Sdef,z_Sn38,Natural stability index Sn38,z_Sk38,Skier stability index Sk38,z_SSI,Structural Stability index SSI,z_S5,Stability index S5";
 		if (useCanopyModel && out_canopy) {
 			Canopy::DumpCanopyHeader(fout);
 		} else {
