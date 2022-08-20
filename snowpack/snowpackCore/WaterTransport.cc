@@ -1136,12 +1136,11 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					Sdata.load[ii] +=  (EMS[0].conc[WATER][ii] * dM / S_TO_H(sn_dt));
 				}
 			}
-
-			// If no snow, add rain in MS_SURFACE_RUNOFF
-			if(Xdata.swe < Constants::eps2 ) {
-				Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Mdata.psum * Mdata.psum_ph;
-			}
 		}
+	}
+	// If no snow, add rain in MS_SURFACE_RUNOFF
+	if(Xdata.swe < Constants::eps2 ) {
+		Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Mdata.psum * Mdata.psum_ph;
 	}
 }
 

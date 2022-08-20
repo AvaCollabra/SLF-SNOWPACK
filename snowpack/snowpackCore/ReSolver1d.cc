@@ -2657,12 +2657,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += refusedtopflux*Constants::density_water;
 	}
 
-	// If no snow, add rain in MS_SURFACE_RUNOFF
-	if(Xdata.swe < Constants::eps2) {
-		Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Mdata.psum * Mdata.psum_ph;
-	}
-
-
 	//If we could not handle all snowpack runoff when not modelling snow with RE, add water layer
 	if(allow_surface_ponding == true && refusedtopflux > Constants::eps) {
 		Xdata.resize(nE+1);
