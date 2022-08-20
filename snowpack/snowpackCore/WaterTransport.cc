@@ -311,6 +311,7 @@ void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& 
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				if (nE == Xdata.SoilNode) {
 					dM = std::min(dM,EMS[nE-1].theta[AIR]*(Constants::density_water*EMS[nE-1].L));
+					Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += dM;
 				}
 				EMS[nE-1].theta[WATER] += dM/(Constants::density_water*EMS[nE-1].L);
 
@@ -374,6 +375,9 @@ void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& 
 					EMS[e].M += dM;
 					assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 					Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
+					if(Xdata.swe < Constants::eps2 ) {
+						Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += dM;
+					}
 					ql -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 					ql2 -= dM*Constants::lh_vaporization/sn_dt; // Update the energy used
 				}
@@ -540,6 +544,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 					if (iwatertransportmodel_snow != RICHARDSEQUATION) {
 						// The mass from the snow element to be removed is snowpack runoff
 						Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += EMS[eUpper].M;
+						Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += EMS[eUpper].M;
 						if (iwatertransportmodel_soil != RICHARDSEQUATION) {
 							if (Xdata.SoilNode > 0) {
 								// Only move water into soil when we don't run richardssolver for soil ...
@@ -562,6 +567,7 @@ void WaterTransport::mergingElements(SnowStation& Xdata, SurfaceFluxes& Sdata)
 						if (iwatertransportmodel_snow == RICHARDSEQUATION) {
 							// Now make sure any left-over surfacefluxrate is considered snowpack runoff:
 							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += RichardsEquationSolver1d_matrix.surfacefluxrate*Constants::density_water*sn_dt;
+							Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += RichardsEquationSolver1d_matrix.surfacefluxrate*Constants::density_water*sn_dt;
 						}
 					}
 
@@ -715,15 +721,14 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 	vector<ElementData>& EMS = Xdata.Edata;
 
 	//NIED (H. Hirashima) //Fz HACK Below follow some NIED specific declarations; please describe
-	std::vector<double> Such(nE, 0.);		//Suction pressure head
-	std::vector<double> HydK(nE, 0.);		//Hydraulic Conductivity
-	double ThR,SatK;  		//Residual water content, saturated water content and saturated hydraulic conductivity for both layers respectively.
-	double FluxQ;					//Flux between layers
+	std::vector<double> Such(nE, 0.); //Suction pressure head
+	std::vector<double> HydK(nE, 0.);  //Hydraulic Conductivity
+	double ThR,SatK;  //Residual water content, saturated water content and saturated hydraulic conductivity for both layers respectively.
+	double FluxQ;  //Flux between layers
 	double Rh0,Rh1,Rk0,Rk1;
 	double q0, qlim, qlim0, qlim1;
 	double P[15]={0.};
-	unsigned int WatCalc=1;					//Number of iterations in WaterTransport model "NIED".
-
+	unsigned int WatCalc=1;  //Number of iterations in WaterTransport model "NIED".
 	// First, consider no soil with no snow on the ground
 	if (!useSoilLayers && nN == 1) {
 		return;
@@ -798,6 +803,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 					// Update snowpack runoff with rain infiltrating into soil (equal to Store when e == Xdata.SoilNode)
 					if (e == Xdata.SoilNode) {
 						Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += Store * Constants::density_water;
+						Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Store * Constants::density_water;
 					}
 					// Update soil runoff with rain (equal to Store when e == 0)
 					if (e == 0) {
@@ -978,6 +984,7 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 									}
 									if (EMS[eLower].theta[SOIL] < Constants::eps2) {
 										Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += excess_water*Constants::density_water;
+										Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += excess_water*Constants::density_water;
 									}
 									// Take care of Solutes
 									for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
@@ -1025,12 +1032,14 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 							// Update snowpack runoff with soil. Note: in case of no soil layers, or lowest soil element: the runoff for the lowest element is updated outside the loop.
 							if (useSoilLayers && eUpper == Xdata.SoilNode) {
 								Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += L_lower * Constants::density_water * dThetaW_lower + excess_water * Constants::density_water;
+								Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += L_lower * Constants::density_water * dThetaW_lower + excess_water * Constants::density_water;
 							}
 						} // end positive water movement
 					} else { //If eLower is soil (so water would be transported INTO soil), only remove water from snow element and don't put in soil, but in surfacefluxrate:
 						//dThetaW_upper = std::max(0, dThetaW_upper);
 						if(eLower==Xdata.SoilNode-1 && eUpper==Xdata.SoilNode) {
 							Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += L_upper * Constants::density_water * dThetaW_upper + excess_water * Constants::density_water;
+							Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF]  += L_upper * Constants::density_water * dThetaW_upper + excess_water * Constants::density_water;
 							RichardsEquationSolver1d_matrix.surfacefluxrate+=((dThetaW_upper*L_upper)+excess_water)/(sn_dt);	//surfacefluxrate is used for the Neumann BC in the Richards solver. Note: W0 is m^3/m^3
 																//note: we devide by snowpack time-step (sn_dt), and not by (sn_dt/WatCalc), as we will spread the amount of runoff evenly over the snowpack time step.
 							excess_water=0.;
@@ -1120,16 +1129,17 @@ void WaterTransport::transportWater(const CurrentMeteo& Mdata, SnowStation& Xdat
 				// Note that remaining excess_water should also be routed to MS_SOIL_RUNOFF and MS_SNOWPACK_RUNOFF
 				if (EMS[0].theta[SOIL] < Constants::eps2) {
 					Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += dM + (excess_water * Constants::density_water);
+					Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += dM + (excess_water * Constants::density_water);
 				}
 				Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += dM + (excess_water * Constants::density_water);
 				for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					Sdata.load[ii] +=  (EMS[0].conc[WATER][ii] * dM / S_TO_H(sn_dt));
 				}
 			}
+
 			// If no snow, add rain in MS_SURFACE_RUNOFF
 			if(Xdata.swe < Constants::eps2 ) {
-				Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Sdata.mass[SurfaceFluxes::MS_RAIN] -
-				                                                Sdata.mass[SurfaceFluxes::MS_EVAPORATION];
+				Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += Mdata.psum * Mdata.psum_ph;
 			}
 		}
 	}
@@ -1223,7 +1233,6 @@ void WaterTransport::compTransportMass(const CurrentMeteo& Mdata,
 		compTopFlux(ql, Xdata, Sdata);
 	}
 	mergingElements(Xdata, Sdata);
-
 	try {
 		adjustDensity(Xdata);
 		if (variant=="SEAICE" && Xdata.Seaice!=NULL && iwatertransportmodel_snow == BUCKET) Xdata.Seaice->compFlooding(Xdata);
