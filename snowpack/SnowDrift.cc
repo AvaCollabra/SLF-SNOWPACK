@@ -33,7 +33,7 @@ using namespace std;
  ************************************************************/
 
 ///Deviation from geometrical factors defined by Schmidt
-const double SnowDrift::schmidt_drift_fudge = 1.0;
+const double SnowDrift::schmidt_drift_fudge = 3.;
 
 ///Enables erosion notification
 const bool SnowDrift::msg_erosion = false;
@@ -89,10 +89,10 @@ double SnowDrift::compMassFlux(const ElementData& Edata, const double& ustar, co
 {
 	// Compute basic quantities that are needed: friction velocity, z0, threshold vw
 	// For now assume logarithmic wind profile; TODO change this later
-	const double weight = 0.02 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg);
+	const double weight = 0.023 * Constants::density_ice * (Edata.sp + 1.) * Constants::g * MM_TO_M(Edata.rg); // 0.02
 	// weight = Edata.Rho*(Edata.sp + 1.)*Constants::g*MM_TO_M(Edata.rg);
 	const double sig = 300.;
-	const double binding = 0.0015 * sig * Edata.N3 * Optim::pow2(Edata.rb/Edata.rg);
+	const double binding = 0.0035 * sig * Edata.N3 * Optim::pow2(Edata.rb/Edata.rg); //0.0015
 	const double tau_thresh = SnowDrift::schmidt_drift_fudge * (weight + binding);  // Original value for fudge: 1. (Schmidt)
 	//const double ustar_thresh = sqrt(tau_thresh / Constants::density_air);
 	const double tau = Constants::density_air * Optim::pow2(ustar);
@@ -183,7 +183,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		}
 		unsigned int nErode=0; // number of eroded elements
 		// REmove as many full layers as necessary
-		while (massErode >= 0.95 * EMS[nE-1].M) {
+		if (massErode >= 0.95 * EMS[nE-1].M) {
 			if(print_snowdrift_debug)
 				std::cout << "[SNP] " << nE << " full layer removal forced_massErode before: " << std::setprecision(12) << forced_massErode << std::endl;
 			// Erode at most one element with a maximal error of +- 5 % on mass ...
@@ -201,7 +201,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 				std::cout << "[SNP] " << nE << " full layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << std::endl;
 		}
 		// Remove part of layers with remaining snow
-		if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
+		else if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "[D] Inconsistent Mass:%lf   L*Rho:%lf   Layer:%d", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho, nE-1);
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
