@@ -193,7 +193,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		// REmove as many full layers as necessary
 
 		while (massErode >= 0.95 * EMS[nE-1].M) {
-			if(print_snowdrift_debug)
+	//		if(print_snowdrift_debug)
 				std::cout << "[SNP] " << nE << " full layer removal forced_massErode before: " << std::setprecision(12) << forced_massErode << std::endl;
 			// Erode at most one element with a maximal error of +- 5 % on mass ...
 			if (windward)
@@ -205,9 +205,9 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			Xdata.ErosionLevel = std::min(nE-1, Xdata.ErosionLevel);
 			nErode++;
 			massErode -= EMS[nE].M;
-			forced_massErode = -massErode;
-			if(print_snowdrift_debug)
-				std::cout << "[SNP] " << nE << " full layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << std::endl;
+			forced_massErode += EMS[nE].M;
+		//	if(print_snowdrift_debug)
+				std::cout << "[SNP] " << nE << " full layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << " Element mass was: "<< EMS[nE].M << std::endl;
 		}
 		// Remove part of layers with remaining snow
 		if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
@@ -231,12 +231,9 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			EMS[nE-1].M -= massErode;
 			assert(EMS[nE-1].M>=0.); //mass must be positive
 			Xdata.ErosionMass += massErode;
-			forced_massErode -= massErode;
+			forced_massErode += massErode;
 			if(print_snowdrift_debug)
 				std::cout << "[SNP] " << nE << " partial layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << std::endl;
-		}
-		if(std::abs(massErode) > Constants::eps){
-			std::cout << " [E] Mass erod remaining " << std::setprecision(12) << forced_massErode << std::endl;
 		}
 
 		if (nErode > 0)
