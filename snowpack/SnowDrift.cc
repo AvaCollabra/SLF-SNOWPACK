@@ -192,7 +192,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 		unsigned int nErode=0; // number of eroded elements
 		// REmove as many full layers as necessary
 
-		while (massErode >= 0.95 * EMS[nE-1].M) {
+		if (massErode >= EMS[nE-1].M - Constants::eps) {
 	//		if(print_snowdrift_debug)
 				std::cout << "[SNP] " << nE << " full layer removal forced_massErode before: " << std::setprecision(12) << forced_massErode << std::endl;
 			// Erode at most one element with a maximal error of +- 5 % on mass ...
@@ -208,9 +208,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			forced_massErode += EMS[nE].M;
 		//	if(print_snowdrift_debug)
 				std::cout << "[SNP] " << nE << " full layer removal forced_massErode after: " << std::setprecision(12) << forced_massErode << " Element mass was: "<< EMS[nE].M << std::endl;
-		}
-		// Remove part of layers with remaining snow
-		if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
+		} else if (massErode > Constants::eps) { // ... or take away massErode from top element - partial real erosion
 			if (fabs(EMS[nE-1].L * EMS[nE-1].Rho - EMS[nE-1].M) > 0.001) {
 				prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "[D] Inconsistent Mass:%lf   L*Rho:%lf   Layer:%d", EMS[nE-1].M,EMS[nE-1].L*EMS[nE-1].Rho, nE-1);
 				EMS[nE-1].M = EMS[nE-1].L * EMS[nE-1].Rho;
