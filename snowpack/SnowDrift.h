@@ -41,7 +41,7 @@ class SnowDrift {
 
 		void compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& forced_massErode) const;
 
-		static const double schmidt_drift_fudge;
+		const double schmidt_drift_fudge; ///< Deviation from geometrical factors defined by Schmidt
 
  	private:
 		double compMassFlux(const ElementData& Edata, const double& ustar, const double& slope_angle) const;

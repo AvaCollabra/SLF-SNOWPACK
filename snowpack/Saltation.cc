@@ -38,7 +38,7 @@ using namespace std;
  */
 const double Saltation::hs_frac = 1.0;
 
-const double Saltation::karman = 0.4; ///< Von Karman constant
+//const double Saltation::karman = 0.4; ///< Von Karman constant
 const double Saltation::elas = 0.5;   ///< Coefficient of Elasticity 0.5
 
 const double Saltation::angle_ej = 25.; ///< ejection angle (deg) (25 orig)
@@ -48,7 +48,7 @@ const int Saltation::strong = 1;
 const int Saltation::weak = 0;
 
 ///Saltation Z0 Preliminary values will be changed later Judith original: 0.00098
-const double Saltation::z0_salt = 0.00005; //0.0007; //before: 0.00098; 0.0017;
+//const double Saltation::z0_salt = 0.00098; //0.0007; //before: 0.00098; 0.0017; 0.00005;
 const double Saltation::salt_height = 0.07;
 
 /*
@@ -70,7 +70,21 @@ static std::string get_model(const SnowpackConfig& cfg)
 	return model;
 }
 
-Saltation::Saltation(const SnowpackConfig& cfg) : saltation_model( get_model(cfg) ) {}
+static double get_z0_salt(const SnowpackConfig& cfg)
+{
+	double z0_salt;
+	cfg.getValue("SALTATION_Z0", "SnowpackAdvanced", z0_salt);
+	return z0_salt;
+}
+static double get_karman(const SnowpackConfig& cfg)
+{
+	double karman;
+	cfg.getValue("SALTATION_KARMAN", "SnowpackAdvanced", karman);
+	return karman;
+}
+
+
+Saltation::Saltation(const SnowpackConfig& cfg) : saltation_model( get_model(cfg) ), z0_salt(get_z0_salt(cfg)), karman(get_karman(cfg))   {}
 
 /**
  * @brief Returns the wind profile
@@ -83,7 +97,7 @@ Saltation::Saltation(const SnowpackConfig& cfg) : saltation_model( get_model(cfg
  * @return u
  */
 double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS, const double& z0,
-                        const double& u_start, const double& slope_angle)
+                        const double& u_start, const double& slope_angle) const
 {
 	//  hs = DSQR(0.6*u_start)/(2.*Constants::g * cos(slope_angle*mio::Cst::to_rad));
 	const double hs = z0 / 100. + 0.6 * Optim::pow2(u_start) / (2. * Constants::g * cos(slope_angle*mio::Cst::to_rad));
@@ -92,9 +106,9 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
 	double u;
 	if (B > 0.0) {
 		u = (pow(tauA + B * log(z / z0), 1.5) - pow(tauA, 1.5))
-			/ (1.5 * B * Saltation::karman * sqrt(Constants::density_air));
+			/ (1.5 * B * karman * sqrt(Constants::density_air));
 	} else {
-		u = sqrt(tauS / Constants::density_air) / Saltation::karman * log(z / z0);
+		u = sqrt(tauS / Constants::density_air) / karman * log(z / z0);
 	}
 
 	return (u);
@@ -111,7 +125,7 @@ double Saltation::sa_vw(const double& z, const double& tauA, const double& tauS,
  * @return u
  */
 double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS, const double& z0,
-                         const double& u_start, const double& slope_angle)
+                         const double& u_start, const double& slope_angle) const
 {
 	//  hs = z0 + DSQR(0.6*u_start)/(2.*Constants::g * cos(slope_angle*mio::Cst::to_rad));
 	const double hs = Optim::pow2(0.6 * u_start) / (2. * Constants::g * cos(slope_angle*mio::Cst::to_rad));
@@ -123,7 +137,7 @@ double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS
 		static const double dz = 0.00002;
 		z_act += dz;
 		const double ustarz = ustar * (1. - (1. - sqrt(r)) *  exp(-z_act / hs));
-		const double dudz = ustarz / Saltation::karman / z_act;
+		const double dudz = ustarz / karman / z_act;
 		u += dudz * dz;
 	}
 
@@ -148,7 +162,7 @@ double Saltation::sa_vw2(const double& z, const double& tauA, const double& tauS
  */
 bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const double& slope_angle, const double& dg,
                            const double& tauA, const double& tauS, const double& z0,
-                           double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max)
+                           double& ubar, double& u_i, double& angle_i_rad, double& t_i, double& z_max) const
 {
 	static const double DT = 0.0005; //time step in seconds
 	static const double vis = 1.74e-5; //viscosity
@@ -219,7 +233,7 @@ bool Saltation::sa_Traject(const double& u0, const double& angle_e_rad, const do
  * @return mass flux
  */
 double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double& tauA, const double& slope_angle,
-                              const double& dg, const double& tau_th, double& z_max, double& ubar, double& cs)
+                              const double& dg, const double& tau_th, double& z_max, double& ubar, double& cs) const
 {
 	// Initialize mass: Model Mass Flus is extremely sensitive to grain mass
 	const double mass = Constants::density_ice * 4. / 3. * Constants::pi * Optim::pow3(.5*dg);
@@ -248,7 +262,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
 	if ( (u0 > 0.0) && (ubar > 0.0) ) {
 		const double hsalt = z0 + Saltation::hs_frac * Optim::pow2(u0 * cos(angle_e_rad)) / (4. * Constants::g);
 		const double udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e_rad), slope_angle);
-		const double ulog = sqrt(tauS / Constants::density_air) / Saltation::karman * log(hsalt / z0);
+		const double ulog = sqrt(tauS / Constants::density_air) / karman * log(hsalt / z0);
 		cs = std::min(0.02, Constants::density_air * Optim::pow2((ulog - udisturb)/ubar) );
 	} else {
 		cs = 0.0;
@@ -276,7 +290,7 @@ double Saltation::sa_MassFlux(const double& z0, const double& tauS, const double
  * @return surface shear stress
 */
 double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const double& slope_angle, const double& dg,
-                                 const double& tau_th, double& flux, double& z_max, double& ubar, double& cs)
+                                 const double& tau_th, double& flux, double& z_max, double& ubar, double& cs) const
 {
 
 	static const double C_ae = 1.5; // entrainment coefficient (1.5)
@@ -344,7 +358,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
 	if ( (u0 > 0.0) && (ubar > 0.0) ){
 		const double hsalt = z0 + Saltation::hs_frac * Optim::pow2(u0 * cos(angle_e_rad)) / (4. * Constants::g);
 		const double udisturb = sa_vw(hsalt, tauA, tauS, z0, u0 * sin(angle_e_rad), slope_angle);
-		const double ulog = sqrt(tauS / Constants::density_air) / Saltation::karman * log(hsalt / z0);
+		const double ulog = sqrt(tauS / Constants::density_air) / karman * log(hsalt / z0);
 		cs = std::min(0.02, Constants::density_air * Optim::pow2((ulog - udisturb)/ubar) );
 	} else {
 		cs = 0.0;
@@ -367,7 +381,7 @@ double Saltation::sa_AeroEntrain(const double& z0, const double& tauS, const dou
  * @return saltation weak or strong
  */
 int Saltation::sa_TestSaltation(const double& z0, const double& tauS, const double& tauA, const double& slope_angle,
-                                const double& dg, const double& tau_th, double& z_max, double& ubar)
+                                const double& dg, const double& tau_th, double& z_max, double& ubar) const
 {
 	// Compute trajectories until stationary
 	const double angle_e_rad = Saltation::angle_ej*mio::Cst::to_rad;
@@ -445,15 +459,15 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 				double ubar = 0., z_lower = 0.;
 				double flux, cs; // What we finally want
 				// First test for large rebound thresholds
-				if (sa_TestSaltation(Saltation::z0_salt, tauS, tauS, slope_angle, dg, tau_th, z_lower, ubar) == Saltation::weak) {
-					sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
+				if (sa_TestSaltation(z0_salt, tauS, tauS, slope_angle, dg, tau_th, z_lower, ubar) == Saltation::weak) {
+					sa_AeroEntrain(z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
 				} else {
 					// Use an iterative method to determine the rebound threshold at the ground
 					const double eps = 1e-5;
 					double tauA_right = tauS, tauA_left = 0.;
 					do {
 						tauA_middle = .5 * (tauA_left + tauA_right);
-						if (sa_TestSaltation(Saltation::z0_salt, tauS, tauA_middle, slope_angle,
+						if (sa_TestSaltation(z0_salt, tauS, tauA_middle, slope_angle,
 									      dg, tau_th, z_lower, ubar) == Saltation::strong) {
 							tauA_right = tauA_middle;
 						} else {
@@ -468,15 +482,15 @@ bool Saltation::compSaltation(const double& i_tauS, const double& tau_th, const 
 					* for the hypothetical case of aerodynamic entrainment only given a
 					* certain overall shear stress, tauS
 					*/
-					const double tau_e = sa_AeroEntrain(Saltation::z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
+					const double tau_e = sa_AeroEntrain(z0_salt, tauS, slope_angle, dg, tau_th, flux, z_lower, ubar, cs);
 					if (tau_e < tau_th) {
 						const double tauA = tau_r;
-						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
+						flux = sa_MassFlux(z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
 					} else if (tau_e < tau_r) {
 						//const double tauA = tau_e;
 					} else {
 						const double tauA = tau_r; // Flux computation is wrong, must be redone
-						flux = sa_MassFlux(Saltation::z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
+						flux = sa_MassFlux(z0_salt, tauS, tauA, slope_angle, dg, tau_th, z_lower, ubar, cs);
 					}
 				} // else large rebound threshold
 				const double Ptau_j = exp(-Cp * (tau_j - 0.5 * taustep)) - exp(-Cp * (tau_j+ 0.5 * taustep));

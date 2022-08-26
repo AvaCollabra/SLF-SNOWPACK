@@ -85,6 +85,9 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SNOW_EROSION"] = "TRUE";
 	advancedConfig["SNOW_REDISTRIBUTION"] = "TRUE";
 	advancedConfig["SALTATION_MODEL"] = "DOORSCHOT";
+	advancedConfig["SALTATION_KARMAN"] = "0.4";
+	advancedConfig["SALTATION_Z0"] = "0.00098";
+	advancedConfig["SCHMIDT_DRIFT_FUDGE"] = "3";
 	advancedConfig["STRENGTH_MODEL"] = "DEFAULT";
 	advancedConfig["SW_ABSORPTION_SCHEME"] = "MULTI_BAND";
 	advancedConfig["FORCE_SW_MODE"] = "false";
