@@ -165,7 +165,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 	const bool erosion = snow_erosion && (Xdata.mH > (Xdata.Ground + Constants::eps)) && ((Xdata.mH + 0.02) < Xdata.cH);
 	if (windward || alpine3d || erosion) {
 		double massErode=0.; // Mass loss due to erosion
-		if (forced_massErode < -Constants::eps2) {
+		if (alpine3d && forced_massErode < -Constants::eps2) {
 			massErode = std::max(0., -forced_massErode); //negative mass is erosion
 			if(print_snowdrift_debug){
 				cout << "[SNP] forced_massErode entering: " << std::setprecision(12) << forced_massErode << endl;
@@ -176,7 +176,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 				std::cout << "Mass " << forced_massErode << " " << Xdata.swe << std::endl;
 			}
 
-		} else {
+		} else { //snowpack case
 			const double ustar_max = (Mdata.vw>0.1) ? Mdata.ustar * Mdata.vw_drift / Mdata.vw : 0.; // Scale Mdata.ustar
 			try {
 				if (enforce_measured_snow_heights && !windward)
@@ -189,7 +189,7 @@ void SnowDrift::compSnowDrift(const CurrentMeteo& Mdata, SnowStation& Xdata, Sur
 			}
 			massErode = Sdata.drift * sn_dt / Hazard::typical_slope_length; // Convert to eroded snow mass in kg m-2
 		}
-		unsigned int nErode=0; // number of eroded elements
+		unsigned int nErode = 0; // number of eroded elements
 		// REmove as many full layers as necessary
 
 		if (massErode >= EMS[nE-1].M - Constants::eps) {
