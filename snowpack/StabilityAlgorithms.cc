@@ -477,7 +477,7 @@ double StabilityAlgorithms::setDeformationRateIndex(ElementData& Edata)
 	const double eps1Dot = 1.76e-7; // Unit strain rate (at stress = 1 MPa) (s-1)
 	const double sig1 = 0.5e6;      // Unit stress from Sinha's formulation (Pa)
 	const double sig = -Edata.C;   // Overburden stress, that is, absolute value of Cauchy stress (Pa)
-	const double Te = std::min(Edata.Te, Edata.melting_tk); // Element temperature (K)
+	const double Te = std::min(Edata.Te, Edata.meltfreeze_tk); // Element temperature (K)
 
 	// First find the absolute neck stress
 	const double sigNeck = Edata.neckStressEnhancement() * (sig); // Neck stress (Pa)
@@ -1287,8 +1287,8 @@ bool StabilityAlgorithms::setShearStrength_NIED(const double& cH, const double& 
 	//NIED (H. Hirashima)
 	const double Sig_ET = 9.4*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.91)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
 	const double Sig_DH = 2.3*0.0001*pow(Edata.theta[ICE]*Constants::density_ice,2.78)*exp(-0.235*Edata.theta[WATER]*100.)/1000.;
-	Ndata.Sigdhf = Sig_ET - Edata.dhf*(Sig_ET - Sig_DH);
-	Ndata.S_dhf = (Ndata.Sigdhf + phi*STpar.sig_n)/STpar.sig_s;
+	Ndata.Sigdsm = Sig_ET - Edata.dsm*(Sig_ET - Sig_DH);
+	Ndata.S_dsm = (Ndata.Sigdsm + phi*STpar.sig_n)/STpar.sig_s;
 	// original SNOWPACK
 	Edata.s_strength = Sig_c2;
 	STpar.Sig_c2 = std::min(Sig_c2, STpar.strength_upper);
@@ -1328,14 +1328,10 @@ double StabilityAlgorithms::CriticalCutLength(const double& H_slab, const double
 	const double sigma_n = - stress / 1000.; 
 	const double tau_g = sigma_n * sin_sl / cos_sl; 
 	const double E = ElementData::getYoungModule(rho_slab, ElementData::Pow);
-	//const double E = ElementData::getYoungModule(rho_slab, ElementData::Exp);
 	
 	const double E_prime = E / (1. - 0.2*0.2);	// 0.2 is poisson ratio
-//	static const double G_wl = 2e5;
-//	const double Dwl = Edata.L;
-//	const double lambda = sqrt( (E_prime * D * Dwl) / (G_wl) );
-        const double Fwl = 6.21e-7 * exp(-2.11*log(Edata.Rho)) * exp(-2.11*log(2. * Edata.rg*0.001)) * 0.01; //[m/Pa]
-        const double lambda = sqrt( E_prime * D * Fwl );
+	const double Fwl = 6.21e-7 * exp(-2.11*log(Edata.Rho)) * exp(-2.11*log(2. * Edata.rg*0.001)) * 0.01; //[m/Pa]
+	const double lambda = sqrt( E_prime * D * Fwl );
 	const double sqrt_arg = Optim::pow2(tau_g) + 2.*sigma_n*(tau_p - tau_g);
 	if (sqrt_arg<0.) return 0.;
 	
