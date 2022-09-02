@@ -310,7 +310,9 @@ void WaterTransport::compTopFlux(double& ql, SnowStation& Xdata, SurfaceFluxes& 
 				ql = 0.;
 				Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 				if (nE == Xdata.SoilNode) {
+					Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= dM;
 					dM = std::min(dM,EMS[nE-1].theta[AIR]*(Constants::density_water*EMS[nE-1].L));
+					Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += dM;
 					Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += dM;
 				}
 				EMS[nE-1].theta[WATER] += dM/(Constants::density_water*EMS[nE-1].L);
