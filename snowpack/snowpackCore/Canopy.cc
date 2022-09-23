@@ -185,7 +185,10 @@ void Canopy::writeTimeSeriesAdd2LCanopy(std::ofstream &fout, const CanopyData *C
 Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
-          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true), forestfloor_alb(true), useUnload(false), min_unload(0.01), stochastic_unload(false)
+          CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true),
+          forestfloor_alb(true), useUnload(false), min_unload(0.01), stochasticUnload(false),
+          StochasticUnloadFrac(0.1), stochasticParams(), stochasticDegree(0),
+          GetStochasticUnloadProb([this](double ta, double vw){return(this->GetStochasticUnloadProb1(ta, vw));})
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 	cfg.getValue("SNP_SOIL", "Snowpack", useSoilLayers);
@@ -201,7 +204,40 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 	cfg.getValue("UNLOAD_MICROSTRUCTURE", "SnowpackAdvanced", useUnload);
 	cfg.getValue("MINIMUM_UNLOAD_CANOPY", "SnowpackAdvanced", min_unload);
-	cfg.getValue("STOCHASTIC_UNLOAD", "SnowpackAdvanced", stochastic_unload);
+	cfg.getValue("STOCHASTIC_UNLOAD", "SnowpackAdvanced", stochasticUnload);
+
+	if(stochasticUnload){
+		initStochasticUnload(cfg);
+	}
+}
+
+
+void Canopy::initStochasticUnload(const SnowpackConfig& cfg) {
+
+	cfg.getValue("STOCHASTIC_DEGREE", "SnowpackAdvanced", stochasticDegree);
+	cfg.getValue("STOCHASTIC_PARAMS", "SnowpackAdvanced", stochasticParams);
+	if(stochasticParams.size() != (stochasticDegree+1)*(stochasticDegree+2)/2) {
+		throw InvalidArgumentException("For a polynomial stochastic unload of degree " +
+			std::to_string(stochasticDegree)+", "+ std::to_string((stochasticDegree+1)*(stochasticDegree+2)/2)+
+			" coefficients should be provided, but "+ std::to_string(stochasticParams.size())+ " were provided.", AT);
+	}
+	if(stochasticDegree < 1 || stochasticDegree > 4) {
+		throw InvalidArgumentException("STOCHASTIC_DEGREE should be in [1,4]", AT);
+	}
+	if(stochasticDegree == 1) {
+		GetStochasticUnloadProb = [this](double ta, double vw){return(this->GetStochasticUnloadProb1(ta, vw));};
+	}
+	else if(stochasticDegree == 2) {
+		GetStochasticUnloadProb = [this](double ta, double vw){return(this->GetStochasticUnloadProb2(ta, vw));};
+	}
+	else if(stochasticDegree == 3) {
+		GetStochasticUnloadProb = [this](double ta, double vw){return(this->GetStochasticUnloadProb3(ta, vw));};
+	}
+	else if(stochasticDegree == 4) {
+		GetStochasticUnloadProb = [this](double ta, double vw){return(this->GetStochasticUnloadProb4(ta, vw));};
+	}
+
+	cfg.getValue("STOCHASTIC_UNOLAD_FRAC", "SnowpackAdvanced", StochasticUnloadFrac);
 
 }
 
@@ -481,6 +517,37 @@ double Canopy::IntUnload(const double capacity, const double storage) const
 	}
 }
 
+// Polynoms are implements in the form:
+// p = A + B*VW + C*TA + D*VW**2 + E*VW*TA + F*TA**2 + G*VW**3 + H*VW**2*TA +
+//     I*VW*TA**2 + J*TA**3 + K*VW**4 + L*VW**3*TA + M*VW**2*TA**2 + N*VW*TA**3 + O*TA**4
+
+double Canopy::GetStochasticUnloadProb1(double vw, double ta) const
+{
+	return(stochasticParams[0] + stochasticParams[1]*vw + stochasticParams[2]*ta);
+}
+
+double Canopy::GetStochasticUnloadProb2(double vw, double ta) const
+{
+	return(stochasticParams[0] + stochasticParams[1]*vw + stochasticParams[2]*ta +
+	       stochasticParams[3]*vw*vw + stochasticParams[4]*vw*ta + stochasticParams[5]*ta*ta);
+}
+
+double Canopy::GetStochasticUnloadProb3(double vw, double ta) const
+{
+	return(stochasticParams[0] + stochasticParams[1]*vw + stochasticParams[2]*ta +
+	       stochasticParams[3]*vw*vw + stochasticParams[4]*vw*ta + stochasticParams[5]*ta*ta +
+	       stochasticParams[6]*vw*vw*vw + stochasticParams[7]*vw*vw*ta + stochasticParams[8]*vw*ta*ta +
+	       stochasticParams[9]*ta*ta*ta);
+}
+
+double Canopy::GetStochasticUnloadProb4(double vw, double ta) const
+{
+	return(stochasticParams[0] + stochasticParams[1]*vw + stochasticParams[2]*ta +
+	       stochasticParams[3]*vw*vw + stochasticParams[4]*vw*ta + stochasticParams[5]*ta*ta +
+	       stochasticParams[6]*vw*vw*vw + stochasticParams[7]*vw*vw*ta + stochasticParams[8]*vw*ta*ta +
+	       stochasticParams[9]*ta*ta*ta + stochasticParams[10]*vw*vw*vw*vw + stochasticParams[11]*vw*vw*vw*ta +
+	       stochasticParams[12]*vw*vw*ta*ta + stochasticParams[13]*vw*ta*ta*ta + stochasticParams[14]*ta*ta*ta*ta);
+}
 
 /**
  * @brief Intercepted snow or rain above the capacity is unloaded imediately
@@ -490,12 +557,22 @@ double Canopy::IntUnload(const double capacity, const double storage) const
  */
 double Canopy::StochasticUnload(const CurrentMeteo& Mdata, const double storage, const double solidfraction) const
 {
-	const double snowContent = storage * solidfraction;
-	int hours, minutes;
-	Mdata.date.getTime(hours,minutes);
-	if((int)Mdata.date.getJulian()%10 == 0 && hours%12 == 0){
-		return(snowContent/5);
+
+	const double vw = Mdata.vw;
+	const double ta = Mdata.ta-273.15;
+
+	const double prob = GetStochasticUnloadProb(vw, ta)/4.;
+	//std::cout << "prob: " << prob << std::endl;
+	if(prob>0){
+		size_t rnd = rand();
+		const double randNum = static_cast <float>(rnd) / static_cast <float>(RAND_MAX);
+		//std::cout << "rand: "<< randNum << std::endl;
+		if(prob > randNum) {
+			const double snowContent = storage * solidfraction;
+			return(snowContent*StochasticUnloadFrac);
+		}
 	}
+
 	return(0);
 }
 
@@ -1722,7 +1799,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	const double intcapacity = IntCapacity(Mdata, Xdata);
 
 	// 1.2.1 compute direct unload from storage limit [mm timestep-1], update storage [mm]
-	const double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
+	double unload = IntUnload(intcapacity, Xdata.Cdata.storage);
 	double oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage -= unload;
 	double liqmm_unload=0.0;
@@ -1748,14 +1825,12 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		std::cout << "[D] Storage unload" << std::endl;
 		updateStorageAndUnloadElements(Xdata.Cdata.unload_from_threshold, Xdata.Cdata.unloadedSnowStorageThreshold,
 		                               Xdata.Cdata.snowStored);
-		std::cout <<  "[D] storage old " <<Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction) << " storage new " <<
-		              Xdata.Cdata.snowStored.M << " storage no evap " << Xdata.Cdata.solid_storage << std::endl;
-
 	}
 
 	// 1.2.1 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
-	// Only if no threshold unload already
-	if( icemm_unload < Constants::eps2 && useUnload && stochastic_unload){
+	// Only if no threshold unload already and in snow stored
+	if( icemm_unload < Constants::eps2 && useUnload && stochasticUnload &&
+	    Xdata.Cdata.storage*(1. - Xdata.Cdata.liquidfraction) > Constants::eps2){
 		const double stochastic_unload = StochasticUnload(Mdata, Xdata.Cdata.storage, 1. - Xdata.Cdata.liquidfraction);
 		oldstorage = Xdata.Cdata.storage;
 		Xdata.Cdata.storage -= stochastic_unload;
@@ -1769,8 +1844,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		Xdata.Cdata.unload_from_stochastic = stochastic_unload;
 		if(Xdata.Cdata.unload_from_stochastic > Constants::eps2 && useUnload) {
 			std::cout << "[D] Stochastic unload" << std::endl;
+			unload += stochastic_unload;
 			updateStorageAndUnloadElements(Xdata.Cdata.unload_from_stochastic, Xdata.Cdata.unloadedSnowStochastic, Xdata.Cdata.snowStored);
-			std::cout <<  "[D] storage old " <<Xdata.Cdata.storage*(1-Xdata.Cdata.liquidfraction) << " storage new " << Xdata.Cdata.snowStored.M << " storage no evap " << Xdata.Cdata.solid_storage << std::endl;
 		}
 	} else {
 		Xdata.Cdata.unload_from_stochastic = 0;
@@ -2090,9 +2165,9 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	auto diff_storage = Xdata.Cdata.storage - init_storage;
 	if( std::abs(diff_storage - (interception - unload - intevap)) > Constants::eps2){
 		std::cout << "[W] Mass Balance problem. Storage entering runCanopy "<<init_storage
-		          << " \t storage leaving runCanopy" <<  Xdata.Cdata.storage  << " \t difference" << diff_storage
-		          << " \t interception" <<  interception << " \t unload" << unload << " \t " << intevap
-		          << " \t evaporation" << std::endl;
+		          << "\t storage leaving runCanopy " <<  Xdata.Cdata.storage  << " \t difference " << diff_storage
+		          << "\t interception " <<  interception << "\t unload " << unload <<" \t evaporation " << intevap
+		          << std::endl;
 	}
 
 	return true;

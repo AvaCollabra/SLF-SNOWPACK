@@ -91,6 +91,8 @@ class Canopy {
 
  	private:
 
+		void initStochasticUnload(const SnowpackConfig& cfg);
+
 		double get_f1(const double ris) const;
 
 		double RootFraction(const double zupper, const double zlower, const double rootdepth) const;
@@ -209,6 +211,11 @@ class Canopy {
 								double &rlwrac, double &ilwrbc, double &rlwrbc,
 								double CanopyClosureDirect, double RadFracDirect, double sigfdirect, double sigftrunkdirect);
 
+		double GetStochasticUnloadProb1(double vw, double ta) const;
+		double GetStochasticUnloadProb2(double vw, double ta) const;
+		double GetStochasticUnloadProb3(double vw, double ta) const;
+		double GetStochasticUnloadProb4(double vw, double ta) const;
+
 		std::string hn_density, hn_density_parameterization, variant, watertransportmodel_soil;
 		double hn_density_fixedValue, calculation_step_length;
 		bool useSoilLayers;
@@ -219,7 +226,12 @@ class Canopy {
 		bool forestfloor_alb;
 		bool useUnload;
 		double min_unload;
-		bool stochastic_unload;
+		bool stochasticUnload;
+		double StochasticUnloadFrac;
+		std::vector<double> stochasticParams;
+		size_t stochasticDegree;
+		std::function<double(double, double)> GetStochasticUnloadProb;
+
 
 };
 

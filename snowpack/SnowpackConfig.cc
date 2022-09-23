@@ -121,10 +121,13 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SOIL_EVAP_MODEL"] = "EVAP_RESISTANCE";
 	advancedConfig["SOIL_THERMAL_CONDUCTIVITY"] = "FITTED";
 
-	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
 	advancedConfig["MINIMUM_UNLOAD_CANOPY"] = "0.01";
+	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
 	advancedConfig["STOCHASTIC_UNLOAD"] = "false";
-
+	advancedConfig["STOCHASTIC_DEGREE"] = "2";
+	advancedConfig["STOCHASTIC_PARAMS"] = "1.04563757e-01 1.78501155e-03 1.52710542e-02 4.51468218e-03 6.01864329e-05 4.72778712e-04";
+	advancedConfig["STOCHASTIC_UNOLAD_FRAC"] = "0.1";
+	advancedConfig["STOCHASTIC_SEED"] = "false";
 
 	//temporary keys for Stability until we decide for a permanent solution
 	advancedConfig["MULTI_LAYER_SK38"] = "false";

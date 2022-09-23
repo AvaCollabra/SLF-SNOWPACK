@@ -1027,6 +1027,13 @@ inline void real_main (int argc, char *argv[])
 	const bool advective_heat = cfg.get("ADVECTIVE_HEAT", "SnowpackAdvanced");
 	const bool soil_flux = (useSoilLayers || variant == "SEAICE") ? cfg.get("SOIL_FLUX", "Snowpack") : false;
 
+	// Initialize random number generator if Canopy stocahstic unload is used
+	const bool  stochastinc_unload = cfg.get("STOCHASTIC_UNLOAD", "SnowpackAdvanced");
+	if(stochastinc_unload) {
+		const size_t seed = cfg.get("STOCHASTIC_SEED", "SnowpackAdvanced");
+		srand( seed );
+	}
+
 	//If the user provides the stationIDs - operational use case
 	if (!vecStationIDs.empty()) { //operational use case: stationIDs provided on the command line
 		for (size_t i_stn=0; i_stn<vecStationIDs.size(); i_stn++) {
