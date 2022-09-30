@@ -1826,7 +1826,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		                               Xdata.Cdata.snowStored);
 	}
 
-	// 1.2.1 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
+	// 1.2.2 compute direct unload from stochastic process [mm timestep-1], update storage [mm]
 	// Only if no threshold unload already and in snow stored
 	if( icemm_unload < Constants::eps2 && useUnload && stochasticUnload &&
 	    Xdata.Cdata.storage*(1. - Xdata.Cdata.liquidfraction) > Constants::eps2){
@@ -1843,6 +1843,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 		Xdata.Cdata.unload_from_stochastic = stochastic_unload;
 		if(Xdata.Cdata.unload_from_stochastic > Constants::eps2 && useUnload) {
 			std::cout << "[D] Stochastic unload" << std::endl;
+			icemm_unload += stochastic_unload;
 			unload += stochastic_unload;
 			updateStorageAndUnloadElements(Xdata.Cdata.unload_from_stochastic, Xdata.Cdata.unloadedSnowStochastic, Xdata.Cdata.snowStored);
 		}
