@@ -658,7 +658,7 @@ void Canopy::compactStoredSnow(ElementData& snowStored, double age, const Curren
 //		snowStored.iniRho = snowStored.Rho;
 //	}
 	if (age > 0){
-		snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133))); // Age only
+		snowStored.Rho = 80.3 + (280.5 - 80.3)*(1-exp(-(age-0.0104167)/(7.027))); // Age only (280.5 is the average density of rounded grains layers measured in forested environments (2 sites - 3 winters))
 		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(266.2/Mdata.ta)))); // Age and temperature
 		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(303/snowStored.Rho)))); // Age and snow density dependency
 		//snowStored.Rho = 100 + (303 - 100)*(1-exp(-(age-0.0104167)/(7.133*(266.2/Mdata.ta)*(303/snowStored.Rho)))); // Age, air temp. and snow density dependency

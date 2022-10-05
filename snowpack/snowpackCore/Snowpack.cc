@@ -2065,7 +2065,7 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& e
 	const double logit = 49.6 + 0.857*Mdata.vw - 0.547*RH;
 	const double value = exp(logit)/(1.+exp(logit));
 
-	if (unloadedSnow.Rho <= 175){ //Precipitation particles
+	if (unloadedSnow.Rho <= 152){ //Precipitation particles
 		elem.mk = Snowpack::new_snow_marker;
 		elem.dd = new_snow_dd;
 		elem.sp = new_snow_sp;
@@ -2075,26 +2075,26 @@ void Snowpack::setUnloadMicrostructure(const CurrentMeteo& Mdata, ElementData& e
 		elem.opticalEquivalentGrainSize();
 		elem.metamo = 0.;
 
-	} else if (unloadedSnow.Rho > 175 & unloadedSnow.Rho <= 250){ //rounded grains
+	} else if (unloadedSnow.Rho > 152){;// & unloadedSnow.Rho <= 250){ //rounded grains // here 152 g to the average density of Decomposed and fragmented snow crystals)
 		elem.mk = 2;
 		elem.dd = 0;
 		elem.sp = 1;
-		elem.rg = 0.2/2.;
+		elem.rg = 0.2/2.; //value of 0.82 based on snow pit observations over 68 layers of rounded grains in 2 sites during three winters (0.82 +/- 0.26 mm for the grain size)
 		elem.rb = elem.rg/3.;
 
 		elem.opticalEquivalentGrainSize();
 		elem.metamo = 0.;
 
-	} else if (unloadedSnow.Rho > 250){ //faceted crystals
-		elem.mk = 1;
-		elem.dd = 0;
-		elem.sp = 0;
-		elem.rg = 0.2/2.;
-		elem.rb = elem.rg/3.;
+	} //else if (unloadedSnow.Rho > 250){ //faceted crystals
+	//	elem.mk = 1;
+	//	elem.dd = 0;
+	//	elem.sp = 0;
+	//	elem.rg = 0.2/2.;
+	//	elem.rb = elem.rg/3.;
 
-		elem.opticalEquivalentGrainSize();
-		elem.metamo = 0.;
-	}
+	//	elem.opticalEquivalentGrainSize();
+	//	elem.metamo = 0.;
+	//}
 
 }
 /**
