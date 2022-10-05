@@ -1760,12 +1760,11 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	/////// ADDITION BY BEN ///////
 	// Addition by Ben for having the new snow density as an output
-	double rho_new_snow = 0.0;
-	rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
-																						hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp, variant);
+	const double rho_new_snow = SnLaws::compNewSnowDensity(hn_density, hn_density_parameterization,
+	                                                       hn_density_fixedValue, Mdata, Xdata, Xdata.Cdata.temp,
+	                                                       variant);
 
-	double density_new_snow;
-	density_new_snow = rho_new_snow; // On crée l'object density new snow afin de l'avoir dans les outputs en .smet
+	double density_new_snow = rho_new_snow; // On crée l'object density new snow afin de l'avoir dans les outputs en .smet
 	/////// ADDITION BY BEN ///////
 
 
