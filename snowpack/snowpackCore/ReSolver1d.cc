@@ -1053,7 +1053,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	surfacefluxrate += (ql/Constants::lh_vaporization)/Constants::density_water;
 	Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
 	if(Xdata.swe < Constants::eps2) {
-		Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += ql*sn_dt/Constants::lh_vaporization;
+		Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += ql*sn_dt/Constants::lh_vaporization;
 	}
 	ql = 0.; //We dealt with ql, so set it to 0, only to be possibly modified at the end of the function.
 
@@ -2620,13 +2620,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m^2 (almost equal to mm/m^2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
-	Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
+	Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += snowsoilinterfaceflux*Constants::density_water;
 
 	// Deal with the virtual lysimeters
 	Xdata.Ndata[0].soil_lysimeter += actualbottomflux*Constants::density_water;
 	if(Xdata.SoilNode > 0) {
-		// See comment above, to be sure we take all contibutions, we take MS_SURFACE_RUNOFF
-		Xdata.Ndata[Xdata.SoilNode].soil_lysimeter = Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF];
+		// See comment above, to be sure we take all contibutions, we take MS_SURFACE_MASS_FLUX
+		Xdata.Ndata[Xdata.SoilNode].soil_lysimeter = Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX];
 		for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
 			Xdata.Ndata[node_i].soil_lysimeter += soil_lysimeters[node_i]*Constants::density_water;
 		}
@@ -2641,7 +2641,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//First, we fully intepreted ql as evaporation. Now, remaining energy (ql) should not be counted as evaporation
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= ql*sn_dt/Constants::lh_vaporization;
 		if(Xdata.swe < Constants::eps2) {
-			Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] -= ql*sn_dt/Constants::lh_vaporization;
+			Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] -= ql*sn_dt/Constants::lh_vaporization;
 		}
 		if(uppernode+1==Xdata.SoilNode) {
 			//The energy is substracted from the top element
@@ -2654,7 +2654,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//If we could not handle all incoming water at top boundary AND we have snow AND we solve RE for snow:
 	if(refusedtopflux>0. && uppernode+1>Xdata.SoilNode) {
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
-		Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF] += refusedtopflux*Constants::density_water;
+		Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += refusedtopflux*Constants::density_water;
 	}
 
 	//If we could not handle all snowpack runoff when not modelling snow with RE, add water layer

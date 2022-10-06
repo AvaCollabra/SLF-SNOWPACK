@@ -657,6 +657,7 @@ class SnowStation {
 		double swe;                 ///< Total mass summing snow water equivalent of elements
 		double lwc_sum;             ///< Total liquid water in snowpack
 		double lwc_sum_soil;        ///< Total liquid water in soil
+		double swc_sum_soil;        ///< Total solid water in soil
 		double hn;                  ///< Depth of new snow to be used on slopes
 		double rho_hn;              ///< Density of new snow to be used on slopes
 		double rime_hn;              ///< rime of new snow to be used on slopes
@@ -738,13 +739,14 @@ class SurfaceFluxes {
 			MS_SWE,            ///< This too, of course, but summing rho*L
 			MS_WATER,          ///< The total amount of water in the snowpack at the present time
 			MS_WATER_SOIL,     ///< The total amount of water in the soil at the present time
+			MS_ICE_SOIL,       ///< The total amount of ice in the soil at the present time
 			MS_HNW,            ///< Solid precipitation rate
 			MS_RAIN,           ///< Rain rate
 			MS_WIND,           ///< Mass loss rate due to wind erosion
 			MS_EVAPORATION,    ///< The mass loss or gain of the top element due to water evaporating
 			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
 			MS_SNOWPACK_RUNOFF,///< The mass loss of snowpack from snow melt due to water transport (virtual lysimeter)
-			MS_SURFACE_RUNOFF, ///< The total mass loss of snowpack due to water transport (virtual lysimeter)
+			MS_SURFACE_MASS_FLUX, ///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
 			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
 			N_MASS_CHANGES     ///< Total number of different mass change types

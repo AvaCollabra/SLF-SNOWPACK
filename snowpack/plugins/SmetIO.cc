@@ -926,27 +926,27 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 	os << "timestamp ";
 
 	if (out_heat)
-		os << "Qs Ql Qg TSG Qg0 Qr" << " "; // 1-2: Turbulent fluxes (W m-2)
-		// 14-17: Heat flux at lower boundary (W m-2), ground surface temperature (degC),
-		//        Heat flux at gound surface (W m-2), rain energy (W m-2)
+		os << "Qs Ql Qg TSG Qg0 Qr dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " "; //Turbulent fluxes (W m-2)
+		// Heat flux at lower boundary (W m-2), ground surface temperature (degC),
+		// Heat flux at gound surface (W m-2), rain energy (W m-2)
 	if (out_lw)
-		os << "OLWR ILWR LWR_net" << " "; // 3-5: Longwave radiation fluxes (W m-2)
+		os << "OLWR ILWR LWR_net" << " "; //Longwave radiation fluxes (W m-2)
 	if (out_sw)
-		os << "OSWR ISWR Qw pAlbedo mAlbedo ISWR_h ISWR_dir ISWR_diff" << " "; // 6-9: Shortwave radiation fluxes (W m-2) and computed albedo
+		os << "OSWR ISWR Qw pAlbedo mAlbedo ISWR_h ISWR_dir ISWR_diff" << " "; //Shortwave radiation fluxes (W m-2) and computed albedo
 	if (out_meteo)
-		os << "TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas" << " "; // 10-13: Air temperature, snow surface temperature (modeled and measured), temperature at bottom of snow/soil pack (degC)
+		os << "TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas" << " "; //Air temperature, snow surface temperature (modeled and measured), temperature at bottom of snow/soil pack (degC)
 	if (out_haz)
-		os << "hoar_size wind_trans24 HN24 HN72_24" << " ";// 30-33: surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
+		os << "hoar_size wind_trans24 HN24 HN72_24" << " ";//surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
 	if (out_soileb)
 		os << "dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " ";
 	if (out_mass)
-		os << "SWE MS_Water MS_Water_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap" << " ";
-		// 34-40: SWE (kg m-2), LWC (kg m-2),  LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
+		os << "SWE MS_Water MS_Water_Soil MS_Ice_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_Mass_Flux MS_Soil_Runoff MS_Sublimation MS_Evap" << " ";
+		//SWE (kg m-2), LWC (kg m-2),  LWC (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
 		// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
 	if (out_load)
-		os << "load "; // 50: Solute load at ground surface
+		os << "load "; //Solute load at ground surface
 	if (out_t && !fixedPositions.empty()) {
-		// 41-50: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
+		//Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 		for (size_t ii = 0; ii < fixedPositions.size(); ii++)
 			os << "TS" << ii << " ";
 	}
@@ -955,13 +955,13 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 
 	if (out_canopy)
 	{
-		os << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " "; //6
-		os << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " "; //4
-		os << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " "; //3
-		os << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //5
-		os << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " "; //3
-		os << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " "; //2
-		os << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " "; //4
+		os << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " ";
+		os << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " ";
+		os << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " ";
+		os << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " ";
+		os << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " ";
+		os << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " ";
+		os << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " ";
 	}
 
 	if (Xdata.Seaice != NULL)
@@ -983,11 +983,11 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 	plot_units << "- "; plot_description << "timestamp  "; plot_color << "0x000000 "; plot_min << IOUtils::nodata << " "; plot_max << IOUtils::nodata << " ";
 
 	if (out_heat) {
-		//"Qs Ql Qg TSG Qg0 Qr"
-		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy" << " ";
-		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2" << " ";
-		units_offset << "0 0 0 273.15 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1" << " ";
+		//"Qs Ql Qg TSG Qg0 Qr dIntEnergySoil meltFreezeEnergySoil ColdContentSoil"
+		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy snow_internal_energy_change  snow_melt_freeze_energy  snow_cold_content" << " ";
+		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2 W/m2 W/m2 J/m2" << " ";
+		units_offset << "0 0 0 273.15 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1" << " ";
 		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
@@ -1043,12 +1043,12 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_max << "" << " ";
 	}
 	if (out_mass) {
-		//"SWE MS_Water MS_Water_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
-		plot_description << "snow_water_equivalent  total_amount_of_water  total_amount_of_water_soil erosion_mass_loss  rain_rate  virtual_lysimeter_surface_snow_only virtual_lysimeter_surface_total_water  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
-		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2 kg/m2" << " ";
-		units_offset << "0 0 0 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
+		//"SWE MS_Water MS_Water_Soil MS_Ice_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_mass_flux MS_Soil_Runoff MS_Sublimation MS_Evap"
+		plot_description << "snow_water_equivalent  total_amount_of_water  total_amount_of_water_soil  total_amount_of_ice_soil  erosion_mass_loss  rain_rate  virtual_lysimeter_surface_snow_only surface_mass_flux  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
+		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2 kg/m2" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0x3300FF 0x3300FF 0x3300FF 0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -1084,16 +1084,16 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
-	if (out_canopy) { //HACK
-		plot_description << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " "; //6
-		plot_description << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " "; //4
-		plot_description << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " "; //3
-		plot_description << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " "; //5
-		plot_description << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " "; //3
-		plot_description << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " "; //2
-		plot_description << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " "; //4
-		plot_units << "kg/m2 degC  - - kg/m2 W/m2 W/m2 W/m2 W/m2 W/m2 W/m2 kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep W/m2" << " "; //17
-		plot_units << "W/m2 W/m2 W/m2 - W/m2 degC - kg/m2/timestep kg/m2/timestep kg/m2/timestep" << " "; //10
+	if (out_canopy) {
+		plot_description << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " ";
+		plot_description << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " ";
+		plot_description << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " ";
+		plot_description << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " ";
+		plot_description << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " ";
+		plot_description << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " ";
+		plot_description << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " ";
+		plot_units << "kg/m2 degC  - - kg/m2 W/m2 W/m2 W/m2 W/m2 W/m2 W/m2 kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep W/m2" << " ";
+		plot_units << "W/m2 W/m2 W/m2 - W/m2 degC - kg/m2/timestep kg/m2/timestep kg/m2/timestep" << " ";
 		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" << " ";
 		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
@@ -1141,6 +1141,9 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back( IOUtils::K_TO_C(NDS[Xdata.SoilNode].T) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( Sdata.qg0 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( Sdata.qr ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.dIntEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.meltFreezeEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.ColdContent/1e6 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_lw) {
@@ -1203,6 +1206,9 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WATER_SOIL]/cos_sl );
 		vec_precision.push_back(dflt_precision);
 		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_ICE_SOIL]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl );
 		vec_precision.push_back(dflt_precision);
 		vec_width.push_back(dflt_width);
@@ -1211,7 +1217,8 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF]/cos_sl );
 		vec_precision.push_back(dflt_precision);
-		data.push_back( Sdata.mass[SurfaceFluxes::MS_SURFACE_RUNOFF]/cos_sl );
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX]/cos_sl );
 		vec_precision.push_back(dflt_precision);
 		vec_width.push_back(dflt_width);
 		data.push_back( (useSoilLayers? Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / Xdata.cos_sl : IOUtils::nodata) );
