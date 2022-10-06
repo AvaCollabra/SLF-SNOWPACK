@@ -1141,6 +1141,7 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back( IOUtils::K_TO_C(NDS[Xdata.SoilNode].T) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( Sdata.qg0 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( Sdata.qr ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		const size_t nCalcSteps = static_cast<size_t>( ts_days_between / M_TO_D(calculation_step_length) + 0.5 );
 		data.push_back( (Sdata.dIntEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( (Sdata.meltFreezeEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		data.push_back( Xdata.ColdContent/1e6 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
