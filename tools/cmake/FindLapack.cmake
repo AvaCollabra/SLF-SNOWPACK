@@ -65,6 +65,7 @@ ELSE(WIN32)
 		PATHS
 			ENV LD_LIBRARY_PATH
 			"~/usr/lib"
+			"/usr/lib/x86_64-linux-gnu/"
 			"/usr/local/lib"
 			"/usr/lib64"
 			"/usr/lib64/atlas"
@@ -79,6 +80,7 @@ ELSE(WIN32)
 		PATHS
 			ENV LD_LIBRARY_PATH
 			"~/usr/lib"
+			"/usr/lib/x86_64-linux-gnu/"
 			"/usr/local/lib"
 			"/usr/lib64"
 			"/usr/lib64/atlas"
