@@ -562,11 +562,9 @@ double Canopy::StochasticUnload(const CurrentMeteo& Mdata, const double storage,
 	const double ta = Mdata.ta-273.15;
 
 	const double prob = GetStochasticUnloadProb(vw, ta)/4.;
-	//std::cout << "prob: " << prob << std::endl;
 	if(prob>0){
 		size_t rnd = rand();
 		const double randNum = static_cast <float>(rnd) / static_cast <float>(RAND_MAX);
-		//std::cout << "rand: "<< randNum << std::endl;
 		if(prob > randNum) {
 			const double snowContent = storage * solidfraction;
 			return(snowContent*StochasticUnloadFrac);
@@ -1805,10 +1803,15 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	double icemm_unload=0.0;
 	const double intcaprain = IntCapacity(Mdata, Xdata, true);
 	// determine liquid and frozen water unload
-	liqmm_unload = std::max(0.0,std::min(unload * Xdata.Cdata.liquidfraction,
-			oldstorage * Xdata.Cdata.liquidfraction-intcaprain));
-	icemm_unload = std::max(unload - liqmm_unload,0.0);
-
+	if(unload > Constants::eps2) { //Do we have excedded snow storage?
+		liqmm_unload = std::max(0.0, unload * Xdata.Cdata.liquidfraction);
+				//Xdata.Cdata.storage * Xdata.Cdata.liquidfraction-intcaprain
+		icemm_unload = std::max(unload - liqmm_unload,0.0);
+	} else { //Do we have excedded liquid storage?
+		liqmm_unload = std::max(0.0, Xdata.Cdata.storage * Xdata.Cdata.liquidfraction-intcaprain);
+		Xdata.Cdata.storage -= liqmm_unload;
+		//No need to update icemm_unload, it is 0 here
+	}
 	Xdata.Cdata.solid_storage -= icemm_unload;
 	// Update liquid fraction
 	if (Xdata.Cdata.storage > 0.) {
