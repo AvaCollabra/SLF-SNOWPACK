@@ -1810,6 +1810,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	} else { //Do we have excedded liquid storage?
 		liqmm_unload = std::max(0.0, Xdata.Cdata.storage * Xdata.Cdata.liquidfraction-intcaprain);
 		Xdata.Cdata.storage -= liqmm_unload;
+		unload += liqmm_unload;
 		//No need to update icemm_unload, it is 0 here
 	}
 	Xdata.Cdata.solid_storage -= icemm_unload;
@@ -1858,7 +1859,6 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
 	oldstorage = Xdata.Cdata.storage;
 	Xdata.Cdata.storage += interception;
-
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	// UPDATE : We removed the unloading from the computation of the throughfall
 	const double throughfall = Mdata.psum - interception + unload;
