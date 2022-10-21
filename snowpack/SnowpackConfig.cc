@@ -121,6 +121,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["SOIL_EVAP_MODEL"] = "EVAP_RESISTANCE";
 	advancedConfig["SOIL_THERMAL_CONDUCTIVITY"] = "FITTED";
 
+  advancedConfig["NO_LIQUID_UNLOAD"] = "false";
 	advancedConfig["MINIMUM_UNLOAD_CANOPY"] = "0.01";
 	advancedConfig["UNLOAD_MICROSTRUCTURE"] = "false";
 	advancedConfig["STOCHASTIC_UNLOAD"] = "false";

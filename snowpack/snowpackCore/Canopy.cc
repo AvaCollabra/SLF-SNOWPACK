@@ -186,7 +186,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
           CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true),
-          forestfloor_alb(true), useUnload(false), min_unload(0.01), stochasticUnload(false),
+          forestfloor_alb(true), useUnload(false), no_liquid_unnload(false), min_unload(0.01), stochasticUnload(false),
           StochasticUnloadFrac(0.1), stochasticParams(), stochasticDegree(0),
           GetStochasticUnloadProb([this](double ta, double vw){return(this->GetStochasticUnloadProb1(ta, vw));})
 {
@@ -203,6 +203,8 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 	Twolayercanopy = Twolayercanopy_user;
 	cfg.getValue("FORESTFLOOR_ALB", "SnowpackAdvanced", forestfloor_alb);
 	cfg.getValue("UNLOAD_MICROSTRUCTURE", "SnowpackAdvanced", useUnload);
+	cfg.getValue("NO_LIQUID_UNLOAD", "SnowpackAdvanced", no_liquid_unnload);
+
 	cfg.getValue("MINIMUM_UNLOAD_CANOPY", "SnowpackAdvanced", min_unload);
 	cfg.getValue("STOCHASTIC_UNLOAD", "SnowpackAdvanced", stochasticUnload);
 
@@ -1856,14 +1858,23 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 	}
 
 	// 1.3 compute the interception [mm timestep-1] and update storage [mm]
-	const double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
+	double interception = IntRate(intcapacity, Xdata.Cdata.storage, Mdata.psum, Xdata.Cdata.direct_throughfall, Xdata.Cdata.interception_timecoef);
 	oldstorage = Xdata.Cdata.storage;
+
+	if(no_liquid_unnload){
+		interception = interception * (1. - Mdata.psum_ph);
+	}
+
 	Xdata.Cdata.storage += interception;
 	// 1.4 compute the throughfall [mm timestep-1] (and update liquid fraction if SnowMIP)
 	// UPDATE : We removed the unloading from the computation of the throughfall
 	const double throughfall = Mdata.psum - interception + unload;
 	double icemm_interception = (Mdata.psum>0.)? interception * (1. - Mdata.psum_ph) : 0.;
 	double liqmm_interception = (Mdata.psum>0.)? interception * Mdata.psum_ph : 0.;
+	if(no_liquid_unnload)  {
+		icemm_interception =  (Mdata.psum>0.)? interception : 0.;
+		liqmm_interception = 0;
+	}
 
 	Xdata.Cdata.solid_storage += icemm_interception;
 
