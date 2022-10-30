@@ -2203,6 +2203,7 @@ bool SnowStation::hasSoilLayers() const
 
 void SnowStation::reset_lysimeters()
 {
+	if (Ndata.size() == 0) return;
 	for(size_t i=0; i <= SoilNode; i++){
 		Ndata[i].soil_lysimeter = 0;
 	}
