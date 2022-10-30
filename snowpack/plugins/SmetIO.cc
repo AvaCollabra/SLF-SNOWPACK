@@ -926,7 +926,7 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 	os << "timestamp ";
 
 	if (out_heat)
-		os << "Qs Ql Qg TSG Qg0 Qr dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " "; //Turbulent fluxes (W m-2)
+		os << "Qs Ql Qg TSG Qg0 Qr dIntEnergySnow meltFreezeEnergySnow ColdContentSnow" << " "; //Turbulent fluxes (W m-2)
 		// Heat flux at lower boundary (W m-2), ground surface temperature (degC),
 		// Heat flux at gound surface (W m-2), rain energy (W m-2)
 	if (out_lw)
@@ -983,12 +983,12 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 	plot_units << "- "; plot_description << "timestamp  "; plot_color << "0x000000 "; plot_min << IOUtils::nodata << " "; plot_max << IOUtils::nodata << " ";
 
 	if (out_heat) {
-		//"Qs Ql Qg TSG Qg0 Qr dIntEnergySoil meltFreezeEnergySoil ColdContentSoil"
-		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy snow_internal_energy_change  snow_melt_freeze_energy  snow_cold_content" << " ";
+		//"Qs Ql Qg TSG Qg0 Qr dIntEnergySnow meltFreezeEnergySnow ColdContentSnow"
+		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy  snow_internal_energy_change  snow_melt_freeze_energy  snow_cold_content" << " ";
 		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2 W/m2 W/m2 J/m2" << " ";
 		units_offset << "0 0 0 273.15 0 0 0 0 0" << " ";
 		units_multiplier << "1 1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF" << " ";
+		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF 0x663300 0x996666 0xCC9966" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
