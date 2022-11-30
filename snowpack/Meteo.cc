@@ -38,11 +38,13 @@ using namespace mio;
 ************************************************************/
 
 Meteo::Meteo(const SnowpackConfig& cfg)
-       : canopy(cfg), roughness_length(0.), height_of_wind_value(0.),
-         stability(MO_HOLTSLAG), research_mode(false), useCanopyModel(false)
+       : canopy(cfg), dataGenerator(nullptr), roughness_length(0.), height_of_wind_value(0.),
+         variant(), stability(MO_HOLTSLAG), research_mode(false), useCanopyModel(false)
 {
 	const std::string stability_model = cfg.get("ATMOSPHERIC_STABILITY", "Snowpack");
 	stability = getStability(stability_model);
+	
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
 	//Initial estimate of the roughness length for the site; will be adjusted iteratively, default value and operational mode: 0.002 m
 	cfg.getValue("ROUGHNESS_LENGTH", "Snowpack", roughness_length);
@@ -54,6 +56,29 @@ Meteo::Meteo(const SnowpackConfig& cfg)
 	cfg.getValue("HEIGHT_OF_WIND_VALUE", "Snowpack", height_of_wind_value);
 
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
+}
+
+Meteo::Meteo(const Meteo& mt)
+       : canopy(mt.canopy), dataGenerator(nullptr), roughness_length(mt.roughness_length), height_of_wind_value(mt.height_of_wind_value),
+         variant(mt.variant), stability(mt.stability), research_mode(mt.research_mode), useCanopyModel(mt.useCanopyModel) {}
+
+Meteo& Meteo::operator=(const Meteo& mt)
+{
+	canopy = mt.canopy;
+	dataGenerator = nullptr;
+	roughness_length = mt.roughness_length;
+	height_of_wind_value = mt.height_of_wind_value;
+	variant = mt.variant;
+	stability = mt.stability;
+	research_mode = mt.research_mode;
+	useCanopyModel = mt.useCanopyModel;
+
+	return *this;
+}
+
+Meteo::~Meteo()
+{
+	if (dataGenerator!=nullptr) delete dataGenerator;
 }
 
 /**
@@ -418,6 +443,22 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 				Mdata.rswr = 0.;
 			cfg.addKey("SW_MODE", "Snowpack", "BOTH");  // as both Mdata.iswr and Mdata.rswr were reset
 		}
+	}
+	
+	//if needed and possible, recompute ilwr and ea now that we have a good iswr (computed from rswr with a good parametrized albedo)
+	if (Mdata.poor_ea) {
+		if (dataGenerator==nullptr) dataGenerator = new mio::DataGenerator(cfg, std::set<std::string>({"ILWR"}));
+		mio::MeteoData md(Mdata.date, station.meta);
+		md("TA") = Mdata.ta;
+		md("TSS") = Mdata.tss;
+		md("RH") = Mdata.rh;
+		md("HS") = Mdata.hs;
+		md("ISWR") = Mdata.iswr;
+		md("RSWR") = Mdata.rswr;
+		std::vector<mio::MeteoData> vecMeteo( {md} );
+		
+		dataGenerator->fillMissing( vecMeteo );
+		Mdata.ea = SnLaws::AirEmissivity(vecMeteo.front(), variant);
 	}
 
 	Mdata.diff = diff;
