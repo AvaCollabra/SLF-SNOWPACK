@@ -350,7 +350,7 @@
  * - relative humidity (RH)
  * - wind speed (VW)
  * - incoming short wave radiation (ISWR) <i>and/or</i> reflected short wave radiation (RSWR) <i>or</i> net short wave radiation (it must be called NET_SW in Smet files).
- * - incoming long wave radiation (ILWR) <i>and/or</i> surface temperature (TSS)
+ * - incoming long wave radiation (ILWR) <i>and/or</i> surface temperature (TSS) [*]
  * - precipitation (PSUM) <i>and/or</i> snow height (HS)
  * - ground temperature (TSG, if available. Otherwise, you will have to use <a href="https://meteoio.slf.ch">MeteoIO</A>'s 
  * data generators to generate a value) <i>or</i> geothermal heat flux
@@ -359,6 +359,15 @@
  * These parameters <b>should best</b> be available at a hourly time step and preferably in MKSA units 
  * (please check the MeteoIO plugins documentation for specific cases, like GRIB, NetCDF... that are automatically handled). Please have a look 
  * at the \ref snowpackio "other input parameters" that are required to run your simulation!
+ * 
+ * [*] Please note that it is possible to parametrize the incoming long wave radiation (ILWR) from the short wave radiation, obviously 
+ * with reduced performance compared to measured ILWR. This is achieved by configuring a 
+ * <a href="https://meteoio.slf.ch/doc-release/html/generators.html">data generator</a> in <a href="https://meteoio.slf.ch">MeteoIO</A> such as an
+ * <a href="https://meteoio.slf.ch/doc-release/html/classmio_1_1AllSkyLWGenerator.html">all sky</a> parametrization. if ISWR is available, 
+ * this is straightforward: the clearness index <i>iswr_meas / iswr_pot</i> gives the cloudiness which is used by a <i>ilwr parametrization</i>. 
+ * If only RSWR is available, at each timestep Snowpack computes the matching iswr based on its modelled albedo <i>iswr = rswr / albedo_mod</i> and 
+ * then calls all data generator that you may have defined for ILWR (which now have access to ISWR). It is also possible to use such a
+ * data generator directly on rswr (thus based on a fixed soil or snow albedo to internally compute iswr) but this is less performant...
  *
  * @section data_preparation Data preparation
  * In order to help %Snowpack handle the (sometimes broken) data sets to be used in a simulation, the <a href="https://meteoio.slf.ch">MeteoIO library</a> is used.
