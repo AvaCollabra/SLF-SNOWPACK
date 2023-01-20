@@ -3006,7 +3006,7 @@ CurrentMeteo::CurrentMeteo()
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), lw_net(IOUtils::nodata), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata),
+          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata), snowdrift(0.),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.), rime_hn(0.), lwc_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -3017,7 +3017,7 @@ CurrentMeteo::CurrentMeteo(const SnowpackConfig& cfg)
         : date(), ta(0.), rh(0.), rh_avg(0.), vw(0.), vw_avg(0.), vw_max(0.), dw(0.),
           vw_drift(0.), dw_drift(0.), ustar(0.), z0(0.), psi_s(0.),
           iswr(0.), rswr(0.), mAlbedo(0.), diff(0.), dir_h(0.), elev(0.), ea(0.), lw_net(IOUtils::nodata), tss(0.), tss_a12h(0.), tss_a24h(0.), ts0(0.),
-          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata),
+          psum(0.), psum_ph(IOUtils::nodata), psum_tech(IOUtils::nodata), hs(0.), hs_a3h(0.), hs_rate(0.), geo_heat(IOUtils::nodata), adv_heat(IOUtils::nodata), snowdrift(0.),
           ts(), zv_ts(), conc(SnowStation::number_of_solutes, 0.), rho_hn(0.), rime_hn(0.), lwc_hn(0.),
           fixedPositions(), minDepthSubsurf(), maxNumberMeasTemperatures(),
           numberMeasTemperatures(mio::IOUtils::unodata), numberFixedRates()
@@ -3192,6 +3192,7 @@ std::ostream& operator<<(std::ostream& os, const CurrentMeteo& data)
 	os.write(reinterpret_cast<const char*>(&data.hs_rate), sizeof(data.hs_rate));
 	os.write(reinterpret_cast<const char*>(&data.geo_heat), sizeof(data.geo_heat));
 	os.write(reinterpret_cast<const char*>(&data.adv_heat), sizeof(data.adv_heat));
+	os.write(reinterpret_cast<const char*>(&data.snowdrift), sizeof(data.snowdrift));
 
 	const size_t s_ts = data.ts.size();
 	os.write(reinterpret_cast<const char*>(&s_ts), sizeof(size_t));
@@ -3254,6 +3255,7 @@ std::istream& operator>>(std::istream& is, CurrentMeteo& data)
 	is.read(reinterpret_cast<char*>(&data.hs_rate), sizeof(data.hs_rate));
 	is.read(reinterpret_cast<char*>(&data.geo_heat), sizeof(data.geo_heat));
 	is.read(reinterpret_cast<char*>(&data.adv_heat), sizeof(data.adv_heat));
+	is.read(reinterpret_cast<char*>(&data.snowdrift), sizeof(data.snowdrift));
 
 	size_t s_ts;
 	is.read(reinterpret_cast<char*>(&s_ts), sizeof(size_t));

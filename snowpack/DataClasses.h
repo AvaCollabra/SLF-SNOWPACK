@@ -132,6 +132,7 @@ class CurrentMeteo {
 		double hs_rate;  ///< The rate of change in snow depth (m h-1)
 		double geo_heat; ///< Geo heat flux (W/m^2), for the neumann lower boundary condition in the heat equation
 		double adv_heat; ///< Advective heat to inject in the soil (if ADVECTIVE_HEAT and related parameters set to true)
+		double snowdrift;///< Snow drift (erosion or deposition) (kg m-2) per CALCULATION_STEP_LENGTH
 
 		std::vector<double> ts;    ///< Measured snow or/and soil temperatures (K)
 		std::vector<double> zv_ts; ///< Positions of all measured snow or/and soil temperatures (m)

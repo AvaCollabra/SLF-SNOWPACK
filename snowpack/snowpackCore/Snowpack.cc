@@ -1896,6 +1896,42 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 }
 
 /**
+ * @brief Add snow layers that originate from wind-transported snow being deposited, using the event-driven deposition scheme.
+ * @param Mdata Meteorological data (pass by value, since we modify it)
+ * @param Xdata Snow cover data
+ * @param redeposit_mass cumulated amount of snow deposition (kg m-2)
+ */
+void Snowpack::RedepositSnow(CurrentMeteo Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double redeposit_mass)
+{
+	// Backup settings we are going to override:
+	const std::string tmp_hn_density = hn_density;
+	const std::string tmp_variant = variant;
+	const bool tmp_enforce_measured_snow_heights = enforce_measured_snow_heights;
+	const double tmp_Xdata_hn = Xdata.hn;
+	const double tmp_Xdata_rho_hn = Xdata.rho_hn;
+	// Deposition mode settings:
+	double tmp_psum = redeposit_mass;
+	hn_density = "EVENT";
+	variant = "POLAR";		// Ensure that the ANTARCTICA wind speed limits are *not* used.
+	enforce_measured_snow_heights = false;
+	Mdata.psum = redeposit_mass; Mdata.psum_ph = 0.;
+	if (Mdata.vw_avg == mio::IOUtils::nodata) Mdata.vw_avg = Mdata.vw;
+	if (Mdata.rh_avg == mio::IOUtils::nodata) Mdata.rh_avg = Mdata.rh;
+	Xdata.hn = 0.;
+	// Add eroded snow:
+	compSnowFall(Mdata, Xdata, tmp_psum, Sdata);
+	// Set back original settings:
+	hn_density = tmp_hn_density;
+	variant = tmp_variant;
+	enforce_measured_snow_heights = tmp_enforce_measured_snow_heights;
+	// Calculate new snow density (weighted average) and total snowfall (snowfall + redeposited snow)
+	if ((tmp_Xdata_hn + Xdata.hn) > 0.) {
+		Xdata.rho_hn = ((tmp_Xdata_hn * tmp_Xdata_rho_hn) + (Xdata.hn * Xdata.rho_hn)) / (tmp_Xdata_hn + Xdata.hn);
+	}
+	Xdata.hn += tmp_Xdata_hn;
+}
+
+/**
  * @brief The near future (s. below) has arrived on Wednesday Feb. 6, when it was finally snowing
  * in Davos and Sergey, Michael and Perry were working furiously on SNOWPACK again. Michael
  * prepared the coupling of the model to the energy balance model of Olivia and his own snow
@@ -1978,6 +2014,16 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 				t_surf = Mdata.tss;
 				Xdata.Ndata[Xdata.getNumberOfNodes()-1].T = t_surf;
 			}
+		}
+
+		// If there is DEPOSITING of snow:
+		if (Mdata.snowdrift > 0.) {
+			const bool consider_precipitation_as_driftingsnow = false;	// if true, add precipitation to drifting snow, when drifting snow is present
+			if (consider_precipitation_as_driftingsnow && cumu_precip > Constants::eps) {
+				Mdata.snowdrift += cumu_precip;
+				cumu_precip = 0.;
+			}
+			RedepositSnow(Mdata, Xdata, Sdata, Mdata.snowdrift);
 		}
 
 		// If it is SNOWING, find out how much, prepare for new FEM data. If raining, cumu_precip is set back to 0
