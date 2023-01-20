@@ -1011,7 +1011,7 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
 				//static const double rho_0=361., rho_1=33.;
 				static const double rho_0=250., rho_1=33.;
-				return (rho_0*log10(Mdata.vw_avg) + rho_1);
+				return (Mdata.vw_avg == 0.) ? (rho_1) : (std::max(rho_1, rho_0*log10(Mdata.vw_avg) + rho_1));
 			} else
 				return Constants::undefined;
 		}
@@ -1040,7 +1040,7 @@ double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnL
 
 				//static const double rho_0=361., rho_1=33.;
 				static const double rho_0=250., rho_1=33.;
-				rho = rho_0*log10(Mdata.vw) + rho_1;
+				rho = (Mdata.vw == 0.) ? (rho_1) : (std::max(rho_1, rho_0*log10(Mdata.vw) + rho_1));
 				return rho;
 			} else{
 				//return Constants::undefined;
