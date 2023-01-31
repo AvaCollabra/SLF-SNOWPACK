@@ -374,7 +374,7 @@ bool Meteo::compHSrate(CurrentMeteo& Mdata, const SnowStation& Xdata, const doub
  * @param Mdata meteorological forcing
  * @param Xdata snow profile data
  * @param runCanopyModel should the canopy module also be called?
- * @param runCanopyModel should the height of wind values be adjusted?
+ * @param adjust_height_of_wind_value should the height of wind values be adjusted?
  */
 void Meteo::compMeteo(CurrentMeteo &Mdata, SnowStation &Xdata, const bool runCanopyModel,
                      const bool adjust_height_of_wind_value)

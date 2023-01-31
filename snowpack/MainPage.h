@@ -156,20 +156,41 @@
  * [Input]
  * METEO      = SMET
  *
- * PSUM_S::MOVE = MS_Snow
- * PSUM_L::MOVE = MS_Rain
- * HS::MOVE    = HS_meas	;so we can still compare measured vs modelled snow height
- * TSG::MOVE   = T_bottom	;so we can compare the ground temperatures
- * TSS::MOVE   = TSS_meas	;so we can compare the surface temperatures
- *
- * WFJ2::KEEP = TA TSS TSG RH ISWR ILWR HS VW DW PSUM_S PSUM_L PSUM PSUM_PH	;so we do not keep all kind of unnecessary parameters
- *
- * PSUM_PH::create     = PRECSPLITTING
- * PSUM_PH::PRECSPLITTING::type   = THRESH
- * PSUM_PH::PRECSPLITTING::snow   = 274.35
- * PSUM::create     = PRECSPLITTING
- * PSUM::PRECSPLITTING::type   = THRESH
- * PSUM::PRECSPLITTING::snow   = 274.35
+ * [InputEditing]
+ * *::EDIT1 = MOVE
+ * *::ARG1::DEST = PSUM_S
+ * *::ARG1::SRC = MS_Snow
+ * 
+ * *::EDIT2 = MOVE
+ * *::ARG2::DEST = PSUM_L
+ * *::ARG2::SRC = MS_Rain
+ * 
+ * *::EDIT3 = MOVE
+ * *::ARG3::DEST = HS
+ * *::ARG3::SRC = HS_meas
+ * 
+ * *::EDIT4 = MOVE
+ * *::ARG4::DEST = TSG
+ * *::ARG4::SRC = T_bottom
+ * 
+ * *::EDIT5 = MOVE
+ * *::ARG5::DEST = TSS
+ * *::ARG5::SRC = TSS_meas
+ * 
+ * *::EDIT6 = KEEP
+ * *::ARG6::PARAMS = TA TSS TSG RH ISWR ILWR HS VW DW PSUM_S PSUM_L PSUM PSUM_PH
+ * 
+ * *::EDIT7 = CREATE
+ * *::ARG7::PARAM = PSUM_PH
+ * *::ARG7::ALGORITHM = PRECSPLITTING
+ * *::ARG7::TYPE = THRESH
+ * *::ARG7::SNOW = 274.35
+ * 
+ * *::EDIT8 = CREATE
+ * *::ARG8::PARAM = PSUM
+ * *::ARG8::ALGORITHM = PRECSPLITTING
+ * *::ARG8::TYPE = THRESH
+ * *::ARG8::SNOW = 274.35
  *
  * [SNOWPACK]
  * ENFORCE_MEASURED_SNOW_HEIGHTS = FALSE
@@ -441,10 +462,10 @@
  * the section <i>"Available data generators and usage"</i> for the full list of available generators):
  * @code
  * [Generators]
- * PSUM_PH::generators   = PPHASE
- * PSUM_PH::pphase::type = RANGE
- * PSUM_PH::pphase::snow = 273.35
- * PSUM_PH::pphase::rain = 275.35
+ * PSUM_PH::GENERATOR1 = PRECSPLITTING
+ * PSUM_PH::ARG1::TYPE = RANGE
+ * PSUM_PH::ARG1::SNOW = 273.35
+ * PSUM_PH::ARG1::RAIN = 275.35
  * @endcode
  * 
  */
