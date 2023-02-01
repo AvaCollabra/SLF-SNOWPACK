@@ -215,9 +215,9 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		{
 			double theta_air = std::max(EMS[i].theta[AIR],0.0);
 			double tortuosity = pow(theta_air,7./3.)/pow(1-EMS[i].theta[SOIL], 2.);    
-			double D_vapSoil = tortuosity * theta_air * Constants::diffusion_coefficient_in_air;
+			double D_vapSoil = tortuosity * theta_air * Constants::diffusion_coefficient_in_air; 
 			//D_vapSoil = 1.5*theta_air *Constants::diffusion_coefficient_in_air;
-		const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
+			// const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
 
 			// based on Colbeck
 			//double Dsnow = Constants::diffusion_coefficient_in_snow;
@@ -264,6 +264,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		double water_molecular_mass = 18.0153e-3; // (kg)
 		double gaz_constant = 8.31451; // (J mol-1 K-1)
 		for(size_t i=0; i<nN; i++)
+		{
 			double Re,saturationDensity;
 			saturationDensity = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));	
 			hm_[i] =Constants::density_ice/saturationDensity/9.7e9; // hm_experimental, Pirmin 2012, M_mm=as_all*hm_experimental*(rhov_sat-rhov)
