@@ -1166,9 +1166,9 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID),rhov(0.),Qmm(0.),vapTrans_fluxDiff(0.),vapTrans_snowDenChangeRate(0.),vapTrans_cumulativeDenChange(0.),vapTrans_underSaturationDegree(0.),elementIDTracking(0)  {}
-                             theta_w_transfer(0.), theta_i_reservoir(0.), theta_i_reservoir_cumul(0.),
-                             SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), rime(0.), ID(in_ID), rhov(0.), Qmm(0.), vapTrans_fluxDiff(0.), vapTrans_snowDenChangeRate(0.), vapTrans_cumulativeDenChange(0.)  {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID), rhov(0.),
+							 Qmm(0.),vapTrans_fluxDiff(0.),vapTrans_snowDenChangeRate(0.),vapTrans_cumulativeDenChange(0.),vapTrans_underSaturationDegree(0.),elementIDTracking(0),  
+                             theta_w_transfer(0.), theta_i_reservoir(0.), theta_i_reservoir_cumul(0.), rime(0.) {}
 
 ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
@@ -1179,9 +1179,10 @@ ElementData::ElementData(const ElementData& cc) :
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID),rhov(cc.rhov),Qmm(cc.Qmm),vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange),vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree),elementIDTracking(cc.elementIDTracking)  {}
-                             theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul),
-                             SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), rime(cc.rime), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange)  {}
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), 
+							 Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID),rhov(cc.rhov),Qmm(cc.Qmm),vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), 
+							 vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange), vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree), elementIDTracking(cc.elementIDTracking),
+                             theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul), rime(cc.rime) {}
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
