@@ -37,6 +37,7 @@ class ElementData;
 class SnowStation;
 class CurrentMeteo;
 class BoundCond;
+class SurfaceFluxes;
 
 class SeaIce {
 	public:
@@ -86,17 +87,17 @@ class SeaIce {
 		void compSalinityProfile(SnowStation& Xdata);
 		void updateFreeboard(SnowStation& Xdata);
 		double findIceSurface(SnowStation& Xdata);
-		void compFlooding(SnowStation& Xdata);
-		void bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt);
-		void ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& Mdata, double dM);
+		void compFlooding(SnowStation& Xdata, SurfaceFluxes& Sdata);
+		void bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt, SurfaceFluxes& Sdata);
+		void ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& Mdata, double dM, SurfaceFluxes& Sdata);
 
 		double getAvgBulkSalinity(const SnowStation& Xdata);
 		double getAvgBrineSalinity(const SnowStation& Xdata);
 		double getTotSalinity(const SnowStation& Xdata);
 
-		void InitSeaIce(SnowStation& Xdata);
-		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt);
+		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt, SurfaceFluxes& Sdata);
 	private:
+		double elementTrackingCounter; // The counter for element tracking for making comparison of any snow properties between two simulation (-)
 
 
 }; //end class Snowpack

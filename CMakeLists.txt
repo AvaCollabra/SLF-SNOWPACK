@@ -88,6 +88,13 @@ ENDIF(NOT CMAKE_BUILD_TYPE)
 
 FIND_PACKAGE(MeteoIO REQUIRED)
 
+# Add Eigen3 to support Vapour Transport
+FIND_PACKAGE(Eigen3)
+
+# Link Eigen to project
+include_directories(${EIGEN3_INCLUDE_DIR})
+
+
 ###########################################################
 #plugins and applications
 SET(SNOWPACK_STANDALONE ON CACHE BOOL "Compilation SNOWPACK standalone ON or OFF")

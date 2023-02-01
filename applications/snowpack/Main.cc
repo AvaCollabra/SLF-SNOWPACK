@@ -629,7 +629,7 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 		}
 
 		// B) Check whether to use incoming longwave as estimated from station field
-		const bool meas_incoming_longwave = cfg.get("MEAS_INCOMING_LONGWAVE", "SnowpackAdvanced");
+		const bool meas_incoming_longwave = cfg.get("MEAS_INCOMING_LONGWAVE", "SnowpackAdvanced");		
 		if (!meas_incoming_longwave) {
 			Mdata.ea = SnLaws::AirEmissivity(lw_in, Mdata.ta, variant);
 		}
@@ -788,7 +788,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	const std::string variant = cfg.get("VARIANT", "SnowpackAdvanced");
 
 	// Add keys to perform running mean in Antarctic variant
-	if (variant == "ANTARCTICA") {
+	if (variant == "ANTARCTICA" || variant == "POLAR") {
 		cfg.addKey("*::edit999", "InputEditing", "COPY");
 		cfg.addKey("*::arg999::dest", "InputEditing", "VW_AVG");
 		cfg.addKey("*::arg999::src", "InputEditing", "VW");

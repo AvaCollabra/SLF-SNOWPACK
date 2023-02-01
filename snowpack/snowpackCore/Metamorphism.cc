@@ -574,6 +574,15 @@ void Metamorphism::metamorphismDEFAULT(const CurrentMeteo& Mdata, SnowStation& X
 		rgDotMax = std::max(0.0, rgDotMax);
 		rbDotMax = TGBondRate(EMS[e]);
 
+// for SML
+/*
+		if (NDS[e+1].z <= 3.07){// IG : <=3.07 m corresponds to the grass layer of 7 cm (NDS includes soil depth of 3m here)
+			rgDotMax = std::max(0.0, 5*rgDotMax);// IG : add x5
+			rbDotMax = 5*TGBondRate(EMS[e]);// IG : add x5
+		 }
+*/
+// for SML
+
 		if ( (EMS[e].theta[WATER] < 0.01) && (Mdata.vw > Metamorphism::wind_slab_vw) && ((NDS[nE].z - NDS[e].z < Metamorphism::wind_slab_depth) || e == nE-1) ) {
 			//if snow is dry AND wind strong AND we are near the surface => wind densification of snow
 			// Introduce heuristic metamorphism for wind slabs of Metamorphism::wind_slab_depth (m)
