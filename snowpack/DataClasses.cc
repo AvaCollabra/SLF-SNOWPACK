@@ -406,10 +406,10 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	mass[MS_SWE] = Xdata.swe;
 	mass[MS_WATER] = Xdata.lwc_sum;
 	if (Xdata.Seaice != NULL) {
-		mass[MS_FLOODING] += Xdata.Seaice->TotalFloodingBucket;
-		Xdata.Seaice->TotalFloodingBucket = 0.;
+		//mass[MS_FLOODING] += Xdata.Seaice->TotalFloodingBucket;
+		//Xdata.Seaice->TotalFloodingBucket = 0.;
 	} else {
-		mass[MS_FLOODING] = Constants::undefined;
+		//mass[MS_FLOODING] = Constants::undefined;
 	}
 }
 
@@ -1135,7 +1135,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID), rhov(0.), Qmm(0.), vapTrans_fluxDiff(0.), vapTrans_snowDenChangeRate(0.), vapTrans_cumulativeDenChange(0.)  {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID),rhov(0.),Qmm(0.),vapTrans_fluxDiff(0.),vapTrans_snowDenChangeRate(0.),vapTrans_cumulativeDenChange(0.),vapTrans_underSaturationDegree(0.),elementIDTracking(0)  {}
 
 ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
@@ -1146,7 +1146,7 @@ ElementData::ElementData(const ElementData& cc) :
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange)  {}
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID),rhov(cc.rhov),Qmm(cc.Qmm),vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange),vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree),elementIDTracking(cc.elementIDTracking)  {}
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
@@ -1222,6 +1222,8 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_fluxDiff), sizeof(data.vapTrans_fluxDiff));
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
+	os.write(reinterpret_cast<const char*>(&data.vapTrans_underSaturationDegree), sizeof(data.vapTrans_underSaturationDegree));
+	os.write(reinterpret_cast<const char*>(&data.elementIDTracking), sizeof(data.elementIDTracking));
 	return os;
 }
 
@@ -1303,6 +1305,8 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.vapTrans_fluxDiff), sizeof(data.vapTrans_fluxDiff));
 	is.read(reinterpret_cast<char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
 	is.read(reinterpret_cast<char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
+	is.read(reinterpret_cast<char*>(&data.vapTrans_underSaturationDegree), sizeof(data.vapTrans_underSaturationDegree));
+	is.read(reinterpret_cast<char*>(&data.elementIDTracking), sizeof(data.elementIDTracking));
 	return is;
 }
 
@@ -1377,7 +1381,7 @@ bool ElementData::checkVolContent()
 			} else if (theta[WATER] > 1. - Constants::eps) {
 				theta[WATER] += theta[AIR];
 			} else {
-				prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.20f, theta[ICE] = %.20f, theta[WATER] = %.20f, theta[WATER_PREF] = %.20f, theta[SOIL] = %.20f, theta[AIR] = %.20f", sum, theta[ICE], theta[WATER], theta[WATER_PREF], theta[SOIL], theta[AIR]);
+				//prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.20f, theta[ICE] = %.20f, theta[WATER] = %.20f, theta[WATER_PREF] = %.20f, theta[SOIL] = %.20f, theta[AIR] = %.20f", sum, theta[ICE], theta[WATER], theta[WATER_PREF], theta[SOIL], theta[AIR]);
 			}
 			theta[AIR] = 0.;
 		}
@@ -1878,7 +1882,7 @@ SnowStation::SnowStation(const bool& i_useCanopyModel, const bool& i_useSoilLaye
 	Ndata(), Edata(), Kt(NULL),Kt_vapor(NULL), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
 	WindScalingFactor(1.), TimeCountDeltaHS(0.),
-	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers)
+	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers),elementTrackingCounter(0.)
 {
 	if (i_useSeaIceModule)
 		Seaice = new SeaIce;
@@ -2279,7 +2283,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 	Ndata.front().z = 0.;
 	Ndata.front().T = (SSdata.nLayers > 0)? SSdata.Ldata.front().tl : Constants::meltfreeze_tk;
 	Ndata.front().rhov = Atmosphere::waterVaporDensity(Ndata.front().T, Atmosphere::vaporSaturationPressure(Ndata.front().T));
-	//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Ndata.front().rhov << ' ' << Ndata.front().T << "\n";
 	Ndata.front().u = 0.;
 	Ndata.front().f = 0.;
 	Ndata.front().udot = 0.;
@@ -2303,7 +2306,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Ndata[n].z = Ndata[n-1].z + SSdata.Ldata[ll].hl / static_cast<double>(SSdata.Ldata[ll].ne);
 			Ndata[n].T = Ndata[n-1].T + dT;
 			Ndata[n].rhov = Atmosphere::waterVaporDensity(Ndata[n].T, Atmosphere::vaporSaturationPressure(Ndata[n].T));
-			//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Ndata[n].rhov << ' ' << Ndata[n].T << "\n";
 			Ndata[n].u = 0.;
 			Ndata[n].f = 0.;
 			Ndata[n].udot = 0.;
@@ -2325,7 +2327,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			// Temperature data
 			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
 			Edata[e].rhov = Atmosphere::waterVaporDensity(Edata[e].Te, Atmosphere::vaporSaturationPressure(Edata[e].Te));
-			//std::cout << "ttttttttttt At front rhov=%.2lf, T=%.2lf "<< Edata[e].rhov << ' ' << Edata[e].Te << "\n";
+			Edata[e].elementIDTracking = e;
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
 			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T) / Edata[e].L;
 			// Creep data
@@ -2379,7 +2381,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
-			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive
+			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive		
 
 			// Check if pore space is available when water would freeze
 			const double porespace = (1. - Edata[e].theta[ICE] - Edata[e].theta[SOIL]) * (Constants::density_ice / Constants::density_water);
@@ -2441,6 +2443,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
 	ReSolver_dt = -1.;
+	
+	elementTrackingCounter=nElems; //The counter for element tracking for making comparison of any snow properties between two simulation (-)	
 }
 
 /**
@@ -2558,6 +2562,45 @@ void SnowStation::splitElement(const size_t& e)
 		Edata[e].h+=.5*Edata[e].L;
 		Edata[e+1].h-=.5*Edata[e+1].L;
 	}
+
+	/*
+	double elementIDTracking_e=Edata[e].elementIDTracking;
+	double vapTrans_cumulativeDenChange_e=Edata[e].vapTrans_cumulativeDenChange;
+	double all_cumulativeDenChange_e=Edata[e].all_cumulativeDenChange;
+	double vapTrans_snowDenChangeRate_e=Edata[e].vapTrans_snowDenChangeRate;
+	if(e==nElems-2) // if "e" was the index of the last element before splitting....
+	{
+		double f_upper=Edata[e].Rho*Edata[e].L*2.0; 
+		double f_lower=Edata[e-1].Rho*Edata[e-1].L;
+		Edata[e].elementIDTracking=f_upper/(f_upper+f_lower)*elementIDTracking_e+f_lower/(f_upper+f_lower)*Edata[e-1].elementIDTracking;
+		Edata[e].vapTrans_cumulativeDenChange=f_upper/(f_upper+f_lower)*vapTrans_cumulativeDenChange_e+f_lower/(f_upper+f_lower)*Edata[e-1].vapTrans_cumulativeDenChange;
+		Edata[e].all_cumulativeDenChange=f_upper/(f_upper+f_lower)*all_cumulativeDenChange_e+f_lower/(f_upper+f_lower)*Edata[e-1].all_cumulativeDenChange;
+		Edata[e].vapTrans_snowDenChangeRate=f_upper/(f_upper+f_lower)*vapTrans_snowDenChangeRate_e+f_lower/(f_upper+f_lower)*Edata[e-1].vapTrans_snowDenChangeRate;
+		Edata[e+1].elementIDTracking=elementIDTracking_e+(elementIDTracking_e-Edata[e].elementIDTracking);
+		Edata[e+1].vapTrans_cumulativeDenChange=vapTrans_cumulativeDenChange_e+(vapTrans_cumulativeDenChange_e-Edata[e].vapTrans_cumulativeDenChange);
+		Edata[e+1].all_cumulativeDenChange=all_cumulativeDenChange_e+(all_cumulativeDenChange_e-Edata[e].all_cumulativeDenChange);
+		Edata[e+1].vapTrans_snowDenChangeRate=vapTrans_snowDenChangeRate_e+(vapTrans_snowDenChangeRate_e-Edata[e].vapTrans_snowDenChangeRate);
+	}
+	else
+	{
+		// for bottom new elememt due to splitting ( bottom half) 
+		double f_upper_b=Edata[e].Rho*Edata[e].L*2.0; 
+		double f_lower_b=Edata[e-1].Rho*Edata[e-1].L;
+		Edata[e].elementIDTracking=f_upper_b/(f_upper_b+f_lower_b)*elementIDTracking_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].elementIDTracking;
+		Edata[e].vapTrans_cumulativeDenChange=f_upper_b/(f_upper_b+f_lower_b)*vapTrans_cumulativeDenChange_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].vapTrans_cumulativeDenChange;
+		Edata[e].all_cumulativeDenChange=f_upper_b/(f_upper_b+f_lower_b)*all_cumulativeDenChange_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].all_cumulativeDenChange;
+		Edata[e].vapTrans_snowDenChangeRate=f_upper_b/(f_upper_b+f_lower_b)*vapTrans_snowDenChangeRate_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].vapTrans_snowDenChangeRate;
+		
+		// for top new elememt due to splitting ( top half)		
+		double f_lower_t=Edata[e].Rho*Edata[e].L*2.0; 
+		double f_upper_t=Edata[e+2].Rho*Edata[e+2].L;
+		Edata[e+1].elementIDTracking=f_lower_t/(f_upper_t+f_lower_t)*elementIDTracking_e+f_upper_t/(f_upper_t+f_lower_t)*Edata[e+2].elementIDTracking;
+		Edata[e+1].vapTrans_cumulativeDenChange=f_lower_t/(f_upper_b+f_lower_b)*vapTrans_cumulativeDenChange_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].vapTrans_cumulativeDenChange;
+		Edata[e+1].all_cumulativeDenChange=f_lower_t/(f_upper_b+f_lower_b)*all_cumulativeDenChange_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].all_cumulativeDenChange;
+		Edata[e+1].vapTrans_snowDenChangeRate=f_lower_t/(f_upper_b+f_lower_b)*vapTrans_snowDenChangeRate_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].vapTrans_snowDenChangeRate;		
+	}
+	*/
+	
 }
 
 /**
@@ -2608,6 +2651,8 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	const double L_lower = EdataLower.L; //Thickness of lower element
 	const double L_upper = EdataUpper.L; //Thickness of upper element
 	double LNew = L_lower;               //Thickness of "new" element
+	double theta_air_lower=EdataLower.theta[AIR]; // the volume fraction of air for the lower element before any changes
+	double Rho_lower=EdataLower.Rho; // the density of the lower element before any changes
 
 	if (merge) {
 		// Determine new element length under the condition of keeping the density of the lower element constant, if the density of the lower element is larger than the upper element.
@@ -2671,10 +2716,14 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	}
 	EdataLower.heatCapacity();
 
-	EdataLower.rhov = (EdataUpper.rhov*L_upper + EdataLower.rhov*L_lower)/LNew;
-	EdataLower.vapTrans_fluxDiff = EdataUpper.vapTrans_fluxDiff + EdataLower.vapTrans_fluxDiff;
-	EdataLower.vapTrans_snowDenChangeRate = (EdataUpper.vapTrans_snowDenChangeRate*L_upper + EdataLower.vapTrans_snowDenChangeRate*L_lower)/LNew;
-	EdataLower.vapTrans_cumulativeDenChange = (EdataUpper.vapTrans_cumulativeDenChange*L_upper + EdataLower.vapTrans_cumulativeDenChange*L_lower)/LNew;
+	EdataLower.vapTrans_snowDenChangeRate = (EdataUpper.vapTrans_snowDenChangeRate*EdataUpper.Rho*L_upper + EdataLower.vapTrans_snowDenChangeRate*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.vapTrans_cumulativeDenChange = (EdataUpper.vapTrans_cumulativeDenChange*EdataUpper.Rho*L_upper + EdataLower.vapTrans_cumulativeDenChange*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.vapTrans_fluxDiff = (EdataUpper.vapTrans_fluxDiff*EdataUpper.Rho*L_upper + EdataLower.vapTrans_fluxDiff*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.Qmm = (EdataUpper.Qmm*EdataUpper.Rho*L_upper + EdataLower.Qmm*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.vapTrans_underSaturationDegree = (EdataUpper.vapTrans_underSaturationDegree*EdataUpper.Rho*L_upper + EdataLower.vapTrans_underSaturationDegree*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.elementIDTracking = (EdataUpper.elementIDTracking*EdataUpper.Rho*L_upper + EdataLower.elementIDTracking*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
+	EdataLower.rhov = (EdataUpper.rhov*EdataUpper.theta[AIR]*L_upper + EdataLower.rhov*theta_air_lower*L_lower)/EdataLower.theta[AIR];
+	EdataLower.Eps_vDot = (EdataUpper.Eps_vDot*EdataUpper.Rho*L_upper + EdataLower.Eps_vDot*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
 }
 
 /**

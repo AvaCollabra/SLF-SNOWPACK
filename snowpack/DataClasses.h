@@ -373,6 +373,8 @@ class ElementData {
 		double vapTrans_fluxDiff;  ///< vapor dissusion flux in the case of vapor transport (W/m^2/s)
 		double vapTrans_snowDenChangeRate;  ///< snow density change rate in the case of vapor transport (kg/m^3/s)
 		double vapTrans_cumulativeDenChange;  ///< cumulative density change  in the case of vapor transport (kg/m^3)
+		double vapTrans_underSaturationDegree;  ///< the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)
+		double elementIDTracking;  ///< the element id to track the element for making comparison of any snow properties between two simulation (-)
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
@@ -669,6 +671,7 @@ class SnowStation {
 		bool windward;              ///< True for windward (luv) slope
 		double WindScalingFactor;   ///< Local scaling factor for wind at drift station
 		double TimeCountDeltaHS;    ///< Time counter tracking erroneous settlement in operational mode
+		double elementTrackingCounter; ///< The counter for element tracking for making comparison of any snow properties between two simulation (-)		
 
 		static const double comb_thresh_l_ratio, comb_thresh_ice, comb_thresh_water;
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;
@@ -725,7 +728,8 @@ class SurfaceFluxes {
 			MS_SUBLIMATION,    ///< The mass loss or gain of the top element due to snow (ice) sublimating
 			MS_SNOWPACK_RUNOFF,///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
-			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
+			MS_FLOODING,       ///< The mass gain due to adding ocean water to snow- seaice by flodding process						
+			MS_ICEBASE_MELTING_FREEZING,       ///< The mass gain/loss of the ice base due to melting-freezing						
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 

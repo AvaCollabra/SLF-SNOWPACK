@@ -227,10 +227,11 @@ void SnowpackConfig::setDefaults()
 		if (watertransportmodel_soil.empty()) addKey("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", "NIED");
 
 	} else if (variant == "ANTARCTICA" || variant == "POLAR") {
-		if (variant == "ANTARCTICA") {
+		if (variant == "ANTARCTICA" || variant == "POLAR") {
+			/*
 			if (hn_density.empty()) addKey("HN_DENSITY", "SnowpackAdvanced", "EVENT");
 
-			addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.0001"); //Minimum element length (m)
+			addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", "0.001"); //Minimum element length (m)
 			minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
 			if ( !enforce_measured_snow_heights) {
@@ -239,6 +240,7 @@ void SnowpackConfig::setDefaults()
 				ss << tmp;
 				addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 			}
+			*/
 		}
 
 		string hoar_density_buried; getValue("HOAR_DENSITY_BURIED", "SnowpackAdvanced", hoar_density_buried, IOUtils::nothrow);
