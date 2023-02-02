@@ -34,6 +34,8 @@ build:
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
+    # Install Eigen3 (to support Vapour Transport)
+    - apt-get -y install libeigen3-dev
     # Build snowpack
     - mkdir build && cd build
     - cmake -S .. -B . -D DEST:STRING=safe -D VERSION_FROM_GIT:BOOL=ON -D BUILD_TESTING:BOOL=ON
@@ -52,6 +54,8 @@ build:
   stage: test
   script:
     - apt-get -y install numdiff
+    # Install Eigen3 (to support Vapour Transport)
+    - apt-get -y install libeigen3-dev
     # Install meteoio
     - METEO_IO_DEB=$(find ./meteoio -maxdepth 1 -type f -name "MeteoIO-*.deb")
     - dpkg -i $METEO_IO_DEB
@@ -124,6 +128,8 @@ Debian release build:
   dependencies: []
   script:
     - apt-get -y install doxygen graphviz jq # both doxygen and graphviz are required for cmake "FindDoxygen"
+    # Install Eigen3 (to support Vapour Transport)
+    - apt-get -y install libeigen3-dev
     # Download newest meteoio release
     - 'JSON_RESPONSE=$(curl "https://gitlabext.wsl.ch/api/v4/projects/30/releases" --header "JOB-TOKEN: $CI_JOB_TOKEN")'
     - 'echo "MeteoIO Releases: ${JSON_RESPONSE}"'
@@ -160,7 +166,7 @@ Fedora release build:
     - if: $CI_COMMIT_TAG # Run this job when a tag is created manually
   dependencies: []
   before_script:
-    - yum -y install make gcc g++ cmake doxygen graphviz rpm-build jq
+    - yum -y install make gcc g++ cmake doxygen graphviz rpm-build jq eigen3-devel
   script:
     # Download newest meteoio release
     - 'JSON_RESPONSE=$(curl "https://gitlabext.wsl.ch/api/v4/projects/30/releases" --header "JOB-TOKEN: $CI_JOB_TOKEN")'
