@@ -140,6 +140,7 @@ class CurrentMeteo {
 		double rime_hn;            ///< riming index of new snow
 		double lwc_hn;             ///< liquid water content of new snow
 
+		bool can_unload;           ///< for canopy: unloading occurring (yes/no)
 	private:
 		size_t getNumberMeasTemperatures(const mio::MeteoData& md);
 
