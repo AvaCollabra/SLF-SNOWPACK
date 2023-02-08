@@ -117,11 +117,11 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 	if(enable_vapour_transport)
 	{
 		cfg.getValue("ENABLE_VAPOUR_TRANSPORT_SOIL", "SnowpackAdvanced", enable_vapour_transport_soil);
-		
+
 		// the water vapor subtime step
 		cfg.getValue("WATER_VAPOR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
 		waterVaporTransport_timeStep=std::min(sn_dt,waterVaporTransport_timeStep);
-		
+
 		// the water vapor transport scheme, f=1 fully implicit, f=0.5 Crank-Nicolson
 		cfg.getValue("WATER_VAPOR_TRANSPORT_IMPLICIT_FACTOR", "SnowpackAdvanced", f);
 
@@ -183,15 +183,12 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	if (enable_vapour_transport)
 	{
-		                                                                   
-		//if(!enable_vapour_transport_soil || Xdata.SoilNode<Xdata.getNumberOfNodes()-1)
-		//{
-			compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
-			ql=0;
-		//}
+
+		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
+		ql=0;
 
 		if(!enable_vapour_transport_soil && Xdata.SoilNode==Xdata.getNumberOfNodes()-1) return;
-		 
+
 		const size_t nN = Xdata.getNumberOfNodes();
 		size_t nE = nN-1;
 		vector<NodeData>& NDS = Xdata.Ndata;
@@ -209,36 +206,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			factor_[i]=0.;
 			//EMS[i].VG.SetVGParamsSoil();
 		}
-		
+
 		std::vector<double> D_(nE, 0.);
 		for (size_t i=0; i<=nE-1; i++)
 		{
 			double theta_air = std::max(EMS[i].theta[AIR],0.0);
-			double tortuosity = pow(theta_air,7./3.)/pow(1-EMS[i].theta[SOIL], 2.);    
-			double D_vapSoil = tortuosity * theta_air * Constants::diffusion_coefficient_in_air; 
-			//D_vapSoil = 1.5*theta_air *Constants::diffusion_coefficient_in_air;
-			// const double D_vapSoil = Constants::diffusion_coefficient_in_air * pow(aaa,10./3.)/nnn/nnn; // based on jury1983
+			double tortuosity = pow(theta_air,7./3.)/pow(1-EMS[i].theta[SOIL], 2.);
+			double D_vapSoil = tortuosity * theta_air * Constants::diffusion_coefficient_in_air;
 
-			// based on Colbeck
-			//double Dsnow = Constants::diffusion_coefficient_in_snow;
-			
-			/*
-			// based on Calonne et al. 2014
-			double Dsnow = 0.;
-			if(EMS[i].Rho < 450.)
-			{
-				Dsnow= ( (3./2.)*(1.-EMS[i].Rho/Constants::density_ice)-(1./2.) ) * Constants::diffusion_coefficient_in_air;
-			}
-			else
-			{
-				Dsnow= ( (3./2.)*(1.-450./Constants::density_ice)-(1./2.) ) * (1-(EMS[i].Rho-450.)/(Constants::density_ice-450.)) * Constants::diffusion_coefficient_in_air;
-			}
-			*/
-			
-			// based on A. C. Hansen and W. E. Foslien 2015: https://www.the-cryosphere.net/9/1857/2015/
-			//double Dsnow = (EMS[i].theta[ICE]*EMS[i].theta[AIR]+1.)*Constants::diffusion_coefficient_in_air;
-			
-			
 			// based on Foslien (1994)
 			double Dsnow = EMS[i].theta[ICE]*theta_air*Constants::diffusion_coefficient_in_air+
 						   theta_air*Constants::diffusion_coefficient_in_air/
@@ -246,84 +221,29 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 							EMS[i].theta[ICE]*Constants::lh_sublimation*Constants::diffusion_coefficient_in_air*dRhov_dT(EMS[i].Te)/Constants::conductivity_ice+
 							theta_air
 						   );
-			/*
-			double Dsnow = EMS[i].theta[ICE]*EMS[i].theta[AIR]*Constants::diffusion_coefficient_in_air+
-						   EMS[i].theta[AIR]*Constants::diffusion_coefficient_in_air/
-						   (EMS[i].theta[ICE]*Constants::conductivity_air/Constants::conductivity_ice+
-							EMS[i].theta[ICE]*Constants::lh_sublimation*Constants::diffusion_coefficient_in_air*dRhov_dT(EMS[i].Te)/Constants::conductivity_ice+
-							EMS[i].theta[AIR]
-						   );
-						   */
-						  
-			
+
 			D_[i] = factor_[i]*Dsnow + (1.0-factor_[i])*D_vapSoil;
-			//if(i==Xdata.SoilNode-1) std::cout << "i/D_[i]/factor_[i]/EMS[i].theta[AIR]/EMS[i].theta[ICE]/EMS[i].theta[SOIL]/D_vapSoil " << i << ' ' << D_[i] << ' ' << factor_[i] << ' ' << EMS[i].theta[AIR] << ' ' << EMS[i].theta[ICE] << ' ' << EMS[i].theta[SOIL] << ' ' << D_vapSoil << "\n";					
-		}				
-		
+		}
+
 		std::vector<double> hm_(nN, 0.); // mass transfer coefficient m s-1
 		double water_molecular_mass = 18.0153e-3; // (kg)
 		double gaz_constant = 8.31451; // (J mol-1 K-1)
 		for(size_t i=0; i<nN; i++)
 		{
 			double Re,saturationDensity;
-			saturationDensity = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));	
+			saturationDensity = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
 			hm_[i] =Constants::density_ice/saturationDensity/9.7e9; // hm_experimental, Pirmin 2012, M_mm=as_all*hm_experimental*(rhov_sat-rhov)
-
-			//Re = 0.0;
-			//hm_[i] =1.e-3*(0.566*Re+0.075); //Neumann 2009
-			//hm_[i] =Constants::density_ice/saturationDensity/9.7e9; // Pirmin 2012
-			//if(i>=Xdata.SoilNode) std::cout << "i/hm " << i << ' ' << pow(saturationDensity/1.88*(Constants::lh_sublimation*water_molecular_mass/gaz_constant/NDS[i].T-1.0)*
-			//									   Constants::lh_sublimation/Constants::conductivity_air/NDS[i].T+1.0/Constants::diffusion_coefficient_in_air/1.88,-1.0) << "\n";
-			//if(i>=Xdata.SoilNode) std::cout << "i/hm " << i << ' ' << (3.8e-5/Atmosphere::waterVaporDensity(258, Atmosphere::vaporSaturationPressure(258))-1)*
-			//										0.00008659*6.0/(0.001*1.3)*(1./(pow(0.001*1.3,2.)*3.14))*(0.001*1.3*3.14)*pow(1/1.88*(Constants::lh_sublimation*water_molecular_mass/gaz_constant/258.-1.0)*
-			//								   Constants::lh_sublimation/Constants::conductivity_air/254+1.0/Constants::diffusion_coefficient_in_air/1.88/Atmosphere::waterVaporDensity(258, Atmosphere::vaporSaturationPressure(258)),-1.0) << "\n";
-		
-			// hm_theoretical,------->M_mm=as_active*hm_theoretical*(rhov_sat-rhov)
-			/*
-			if(i==0)
-				double rwTors_u=pow((EMS[i].theta[WATER]+EMS[i].theta[ICE])/EMS[i].theta[SOIL]+1., 1./3.);				
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.002*rwTors_u*EMS[i].rg);
-			}
-			else if(i>0 && i<Xdata.SoilNode)
-				double rwTors_u=pow((EMS[i].theta[WATER]+EMS[i].theta[ICE])/EMS[i].theta[SOIL]+1., 1./3.);
-				double rwTors_d=pow((EMS[i-1].theta[WATER]+EMS[i-1].theta[ICE])/EMS[i-1].theta[SOIL]+1., 1./3.);
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.5*0.002*rwTors_d*EMS[i-1].rg+0.5*0.002*rwTors_u*EMS[i].rg);
-			}
-			else if(i==Xdata.SoilNode && Xdata.SoilNode==nN-1 )
-			{
-				double rwTors_d=pow((EMS[i-1].theta[WATER]+EMS[i-1].theta[ICE])/EMS[i-1].theta[SOIL]+1., 1./3.);							
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.002*rwTors_d*EMS[i-1].rg);
-				//std::cout << "soil rg: " << EMS[i-1].rg << ' ' << ' ' << rwTors_d << ' ' << hm_[i] << "\n";														
-			}
-			else if(i==Xdata.SoilNode && Xdata.SoilNode<nN-1 )
-				double rwTori_u=pow(EMS[i].theta[WATER]/EMS[i].theta[ICE]+1., 1./3.);
-				double rwTors_d=pow((EMS[i-1].theta[WATER]+EMS[i-1].theta[ICE])/EMS[i-1].theta[SOIL]+1., 1./3.);							
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.5*0.002*rwTors_d*EMS[i-1].rg+0.5*0.001*rwTori_u*EMS[i].ogs);
-				//hm_[i]=1.88*Constants::diffusion_coefficient_in_air/(0.001*rwTori_u*EMS[i].ogs);
-			}
-			else if(i>Xdata.SoilNode && i<nN-1)
-			{
-				double rwTori_u=pow(EMS[i].theta[WATER]/EMS[i].theta[ICE]+1., 1./3.);
-				double rwTori_d=pow(EMS[i-1].theta[WATER]/EMS[i-1].theta[ICE]+1., 1./3.);
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.5*0.001*rwTori_d*EMS[i-1].ogs+0.5*0.001*rwTori_u*EMS[i].ogs);								
-			}
-			else //i==nN-1
-			{
-				double rwTori_d=pow(EMS[i-1].theta[WATER]/EMS[i-1].theta[ICE]+1., 1./3.);
-				hm_[i]=2.0*Constants::diffusion_coefficient_in_air/(0.001*rwTori_d*EMS[i-1].ogs);
-			}
-			*/
 		}
-		
-		std::vector<double> as_(nN, 0.); // the specific surface area m-1				
+
+		std::vector<double> as_(nN, 0.); // the specific surface area m-1
 		for(size_t i=0; i<nN; i++)
 		{
-			double saturationDensity = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));										
+			double saturationDensity = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
 
 			// as_all---------->M_mm=as_all*hm_experimental*(rhov_sat-rhov)
 			if(i==0)
 			{
-				double rwTors_u=pow((EMS[i].theta[WATER]+EMS[i].theta[ICE])/EMS[i].theta[SOIL]+1., 1./3.);				
+				double rwTors_u=pow((EMS[i].theta[WATER]+EMS[i].theta[ICE])/EMS[i].theta[SOIL]+1., 1./3.);
 				double apparentTheta=EMS[i].theta[SOIL]+EMS[i].theta[ICE]+EMS[i].theta[WATER];
 				//if(apparentTheta==EMS[i].theta[SOIL]) apparentTheta=0.; //dry soil
 				as_[i]=6.0*apparentTheta/(0.002*rwTors_u*EMS[i].rg);
@@ -335,16 +255,16 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				double apparentTheta=0.5*(EMS[i].theta[SOIL]+EMS[i].theta[ICE]+EMS[i].theta[WATER])
 									+0.5*(EMS[i-1].theta[SOIL]+EMS[i-1].theta[ICE]+EMS[i-1].theta[WATER]);
 				//if(apparentTheta==0.5*(EMS[i].theta[SOIL]+EMS[i-1].theta[SOIL])) apparentTheta=0.; //dry soil
-									
+
 				as_[i]=6.0*apparentTheta/(0.5*0.002*rwTors_d*EMS[i-1].rg+0.5*0.002*rwTors_u*EMS[i].rg);
 			}
 			else if(i==Xdata.SoilNode && Xdata.SoilNode==nN-1 )
 			{
 				double rwTors_d=pow((EMS[i-1].theta[WATER]+EMS[i-1].theta[ICE])/EMS[i-1].theta[SOIL]+1., 1./3.);
 				double apparentTheta=EMS[i-1].theta[SOIL]+EMS[i-1].theta[ICE]+EMS[i-1].theta[WATER];
-				//if(apparentTheta==EMS[i-1].theta[SOIL]) apparentTheta=0.; //dry soil				
-				as_[i]=6.0*apparentTheta/(0.002*rwTors_d*EMS[i-1].rg);											
-				//std::cout << "soil rg: " << EMS[i-1].rg << ' ' << ' ' << rwTors_d << ' ' << hm_[i] << "\n";														
+				//if(apparentTheta==EMS[i-1].theta[SOIL]) apparentTheta=0.; //dry soil
+				as_[i]=6.0*apparentTheta/(0.002*rwTors_d*EMS[i-1].rg);
+				//std::cout << "soil rg: " << EMS[i-1].rg << ' ' << ' ' << rwTors_d << ' ' << hm_[i] << "\n";
 			}
 			else if(i==Xdata.SoilNode && Xdata.SoilNode<nN-1 )
 			{
@@ -352,7 +272,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				double rwTors_d=pow((EMS[i-1].theta[WATER]+EMS[i-1].theta[ICE])/EMS[i-1].theta[SOIL]+1., 1./3.);
 				double apparentTheta=0.5*(EMS[i].theta[ICE]+EMS[i].theta[WATER])
 									+0.5*(EMS[i-1].theta[SOIL]+EMS[i-1].theta[ICE]+EMS[i-1].theta[WATER]);
-				as_[i]=6.0*apparentTheta/(0.5*0.002*rwTors_d*EMS[i-1].rg+0.5*0.001*rwTori_u*EMS[i].ogs);											
+				as_[i]=6.0*apparentTheta/(0.5*0.002*rwTors_d*EMS[i-1].rg+0.5*0.001*rwTori_u*EMS[i].ogs);
 			}
 			else if(i>Xdata.SoilNode && i<nN-1)
 			{
@@ -360,55 +280,29 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				double rwTori_d=pow(EMS[i-1].theta[WATER]/EMS[i-1].theta[ICE]+1., 1./3.);
 				double apparentTheta=0.5*(EMS[i].theta[ICE]+EMS[i].theta[WATER])
 									+0.5*(EMS[i-1].theta[ICE]+EMS[i-1].theta[WATER]);
-				as_[i]=6.0*apparentTheta/(0.5*0.001*rwTori_d*EMS[i-1].ogs+0.5*0.001*rwTori_u*EMS[i].ogs);														
+				as_[i]=6.0*apparentTheta/(0.5*0.001*rwTori_d*EMS[i-1].ogs+0.5*0.001*rwTori_u*EMS[i].ogs);
 			}
 			else //i==nN-1
 			{
 				double rwTori_d=pow(EMS[i-1].theta[WATER]/EMS[i-1].theta[ICE]+1., 1./3.);
 				double apparentTheta=EMS[i-1].theta[ICE]+EMS[i-1].theta[WATER];
-				as_[i]=6.0*apparentTheta/(0.001*rwTori_d*EMS[i-1].ogs);																		
-			}						
+				as_[i]=6.0*apparentTheta/(0.001*rwTori_d*EMS[i-1].ogs);
+			}
 
-			// as_active------->M_mm=as_active*hm_theoretical*(rhov_sat-rhov)
-			/*			
-			if(i==0)
-			{
-				as_[i]=6.0*EMS[i].theta[SOIL]*Constants::density_ice/saturationDensity/9.7e9/2.0/Constants::diffusion_coefficient_in_air;
-			}
-			else if(i>0 && i<Xdata.SoilNode)
-			{
-				as_[i]=6.0*(0.5*EMS[i-1].theta[SOIL]+0.5*EMS[i].theta[SOIL])*Constants::density_ice/saturationDensity/9.7e9/2.0/Constants::diffusion_coefficient_in_air;
-			}
-			else if(i==Xdata.SoilNode && Xdata.SoilNode==nN-1 )
-			{
-				//as_[i]=6.0*(0.5*EMS[i-1].theta[SOIL]+0.5)*Constants::density_ice/saturationDensity/9.7e9/(0.5*1.88+0.5*2.)/Constants::diffusion_coefficient_in_air;
-				as_[i]=6.0*(0.5*EMS[i-1].theta[SOIL])*Constants::density_ice/saturationDensity/9.7e9/2.0/Constants::diffusion_coefficient_in_air;
-			}
-			else if(i==Xdata.SoilNode && Xdata.SoilNode<nN-1 )
-			{
-				as_[i]=0.5*(6.0*Constants::density_ice/saturationDensity/9.7e9/1.88/Constants::diffusion_coefficient_in_air)
-					  +0.5*(6.0*EMS[i-1].theta[SOIL]*Constants::density_ice/saturationDensity/9.7e9/2.0/Constants::diffusion_coefficient_in_air);								
-			}
-			else //i==nN-1
-			{
-				as_[i]=6.0*Constants::density_ice/saturationDensity/9.7e9/1.88/Constants::diffusion_coefficient_in_air;
-			}
-			*/											
 		}
-				
+
 		double min_dt =1e30;
 		for(size_t i=Xdata.SoilNode; i<nE; i++)
 		{
 			double saturationDensity=Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 			double diffVaporVelocity =std::abs(-D_[i]*(NDS[i+1].rhov-NDS[i].rhov)/EMS[i].L/saturationDensity);
 			double dt=EMS[i].L/diffVaporVelocity;
-			min_dt = std::min(min_dt,dt);			
+			min_dt = std::min(min_dt,dt);
 		}
-		//std::cout << "min_dt/waterVaporTransport_timeStep " << min_dt << ' ' << waterVaporTransport_timeStep << "\n";
 
-		timeStep=(waterVaporTransport_timeStepAdjust) ? std::min(min_dt,waterVaporTransport_timeStep) : waterVaporTransport_timeStep;		
+		timeStep=(waterVaporTransport_timeStepAdjust) ? std::min(min_dt,waterVaporTransport_timeStep) : waterVaporTransport_timeStep;
 		int nTime= int(sn_dt/timeStep)+1;
-		double time = 0;		
+		double time = 0;
 		for( size_t l=0; l<=nTime; l++)
 		{
 			time=time+timeStep;
@@ -419,22 +313,19 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			}
 
 			if (!compDensityProfile(Mdata, Xdata, true, ql, surfaceVaporPressure, hm_, as_, D_,oldVaporDenNode)) break;
-			
-			//if(time==sn_dt) break;			 				
-		//}			
 
 			for (size_t i=0; i<=nE-1; i++)
 			{
-				double saturationDensity=Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));				
+				double saturationDensity=Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 				double saturationVaporUp = Atmosphere::waterVaporDensity(NDS[i+1].T, Atmosphere::vaporSaturationPressure(NDS[i+1].T));
-				double saturationVaporDown = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));				
+				double saturationVaporDown = Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
 				double diffRhov_hm_as_Up=(f*NDS[i+1].rhov+(1-f)*oldVaporDenNode[i+1]-saturationVaporUp)*hm_[i+1]*as_[i+1];
-				double diffRhov_hm_as_Down=(f*NDS[i].rhov+(1-f)*oldVaporDenNode[i]-saturationVaporDown)*hm_[i]*as_[i];					
+				double diffRhov_hm_as_Down=(f*NDS[i].rhov+(1-f)*oldVaporDenNode[i]-saturationVaporDown)*hm_[i]*as_[i];
 				totalMassChange[i] =(0.5*diffRhov_hm_as_Down+0.5*diffRhov_hm_as_Up)*timeStep*EMS[i].L; //total mass change, (kg m-2 )
 				//totalMassChange[i]=(0.5*hm_[i+1]*as_[i+1]+0.5*hm_[i]*as_[i])*(EMS[i].rhov-saturationDensity)*timeStep*EMS[i].L;
 			}
-			
-			e = nE;			
+
+			e = nE;
 			// consider the mass change due to vapour transport in snow/soil
 			while (e-- > 0) {
 				//const double massPhaseChange = totalMassChange[e]+deltaM[e];
@@ -456,7 +347,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 						 ); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
 
 				}
-				
+
 
 				// If there is no pore space, or, in fact, only so much pore space to accomodate the larger volume occupied by ice when all water freezes,
 				// we inhibit vapour flux. This is necessary to maintain saturated conditions when present, and this is in turn necessary for the stability in the Richards equation solver.
@@ -467,22 +358,19 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				//deltaM[e] += dM;
 				deltaM[e] = dM;//JJJJJ
 			}
-			
-			if(time==sn_dt) break;			 				
+
+			if(time==sn_dt) break;
 		}
 
 		for (size_t i = 0; i < nE; i++) {
-			//double topSaturatedVapor=Atmosphere::waterVaporDensity(NDS[i+1].T, Atmosphere::vaporSaturationPressure(NDS[i+1].T));
-			//double botSaturatedVapor=Atmosphere::waterVaporDensity(NDS[i].T, Atmosphere::vaporSaturationPressure(NDS[i].T));
-			//EMS[i].vapTrans_fluxDiff =-D_[i]*(topSaturatedVapor-botSaturatedVapor)/EMS[i].L;
 			EMS[i].vapTrans_fluxDiff =-D_[i]*(NDS[i+1].rhov-NDS[i].rhov)/EMS[i].L;
 		}
 
 		double dHoar = 0.;
 		for (e = 0; e < nE; e++)
-		{	
+		{
 			EMS[e].Qmm = 0.0;
-			
+
 			if (deltaM[e] < 0.) {
 				// Mass loss: apply mass change first to water, then to ice, based on energy considerations
 				// We can only do this partitioning here in this "simple" way, without checking if the mass is available, because we already limited dM above, based on available ICE + WATER.
@@ -517,7 +405,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 				assert(EMS[e].M >= (-Constants::eps2)); //mass must be positive
 			}
 
-			
+
 			EMS[e].theta[AIR] = std::max(1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL],0.);
 			if(std::fabs(EMS[e].theta[AIR])<1.e-15)
 			{
@@ -531,33 +419,13 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 							EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[SOIL], EMS[e].theta[AIR]);
 					throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
 			}
-			
-			/*
-			// Numerical rounding errors were found to lead to theta[AIR] < 0, so force the other components between [0,1]:
-			EMS[e].theta[ICE] = std::max(0., std::min(1. - EMS[e].theta[SOIL], EMS[e].theta[ICE]));
-			EMS[e].theta[WATER] = std::max(0., std::min(1. - EMS[e].theta[SOIL], EMS[e].theta[WATER]));
-			EMS[e].theta[WATER_PREF] = std::max(0., std::min(1., EMS[e].theta[WATER_PREF]));
-			// Update theta[AIR] and density:
-			EMS[e].theta[AIR] = (1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);		
-			EMS[e].updDensity();
-			assert(EMS[e].Rho > 0 || EMS[e].Rho==IOUtils::nodata); //density must be positive
-			if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {
-				if(EMS[e].theta[AIR] > -Constants::eps2) {
-					EMS[e].theta[AIR] = 0.;
-				} else {
-					prn_msg(__FILE__, __LINE__, "err", Date(),
-						"Volume contents: e=%d nE=%d rho=%lf ice=%lf wat=%lf wat_pref=%le air=%le  soil=%le", e, nE, EMS[e].Rho, EMS[e].theta[ICE], EMS[e].theta[WATER], EMS[e].theta[WATER_PREF], EMS[e].theta[AIR], EMS[e].salinity);
-					throw IOException("Cannot evaluate mass balance in vapour transport LayerToLayer routine", AT);
-				}
-			}			
-			*/
-			
+
 			//some useful output in case of vapor transport
-			double sVaporDown = Atmosphere::waterVaporDensity(NDS[e].T, Atmosphere::vaporSaturationPressure(NDS[e].T));				
+			double sVaporDown = Atmosphere::waterVaporDensity(NDS[e].T, Atmosphere::vaporSaturationPressure(NDS[e].T));
 			double sVaporUp = Atmosphere::waterVaporDensity(NDS[e+1].T, Atmosphere::vaporSaturationPressure(NDS[e+1].T));
 			EMS[e].vapTrans_underSaturationDegree = (0.5*(NDS[e].rhov-sVaporDown)+0.5*(NDS[e+1].rhov-sVaporUp))/(0.5*sVaporDown+0.5*sVaporUp);
 			EMS[e].vapTrans_cumulativeDenChange += deltaM[e]/EMS[e].L;
-			EMS[e].vapTrans_snowDenChangeRate = deltaM[e]/EMS[e].L/sn_dt;			
+			EMS[e].vapTrans_snowDenChangeRate = deltaM[e]/EMS[e].L/sn_dt;
 		}
 
 		Sdata.hoar += dHoar;
@@ -565,14 +433,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		if (NDS[nN-1].hoar < 0.) {
 			NDS[nN-1].hoar = 0.;
 		}
-		
+
 	}
 	else
 	{
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
 		ql=0;
 	}
-	
+
 }
 
 /**
@@ -778,14 +646,14 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		// Case of fixed height above ground surface (e.g., weather station)
 		actual_height_of_meteo_values = height_of_meteo_values;
 	}
-	
+
 	bool bottomDirichletBCtype= false;
-	
+
 	const size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	const size_t nX = nN; // number of unknowns	
+	const size_t nX = nN; // number of unknowns
 
 	//Built-in direct solvers:
 	//SparseLU<SparseMatrix<double> > solver;
@@ -793,26 +661,26 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	//SimplicialLLT<SparseMatrix<double> > solver;
 	//SimplicialLDLT<SparseMatrix<double> > solver;
 
-	//Built-in iterative solvers:	
+	//Built-in iterative solvers:
 	BiCGSTAB<SparseMatrix<double> > solver;
 	//ConjugateGradient<SparseMatrix<double> > solver;
 	//LeastSquaresConjugateGradient <SparseMatrix<double> > solver;
     //solver.setTolerance(1.e-45);
     //solver.setMaxIterations(1e6);
-	
+
 	SparseMatrix<double,RowMajor> A(nX,nX);
 	//SparseMatrix<double> A(nX,nX);
 	std::vector<Trip> tripletList(nX);
 	VectorXd b(nX);
-	VectorXd xx(nX);	
-		
+	VectorXd xx(nX);
+
 	// grid
     std::vector<double> z(nN,0.);
     for(size_t i=0; i<nN; i++)
-    {   
+    {
 		z[i]=NDS[i].z;
-	}	
-	
+	}
+
 	// initial values
 	std::vector<double> D_(nN, Constants::diffusion_coefficient_in_air);
 	for(size_t i=0; i<nN; i++)
@@ -830,14 +698,14 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 			D_[i]=D_el[i];
 		}
 	}
-	
+
 	// initial values
 	// if the effective water vapor diffusivity in air is defined eps_=thata_a,
 	// otherwise for the effective water vapor diffusivity in snow eps_=1.
-	// for now Deff,s is available so eps_=1	
+	// for now Deff,s is available so eps_=1
 	std::vector<double> eps_(nN, 1.0);
 	for(size_t i=0; i<nN; i++)
-	{		
+	{
 		if(i==0)
 		{
 			eps_[i]=std::max(EMS[i].theta[AIR],1.0);
@@ -849,20 +717,20 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		else
 		{
 			eps_[i]=std::max(EMS[i].theta[AIR],1.0);
-		}					
+		}
 	}
-			
+
 	double error_max = 0;
 	do
 	{
 		error_max = 0;
-						
+
         // the lower B.C.
 		if(bottomDirichletBCtype){
 			double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(NDS[0].T, Atmosphere::vaporSaturationPressure(NDS[0].T));
 			NDS[0].rhov=elementSaturationVaporDensity;
 		}
-		
+
 		// diffusion equation
 		double v_ij=0.;
 		A.setZero();
@@ -871,174 +739,54 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		double eps_n;
 		for(size_t k=0; k<=nN-1; k++)
 		{
-			saturationDensity=Atmosphere::waterVaporDensity(NDS[k].T, Atmosphere::vaporSaturationPressure(NDS[k].T));			
-																						
+			saturationDensity=Atmosphere::waterVaporDensity(NDS[k].T, Atmosphere::vaporSaturationPressure(NDS[k].T));
+
 			if(k!=0 && k!=nN-1)
-			{								
+			{
 				dz_u=z[k+1]-z[k];
 				dz_d=z[k]-z[k-1];
 				eps_n=(0.5*eps_[k]+0.5*eps_[k-1]);
-				
+
 				b[k]= eps_n*NDS[k].rhov/timeStep+hm_[k]*as_[k]*(saturationDensity-(1-f)*NDS[k].rhov);
 				b[k]+= -NDS[k].rhov*((1-f)*2.0*eps_[k]*D_[k]/dz_u/(dz_u+dz_d)+(1-f)*2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d));
 				b[k]+= -NDS[k+1].rhov*(1-f)*-2.0*eps_[k]*D_[k]/dz_u/(dz_u+dz_d);
 				b[k]+= -NDS[k-1].rhov*(1-f)*-2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d);
-							    										
+
 				v_ij=f*2.0*eps_[k]*D_[k]/dz_u/(dz_u+dz_d)+f*2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d)+eps_n*1.0/timeStep+hm_[k]*as_[k]*f;
 				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-							  
-				v_ij=f*-2.0*eps_[k]*D_[k]/dz_u/(dz_u+dz_d);	  
-				tripletList.push_back(Trip(k,k+1,v_ij));//Set up the matrix upper diagonals, k+1
-								  								  
-				v_ij=f*-2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d);	  
-				tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
 
-				/*
-				if(k>=Xdata.SoilNode)
-				{
-					std::cout << "k/temporal/diffusion/hmas/b " <<  k << ' ' <<	eps_n/timeStep << ' ' 
-															<< eps_[k]*f*2.0*D_[k]/dz_u/(dz_u+dz_d)+eps_[k-1]*f*2.0*D_[k-1]/dz_d/(dz_u+dz_d) << ' ' 
-															<< hm_[k]*as_[k]  << ' ' << b[k] << "\n";
-				}
-				*/
-				
+				v_ij=f*-2.0*eps_[k]*D_[k]/dz_u/(dz_u+dz_d);
+				tripletList.push_back(Trip(k,k+1,v_ij));//Set up the matrix upper diagonals, k+1
+
+				v_ij=f*-2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d);
+				tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
 			}
 			if(k==nN-1)
-			{	
-	
+			{
 				//normal top B.C. assuming satuarion condition for the uppermost node of snowpack
-				//if(Xdata.SoilNode<nN-1)
-				//{
-					b[k]=saturationDensity;
-					v_ij=1.0;
-					tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-				//}
-				/*
-				//normal top B.C. assuming zero flux of the uppermost element of snowpack
-				b[k]=0;
-
-				v_ij=1.;
+				b[k]=saturationDensity;
+				v_ij=1.0;
 				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-
-				v_ij=-1.;	  
-				tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
-				*/
-				
-				
-				//normal top B.C. assuming diffusive mass flux of the uppermost element of snowpack equals to mass flux from(to) atmoshpere to(from) snowpack
-				/*
-				if(Xdata.SoilNode==nN-1)
-				{
-					double beta = SnLaws::compLatentHeat(Snowpack::EVAP_RELATIVE_HUMIDITY, Mdata, Xdata, actual_height_of_meteo_values);
-					double p_vapor = Mdata.rh * Atmosphere::vaporSaturationPressure(Mdata.ta);
-					double rhov_atm = Atmosphere::waterVaporDensity(Mdata.ta, p_vapor);		
-					dz_d=z[k]-z[k-1];
-					double Xatm = 28.9647e-3/8.31451/Mdata.ta;				
-					double Xsurf = 28.9647e-3/8.31451/NDS[k].T;
-
-					b[k]=beta/Xatm/Constants::lh_sublimation*rhov_atm;
-
-					v_ij=beta/Xsurf/Constants::lh_sublimation+D_[k]/dz_d;
-					tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-
-					v_ij=-D_[k]/dz_d;	  
-					tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
-				}
-				*/
-				
-				/*				
-				//assuming the net flux divergence of the uppermost element of snowpack is zero
-
-				eps_n=eps_[k]; // volumetric air content for node k=nN-1
-
-				b[k]=eps_n*NDS[k].rhov/timeStep+hm_[k]*as_[k]*saturationDensity;
-
-				v_ij=eps_n*1.0/timeStep+hm_[k]*as_[k];
-				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-				*/
-								
-				/*				
-				//BB
-				double beta = SnLaws::compLatentHeat(Snowpack::EVAP_RELATIVE_HUMIDITY, Mdata, Xdata, actual_height_of_meteo_values);
-				double p_vapor = Mdata.rh * Atmosphere::vaporSaturationPressure(Mdata.ta);
-				double rhov_atm = Atmosphere::waterVaporDensity(Mdata.ta, p_vapor);		
-				dz_d=z[k]-z[k-1];
-				dz_dd=z[k-1]-z[k-2];
-				double Xatm = 28.9647e-3/8.31451/Mdata.ta;				
-				double Xsurf = 28.9647e-3/8.31451/NDS[k].T;
-
-				eps_n=eps_[k]; // volumetric air content for node k=nN-1
-				double D_nd = 0.5*D_[k-1]+0.5*D_[k-2]; // diffusivity for node k=nN-2
-				double eps_nd = 0.5*eps_[k-1]+0.5*eps_[k-2]; // volumetric air content for node k=nN-2
-
-				b[k]=eps_n*NDS[k].rhov/timeStep+hm_[k]*as_[k]*saturationDensity+eps_n*beta/Xatm/Constants::lh_sublimation/dz_d*rhov_atm;
-
-				v_ij=eps_n*1.0/timeStep+hm_[k]*as_[k]+eps_n*beta/Xsurf/Constants::lh_sublimation/dz_d;
-				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-
-				v_ij=eps_nd*D_nd/dz_d/dz_dd;	  
-				tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
-				
-				v_ij=eps_nd*-D_nd/dz_d/dz_dd;	  
-				tripletList.push_back(Trip(k,k-2,v_ij));//Set up the matrix lower diagonals, k-2
-				*/
-				
-				/*
-				//BC
-				double beta = SnLaws::compLatentHeat(Snowpack::EVAP_RELATIVE_HUMIDITY, Mdata, Xdata, actual_height_of_meteo_values);
-				double p_vapor = Mdata.rh * Atmosphere::vaporSaturationPressure(Mdata.ta);
-				double rhov_atm = Atmosphere::waterVaporDensity(Mdata.ta, p_vapor);		
-				dz_d=z[k]-z[k-1];
-				dz_dd=z[k-1]-z[k-2];
-				double Xatm = 28.9647e-3/8.31451/Mdata.ta;				
-				double Xsurf = 28.9647e-3/8.31451/NDS[k].T;				
-
-				b[k]=eps_[k]*NDS[k].rhov/timeStep+hm_[k]*as_[k]*saturationDensity+eps_[k]*beta/Xatm/Constants::lh_sublimation/dz_d*rhov_atm;
-
-				v_ij=eps_[k-1]*D_[k-1]/dz_d/(dz_d+dz_dd)+eps_[k]*1.0/timeStep+eps_[k]*beta/Xsurf/Constants::lh_sublimation/dz_d+hm_[k]*as_[k];
-				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-
-				v_ij=eps_[k-1]*-D_[k-1]/dz_d/(dz_d+dz_dd);	  
-				tripletList.push_back(Trip(k,k-2,v_ij));//Set up the matrix lower diagonals, k-2
-				*/
-				
-				/*
-				//BF
-				double beta = SnLaws::compLatentHeat(Snowpack::EVAP_RELATIVE_HUMIDITY, Mdata, Xdata, actual_height_of_meteo_values);
-				double p_vapor = Mdata.rh * Atmosphere::vaporSaturationPressure(Mdata.ta);
-				double rhov_atm = Atmosphere::waterVaporDensity(Mdata.ta, p_vapor);		
-				dz_d=z[k]-z[k-1];
-				double Xatm = 28.9647e-3/8.31451/Mdata.ta;				
-				double Xsurf = 28.9647e-3/8.31451/NDS[k].T;				
-
-				b[k]= NDS[k].rhov/timeStep+hm_[k]*as_[k]*saturationDensity+beta/Xatm/Constants::lh_sublimation/dz_d*rhov_atm;
-
-				v_ij=D_[k-1]/dz_d/dz_d+1.0/timeStep+beta/Xsurf/Constants::lh_sublimation/dz_d+hm_[k]*as_[k];
-				tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-
-				v_ij=-D_[k-1]/dz_d/dz_d;	  
-				tripletList.push_back(Trip(k,k-1,v_ij));//Set up the matrix lower diagonals, k-1
-				*/		
 			}
 			if(k==0)
 			{
 				if(bottomDirichletBCtype)
 				{
-					b[k]= saturationDensity;//NDS[k].rhov;		
+					b[k]= saturationDensity;//NDS[k].rhov;
 					v_ij= 1.0;
-					tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal					
+					tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
 				}
 				else
-				{				
+				{
 					dz_u=z[1]-z[0];
 					dz_uu=z[2]-z[1];
 
-					b[k]= 0.0;		
+					b[k]= 0.0;
 					v_ij= -1.0;
 					tripletList.push_back(Trip(k,k,v_ij));//Set up the matrix diagonal
-					
+
 					v_ij= 1.0;
-					tripletList.push_back(Trip(k,k+1,v_ij));//Set up the matrix upper diagonals, k+1					
+					tripletList.push_back(Trip(k,k+1,v_ij));//Set up the matrix upper diagonals, k+1
 				}
 			}
 		}
@@ -1047,44 +795,44 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		tripletList.clear();
 		A.makeCompressed();
 		solver.compute(A);
-		if(solver.info()!=Success) 
+		if(solver.info()!=Success)
 		{
 			prn_msg(__FILE__, __LINE__, "msg", Mdata.date, "solver.compute(A).......you cannot use solver Eigen....vapor transport is ignored fro this time step");
 			return false;
 			//throw InvalidArgumentException("solver.compute(A).......you cannot use solver Eigen....", AT);
-		}			
+		}
 		//solve the equation
 		xx = solver.solve(b);
 		//std::cout << "estimated error: " << solver.error()      << std::endl;
-		if(solver.info()!=Success) 
+		if(solver.info()!=Success)
 		{
 			//throw InvalidArgumentException("solver.solve(b).........you cannot use solver Eigen....", AT);
-		}				
+		}
 
-		std::vector<double> oldrhov(nN, 0);	
+		std::vector<double> oldrhov(nN, 0);
 		for(size_t k=0; k<=nN-1; k++)
-		{	
-			oldVaporDenNode[k]=NDS[k].rhov;				
+		{
+			oldVaporDenNode[k]=NDS[k].rhov;
 			NDS[k].rhov=xx(k);
 			double error = std::abs(NDS[k].rhov-oldVaporDenNode[k]);
 			error_max=std::max(error_max,error);
 			saturationDensity=Atmosphere::waterVaporDensity(NDS[k].T, Atmosphere::vaporSaturationPressure(NDS[k].T));
 			if(NDS[k].rhov<0)
 			{
-				std::cout << "...........3k/nN-1/oldrhov/NDS[k].rhov/saturationDensity.................. " << k << ' ' 
-				          << nN-1 << ' ' << oldVaporDenNode[k] << ' ' << NDS[k].rhov << ' ' << saturationDensity << "\n";						
-				//NDS[k].rhov=1.e-9;          
-			}			
+				std::cout << "...........3k/nN-1/oldrhov/NDS[k].rhov/saturationDensity.................. " << k << ' '
+				          << nN-1 << ' ' << oldVaporDenNode[k] << ' ' << NDS[k].rhov << ' ' << saturationDensity << "\n";
+				//NDS[k].rhov=1.e-9;
+			}
 		}
-		
+
 		break;
 	}while(error_max>1.e-6);
-		
+
 	for (size_t e = 0; e < nE; e++)
 	{
 		EMS[e].rhov = (NDS[e].rhov + NDS[e+1].rhov) / 2.0;
 	}
-			 
+
 	return true;
 }
 
@@ -1096,7 +844,7 @@ double VapourTransport::dRhov_dT(const double Tem)
 	const double gaz_constant = 8.31451; // (J mol-1 K-1)
 	const double t_water_triple_pt = 273.16; // (K)
 	const double l_water_sublimation = 2.838e6; // (J kg-1)
-		
+
 	// For the first derivative of vapor density with respect to temperature, we have
 	if ( Tem < t_water_triple_pt ) { // for a flat ice surface
 		c2 = 21.88;
@@ -1107,10 +855,10 @@ double VapourTransport::dRhov_dT(const double Tem)
 	}
 	c2 = 21.88;
 	c3 = 7.66;
-	
+
 	double dRhov_dT = (water_molecular_mass*p_water_triple_pt/gaz_constant/Tem)*
 				                 exp(c2*(Tem-t_water_triple_pt)/(Tem-c3))*
-			                     ( -1./Tem + (c2*(Tem-c3)-c2*(Tem-t_water_triple_pt))/(Tem-c3)/(Tem-c3) );			                     
+			                     ( -1./Tem + (c2*(Tem-c3)-c2*(Tem-t_water_triple_pt))/(Tem-c3)/(Tem-c3) );
 	return dRhov_dT;
 }
 /*

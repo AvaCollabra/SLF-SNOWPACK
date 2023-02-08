@@ -939,7 +939,6 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	const double offset = (SeaIce)?(0):(0.);
 	// Check reference level: either a marked reference level, or, if non existent, the sea level (if sea ice module is used), otherwise 0:
 	const double ReferenceLevel = (  Xdata.findMarkedReferenceLayer()==Constants::undefined || !useReferenceLayer  )  ?  (  (Xdata.Seaice==NULL)?(0.):(Xdata.Seaice->SeaLevel)  )  :  (Xdata.findMarkedReferenceLayer()  - Xdata.Ground);
-	//std::cout <<"NDS.size/EMS.size/NDS[Xdata.SoilNode].z " << NDS.size() << ' ' << EMS.size() << ' ' << NDS[Xdata.SoilNode].z <<std::endl;
 	// Number of fill elements for offset (only 0 or 1 is supported now):
 	const size_t Noffset = (SeaIce)?(0):(0);
 
@@ -1202,7 +1201,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 
 	//if(enable_vapour_transport)
 	if(1)
-	{				
+	{
 		// 0901: the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)
 		fout << "\n0901," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
@@ -1220,13 +1219,13 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
 			fout << "," << std::scientific << std::setprecision(6) << EMS[e].vapTrans_cumulativeDenChange;
-			
+
 		// 0904: the snow density change rate due to water vapor transport (1.0e-6 kg m-3)
 		fout << "\n0904," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
 			fout << "," << std::scientific << std::setprecision(6) << 1.e6*EMS[e].vapTrans_snowDenChangeRate;
-			
+
 		// 0905: element tracking for making comparison of any snow properties between two simulation, (-)
 		fout << "\n0905," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
@@ -2503,8 +2502,8 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	//if(enable_vapour_transport)
 	if(1)
 	{
-		fout << "\n0901,nElems, the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)";		
-		fout << "\n0902,nElems, the water vapor diffusion flux (kg m-2 s-1)";		
+		fout << "\n0901,nElems, the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)";
+		fout << "\n0902,nElems, the water vapor diffusion flux (kg m-2 s-1)";
 		fout << "\n0903,nElems, the cumulative density change due to water vapor transport (kg m-3)";
 		fout << "\n0904,nElems, the snow density change rate due to water vapor transport (1.0e-6 kg m-3)";
 		fout << "\n0905,nElems, the element tracking for comparison, (-)";

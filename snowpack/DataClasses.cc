@@ -421,13 +421,6 @@ void SurfaceFluxes::collectSurfaceFluxes(const BoundCond& Bdata,
 	mass[MS_WATER] = Xdata.lwc_sum;
 	mass[MS_WATER_SOIL] = Xdata.lwc_sum_soil;
 	mass[MS_ICE_SOIL] = Xdata.swc_sum_soil;
-
-	if (Xdata.Seaice != NULL) {
-		//mass[MS_FLOODING] += Xdata.Seaice->TotalFloodingBucket;
-		//Xdata.Seaice->TotalFloodingBucket = 0.;
-	} else {
-		//mass[MS_FLOODING] = Constants::undefined;
-	}
 }
 
 /**
@@ -1167,7 +1160,7 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
                              s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), ID(in_ID), rhov(0.),
-							 Qmm(0.),vapTrans_fluxDiff(0.),vapTrans_snowDenChangeRate(0.),vapTrans_cumulativeDenChange(0.),vapTrans_underSaturationDegree(0.),elementIDTracking(0),  
+							 Qmm(0.),vapTrans_fluxDiff(0.),vapTrans_snowDenChangeRate(0.),vapTrans_cumulativeDenChange(0.),vapTrans_underSaturationDegree(0.),elementIDTracking(0),
                              theta_w_transfer(0.), theta_i_reservoir(0.), theta_i_reservoir_cumul(0.), rime(0.) {}
 
 ElementData::ElementData(const ElementData& cc) :
@@ -1179,8 +1172,8 @@ ElementData::ElementData(const ElementData& cc) :
                              type(cc.type), metamo(cc.metamo), salinity(cc.salinity), dth_w(cc.dth_w), res_wat_cont(cc.res_wat_cont), Qmf(cc.Qmf), QIntmf(cc.QIntmf),
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
-                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux), 
-							 Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID),rhov(cc.rhov),Qmm(cc.Qmm),vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), 
+                             s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea), SlopeParFlux(cc.SlopeParFlux),
+							 Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), ID(cc.ID),rhov(cc.rhov),Qmm(cc.Qmm),vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate),
 							 vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange), vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree), elementIDTracking(cc.elementIDTracking),
                              theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul), rime(cc.rime) {}
 
@@ -1426,8 +1419,6 @@ bool ElementData::checkVolContent()
 				theta[ICE] += theta[AIR];
 			} else if (theta[WATER] > 1. - Constants::eps) {
 				theta[WATER] += theta[AIR];
-			} else {
-				//prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.20f, theta[ICE] = %.20f, theta[WATER] = %.20f, theta[WATER_PREF] = %.20f, theta[SOIL] = %.20f, theta[AIR] = %.20f", sum, theta[ICE], theta[WATER], theta[WATER_PREF], theta[SOIL], theta[AIR]);
 			}
 			theta[AIR] = 0.;
 		}
@@ -2454,7 +2445,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			Edata[e].S_dr = INIT_STABILITY;
 			Edata[e].hard = IOUtils::nodata;
 			Edata[e].M = Edata[e].Rho * Edata[e].L0;
-			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive		
+			assert(Edata[e].M >= (-Constants::eps2)); //mass must be positive
 
 			// Check if pore space is available when water would freeze
 			const double porespace = (1. - Edata[e].theta[ICE] - Edata[e].theta[SOIL]) * (Constants::density_ice / Constants::density_water);
@@ -2517,8 +2508,8 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
 	ReSolver_dt = -1.;
-	
-	elementTrackingCounter=nElems; //The counter for element tracking for making comparison of any snow properties between two simulation (-)	
+
+	elementTrackingCounter=nElems; //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 }
 
 /**
@@ -2638,45 +2629,6 @@ void SnowStation::splitElement(const size_t& e)
 		Edata[e].h+=.5*Edata[e].L;
 		Edata[e+1].h-=.5*Edata[e+1].L;
 	}
-
-	/*
-	double elementIDTracking_e=Edata[e].elementIDTracking;
-	double vapTrans_cumulativeDenChange_e=Edata[e].vapTrans_cumulativeDenChange;
-	double all_cumulativeDenChange_e=Edata[e].all_cumulativeDenChange;
-	double vapTrans_snowDenChangeRate_e=Edata[e].vapTrans_snowDenChangeRate;
-	if(e==nElems-2) // if "e" was the index of the last element before splitting....
-	{
-		double f_upper=Edata[e].Rho*Edata[e].L*2.0; 
-		double f_lower=Edata[e-1].Rho*Edata[e-1].L;
-		Edata[e].elementIDTracking=f_upper/(f_upper+f_lower)*elementIDTracking_e+f_lower/(f_upper+f_lower)*Edata[e-1].elementIDTracking;
-		Edata[e].vapTrans_cumulativeDenChange=f_upper/(f_upper+f_lower)*vapTrans_cumulativeDenChange_e+f_lower/(f_upper+f_lower)*Edata[e-1].vapTrans_cumulativeDenChange;
-		Edata[e].all_cumulativeDenChange=f_upper/(f_upper+f_lower)*all_cumulativeDenChange_e+f_lower/(f_upper+f_lower)*Edata[e-1].all_cumulativeDenChange;
-		Edata[e].vapTrans_snowDenChangeRate=f_upper/(f_upper+f_lower)*vapTrans_snowDenChangeRate_e+f_lower/(f_upper+f_lower)*Edata[e-1].vapTrans_snowDenChangeRate;
-		Edata[e+1].elementIDTracking=elementIDTracking_e+(elementIDTracking_e-Edata[e].elementIDTracking);
-		Edata[e+1].vapTrans_cumulativeDenChange=vapTrans_cumulativeDenChange_e+(vapTrans_cumulativeDenChange_e-Edata[e].vapTrans_cumulativeDenChange);
-		Edata[e+1].all_cumulativeDenChange=all_cumulativeDenChange_e+(all_cumulativeDenChange_e-Edata[e].all_cumulativeDenChange);
-		Edata[e+1].vapTrans_snowDenChangeRate=vapTrans_snowDenChangeRate_e+(vapTrans_snowDenChangeRate_e-Edata[e].vapTrans_snowDenChangeRate);
-	}
-	else
-	{
-		// for bottom new elememt due to splitting ( bottom half) 
-		double f_upper_b=Edata[e].Rho*Edata[e].L*2.0; 
-		double f_lower_b=Edata[e-1].Rho*Edata[e-1].L;
-		Edata[e].elementIDTracking=f_upper_b/(f_upper_b+f_lower_b)*elementIDTracking_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].elementIDTracking;
-		Edata[e].vapTrans_cumulativeDenChange=f_upper_b/(f_upper_b+f_lower_b)*vapTrans_cumulativeDenChange_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].vapTrans_cumulativeDenChange;
-		Edata[e].all_cumulativeDenChange=f_upper_b/(f_upper_b+f_lower_b)*all_cumulativeDenChange_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].all_cumulativeDenChange;
-		Edata[e].vapTrans_snowDenChangeRate=f_upper_b/(f_upper_b+f_lower_b)*vapTrans_snowDenChangeRate_e+f_lower_b/(f_upper_b+f_lower_b)*Edata[e-1].vapTrans_snowDenChangeRate;
-		
-		// for top new elememt due to splitting ( top half)		
-		double f_lower_t=Edata[e].Rho*Edata[e].L*2.0; 
-		double f_upper_t=Edata[e+2].Rho*Edata[e+2].L;
-		Edata[e+1].elementIDTracking=f_lower_t/(f_upper_t+f_lower_t)*elementIDTracking_e+f_upper_t/(f_upper_t+f_lower_t)*Edata[e+2].elementIDTracking;
-		Edata[e+1].vapTrans_cumulativeDenChange=f_lower_t/(f_upper_b+f_lower_b)*vapTrans_cumulativeDenChange_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].vapTrans_cumulativeDenChange;
-		Edata[e+1].all_cumulativeDenChange=f_lower_t/(f_upper_b+f_lower_b)*all_cumulativeDenChange_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].all_cumulativeDenChange;
-		Edata[e+1].vapTrans_snowDenChangeRate=f_lower_t/(f_upper_b+f_lower_b)*vapTrans_snowDenChangeRate_e+f_upper_t/(f_upper_b+f_lower_b)*Edata[e+2].vapTrans_snowDenChangeRate;		
-	}
-	*/
-	
 }
 
 /**
@@ -3362,7 +3314,7 @@ std::istream& operator>>(std::istream& is, CurrentMeteo& data)
 	is.read(reinterpret_cast<char*>(&data.rime_hn), sizeof(data.rime_hn));
 	is.read(reinterpret_cast<char*>(&data.lwc_hn), sizeof(data.lwc_hn));
 	is.read(reinterpret_cast<char*>(&data.poor_ea), sizeof(data.poor_ea));
-	
+
 	size_t s_fixedPositions;
 	is.read(reinterpret_cast<char*>(&s_fixedPositions), sizeof(size_t));
 	data.fixedPositions.resize(s_fixedPositions);

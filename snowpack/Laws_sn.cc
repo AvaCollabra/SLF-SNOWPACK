@@ -1026,38 +1026,20 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnLaws::EventType& i_event,
                                    const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss)
 {
-
-	static double rho;
-
 	if (variant != SnLaws::current_variant)
-		setStaticData(variant, "BUCKET");			
-
-			//std::cout << "-------Mdata.vw_avg----- " << Mdata.vw_avg << "\n";
+		setStaticData(variant, "BUCKET");
 
 	switch (i_event) {
 		case event_wind: {
-			/*
-			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {				
-				static const double rho_0=361., rho_1=33.;
-				rho = rho_0*log10(Mdata.vw_avg) + rho_1;
-				return rho;
-			*/
-			
 			//Gouttevin 2018, "Observation and modelling of snow at a polygonal tundra permafrost site: spatial variability and thermal implications"
-			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {				
-			//if (false) {				
+			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
 				//Groot Zwaaftink et al 2014: const double rho_0=361., rho_1=33.; because : 251-361*log(4)/log(10)=33.
 				//Gouttevin et al., 2018: see below, because : 325-361*log(4)/log(10)=108
-				const double rho_0=361., rho_1=108.; 
+				const double rho_0=361., rho_1=108.;
 				return (rho_0*log10(Mdata.vw_avg) + rho_1);
-				
+
 			} else{
-				//static const double rho_0=250.;				
-				//return rho_0;
 				return Constants::undefined;
-				//rho = newSnowDensityPara("LEHNING_NEW", Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
-				//return rho;
-				//return 300;
 			}
 		}
 		case event_none:
@@ -1191,19 +1173,6 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		                         Xdata.meta.position.getAltitude());
 	} else if (i_hn_density == "EVENT") {
 		rho = newSnowDensityEvent(variant, event, Mdata);
-		
-		// for SML
-		/*
-			rho = newSnowDensityEventModified(variant, event, Mdata, Xdata, tss);
-			//IG
-			// subvariant density150
-			// after 4/04/2016 veg height becomes 7 cm
-			// on 27-05-2016 I briefly tested rho=250, then we do not simulate DHch density properly + we produce less DH because we insulate less. 
-			if (M_TO_CM((Xdata.cH - Xdata.Ground))<7.){
-				rho=150.;
-			}
-			*/
-		// for SML
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file
