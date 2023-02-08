@@ -28,13 +28,13 @@
 #include <errno.h>
 
 //Eigen
-#include <Eigen/Dense>
-#include <Eigen/Sparse>
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/SparseQR>
-#include <Eigen/SparseCholesky>
-#include <Eigen/SparseLU>
-#include <Eigen/Core>
+#include <meteoio/thirdParty/Eigen/Dense>
+#include <meteoio/thirdParty/Eigen/Sparse>
+#include <meteoio/thirdParty/Eigen/IterativeLinearSolvers>
+#include <meteoio/thirdParty/Eigen/SparseQR>
+#include <meteoio/thirdParty/Eigen/SparseCholesky>
+#include <meteoio/thirdParty/Eigen/SparseLU>
+#include <meteoio/thirdParty/Eigen/Core>
 
 #include "omp.h"
 
