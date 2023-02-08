@@ -25,6 +25,7 @@
 
 #include <string>
 #include <fstream>
+#include <functional>
 
 /**
  * @brief Computes interception of precipitation and radiation, and reduction of windspeed
