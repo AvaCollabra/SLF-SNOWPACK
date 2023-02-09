@@ -457,6 +457,10 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	// Copy canopy unload parameter if it exists
 	if (md.param_exists("CAN_UNLOAD"))
 		Mdata.can_unload = md("CAN_UNLOAD");
+
+	// Copy ISWR below canopy if it exists
+	if (md.param_exists("ISWR_BC"))
+		Mdata.iswr_bc = md("ISWR_BC");
 }
 
 inline double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)

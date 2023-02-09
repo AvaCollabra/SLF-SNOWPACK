@@ -2144,7 +2144,7 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// downward and reflected shortwave below canopy
 	Mdata.rswr = rswrbc;
-	Mdata.iswr = iswrbc;
+	Mdata.iswr = (Mdata.iswr_bc == IOUtils::nodata) ? (iswrbc) : (Mdata.iswr_bc);
 
 	// Adjust friction velocity below canopy using the same reference height as in Meteo.c
 	zref = std::max(0.5, height_of_wind_val - hs);

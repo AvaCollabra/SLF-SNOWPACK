@@ -113,6 +113,7 @@ class CurrentMeteo {
 		double z0;       ///< The roughness length computed in SnowDrift and also used later for the MeteoHeat fluxes (m)
 		double psi_s;    ///< Stability correction for scalar heat fluxes
 		double iswr;     ///< Incoming SHORTWAVE radiation (W m-2)
+		double iswr_bc;  ///< Incoming SHORTWAVE radiation (W m-2) below canopy
 		double rswr;     ///< Reflected SHORTWAVE radiation (W m-2) divide this value by the ALBEDO to get iswr
 		double mAlbedo;  ///< Measured snow albedo
 		double diff;     ///< Diffuse radiation from the sky (W m-2)
