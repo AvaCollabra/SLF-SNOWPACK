@@ -227,7 +227,7 @@ class Canopy {
 		bool forestfloor_alb;
 		bool useUnload, no_liquid_unnload;
 		double min_unload;
-		bool stochasticUnload;
+		bool stochasticUnload, prescribedUnload;
 		double StochasticUnloadFrac;
 		std::vector<double> stochasticParams;
 		size_t stochasticDegree;

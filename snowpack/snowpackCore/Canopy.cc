@@ -186,7 +186,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
         : hn_density(), hn_density_parameterization(), variant(), watertransportmodel_soil(),
           hn_density_fixedValue(Constants::undefined), calculation_step_length(0.), useSoilLayers(false),
           CanopyHeatMass(true), Twolayercanopy(true), Twolayercanopy_user(true), canopytransmission(true),
-          forestfloor_alb(true), useUnload(false), no_liquid_unnload(false), min_unload(0.01), stochasticUnload(false),
+          forestfloor_alb(true), useUnload(false), no_liquid_unnload(false), min_unload(0.01), stochasticUnload(false), prescribedUnload(false),
           StochasticUnloadFrac(0.1), stochasticParams(), stochasticDegree(0),
           GetStochasticUnloadProb([this](double ta, double vw){return(this->GetStochasticUnloadProb1(ta, vw));})
 {
@@ -207,6 +207,7 @@ Canopy::Canopy(const SnowpackConfig& cfg)
 
 	cfg.getValue("MINIMUM_UNLOAD_CANOPY", "SnowpackAdvanced", min_unload);
 	cfg.getValue("STOCHASTIC_UNLOAD", "SnowpackAdvanced", stochasticUnload);
+	cfg.getValue("PRESCRIBED_UNLOAD", "SnowpackAdvanced", prescribedUnload);
 
 	if(stochasticUnload){
 		initStochasticUnload(cfg);
@@ -563,7 +564,14 @@ double Canopy::StochasticUnload(const CurrentMeteo& Mdata, const double storage,
 	const double vw = Mdata.vw;
 	const double ta = Mdata.ta-273.15;
 
-	const double prob = GetStochasticUnloadProb(vw, ta)/4.;
+	double prob = GetStochasticUnloadProb(vw, ta)/4.;
+	if(prescribedUnload) {
+		if(Mdata.can_unload) {
+			prob = 1.;
+		} else {
+			prob = 0.;
+		}
+	}
 	if(prob>0){
 		size_t rnd = rand();
 		const double randNum = static_cast <float>(rnd) / static_cast <float>(RAND_MAX);
