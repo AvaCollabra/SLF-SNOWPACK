@@ -567,11 +567,12 @@ double Canopy::StochasticUnload(const CurrentMeteo& Mdata, const double storage,
 	double prob = GetStochasticUnloadProb(vw, ta)/4.;
 	if(prescribedUnload) {
 		if(Mdata.can_unload) {
-			prob = 1.;
+			prob = Mdata.can_unload;
 		} else {
 			prob = 0.;
 		}
 	}
+	std::cout << Mdata.date.toString(Date::ISO) << " " <<  prob << "\n";
 	if(prob>0){
 		size_t rnd = rand();
 		const double randNum = static_cast <float>(rnd) / static_cast <float>(RAND_MAX);
