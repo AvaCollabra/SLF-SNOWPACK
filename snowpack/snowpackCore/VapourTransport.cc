@@ -647,7 +647,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 		actual_height_of_meteo_values = height_of_meteo_values;
 	}
 
-	bool bottomDirichletBCtype= false;
+	const bool bottomDirichletBCtype = (Xdata.SoilNode == 0) ? (true) : (false);
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
