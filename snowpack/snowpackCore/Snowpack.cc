@@ -1975,7 +1975,7 @@ void Snowpack::fillNewUnloadElement(const CurrentMeteo& Mdata, const double& len
 {
 
 	//basic parameters
-	elem.depositionDate = Mdata.date;
+	elem.depositionDate = unloadedSnow.depositionDate;
 	elem.Te = t_surf;
 	elem.L0 = elem.L = length;
 	elem.Rho = density;
