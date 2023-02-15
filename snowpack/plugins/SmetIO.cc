@@ -528,7 +528,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 
 	SSdata.Canopy_Height = get_doubleval(sno_reader, "CanopyHeight");
 	SSdata.Canopy_LAI = get_doubleval(sno_reader, "CanopyLeafAreaIndex");
-	SSdata.Canopy_SkyViewFraction = get_doubleval(sno_reader, "CanopySkyViewFraction");
+	SSdata.Canopy_SkyViewFraction = get_doubleval_no_error(sno_reader, "CanopySkyViewFraction");
 	SSdata.Canopy_Direct_Throughfall = get_doubleval(sno_reader, "CanopyDirectThroughfall");
 	SSdata.WindScalingFactor = get_doubleval(sno_reader, "WindScalingFactor");
 

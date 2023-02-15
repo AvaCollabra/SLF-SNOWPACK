@@ -681,9 +681,12 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 	SkyViewFraction = SSdata.Canopy_SkyViewFraction;
 	if(useCanopyModel && (SkyViewFraction < 0.0 || SkyViewFraction == mio::IOUtils::nodata ))
 	{
-		std::stringstream msg;
-		msg << "Value provided for SkyViewFraction (" << SkyViewFraction << ") in soil file is not valid.";
-		throw UnknownValueException(msg.str(), AT);
+		if(!isAlpine3D){
+			std::stringstream msg;
+			msg << "Value provided for SkyViewFraction (" << SkyViewFraction << ") in soil file is not valid, the default value of 1.0 will be used.";
+			prn_msg(__FILE__, __LINE__, "wrn", Date(),msg.str().c_str());
+		}
+		SkyViewFraction = 1.;
 	}
 
 	z0m = height*0.1;
