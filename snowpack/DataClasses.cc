@@ -678,6 +678,13 @@ void CanopyData::initialize(const SN_SNOWSOIL_DATA& SSdata, const bool useCanopy
 		msg << "Value provided for LAI (" << lai << ") in soil file is not valid.";
 		throw UnknownValueException(msg.str(), AT);
 	}
+	SkyViewFraction = SSdata.Canopy_SkyViewFraction;
+	if(useCanopyModel && (SkyViewFraction < 0.0 || SkyViewFraction == mio::IOUtils::nodata ))
+	{
+		std::stringstream msg;
+		msg << "Value provided for SkyViewFraction (" << SkyViewFraction << ") in soil file is not valid.";
+		throw UnknownValueException(msg.str(), AT);
+	}
 
 	z0m = height*0.1;
 	z0h = z0m*0.1;
@@ -3371,6 +3378,7 @@ std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data)
 	os.write(reinterpret_cast<const char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	os.write(reinterpret_cast<const char*>(&data.Canopy_SkyViewFraction), sizeof(data.Canopy_SkyViewFraction));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	os.write(reinterpret_cast<const char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
@@ -3405,6 +3413,7 @@ std::istream& operator>>(std::istream& is, SN_SNOWSOIL_DATA& data)
 	is.read(reinterpret_cast<char*>(&data.BareSoil_z0), sizeof(data.BareSoil_z0));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Height), sizeof(data.Canopy_Height));
 	is.read(reinterpret_cast<char*>(&data.Canopy_LAI), sizeof(data.Canopy_LAI));
+	is.read(reinterpret_cast<char*>(&data.Canopy_SkyViewFraction), sizeof(data.Canopy_SkyViewFraction));
 	is.read(reinterpret_cast<char*>(&data.Canopy_BasalArea), sizeof(data.Canopy_BasalArea));
 	is.read(reinterpret_cast<char*>(&data.Canopy_Direct_Throughfall), sizeof(data.Canopy_Direct_Throughfall));
 	is.read(reinterpret_cast<char*>(&data.Canopy_diameter), sizeof(data.Canopy_diameter));
@@ -3440,6 +3449,7 @@ const std::string SN_SNOWSOIL_DATA::toString() const
 	os << "BareSoil_z0:                  " << BareSoil_z0 << "\n";
 	os << "Canopy_Height:                " << Canopy_Height << "\n";
 	os << "Canopy_LAI:                   " << Canopy_LAI << "\n";
+	os << "Canopy_SkyViewFraction:       " << Canopy_SkyViewFraction << "\n";
 	os << "Canopy_BasalArea:             " << Canopy_BasalArea << "\n";
 	os << "Canopy_diameter:              " << Canopy_diameter << "\n";
 	os << "Canopy_lai_frac_top_default:  " << Canopy_lai_frac_top_default << "\n";

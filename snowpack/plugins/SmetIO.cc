@@ -528,6 +528,7 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 
 	SSdata.Canopy_Height = get_doubleval(sno_reader, "CanopyHeight");
 	SSdata.Canopy_LAI = get_doubleval(sno_reader, "CanopyLeafAreaIndex");
+	SSdata.Canopy_SkyViewFraction = get_doubleval(sno_reader, "CanopySkyViewFraction");
 	SSdata.Canopy_Direct_Throughfall = get_doubleval(sno_reader, "CanopyDirectThroughfall");
 	SSdata.WindScalingFactor = get_doubleval(sno_reader, "WindScalingFactor");
 
@@ -809,6 +810,8 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 	smet_writer.set_header_value("CanopyHeight", ss.str());
 	ss.str(""); ss << fixed << setprecision(6) << Xdata.Cdata.lai;
 	smet_writer.set_header_value("CanopyLeafAreaIndex", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.SkyViewFraction;
+	smet_writer.set_header_value("CanopySkyViewFraction", ss.str());
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.direct_throughfall;
 	smet_writer.set_header_value("CanopyDirectThroughfall", ss.str());
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.int_cap_snow;

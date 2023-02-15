@@ -231,15 +231,15 @@ class SN_SNOWSOIL_DATA {
 	public:
 		SN_SNOWSOIL_DATA() : meta(), profileDate(), nN(0), Height(0.),
                      nLayers(0), Ldata(), HS_last(0.), Albedo(mio::IOUtils::nodata),
-								     SoilAlb(mio::IOUtils::nodata), BareSoil_z0(mio::IOUtils::nodata),
-                     Canopy_Height(mio::IOUtils::nodata), Canopy_LAI(mio::IOUtils::nodata),
-										 Canopy_Direct_Throughfall(mio::IOUtils::nodata),  WindScalingFactor(1.),
-										 ErosionLevel(static_cast<int>(mio::IOUtils::nodata)), TimeCountDeltaHS(mio::IOUtils::nodata),
-										 Canopy_BasalArea(mio::IOUtils::nodata), Canopy_diameter(mio::IOUtils::nodata),
-										 Canopy_lai_frac_top_default(mio::IOUtils::nodata),Canopy_int_cap_snow(mio::IOUtils::nodata),
-										 Canopy_alb_dry(mio::IOUtils::nodata),Canopy_alb_wet(mio::IOUtils::nodata),
-										 Canopy_alb_snow(mio::IOUtils::nodata),Emissivity_soil(mio::IOUtils::nodata)
-                    {}
+                     SoilAlb(mio::IOUtils::nodata), BareSoil_z0(mio::IOUtils::nodata),
+                     Canopy_Height(mio::IOUtils::nodata), Canopy_LAI(mio::IOUtils::nodata), Canopy_SkyViewFraction(mio::IOUtils::nodata),
+                     Canopy_Direct_Throughfall(mio::IOUtils::nodata),  WindScalingFactor(1.),
+                     ErosionLevel(static_cast<int>(mio::IOUtils::nodata)), TimeCountDeltaHS(mio::IOUtils::nodata),
+                     Canopy_BasalArea(mio::IOUtils::nodata), Canopy_diameter(mio::IOUtils::nodata),
+                     Canopy_lai_frac_top_default(mio::IOUtils::nodata),Canopy_int_cap_snow(mio::IOUtils::nodata),
+                     Canopy_alb_dry(mio::IOUtils::nodata),Canopy_alb_wet(mio::IOUtils::nodata),
+                     Canopy_alb_snow(mio::IOUtils::nodata),Emissivity_soil(mio::IOUtils::nodata)
+		{}
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const SN_SNOWSOIL_DATA& data);
@@ -258,6 +258,7 @@ class SN_SNOWSOIL_DATA {
 		double BareSoil_z0;               ///< Bare soil roughness in m, default 0.02 m
 		double Canopy_Height;             ///< Canopy Height in m
 		double Canopy_LAI;                ///< Canopy Leaf Area Index in m2 m-2
+		double Canopy_SkyViewFraction;    ///< Canopy Sky View Fraction
 		double Canopy_Direct_Throughfall; ///< Direct throughfall [fraction of precipitation]
 		double WindScalingFactor;         ///< Local scaling factor for wind at drift station
 		int    ErosionLevel;              ///< Erosion Level in operational mode (flat field virtual erosion)
@@ -440,7 +441,7 @@ class CanopyData {
 		canopy_stabilitycorrection(true), roughmom_to_canopyheight_ratio(0.), displ_to_canopyheight_ratio(0.),
 		raincrease_snow(0.), canopytemp_maxchange_perhour(0.), roughheat_to_roughmom_ratio(0.),
 		can_ch0(0.), can_rs_mult(0.), rsmin(0.), f3_gd(0.), rootdepth(0.), wp_fraction(0.),
-		h_wilt(0.), storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), z0m(0.), z0h(0.), zdispl(0.),
+		h_wilt(0.), storage(0.), temp(0.), sigf(0.), ec(0.), lai(0.), SkyViewFraction(1.), z0m(0.), z0h(0.), zdispl(0.),
 		height(0.), direct_throughfall(0.), ra(0.), rc(0.), rs(0.), rstransp(0.), canopyalb(0.),
 		totalalb(0.), wetfraction(0.), intcapacity(0.), rswrac(0.), iswrac(0.), rswrbc(0.), iswrbc(0.),
 		ilwrac(0.), rlwrac(0.), ilwrbc(0.), rlwrbc(0.), rsnet(0.), rlnet(0.), sensible(0.), latent(0.),
@@ -539,6 +540,7 @@ class CanopyData {
 		double ec;          ///< longwave emissivity (1)
 		// parameters
 		double lai;
+		double SkyViewFraction;
 		double z0m;
 		double z0h;
 		double zdispl;
