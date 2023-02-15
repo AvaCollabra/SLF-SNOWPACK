@@ -1676,8 +1676,8 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
 
 	// Direct Shortwave radiation fluxes above and below canopy
 	const double  rswrac_loc2 = iswrac * (sigfdirect * ac + (1-sigfdirect) * (1-sigfdirect) * sigftrunkdirect * trunkalb + ag * (1.0 - sigfdirect) * (1.0 - sigfdirect) / (1.0 - sigfdirect * ac * ag)*attfactor_SWdir);
-        const double  iswrbc_loc2 = iswrac * (1. - sigfdirect) / (1.0 - sigfdirect * ac * ag) *attfactor_SWdir ;
-        const double  rswrbc_loc2 = iswrbc_loc2 * ag;
+  const double  iswrbc_loc2 = iswrac * (1. - sigfdirect) / (1.0 - sigfdirect * ac * ag) *attfactor_SWdir ;
+  const double  rswrbc_loc2 = iswrbc_loc2 * ag;
 
 	// Additional Direct Shortwave radiation term due to trunks direct insolation (optional, default = not used)
 	// >> to be weighed by CanClosDirTrunks in the final EB equation
@@ -1742,6 +1742,10 @@ void Canopy::CanopyRadiationOutput(SnowStation& Xdata, const CurrentMeteo& Mdata
 		ilwrbc = ilwrbc * CanopyClosureDiffuse + ilwrac * (1.0 - CanopyClosureDiffuse);
 		rlwrbc = rlwrbc * CanopyClosureDiffuse + Constants::stefan_boltzmann * eg * Tsfc4 * (1.0-CanopyClosureDiffuse);
 	 }
+
+	//If iswr_bc is provided in the M.data, then use it to compute the rswr_bc
+	iswrbc = (Mdata.iswr_bc == IOUtils::nodata) ? (iswrbc) : (Mdata.iswr_bc);
+	rswrbc = (Mdata.iswr_bc == IOUtils::nodata) ? (rswrbc) : (iswrbc * ag);
 }
 
 /**
@@ -2145,7 +2149,8 @@ bool Canopy::runCanopyModel(CurrentMeteo &Mdata, SnowStation &Xdata, const doubl
 
 	// downward and reflected shortwave below canopy
 	Mdata.rswr = rswrbc;
-	Mdata.iswr = (Mdata.iswr_bc == IOUtils::nodata) ? (iswrbc) : (Mdata.iswr_bc);
+	//Mdata.iswr = (Mdata.iswr_bc == IOUtils::nodata) ? (iswrbc) : (Mdata.iswr_bc);
+	Mdata.iswr = iswrbc;
 
 	// Adjust friction velocity below canopy using the same reference height as in Meteo.c
 	zref = std::max(0.5, height_of_wind_val - hs);
