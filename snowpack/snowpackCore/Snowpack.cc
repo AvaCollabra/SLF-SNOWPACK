@@ -1075,6 +1075,9 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 					}
 					// Correct volumetric changes in upper and lower half of element proportional to limits
 					dth_i_down[e] = dth_i_up[e] = dth_i_lim;
+				} else {
+					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Ideally, we wouldn't arrive here (#1)!");
+					dth_i_down[e] = dth_i_up[e] = 0.;
 				}
 
 				// Track max. abs. change in ice contents
@@ -1211,7 +1214,16 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 				        "Latent: %lf  Sensible: %lf  Rain: %lf  NetLong:%lf  NetShort: %lf",
 				        Bdata.ql, Bdata.qs, Bdata.qr, Bdata.lw_net, I0);
 				free(U); free(dU); free(ddU);
-				throw IOException("Runtime error in compTemperatureProfile", AT);
+				if (!alpine3d) {
+					throw IOException("Runtime error in compTemperatureProfile", AT);
+				} else {
+					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Ideally, we wouldn't arrive here (#2)!");
+					for (size_t n = 0; n < nN; n++) {
+						U[n] += ddU[ n ];
+					}
+					NotConverged = false;
+					TempEqConverged = true;
+				}
 			} else {
 				TempEqConverged = false;	// Set return value of function
 				NotConverged = false;		// Ensure we leave the do...while loop
