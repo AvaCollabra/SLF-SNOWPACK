@@ -1076,8 +1076,10 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 					// Correct volumetric changes in upper and lower half of element proportional to limits
 					dth_i_down[e] = dth_i_up[e] = dth_i_lim;
 				} else {
-					prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Ideally, we wouldn't arrive here (#1)!");
-					dth_i_down[e] = dth_i_up[e] = 0.;
+					if (dth_i_down[e] != 0.) {
+						prn_msg(__FILE__, __LINE__, "wrn", Mdata.date, "Ideally, we wouldn't arrive here (#1)!");
+						dth_i_down[e] = dth_i_up[e] = 0.;
+					}
 				}
 
 				// Track max. abs. change in ice contents
