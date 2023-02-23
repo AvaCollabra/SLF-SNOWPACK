@@ -68,17 +68,16 @@ class VapourTransport : public WaterTransport {
 
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
-		double sn_dt,waterVaporTransport_timeStep;
-		double timeStep, mint, maxt;
+		double sn_dt, timeStep, waterVaporTransport_timeStep;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
-		//double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
-		//double minimum_l_element;
 		bool useSoilLayers, water_layer;
 
-		bool enable_vapour_transport,enable_vapour_transport_soil,waterVaporTransport_timeStepAdjust;
-		
-		double diffusionScalingFactor_,height_of_meteo_values, f;
-		
+		bool enable_vapour_transport, enable_vapour_transport_soil;
+		double diffusionScalingFactor_, height_of_meteo_values;
 		bool adjust_height_of_meteo_values;
+
+		double f;
+
+		bool waterVaporTransport_timeStepAdjust;
 };
 #endif // End of VapourTransport.h}

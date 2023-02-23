@@ -60,7 +60,7 @@ const double SeaIce::InitSnowSalinity = 0.;
  ************************************************************/
 
 SeaIce::SeaIce():
-	SeaLevel(0.), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), salinityprofile(SINUSSAL), elementTrackingCounter(0.) {}
+	SeaLevel(0.), ForcedSeaLevel(IOUtils::nodata), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), check_initial_conditions(false), salinityprofile(SINUSSAL), elementTrackingCounter(0.) {}
 
 SeaIce& SeaIce::operator=(const SeaIce& source) {
 	if(this != &source) {
