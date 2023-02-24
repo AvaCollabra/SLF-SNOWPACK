@@ -50,14 +50,14 @@
 class VapourTransport : public WaterTransport {
 	public:
 		VapourTransport(const SnowpackConfig& cfg);
-		void compTransportMass(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata, const double& surfaceVaporPressure);
+		void compTransportMass(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 	private:
-
 		bool compDensityProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
-                              const bool& ThrowAtNoConvergence, double& ql, const double& surfaceVaporPressure, std::vector<double>& hm_,std::vector<double>& as_, const std::vector<double>& D_el, std::vector<double>& oldVaporDenNode);
+                                std::vector<double>& hm_, std::vector<double>& as_,
+                                const std::vector<double>& D_el, std::vector<double>& oldVaporDenNode);
 		void compSurfaceSublimation(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata);
-		void LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql, const double& surfaceVaporPressure);
+		void LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql);
 		double dRhov_dT(const double Tem);
 
 		ReSolver1d RichardsEquationSolver1d;

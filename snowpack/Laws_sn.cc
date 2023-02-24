@@ -1021,36 +1021,6 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 }
 
 /**
- * @brief it is exactly the newSnowDensityEvent function, however a new object is passed into this function.
- */
-double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnLaws::EventType& i_event,
-                                   const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss)
-{
-	if (variant != SnLaws::current_variant)
-		setStaticData(variant, "BUCKET");
-
-	switch (i_event) {
-		case event_wind: {
-			//Gouttevin 2018, "Observation and modelling of snow at a polygonal tundra permafrost site: spatial variability and thermal implications"
-			if ((Mdata.vw_avg >= event_wind_lowlim) && (Mdata.vw_avg <= event_wind_highlim)) {
-				//Groot Zwaaftink et al 2014: const double rho_0=361., rho_1=33.; because : 251-361*log(4)/log(10)=33.
-				//Gouttevin et al., 2018: see below, because : 325-361*log(4)/log(10)=108
-				const double rho_0=361., rho_1=108.;
-				return (rho_0*log10(Mdata.vw_avg) + rho_1);
-
-			} else{
-				return Constants::undefined;
-			}
-		}
-		case event_none:
-		default:
-			prn_msg(__FILE__, __LINE__,"err", Date(),
-				"No new snow density parameterization for event type %d", i_event);
-			throw IOException("Event type not implemented yet!", AT);
-	}
-}
-
-/**
  * @brief Parameterized new-snow density
  * @param TA  Air temperature (K)
  * @param TSS Snow surface temperature (K)

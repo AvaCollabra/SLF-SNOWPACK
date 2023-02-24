@@ -511,11 +511,11 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	// Add the source/sink term resulting from phase changes
 	Fe[1] += Edata.Qph_up * 0.5 * Edata.L;
 	Fe[0] += Edata.Qph_down * 0.5 * Edata.L;
-	
+
 	// Add the source/sink term resulting from phase changes (due to water vapor transport)
 	Fe[1] += Edata.Qmm * 1.0 * Edata.L;
 	Fe[0] += Edata.Qmm * 1.0 * Edata.L;
-	
+
 	//Se[1][1] += Edata.Qmm*Edata.L/Edata.Te;
 	//Fe[1] += Edata.Qmm*Edata.L;
 
@@ -1857,7 +1857,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 			// Fill the element data
 			for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
-				EMS[e].elementIDTracking=Xdata.elementTrackingCounter+e-nOldE;				
+				EMS[e].elementIDTracking = Xdata.elementTrackingCounter + static_cast<double>(e) - static_cast<double>(nOldE);
 				const bool is_surface_hoar = (nHoarE && (e == nOldE));
 				const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 				const double density = (is_surface_hoar)? hoar_density_buried : rho_hn;
@@ -1874,7 +1874,7 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				Xdata.ColdContent += EMS[e].coldContent(); //update cold content
 			}   // End elements
 
-			Xdata.elementTrackingCounter+=nNewE-nOldE; //The counter for element tracking for making comparison of any snow properties between two simulation (-)
+			Xdata.elementTrackingCounter += static_cast<double>(nNewE) - static_cast<double>(nOldE); //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 
 			// Finally, update the computed snowpack height
 			Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
@@ -2022,7 +2022,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 			sn_dt = 60.;
 			if (Mdata.psum != mio::IOUtils::nodata) Mdata.psum *= sn_dt;	// ... then express psum again as precipitation per time step with the new time step
 		}
-		
+
 		Meteo meteo(cfg);
 		do {
 			// After the first sub-time step, update Meteo object to reflect on the new stability state
@@ -2140,8 +2140,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& 
 		double ql = Bdata.ql;	// Variable to keep track of how latent heat is used
 		watertransport.compTransportMass(Mdata, Xdata, Sdata, ql);
 
-		const double surfaceVaporPressure = Atmosphere::vaporSaturationPressure(t_surf);
-		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata, surfaceVaporPressure);		
+		vapourtransport.compTransportMass(Mdata, ql, Xdata, Sdata);
 
 		// See if any SUBSURFACE phase changes are occuring due to updated water content (infiltrating rain/melt water in cold snow layers)
 		if(!coupled_phase_changes) {
