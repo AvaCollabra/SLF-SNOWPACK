@@ -296,9 +296,9 @@ void SeaIce::compFlooding(SnowStation& Xdata, SurfaceFluxes& Sdata)
 		Xdata.Edata[iN].theta[AIR] -= dth_w;
 		Xdata.Edata[iN].salinity += SeaIce::OceanSalinity * dth_w;
 		Xdata.Edata[iN].salinity = std::min(SeaIce::OceanSalinity, Xdata.Edata[iN].salinity);
-		Sdata.mass[SurfaceFluxes::MS_FLOODING]-=Xdata.Edata[iN].Rho * Xdata.Edata[iN].L;		
+		Sdata.mass[SurfaceFluxes::MS_FLOODING]-=Xdata.Edata[iN].Rho * Xdata.Edata[iN].L;
 		Xdata.Edata[iN].updDensity();
-		Sdata.mass[SurfaceFluxes::MS_FLOODING]+=Xdata.Edata[iN].Rho * Xdata.Edata[iN].L;				
+		Sdata.mass[SurfaceFluxes::MS_FLOODING]+=Xdata.Edata[iN].Rho * Xdata.Edata[iN].L;
 		Xdata.Edata[iN].M = Xdata.Edata[iN].Rho * Xdata.Edata[iN].L;
 		calculateMeltingTemperature(Xdata.Edata[iN]);
 		iN++;
@@ -452,27 +452,27 @@ void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& M
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
 	size_t nE = Xdata.getNumberOfElements();
-	
+
 	// Apply mass change:
 	double dz = 0.;
 	if ( dM > 0 ) {
 		// dM > 0: mass gain
 		if ( nE == 0 || EMS[Xdata.SoilNode].Rho < ice_threshold ) {
-			
+
 			double newTheta_ice=ReSolver1d::max_theta_ice; //changed
 			double newTheta_water=(1. - ReSolver1d::max_theta_ice) * (Constants::density_ice/Constants::density_water);//changed
 			double newSalinity=OceanSalinity * newTheta_water; //changed bulk salinity
 			double newDensity=newTheta_ice*Constants::density_ice+
 							  newTheta_water*Constants::density_water+
 							  newSalinity * SeaIce::betaS;//changed
-							  
+
 			const double dH = dM / newDensity;	//changed							// Total height to be added
 			//const double dH = dM / SeaIceDensity;								// Total height to be added
 			const size_t nAddE = 1;										// Number of elements
 			const double dL = (dH / double(nAddE));								// Height of each individual layer
 			for ( size_t j = 0; j < nAddE; j++ ) {
-				
-				elementTrackingCounter-=1.; //The counter for element tracking for making comparison of any snow properties between two simulation (-)				
+
+				elementTrackingCounter-=1.; //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 				dz += dL;
 				nE++;
 				Xdata.resize(nE);
@@ -488,8 +488,6 @@ void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& M
 					NDS[nE].T = SeaIce::calculateMeltingTemperature(OceanSalinity);
 				}
 				// Set the new ice element
-				//EMS[Xdata.SoilNode].elementIDTracking = elementTrackingCounter; // the element id to track the element for making comparison of any snow properties between two simulation (-)
-				
 				EMS[Xdata.SoilNode].depositionDate = Mdata.date;
 				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = dL;
 				EMS[Xdata.SoilNode].theta[SOIL] = 0.;
@@ -497,11 +495,11 @@ void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& M
 				EMS[Xdata.SoilNode].theta[WATER] = newTheta_water;//(1. - EMS[Xdata.SoilNode].theta[ICE]) * (Constants::density_ice/Constants::density_water); //changed
 				EMS[Xdata.SoilNode].theta[WATER_PREF] = 0.;
 				EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL];
-				EMS[Xdata.SoilNode].salinity = newSalinity;//OceanSalinity * EMS[Xdata.SoilNode].theta[WATER];	//changed			
+				EMS[Xdata.SoilNode].salinity = newSalinity;//OceanSalinity * EMS[Xdata.SoilNode].theta[WATER];	//changed
 				EMS[Xdata.SoilNode].updDensity();
 				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=dM/nAddE;//EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////
 				//EMS[Xdata.SoilNode].M = dM / nAddE;
-							
+
 
 				for (unsigned short ii = 0; ii < Xdata.number_of_solutes; ii++) {
 					EMS[Xdata.SoilNode].conc[ICE][ii]   = Mdata.conc[ii]*Constants::density_ice/Constants::density_water;
@@ -556,117 +554,42 @@ void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& M
 				NDS[Xdata.SoilNode].S_n = INIT_STABILITY;
 				NDS[Xdata.SoilNode].S_s = INIT_STABILITY;
 				NDS[Xdata.SoilNode].z = 0.;
-				//NDS[Xdata.SoilNode].rhov = Atmosphere::waterVaporDensity(NDS[Xdata.SoilNode].T, Atmosphere::vaporSaturationPressure(NDS[Xdata.SoilNode].T));
 
 				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
 			}
 		} else {
-			/* // (1) original from nander whixh is not mass conserverd................
-			// In this case, increase existing element
-			const double dL = dM / (EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice);
-			dz += dL;
-			const double L0 = EMS[Xdata.SoilNode].L;
-			EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = (L0 + dL);
-			//EMS[Xdata.SoilNode].M += dM;
-			Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*L0; //////////////////////						
-			EMS[Xdata.SoilNode].updDensity();
-			EMS[Xdata.SoilNode].h += .5 * dL;
-			BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
-			Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////
-			*/
-			
-			/* // (2) mass balance is considered in a way that just ice is removed from the system and as the elemnet is should be reduced, the water and ice columetric contents are changing
-			// In this case, increase existing element
-			//const double dL = dM / (ReSolver1d::max_theta_ice * Constants::density_ice); // adding ice of 95% conetent
-			const double dL = dM /Constants::density_ice; // adding ice based on pure ice density
-			const double L0 = EMS[Xdata.SoilNode].L;			
-			double newTheta_ice= (dL+EMS[Xdata.SoilNode].theta[ICE]*L0)/(dL+L0);
-			double newTheta_water=EMS[Xdata.SoilNode].theta[WATER]*L0/(dL+L0);
-			
-			EMS[Xdata.SoilNode].theta[ICE]=newTheta_ice;
-			EMS[Xdata.SoilNode].theta[WATER]=newTheta_water;
-			EMS[Xdata.SoilNode].theta[WATER_PREF] = 0.;
-			EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL];			
-			dz += dL;
-			EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = (L0 + dL);
-			//EMS[Xdata.SoilNode].M += dM; //changed
-			Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*L0; //////////////////////						
-			EMS[Xdata.SoilNode].updDensity();
-			EMS[Xdata.SoilNode].h += .5 * dL;
-			BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
-			Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]+=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////	
-			*/
-			
-			// (3) original from nander in which the  mass is conserved and the ice and water voluumetric are not changing................
 			// In this case, increase existing element
 			const double dL = dM / EMS[Xdata.SoilNode].Rho;
 			dz += dL;
 			const double L0 = EMS[Xdata.SoilNode].L;
 			EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = (L0 + dL);
-			//EMS[Xdata.SoilNode].M += dM;
-			//Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////			
 			EMS[Xdata.SoilNode].updDensity();
 			EMS[Xdata.SoilNode].h += .5 * dL;
 			BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
-			Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=dM;//EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////
-			
+			Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=dM;
+
 		}
 	} else {
 		// dM < 0: Mass loss
-		
+
 		while (dM < 0. && nE > 0) {
 			if(EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice * EMS[Xdata.SoilNode].L + dM > Constants::eps2) {
-		
-				/*// (1) original from nander which is not mass conserverd................
-				const double dL = dM / (EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice);
-				// Reduce element length
-				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = EMS[Xdata.SoilNode].L + dL;
-				//EMS[Xdata.SoilNode].M += dM;
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*(EMS[Xdata.SoilNode].L-dL); //////////////////////							
-				EMS[Xdata.SoilNode].updDensity();
-				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
-				dz += dL;
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////			
-				dM = 0.;
-				*/
-				
-				/* // (2) mass balance is considered in a way that just ice is removed from the system and as the elemnet is should be reduced, the water and ice columetric contents are changing
-				const double dL = dM / Constants::density_ice; //changed     just ice content should be melted, so we use only pure ice density
-				const double L0 = EMS[Xdata.SoilNode].L; //changed			
-				double newTheta_ice= (EMS[Xdata.SoilNode].theta[ICE]*L0+dL)/(dL+L0); //changed
-				double newTheta_water= EMS[Xdata.SoilNode].theta[WATER]*L0/(dL+L0); //changed
-				EMS[Xdata.SoilNode].theta[ICE]=newTheta_ice; //changed
-				EMS[Xdata.SoilNode].theta[WATER]=newTheta_water; //changed
-				EMS[Xdata.SoilNode].theta[WATER_PREF] = 0.; //changed
-				EMS[Xdata.SoilNode].theta[AIR] = 1.0 - EMS[Xdata.SoilNode].theta[WATER] - EMS[Xdata.SoilNode].theta[WATER_PREF] - EMS[Xdata.SoilNode].theta[ICE] - EMS[Xdata.SoilNode].theta[SOIL]; //changed
-				// Reduce element length
-				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = EMS[Xdata.SoilNode].L + dL;
-				//EMS[Xdata.SoilNode].M += dM; //changed
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*L0; //////////////////////							
-				EMS[Xdata.SoilNode].updDensity();
-				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
-				dz += dL;
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////			
-				dM = 0.;
-				*/
-							
 				// (3) original from nander in which the  mass is conserved and the ice and water voluumetric are not changing................
 				const double dL = dM / EMS[Xdata.SoilNode].Rho;
+
 				// Reduce element length
 				EMS[Xdata.SoilNode].L0 = EMS[Xdata.SoilNode].L = EMS[Xdata.SoilNode].L + dL;
-				//EMS[Xdata.SoilNode].M += dM;
-				//Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*(EMS[Xdata.SoilNode].L-dL); //////////////////////							
 				EMS[Xdata.SoilNode].updDensity();
 				BottomSalFlux += EMS[Xdata.SoilNode].salinity * dL;
 				dz += dL;
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=dM;//EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////			
+				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]+=dM;
 				dM = 0.;
-								
-										
+
+
 			} else {
 				// Remove element
 				dM += EMS[Xdata.SoilNode].theta[ICE] * Constants::density_ice * EMS[Xdata.SoilNode].L;
-				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L; //////////////////////				
+				Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]-=EMS[Xdata.SoilNode].Rho*EMS[Xdata.SoilNode].L;
 				dz += -EMS[Xdata.SoilNode].L;
 				// TODO: put mass in SNOWPACK runoff!
 				// Add salinity to BottomSalFlux

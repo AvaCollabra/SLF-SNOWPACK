@@ -96,7 +96,6 @@ class SeaIce {
 		double getTotSalinity(const SnowStation& Xdata);
 
 		void InitSeaIce(SnowStation& Xdata);
-		// void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt);
 
 		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt, SurfaceFluxes& Sdata);
 
