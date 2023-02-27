@@ -119,11 +119,11 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 		cfg.getValue("ENABLE_VAPOUR_TRANSPORT_SOIL", "SnowpackAdvanced", enable_vapour_transport_soil);
 
 		// the water vapor subtime step
-		cfg.getValue("WATER_VAPOR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
+		cfg.getValue("VAPOUR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
 		waterVaporTransport_timeStep = std::min(sn_dt,waterVaporTransport_timeStep);
 
 		// the water vapor transport scheme, f=1 fully implicit, f=0.5 Crank-Nicolson
-		cfg.getValue("WATER_VAPOR_TRANSPORT_IMPLICIT_FACTOR", "SnowpackAdvanced", f);
+		cfg.getValue("VAPOUR_TRANSPORT_IMPLICIT_FACTOR", "SnowpackAdvanced", f);
 
 		if (f < 1.0) waterVaporTransport_timeStepAdjust = true;
 	}
