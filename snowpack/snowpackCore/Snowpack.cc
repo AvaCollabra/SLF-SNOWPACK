@@ -472,10 +472,11 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	// Find the conductivity of the element TODO: check thresholds
 	double Keff;    // the effective thermal conductivity
 	if (Edata.theta[SOIL] > 0.0) {
-		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz,soil_thermal_conductivity);
+		Keff = SnLaws::compSoilThermalConductivity(Edata, dvdz, soil_thermal_conductivity);
 	} else if (Edata.theta[ICE] > 0.55 || Edata.theta[ICE] < min_ice_content) {
+		// Note: no soil when inside this if-block.
 		Keff = Edata.theta[AIR] * Constants::conductivity_air + Edata.theta[ICE] * Constants::conductivity_ice +
-		           (Edata.theta[WATER]+Edata.theta[WATER_PREF]) * Constants::conductivity_water + Edata.theta[SOIL] * Edata.soil[SOIL_K];
+		           (Edata.theta[WATER]+Edata.theta[WATER_PREF]) * Constants::conductivity_water;
 	} else {
 		Keff = SnLaws::compSnowThermalConductivity(Edata, dvdz, !alpine3d); //do not show the warning for Alpine3D
 	}
