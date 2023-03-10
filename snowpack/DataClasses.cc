@@ -1159,8 +1159,9 @@ ElementData::ElementData(const unsigned short int& in_ID) : depositionDate(), L0
                              type(0), metamo(0.), salinity(0.), dth_w(0.), res_wat_cont(0.), Qmf(0.), QIntmf(0.),
                              dEps(0.), Eps(0.), Eps_e(0.), Eps_v(0.), Eps_Dot(0.), Eps_vDot(0.), E(0.),
                              S(0.), C(0.), CDot(0.), ps2rb(0.),
-                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.), elementIDTracking(0), theta_w_transfer(0.), theta_i_reservoir(0.), theta_i_reservoir_cumul(0.), SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), rime(0.), ID(in_ID), rhov(0.),
-                             Qmm(0.), vapTrans_fluxDiff(0.), vapTrans_snowDenChangeRate(0.), vapTrans_cumulativeDenChange(0.), vapTrans_underSaturationDegree(0.) {}
+                             s_strength(0.), hard(0.), S_dr(0.), crit_cut_length(Constants::undefined), VG(*this), lwc_source(0.), PrefFlowArea(0.),
+                             theta_w_transfer(0.), theta_i_reservoir(0.), theta_i_reservoir_cumul(0.),
+                             SlopeParFlux(0.), Qph_up(0.), Qph_down(0.), dsm(0.), rime(0.), ID(in_ID), rhov(0.), Qmm(0.), vapTrans_fluxDiff(0.), vapTrans_snowDenChangeRate(0.), vapTrans_cumulativeDenChange(0.), vapTrans_underSaturationDegree(0.) {}
 
 ElementData::ElementData(const ElementData& cc) :
                              depositionDate(cc.depositionDate), L0(cc.L0), L(cc.L),
@@ -1172,9 +1173,8 @@ ElementData::ElementData(const ElementData& cc) :
                              dEps(cc.dEps), Eps(cc.Eps), Eps_e(cc.Eps_e), Eps_v(cc.Eps_v), Eps_Dot(cc.Eps_Dot), Eps_vDot(cc.Eps_vDot), E(cc.E),
                              S(cc.S), C(cc.C), CDot(cc.CDot), ps2rb(cc.ps2rb),
                              s_strength(cc.s_strength), hard(cc.hard), S_dr(cc.S_dr), crit_cut_length(cc.crit_cut_length), VG(*this), lwc_source(cc.lwc_source), PrefFlowArea(cc.PrefFlowArea),
-                             elementIDTracking(cc.elementIDTracking), theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul), SlopeParFlux(cc.SlopeParFlux),
-                             Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), rime(cc.rime), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff),
-                             vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange), vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree) {}
+                             theta_w_transfer(cc.theta_w_transfer), theta_i_reservoir(cc.theta_i_reservoir), theta_i_reservoir_cumul(cc.theta_i_reservoir_cumul),
+                             SlopeParFlux(cc.SlopeParFlux), Qph_up(cc.Qph_up), Qph_down(cc.Qph_down), dsm(cc.dsm), rime(cc.rime), ID(cc.ID), rhov(cc.rhov), Qmm(cc.Qmm), vapTrans_fluxDiff(cc.vapTrans_fluxDiff), vapTrans_snowDenChangeRate(cc.vapTrans_snowDenChangeRate), vapTrans_cumulativeDenChange(cc.vapTrans_cumulativeDenChange), vapTrans_underSaturationDegree(cc.vapTrans_underSaturationDegree) {}
 
 std::ostream& operator<<(std::ostream& os, const ElementData& data)
 {
@@ -1255,7 +1255,6 @@ std::ostream& operator<<(std::ostream& os, const ElementData& data)
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
 	os.write(reinterpret_cast<const char*>(&data.vapTrans_underSaturationDegree), sizeof(data.vapTrans_underSaturationDegree));
-	os.write(reinterpret_cast<const char*>(&data.elementIDTracking), sizeof(data.elementIDTracking));
 	return os;
 }
 
@@ -1342,7 +1341,6 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.vapTrans_snowDenChangeRate), sizeof(data.vapTrans_snowDenChangeRate));
 	is.read(reinterpret_cast<char*>(&data.vapTrans_cumulativeDenChange), sizeof(data.vapTrans_cumulativeDenChange));
 	is.read(reinterpret_cast<char*>(&data.vapTrans_underSaturationDegree), sizeof(data.vapTrans_underSaturationDegree));
-	is.read(reinterpret_cast<char*>(&data.elementIDTracking), sizeof(data.elementIDTracking));
 	return is;
 }
 
@@ -1921,7 +1919,7 @@ SnowStation::SnowStation(const bool i_useCanopyModel, const bool i_useSoilLayers
 	S_s(0.), z_S_s(0.), S_4(0.), z_S_4(0.), S_5(0.), z_S_5(0.),
 	Ndata(), Edata(), Kt(NULL),Kt_vapor(NULL), ColdContent(0.), ColdContentSoil(0.), dIntEnergy(0.), dIntEnergySoil(0.), meltFreezeEnergy(0.), meltFreezeEnergySoil(0.),
 	ReSolver_dt(-1), windward(false),
-	WindScalingFactor(1.), TimeCountDeltaHS(0.), elementTrackingCounter(0.),
+	WindScalingFactor(1.), TimeCountDeltaHS(0.),
 	nNodes(0), nElems(0), maxElementID(0), useCanopyModel(i_useCanopyModel), useSoilLayers(i_useSoilLayers), isAlpine3D(i_isAlpine3D)
 {
 	if (i_useSeaIceModule)
@@ -1938,9 +1936,8 @@ SnowStation::SnowStation(const SnowStation& c) :
 	S_s(c.S_s), z_S_s(c.z_S_s), S_4(c.S_4), z_S_4(c.z_S_4), S_5(c.S_5), z_S_5(c.z_S_5),
 	Ndata(c.Ndata), Edata(c.Edata), Kt(NULL),Kt_vapor(NULL), ColdContent(c.ColdContent), ColdContentSoil(c.ColdContentSoil), dIntEnergy(c.dIntEnergy), dIntEnergySoil(c.dIntEnergySoil), meltFreezeEnergy(c.meltFreezeEnergy), meltFreezeEnergySoil(c.meltFreezeEnergySoil),
 	ReSolver_dt(-1), windward(c.windward),
-	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS), elementTrackingCounter(0.),
-	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers), isAlpine3D(c.isAlpine3D)
-	{
+	WindScalingFactor(c.WindScalingFactor), TimeCountDeltaHS(c.TimeCountDeltaHS),
+	nNodes(c.nNodes), nElems(c.nElems), maxElementID(c.maxElementID), useCanopyModel(c.useCanopyModel), useSoilLayers(c.useSoilLayers), isAlpine3D(c.isAlpine3D) {
 	if (c.Seaice != NULL) {
 		// Deep copy pointer to sea ice object
 		Seaice = new SeaIce(*c.Seaice);
@@ -2388,7 +2385,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 			// Temperature data
 			Edata[e].Te = (Ndata[e].T+Ndata[e+1].T) / 2.;
 			Edata[e].rhov = Atmosphere::waterVaporDensity(Edata[e].Te, Atmosphere::vaporSaturationPressure(Edata[e].Te));
-			Edata[e].elementIDTracking = static_cast<double>(e);
 			Edata[e].L0 = Edata[e].L = (Ndata[e+1].z - Ndata[e].z);
 			Edata[e].gradT = (Ndata[e+1].T-Ndata[e].T) / Edata[e].L;
 			// Creep data
@@ -2508,8 +2504,6 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	// Set time step to -1, so we can determine the first time ReSolver1d is called.
 	ReSolver_dt = -1.;
-
-	elementTrackingCounter = static_cast<double>(nElems);; //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 }
 
 /**
@@ -2754,7 +2748,6 @@ void SnowStation::mergeElements(ElementData& EdataLower, const ElementData& Edat
 	EdataLower.vapTrans_fluxDiff = (EdataUpper.vapTrans_fluxDiff*EdataUpper.Rho*L_upper + EdataLower.vapTrans_fluxDiff*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
 	EdataLower.Qmm = (EdataUpper.Qmm*EdataUpper.Rho*L_upper + EdataLower.Qmm*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
 	EdataLower.vapTrans_underSaturationDegree = (EdataUpper.vapTrans_underSaturationDegree*EdataUpper.Rho*L_upper + EdataLower.vapTrans_underSaturationDegree*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
-	EdataLower.elementIDTracking = (EdataUpper.elementIDTracking*EdataUpper.Rho*L_upper + EdataLower.elementIDTracking*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
 	EdataLower.rhov = (EdataUpper.rhov*EdataUpper.theta[AIR]*L_upper + EdataLower.rhov*theta_air_lower*L_lower)/EdataLower.theta[AIR];
 	EdataLower.Eps_vDot = (EdataUpper.Eps_vDot*EdataUpper.Rho*L_upper + EdataLower.Eps_vDot*Rho_lower*L_lower)/(L_upper*EdataUpper.Rho+L_lower*Rho_lower);
 }

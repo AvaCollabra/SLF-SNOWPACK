@@ -99,10 +99,6 @@ class SeaIce {
 
 		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt, SurfaceFluxes& Sdata);
 
-	private:
-		double elementTrackingCounter; // The counter for element tracking for making comparison of any snow properties between two simulation (-)
-
-
 }; //end class Snowpack
 
 #endif

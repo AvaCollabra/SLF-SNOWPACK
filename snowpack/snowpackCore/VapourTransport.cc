@@ -225,50 +225,32 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		}
 
 		std::vector<double> as_(nN, 0.); // the specific surface area m-1
-		for (size_t i=0; i<nN; i++) {
+		for (size_t i = 0; i < nN; i++) {
+			double apparentTheta;
+			double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1., 1. / 3.);
+			double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1., 1. / 3.);
+			double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1., 1. / 3.);
+			double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1., 1. / 3.);
+			
 			if (i == 0) {
-				double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1.,
-									  1. / 3.);
-				double apparentTheta = EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER];
+				apparentTheta = EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER];
 				as_[i] = 6.0 * apparentTheta / (0.002 * rwTors_u * EMS[i].rg);
-			} else if (i > 0 && i < Xdata.SoilNode) {
-				double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1.,
-									  1. / 3.);
-				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1.,
-									  1. / 3.);
-				double apparentTheta = 0.5 * (EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER])
-									   + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+			} else if (i < Xdata.SoilNode) {
+				apparentTheta = 0.5 * (EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.002 * rwTors_d * EMS[i-1].rg + 0.5 * 0.002 * rwTors_u * EMS[i].rg);
 			} else if (i == Xdata.SoilNode && Xdata.SoilNode == nN-1) {
-				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1.,
-									  1./3.);
-				double apparentTheta = EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
+				apparentTheta = EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
 				as_[i] = 6.0 * apparentTheta / (0.002 * rwTors_d * EMS[i-1].rg);
 			} else if (i == Xdata.SoilNode && Xdata.SoilNode < nN-1) {
-				double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1.,
-									  1. / 3.);
-				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1.,
-									  1. / 3.);
-				double apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER])
-									   + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+				apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.002 * rwTors_d * EMS[i-1].rg + 0.5 * 0.001 * rwTori_u * EMS[i].ogs);
 			} else if (i > Xdata.SoilNode && i < nN-1) {
-				double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1.,
-									  1. / 3.);
-				double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1.,
-									  1. / 3.);
-				double apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER])
-									   + 0.5 * (EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+				apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.001 * rwTori_d * EMS[i-1].ogs + 0.5 * 0.001 * rwTori_u * EMS[i].ogs);
 			} else { // i==nN-1
-
-				double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1.,
-									  1. / 3.);
-				double apparentTheta = EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
+				apparentTheta = EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
 				as_[i] = 6.0 * apparentTheta / (0.001 * rwTori_d * EMS[i-1].ogs);
-
 			}
-
 		}
 
 		double min_dt =1e30;
@@ -746,6 +728,11 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 			oldVaporDenNode[k]=NDS[k].rhov;
 			NDS[k].rhov=xx(k);
 			double error = std::abs(NDS[k].rhov-oldVaporDenNode[k]);
+			if(NDS[k].rhov<0) {
+				std::ostringstream err_msg;
+				err_msg << "Error, rhov is below zero (" << NDS[k].rhov << "). Can not proceed.";
+				throw mio::IOException(err_msg.str(), AT);
+			}
 			error_max = std::max(error_max, error);
 			saturationDensity = Atmosphere::waterVaporDensity(NDS[k].T, Atmosphere::vaporSaturationPressure(NDS[k].T));
 		}

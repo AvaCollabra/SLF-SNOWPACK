@@ -1199,9 +1199,7 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	else
 		writeProfileProAddDefault(Xdata, fout);
 
-	//if(enable_vapour_transport)
-	if(1)
-	{
+	if(enable_vapour_transport) {
 		// 0901: the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)
 		fout << "\n0901," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
@@ -1229,8 +1227,6 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 		// 0905: element tracking for making comparison of any snow properties between two simulation, (-)
 		fout << "\n0905," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
-		for (size_t e = 0; e < nE; e++)
-			fout << "," << EMS[e].elementIDTracking;
 	}
 
 	fout.close();
@@ -2499,9 +2495,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0893,nElems,SNTHERM: viscosity (GPa s)";
 	}
 
-	//if(enable_vapour_transport)
-	if(1)
-	{
+	if(enable_vapour_transport)	{
 		fout << "\n0901,nElems, the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)";
 		fout << "\n0902,nElems, the water vapor diffusion flux (kg m-2 s-1)";
 		fout << "\n0903,nElems, the cumulative density change due to water vapor transport (kg m-3)";

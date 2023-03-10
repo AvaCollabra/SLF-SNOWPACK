@@ -60,7 +60,7 @@ const double SeaIce::InitSnowSalinity = 0.;
  ************************************************************/
 
 SeaIce::SeaIce():
-	SeaLevel(0.), ForcedSeaLevel(IOUtils::nodata), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), check_initial_conditions(false), salinityprofile(SINUSSAL), elementTrackingCounter(0.) {}
+	SeaLevel(0.), ForcedSeaLevel(IOUtils::nodata), FreeBoard (0.), IceSurface(0.), IceSurfaceNode(0), OceanHeatFlux(0.), BottomSalFlux(0.), TopSalFlux(0.), TotalFloodingBucket(0.), check_initial_conditions(false), salinityprofile(SINUSSAL) {}
 
 SeaIce& SeaIce::operator=(const SeaIce& source) {
 	if(this != &source) {
@@ -471,8 +471,6 @@ void SeaIce::ApplyBottomIceMassBalance(SnowStation& Xdata, const CurrentMeteo& M
 			const size_t nAddE = 1;										// Number of elements
 			const double dL = (dH / double(nAddE));								// Height of each individual layer
 			for ( size_t j = 0; j < nAddE; j++ ) {
-
-				elementTrackingCounter-=1.; //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 				dz += dL;
 				nE++;
 				Xdata.resize(nE);

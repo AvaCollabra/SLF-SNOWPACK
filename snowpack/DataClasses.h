@@ -139,7 +139,7 @@ class CurrentMeteo {
 		double rho_hn;             ///< Measured new snow density (kg m-3)
 		double rime_hn;            ///< riming index of new snow
 		double lwc_hn;             ///< liquid water content of new snow
-
+		
 		bool poor_ea;              ///< when ilwr has not been measured nor parametrized in good conditions, it could be redone later on
 
 	private:
@@ -368,7 +368,6 @@ class ElementData {
 		vanGenuchten VG;           ///< Van Genuchten Model for water retention
 		double lwc_source;         ///< Source/sink term for Richards equation (m^3/m^3 / timestep)
 		double PrefFlowArea;       ///< Preferential flow path relative area (-)
-		double elementIDTracking;  ///< the element id to track the element for making comparison of any snow properties between two simulation (-)
 		double theta_w_transfer;   ///< Volumetric content of water transferred from preferential flow to matrix domain (1)
 		double theta_i_reservoir;  ///< Volumetric ice content in ice reservoir (1)
 		double theta_i_reservoir_cumul;  ///< Volumetric ice content in cumulated ice reservoir (1)
@@ -693,7 +692,6 @@ class SnowStation {
 		bool windward;              ///< True for windward (luv) slope
 		double WindScalingFactor;   ///< Local scaling factor for wind at drift station
 		double TimeCountDeltaHS;    ///< Time counter tracking erroneous settlement in operational mode
-		double elementTrackingCounter; ///< The counter for element tracking for making comparison of any snow properties between two simulation (-)
 
 		static const double comb_thresh_l_ratio, comb_thresh_ice, comb_thresh_water;
 		static const double comb_thresh_dd, comb_thresh_sp, comb_thresh_rg;

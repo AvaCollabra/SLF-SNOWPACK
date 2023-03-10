@@ -1857,7 +1857,6 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 
 			// Fill the element data
 			for (size_t e = nOldE; e < nNewE; e++) { //loop over the elements
-				EMS[e].elementIDTracking = Xdata.elementTrackingCounter + static_cast<double>(e) - static_cast<double>(nOldE);
 				const bool is_surface_hoar = (nHoarE && (e == nOldE));
 				const double length = (NDS[e+1].z + NDS[e+1].u) - (NDS[e].z + NDS[e].u);
 				const double density = (is_surface_hoar)? hoar_density_buried : rho_hn;
@@ -1873,8 +1872,6 @@ void Snowpack::compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, doubl
 				}
 				Xdata.ColdContent += EMS[e].coldContent(); //update cold content
 			}   // End elements
-
-			Xdata.elementTrackingCounter += static_cast<double>(nNewE) - static_cast<double>(nOldE); //The counter for element tracking for making comparison of any snow properties between two simulation (-)
 
 			// Finally, update the computed snowpack height
 			Xdata.cH = NDS[nNewN-1].z + NDS[nNewN-1].u;
