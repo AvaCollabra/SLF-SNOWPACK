@@ -51,6 +51,8 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["ALBEDO_AGING"] = "true";
 	advancedConfig["COUPLEDPHASECHANGES"] = "false";
 	advancedConfig["ENABLE_VAPOUR_TRANSPORT"] = "false";
+	advancedConfig["VAPOUR_TRANSPORT_TIMESTEP"] = "60.";
+	advancedConfig["VAPOUR_TRANSPORT_IMPLICIT_FACTOR"] = "1.";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
 	advancedConfig["HARDNESS_PARAMETERIZATION"] = "MONTI";
