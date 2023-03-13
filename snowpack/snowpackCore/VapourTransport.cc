@@ -249,12 +249,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			}
 		}
 
-		double min_dt =1e30;
+		double min_dt = sn_dt; // first guess for the required minimum time step is the SNOWPACK time step
 		for (size_t i=Xdata.SoilNode; i<nE; i++) {
 			double saturationDensity = Atmosphere::waterVaporDensity(EMS[i].Te, Atmosphere::vaporSaturationPressure(EMS[i].Te));
 			double diffVaporVelocity = std::abs(-D_[i] * (NDS[i+1].rhov-NDS[i].rhov) / EMS[i].L / saturationDensity);
-			double dt = EMS[i].L / diffVaporVelocity;
-			min_dt = std::min(min_dt, dt);
+			if (diffVaporVelocity!=0.) {
+				double dt = EMS[i].L / diffVaporVelocity;
+				min_dt = std::min(min_dt, dt);
+			}
 		}
 
 		timeStep = (waterVaporTransport_timeStepAdjust) ? std::min(min_dt,waterVaporTransport_timeStep) : waterVaporTransport_timeStep;
