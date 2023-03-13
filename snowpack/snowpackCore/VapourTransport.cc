@@ -75,7 +75,7 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                  sn_dt(IOUtils::nodata), timeStep(IOUtils::nodata), waterVaporTransport_timeStep(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
-				 useSoilLayers(false), water_layer(false), enable_vapour_transport(false),enable_vapour_transport_soil(false),
+                 useSoilLayers(false), water_layer(false), enable_vapour_transport(false),
                  diffusionScalingFactor_(1.0), height_of_meteo_values(0.), adjust_height_of_meteo_values(true), f(1.0),waterVaporTransport_timeStepAdjust(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -116,8 +116,6 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 	//Enable vapour transport
 	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport);
 	if (enable_vapour_transport) {
-		cfg.getValue("ENABLE_VAPOUR_TRANSPORT_SOIL", "SnowpackAdvanced", enable_vapour_transport_soil);
-
 		// the water vapor subtime step
 		cfg.getValue("VAPOUR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
 		waterVaporTransport_timeStep = std::min(sn_dt,waterVaporTransport_timeStep);
@@ -182,8 +180,6 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
 		ql=0;
-
-		if(!enable_vapour_transport_soil && Xdata.SoilNode==Xdata.getNumberOfNodes()-1) return;
 
 		const size_t nN = Xdata.getNumberOfNodes();
 		size_t nE = nN-1;

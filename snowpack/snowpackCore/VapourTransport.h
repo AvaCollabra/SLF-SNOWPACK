@@ -72,7 +72,7 @@ class VapourTransport : public WaterTransport {
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
 		bool useSoilLayers, water_layer;
 
-		bool enable_vapour_transport, enable_vapour_transport_soil;
+		bool enable_vapour_transport;
 		double diffusionScalingFactor_, height_of_meteo_values;
 		bool adjust_height_of_meteo_values;
 
