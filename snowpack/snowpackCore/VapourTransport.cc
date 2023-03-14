@@ -31,7 +31,9 @@
 #include <sstream>
 #include <errno.h>
 
-//Eigen
+//Eigen, note we temporarily disable Effective C++ warnings
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Weffc++"
 #include <meteoio/thirdParty/Eigen/Dense>
 #include <meteoio/thirdParty/Eigen/Sparse>
 #include <meteoio/thirdParty/Eigen/IterativeLinearSolvers>
@@ -40,8 +42,8 @@
 #include <meteoio/thirdParty/Eigen/SparseLU>
 #include <meteoio/thirdParty/Eigen/Core>
 
-
 typedef Eigen::Triplet<double> Trip;
+#pragma GCC diagnostic pop
 
 #ifdef CLAPACK
 	// Matching C data types with FORTRAN data types (taken from f2c.h):
