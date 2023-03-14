@@ -34,6 +34,7 @@
 //Eigen, note we temporarily disable Effective C++ warnings
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Weffc++"
+#pragma GCC diagnostic ignored "-Wctor-dtor-privacy"
 #include <meteoio/thirdParty/Eigen/Dense>
 #include <meteoio/thirdParty/Eigen/Sparse>
 #include <meteoio/thirdParty/Eigen/IterativeLinearSolvers>
