@@ -46,29 +46,6 @@
 typedef Eigen::Triplet<double> Trip;
 #pragma GCC diagnostic pop
 
-#ifdef CLAPACK
-	// Matching C data types with FORTRAN data types (taken from f2c.h):
-	typedef long int integer;
-	typedef double doublereal;
-
-	// Declare the function interfaces with the LAPACK library (taken from clapack.h):
-	extern "C" {
-		/* Subroutine */ int dgesvd_(char *jobu, char *jobvt, integer *m, integer *n,
-		doublereal *a, integer *lda, doublereal *s, doublereal *u, integer *
-		ldu, doublereal *vt, integer *ldvt, doublereal *work, integer *lwork,
-		integer *info);
-
-		/* Subroutine */ int dgesdd_(char *jobz, integer *m, integer *n, doublereal *
-		a, integer *lda, doublereal *s, doublereal *u, integer *ldu,
-		doublereal *vt, integer *ldvt, doublereal *work, integer *lwork,
-		integer *iwork, integer *info);
-
-		/* Subroutine */ int dgtsv_(integer *n, integer *nrhs, doublereal *dl,
-		doublereal *d__, doublereal *du, doublereal *b, integer *ldb, integer
-		*info);
-	}
-#endif
-
 using namespace mio;
 using namespace std;
 using namespace Eigen;
@@ -224,30 +201,39 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		}
 
 		std::vector<double> as_(nN, 0.); // the specific surface area m-1
-		for (size_t i = 0; i < nN; i++) {
-			double apparentTheta;
-			double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1., 1. / 3.);
-			double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1., 1. / 3.);
-			double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1., 1. / 3.);
-			double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1., 1. / 3.);
-			
+		for (size_t i=0; i<nN; i++) {
 			if (i == 0) {
-				apparentTheta = EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER];
-				as_[i] = 6.0 * apparentTheta / (0.002 * rwTors_u * EMS[i].rg);
-			} else if (i < Xdata.SoilNode) {
-				apparentTheta = 0.5 * (EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+				if (!useSoilLayers) {
+					double rwTors_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1.,  1. / 3.);
+					double apparentTheta = EMS[i].theta[ICE] + EMS[i].theta[WATER];
+					as_[i] = 6.0 * apparentTheta / (0.001 * rwTors_u * EMS[i].ogs);
+				} else {
+					double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1., 1. / 3.);
+					double apparentTheta = EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER];
+					as_[i] = 6.0 * apparentTheta / (0.002 * rwTors_u * EMS[i].rg);
+				}
+			} else if (i > 0 && i < Xdata.SoilNode) {
+				double rwTors_u = pow((EMS[i].theta[WATER] + EMS[i].theta[ICE]) / EMS[i].theta[SOIL] + 1., 1. / 3.);
+				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1., 1. / 3.);
+				double apparentTheta = 0.5 * (EMS[i].theta[SOIL] + EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.002 * rwTors_d * EMS[i-1].rg + 0.5 * 0.002 * rwTors_u * EMS[i].rg);
 			} else if (i == Xdata.SoilNode && Xdata.SoilNode == nN-1) {
-				apparentTheta = EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
+				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1., 1./3.);
+				double apparentTheta = EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
 				as_[i] = 6.0 * apparentTheta / (0.002 * rwTors_d * EMS[i-1].rg);
 			} else if (i == Xdata.SoilNode && Xdata.SoilNode < nN-1) {
-				apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+				double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1., 1. / 3.);
+				double rwTors_d = pow((EMS[i-1].theta[WATER] + EMS[i-1].theta[ICE]) / EMS[i-1].theta[SOIL] + 1., 1. / 3.);
+				double apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[SOIL] + EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.002 * rwTors_d * EMS[i-1].rg + 0.5 * 0.001 * rwTori_u * EMS[i].ogs);
 			} else if (i > Xdata.SoilNode && i < nN-1) {
-				apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
+				double rwTori_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1., 1. / 3.);
+				double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1., 1. / 3.);
+				double apparentTheta = 0.5 * (EMS[i].theta[ICE] + EMS[i].theta[WATER]) + 0.5 * (EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER]);
 				as_[i] = 6.0 * apparentTheta / (0.5 * 0.001 * rwTori_d * EMS[i-1].ogs + 0.5 * 0.001 * rwTori_u * EMS[i].ogs);
 			} else { // i==nN-1
-				apparentTheta = EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
+				double rwTori_d = pow(EMS[i-1].theta[WATER] / EMS[i-1].theta[ICE] + 1., 1. / 3.);
+				double apparentTheta = EMS[i-1].theta[ICE] + EMS[i-1].theta[WATER];
 				as_[i] = 6.0 * apparentTheta / (0.001 * rwTori_d * EMS[i-1].ogs);
 			}
 		}
