@@ -633,7 +633,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 										 const std::vector<double>& D_el,
 										 std::vector<double>& oldVaporDenNode)
 {
-	const bool bottomDirichletBCtype = (Xdata.SoilNode == 0) ? (true) : (false);
+	const bool bottomDirichletBCtype = (Xdata.SoilNode == 0 && variant != "SEAICE") ? (true) : (false);
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
