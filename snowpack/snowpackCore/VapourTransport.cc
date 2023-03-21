@@ -133,6 +133,24 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 
 }
 
+/**
+ * @brief The mass transport procedure, which serves as the primary function, is invoked from Snowpack::runSnowpackModel. \n
+ * NOTES:
+ * -#   It is worth noting that the solver is highly stable with default parameters. Specifically, VAPOUR_TRANSPORT_TIMESTEP is set to 60 seconds,
+ *      while the SNOWPACK simulation time step is 15 minutes, and VAPOUR_TRANSPORT_IMPLICIT_FACTOR is set to 1. The latter factor determines whether
+ *      the equation is discretized in full implicit, full explicit, or a combination of the two, with a value of 1 indicating full implicit,
+ *      and a value of 0.5 indicating Crank-Nicolson. In the case of convergence issues, reducing the height of the new-snow element controlled
+ *      by HEIGHT_NEW_ELEM (in the .ini config file) is recommended. For sea-ice simulations, choosing BUCKET for the water transport scheme is advised
+ *      if convergence issues arise.  \n
+ * -#   If there is no soil or snow present, vapor transport will be bypassed.
+ * -#   If vapor transport enabled, ql is only used in vaportransport for mass tranport on top. See WaterTransport::compTransportMass. \n
+ * @author Mahdi Jafari
+ * @param Xdata
+ * @param ql Latent heat flux (W m-2)
+ * @param Sdata
+ * @param Mdata
+ */
+
 void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
                                        SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
@@ -151,6 +169,25 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
     }
 }
 
+
+/**
+ * @brief This function prepares everything to solve the transient-diffusive vapor transport with phase change:  \n
+ * NOTES:
+ * -#   Initially, the model employs the complete latent heat flux (ql) to alter the mass of the uppermost components.
+ *      It is crucial to note that direct usage of this mass flux as the top boundary condition for the transient-diffusive
+ *      vapor transport solver is not feasible, both theoretically and practically. This is primarily due to
+ *      ql's turbulent nature as a latent heat flux, while the equation lacks a convection term.
+ * -#   It calculates water vapor diffusivity and mass tranfer coefficient.
+ * -#   When selecting the Explicit method, sub time steps are computed to ensure a stable solution. \n
+ *      The method then integrates compDensityProfile to complete the full SNOWPACK time step, typically set at 15 minutes. \n
+ *      Finally, mass is explicitly added or subtracted for each element, while adhering to specific constraints. \n
+ * -#   For more information, please check the main reference as: DOI={10.3389/feart.2020.00249}
+ * @author Mahdi Jafari
+ * @param Xdata
+ * @param ql Latent heat flux (W m-2)
+ * @param Sdata
+ * @param Mdata
+ */
 void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata,
 								   SurfaceFluxes& Sdata, double& ql)
  {
@@ -572,6 +609,26 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 	if (Xdata.mH!=Constants::undefined) Xdata.mH -= std::min(Xdata.mH - Xdata.Ground, (cH_old - Xdata.cH));	// TODO/HACK: why is this correction for Xdata.mH necessary?
 }
 
+compDensityProfile
+
+/**
+ * @brief This function is the solver for discretized transient-diffusive vapor tranport equation.
+ * NOTES:
+ * -#   Note, for the case of only snow (no soil), bottomDirichletBCtype is set to Drichlet ans Neumann does not make sense \n
+ * -#   The system of equations forms a tridiagonal sparse matrix for which the sparse solvers from the Eigen C++ library are used. \n
+ *      Here, we used quite well stabel solver as BiCGSTAB. Feel free to use other solvers by looking at Eigen documentaion.
+ * -#   When selecting the Explicit method, sub time steps are computed to ensure a stable solution. \n
+ *      The method then integrates compDensityProfile to complete the full SNOWPACK time step, typically set at 15 minutes. \n
+ *      Finally, mass is explicitly added or subtracted for each element, while adhering to specific constraints. \n
+ * @author Mahdi Jafari
+ * @param Xdata
+ * @param Mdata
+ * @param D_el, water vapor diffusivity (m2 s-1)
+ * @param hm_, mass tranfer coefficient (m s-1)
+ * @param as_, specific surface area (m-1)
+ * @param oldVaporDenNode, old vapor denisty stored for nodes
+ * @return a flag to check if the solution has converged
+ */
 bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation& Xdata,
 										 std::vector<double>& hm_,
 										 std::vector<double>& as_,
