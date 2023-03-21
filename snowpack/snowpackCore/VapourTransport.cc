@@ -609,8 +609,6 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 	if (Xdata.mH!=Constants::undefined) Xdata.mH -= std::min(Xdata.mH - Xdata.Ground, (cH_old - Xdata.cH));	// TODO/HACK: why is this correction for Xdata.mH necessary?
 }
 
-compDensityProfile
-
 /**
  * @brief This function is the solver for discretized transient-diffusive vapor tranport equation.
  * NOTES:
