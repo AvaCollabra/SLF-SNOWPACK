@@ -252,13 +252,12 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 	} else {
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
 		// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
-		/*
 		const double topFlux = -ql / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
-		deltaM[nE-1] += std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
-		// HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
+		const double dM = std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
+		// Correct latent heat flux, which should become 0. at this point. HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
 		// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
-		Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] -= topFlux * sn_dt;
-		*/
+		ql -= dM / sn_dt * Constants::lh_sublimation;
+		deltaM[nE-1] += dM;
 	}
 	double dHoar = 0.;
 
