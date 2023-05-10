@@ -1909,6 +1909,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	// Correction for snow depth. If we have a marked reference layer, then subtract the height of the reference layer in the output.
 	const double HScorrC = (Xdata.findMarkedReferenceLayer()==IOUtils::nodata || !useReferenceLayer) ? (0.) : (Xdata.findMarkedReferenceLayer() - Xdata.Ground);
 
+	// Check for number of computation steps in between output steps
+	const size_t nCalcSteps = (!avgsum_time_series) ? (static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5)) : (1);
+
 	// Check file for header
 	if (!checkHeader(Xdata, filename, "met", "[STATION_PARAMETERS]")) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
@@ -1977,8 +1980,6 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	} else {
 		if(out_soileb) {
 			// 30-33: soil energy balance variables
-			size_t nCalcSteps = 1;
-			nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 			fout << "," << (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << Xdata.ColdContentSoil/1E6 << "," << Hdata.hn72_24;
 		} else {
 			fout << ",,,,";
@@ -2079,10 +2080,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fout << ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,";
 	}
 	// 96[94]-102 (8 or 7 free columns)
-	size_t nCalcSteps = 1;
 	double crust = 0., dhs_corr = 0., mass_corr = 0.;
-	if (!avgsum_time_series)
-		nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 	if (out_haz) {
 		crust = Hdata.crust;
 		dhs_corr = Hdata.dhs_corr;
