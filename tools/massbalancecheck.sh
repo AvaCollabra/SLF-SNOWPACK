@@ -1,29 +1,25 @@
 #!/bin/bash
-# Provide met file as first argument.
+# Provide *.met or *.smet file as first argument.
 # Note: for the first time step, no mass balance check can be done, because SWE of previous time step is unknown. Therefore, it is zero by definition.
-# Example for quickly plotting in gnuplot the mass balance, provided the output file is called output.txt:
-# pl "<(cat ./output.txt | awk '{sum+=$15; print sum}')" u 1 w l title 'mass in', "<(cat ./output.txt | awk '{sum+=$16; print -1.0*sum}')" w l title 'mass out', "<(cat ./output.txt | awk '{sum=$5; print 1.0*sum}')" w l title 'storage (SWE)'
 if [ $# -lt 1 ]; then
-        echo "This script reads a *.met or *.smet file (provided as first argument) and writes the mass balance on the stdout and statistics to stderr." > /dev/stderr
-	echo "Invoke with: ./massbalancecheck.sh <met file> [firstdate=YYYYMMDD] [lastdate=YYYYMMDD]" > /dev/stderr
+	echo "This script reads a *.met or *.smet file (provided as first argument) and writes the mass balance on the stdout and statistics to stderr." > /dev/stderr
+	echo "Invoke with: ./massbalancecheck.sh <(s)met file> [firstdate=YYYYMMDD] [lastdate=YYYYMMDD]" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Note: 1) the mass balance represents only the snow cover mass balance!" > /dev/stderr
-	echo "      2) the mass balance can only be properly checked when the output resolution of the met file is the" > /dev/stderr
+	echo "      2) the mass balance can only be properly checked when the output resolution of the (s)met file is the" > /dev/stderr
 	echo "         same as the snowpack calculation step length." > /dev/stderr
-	echo "      3) the first time stamp in the met file is not shown in the mass balance, as one cannot determine" > /dev/stderr
+	echo "      3) the first time stamp in the (s)met file is not shown in the mass balance, as one cannot determine" > /dev/stderr
 	echo "         this for the first time step (delta SWE cannot be determined)." > /dev/stderr
 	echo "      4) using options firstdate and lastdate, one can define a period over which the mass balance should be" > /dev/stderr
-	echo "         determined. Default is full period in met-file. No spaces in command line options are allowed!" > /dev/stderr
+	echo "         determined. Default is full period in (s)met-file. No spaces in command line options are allowed!" > /dev/stderr
 	echo "" > /dev/stderr
 	echo "Examples:" > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met > output.txt	  Writes mass balance in output.txt and shows overall" > /dev/stderr
-	echo "							     mass balance statistics on screen." > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met > /dev/null	  Just shows overall mass balance statistics on screen." > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met | less		  View the mass balance in less." > /dev/stderr
-	echo " ./massbalancecheck.sh WFJ2_flat.met firstdate=20071001 lastdate=20080323" > /dev/stderr
-	echo "							  Determines mass balance between 1st of October 2007" > /dev/stderr
-	echo "							     up to and including 23rd of March 2008." > /dev/stderr
-        exit
+	echo " ./massbalancecheck.sh WFJ2_flat.met > output.txt	  Writes mass balance in output.txt and shows overall mass balance statistics on screen." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.met > /dev/null    Just shows overall mass balance statistics on screen." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.smet | less        View the mass balance in less." > /dev/stderr
+	echo " ./massbalancecheck.sh WFJ2_flat.smet firstdate=20071001 lastdate=20080323" > /dev/stderr
+	echo "							  Determines mass balance between 1st of October 2007 up to and including 23rd of March 2008." > /dev/stderr
+	exit
 fi
 
 
