@@ -1334,6 +1334,7 @@ std::istream& operator>>(std::istream& is, ElementData& data)
 	is.read(reinterpret_cast<char*>(&data.S_dr), sizeof(data.S_dr));
 	is.read(reinterpret_cast<char*>(&data.crit_cut_length), sizeof(data.crit_cut_length));
 	is.read(reinterpret_cast<char*>(&data.VG), sizeof(data.VG));
+	data.VG.EMS = &data;
 	is.read(reinterpret_cast<char*>(&data.lwc_source), sizeof(data.lwc_source));
 	is.read(reinterpret_cast<char*>(&data.PrefFlowArea), sizeof(data.PrefFlowArea));
 	is.read(reinterpret_cast<char*>(&data.SlopeParFlux), sizeof(data.SlopeParFlux));
