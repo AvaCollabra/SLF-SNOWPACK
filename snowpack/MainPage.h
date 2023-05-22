@@ -441,7 +441,7 @@
  * label the columns as TS1, TS2, TS3, etc. If you use the snio format, refer to the documentation.
  * User defined positions (m) should be provided in the SnowpackAdvanced section of the \em "io.ini" file,
  *   for example, FIXED_POSITIONS = "0.25 0.50 -0.10":
- *   - positive values refer to heigths measured from the ground surface (snow only)
+ *   - positive values refer to heights measured from the ground surface (snow only)
  *   - negative values refer to depths measured from either the ground surface or the snow surface in case no soil
  *       layers are present
  *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.

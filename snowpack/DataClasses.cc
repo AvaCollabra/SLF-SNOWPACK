@@ -2359,7 +2359,7 @@ void SnowStation::initialize(const SN_SNOWSOIL_DATA& SSdata, const size_t& i_sec
 
 	bool real_soil_no_sandwich = true;  // Switch to count real soil layers
 	for (size_t ll = 0, n = 1; ll < SSdata.nLayers; ll++) {
-		// Update ground heigth and SoilNode number
+		// Update ground height and SoilNode number
 		if (SSdata.Ldata[ll].phiSoil > 0.0 && real_soil_no_sandwich) {
 			Ground += SSdata.Ldata[ll].hl;
 			SoilNode += SSdata.Ldata[ll].ne;
@@ -3077,7 +3077,7 @@ void CurrentMeteo::reset(const SnowpackConfig& i_cfg)
 *     label the columns: TS1, TS2, TS3, etc.
 * - User defined positions (m) should be provided in the advanced section, for example,
 *     FIXED_POSITIONS = "0.25 0.50 -0.10":
-* 	- positive values refer to heigths measured from the ground surface (snow only)
+* 	- positive values refer to heights measured from the ground surface (snow only)
 * 	- negative values refer to depths measured from either the ground surface or the snow surface in case no soil
 *      layers are present
 * 	- There may be be more FIXED_POSITIONS than measured temperatures. In that case, the first positions are
