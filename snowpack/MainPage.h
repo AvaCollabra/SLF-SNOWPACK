@@ -496,6 +496,30 @@
  * The %Snowpack_advanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.
  *
+ * @section soil_hydraulic_properties Setting soil hydraulic properties with Richards Equation
+ * When selecting `WATERTRANSPORTMODEL_SOIL = RICHARDSEQUATION`, the grain size (`rg`) of the soil layers in the `*.sno` file is used to determine the water retention properties of the soil, according to the following values:
+ * <table>
+ * <caption id="multi_row">Soil type definitions</caption>
+ * <tr><th>Soil type   <th>rg
+ * <tr><td>ORGANIC<td>0.2
+ * <tr><td>CLAY<td>0.5
+ * <tr><td>CLAYLOAM<td>1.5
+ * <tr><td>LOAM<td>2.5
+ * <tr><td>LOAMYSAND<td>3.5
+ * <tr><td>SAND<td>4.5
+ * <tr><td>SANDYCLAY<td>5.5
+ * <tr><td>SANDYCLAYLOAM<td>6.5
+ * <tr><td>SANDYLOAM<td>7.5
+ * <tr><td>SILT<td>8.5
+ * <tr><td>SILTYCLAY<td>9.5
+ * <tr><td>SILTYCLAYLOAM<td>10.5
+ * <tr><td>SILTLOAM<td>11.5
+ * <tr><td>WFJGRAVELSAND<td>12.5
+ * </table>
+ * Notes:
+ * - Here, the soil types refer to the <a href="https://www.ars.usda.gov/pacific-west-area/riverside-ca/agricultural-water-efficiency-and-salinity-research-unit/docs/model/rosetta-class-average-hydraulic-parameters/">ROSETTA Class Average Hydraulic Parameters</a>.
+ * - When using Richards equation, theta[SOIL] is set according to the soil type and the values specified in the *.sno file will be ignored.
+ * - WFJGRAVELSAND is a special type created for initial simulations for Weissfluhjoch. In later simulations, LOAMYSAND has been used for Weissfluhjoch.
  */
 
 /**
