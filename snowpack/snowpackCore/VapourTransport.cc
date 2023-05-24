@@ -190,7 +190,12 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
  */
 void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata,
 								   SurfaceFluxes& Sdata, double& ql)
- {
+{
+	const size_t nN = Xdata.getNumberOfNodes();
+	size_t nE = nN-1;
+	vector<NodeData>& NDS = Xdata.Ndata;
+	vector<ElementData>& EMS = Xdata.Edata;
+	std::vector<double> deltaM(nE, 0.);           // calculate the limited layer mass change
 
 	if (enable_vapour_transport)
 	{
@@ -198,12 +203,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
 		ql=0;
 
-		const size_t nN = Xdata.getNumberOfNodes();
-		size_t nE = nN-1;
-		vector<NodeData>& NDS = Xdata.Ndata;
-		vector<ElementData>& EMS = Xdata.Edata;
 		size_t e = nE;
-		std::vector<double> deltaM(nE, 0.);           //Calculate the limited layer mass change
 		std::vector<double> totalMassChange(nE, 0.);  // store the total mass change
 		std::vector<double> oldVaporDenNode(nN, 0.);  // old water vapor density for node
 
@@ -412,9 +412,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 
 	} else {
 		compSurfaceSublimation(Mdata, ql, Xdata, Sdata);
-		ql=0;
+		// Only deal with the remaining ql (i.e., latent heat exchange at the surface)
+		const double topFlux = -ql / Constants::lh_sublimation;										//top layer flux (kg m-2 s-1)
+		const double dM = std::max(-EMS[nE-1].theta[ICE] * (Constants::density_ice * EMS[nE-1].L), -(topFlux * sn_dt));
+		// Correct latent heat flux, which should become 0. at this point. HACK: note that if we cannot satisfy the ql at this point, we overestimated the latent heat from soil.
+		// We will not get mass from deeper layers, as to do that, one should work with enable_vapour_transport == true.
+		ql -= dM / sn_dt * Constants::lh_sublimation;
+		deltaM[nE-1] += dM;
 	}
-
 }
 
 /**

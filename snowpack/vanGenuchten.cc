@@ -86,16 +86,16 @@ std::iostream& operator<<(std::iostream& os, const vanGenuchten& data)
 
 std::iostream& operator>>(std::iostream& is, vanGenuchten& data)
 {
-	is.write(reinterpret_cast<const char*>(&data.EMS), sizeof(data.EMS));
-	is.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
-	is.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
-	is.write(reinterpret_cast<const char*>(&data.alpha), sizeof(data.alpha));
-	is.write(reinterpret_cast<const char*>(&data.n), sizeof(data.n));
-	is.write(reinterpret_cast<const char*>(&data.m), sizeof(data.m));
-	is.write(reinterpret_cast<const char*>(&data.h_e), sizeof(data.h_e));
-	is.write(reinterpret_cast<const char*>(&data.Sc), sizeof(data.Sc));
-	is.write(reinterpret_cast<const char*>(&data.ksat), sizeof(data.ksat));
-	is.write(reinterpret_cast<const char*>(&data.defined), sizeof(data.defined));
+	is.read(reinterpret_cast<char*>(&data.EMS), sizeof(data.EMS));
+	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
+	is.read(reinterpret_cast<char*>(&data.theta_s), sizeof(data.theta_s));
+	is.read(reinterpret_cast<char*>(&data.alpha), sizeof(data.alpha));
+	is.read(reinterpret_cast<char*>(&data.n), sizeof(data.n));
+	is.read(reinterpret_cast<char*>(&data.m), sizeof(data.m));
+	is.read(reinterpret_cast<char*>(&data.h_e), sizeof(data.h_e));
+	is.read(reinterpret_cast<char*>(&data.Sc), sizeof(data.Sc));
+	is.read(reinterpret_cast<char*>(&data.ksat), sizeof(data.ksat));
+	is.read(reinterpret_cast<char*>(&data.defined), sizeof(data.defined));
 	return is;
 }
 

@@ -1918,6 +1918,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	// Correction for snow depth. If we have a marked reference layer, then subtract the height of the reference layer in the output.
 	const double HScorrC = (Xdata.findMarkedReferenceLayer()==IOUtils::nodata || !useReferenceLayer) ? (0.) : (Xdata.findMarkedReferenceLayer() - Xdata.Ground);
 
+	// Check for number of computation steps in between output steps
+	const size_t nCalcSteps = (!avgsum_time_series) ? (static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5)) : (1);
+
 	// Check file for header
 	if (!checkHeader(Xdata, filename, "met", "[STATION_PARAMETERS]")) {
 		prn_msg(__FILE__, __LINE__, "err", Mdata.date, "Checking header in file %s", filename.c_str());
@@ -1986,8 +1989,6 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	} else {
 		if(out_soileb) {
 			// 30-33: soil energy balance variables
-			size_t nCalcSteps = 1;
-			nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 			fout << "," << (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. << "," << Xdata.ColdContentSoil/1E6 << "," << Hdata.hn72_24;
 		} else {
 			fout << ",,,,";
@@ -2090,10 +2091,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 		fout << ",,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,";
 	}
 	// 96[94]-102 (8 or 7 free columns)
-	size_t nCalcSteps = 1;
 	double crust = 0., dhs_corr = 0., mass_corr = 0.;
-	if (!avgsum_time_series)
-		nCalcSteps = static_cast<size_t>(ts_days_between / M_TO_D(calculation_step_length) + 0.5);
 	if (out_haz) {
 		crust = Hdata.crust;
 		dhs_corr = Hdata.dhs_corr;
@@ -2295,9 +2293,9 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101";
 	fout << "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)";
 	if(out_haz==true || out_soileb==false) {
-		fout << ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter, snow only), Surface mass flux (virtual lysimeter)";
+		fout << ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter -- snow only), Surface mass flux (virtual lysimeter)";
 	} else {
-		fout << ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Internal energy change soil,Melt freeze part of internal energy change soil,Cold content soil,,SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter, snow only), Surface mass flux (virtual lysimeter)";
+		fout << ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Internal energy change soil,Melt freeze part of internal energy change soil,Cold content soil,,SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter -- snow only), Surface mass flux (virtual lysimeter)";
 	}
 	fout << ",Sublimation,Evaporation,Temperature 1 (modelled),Temperature 1 (measured),Temperature 2 (modelled),Temperature 2 (measured),Temperature 3 (modelled),Temperature 3 (measured),Temperature 4 (modelled),Temperature 4 (measured),Temperature 5 (modelled),Temperature 5 (measured)";
 	if (maxNumberMeasTemperatures == 5) {

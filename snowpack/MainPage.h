@@ -441,7 +441,7 @@
  * label the columns as TS1, TS2, TS3, etc. If you use the snio format, refer to the documentation.
  * User defined positions (m) should be provided in the SnowpackAdvanced section of the \em "io.ini" file,
  *   for example, FIXED_POSITIONS = "0.25 0.50 -0.10":
- *   - positive values refer to heigths measured from the ground surface (snow only)
+ *   - positive values refer to heights measured from the ground surface (snow only)
  *   - negative values refer to depths measured from either the ground surface or the snow surface in case no soil
  *       layers are present
  *   - A sensor must at least be covered by MIN_DEPTH_SUBSURF (m) snow for its temperature to be output.
@@ -496,24 +496,42 @@
  * The %Snowpack_advanced section contains settings that previously required to edit the source code and recompile the model. Since these settings
  * deeply transform the operation of the model, please <b>refrain from using them</b> if you are not absolutely sure of what you are doing.
  *
+ * @section soil_hydraulic_properties Setting soil hydraulic properties with Richards Equation
+ * When selecting `WATERTRANSPORTMODEL_SOIL = RICHARDSEQUATION`, the grain size (`rg`) of the soil layers in the `*.sno` file is used to determine the water retention properties of the soil, according to the following values:
+ * <table>
+ * <caption id="multi_row">Soil type definitions</caption>
+ * <tr><th>Soil type   <th>rg
+ * <tr><td>ORGANIC<td>0.2
+ * <tr><td>CLAY<td>0.5
+ * <tr><td>CLAYLOAM<td>1.5
+ * <tr><td>LOAM<td>2.5
+ * <tr><td>LOAMYSAND<td>3.5
+ * <tr><td>SAND<td>4.5
+ * <tr><td>SANDYCLAY<td>5.5
+ * <tr><td>SANDYCLAYLOAM<td>6.5
+ * <tr><td>SANDYLOAM<td>7.5
+ * <tr><td>SILT<td>8.5
+ * <tr><td>SILTYCLAY<td>9.5
+ * <tr><td>SILTYCLAYLOAM<td>10.5
+ * <tr><td>SILTLOAM<td>11.5
+ * <tr><td>WFJGRAVELSAND<td>12.5
+ * </table>
+ * Notes:
+ * - Here, the soil types refer to the <a href="https://www.ars.usda.gov/pacific-west-area/riverside-ca/agricultural-water-efficiency-and-salinity-research-unit/docs/model/rosetta-class-average-hydraulic-parameters/">ROSETTA Class Average Hydraulic Parameters</a>.
+ * - When using Richards equation, theta[SOIL] is set according to the soil type and the values specified in the *.sno file will be ignored.
+ * - WFJGRAVELSAND is a special type created for initial simulations for Weissfluhjoch. In later simulations, LOAMYSAND has been used for Weissfluhjoch.
  */
 
 /**
  * @page snowpack_visualization Visualization tools
  * The simulation outputs are usually saved in \a ".pro" files for the time resolved profiles and \a ".met" files for the meteorological data time series
  * (see section \subpage snowpackio "Snowpack file formats"). These files can be processed with some scripts, relying on GNU plot or R for generating graphs
- * but are usually viewed with a graphical application. Two such applications are currently available: the legacy SnGUI Java tool and the newly developed 
- * SnopViz javascript tool.
+ * but are usually viewed with a graphical application such as the open source, online niViz application.
  * 
- * @section sngui_config The sngui tool
- * This deprecated java application can be  <a href="https://models.slf.ch/p/sngui/">downloaded</a> after registering (and requesting access) on the web site.
- * \image html sngui_overview_small.png "sngui overview"
- * \image latex sngui_overview.eps "sngui overview" width=0.9\textwidth
- *
  * @section snopviz The SnopViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
  * Chrome >= 38). You can either use it <a href="https://run.niviz.org">online</a> and then open your profile to visualize or you can 
- * <a href="https://gitlabext.wsl.ch/snow-models/niviz/-/wikis/home">download</a> a pre-packaged version that can be installed for offline use on your computer.
+ * <a href="https://code.wsl.ch/snow-models/niviz/-/wikis/home">download</a> a pre-packaged version that can be installed for offline use on your computer.
  * \image html snopviz_small.png "SnopViz overview"
  * \image latex snopviz.eps "SnopVizi overview" width=0.9\textwidth
  * 
