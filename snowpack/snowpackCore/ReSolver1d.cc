@@ -70,14 +70,14 @@ const double ReSolver1d::MIN_VAL_TIMESTEP = 1E-12;		//Minimum time step allowed 
 const double ReSolver1d::MAX_VAL_TIMESTEP = 900.;		//Maximum time step allowed in Richards solver.
 const double ReSolver1d::MIN_DT_FOR_INFILTRATION=10.;		//If dt is above this value, do a rewind if the matrix cannot allow for all infiltrating water
 const size_t ReSolver1d::BS_MAX_ITER = 5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
-const double ReSolver1d::SF_epsilon = 1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
+const double ReSolver1d::SF_epsilon = REQUIRED_ACCURACY_THETA;	//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
-             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.), enable_ice_reservoir(false),
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN), K_frozen_soilType(IGNORE), omega(7.),
+             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.), enable_ice_reservoir(false), runSoilInitializer(false),
              sn_dt(IOUtils::nodata), allow_surface_ponding(false), lateral_flow(false), matrix(false), SalinityTransportSolver(SalinityTransport::IMPLICIT),
              dz(), z(), dz_up(), dz_down(), dz_()
 {
@@ -138,6 +138,9 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 	// Check for ice reservoir
 	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
 
+	// Check if the enforceThermalEquilibrium() function needs to be run
+	cfg.getValue("REQ_INITIALIZE_SOIL", "SnowpackAdvanced", runSoilInitializer);
+
 	//Set averaging method for hydraulic conductivity at the layer interfaces
 	std::string tmp_avg_method_K;
 	if(matrix_part) {
@@ -178,6 +181,23 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 			prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown averaging method for hydraulic conductivity (key: AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW).");
 			throw;
 		}
+	}
+	std::string tmp_K_frozen_soil;
+	cfg.getValue("HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL", "SnowpackAdvanced", tmp_K_frozen_soil);
+	if (tmp_K_frozen_soil=="IGNORE") {
+		K_frozen_soilType=IGNORE;
+	} else if (tmp_K_frozen_soil.substr(0,5)=="OMEGA") {
+		K_frozen_soilType=OMEGA;
+		omega=::atof(tmp_K_frozen_soil.substr(5).c_str());
+		if (!(omega>0.) || tmp_K_frozen_soil.length() == 5) {
+			prn_msg( __FILE__, __LINE__, "err", Date(), "When selecting hydraulic conductivity model for frozen soil OMEGA (key: HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL), specify a positive value for omega following \"OMEGA\" (for example: \"OMEGA7\", which sets the recommended value of 7).");
+			throw;
+		}
+	} else if (tmp_K_frozen_soil=="LIQUIDPORESPACE") {
+		K_frozen_soilType=LIQUIDPORESPACE;
+	} else {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown hydraulic conductivity model for frozen soil (key: HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL).");
+		throw;
 	}
 
 	std::string tmp_SalinityTransportSolver = "EXPLICIT";
@@ -709,7 +729,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		const bool LIMITEDFLUXINFILTRATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
 	const bool LIMITEDFLUXSOURCESINKTERM=true;				//Check if the source/sink term can be absorbed by the matrix.
-	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 
 	//Setting some program flow variables
 	const bool SafeMode=true;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
@@ -915,10 +934,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
 				const double tmp_excess_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);
-				//HACK: how to treat ice layers? The line below that is commented out makes the model spiral out of control...
-				// Produce warning, but not when running for sea ice, because then ice layers are too common.
-				//dT[i]+=tmp_excess_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-				if(variant!="SEAICE") std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_excess_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
+				dT[i]+=tmp_excess_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
 				EMS[i].theta[WATERINDEX]+=tmp_excess_theta;
 				EMS[i].theta[ICE]-=tmp_excess_theta*(Constants::density_water/Constants::density_ice);
 				EMS[i].theta[AIR]=1.-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
@@ -964,7 +980,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
 	for (i = lowernode; i <= uppernode; i++) {
 		//Now calculate the theta that should be considered "dry soil".
-		theta_d[i]=EMS[i].VG.fromHtoTHETAforICE(h_d, 0.);
+		theta_d[i]=EMS[i].VG.fromHtoTHETA(h_d);
 
 		//Now check if this case is not too extreme for pressure head (important for numerical stability)
 		const double fact=1000.;
@@ -1014,6 +1030,27 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 		}
 
+		// Run soil initializer functionality when requested upon initialization
+		if (boolFirstFunctionCall && WATERINDEX==WATER && runSoilInitializer && i < Xdata.SoilNode) {
+			std::cout << "[i] Initializing soil layer " << i << ". Initial values: " << " h=" << EMS[i].h << " (" << EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, theta_i_n[i]) << ") theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE];
+			if (BottomBC==WATERTABLE) {
+				EMS[i].h = EMS[i].VG.h_e - NDS[i].z - .5*EMS[i].L;
+				// As partitioning in water and ice is done in enforceThermalEquilibrium(), assume all water for now
+				EMS[i].theta[WATER] = EMS[i].VG.fromHtoTHETAforICE(EMS[i].h, 0.);
+				EMS[i].theta[ICE] = 0.;
+			} else {
+				if (i>0) {
+					// Bottom element remains unchanged, add all elements above accordingly. Note that this assumes that the outer loop is executed bottom to top
+					EMS[i].h = h_n[i-1] - (.5*EMS[i-1].L + .5*EMS[i].L);
+					// As partitioning in water and ice is done in enforceThermalEquilibrium(), assume all water for now
+					EMS[i].theta[WATER] = EMS[i].VG.fromHtoTHETAforICE(EMS[i].h, 0.);
+					EMS[i].theta[ICE] = 0.;
+				}
+			}
+			EMS[i].VG.enforceThermalEquilibrium();
+			snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
+			std::cout << "   changed to:  h=" << EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, EMS[i].theta[ICE]) << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << std::endl;
+		}
 
 		//Now copy the EMS water content into the working arrays to solve Richards-equation (so this is the important part were this function is coupled to the rest of SNOWPACK).
 		if(EMS[i].theta[SOIL]<Constants::eps2) {		//For snow
@@ -1023,6 +1060,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 		} else {
 			//For soil, we take the matrix pressure head as lower boundary for the snow preferential flow
+			theta_i_n[i]=EMS[i].theta[ICE];
 			if(matrix == false) theta_i_n[i]=EMS[i].theta[ICE];	// Keep ice contents in sync, as we skip soil freezing with preferential flow (in turn because we suppress preferential flow in soil)
 			h_n[i]=EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATER], h_d, theta_i_n[i]);
 		}
@@ -1175,17 +1213,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Determine hydraulic conductivity, using the Mualem model (see Ippisch, 2006), Eq. 11
 				K[i]=EMS[i].VG.ksat*sqrt(Se[i])*pow((1.-(pow(1.-pow(Se[i]*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
 
-				//Applying ice impedance on K
-				if(ApplyIceImpedance==true) {
-					const double omega=7.;		//See Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
-					if (i < Xdata.SoilNode && theta_i_np1_m[i]>0. && K[i]>0. ) {	//Only for soil and when there is ice in the soil
+				//Applying ice impedance on K when requested
+				if (K_frozen_soilType != IGNORE && i < Xdata.SoilNode && theta_i_np1_m[i]>0.) {	//Only for soil and when there is ice in the soil
+					if (K_frozen_soilType==OMEGA) {
+						//See Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 						//q=theta_i_np1_m[i]/(EMS[i].VG.theta_s-EMS[i].VG.theta_r);					//This is how Dall'Amico presents it, but it is based on Hanssen (2004), who defines it as:
 						const double q = (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water))/((theta_np1_m[i]+(theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)))-EMS[i].VG.theta_r);		//Hanssen (2004).
 						impedance[i]=pow(10., -1.*omega*q);
-					} else {
-						impedance[i]=1.;
+						K[i]*=impedance[i];
+					} else if (K_frozen_soilType==LIQUIDPORESPACE) {
+						const double tmp_Se = ((theta_np1_m[i] - EMS[i].VG.theta_r)/(EMS[i].VG.theta_s - EMS[i].VG.theta_r));
+						K[i]=EMS[i].VG.ksat*sqrt(tmp_Se)*pow((1.-(pow(1.-pow(tmp_Se*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
 					}
-					K[i]*=impedance[i];
 				}
 
 				//Calculate the specific moisture capacity (which is derivative d.theta/d.h)
@@ -2352,7 +2391,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	// Copy results back to SNOWPACK
 	for (i = lowernode; i <= uppernode; i++) {						//We loop over all Richards solver domain layers
-
 		if(EMS[i].theta[SOIL]>Constants::eps2) {					//We are in soil
 			EMS[i].theta[WATER]=EMS[i].VG.fromHtoTHETAforICE(h_n[i], theta_i_n[i]);
 			EMS[i].theta[ICE]=theta_i_n[i];
@@ -2360,13 +2398,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			EMS[i].theta[WATERINDEX]=EMS[i].VG.fromHtoTHETAforICE(h_n[i], theta_i_n[i]);
 		}
 		EMS[i].h=h_n[i];
-
-		//In case we had to melt ice to get theta_r, we have to adjust the temperature:
-		EMS[i].Te -= dT[i];
-		if(i==nE-1) {
-			NDS[i+1].T-=dT[i];
-			NDS[i].T-=dT[i];
-		}
 
 		//And adjust all the properties accordingly
 		EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
@@ -2592,13 +2623,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
 				}
 			}
-			NDS[i+1].T+=deltaN;
-			NDS[i].T+=deltaN;
-			if(fabs(deltaN)>0.) {
-				if(i < nE-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);
-				EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
-				if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
-			}
+			EMS[i].Qmf += (deltaN * EMS[i].c[TEMPERATURE] * EMS[i].Rho) / sn_dt;
 		} else {
 			// If there is only 1 element, we don't care about heat advection...
 		}
