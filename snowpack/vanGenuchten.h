@@ -64,6 +64,7 @@ class vanGenuchten {
 		// Functions to initialize the van Genuchten model
 		void SetVGParamsSnow(VanGenuchten_ModelTypesSnow VGModelTypeSnow, K_Parameterizations K_PARAM, const bool& matrix, const bool& seaice);
 		void SetVGParamsSoil();
+		bool enforceThermalEquilibrium(const bool fixTemp=true);
 
 		double theta_r;	//Soil property, residual water content.
 		double theta_s;	//Soil property, saturation water content.
