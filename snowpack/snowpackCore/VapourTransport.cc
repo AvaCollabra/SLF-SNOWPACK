@@ -131,7 +131,6 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 
 	cfg.getValue("HEIGHT_OF_METEO_VALUES", "Snowpack", height_of_meteo_values);
 	cfg.getValue("ADJUST_HEIGHT_OF_METEO_VALUES", "SnowpackAdvanced", adjust_height_of_meteo_values);
-
 }
 
 /**
@@ -151,7 +150,6 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
  * @param Sdata
  * @param Mdata
  */
-
 void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
                                        SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
@@ -161,13 +159,13 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
 		return;
 	}
 
-    try {
-	    LayerToLayer(Mdata, Xdata, Sdata, ql);
-	    WaterTransport::adjustDensity(Xdata);
-    } catch(const exception&) {
-	    prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
-	    throw;
-    }
+	try {
+		LayerToLayer(Mdata, Xdata, Sdata, ql);
+		WaterTransport::adjustDensity(Xdata);
+	} catch(const exception&) {
+		prn_msg( __FILE__, __LINE__, "err", Mdata.date, "Error in transportVapourMass()");
+		throw;
+	}
 }
 
 
@@ -189,14 +187,13 @@ void VapourTransport::compTransportMass(const CurrentMeteo& Mdata, double& ql,
  * @param Sdata
  * @param Mdata
  */
-void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata,
-								   SurfaceFluxes& Sdata, double& ql)
+void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
 {
 	const size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
-	std::vector<double> deltaM(nE, 0.);           // calculate the limited layer mass change
+	std::vector<double> deltaM(nE, 0.);			// calculate the limited layer mass change
 
 	if (enable_vapour_transport)
 	{
@@ -205,10 +202,10 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		ql=0;
 
 		size_t e = nE;
-		std::vector<double> totalMassChange(nE, 0.);  // store the total mass change
-		std::vector<double> oldVaporDenNode(nN, 0.);  // old water vapor density for node
+		std::vector<double> totalMassChange(nE, 0.);	// store the total mass change
+		std::vector<double> oldVaporDenNode(nN, 0.);	// old water vapor density for node
 
-		std::vector<double> factor_(nE, 1.); 		  // this is for source term in vapor transport equation
+		std::vector<double> factor_(nE, 1.);		// this is for source term in vapor transport equation
 		for (size_t i = 0; i < Xdata.SoilNode; i++) {
 			factor_[i] = 0.;
 		}
@@ -242,7 +239,7 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 		for (size_t i=0; i<nN; i++) {
 			if (i == 0) {
 				if (!useSoilLayers) {
-					double rwTors_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1.,  1. / 3.);
+					double rwTors_u = pow(EMS[i].theta[WATER] / EMS[i].theta[ICE] + 1., 1. / 3.);
 					double apparentTheta = EMS[i].theta[ICE] + EMS[i].theta[WATER];
 					as_[i] = 6.0 * apparentTheta / (0.001 * rwTors_u * EMS[i].ogs);
 				} else {
@@ -286,9 +283,9 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			}
 		}
 
-		timeStep = (waterVaporTransport_timeStepAdjust) ? std::min(min_dt,waterVaporTransport_timeStep) : waterVaporTransport_timeStep;
+		timeStep = (waterVaporTransport_timeStepAdjust) ? std::min(min_dt, waterVaporTransport_timeStep) : waterVaporTransport_timeStep;
 		int nTime = int(sn_dt/timeStep) + 1;
-		double time = 0;
+		double time = 0.;
 		for (size_t l = 0; static_cast<int>(l) <= nTime; l++) {
 			time=time+timeStep;
 			if (time >= sn_dt) {
@@ -309,14 +306,14 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			e = nE;
 			// consider the mass change due to vapour transport in snow/soil
 			while (e-- > 0) {
-				const double massPhaseChange = totalMassChange[e]+deltaM[e];//JJJJJ
+				const double massPhaseChange = totalMassChange[e]+deltaM[e];
 
 				double dM = 0.;	// mass change induced by vapor flux (kg m-2)
 
 				// Now, the mass change is limited by:
 				// - we cannot remove more WATER and ICE than available
 				// - we cannot add more WATER and ICE than pore space available
-				if ( EMS[e].theta[SOIL] < Constants::eps ) {  // there is no soil in element to keep element not to merge
+				if ( EMS[e].theta[SOIL] < Constants::eps ) {	// there is no soil in element to keep element not to merge
 					dM = std::max(-((EMS[e].theta[WATER] - EMS[e].VG.theta_r * (1. + Constants::eps)) * Constants::density_water * EMS[e].L + (EMS[e].theta[ICE] - Snowpack::min_ice_content) * Constants::density_ice * EMS[e].L),
 								  std::min((EMS[e].theta[AIR] * Constants::density_ice * EMS[e].L), massPhaseChange)
 						 		 ); // mass change due to difference in water vapor flux (kg m-2), at most can fill the pore space.
@@ -333,10 +330,10 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 					dM = 0.;
 				}
 
-				deltaM[e] = dM;  // JJJJJ
+				deltaM[e] = dM;
 			}
 
-			if(time==sn_dt) break;
+			if (time==sn_dt) break;
 		}
 
 		for (size_t i = 0; i < nE; i++) {
@@ -372,11 +369,11 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
 			} else {  // Mass gain: add water in case temperature at or above melting point, ice otherwise
 				if (EMS[e].Te >= EMS[e].meltfreeze_tk) {
 					EMS[e].theta[WATER] += deltaM[e] / (Constants::density_water * EMS[e].L);
-					EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;  // [w/m^3]
+					EMS[e].Qmm += (deltaM[e]*Constants::lh_vaporization)/sn_dt/EMS[e].L;	// [w/m^3]
 					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e];
 				} else {
 					EMS[e].theta[ICE] += deltaM[e] / (Constants::density_ice * EMS[e].L);
-					EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;  // [w/m^3]
+					EMS[e].Qmm += (deltaM[e]*Constants::lh_sublimation)/sn_dt/EMS[e].L;	// [w/m^3]
 					Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += deltaM[e];
 				}
 				EMS[e].M += deltaM[e];
@@ -439,9 +436,9 @@ void VapourTransport::LayerToLayer(const CurrentMeteo& Mdata, SnowStation& Xdata
  */
 void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& ql, SnowStation& Xdata, SurfaceFluxes& Sdata)
 {
-	double dM, M;	// Length and mass changes, and Initial mass and volumetric content (water or ice)
-	double dHoar = 0.;  // Actual change in hoar mass
-	double cH_old;      // Temporary variable to hold height of snow
+	double dM, M;		// Length and mass changes, and Initial mass and volumetric content (water or ice)
+	double dHoar = 0.;	// Actual change in hoar mass
+	double cH_old;		// Temporary variable to hold height of snow
 
 	const size_t nN = Xdata.getNumberOfNodes();
 	size_t nE = nN-1;
@@ -464,7 +461,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 		const double meltfreeze_tk = (Xdata.getNumberOfElements()>0)? Xdata.Edata[Xdata.getNumberOfElements()-1].meltfreeze_tk : Constants::meltfreeze_tk;
 		if (Tss < meltfreeze_tk) { // Add Ice
 			dM = ql*sn_dt/Constants::lh_sublimation;
-			//  If rh is very close to 1, vw too high or ta too high, surface hoar is destroyed and should not be formed
+			// If rh is very close to 1, vw too high or ta too high, surface hoar is destroyed and should not be formed
 			if (!((Mdata.rh > hoar_thresh_rh) || (Mdata.vw > hoar_thresh_vw) || (Mdata.ta >= IOUtils::C_TO_K(hoar_thresh_ta)))) {
 				// Under these conditions, form surface hoar
 				ql = 0.;
@@ -506,7 +503,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 		// If ql < 0, SUBLIMATE mass off
 		std::vector<double> M_Solutes(Xdata.number_of_solutes, 0.); // Mass of solutes from disappearing phases
 		size_t e = nE;
-		while ((e > 0) && (ql < (-Constants::eps2))) {  // While energy is available
+		while ((e > 0) && (ql < (-Constants::eps2))) {	// While energy is available
 			e--;
 			/*
 			* Determine the amount of potential sublimation and collect some variables
@@ -529,7 +526,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 
 				EMS[e].M += dM;
 				Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] += dM;
-				ql -= dM*Constants::lh_sublimation/sn_dt;     // Update the energy used
+				ql -= dM*Constants::lh_sublimation/sn_dt;	// Update the energy used
 
 				// If present at surface, surface hoar is sublimated away
 				if (e == nE-1) {
@@ -647,7 +644,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	vector<ElementData>& EMS = Xdata.Edata;
 	const size_t nX = nN; // number of unknowns
 
-	BiCGSTAB<SparseMatrix<double> > solver;  // Built-in iterative solver
+	BiCGSTAB<SparseMatrix<double> > solver; // Built-in iterative solver
 
 	SparseMatrix<double,RowMajor> A(nX,nX);
 	std::vector<Trip> tripletList(nX);
@@ -655,8 +652,8 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	VectorXd xx(nX);
 
 	// grid
-    std::vector<double> z(nN,0.);
-    for (size_t i = 0; i < nN; i++) {
+	std::vector<double> z(nN,0.);
+	for (size_t i = 0; i < nN; i++) {
 		z[i] = NDS[i].z;
 	}
 
@@ -665,7 +662,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	for(size_t i=0; i<nN; i++) {
 		if (i == 0) {
 			D_[i]=D_el[i];
-		} else if(i==nN-1) {
+		} else if (i==nN-1) {
 			D_[i]=0.5*D_el[i-1]+0.5*Constants::diffusion_coefficient_in_air;
 		} else {
 			D_[i]=D_el[i];
@@ -698,7 +695,7 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 	{
 		error_max = 0;
 
-        // The lower B.C.
+		// The lower B.C.
 		if(bottomDirichletBCtype){
 			double elementSaturationVaporDensity=Atmosphere::waterVaporDensity(NDS[0].T, Atmosphere::vaporSaturationPressure(NDS[0].T));
 			NDS[0].rhov=elementSaturationVaporDensity;
@@ -725,30 +722,30 @@ bool VapourTransport::compDensityProfile(const CurrentMeteo& Mdata, SnowStation&
 				b[k] += -NDS[k-1].rhov*(1-f)*-2.0*eps_[k-1]*D_[k-1]/dz_d/(dz_u+dz_d);
 
 				v_ij = f * 2.0 * eps_[k] * D_[k] / dz_u / (dz_u + dz_d) + f * 2.0 * eps_[k-1] * D_[k-1] / dz_d / (dz_u + dz_d) + eps_n * 1.0 / timeStep + hm_[k] * as_[k] * f;
-				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));      // Set up the matrix diagonal
+				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));		// Set up the matrix diagonal
 
 				v_ij = f * -2.0 * eps_[k] * D_[k] / dz_u / (dz_u + dz_d);
-				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) + 1, v_ij));  // Set up the matrix upper diagonals, k+1
+				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) + 1, v_ij));	// Set up the matrix upper diagonals, k+1
 
 				v_ij = f * -2.0 * eps_[k-1] * D_[k-1] / dz_d / (dz_u + dz_d);
-				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) - 1, v_ij));  // Set up the matrix lower diagonals, k-1
+				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) - 1, v_ij));	// Set up the matrix lower diagonals, k-1
 			} if (k == nN-1) {
 				// Normal top B.C. assuming satuarion condition for the uppermost node of snowpack
 				b[k] = saturationDensity;
 				v_ij = 1.0;
-				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));  // Set up the matrix diagonal
+				tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));		// Set up the matrix diagonal
 			} if (k == 0) {
 				if (bottomDirichletBCtype) {
 					b[k] = saturationDensity;  // NDS[k].rhov;
 					v_ij = 1.0;
-					tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));  // Set up the matrix diagonal
+					tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));	// Set up the matrix diagonal
 				} else {
 					b[k] = 0.0;
 					v_ij = -1.0;
 					tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k), v_ij));	// Set up the matrix diagonal
 
 					v_ij = 1.0;
-					tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) + 1, v_ij));  // Set up the matrix upper diagonals, k+1
+					tripletList.push_back(Trip(static_cast<int>(k), static_cast<int>(k) + 1, v_ij));// Set up the matrix upper diagonals, k+1
 				}
 			}
 		}
