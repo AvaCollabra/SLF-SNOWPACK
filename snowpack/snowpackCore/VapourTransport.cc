@@ -50,13 +50,16 @@ using namespace mio;
 using namespace std;
 using namespace Eigen;
 
+//vapour_transport_implicit_factor: 1 is fully implicit, 0 is fully explicit, 0.5 is Crank-Nicolson
+const double VapourTransport::f = 1.;
+
 VapourTransport::VapourTransport(const SnowpackConfig& cfg)
                : WaterTransport(cfg), RichardsEquationSolver1d(cfg, false), variant(),
                  iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET), watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"),
                  sn_dt(IOUtils::nodata), timeStep(IOUtils::nodata), waterVaporTransport_timeStep(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  useSoilLayers(false), water_layer(false), enable_vapour_transport(false),
-                 diffusionScalingFactor_(1.0), height_of_meteo_values(0.), adjust_height_of_meteo_values(true), f(1.0),waterVaporTransport_timeStepAdjust(false)
+                 diffusionScalingFactor_(1.0), height_of_meteo_values(0.), adjust_height_of_meteo_values(true), waterVaporTransport_timeStepAdjust(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -93,16 +96,14 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 	const double calculation_step_length = cfg.get("CALCULATION_STEP_LENGTH", "Snowpack");
 	sn_dt = M_TO_S(calculation_step_length);
 
-	//Enable vapour transport
+	//Vapour transport settings
 	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport);
 	if (enable_vapour_transport) {
 		// the water vapor subtime step
 		cfg.getValue("VAPOUR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
 		waterVaporTransport_timeStep = std::min(sn_dt,waterVaporTransport_timeStep);
 
-		// the water vapor transport scheme, f=1 fully implicit, f=0.5 Crank-Nicolson
-		cfg.getValue("VAPOUR_TRANSPORT_IMPLICIT_FACTOR", "SnowpackAdvanced", f);
-
+		// If not using fully implicit scheme
 		if (f < 1.0) waterVaporTransport_timeStepAdjust = true;
 	}
 

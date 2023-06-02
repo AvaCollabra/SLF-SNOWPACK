@@ -76,7 +76,7 @@ class VapourTransport : public WaterTransport {
 		double diffusionScalingFactor_, height_of_meteo_values;
 		bool adjust_height_of_meteo_values;
 
-		double f;
+		const static double f;
 
 		bool waterVaporTransport_timeStepAdjust;
 };
