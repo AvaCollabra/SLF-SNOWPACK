@@ -69,6 +69,7 @@ class VapourTransport : public WaterTransport {
 		std::string watertransportmodel_snow;
 		std::string watertransportmodel_soil;
 		double sn_dt, timeStep, waterVaporTransport_timeStep;
+		const static double VapourTransport_timeStep;
 		double hoar_thresh_rh, hoar_thresh_vw, hoar_thresh_ta;
 		bool useSoilLayers, water_layer;
 

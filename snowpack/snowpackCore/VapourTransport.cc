@@ -52,6 +52,7 @@ using namespace Eigen;
 
 //vapour_transport_implicit_factor: 1 is fully implicit, 0 is fully explicit, 0.5 is Crank-Nicolson
 const double VapourTransport::f = 1.;
+const double VapourTransport::VapourTransport_timeStep = 60.;	// Only used when f < 1 !!
 
 VapourTransport::VapourTransport(const SnowpackConfig& cfg)
                : WaterTransport(cfg), RichardsEquationSolver1d(cfg, false), variant(),
@@ -100,11 +101,14 @@ VapourTransport::VapourTransport(const SnowpackConfig& cfg)
 	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport);
 	if (enable_vapour_transport) {
 		// the water vapor subtime step
-		cfg.getValue("VAPOUR_TRANSPORT_TIMESTEP", "SnowpackAdvanced", waterVaporTransport_timeStep);
-		waterVaporTransport_timeStep = std::min(sn_dt,waterVaporTransport_timeStep);
-
 		// If not using fully implicit scheme
-		if (f < 1.0) waterVaporTransport_timeStepAdjust = true;
+		if (f < 1.0) {
+			waterVaporTransport_timeStepAdjust = true;
+			waterVaporTransport_timeStep = std::min(sn_dt, VapourTransport_timeStep);
+		} else {
+			// Implicit: time step defaults to SNOWPACK time step
+			waterVaporTransport_timeStep = sn_dt;
+		}
 	}
 
 	// Water transport model snow
