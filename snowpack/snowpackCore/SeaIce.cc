@@ -122,7 +122,7 @@ std::iostream& operator>>(std::iostream& is, SeaIce& data)
 
 /**
  * @brief Determines the salinity and associated melting temperature
- * @param Xdata Snow cover data
+ * @param Xdata SnowStation to apply the salinity profile to
  */
 void SeaIce::compSalinityProfile(SnowStation& Xdata)
 {
@@ -240,6 +240,7 @@ void SeaIce::compSalinityProfile(SnowStation& Xdata)
  *        positive: sea level below ice surface\n
  *        negative: sea level above ice surface (flooding)\n
  * @version 16.08
+ * @param Xdata SnowStation object to use in calculation
  */
 void SeaIce::updateFreeboard(SnowStation& Xdata)
 {
@@ -253,6 +254,7 @@ void SeaIce::updateFreeboard(SnowStation& Xdata)
 /**
  * @brief Find snow/ice transition for sea ice simulations\n
  * @version 16.08
+ * @param Xdata SnowStation object to use in calculation
  */
 double SeaIce::findIceSurface(SnowStation& Xdata)
 {
@@ -286,6 +288,7 @@ double SeaIce::findIceSurface(SnowStation& Xdata)
 /**
  * @brief Apply flooding\n
  * @version 16.08
+ * @param Xdata SnowStation object to use in calculation
  */
 void SeaIce::compFlooding(SnowStation& Xdata)
 {
@@ -309,7 +312,7 @@ void SeaIce::compFlooding(SnowStation& Xdata)
 /**
  * @brief Calculate melting temperature as function of brine salinity
  * @version 16.08
- * @param Edata
+ * @param Edata Layer element to use in calculation
  */
 void SeaIce::calculateMeltingTemperature(ElementData& Edata)
 {
@@ -402,7 +405,9 @@ double SeaIce::compSeaIceLatentHeatFusion(const ElementData& Edata)
 /**
  * @brief Calculate ice formation and decay at the bottom
  * @version 16.08: initial version
- * @param Edata
+ * @param Xdata SnowStation object to use in calculation
+ * @param Mdata Meteo data
+ * @param sn_dt Time step (s)
  */
 void SeaIce::bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt)
 {

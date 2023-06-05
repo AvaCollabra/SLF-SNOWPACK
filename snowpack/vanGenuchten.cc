@@ -51,7 +51,7 @@ vanGenuchten::vanGenuchten(const vanGenuchten& c) :
 /**
  * @brief Assignment operator \n
  * @author Nander Wever
- * @param c Class to assign
+ * @param source Class to assign
  */
 vanGenuchten& vanGenuchten::operator=(const vanGenuchten& source) {
 	if(this != &source) {
@@ -381,6 +381,7 @@ double vanGenuchten::dtheta_dh(const double h) {
  * @param VGModelTypeSnow van Genuchten model parameterization to use
  * @param K_PARAM hydraulic conductivity parameterization to use
  * @param matrix true: set parameters for matrix domain. false: set parameters for preferential flow domain
+ * @param seaice if true: use some tweaks for sea ice.
  */
 void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelTypeSnow, const K_Parameterizations K_PARAM, const bool& matrix, const bool& seaice)
 {

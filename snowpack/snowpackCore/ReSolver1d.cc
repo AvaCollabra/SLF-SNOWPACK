@@ -649,8 +649,10 @@ std::vector<double> ReSolver1d::AssembleRHS( const size_t& lowernode,
  * @brief Solve Richards Equation \n
  * Solve Richards Equation \n
  * @author Nander Wever
- * @param Xdata
- * @param Sdata
+ * @param Xdata SnowStation object for which Richards Equation should be solved
+ * @param Sdata SurfaceFluxes object to store fluxes
+ * @param ql latent heat flux that should be considered as evaporation in the upper boundary condition
+ * @param date Date for wich the time step is executed, to provide a helpful error message when problems occur
  */
 void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql, const mio::Date& date)
 {
