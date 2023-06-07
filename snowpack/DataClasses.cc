@@ -1465,10 +1465,11 @@ double ElementData::coldContent() const
  */
 void ElementData::updDensity()
 {
+	const double brine_salinity = ((theta[WATER] + theta[WATER_PREF]) > 0.) ? (salinity / (theta[WATER] + theta[WATER_PREF])) : (0.); //salinity = bulk salinity
 	// Calculate element density
 	Rho = theta[ICE] * Constants::density_ice +
               (theta[WATER] + theta[WATER_PREF]) * Constants::density_water +
-              salinity * SeaIce::betaS +						//salinity = bulk salinity
+              brine_salinity * SeaIce::betaS +
               theta[SOIL] * soil[SOIL_RHO];
 	M = Rho * L;
 	return;
