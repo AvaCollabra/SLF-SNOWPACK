@@ -217,7 +217,7 @@ class LayerData {
 		double hr;                  ///< Surface hoar Mass in kg m-2
 		double CDot;                ///< Stress rate (Pa s-1), that is the LAST overload change rate
 		double metamo;              ///< keep track of metamorphism
-		double salinity;            ///< salinity (kg/kg)
+		double salinity;            ///< bulk salinity (g/kg)
 		double h;                   ///< capillary pressure head (m)
 		double dsm;                 ///< dry snow metamorphism factor
 };
@@ -349,7 +349,7 @@ class ElementData {
 		size_t mk;                 ///< grain marker (history dependent)
 		unsigned short int type;   ///< grain class
 		double metamo;             ///< keep track of metamorphism
-		double salinity;           ///< salinity (PSU, which is g/kg)
+		double salinity;           ///< bulk salinity (PSU, which is g/kg)
 		double dth_w;              ///< Subsurface Melting & Freezing Data: change of water content
 		double res_wat_cont;       ///< Residual water content
 		double Qmf;                ///< Subsurface Melting & Freezing Data: change of energy due to phase changes (melt-freeze)
