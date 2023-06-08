@@ -112,7 +112,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["REQ_INITIALIZE_SOIL" ] = "false";				// Only for use with RE.
 	advancedConfig["ADJUST_HEIGHT_OF_METEO_VALUES"] = "true";
 	advancedConfig["ADJUST_HEIGHT_OF_WIND_VALUE"] = "true";
-	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";
+	advancedConfig["WIND_SCALING_FACTOR"] = "1.0";			// Used to scale wind for blowing and drifting snowpack (from statistical analysis) bc some stations consistently measure a wind that is too low
 	advancedConfig["ADVECTIVE_HEAT"] = "false";
 	advancedConfig["HEAT_BEGIN"] = "0.0";
 	advancedConfig["HEAT_END"] = "0.0";
