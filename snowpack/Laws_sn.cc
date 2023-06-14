@@ -793,7 +793,7 @@ double SnLaws::compSnowThermalConductivity(const ElementData& Edata, const doubl
 
 	// Compute cross-sectional areas of conduction paths (m2)
 	const double Ap = Metamorphism::csPoreArea(Edata); // (mm2)
-	const double Aiw = std::max(0., Edata.theta[WATER] * (1. / C1 - rg) / C1 * (Ap + Constants::pi * rg*rg));
+	const double Aiw = std::max(0., Edata.theta[WATER] * (1. / C1)/(1. / C1 - rg) * (Ap + Constants::pi * rg*rg));
 	const double Aip = std::max(0., Constants::pi * (rg*rg - rb*rb) - Aiw);
 
 	/*
@@ -1021,39 +1021,6 @@ double SnLaws::newSnowDensityEvent(const std::string& variant, const SnLaws::Eve
 }
 
 /**
- * @brief it is exactly the newSnowDensityEvent function, however a new object is passed into this function.
- */
-double SnLaws::newSnowDensityEventModified(const std::string& variant, const SnLaws::EventType& i_event,
-                                   const CurrentMeteo& Mdata, const SnowStation& Xdata, const double& tss)
-{
-	static double rho;
-
-	if (variant != SnLaws::current_variant)
-		setStaticData(variant, "BUCKET");
-
-	switch (i_event) {
-		case event_wind: {
-			if ((Mdata.vw >= event_wind_lowlim) && (Mdata.vw <= event_wind_highlim)) {
-
-				static const double rho_0=361., rho_1=33.;
-				rho = rho_0*log10(Mdata.vw) + rho_1;
-				return rho;
-			} else{
-				//return Constants::undefined;
-				rho = newSnowDensityPara("LEHNING_NEW", Mdata.ta, tss, Mdata.rh, Mdata.vw, Xdata.meta.position.getAltitude());
-				return rho;
-			}
-				//return 220;
-		}
-		case event_none:
-		default:
-			prn_msg(__FILE__, __LINE__,"err", Date(),
-				"No new snow density parameterization for event type %d", i_event);
-			throw IOException("Event type not implemented yet!", AT);
-	}
-}
-
-/**
  * @brief Parameterized new-snow density
  * @param TA  Air temperature (K)
  * @param TSS Snow surface temperature (K)
@@ -1175,8 +1142,7 @@ double SnLaws::compNewSnowDensity(const std::string& i_hn_density, const std::st
 		                         Mdata.ta, tss, Mdata.rh, Mdata.vw,
 		                         Xdata.meta.position.getAltitude());
 	} else if (i_hn_density == "EVENT") {
-		//rho = newSnowDensityEvent(variant, event, Mdata);
-		rho = newSnowDensityEventModified(variant, event, Mdata, Xdata, tss);
+		rho = newSnowDensityEvent(variant, event, Mdata);
 	} else if (i_hn_density == "MEASURED") {
 		if (Mdata.rho_hn != Constants::undefined) {
 			rho = Mdata.rho_hn; // New snow density as read from input file

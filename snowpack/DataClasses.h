@@ -386,6 +386,7 @@ class ElementData {
 		double vapTrans_fluxDiff;  ///< vapor dissusion flux in the case of vapor transport (W/m^2/s)
 		double vapTrans_snowDenChangeRate;  ///< snow density change rate in the case of vapor transport (kg/m^3/s)
 		double vapTrans_cumulativeDenChange;  ///< cumulative density change  in the case of vapor transport (kg/m^3)
+		double vapTrans_underSaturationDegree;  ///< the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)
 };
 
 /// @brief NODAL DATA used as a pointer in the SnowStation structure
@@ -750,7 +751,8 @@ class SurfaceFluxes {
 			MS_SNOWPACK_RUNOFF,///< The mass loss of snowpack from snow melt due to water transport (virtual lysimeter)
 			MS_SURFACE_MASS_FLUX, ///< The total mass loss of snowpack due to water transport (virtual lysimeter)
 			MS_SOIL_RUNOFF,    ///< Equivalent to MS_SNOWPACK_RUNOFF but at bottom soil node
-			MS_FLOODING,       ///< Flooding of sea ice (Bucket scheme only)
+			MS_FLOODING,       ///< The mass gain due to adding ocean water to snow- seaice by flodding process
+			MS_ICEBASE_MELTING_FREEZING,       ///< The mass gain/loss of the ice base due to melting-freezing
 			N_MASS_CHANGES     ///< Total number of different mass change types
 		};
 

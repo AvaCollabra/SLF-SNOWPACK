@@ -936,14 +936,14 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	// Are we using sea ice variant? Check if the object is defined via the pointer:
 	const bool SeaIce = (Xdata.Seaice==NULL)?(false):(true);
 	// Offset profile [m]:
-	const double offset = (SeaIce)?(4.):(0.);
+	const double offset = (SeaIce)?(0):(0.);
 	// Check reference level: either a marked reference level, or, if non existent, the sea level (if sea ice module is used), otherwise 0:
 	const double ReferenceLevel = (  Xdata.findMarkedReferenceLayer()==Constants::undefined || !useReferenceLayer  )  ?  (  (Xdata.Seaice==NULL)?(0.):(Xdata.Seaice->SeaLevel)  )  :  (Xdata.findMarkedReferenceLayer()  - Xdata.Ground);
 	// Number of fill elements for offset (only 0 or 1 is supported now):
-	const size_t Noffset = (SeaIce)?(1):(0);
+	const size_t Noffset = (SeaIce)?(0):(0);
 
 	//  501: height [> 0: top, < 0: bottom of elem.] (cm)
-	const size_t nz = (useSoilLayers)? nN : nE;
+	const size_t nz = (useSoilLayers || SeaIce)? nN : nE;
 	if(nE==0) {
 		fout << "\n0501,1,0";
 		fout.close();
@@ -1199,25 +1199,34 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	else
 		writeProfileProAddDefault(Xdata, fout);
 
-	if(enable_vapour_transport)
-	{
-		// 0901: the rate of snow density change due to vapour transport (kg/m^3/s)
+	if(enable_vapour_transport) {
+		// 0901: the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)
 		fout << "\n0901," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
-			fout << "," << std::scientific << std::setprecision(9) << EMS[e].vapTrans_snowDenChangeRate;
+			fout << "," << std::scientific << std::setprecision(6) << 1.e2*EMS[e].vapTrans_underSaturationDegree;
 
-		// 0902: the vapour diffusion flux of the element (kg/m^2/s)
+		// 0902: the water vapor diffusion flux (kg m-2 s-1)
 		fout << "\n0902," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
-			fout << "," << std::scientific << std::setprecision(9) << EMS[e].vapTrans_fluxDiff;
+			fout << "," << std::scientific << std::setprecision(6) << 1.e7*EMS[e].vapTrans_fluxDiff;
 
-		// 0903: the cumulative density change due to vapour transport of the element (kg/m^3)
+		// 0903: the cumulative density change due to water vapor transport (kg m-3)
 		fout << "\n0903," << nE + Noffset;
 		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 		for (size_t e = 0; e < nE; e++)
 			fout << "," << std::scientific << std::setprecision(6) << EMS[e].vapTrans_cumulativeDenChange;
+
+		// 0904: the snow density change rate due to water vapor transport (1.0e-6 kg m-3)
+		fout << "\n0904," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::scientific << std::setprecision(6) << 1.e6*EMS[e].vapTrans_snowDenChangeRate;
+
+		// 0905: element tracking for making comparison of any snow properties between two simulation, (-)
+		fout << "\n0905," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	}
 
 	fout.close();
@@ -2045,7 +2054,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 			Canopy::DumpCanopyData(fout, &Xdata.Cdata, &Sdata, cos_sl);
 		else {
 			if (variant == "SEAICE" && Xdata.Seaice != NULL) {
-				// Total thickness (m), Ice thickness (m), snow thickness (m), snow thickness wrt reference (m), freeboard (m), sea level (m), bulk salinity, average bulk salinity, brine salinity, average brine salinity, bottom salinity flux, top salinity flux
+				// Total thickness (m), Ice thickness (m), snow thickness (m), snow thickness wrt reference (m), freeboard (m), sea level (m), bulk salinity, average bulk salinity, average brine salinity, bottom salinity flux, top salinity flux, MS_FLOODING, MS_ICEBASE_MELTING_FREEZING
 				fout << "," << std::setprecision(3) << Xdata.cH - Xdata.Ground;
 				fout << "," << std::setprecision(3) << Xdata.Ndata[Xdata.Seaice->IceSurfaceNode].z - Xdata.Ground;
 				fout << "," << std::setprecision(3) << Xdata.Ndata[Xdata.getNumberOfNodes()-1].z - Xdata.Ndata[Xdata.Seaice->IceSurfaceNode].z;
@@ -2059,7 +2068,9 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 				fout << "," << std::setprecision(3) << Xdata.Seaice->getAvgBrineSalinity(Xdata);
 				fout << "," << std::setprecision(3) << Xdata.Seaice->BottomSalFlux;
 				fout << "," << std::setprecision(3) << Xdata.Seaice->TopSalFlux;
-				fout << ",,,,,,,,,,,,,,,,";
+				fout << "," << Sdata.mass[SurfaceFluxes::MS_FLOODING]/cos_sl;
+				fout << "," << Sdata.mass[SurfaceFluxes::MS_ICEBASE_MELTING_FREEZING]/cos_sl;
+				fout << ",,,,,,,,,,,,,,,";
 			} else {
 				fout << ",,,,,,,,,,,,,,,,,,,,,,,,,,,,";
 			}
@@ -2293,8 +2304,8 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 			Canopy::DumpCanopyHeader(fout);
 		} else {
 			if (variant == "SEAICE" && Xdata.Seaice != NULL) {
-				fout << ",Total thickness,Ice thickness,Snow thickness,Snow thickness wrt reference,Freeboard,Sea level,Tot salinity,Average bulk salinity,Average Brine Salinity,Bottom Sal Flux,Top Sal Flux";
-				fout << ",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
+				fout << ",Total thickness,Ice thickness,Snow thickness,Snow thickness wrt reference,Freeboard,Sea level,Tot salinity,Average bulk salinity,Average Brine Salinity,Bottom Sal Flux,Top Sal Flux,MS_FLOODING,MS_ICEBASE_MELTING_FREEZING";
+				fout << ",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
 			} else {
 				// 28 empty fields
 				fout << ",-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-,-";
@@ -2482,11 +2493,12 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0893,nElems,SNTHERM: viscosity (GPa s)";
 	}
 
-	if(enable_vapour_transport)
-	{
-		fout << "\n0901,nElems, the rate of snow density change due to vapour transport (kg/m^3/s)";
-		fout << "\n0902,nElems, the vapour diffusion flux of the element (kg/m^2/s)";
-		fout << "\n0903,nElems, the cumulative density change due to vapour transport of the element (kg/m^3)";
+	if(enable_vapour_transport)	{
+		fout << "\n0901,nElems, the degree of undersaturation, (rhov-rohv_sat)/rhov_sat (-)";
+		fout << "\n0902,nElems, the water vapor diffusion flux (kg m-2 s-1)";
+		fout << "\n0903,nElems, the cumulative density change due to water vapor transport (kg m-3)";
+		fout << "\n0904,nElems, the snow density change rate due to water vapor transport (1.0e-6 kg m-3)";
+		fout << "\n0905,nElems, the element tracking for comparison, (-)";
 	}
 
 	fout << "\n\n[DATA]";

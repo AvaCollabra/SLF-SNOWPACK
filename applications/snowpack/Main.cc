@@ -788,7 +788,7 @@ inline void addSpecialKeys(SnowpackConfig &cfg)
 	const std::string variant = cfg.get("VARIANT", "SnowpackAdvanced");
 
 	// Add keys to perform running mean in Antarctic variant
-	if (variant == "ANTARCTICA") {
+	if (variant == "ANTARCTICA" || variant == "POLAR") {
 		cfg.addKey("*::edit999", "InputEditing", "COPY");
 		cfg.addKey("*::arg999::dest", "InputEditing", "VW_AVG");
 		cfg.addKey("*::arg999::src", "InputEditing", "VW");
