@@ -38,6 +38,11 @@
  *    -# \subpage getting_started "Getting Started"
  *    -# Model principles
  *        -# \subpage general "General concepts"
+ *        -# Submodels documentation
+ *            -# \subpage water_transport "Water Transport"
+ *            -# \subpage water_vapor_transport "Water Vapor Transport"
+ *            -# \subpage sea_ice "Sea Ice"
+ *            -# \subpage technical_snow "Technical snow"
  *        -# \subpage references "References"
  *        -# \subpage uses "Use cases"
  *    -# Inputs / Outputs
@@ -89,7 +94,7 @@
  *    the last command line it contains into a terminal). You can also manually run %Snowpack, by typing something like
  *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
- * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ * -# The results can be visualized using the <a href="https://run.niviz.org">niViz tool</a> and opening the <b>.pro</b> file that was generated in \b output.
  *
  * @section Running_own_simulation Running your own simulation
  * Once you have been able to run an example simulation, you can try to run your own simulation. This involves the following steps:
@@ -102,7 +107,7 @@
  * -# Then, run the simulation from a terminal (after going to the directory where your simulation is) with a command line such as
  *    <i>snowpack -c {ini file with path} -e {simulation end date in ISO format}</i>.
  * -# Once the simulation is finished, the results are available in the \b output directory. This directory \b must exist before you run the simulation!
- * -# The results can be visualized using the \ref sngui_config "sngui tool" by opening the <b>.pro</b> file that was generated in \b output.
+ * -# The results can be visualized using the <a href="https://run.niviz.org">niViz tool</a> and opening the <b>.pro</b> file that was generated in \b output.
  *
  * @section model_workflow Simulation workflow
  * When running a simulation, it is important to keep in mind that the model is organized as several modules that interract together. It is possible to configure
@@ -252,7 +257,7 @@
  *
  * @subsection model_ebalance Energy Balance
  * The figure below shows the various fluxes that are part of the energy balance of the SNOWPACK model. These are available in the output files as well as
- * through the sngui interface.
+ * through the <a href="https://niviz.org">niViz</a> interface.
  *
  * \image html energy_balance.png "Energy Balance components of the SNOWPACK model"
  * \image latex energy_balance.eps "Energy Balance components of the SNOWPACK model" width=0.9\textwidth
@@ -528,7 +533,7 @@
  * (see section \subpage snowpackio "Snowpack file formats"). These files can be processed with some scripts, relying on GNU plot or R for generating graphs
  * but are usually viewed with a graphical application such as the open source, online niViz application.
  * 
- * @section snopviz The SnopViz tool
+ * @section snopviz The niViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
  * Chrome >= 38). You can either use it <a href="https://run.niviz.org">online</a> and then open your profile to visualize or you can 
  * <a href="https://code.wsl.ch/snow-models/niviz/-/wikis/home">download</a> a pre-packaged version that can be installed for offline use on your computer.

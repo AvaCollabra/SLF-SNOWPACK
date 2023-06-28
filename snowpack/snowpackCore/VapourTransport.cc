@@ -50,6 +50,12 @@ using namespace mio;
 using namespace std;
 using namespace Eigen;
 
+
+/**
+ * @page water_vapor_transport Water Vapor Transport
+ *
+ */
+
 //vapour_transport_implicit_factor: 1 is fully implicit, 0 is fully explicit, 0.5 is Crank-Nicolson
 const double VapourTransport::f = 1.;
 const double VapourTransport::VapourTransport_timeStep = 60.;	// Only used when f < 1 !!
