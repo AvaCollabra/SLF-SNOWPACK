@@ -112,6 +112,7 @@ class AsciiIO : public SnowpackIOInterface {
 		double time_zone; // time zone of input
 		double calculation_step_length, hazard_steps_between, ts_days_between;
 		double min_depth_subsurf, hoar_density_surf, hoar_min_size_surf;
+		bool useRichardsEq;
 		bool enable_pref_flow;
 		bool enable_ice_reservoir;
 		bool avgsum_time_series, useCanopyModel, useSoilLayers, research_mode, perp_to_slope;

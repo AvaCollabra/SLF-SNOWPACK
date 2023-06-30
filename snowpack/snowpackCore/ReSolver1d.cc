@@ -78,7 +78,7 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
              watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN), K_frozen_soilType(IGNORE), omega(7.),
              enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.), enable_ice_reservoir(false), runSoilInitializer(false),
-             sn_dt(IOUtils::nodata), allow_surface_ponding(false), lateral_flow(false), matrix(false), SalinityTransportSolver(SalinityTransport::IMPLICIT),
+             sn_dt(IOUtils::nodata), allow_surface_ponding(false), matrix(false), SalinityTransportSolver(SalinityTransport::IMPLICIT),
              dz(), z(), dz_up(), dz_down(), dz_()
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
@@ -212,10 +212,6 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown solver method for SalinityTransport (key: SALINITYTRANSPORT_SOLVER).");
 		throw;
 	}
-
-	//Check if lateral flow is considered
-	lateral_flow = false;
-	cfg.getValue("LATERAL_FLOW", "Alpine3D", lateral_flow, IOUtils::nothrow);
 
 	//Assign if we solve matrix or prefential flow
 	matrix=matrix_part;
@@ -2354,12 +2350,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 
-			//Determine slope parallel flux, if lateral_flow is enabled.
-			if (lateral_flow) {
-				const double tmp_sin_sl = sqrt(1. - Xdata.cos_sl * Xdata.cos_sl); 	//Calculate sin of slope, from cos_sl
-				for (i = lowernode; i <= uppernode; i++) {				//Cycle through all Richards solver domain layers.
-					EMS[i].SlopeParFlux += tmp_sin_sl*K[i]*dt;
-				}
+			//Determine slope parallel flux
+			const double tmp_sin_sl = sqrt(1. - Xdata.cos_sl * Xdata.cos_sl); 	//Calculate sin of slope, from cos_sl
+			for (i = lowernode; i <= uppernode; i++) {				//Cycle through all Richards solver domain layers.
+				EMS[i].SlopeParFlux += tmp_sin_sl*K[i]*dt;
 			}
 
 

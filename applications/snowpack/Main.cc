@@ -1395,6 +1395,8 @@ inline void real_main (int argc, char *argv[])
 							prn_msg(__FILE__, __LINE__, "msg+", current_date, "Mass error at end of time step!");
 					}
 				}
+
+				if (tswrite && mn_ctrl.TsDump) vecXdata[slope.sector].resetSlopeParFlux();
 			} //end loop on slopes
 			computed_one_timestep = true;
 		} while ((dateEnd.getJulian() - current_date.getJulian()) > calculation_step_length/(2.*1440));

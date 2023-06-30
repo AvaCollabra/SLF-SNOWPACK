@@ -147,7 +147,7 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
           avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), haz_write(true), useReferenceLayer(false),
           out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
-          out_load(false), out_stab(false), out_canopy(false), out_soileb(false), enable_pref_flow(false), enable_ice_reservoir(false), read_dsm(false)
+          out_load(false), out_stab(false), out_canopy(false), out_soileb(false), useRichardsEq(false), enable_pref_flow(false), enable_ice_reservoir(false), read_dsm(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
@@ -162,6 +162,14 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
 	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
 	cfg.getValue("READ_DSM", "SnowpackAdvanced", read_dsm);
+
+	//Check for use of Richards Equation
+	useRichardsEq = false;
+	std::string tmp_useRichardsEq;
+	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
+	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
@@ -244,6 +252,7 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		out_stab = source.out_stab;
 		out_canopy = source.out_canopy;
 		out_soileb = source.out_soileb;
+		useRichardsEq = source.useRichardsEq;
 		enable_pref_flow = source.enable_pref_flow;
 		enable_ice_reservoir = source.enable_ice_reservoir;
 	}
@@ -940,10 +949,15 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 		os << "hoar_size wind_trans24 HN24 HN72_24" << " ";//surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
 	if (out_soileb)
 		os << "dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " ";
-	if (out_mass)
+	if (out_mass) {
 		os << "SWE MS_Water MS_Water_Soil MS_Ice_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_Mass_Flux MS_Soil_Runoff MS_Sublimation MS_Evap" << " ";
 		//SWE (kg m-2), LWC (kg m-2),  LWC (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2); see also 52 & 93.
 		// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			os << "Lateral_flow_snow" << " ";
+			if (useSoilLayers) os << "Lateral_flow_soil" << " ";
+		}
+	}
 	if (out_load)
 		os << "load "; //Solute load at ground surface
 	if (out_t && !fixedPositions.empty()) {
@@ -954,8 +968,7 @@ std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 	if (out_stab)
 		os << "Sclass1 Sclass2 zSd Sd zSn Sn zSs Ss zS4 S4 zS5 S5" << " "; //S5 is liquidWaterIndex
 
-	if (out_canopy)
-	{
+	if (out_canopy) {
 		os << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " ";
 		os << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " ";
 		os << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " ";
@@ -1052,6 +1065,24 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_color << "0x3300FF 0x3300FF 0x3300FF 0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			plot_description << "later_flow_snow" << " ";
+			plot_units << "kg/m2" << " ";
+			units_offset << "0" << " ";
+			units_multiplier << "1" << " ";
+			plot_color << "#A3A3CC" << " ";
+			plot_min << "" << " ";
+			plot_max << "" << " ";
+			if (useSoilLayers) {
+				plot_description << "later_flow_soil" << " ";
+				plot_units << "kg/m2" << " ";
+				units_offset << "0" << " ";
+				units_multiplier << "1" << " ";
+				plot_color << "#CCA3A3" << " ";
+				plot_min << "" << " ";
+				plot_max << "" << " ";
+			}
+		}
 	}
 	if (out_load) {
 		//"load"
@@ -1232,6 +1263,16 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_EVAPORATION]/cos_sl );
 		vec_precision.push_back(dflt_precision);
 		vec_width.push_back(dflt_width);
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			data.push_back( Xdata.getTotalLateralFlowSnow() );
+			vec_precision.push_back(dflt_precision);
+			vec_width.push_back(dflt_width);
+			if (useSoilLayers) {
+				data.push_back( Xdata.getTotalLateralFlowSoil() );
+				vec_precision.push_back(dflt_precision);
+				vec_width.push_back(dflt_width);
+			}
+		}
 	}
 
 	if (out_load) {

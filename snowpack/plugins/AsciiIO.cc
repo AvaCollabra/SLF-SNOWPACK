@@ -190,6 +190,7 @@ const bool AsciiIO::t_gnd = false;
  * 0535,nElems,optical equivalent grain size (mm)
  * 0540,nElems,bulk salinity (g/kg)
  * 0541,nElems,brine salinity (g/kg)
+ * 0560,nElems,potential lateral flow rate (kg/m3)
  * 0601,nElems,snow shear strength (kPa)
  * 0602,nElems,grain size difference (mm)
  * 0603,nElems,hardness difference (1)
@@ -321,7 +322,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
-           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), enable_pref_flow(false), enable_ice_reservoir(false),
+           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), useRichardsEq(false), enable_pref_flow(false), enable_ice_reservoir(false),
            avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), useReferenceLayer(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
            out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false), enable_vapour_transport(false)
@@ -373,6 +374,13 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
 	cfg.getValue("ENABLE_VAPOUR_TRANSPORT", "SnowpackAdvanced", enable_vapour_transport); //Enable vapour transport
 
+	//Check for use of Richards Equation
+	useRichardsEq = false;
+	std::string tmp_useRichardsEq;
+	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
+	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
 
 	i_snowpath = (in_snowpath.empty())? inpath : in_snowpath;
 	o_snowpath = (out_snowpath.empty())? outpath : out_snowpath;
@@ -406,6 +414,7 @@ AsciiIO& AsciiIO::operator=(const AsciiIO& source) {
 		hoar_density_surf = source.hoar_density_surf;
 		hoar_min_size_surf = source.hoar_min_size_surf;
 		avgsum_time_series = source.avgsum_time_series;
+		useRichardsEq = source.useRichardsEq;
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
 		research_mode = source.research_mode;
@@ -1193,6 +1202,13 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 			for (size_t e = Xdata.SoilNode; e < nE; e++)
 				fout << "," << std::fixed << std::setprecision(2) << ((EMS[e].theta[WATER] == 0.) ? (mio::IOUtils::nodata) : (EMS[e].salinity / EMS[e].theta[WATER]));
 		}
+	}
+	// 0560: potential lateral flow rate (kg/m3), only when using Richards equation and the SnowStation is on a slope
+	if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+		fout << "\n0560," << nE + Noffset;
+		if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
+		for (size_t e = 0; e < nE; e++)
+			fout << "," << std::fixed << std::setprecision(12) << EMS[e].SlopeParFlux * Constants::density_water;
 	}
 	if (variant == "CALIBRATION")
 		writeProfileProAddCalibration(Xdata, fout);
@@ -2471,6 +2487,7 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		fout << "\n0540,nElems,bulk salinity (g/kg)";
 		fout << "\n0541,nElems,brine salinity (g/kg)";
 	}
+	if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) fout << "\n0560,nElems,potential_lateral_flow_rate_(kg/m3)";
 	fout << "\n0601,nElems,snow shear strength (kPa)";
 	fout << "\n0602,nElems,grain size difference (mm)";
 	fout << "\n0603,nElems,hardness difference (1)";

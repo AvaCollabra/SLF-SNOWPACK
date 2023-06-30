@@ -2141,6 +2141,47 @@ double SnowStation::getModelledTemperature(const double& z) const
 }
 
 /**
+ * @brief Computes the total lateral flow in snow (kg / m2)
+ */
+double SnowStation::getTotalLateralFlowSnow() const
+{
+	// Case of no snow
+	if (getNumberOfElements() == SoilNode) return Constants::undefined;
+
+	double tmp_sum = 0.;
+	for (size_t e=SoilNode; e<getNumberOfElements(); e++) {
+		tmp_sum += Edata[e].SlopeParFlux * Edata[e].L * Constants::density_water;
+	}
+	return tmp_sum;
+}
+
+/**
+ * @brief Computes the total lateral flow in soil (kg / m2)
+ */
+double SnowStation::getTotalLateralFlowSoil() const
+{
+	// Case of no soil
+	if (SoilNode == 0) return Constants::undefined;
+
+	double tmp_sum = 0.;
+	for (size_t e=0; e<SoilNode; e++) {
+		tmp_sum += Edata[e].SlopeParFlux * Edata[e].L * Constants::density_water;
+	}
+	return tmp_sum;
+}
+
+/**
+ * @brief Reset lateral flow
+ */
+void SnowStation::resetSlopeParFlux()
+{
+	for (size_t e=0; e<getNumberOfElements(); e++) {
+		Edata[e].SlopeParFlux = 0.;
+	}
+	return;
+}
+
+/**
  * @brief Reallocate element and node data \n
  * Edata and Ndata as well as nElems and nNodes are reallocated or reset, respectively.
  * @param number_of_elements The new number of elements

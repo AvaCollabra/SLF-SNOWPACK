@@ -626,6 +626,9 @@ class SnowStation {
 		void compSoilInternalEnergyChange(const double& sn_dt);
 		double getLiquidWaterIndex() const;
 		double getModelledTemperature(const double& z) const;
+		double getTotalLateralFlowSnow() const;
+		double getTotalLateralFlowSoil() const;
+		void resetSlopeParFlux();
 
 		size_t getNumberOfElements() const;
 		size_t getNumberOfNodes() const;
