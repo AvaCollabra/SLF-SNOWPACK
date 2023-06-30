@@ -389,6 +389,7 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 AsciiIO& AsciiIO::operator=(const AsciiIO& source) {
 	if (this != &source) {
 		setAppendableFiles = source.setAppendableFiles;
+		metamorphism_model = source.metamorphism_model;
 		variant = source.variant;
 		experiment = source.experiment;
 		sw_mode = source.sw_mode;
@@ -413,12 +414,15 @@ AsciiIO& AsciiIO::operator=(const AsciiIO& source) {
 		min_depth_subsurf = source.min_depth_subsurf;
 		hoar_density_surf = source.hoar_density_surf;
 		hoar_min_size_surf = source.hoar_min_size_surf;
-		avgsum_time_series = source.avgsum_time_series;
 		useRichardsEq = source.useRichardsEq;
+		enable_pref_flow = source.enable_pref_flow;
+		enable_ice_reservoir = source.enable_ice_reservoir;
+		avgsum_time_series = source.avgsum_time_series;
 		useCanopyModel = source.useCanopyModel;
 		useSoilLayers = source.useSoilLayers;
 		research_mode = source.research_mode;
 		perp_to_slope = source.perp_to_slope;
+		useReferenceLayer = source.useReferenceLayer;
 		out_heat = source.out_heat;
 		out_lw = source.out_lw;
 		out_sw = source.out_sw;
@@ -431,6 +435,7 @@ AsciiIO& AsciiIO::operator=(const AsciiIO& source) {
 		out_canopy = source.out_canopy;
 		out_soileb = source.out_soileb;
 		r_in_n = source.r_in_n;
+		enable_vapour_transport = source.enable_vapour_transport;
 	}
 	return *this;
 }
