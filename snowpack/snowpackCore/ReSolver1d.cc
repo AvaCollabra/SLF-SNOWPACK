@@ -841,8 +841,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double snowsoilinterfaceflux=0.;		//Stores the actual flux through the soil-snow interface (positive is flow into soil).
 	double totalsourcetermflux=0.;			//Stores the total applied source term flux (it's a kind of boundary flux, but then in the middle of the domain).
 
-	std::vector<double> soil_lysimeters(Xdata.SoilNode+1, 0.);
-
 	//Declare all numerical arrays and matrices:
 	std::vector< std::vector<double> > delta_h(nmemstates, std::vector<double> (nE,0.));	//Change in pressure head per iteration
 	std::vector<double> delta_h_dt(nE, 0.);		//Change in pressure head per time step.
@@ -885,7 +883,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	std::vector<double> dT(nE, 0.);				//Stores the energy needed to create theta_r from the ice matrix.
 	std::vector<double> snowpackBACKUPTHETAICE(nE, 0.);	//Backup array for the initial SNOWPACK theta ice
-
 
 	//Prevent buffering on the stdout when we write debugging output. In case of exceptions (program crashes), we don't loose any output which is still in the buffer and we can better track what went wrong.
 	if(WriteDebugOutput) setvbuf(stdout, NULL, _IONBF, 0);
@@ -2299,6 +2296,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Determine (estimate) flux across boundaries (downward ==> positive flux):
 			//This is an additional check for the boundaries.
 			actualtopflux+=TopFluxRate*dt;
+			Xdata.Ndata[nN-1].water_flux += TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
 			if(aBottomBC==DIRICHLET) {
 				if(uppernode > 0) {
@@ -2309,6 +2307,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						tmp_flux=(Salinity.flux_down[0]+Salinity.flux_down_2[0])*dt;
 					}
 					actualbottomflux+=tmp_flux;
+					Xdata.Ndata[0].water_flux += tmp_flux*Constants::density_water;
 				} else {
 					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
 					const double tmp_flux=0.;
@@ -2316,16 +2315,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				}
 			} else {
 				actualbottomflux+=BottomFluxRate*dt;
+				Xdata.Ndata[0].water_flux += BottomFluxRate*dt*Constants::density_water;
 			}
-
-
-			massbalanceerror_sum+=massbalanceerror;
-			if(WriteDebugOutput) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
-
-
-			if(Xdata.SoilNode > 0) {
-				for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
-					soil_lysimeters[node_i] += (1./rho[node_i])*((((h_n[node_i]*rho[node_i]-h_n[node_i-1]*rho[node_i-1])/dz_up[node_i-1])+Xdata.cos_sl*rho[node_i])*k_np1_m_ip12[node_i-1]*dt);
+			if(nN > 2) {		// Note: top and bottom node have been filled above, so only execute loop when 3 or more nodes are present.
+				for(size_t node_i=1; node_i < nN-1; node_i++) {
+					Xdata.Ndata[node_i].water_flux += (1./rho[node_i])*((((h_n[node_i]*rho[node_i]-h_n[node_i-1]*rho[node_i-1])/dz_up[node_i-1])+Xdata.cos_sl*rho[node_i])*k_np1_m_ip12[node_i-1]*dt)*Constants::density_water;
 				}
 			}
 
@@ -2357,7 +2351,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 
-			if(WriteDebugOutput) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux, dt);
+			massbalanceerror_sum+=massbalanceerror;
+			if(WriteDebugOutput) {
+				printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
+				printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux, dt);
+			}
+
 
 			//Time step control
 			//This time step control increases the time step when niter is below a certain value. When rewinds occurred in the time step, no change is done (dt already adapted by the rewind-mechanim), if too many iterations, time step is decreased.
@@ -2642,16 +2641,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
 	Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += snowsoilinterfaceflux*Constants::density_water;
-
-	// Deal with the virtual lysimeters
-	Xdata.Ndata[0].soil_lysimeter += actualbottomflux*Constants::density_water;
-	if(Xdata.SoilNode > 0) {
-		// See comment above, to be sure we take all contibutions, we take MS_SURFACE_MASS_FLUX
-		Xdata.Ndata[Xdata.SoilNode].soil_lysimeter = Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX];
-		for(size_t node_i=1; node_i < Xdata.SoilNode; node_i++) {
-			Xdata.Ndata[node_i].soil_lysimeter += soil_lysimeters[node_i]*Constants::density_water;
-		}
-	}
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {

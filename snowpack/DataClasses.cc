@@ -1873,7 +1873,7 @@ std::ostream& operator<<(std::ostream& os, const NodeData& data)
 	os.write(reinterpret_cast<const char*>(&data.dsm), sizeof(data.dsm));
 	os.write(reinterpret_cast<const char*>(&data.S_dsm), sizeof(data.S_dsm));
 	os.write(reinterpret_cast<const char*>(&data.Sigdsm), sizeof(data.Sigdsm));
-	os.write(reinterpret_cast<const char*>(&data.soil_lysimeter), sizeof(data.soil_lysimeter));
+	os.write(reinterpret_cast<const char*>(&data.water_flux), sizeof(data.water_flux));
 	os.write(reinterpret_cast<const char*>(&data.rhov), sizeof(data.rhov));
 	return os;
 }
@@ -1893,7 +1893,7 @@ std::istream& operator>>(std::istream& is, NodeData& data)
 	is.read(reinterpret_cast<char*>(&data.dsm), sizeof(data.dsm));
 	is.read(reinterpret_cast<char*>(&data.S_dsm), sizeof(data.S_dsm));
 	is.read(reinterpret_cast<char*>(&data.Sigdsm), sizeof(data.Sigdsm));
-	is.read(reinterpret_cast<char*>(&data.soil_lysimeter), sizeof(data.soil_lysimeter));
+	is.read(reinterpret_cast<char*>(&data.water_flux), sizeof(data.water_flux));
 	is.read(reinterpret_cast<char*>(&data.rhov), sizeof(data.rhov));
 	return is;
 }
@@ -1906,7 +1906,7 @@ const std::string NodeData::toString() const
 	os << "\tz=" << z << " T=" << T << " hoar=" << hoar << "\n";
 	os << "\tCreep: u=" << u << " udot=" << udot << " f=" << f << "\n";
 	os << "\tStability: S_n=" << S_n << " S_s=" << S_s << " ssi=" << ssi << "\n";
-	os << "\tSoil lysimeter: S_n=" << soil_lysimeter << "\n";
+	os << "\tSoil lysimeter: S_n=" << water_flux << "\n";
 	os << "\rNodal vapor density: rhov=" << rhov << "\n";
 	os << "</NodeData>\n";
 	return os.str();
@@ -2237,11 +2237,11 @@ bool SnowStation::hasSoilLayers() const
 	return useSoilLayers;
 }
 
-void SnowStation::reset_lysimeters()
+void SnowStation::reset_water_fluxes()
 {
 	if (Ndata.size() == 0) return;
 	for(size_t i=0; i <= SoilNode; i++){
-		Ndata[i].soil_lysimeter = 0;
+		Ndata[i].water_flux = 0.;
 	}
 }
 

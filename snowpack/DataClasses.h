@@ -393,7 +393,7 @@ class ElementData {
 class NodeData {
 	public:
 		NodeData() : z(0.), u(0.), f(0.), udot(0.), T(0.), S_n(0.), S_s(0.), ssi(6.), hoar(0.),
-		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), soil_lysimeter(0.), rhov(0.) {} //HACK: set ssi to max_stability!
+		             dsm(0.), S_dsm(0.), Sigdsm(0.), rime(0.), water_flux(0.), rhov(0.) {} //HACK: set ssi to max_stability!
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const NodeData& data);
@@ -415,7 +415,7 @@ class NodeData {
 		double Sigdsm;
 		double rime;
 
-		double soil_lysimeter; ///< Water flowing through the node
+		double water_flux; ///< Water flowing through the node. Positive values denote downward fluxes.
 
 		double rhov;    ///< nodal vapor density in kg/m^3
 
@@ -638,7 +638,7 @@ class SnowStation {
 
 		size_t find_tag(const size_t& tag) const;
 
-		void reset_lysimeters();
+		void reset_water_fluxes();
 
 		const std::string toString() const;
 		friend std::ostream& operator<<(std::ostream& os, const SnowStation& data);
