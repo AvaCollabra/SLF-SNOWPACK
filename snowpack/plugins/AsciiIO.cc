@@ -322,10 +322,10 @@ AsciiIO::AsciiIO(const SnowpackConfig& cfg, const RunInfo& run_info)
            info(run_info), vecProfileFmt(), aggregate_prf(false),
            fixedPositions(), numberMeasTemperatures(0), maxNumberMeasTemperatures(0), numberTags(0), numberFixedSensors(0),
            totNumberSensors(0), time_zone(0.), calculation_step_length(0.), hazard_steps_between(0.), ts_days_between(0.),
-           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), useRichardsEq(false), enable_pref_flow(false), enable_ice_reservoir(false),
+           min_depth_subsurf(0.), hoar_density_surf(0.), hoar_min_size_surf(0.), useRichardsEq(false), enable_pref_flow(false), enable_ice_reservoir(false), enable_vapour_transport(false),
            avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), useReferenceLayer(false),
            out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
-           out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false), enable_vapour_transport(false)
+           out_load(false), out_stab(false), out_canopy(false), out_soileb(false), r_in_n(false)
 {
 	//Defines how heights/depths of snow or/and soil temperatures are read in and output \n
 	// Snowpack section
@@ -1797,10 +1797,7 @@ bool AsciiIO::parsePrfFile(const char& eoln, const mio::Date& start_date, std::i
 					IOUtils::readLineToVec(tmpline, vecTmp, ',');
 					IOUtils::readLineToVec(tmpline, vecTmp, ',');
 					if (vecTmp[1].length() >= 16) {
-						const string tmpdate = vecTmp[1].substr(0,15
-
-
-						);
+						const string tmpdate = vecTmp[1].substr(0,15);
 						IOUtils::convertString(current_date, tmpdate, time_zone);
 
 						if (current_date.getJulian() < (start_date.getJulian()-0.00001)){

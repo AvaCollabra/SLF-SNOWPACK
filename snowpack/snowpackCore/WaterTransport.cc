@@ -41,7 +41,7 @@ WaterTransport::WaterTransport(const SnowpackConfig& cfg)
                  sn_dt(IOUtils::nodata),
                  hoar_thresh_rh(IOUtils::nodata), hoar_thresh_vw(IOUtils::nodata), hoar_thresh_ta(IOUtils::nodata),
                  hoar_density_buried(IOUtils::nodata), hoar_density_surf(IOUtils::nodata), hoar_min_size_buried(IOUtils::nodata),
-                 minimum_l_element(IOUtils::nodata), comb_thresh_l(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false),enable_vapour_transport(false)
+                 minimum_l_element(IOUtils::nodata), comb_thresh_l(IOUtils::nodata), useSoilLayers(false), water_layer(false), jam(false), enable_vapour_transport(false)
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 

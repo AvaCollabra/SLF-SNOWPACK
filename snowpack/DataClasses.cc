@@ -1906,7 +1906,7 @@ const std::string NodeData::toString() const
 	os << "\tz=" << z << " T=" << T << " hoar=" << hoar << "\n";
 	os << "\tCreep: u=" << u << " udot=" << udot << " f=" << f << "\n";
 	os << "\tStability: S_n=" << S_n << " S_s=" << S_s << " ssi=" << ssi << "\n";
-	os << "\tSoil lysimeter: S_n=" << water_flux << "\n";
+	os << "\tWater flux: S_n=" << water_flux << "\n";
 	os << "\rNodal vapor density: rhov=" << rhov << "\n";
 	os << "</NodeData>\n";
 	return os.str();
