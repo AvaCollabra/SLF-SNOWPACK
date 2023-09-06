@@ -207,8 +207,18 @@ void SnowpackConfig::setDefaults()
 
 	getValue("ENFORCE_MEASURED_SNOW_HEIGHTS", "Snowpack", enforce_measured_snow_heights);
 
+	string albedo_model; getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model, IOUtils::nothrow);
+	string hn_density; getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
+	string hn_density_parameterization; getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization, IOUtils::nothrow);
+	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
+	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, IOUtils::nothrow);
+	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, IOUtils::nothrow);
+	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, IOUtils::nothrow);
+	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, IOUtils::nothrow);
+	string lb_cond_waterflux; getValue("LB_COND_WATERFLUX", "SnowpackAdvanced", lb_cond_waterflux, IOUtils::nothrow);
 	string s_minimum_l_element; getValue("MINIMUM_L_ELEMENT", "SnowpackAdvanced", s_minimum_l_element, IOUtils::nothrow);
 	string s_height_new_elem; getValue("HEIGHT_NEW_ELEM", "SnowpackAdvanced", s_height_new_elem, IOUtils::nothrow);
+
 	if (s_minimum_l_element.empty()) addKey("MINIMUM_L_ELEMENT", "SnowpackAdvanced", advancedConfig["MINIMUM_L_ELEMENT"]);
 	double minimum_l_element = get("MINIMUM_L_ELEMENT", "SnowpackAdvanced");
 
@@ -223,15 +233,6 @@ void SnowpackConfig::setDefaults()
 		}
 	}
 
-	string albedo_model; getValue("ALBEDO_MODEL", "SnowpackAdvanced", albedo_model, IOUtils::nothrow);
-	string hn_density; getValue("HN_DENSITY", "SnowpackAdvanced", hn_density, IOUtils::nothrow);
-	string hn_density_parameterization; getValue("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", hn_density_parameterization, IOUtils::nothrow);
-	string metamorphism_model; getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
-	string strength_model; getValue("STRENGTH_MODEL", "SnowpackAdvanced", strength_model, IOUtils::nothrow);
-	string viscosity_model; getValue("VISCOSITY_MODEL", "SnowpackAdvanced", viscosity_model, IOUtils::nothrow);
-	string watertransportmodel_snow; getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow, IOUtils::nothrow);
-	string watertransportmodel_soil; getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil, IOUtils::nothrow);
-	string lb_cond_waterflux; getValue("LB_COND_WATERFLUX", "SnowpackAdvanced", lb_cond_waterflux, IOUtils::nothrow);
 
 	if ((variant.empty()) || (variant == "DEFAULT")) {
 		// Use default settings
@@ -268,8 +269,11 @@ void SnowpackConfig::setDefaults()
 		if (thresh_rh.empty()) addKey("THRESH_RH", "SnowpackAdvanced", "0.7");
 
 		addKey("MIN_DEPTH_SUBSURF", "SnowpackAdvanced", "0.");
-		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
-		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
+		string t_crazy_min; getValue("T_CRAZY_MIN", "SnowpackAdvanced", t_crazy_min, IOUtils::nothrow);
+		string t_crazy_max; getValue("T_CRAZY_MAX", "SnowpackAdvanced", t_crazy_max, IOUtils::nothrow);
+		// If not specified in the ini file, set "polar" limits on the crazy temperatures
+		if (t_crazy_min.empty()) addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
+		if (t_crazy_max.empty()) addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
 		addKey("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", "0.2");
 
 	} else if (variant == "CALIBRATION") {

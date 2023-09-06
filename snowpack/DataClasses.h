@@ -418,7 +418,6 @@ class NodeData {
 		double water_flux; ///< Water flowing through the node (kg/m2). Positive values denote downward fluxes.
 
 		double rhov;    ///< nodal vapor density in kg/m^3
-
 };
 
 /**

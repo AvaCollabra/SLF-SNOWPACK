@@ -181,14 +181,6 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 	current_variant = variant;
 
 	if (current_variant == "ANTARCTICA" || current_variant == "POLAR") {
-
-		//Maybe, the following if-block is not the case for POLAR version, but as Michi said we just want to try to see the effects of new density:
-		if (current_variant == "POLAR") {
-			event = event_wind;
-			event_wind_lowlim = 1.0;
-			event_wind_highlim = 7.0;
-		}
-
 		t_term = t_term_arrhenius_critical;
 		visc = visc_dflt;
 		visc_ice_fudge = 9.45;
@@ -202,11 +194,9 @@ bool SnLaws::setStaticData(const std::string& variant, const std::string& watert
 		} else {
 			visc_water_fudge = 33.;
 		}
-		if (current_variant == "ANTARCTICA") {
-			event = event_wind;
-			event_wind_lowlim = 4.0;
-			event_wind_highlim = 7.0;
-		}
+		event = event_wind;
+		event_wind_lowlim = 4.0;
+		event_wind_highlim = 7.0;
 	} else if (current_variant == "CALIBRATION") {
 		// actual calibration; see factors in Laws_sn.cc
 		t_term = t_term_arrhenius_critical;
