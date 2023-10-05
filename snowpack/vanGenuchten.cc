@@ -384,10 +384,9 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 		throw;
 	}
 	//Make sure theta_r << theta_s
-	if(theta_s<theta_r+0.001) {
+	if(theta_s<theta_r+0.01) {
 		std::cout << "WARNING: theta_s= " << theta_s << "   theta_r=" << theta_r << "\n";
-		// theta_r is only allowed to decrease when this condition occurs
-		theta_r=std::min(theta_s/4., theta_r);
+		theta_r=theta_s/4.;
 	}
 
 	//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)

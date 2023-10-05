@@ -130,7 +130,7 @@ Slope::Slope(const mio::Config& cfg)
 	cfg.getValue("NUMBER_SLOPES", "SnowpackAdvanced", nSlopes);
 	cfg.getValue("SNOW_EROSION", "SnowpackAdvanced", snow_erosion);
 	stringstream ss;
-	ss << nSlopes;
+	ss << "" << nSlopes;
 	cfg.getValue("SNOW_REDISTRIBUTION", "SnowpackAdvanced", snow_redistribution);
 	if (snow_redistribution && !(nSlopes > 1 && nSlopes % 2 == 1))
 		throw mio::IOException("Please set NUMBER_SLOPES to 3, 5, 7, or 9 with SNOW_REDISTRIBUTION set! (nSlopes="+ss.str()+")", AT);
@@ -437,6 +437,21 @@ inline void copyMeteoData(const mio::MeteoData& md, CurrentMeteo& Mdata,
 	// Add advective heat (for permafrost) if available
 	if (md.param_exists("ADV_HEAT"))
 		Mdata.adv_heat = md("ADV_HEAT");
+		
+	// Add massbal parameters (surface snow melt, snow drift, sublimation) 
+	if(md.param_exists("SMELT"))
+		Mdata.surf_melt = md("SMELT");
+	if(md.param_exists("SNOWD"))
+		Mdata.snowdrift = md("SNOWD");
+	if(md.param_exists("SUBLI"))
+		Mdata.sublim = md("SUBLI");
+	
+	//Add atmospheric optical depth and atmospheric pressure parameters
+	if(md.param_exists("ODC"))
+		Mdata.odc = md("ODC");
+	if(md.param_exists("P"))
+		Mdata.p = md("P");
+		
 }
 
 inline double getHS_last3hours(mio::IOManager &io, const mio::Date& current_date)
@@ -505,6 +520,8 @@ inline void dataForCurrentTimeStep(CurrentMeteo& Mdata, SurfaceFluxes& surfFluxe
 	const bool perp_to_slope = cfg.get("PERP_TO_SLOPE", "SnowpackAdvanced");
 	const bool iswr_is_net = cfg.get("ISWR_IS_NET", "Input");
 	if (Mdata.tss == mio::IOUtils::nodata) {
+		// NOTE In case CHANGE_BC is set, this leads to degraded computation, that is, use parameterized
+		//      incoming long wave with NEUMANN BC; it's better than nothing if no TSS is available!
 		cfg.addKey("MEAS_TSS", "Snowpack", "false");
 	}
 
@@ -694,14 +711,13 @@ inline bool readSlopeMeta(mio::IOManager& io, SnowpackIO& snowpackio, SnowpackCo
 				vecSSdata[slope.mainStation].meta = mio::StationData::merge(vectmpmd[i_stn].meta,
 				                                vecSSdata[slope.mainStation].meta);
 			} else {
-				std::stringstream sec_snowfile;
-				sec_snowfile << snowfile << sector;
+				stringstream sec_snowfile;
+				sec_snowfile << "" << snowfile << sector;
 				ss.str("");
-				ss << vecSSdata[slope.mainStation].meta.getStationID() << sector;
+				ss << "" << vecSSdata[slope.mainStation].meta.getStationID() << sector;
 				snowpackio.readSnowCover(sec_snowfile.str(), ss.str(), vecSSdata[sector], sn_Zdata);
 				vecSSdata[sector].meta.position = vecSSdata[slope.mainStation].meta.getPosition();
 				vecSSdata[sector].meta.stationName = vecSSdata[slope.mainStation].meta.getStationName();
-				if (!current_date.isUndef()) vecSSdata[sector].profileDate = current_date; //this should have been set when processing the main station
 			}
 			vecXdata[sector].initialize(vecSSdata[sector], sector); // Generate the corresponding Xdata
 		} catch (const exception& e) {
@@ -1072,7 +1088,7 @@ inline void real_main (int argc, char *argv[])
 			if(meteo_step_length<0.) {
 				std::stringstream ss2;
 				meteo_step_length = io.getAvgSamplingRate();
-				ss2 << meteo_step_length;
+				ss2 << "" << meteo_step_length;
 				cfg.addKey("METEO_STEP_LENGTH", "Snowpack", ss2.str());
 			}
 			meteoRead_timer.stop();
@@ -1105,6 +1121,11 @@ inline void real_main (int argc, char *argv[])
 				dataForCurrentTimeStep(Mdata, surfFluxes, vecXdata, slope, tmpcfg,
                                        sun, cumsum.precip, lw_in, hs_a3hl6,
                                        tot_mass_in, variant);
+
+				// Convert units of massbal parameters
+				Mdata.surf_melt *= (sn_dt / 3600.); // mass flux in kg m-2 CALCULATION_STEP_LENGTH-1
+				Mdata.snowdrift	*= (sn_dt / 3600.); // mass flux in kg m-2 CALCULATION_STEP_LENGTH-1
+				Mdata.sublim *= (sn_dt / 3600.); // mass flux in kg m-2 CALCULATION_STEP_LENGTH-1
 
 				// Notify user every fifteen days of date being processed
 				const double notify_start = floor(vecSSdata[slope.mainStation].profileDate.getJulian()) + 15.5;
@@ -1195,7 +1216,7 @@ inline void real_main (int argc, char *argv[])
 							}
 						}
 						// If the error persisted for at least one day => apply correction
-						if (enforce_snow_height && (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length)))) {
+						if (fabs(time_count_deltaHS) > (1. - 0.05 * M_TO_D(calculation_step_length))) {
 							deflateInflate(Mdata, vecXdata[slope.mainStation],
 							               qr_Hdata.at(i_hz).dhs_corr, qr_Hdata.at(i_hz).mass_corr);
 							if (prn_check) {
@@ -1316,8 +1337,8 @@ inline void real_main (int argc, char *argv[])
 				// ... backup Xdata (*.sno<JulianDate>)
 				if (mn_ctrl.XdataDump) {
 					std::stringstream ss;
-					ss << vecStationIDs[i_stn];
-					if (slope.sector != slope.mainStation) ss << slope.sector;
+					ss << "" << vecStationIDs[i_stn];
+					if (slope.sector != slope.mainStation) ss << "" << slope.sector;
 					snowpackio.writeSnowCover(current_date, vecXdata[slope.sector], sn_Zdata, true);
 					prn_msg(__FILE__, __LINE__, "msg", current_date,
 					        "Backup Xdata dumped for station %s [%.2f days, step %d]", ss.str().c_str(),
@@ -1386,12 +1407,12 @@ inline void real_main (int argc, char *argv[])
 }
 
 int main(int argc, char *argv[]) {
-	try {
+	//try {
 		real_main(argc, argv);
-	} catch (const std::exception &e) {
+	/*} catch (const std::exception &e) {
 		std::cerr << e.what() << endl;
 		throw;
-	}
+	}*/
 
 	return EXIT_SUCCESS;
 }

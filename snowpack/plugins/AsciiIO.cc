@@ -755,7 +755,7 @@ void AsciiIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 	string snofilename = getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".snoold";
 	if (forbackup){
 		stringstream ss;
-		ss << (int)(date.getJulian() + 0.5);
+		ss << "" << (int)(date.getJulian() + 0.5);
 		snofilename += ss.str();
 	}
 
@@ -961,10 +961,6 @@ void AsciiIO::writeProfilePro(const mio::Date& i_date, const SnowStation& Xdata,
 	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
 	for (size_t e = 0; e < nE; e++)
 		fout << "," << std::fixed << std::setprecision(2) << IOUtils::K_TO_C(EMS[e].Te);
-	// 0504: element ID
-	fout << "\n0504," << nE;
-	for (size_t e = 0; e < nE; e++)
-		fout << "," << std::fixed << std::setprecision(0) << EMS[e].ID;
 	// 0506: liquid water content by volume (%)
 	fout << "\n0506," << nE + Noffset;
 	if (Noffset == 1) fout << "," << std::fixed << std::setprecision(2) << mio::IOUtils::nodata;
@@ -1943,7 +1939,7 @@ void AsciiIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sda
 	}
 	if (maxNumberMeasTemperatures == 5) {
 		// 50: Solute load at ground surface
-		if (out_load && !Sdata.load.empty())
+		if (out_load)
 			fout << "," << Sdata.load[0];
 		else
 			fout << ",";
@@ -2079,6 +2075,9 @@ void AsciiIO::writeTimeSeriesAddDefault(const SnowStation& Xdata, const SurfaceF
 	else
 		// for example, measured turbulent fluxes (W m-2); see also 1-2
 		fout << ",," << (Sdata.meltFreezeEnergy * static_cast<double>(nCalcSteps)) / 1000.;
+		// output melt and refreeze mass (kg m-2)
+		fout << "," << Sdata.melt_m;
+		fout << "," << Sdata.refreeze_m;
 }
 
 /**
@@ -2207,7 +2206,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		else
 			fout <<  " (operational mode)";
 	}
-	fout << "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100";
+	fout << "\n,,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100,101,102";
 	fout << "\nID,Date,Sensible heat,Latent heat,Outgoing longwave radiation,Incoming longwave radiation,Net absorbed longwave radiation,Reflected shortwave radiation,Incoming shortwave radiation,Net absorbed shortwave radiation,Modelled surface albedo,Air temperature,Modeled surface temperature,Measured surface temperature,Temperature at bottom of snow or soil pack,Heat flux at bottom of snow or soil pack,Ground surface temperature,Heat flux at ground surface,Heat advected to the surface by liquid precipitation,Global solar radiation (horizontal)";
 	if(out_haz==true || out_soileb==false) {
 		fout << ",Global solar radiation on slope,Direct solar radiation on slope,Diffuse solar radiation on slope,Measured surface albedo,Relative humidity,Wind speed,Max wind speed at snow station or wind speed at ridge station,Wind direction at snow station,Precipitation rate at surface (solid only),Modelled snow depth (vertical),Enforced snow depth (vertical),Surface hoar size,24h Drift index (vertical),Height of new snow HN (24h vertical),3d sum of daily height of new snow (vertical),SWE (of snowpack),Eroded mass,Rain rate,Snowpack runoff (virtual lysimeter)";
@@ -2282,7 +2281,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		if (!research_mode)
 			fout << ",Snow depth correction,Mass change";
 		else
-			fout << ",-,Melt freeze part of internal energy change";
+			fout << ",-,Melt freeze part of internal energy change,Melted mass,Refrozen mass";
 	}
 
 	if(out_haz==true || out_soileb==false) {
@@ -2345,7 +2344,7 @@ void AsciiIO::writeMETHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 		if (!research_mode)
 			fout << ",cm,kg m-2";
 		else
-			fout << ",-,kJ m-2";
+			fout << ",-,kJ m-2,kg m-2,kg m-2";
 	}
 
 	fout << "\n\n[DATA]";
@@ -2375,7 +2374,6 @@ void AsciiIO::writeProHeader(const SnowStation& Xdata, std::ofstream &fout) cons
 	fout << "\n0501,nElems,height [> 0: top, < 0: bottom of elem.] (cm)";
 	fout << "\n0502,nElems,element density (kg m-3)";
 	fout << "\n0503,nElems,element temperature (degC)";
-	fout << "\n0504,nElems,element ID (1)";
 	fout << "\n0506,nElems,liquid water content by volume (%)";
 	if(enable_pref_flow) fout << "\n0507,nElems,liquid preferential flow water content by volume (%)";
 	fout << "\n0508,nElems,dendricity (1)";
@@ -2492,4 +2490,53 @@ bool AsciiIO::writeHazardData(const std::string& /*stationID*/, const std::vecto
                               const std::vector<ProcessInd>& /*Hdata_ind*/, const size_t& /*num*/)
 {
 	throw IOException("Nothing implemented here!", AT);
+}
+
+/**
+ * @brief Reads labels and dates from file for tagging
+ * @author Thomas Egger
+ * @param TAGdata
+ * @param filename Filename to read from
+ * @param Mdata To pass zv_ts[] values for initialization
+ */
+void AsciiIO::readTags(const std::string& filename, const CurrentMeteo&  Mdata, TaggingData& TAGdata)
+{
+	Config tagging_config(filename);
+	tagging_config.getValue("NUMBER_TAGS", numberTags); //HACK: numberTags should be a member of TAGdata?
+	tagging_config.getValue("TAG_LOW", TAGdata.tag_low);
+	tagging_config.getValue("TAG_TOP", TAGdata.tag_top);
+	tagging_config.getValue("REPOS_LOW", TAGdata.repos_low);
+	tagging_config.getValue("REPOS_TOP", TAGdata.repos_top);
+
+	totNumberSensors += numberTags;
+
+	TAGdata.tag_low = std::max((size_t)1, std::min(TAGdata.tag_low, numberTags));
+	TAGdata.tag_top = std::min(TAGdata.tag_top, numberTags);
+	TAGdata.repos_low = std::max((size_t)1, TAGdata.repos_low);
+	TAGdata.repos_top = std::min(TAGdata.repos_top, numberTags);
+
+	TAGdata.resize(numberTags + 1);
+	TAGdata.useSoilLayers = useSoilLayers;
+
+	for (size_t tag=1; tag<=numberTags; tag++) {
+		stringstream ss;
+		ss << setw(2) << setfill('0') << tag;
+
+		tagging_config.getValue("LABEL_" + ss.str(), TAGdata.tags[tag-1].label);
+
+		string date_string;
+		tagging_config.getValue("DATE_" + ss.str(), date_string);
+		IOUtils::convertString(TAGdata.tags[tag-1].date, date_string, time_zone);
+
+		if ( (tag >= TAGdata.repos_low) && (tag <= TAGdata.repos_top) ) {
+			const size_t depth = fixedPositions.size() + tag - 1;
+			if (Mdata.zv_ts.size() > depth) {
+				TAGdata.tags[tag-1].previous_depth = Mdata.zv_ts[depth];
+			} else { //HACK: can I do this? does this make sense?
+				TAGdata.tags[tag-1].previous_depth = IOUtils::nodata;
+			}
+		} else {
+			TAGdata.tags[tag-1].previous_depth = IOUtils::nodata;
+		}
+	}
 }

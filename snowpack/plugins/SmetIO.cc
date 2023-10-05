@@ -560,7 +560,7 @@ void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
 
 	if (forbackup){
 		std::stringstream ss;
-		ss << (int)(date.getJulian() + 0.5);
+		ss << "" << (int)(date.getJulian() + 0.5);
 		snofilename += ss.str();
 		hazfilename += ss.str();
 	}
@@ -1063,10 +1063,7 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 	}
 
 	if (out_load) {
-		if (!Sdata.load.empty())
-			data.push_back( Sdata.load[0] );
-		else
-			data.push_back( IOUtils::nodata );
+		data.push_back( Sdata.load[0] );
 	}
 
 	if (out_t && !fixedPositions.empty()) {

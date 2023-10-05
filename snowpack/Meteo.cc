@@ -276,9 +276,9 @@ void Meteo::MicroMet(const SnowStation& Xdata, CurrentMeteo &Mdata, const bool& 
 	} while ( (iter<max_iter) && (fabs(ustar_old - ustar) > eps1) );
 
 	if(iter==max_iter) {
-		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
-		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
-		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
+//		prn_msg(__FILE__, __LINE__, "wrn", Mdata.date,
+//		        "Stability correction did not converge (azi=%.0lf, slope=%.0lf) --> assume neutral",
+//		        Xdata.meta.getAzimuth(), Xdata.meta.getSlopeAngle());
 		Mdata.z0 = roughness_length;
 		Mdata.ustar = Constants::karman * vw / z_ratio;
 		Mdata.psi_s = 0.;
@@ -395,7 +395,7 @@ void Meteo::compRadiation(const SnowStation &station, mio::SunObject &sun, Snowp
 		const double hs = (use_hs_meas)? station.mH - station.Ground : station.cH - station.Ground;
 		const double iswr_factor = Mdata.rswr / (dir_h+diff+Constants::eps); //avoiding "0/0"
 
-		if ((hs>0 && hs<0.1) && Mdata.rh<0.7 && iswr_factor<0.3) {
+		if (hs<0.1 && Mdata.rh<0.7 && iswr_factor<0.3) {
 			dir_h = H_direct;
 			diff = H_diffuse;
 			Mdata.iswr = dir_h+diff;

@@ -175,7 +175,9 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 
 				// Update remaining volumetric contents and density
 				EMS[nE-1].theta[AIR] = std::max(0., 1.0 - EMS[nE-1].theta[WATER] - EMS[nE-1].theta[WATER_PREF] - EMS[nE-1].theta[ICE] - EMS[nE-1].theta[SOIL]);
-				EMS[nE-1].updDensity();
+				EMS[nE-1].Rho = (EMS[nE-1].theta[ICE] * Constants::density_ice)
+					  + ((EMS[nE-1].theta[WATER] + EMS[nE-1].theta[WATER_PREF])* Constants::density_water)
+					  + (EMS[nE-1].theta[SOIL] * EMS[nE-1].soil[SOIL_RHO]);
 			}
 		}
 	} else if ((ql < (-Constants::eps2)) && (nE > 0)) {
@@ -213,7 +215,7 @@ void VapourTransport::compSurfaceSublimation(const CurrentMeteo& Mdata, double& 
 
 				// Update remaining volumetric contents and density
 				EMS[e].theta[AIR] = std::max(0., 1.0 - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-				EMS[e].updDensity();
+				EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice) + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF])* Constants::density_water) + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
 				// Merge the element if it is a snow layer. This will take care of possible left over liquid water (will be put one layer down)
 				// Keep layer if it is a soil layer inside the snowpack (for example with snow farming)
 				if(e>Xdata.SoilNode) {
@@ -329,7 +331,7 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 
 	if (enable_vapour_transport) {
 		// Solve vapour transport in snow
-		while (e-- > 0) {
+		while (e-- > 0.) {
 			const double topFlux = botFlux;										//top layer flux (kg m-2 s-1)
 			
 			const double gradTbot = (e == 0) ? (0.) : .5 * (EMS[e-1].gradT + EMS[e].gradT);				//Temperature gradient at the upper node (K m-1)
@@ -416,7 +418,9 @@ void VapourTransport::LayerToLayer(SnowStation& Xdata, SurfaceFluxes& Sdata, dou
 		}
 
 		EMS[e].theta[AIR] = (1. - EMS[e].theta[WATER] - EMS[e].theta[WATER_PREF] - EMS[e].theta[ICE] - EMS[e].theta[SOIL]);
-		EMS[e].updDensity();
+		EMS[e].Rho = (EMS[e].theta[ICE] * Constants::density_ice)
+			      + ((EMS[e].theta[WATER] + EMS[e].theta[WATER_PREF]) * Constants::density_water)
+			      + (EMS[e].theta[SOIL] * EMS[e].soil[SOIL_RHO]);
 		assert(EMS[e].Rho > 0 || EMS[e].Rho==IOUtils::nodata); //density must be positive
 
 		if (!(EMS[e].Rho > Constants::eps && EMS[e].theta[AIR] >= 0.)) {

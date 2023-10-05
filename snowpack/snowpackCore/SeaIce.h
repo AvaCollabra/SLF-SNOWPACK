@@ -42,7 +42,6 @@ class SeaIce {
 	public:
 		SeaIce();
 		~SeaIce();
-		void ConfigSeaIce(const SnowpackConfig& i_cfg);
 		SeaIce& operator=(const SeaIce&); ///<Assignement operator
 
 		//SeaIce(const SnowpackConfig& i_cfg);
@@ -50,18 +49,16 @@ class SeaIce {
 		static double compSeaIceThermalConductivity(const ElementData& Edata);
 		static double compSeaIceLatentHeatFusion(const ElementData& Edata);
 		static double compSeaIceLatentHeatFusion(const double& T, const double& Sal);
-		static double calculateMeltingTemperature(const double& Sal);
 
 		const static double SeaWaterFreezingTemp;
 		const static double SeaIceDensity;
 		const static double ice_threshold;
 		const static double mu;
-		const static double betaS;
+
 		const static double ThicknessFirstIceLayer;
 		const static double InitRg;
 		const static double InitRb;
-		const static double OceanSalinity;
-		const static double InitSeaIceSalinity;
+		const static double InitSalinity;
 		const static double InitSnowSalinity;
 
 		double SeaLevel;            ///< Sea level in domain (m)
@@ -76,14 +73,15 @@ class SeaIce {
 		friend std::iostream& operator<<(std::iostream& os, const SeaIce& data);
 		friend std::iostream& operator>>(std::iostream& is, SeaIce& data);
 
+		// For sea ice: HACK should be moved to own class maybe?
 		void calculateMeltingTemperature(ElementData& Edata);
 		void compSalinityProfile(SnowStation& Xdata);
 		void updateFreeboard(SnowStation& Xdata);
 		double findIceSurface(SnowStation& Xdata);
 		void compFlooding(SnowStation& Xdata);
-		void bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, const double& sn_dt);
+		void bottomIceFormation(SnowStation& Xdata, const CurrentMeteo& Mdata, const double sn_dt);
 
-		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double& sn_dt);
+		void runSeaIceModule(SnowStation& Xdata, const CurrentMeteo& Mdata, BoundCond& Bdata, const double sn_dt);
 	private:
 
 

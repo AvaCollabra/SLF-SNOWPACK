@@ -107,7 +107,7 @@ class Snowpack {
 
 		const SnowpackConfig& cfg;
 
-		std::string variant, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
+		std::string variant, forcing, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
 		Meteo::ATM_STABILITY atm_stability_model;
@@ -130,6 +130,7 @@ class Snowpack {
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
+		double soot_ppmv; ///< Impurity content in ppmv for albedo calculatoins
 		bool ageAlbedo; ///< use the age of snow in the albedo parametrizations? default: true
 
 		const static bool hydrometeor;

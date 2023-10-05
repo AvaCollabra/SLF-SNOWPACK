@@ -43,6 +43,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["ALBEDO_PARAMETERIZATION"] = "LEHNING_2";
 	advancedConfig["ALBEDO_AVERAGE_SCHMUCKI"] = "ALL_DATA";
 	advancedConfig["ALBEDO_AGING"] = "true";
+	advancedConfig["SOOT_PPMV"] = "0.0";
 	advancedConfig["ENABLE_VAPOUR_TRANSPORT"] = "false";
 	advancedConfig["FIXED_POSITIONS"] = "";
 	advancedConfig["FORCE_RH_WATER"] = "true";
@@ -89,6 +90,7 @@ bool SnowpackConfig::initStaticData()
 	advancedConfig["T_CRAZY_MAX"] = "340.";
 	advancedConfig["T_CRAZY_MIN"] = "210.";
 	advancedConfig["VARIANT"] = "DEFAULT";
+	advancedConfig["FORCING"] = "ATMOS";
 	advancedConfig["VISCOSITY_MODEL"] = "DEFAULT";
 	advancedConfig["WATER_LAYER"] = "false";
 	advancedConfig["WATERTRANSPORTMODEL_SNOW"]="BUCKET";
@@ -148,7 +150,6 @@ bool SnowpackConfig::initStaticData()
 	outputConfig["PROF_FORMAT"] = "PRO";
 	outputConfig["PROF_DAYS_BETWEEN"] = "1";
 	outputConfig["PROF_START"] = "0";
-	outputConfig["SNOW_WRITE"] = "true";
 	outputConfig["SNOW"] = "SMET";
 	outputConfig["TS_FORMAT"] = "MET";
 	outputConfig["TS_DAYS_BETWEEN"] = "1";
@@ -192,7 +193,7 @@ void SnowpackConfig::setDefaults()
 		if(s_height_new_elem.empty()) {
 			stringstream ss;
 			const double tmp = 2. * minimum_l_element;
-			ss << tmp;
+			ss << "" << tmp;
 			addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 		}
 	}
@@ -228,7 +229,7 @@ void SnowpackConfig::setDefaults()
 			if ( !enforce_measured_snow_heights) {
 				stringstream ss;
 				const double tmp = 1.1 * minimum_l_element;
-				ss << tmp;
+				ss << "" << tmp;
 				addKey("HEIGHT_NEW_ELEM", "SnowpackAdvanced", ss.str());
 			}
 		}
@@ -246,6 +247,12 @@ void SnowpackConfig::setDefaults()
 		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
 		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
 		addKey("NEW_SNOW_GRAIN_SIZE", "SnowpackAdvanced", "0.2");
+		
+		
+	} else if (variant == "POLAR") {
+
+		addKey("T_CRAZY_MIN", "SnowpackAdvanced", "165.");
+		addKey("T_CRAZY_MAX", "SnowpackAdvanced", "300.");
 
 	} else if (variant == "CALIBRATION") {
 		if (hn_density_parameterization.empty()) addKey("HN_DENSITY_PARAMETERIZATION", "SnowpackAdvanced", "ZWART");
@@ -318,7 +325,7 @@ void SnowpackConfig::setDefaults()
 	if (hazard_steps_between.empty()) {
 		stringstream ss;
 		const int tmp = (int)(30./calculation_step_length + 0.5);
-		ss << tmp;
+		ss << "" << tmp;
 		addKey("HAZARD_STEPS_BETWEEN", "Output", ss.str());
 	}
 

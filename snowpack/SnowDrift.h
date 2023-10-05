@@ -52,6 +52,7 @@ class SnowDrift {
 		double sn_dt;        //Calculation time step in seconds as derived from CALCULATION_STEP_LENGTH
 		int nSlopes;
 		static const bool msg_erosion;
+		std::string forcing;
 }; //End class SnowDrift
 
 #endif
