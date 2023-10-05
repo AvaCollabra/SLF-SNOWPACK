@@ -50,17 +50,16 @@ std::string getLibVersion() {
  * - "msg-" : [i] []      \<msg> \<n>
  * @author Charles Fierz \n Mathias Bavay
  * @version 11.02
- * @param *theFile
+ * @param *fileAndPath
  * @param theLine
  * @param *msg_type See above
  * @param date_in Use Date() if date_in is not available.
  * @param *format Format for message
  * @param ... Variable number of parameters to format
  */
-void prn_msg(const char *theFile, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...)
+void prn_msg(const char *fileAndPath, const int theLine, const char *msg_type, const mio::Date& date_in, const char *format, ...)
 {
 	va_list argptr; // get an arg ptr
-
 	int msg_ok = 0;
 
 	// Initialize argptr to point to the first argument after the format string
@@ -75,6 +74,18 @@ void prn_msg(const char *theFile, const int theLine, const char *msg_type, const
 	} else {
 		currentdate = date_in.toString(Date::ISO);
 	}
+
+	//doing it pure c for performance
+#if defined _WIN32
+	#if !defined __CYGWIN__
+		const char *delim = strrchr(fileAndPath, '\\');
+	#else
+		const char *delim = strrchr(fileAndPath, '/');
+	#endif
+#else
+	const char *delim = strrchr(fileAndPath, '/');
+#endif
+	const char *theFile = delim ? delim + 1 : fileAndPath;
 
 	//print message
 	//printf("¬"); //if we need multiline output, use a special char as bloc delimiter
@@ -304,17 +315,17 @@ void typeToCode(int *F1, int *F2, int *F3, int type)
 double unitConversion(const double val, char* unitIn, char* unitOut)
 {
 	if (!strcmp(unitIn,"degK") || !strcmp(unitIn,"°K") || !strcmp(unitIn,"Kelvin"))
-		unitIn = (char*) "K";
+		unitIn = strdup("K");
 	if (!strcmp(unitOut,"degK") || !strcmp(unitOut,"°K") || !strcmp(unitOut,"Kelvin"))
-		unitOut = (char*) "K";
+		unitOut = strdup("K");
 	if (!strcmp(unitIn,"degC") || !strcmp(unitIn,"Celsius"))
-		unitIn = (char*) "°C";
+		unitIn = strdup("°C");
 	if (!strcmp(unitOut,"degC") || !strcmp(unitOut,"Celsius"))
-		unitOut = (char*) "°C";
+		unitOut = strdup("°C");
 	if (!strcmp(unitIn,"degF") || !strcmp(unitIn,"Fahrenheit"))
-		unitIn = (char*) "°F";
+		unitIn = strdup("°F");
 	if (!strcmp(unitOut,"degF") || !strcmp(unitOut,"Fahrenheit"))
-		unitOut = (char*) "°F";
+		unitOut = strdup("°F");
 
 	if (!strcmp(unitIn,"°C") && !strcmp(unitOut,"K")) {
 		return (val+273.15);
@@ -371,7 +382,7 @@ double unitConversion(const double val, char* unitIn, char* unitOut)
 		}
 		return val*ratio;
 	}
-	throw IOException("Unable to perform unit conversion.", AT); //if we don't missuse the method, this should never be reached
+	//NOT REACHABLE... throw IOException("Unable to perform unit conversion.", AT); //if we don't missuse the method, this should never be reached
 }
 
 /**
@@ -389,7 +400,7 @@ bool massBalanceCheck(const SnowStation& Xdata, const SurfaceFluxes& Sdata, doub
 	bool mass_error = true;
 	double tot_mass=0., tot_swe=0., dmassE=0.;
 	const double psum = Xdata.hn*Xdata.rho_hn;
-	double mass_change = psum - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] - std::max(0., Xdata.ErosionMass);
+	double mass_change = psum - Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] + Sdata.mass[SurfaceFluxes::MS_RAIN] + Sdata.mass[SurfaceFluxes::MS_SUBLIMATION] + Sdata.mass[SurfaceFluxes::MS_EVAPORATION] + Sdata.mass[SurfaceFluxes::MS_FLOODING] - std::max(0., Xdata.ErosionMass);
 
 	// Actual mass of snowpack
 	for (size_t e=Xdata.SoilNode; e<Xdata.getNumberOfElements(); e++) {
@@ -468,13 +479,11 @@ double forcedErosion(const double hs, SnowStation& Xdata)
  * @param dhs_corr Correction on calculated snow depth (m)
  * @param mass_corr Mass correction (kg m-2)
  */
-void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr)
+void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_corr, double& mass_corr, const bool &prn_check)
 {
 	const size_t nE = Xdata.getNumberOfElements(), soil_node = Xdata.SoilNode;
 	const double cH = Xdata.cH - Xdata.Ground;    // Calculated snow depth
 	const double mH = Xdata.mH - Xdata.Ground;    // Enforced snow depth
-	//double cH_old;                                // Temporary snow depth
-	bool prn_CK = false;
 
 	vector<NodeData>& NDS = Xdata.Ndata;
 	vector<ElementData>& EMS = Xdata.Edata;
@@ -487,10 +496,8 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 	if ((mH + 0.03) < cH) {
 		dhs_corr = mH - cH;
 		mass_corr = forcedErosion(mH, Xdata);
-		if (prn_CK) { //HACK
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected");
-			prn_msg(__FILE__, __LINE__, "msg-", Date(), "Measured Snow Depth:%lf   Computed Snow Depth:%lf",
-			        mH, cH);
+		if (prn_check) {
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Missed erosion event detected, measured_hs=%lf m computed_hs=%lf m mass_corr=%lf cm", mH, cH, mass_corr);
 		}
 	} else if (cH > Constants::eps) { // assume settling error
 		double factor_corr=0., sum_total_correction=0.;
@@ -499,12 +506,6 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 		if (EMS[nE-1].depositionDate.getJulian() <= EMS[soil_node].depositionDate.getJulian())
 			return;
 
-		if (prn_CK) { //HACK
-			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date,
-			          "Small correction due to assumed settling error");
-			prn_msg(__FILE__, __LINE__, "msg-", Date(),
-			          "Enforced Snow Depth:%lf   Computed Snow Depth:%lf", mH, cH);
-		}
 		// Second find the normalization quantity, which we choose to be the age of the layer.
 		dhs_corr = mH - cH;
 		for (size_t e = soil_node; e < nE; e++) {
@@ -541,9 +542,7 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 				if (age_fraction < 0.) {
 					age_fraction = 0.;
 				}
-				ddL = EMS[e].L
-				        * std::max(-0.9,
-			                 std::min(0.9, factor_corr * (1. - sqrt(age_fraction))));
+				ddL = EMS[e].L * std::max(-0.9, std::min(0.9, factor_corr * (1. - sqrt(age_fraction))));
 			} else {
 				ddL = 0.;
 			}
@@ -556,6 +555,10 @@ void deflateInflate(const CurrentMeteo& Mdata, SnowStation& Xdata, double& dhs_c
 			EMS[e].L0 = EMS[e].L += ddL;
 			EMS[e].E  = EMS[e].Eps  = EMS[e].dEps = EMS[e].Eps_e = EMS[e].Eps_v = EMS[e].S = 0.0;
 		}
+		if (prn_check) {
+			prn_msg(__FILE__, __LINE__, "msg+", Mdata.date, "Correction due to assumed settling error, measured_hs=%lf m computed_hs=%lf m mass_corr=%lf cm", mH, cH, mass_corr);
+		}
+		
 		// Update the overall height
 		Xdata.cH  = NDS[nE].z + NDS[nE].u;
 	} else {

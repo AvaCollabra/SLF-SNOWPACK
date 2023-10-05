@@ -1,7 +1,10 @@
 INCLUDE_DIRECTORIES("${PROJECT_SOURCE_DIR}/")
+INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
+BuildVersionGIT()
+SET(BINARY "snowpack.app")
 
 IF(MSVC)
-	SET(getopt_src getopt.c getopt_long.c)
+	SET(getopt_src getopt.c)
 ENDIF(MSVC)
 
 SET(snowpack-app_sources
@@ -9,29 +12,35 @@ SET(snowpack-app_sources
 	${getopt_src}
 )
 
-SET(SN_LINKS "snowpack")
-LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
+#get the proper Snowpack library
+IF(BUILD_SHARED_LIBS)
+	SET(LIBSNOWPACK_LIBRARY ${PROJECT_NAME})
+ELSE(BUILD_SHARED_LIBS)
+	IF(BUILD_STATIC_LIBS)
+		SET(LIBSNOWPACK_LIBRARY "${PROJECT_NAME}_STATIC")
+	ELSE(BUILD_STATIC_LIBS)
+		MESSAGE(SEND_ERROR "Not building Snowpack, the standalone application won't be able to build")
+	ENDIF(BUILD_STATIC_LIBS)
+ENDIF(BUILD_SHARED_LIBS)
+INCLUDE_DIRECTORIES(../../)
 
 FIND_PACKAGE(MeteoIO REQUIRED)
-INCLUDE_DIRECTORIES(${INCLUDE_DIRECTORIES} ${METEOIO_INCLUDE_DIR})
-
-INCLUDE("${CMAKE_MODULE_PATH}/BuildVersion.cmake")
-BuildVersion()
+INCLUDE_DIRECTORIES(${METEOIO_INCLUDE_DIR})
 
 IF(APPLE)
 	#this is necessary for GUI exceptions
-	LIST(APPEND SN_LINKS "-framework CoreServices")
+	SET(EXTRA_LINKS "-framework CoreServices")
 ENDIF(APPLE)
 IF(UNIX)
-	LIST(APPEND SN_LINKS "dl;pthread")
+	SET(EXTRA_LINKS "dl;pthread")
 ENDIF(UNIX)
 
 #Prepare executable
-SET(BINARY "snowpack.app")
 ADD_EXECUTABLE(${BINARY} ${snowpack-app_sources})
-
-TARGET_LINK_LIBRARIES(${BINARY} ${SN_LINKS})
-
+TARGET_LINK_LIBRARIES(${BINARY} ${LIBSNOWPACK_LIBRARY} ${METEOIO_LIBRARY} ${EXTRA_LINKS})
+IF(BUILD_STATIC_LIBS)
+	TARGET_LINK_OPTIONS(${BINARY} PRIVATE -static-libgcc -static-libstdc++ -static)
+ENDIF(BUILD_STATIC_LIBS)
 SET_TARGET_PROPERTIES(${BINARY} PROPERTIES
 	RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
 	CLEAN_DIRECT_OUTPUT 1

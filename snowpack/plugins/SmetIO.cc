@@ -22,6 +22,8 @@
 #include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Metamorphism.h>
 
+#define OUTPUT_PRECISION_SNO_FILE 6
+
 using namespace std;
 using namespace mio;
 
@@ -29,11 +31,11 @@ using namespace mio;
  * @page smet SMET
  * @section smet_format Format
  * This plugin reads the SMET files as specified in the
- * <a href="https://models.slf.ch/p/meteoio">MeteoIO</a> pre-processing library documentation (under
+ * <a href="https://meteoio.slf.ch">MeteoIO</a> pre-processing library documentation (under
  * <i>"Available plugins and usage"</i>, then <i>"smet"</i>).
  *
  * @section fluxes_ts Fluxes timeseries
- * These files are very regular SMET files with a large number of fields. 
+ * These files are very regular SMET files with a large number of fields.
  *
  * @section layers_data Layers data
  * The snow/soil layers file has the structure described below:
@@ -63,7 +65,7 @@ using namespace mio;
  * <tr><th>Vol_Frac_S</th><td>fractional soil volume [0-1]</td></tr>
  * <tr><th>Rho_S</th><td>soil density [kg/m3]</td></tr>
  * <tr><th>Conduc_S</th><td>mineral phase soil thermal conductivity [w/(mK)]</td></tr>
- * <tr><th>HeatCapac_S</th><td>mineral phase soil thermal capacity [J/K]</td></tr>
+ * <tr><th>HeatCapac_S</th><td>mineral phase soil thermal capacity [J/(kg*K)]</td></tr>
  * </table></td><td><table border="1">
  * <tr><th>Field</th><th>Description</th></tr>
  * <tr><th>rg</th><td>grain radius [mm]</td></tr>
@@ -93,18 +95,18 @@ using namespace mio;
  * source           = WSL-SLF			;optional key
  * ProfileDate      = 2009-10-01T00:00		;when was the profile made, see explanations above
  * HS_Last          = 0.0000			;last measured snow height
- * SlopeAngle       = 38.0			
- * SlopeAzi         = 0.0			
+ * SlopeAngle       = 38.0
+ * SlopeAzi         = 0.0
  * nSoilLayerData   = 0				;number of soil layers
  * nSnowLayerData   = 1				;number of snow layers
  * SoilAlbedo       = 0.20				;albedo of the exposed soil
  * BareSoil_z0      = 0.020			;roughtness length of the exposed soil
  * CanopyHeight     = 0.00				;height (in m) of the canopy
- * CanopyLeafAreaIndex     = 0.00		
- * CanopyDirectThroughfall = 1.00		
+ * CanopyLeafAreaIndex     = 0.00
+ * CanopyDirectThroughfall = 1.00
  * WindScalingFactor       = 1.00			;some stations consistently measure a wind that is too low
- * ErosionLevel     = 0				
- * TimeCountDeltaHS = 0.000000			
+ * ErosionLevel     = 0
+ * TimeCountDeltaHS = 0.000000
  * fields           = timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo
  * [DATA]
  * 2009-09-19T02:30 0.003399 273.15 0.579671 0.068490 0.351839 0.000000 0.0 0.0 0.0 1.432384 1.028390 0.000000 1.000000 22 0.000000 1 0.000000 0.000000
@@ -142,12 +144,12 @@ using namespace mio;
  * the profile date.
  */
 SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
-        : fixedPositions(), outpath(), o_snowpath(), snowpath(), experiment(), inpath(), i_snowpath(), sw_mode(),
-          info(run_info), tsWriters(),
+        : fixedPositions(), outpath(), o_snowpath(), experiment(), inpath(), i_snowpath(),
+          metamorphism_model(), variant(), sw_mode(), info(run_info), tsWriters(), acdd(false),
           in_dflt_TZ(0.), calculation_step_length(0.), ts_days_between(0.), min_depth_subsurf(0.),
-          avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false),
-          out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_t(false),
-          out_load(false), out_stab(false), out_canopy(false), out_soileb(false), enable_pref_flow(false)
+          avgsum_time_series(false), useCanopyModel(false), useSoilLayers(false), research_mode(false), perp_to_slope(false), haz_write(true), useReferenceLayer(false),
+          out_heat(false), out_lw(false), out_sw(false), out_meteo(false), out_haz(false), out_mass(false), out_dhs(false), out_t(false),
+          out_load(false), out_stab(false), out_canopy(false), out_soileb(false), useRichardsEq(false), enable_pref_flow(false), enable_ice_reservoir(false), read_dsm(false)
 {
 	cfg.getValue("TIME_ZONE", "Input", in_dflt_TZ);
 	cfg.getValue("CANOPY", "Snowpack", useCanopyModel);
@@ -157,31 +159,57 @@ SmetIO::SmetIO(const SnowpackConfig& cfg, const RunInfo& run_info)
 	cfg.getValue("PERP_TO_SLOPE", "SnowpackAdvanced", perp_to_slope);
 	cfg.getValue("AVGSUM_TIME_SERIES", "Output", avgsum_time_series, IOUtils::nothrow);
 	cfg.getValue("RESEARCH", "SnowpackAdvanced", research_mode);
+	cfg.getValue("METAMORPHISM_MODEL", "SnowpackAdvanced", metamorphism_model, IOUtils::nothrow);
+	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
+	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
+	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
+	cfg.getValue("READ_DSM", "SnowpackAdvanced", read_dsm);
+
+	//Check for use of Richards Equation
+	useRichardsEq = false;
+	std::string tmp_useRichardsEq;
+	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
+	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", tmp_useRichardsEq);
+	if (tmp_useRichardsEq=="RICHARDSEQUATION") useRichardsEq = true;
 
 	cfg.getValue("EXPERIMENT", "Output", experiment);
 	cfg.getValue("METEOPATH", "Output", outpath, IOUtils::nothrow);
-	cfg.getValue("SNOWPATH", "Output", snowpath, IOUtils::nothrow);
-	o_snowpath = (!snowpath.empty())? snowpath : outpath;
+	cfg.getValue("SNOWPATH", "Output", o_snowpath, IOUtils::nothrow);
+	if (o_snowpath.empty()) o_snowpath = outpath;
 
 	cfg.getValue("METEOPATH", "Input", inpath, IOUtils::nothrow);
-	snowpath = string();
-	cfg.getValue("SNOWPATH", "Input", snowpath, IOUtils::nothrow);
-	i_snowpath = (!snowpath.empty())? snowpath : inpath;
+	cfg.getValue("SNOWPATH", "Input", i_snowpath, IOUtils::nothrow);
+	if (i_snowpath.empty()) i_snowpath = inpath;
 
+	cfg.getValue("HAZ_WRITE", "Output", haz_write, IOUtils::nothrow);
 	cfg.getValue("OUT_CANOPY", "Output", out_canopy);
 	cfg.getValue("OUT_HAZ", "Output", out_haz);
 	cfg.getValue("OUT_HEAT", "Output", out_heat);
 	cfg.getValue("OUT_LOAD", "Output", out_load);
 	cfg.getValue("OUT_LW", "Output", out_lw);
 	cfg.getValue("OUT_MASS", "Output", out_mass);
+	cfg.getValue("OUT_DHS", "Output", out_dhs);
 	cfg.getValue("OUT_METEO", "Output", out_meteo);
 	cfg.getValue("OUT_SOILEB", "Output", out_soileb);
 	cfg.getValue("OUT_STAB", "Output", out_stab);
 	cfg.getValue("OUT_SW", "Output", out_sw);
 	cfg.getValue("OUT_T", "Output", out_t);
+	cfg.getValue("USEREFERENCELAYER", "Output", useReferenceLayer, IOUtils::nothrow);
 	cfg.getValue("TS_DAYS_BETWEEN", "Output", ts_days_between);
 	cfg.getValue("CALCULATION_STEP_LENGTH", "Snowpack", calculation_step_length);
-	cfg.getValue("PREF_FLOW", "SnowpackAdvanced", enable_pref_flow);
+
+	bool write_acdd = false;
+	cfg.getValue("ACDD_WRITE", "Output", write_acdd);
+	if (write_acdd) {
+		acdd.setEnabled(true);
+		acdd.setUserConfig(cfg, "Output", false); //do not allow multi-line keys
+		if (out_haz) { // HACK To avoid troubles in A3D
+			mio::Date now;
+			now.setFromSys();
+			acdd.addAttribute("history", now.toString(mio::Date::ISO_Z) + ", " + info.user + "@" + info.hostname + ", Snowpack-" + info.version);
+		}
+	}
 }
 
 SmetIO::~SmetIO()
@@ -199,13 +227,15 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		fixedPositions = source.fixedPositions;
 		outpath = source.outpath;
 		o_snowpath = source.o_snowpath;
-		snowpath = source.snowpath;
 		experiment = source.experiment;
 		inpath = source.inpath;
 		i_snowpath = source.i_snowpath;
+		metamorphism_model = source.metamorphism_model;
+		variant = source.variant;
 		sw_mode = source.sw_mode;
 		//info = source.info;
 		tsWriters = std::map<std::string, smet::SMETWriter*>(); //it will have to be re-allocated for thread safety
+		acdd = source.acdd;
 
 		in_dflt_TZ = source.in_dflt_TZ;
 		calculation_step_length = source.calculation_step_length;
@@ -216,18 +246,23 @@ SmetIO& SmetIO::operator=(const SmetIO& source) {
 		useSoilLayers = source.useSoilLayers;
 		research_mode = source.research_mode;
 		perp_to_slope = source.perp_to_slope;
+		haz_write = source.haz_write;
+		useReferenceLayer = source.useReferenceLayer;
 		out_heat = source.out_heat;
 		out_lw = source.out_lw;
 		out_sw = source.out_sw;
 		out_meteo = source.out_meteo;
 		out_haz = source.out_haz;
 		out_mass = source.out_mass;
+		out_dhs = source.out_dhs;
 		out_t = source.out_t;
 		out_load = source.out_load;
 		out_stab = source.out_stab;
 		out_canopy = source.out_canopy;
 		out_soileb = source.out_soileb;
+		useRichardsEq = source.useRichardsEq;
 		enable_pref_flow = source.enable_pref_flow;
+		enable_ice_reservoir = source.enable_ice_reservoir;
 	}
 	return *this;
 }
@@ -256,9 +291,10 @@ bool SmetIO::snowCoverExists(const std::string& i_snowfile, const std::string& /
  * @param stationID
  * @param SSdata
  * @param Zdata
+ * @param read_salinity
  */
 void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& stationID,
-                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata)
+                           SN_SNOWSOIL_DATA& SSdata, ZwischenData& Zdata, const bool& read_salinity)
 {
 	std::string snofilename( getFilenamePrefix(i_snowfile, i_snowpath, false) );
 	std::string hazfilename(snofilename);
@@ -270,7 +306,7 @@ void SmetIO::readSnowCover(const std::string& i_snowfile, const std::string& sta
 		hazfilename.replace(hazfilename.rfind(".sno"), 4, ".haz");
 	}
 
-	const Date sno_date( read_snosmet(snofilename, stationID, SSdata) );
+	const Date sno_date( read_snosmet(snofilename, stationID, SSdata, read_salinity) );
 	if (FileUtils::fileExists(hazfilename)) {
 		const Date haz_date( read_hazsmet(hazfilename, Zdata) );
 		if (haz_date != sno_date)
@@ -321,7 +357,7 @@ mio::Date SmetIO::read_hazsmet(const std::string& hazfilename, ZwischenData& Zda
 }
 
 //Read SNO SMET file, parse header and fill SSdata with values from the [DATA] section
-mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata) const
+mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string& stationID, SN_SNOWSOIL_DATA& SSdata, const bool& read_salinity) const
 {
 	smet::SMETReader sno_reader(snofilename);
 	Date profile_date( read_snosmet_header(sno_reader, stationID, SSdata) );
@@ -359,10 +395,10 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 				   ll+1, SSdata.Ldata[ll].depositionDate.toString(Date::ISO).c_str(), SSdata.profileDate.toString(Date::ISO).c_str());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
-		if (SSdata.Ldata[ll].depositionDate < prev_depositionDate) {
+		if (SSdata.Ldata[ll].depositionDate < prev_depositionDate && !read_salinity) {		// Note: in sea ice it is possible that younger layers are below
 			prn_msg(__FILE__, __LINE__, "err", Date(),
 				   "Layer %d is younger (%s) than layer above (%s) !!!",
-				   ll, prev_depositionDate.toString(Date::ISO).c_str(), SSdata.profileDate.toString(Date::ISO).c_str());
+				   ll, prev_depositionDate.toString(Date::ISO).c_str(), SSdata.Ldata[ll].depositionDate.toString(Date::ISO).c_str());
 			throw IOException("Cannot generate Xdata from file " + sno_reader.get_filename(), AT);
 		}
 		prev_depositionDate = SSdata.Ldata[ll].depositionDate;
@@ -371,6 +407,13 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 		SSdata.Ldata[ll].hl = vec_data[current_index++];
 		SSdata.Ldata[ll].tl = vec_data[current_index++];
 		SSdata.Ldata[ll].phiIce = vec_data[current_index++];
+		if (enable_ice_reservoir) {
+			SSdata.Ldata[ll].phiIceReservoir = vec_data[current_index++];
+			SSdata.Ldata[ll].phiIceReservoirCumul = vec_data[current_index++];
+		} else {
+			SSdata.Ldata[ll].phiIceReservoir = 0.;
+			SSdata.Ldata[ll].phiIceReservoirCumul = 0.;
+		}
 		SSdata.Ldata[ll].phiWater = vec_data[current_index++];
 		if (enable_pref_flow) {
 			SSdata.Ldata[ll].phiWaterPref = vec_data[current_index++];
@@ -402,6 +445,14 @@ mio::Date SmetIO::read_snosmet(const std::string& snofilename, const std::string
 
 		SSdata.Ldata[ll].CDot = vec_data[current_index++];
 		SSdata.Ldata[ll].metamo = vec_data[current_index++];
+
+		if ((metamorphism_model == "NIED") && (read_dsm)) {
+			SSdata.Ldata[ll].dsm = vec_data[current_index++];
+		}
+		if (read_salinity) {
+			SSdata.Ldata[ll].salinity = vec_data[current_index++];
+			SSdata.Ldata[ll].h = vec_data[current_index++];
+		}
 
 		for (size_t ii=0; ii<SnowStation::number_of_solutes; ii++) {
 			SSdata.Ldata[ll].cIce[ii] = vec_data[current_index++];
@@ -500,6 +551,16 @@ mio::Date SmetIO::read_snosmet_header(const smet::SMETReader& sno_reader, const 
 	SSdata.ErosionLevel = get_intval(sno_reader, "ErosionLevel");
 	SSdata.TimeCountDeltaHS = get_doubleval(sno_reader, "TimeCountDeltaHS");
 
+	SSdata.Canopy_int_cap_snow = get_doubleval_no_error(sno_reader, "CanopySnowIntCapacity");
+	SSdata.Canopy_alb_dry = get_doubleval_no_error(sno_reader, "CanopyAlbedoDry");
+	SSdata.Canopy_alb_wet = get_doubleval_no_error(sno_reader, "CanopyAlbedoWet");
+	SSdata.Canopy_alb_snow = get_doubleval_no_error(sno_reader, "CanopyAlbedoSnow");
+	SSdata.Canopy_diameter = get_doubleval_no_error(sno_reader, "CanopyDiameter");
+	SSdata.Canopy_lai_frac_top_default = get_doubleval_no_error(sno_reader, "CanopyFracLAIUpperLayer");
+	SSdata.Canopy_BasalArea = get_doubleval_no_error(sno_reader, "CanopyBasalArea");
+	SSdata.Emissivity_soil = get_doubleval_no_error(sno_reader, "SoilEmissivity");
+
+
 	return SSdata.profileDate;
 }
 
@@ -524,6 +585,19 @@ double SmetIO::get_doubleval(const smet::SMETReader& reader, const std::string& 
 		throw InvalidFormatException("Cannot generate Xdata from file " + reader.get_filename(), AT);
 	}
 
+	return value;
+}
+
+double SmetIO::get_doubleval_no_error(const smet::SMETReader& reader, const std::string& key)
+{
+	// Retrieve a double value from a SMETReader object header and make sure it exist
+	// If the header key does not exist or the value is not set, set it to meteoIO nodata
+	const double nodata = reader.get_header_doublevalue("nodata");
+	double value = reader.get_header_doublevalue(key);
+
+	if (value == nodata){
+	   value=mio::IOUtils::nodata;
+	}
 	return value;
 }
 
@@ -553,20 +627,26 @@ int SmetIO::get_intval(const smet::SMETReader& reader, const std::string& key)
  * @param forbackup dump Xdata on the go
  */
 void SmetIO::writeSnowCover(const mio::Date& date, const SnowStation& Xdata,
-                            const ZwischenData& Zdata, const bool& forbackup)
+                            const ZwischenData& Zdata, const size_t& forbackup)
 {
 	std::string snofilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".sno" );
 	std::string hazfilename( getFilenamePrefix(Xdata.meta.getStationID().c_str(), o_snowpath) + ".haz" );
 
-	if (forbackup){
+	if (forbackup > 0){
 		std::stringstream ss;
-		ss << "" << (int)(date.getJulian() + 0.5);
+		if (forbackup == 1) {
+			// 1: No labeling
+			ss << "backup";
+		} else {
+			// >1: Label using timestamp
+			ss << "" << (date.toString(Date::NUM));
+		}
 		snofilename += ss.str();
 		hazfilename += ss.str();
 	}
 
-	writeSnoFile(snofilename, date, Xdata, Zdata, enable_pref_flow);
-	writeHazFile(hazfilename, date, Xdata, Zdata);
+	writeSnoFile(snofilename, date, Xdata, Zdata, enable_pref_flow, enable_ice_reservoir);
+	if (haz_write) writeHazFile(hazfilename, date, Xdata, Zdata);
 }
 
 /*
@@ -606,7 +686,7 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 		vec_data.push_back( Zdata.hn3[143-ii] );  //Print out the 3 hour new snowfall hazard data info
 		vec_data.push_back( Zdata.hn24[143-ii] ); //Print out the 24 hour new snowfall hazard data info
 	}
-	haz_writer.write(vec_timestamp, vec_data);
+	haz_writer.write(vec_timestamp, vec_data, mio::ACDD(false));
 }
 
 /*
@@ -615,19 +695,28 @@ void SmetIO::writeHazFile(const std::string& hazfilename, const mio::Date& date,
 * The SMETWriter object finally writes out the SNO SMET file
 */
 void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date, const SnowStation& Xdata,
-                          const ZwischenData& /*Zdata*/, const bool& write_pref_flow) const
+                          const ZwischenData& /*Zdata*/, const bool& write_pref_flow, const bool& write_ice_reservoir) const
 {
 	smet::SMETWriter sno_writer(snofilename);
 	stringstream ss;
 	if (write_pref_flow) {
 		// Header in case preferential flow is used
-		ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_WP  Vol_Frac_V  Vol_Frac_S Rho_S " //8
-		   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+		if (write_ice_reservoir) {
+			// Header in case ice reservoir is used
+			ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_IR  Vol_Frac_CIR  Vol_Frac_W  Vol_Frac_WP  Vol_Frac_V  Vol_Frac_S Rho_S";
+		} else {
+			ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_WP  Vol_Frac_V  Vol_Frac_S Rho_S"; //8
+		}
 	} else {
 		// Default header
-		ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S " //8
-		   << "Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+		ss << "timestamp Layer_Thick  T  Vol_Frac_I  Vol_Frac_W  Vol_Frac_V  Vol_Frac_S Rho_S"; //8
 	}
+	ss << " Conduc_S HeatCapac_S  rg  rb  dd  sp  mk mass_hoar ne CDot metamo";
+	if (metamorphism_model == "NIED") {
+		ss << " dsm";
+	}
+
+	if (Xdata.Seaice != NULL) ss << " Sal h";
 	for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 		ss << " cIce cWater cAir  cSoil";
 	}
@@ -638,7 +727,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 	vector<string> vec_timestamp;
 	vector<double> vec_data;
 	vector<int> vec_width, vec_precision;
-	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision, write_pref_flow);
+	setFormatting(Xdata.number_of_solutes, vec_width, vec_precision, write_pref_flow, write_ice_reservoir, (Xdata.Seaice!=NULL));
 	sno_writer.set_width(vec_width);
 	sno_writer.set_precision(vec_precision);
 
@@ -650,6 +739,8 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		vec_data.push_back(EMS[e].L);
 		vec_data.push_back(Xdata.Ndata[e+1].T);
 		vec_data.push_back(EMS[e].theta[ICE]);
+		if (write_ice_reservoir) vec_data.push_back(EMS[e].theta_i_reservoir);
+		if (write_ice_reservoir) vec_data.push_back(EMS[e].theta_i_reservoir_cumul);
 		vec_data.push_back(EMS[e].theta[WATER]);
 		if (write_pref_flow) vec_data.push_back(EMS[e].theta[WATER_PREF]);
 		vec_data.push_back(EMS[e].theta[AIR]);
@@ -667,6 +758,13 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		vec_data.push_back(1.);
 		vec_data.push_back(EMS[e].CDot);
 		vec_data.push_back(EMS[e].metamo);
+		if (metamorphism_model == "NIED") {
+			vec_data.push_back(EMS[e].dsm);
+		}
+		if (Xdata.Seaice != NULL) {
+			vec_data.push_back(EMS[e].salinity);
+			vec_data.push_back(EMS[e].h);
+		}
 
 		for (size_t ii = 0; ii < Xdata.number_of_solutes; ii++) {
 			vec_data.push_back(EMS[e].conc(ICE,ii));
@@ -676,7 +774,7 @@ void SmetIO::writeSnoFile(const std::string& snofilename, const mio::Date& date,
 		}
 	}
 
-	sno_writer.write(vec_timestamp, vec_data);
+	sno_writer.write(vec_timestamp, vec_data, mio::ACDD(false));
 }
 
 void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields, smet::SMETWriter& smet_writer)
@@ -692,6 +790,8 @@ void SmetIO::setBasicHeader(const SnowStation& Xdata, const std::string& fields,
 	smet_writer.set_header_value("longitude", Xdata.meta.position.getLon());
 	smet_writer.set_header_value("altitude", Xdata.meta.position.getAltitude());
 	smet_writer.set_header_value("epsg", Xdata.meta.position.getEPSG());
+	smet_writer.set_header_value("slope_angle", Xdata.meta.getSlopeAngle());
+	smet_writer.set_header_value("slope_azi", Xdata.meta.getAzimuth());
 }
 
 void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::SMETWriter& smet_writer)
@@ -734,6 +834,22 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 	smet_writer.set_header_value("CanopyLeafAreaIndex", ss.str());
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.direct_throughfall;
 	smet_writer.set_header_value("CanopyDirectThroughfall", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.int_cap_snow;
+	smet_writer.set_header_value("CanopySnowIntCapacity", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.can_alb_dry;
+	smet_writer.set_header_value("CanopyAlbedoDry", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.can_alb_wet;
+	smet_writer.set_header_value("CanopyAlbedoWet", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.can_alb_snow;
+	smet_writer.set_header_value("CanopyAlbedoSnow", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.can_diameter;
+	smet_writer.set_header_value("CanopyDiameter", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.lai_frac_top_default;
+	smet_writer.set_header_value("CanopyFracLAIUpperLayer", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.Cdata.BasalArea;
+	smet_writer.set_header_value("CanopyBasalArea", ss.str());
+	ss.str(""); ss << fixed << setprecision(2) << Xdata.SoilEmissivity;
+	smet_writer.set_header_value("SoilEmissivity", ss.str());
 
 	// Additional parameters
 	ss.str(""); ss << fixed << setprecision(2) << Xdata.WindScalingFactor;
@@ -744,7 +860,7 @@ void SmetIO::setSnoSmetHeader(const SnowStation& Xdata, const Date& date, smet::
 }
 
 void SmetIO::setFormatting(const size_t& nr_solutes,
-                           std::vector<int>& vec_width, std::vector<int>&  vec_precision, const bool& write_pref_flow)
+                           std::vector<int>& vec_width, std::vector<int>&  vec_precision, const bool& write_pref_flow, const bool& write_ice_reservoir, const bool& write_sea_ice)
 {
 	/*
 	 * When writing a SNOW SMET file each written parameter may have a different
@@ -756,29 +872,39 @@ void SmetIO::setFormatting(const size_t& nr_solutes,
 	 */
 	vec_width.clear();
 	vec_precision.clear();
-
-	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].L
-	vec_width.push_back(12); vec_precision.push_back(6); //Xdata.Ndata[e+1].T
-	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[ICE]
-	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[WATER]
-	if (write_pref_flow) {
-		vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[WATER_PREF]
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].L
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //Xdata.Ndata[e+1].T
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta[ICE]
+	if (write_ice_reservoir) {
+		vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta_i_reservoir
 	}
-	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[AIR]
-	vec_width.push_back(12); vec_precision.push_back(6); //EMS[e].theta[SOIL]
+	if (write_ice_reservoir) {
+		vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta_i_reservoir_cumul
+	}
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta[WATER]
+	if (write_pref_flow) {
+		vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta[WATER_PREF]
+	}
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta[AIR]
+	vec_width.push_back(12); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].theta[SOIL]
 	vec_width.push_back(9); vec_precision.push_back(1);  //EMS[e].soil[SOIL_RHO]
 	vec_width.push_back(9); vec_precision.push_back(3);  //EMS[e].soil[SOIL_K]
 	vec_width.push_back(12); vec_precision.push_back(1);  //EMS[e].soil[SOIL_C]
-	vec_width.push_back(11); vec_precision.push_back(6);  //EMS[e].rg
-	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].rb
-	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].dd
-	vec_width.push_back(10); vec_precision.push_back(6);  //EMS[e].sp
+	vec_width.push_back(11); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE);  //EMS[e].rg
+	vec_width.push_back(10); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE);  //EMS[e].rb
+	vec_width.push_back(10); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE);  //EMS[e].dd
+	vec_width.push_back(10); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE);  //EMS[e].sp
 	vec_width.push_back(6); vec_precision.push_back(0);  //EMS[e].mk
 
-	vec_width.push_back(13); vec_precision.push_back(6); //Xdata.Ndata[e+1].hoar
+	vec_width.push_back(13); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //Xdata.Ndata[e+1].hoar
 	vec_width.push_back(4); vec_precision.push_back(0);  //ne
-	vec_width.push_back(15); vec_precision.push_back(6); //EMS[e].CDot
-	vec_width.push_back(15); vec_precision.push_back(6); //EMS[e].metamo
+	vec_width.push_back(15); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].CDot
+	vec_width.push_back(15); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].metamo
+
+	if (write_sea_ice) {
+		vec_width.push_back(15); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].salinity
+		vec_width.push_back(16); vec_precision.push_back(OUTPUT_PRECISION_SNO_FILE); //EMS[e].h
+	}
 
 	for (size_t ii = 0; ii < nr_solutes; ii++) {
 		vec_width.push_back(17); vec_precision.push_back(6); //EMS[e].conc(ICE,ii)
@@ -816,52 +942,68 @@ double SmetIO::compPerpPosition(const double& z_vert, const double& hs_ref, cons
 	return pos;
 }
 
-std::string SmetIO::getFieldsHeader() const
+std::string SmetIO::getFieldsHeader(const SnowStation& Xdata) const
 {
 	std::ostringstream os;
 	os << "timestamp ";
 
 	if (out_heat)
-		os << "Qs Ql Qg TSG Qg0 Qr" << " "; // 1-2: Turbulent fluxes (W m-2)
-		// 14-17: Heat flux at lower boundary (W m-2), ground surface temperature (degC),
-		//        Heat flux at gound surface (W m-2), rain energy (W m-2)
+		os << "Qs Ql Qg TSG Qg0 Qr dIntEnergySnow meltFreezeEnergySnow ColdContentSnow" << " "; //Turbulent fluxes (W m-2)
+		// Heat flux at lower boundary (W m-2), ground surface temperature (degC),
+		// Heat flux at gound surface (W m-2), rain energy (W m-2)
+		// Internal energy change snow (W m-2), Melt freeze part of internal energy change snow (W m-2), Cold content of snow (MJ/kg)
 	if (out_lw)
-		os << "OLWR ILWR LWR_net" << " "; // 3-5: Longwave radiation fluxes (W m-2)
+		os << "OLWR ILWR LWR_net" << " "; //Longwave radiation fluxes (W m-2)
 	if (out_sw)
-		os << "OSWR ISWR Qw pAlbedo mAlbedo ISWR_h ISWR_dir ISWR_diff" << " "; // 6-9: Shortwave radiation fluxes (W m-2) and computed albedo
+		os << "OSWR ISWR Qw pAlbedo mAlbedo ISWR_h ISWR_dir ISWR_diff" << " "; //Shortwave radiation fluxes (W m-2) and computed albedo
 	if (out_meteo)
-		os << "TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas" << " "; // 10-13: Air temperature, snow surface temperature (modeled and measured), temperature at bottom of snow/soil pack (degC)
+		os << "TA TSS_mod TSS_meas T_bottom RH VW VW_drift DW MS_Snow HS_mod HS_meas" << " "; //Air temperature, snow surface temperature (modeled and measured), temperature at bottom of snow/soil pack (degC)
 	if (out_haz)
-		os << "hoar_size wind_trans24 HN24 HN72_24" << " ";// 30-33: surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
+		os << "hoar_size wind_trans24 HN24 HN72_24" << " ";//surface hoar size (mm), 24h drift index (cm), height of new snow HN (cm), 3d sum of daily new snow depths (cm)
 	if (out_soileb)
 		os << "dIntEnergySoil meltFreezeEnergySoil ColdContentSoil" << " ";
-	if (out_mass)
-		os << "SWE MS_Water MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap" << " "; // 34-39: SWE, eroded mass, rain rate, runoff at bottom of snowpack, sublimation and evaporation, all in kg m-2 except rain as rate: kg m-2 h-1; see also 52 & 93. LWC (kg m-2);
+	if (out_mass) {
+		os << "SWE MS_Water MS_Water_Soil MS_Ice_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_Mass_Flux MS_Soil_Runoff MS_Sublimation MS_Evap MS_melt MS_freeze" << " ";
+		//SWE (kg m-2), LWC (kg m-2),  LWC (kg m-2), LWC (kg m-2), eroded mass (kg m-2 h-1), rain rate (kg m-2 h-1), runoff at bottom of snowpack (kg m-2), runoff at the soil surface (kg m-2), runoff at bottom of soil (kg m-2), sublimation and evaporation (both in kg m-2), mass melt, mass freeze (kg m^2); see also 52 & 93.
+		// Note: in operational mode, runoff at bottom of snowpack is expressed as kg m-2 h-1 when !cumsum_mass.
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			os << "Lateral_flow_snow" << " ";
+			if (useSoilLayers) os << "Lateral_flow_soil" << " ";
+		}
+	}
+	if (out_dhs)
+		os << "MS_Snow_dHS MS_Sublimation_dHS MS_Settling_dHS MS_Erosion_dHS MS_Redeposit_dHS MS_Redeposit_dRHO" << " "; // snow height change from sublimation (mm), snow height change from settling (mm), snow height change from redeposition mode (mm), density change from redeposition mode (kg/m^3).
 	if (out_load)
-		os << "load "; // 50: Solute load at ground surface
+		os << "load "; //Solute load at ground surface
 	if (out_t && !fixedPositions.empty()) {
-		// 40-49: Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
+		//Internal Temperature Time Series at fixed heights, modeled and measured, all in degC
 		for (size_t ii = 0; ii < fixedPositions.size(); ii++)
 			os << "TS" << ii << " ";
 	}
 	if (out_stab)
 		os << "Sclass1 Sclass2 zSd Sd zSn Sn zSs Ss zS4 S4 zS5 S5" << " "; //S5 is liquidWaterIndex
-	/*if (out_canopy)
-		os << " ";*/
+
+	if (out_canopy) {
+		os << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " ";
+		os << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " ";
+		os << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " ";
+		os << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " ";
+		os << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " ";
+		os << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " ";
+		os << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " ";
+	}
+
+	if (Xdata.Seaice != NULL)
+		os << "Total_thickness Ice_thickness Snow_thickness Snow_thickness_wrt_reference Freeboard Sea_level Bulk_salinity Avg_bulk_salinity Avg_brine_salinity Bottom_salinity_flux Top_salinity_flux Total_Flooding_Bucket" << " ";
 
 	return os.str();
 }
 
 void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, smet::SMETWriter& smet_writer) const
 {
-	const std::string fields( getFieldsHeader() );
+	const std::string fields( getFieldsHeader(Xdata) );
 	setBasicHeader(Xdata, fields, smet_writer);
 	smet_writer.set_header_value("tz", tz);
-	if (out_haz) { // HACK To avoid troubles in A3D
-		ostringstream ss;
-		ss << "Snowpack " << info.version << " run by \"" << info.user << "\"";
-		smet_writer.set_header_value("creator", ss.str());
-	}
 
 	std::ostringstream units_offset, units_multiplier;
 	units_offset << "0 "; units_multiplier << "1 ";
@@ -870,12 +1012,12 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 	plot_units << "- "; plot_description << "timestamp  "; plot_color << "0x000000 "; plot_min << IOUtils::nodata << " "; plot_max << IOUtils::nodata << " ";
 
 	if (out_heat) {
-		//"Qs Ql Qg TSG Qg0 Qr"
-		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy" << " ";
-		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2" << " ";
-		units_offset << "0 0 0 273.15 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1" << " ";
-		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF" << " ";
+		//"Qs Ql Qg TSG Qg0 Qr dIntEnergySnow meltFreezeEnergySnow ColdContentSnow"
+		plot_description << "sensible_heat  latent_heat  ground_heat  ground_temperature  ground_heat_at_soil_interface  rain_energy  snow_internal_energy_change  snow_melt_freeze_energy  snow_cold_content" << " ";
+		plot_units << "W/m2 W/m2 W/m2 K W/m2 W/m2 W/m2 W/m2 MJ/m2" << " ";
+		units_offset << "0 0 0 273.15 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0x669933 0x66CC99 0xCC6600 0xDE22E2 0xFFCC00 0x6600FF 0x663300 0x996666 0xCC9966" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
@@ -922,7 +1064,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 	if (out_soileb) {
 		//"dIntEnergySoil meltFreezeEnergySoil ColdContentSoil"
 		plot_description << "soil_internal_energy_change  soil_melt_freeze_energy  soil_cold_content" << " ";
-		plot_units << "W/m2 W/m2 J/m2" << " ";
+		plot_units << "W/m2 W/m2 MJ/m2" << " ";
 		units_offset << "0 0 0" << " ";
 		units_multiplier << "1 1 1" << " ";
 		plot_color << "0x663300 0x996666 0xCC9966" << " ";
@@ -930,14 +1072,42 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_max << "" << " ";
 	}
 	if (out_mass) {
-		//"SWE MS_Water MS_Wind MS_Rain MS_SN_Runoff MS_Soil_Runoff MS_Sublimation MS_Evap"
-		plot_description << "snow_water_equivalent  total_amount_of_water  erosion_mass_loss  rain_rate  virtual_lysimeter  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass" << " ";
-		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2/h kg/m2 kg/m2" << " ";
-		units_offset << "0 0 0 0 0 0 0 0" << " ";
-		units_multiplier << "1 1 1 1 1 1 1 1" << " ";
-		plot_color << "0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF" << " ";
+		//"SWE MS_Water MS_Water_Soil MS_Ice_Soil MS_Wind MS_Rain MS_SN_Runoff MS_Surface_mass_flux MS_Soil_Runoff MS_Sublimation MS_Evap"
+		plot_description << "snow_water_equivalent  total_amount_of_water  total_amount_of_water_soil  total_amount_of_ice_soil  erosion_mass_loss  rain_rate  virtual_lysimeter_surface_snow_only surface_mass_flux  virtual_lysimeter_under_the_soil  sublimation_mass  evaporated_mass  mass_melt  mass_refreeze" << " ";
+		plot_units << "kg/m2 kg/m2 kg/m2 kg/m2 kg/m2/h kg/m2/h kg/m2 kg/m2 kg/m2 kg/m2 kg/m2 kg/m2 kg/m2" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0x3300FF 0x3300FF 0x3300FF 0x3300FF 0x0000FF 0x99CCCC 0x3333 0x0066CC 0x003366 0xCCFFFF 0xCCCCFF 0xFF0000 0x0000FF" << " ";
 		plot_min << "" << " ";
 		plot_max << "" << " ";
+	}
+	if (out_dhs) {
+		//"MS_Sublimation_dHS MS_Settling_dHS MS_Redeposit_dHS MS_Redeposit_dRHO"
+		plot_description << "snow_height_change_from_snowfall snow_height_change_from_sublimation snow_height_change_from_settling snow_height_snow_from_wind_erosion snow_height_change_from_redeposition density_change_from_redeposition" << " ";
+		plot_units << "mm mm mm mm mm kg/m3" << " ";
+		units_offset << "0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1" << " ";
+		plot_color << "0x8282A3 0x8282A3 0x8282A3 0x8282A3 0xA38282 0x82A382" << " ";
+		plot_min << "" << " ";
+		plot_max << "" << " ";
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			plot_description << "later_flow_snow" << " ";
+			plot_units << "kg/m2" << " ";
+			units_offset << "0" << " ";
+			units_multiplier << "1" << " ";
+			plot_color << "#A3A3CC" << " ";
+			plot_min << "" << " ";
+			plot_max << "" << " ";
+			if (useSoilLayers) {
+				plot_description << "later_flow_soil" << " ";
+				plot_units << "kg/m2" << " ";
+				units_offset << "0" << " ";
+				units_multiplier << "1" << " ";
+				plot_color << "#CCA3A3" << " ";
+				plot_min << "" << " ";
+				plot_max << "" << " ";
+			}
+		}
 	}
 	if (out_load) {
 		//"load"
@@ -971,9 +1141,33 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 	}
-	/*if (out_canopy) { //HACK
-		os << " ";
-	}	*/
+	if (out_canopy) {
+		plot_description << "Interception_storage Canopy_surface_temperature Canopy_albedo Wet_fraction Interception_capacity Net_shortwave_radiation_absorbed_by_canopy" << " ";
+		plot_description << "Net_longwave_radiation_absorbed_by_canopy Net_radiation_to_canopy Sensible_heat_flux_to_canopy Latent_heat_flux_to_canopy" << " ";
+		plot_description << "Biomass_heat_storage_flux_towards_Canopy Transpiration_of_the_canopy Evaporation_and_sublimation_of_interception_(liquid_and_frozen)" << " ";
+		plot_description << "Interception_rate Throughfall Snow_unload Longwave_radiation_up_above_canopy Longwave_radiation_down_above_canopy" << " ";
+		plot_description << "Shortwave_radiation_up_above_canopy Shortwave_radiation_down_above_canopy Total_land_surface_albedo" << " ";
+		plot_description << "Total_net_radiation_to_the_surface_(ground_+_canopy) Surface_radiative_temperature_(ground_+_canopy)" << " ";
+		plot_description << "Forest_floor_albedo Snowfall_rate_Above_Canopy Rainfall_rate_Above_Canopy Evapotranspiration_of_the_total_surface_(ground_+_canopy)" << " ";
+		plot_units << "kg/m2 degC  - - kg/m2 W/m2 W/m2 W/m2 W/m2 W/m2 W/m2 kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep kg/m2/timestep W/m2" << " ";
+		plot_units << "W/m2 W/m2 W/m2 - W/m2 degC - kg/m2/timestep kg/m2/timestep kg/m2/timestep" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_min << "" << " ";
+		plot_max << "" << " ";
+	}
+	if (Xdata.Seaice != NULL) {
+		plot_description << "total_thickness  ice_thickness  snow_thickness  snow_thickness_wrt_ref  freeboard  sea_level  tot_salinity  avg_bulk_salinity  avg_brine_salinity  bottom_sal_flux  top_sal_flux  total_flooding_bucket_scheme" << " ";
+		plot_units << "m m m m m m g/m2 g/kg g/kg g/m2 g/m2 kg/m2" << " ";
+		units_offset << "0 0 0 0 0 0 0 0 0 0 0 0" << " ";
+		units_multiplier << "1 1 1 1 1 1 1 1 1 1 1 1" << " ";
+		plot_color << "0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000 0xFF0000" << " ";
+		plot_min << "" << " ";
+		plot_max << "" << " ";
+	}
 
 	smet_writer.set_header_value("units_offset", units_offset.str());
 	smet_writer.set_header_value("units_multiplier", units_multiplier.str());
@@ -988,6 +1182,9 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 {
 	std::vector<std::string> timestamp( 1, Mdata.date.toString(mio::Date::ISO) );
 	std::vector<double> data;
+	std::vector<int> vec_precision, vec_width; //set meaningful precision/width for each column
+	const int dflt_precision = 3;		   //default precision
+	const int dflt_width = 8;		   //default width
 
 	const vector<NodeData>& NDS = Xdata.Ndata;
 	const size_t nN = Xdata.getNumberOfNodes();
@@ -995,75 +1192,135 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 
 	//data.push_back(  );
 	if (out_heat) {
-		data.push_back( Sdata.qs );
-		data.push_back( Sdata.ql );
-		data.push_back( Sdata.qg );
-		data.push_back( IOUtils::K_TO_C(NDS[Xdata.SoilNode].T) );
-		data.push_back( Sdata.qg0 );
-		data.push_back( Sdata.qr );
+		data.push_back( Sdata.qs ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.ql ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.qg ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( IOUtils::K_TO_C(NDS[Xdata.SoilNode].T) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.qg0 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.qr ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		const size_t nCalcSteps = (!avgsum_time_series) ? (static_cast<size_t>( ts_days_between / M_TO_D(calculation_step_length) + 0.5 )) : (1);
+		data.push_back( (Sdata.dIntEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.meltFreezeEnergy * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.ColdContent/1e6 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_lw) {
-		data.push_back( Sdata.lw_out );
-		data.push_back( Sdata.lw_in );
-		data.push_back( Sdata.lw_net );
+		data.push_back( Sdata.lw_out ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.lw_in ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.lw_net ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_sw) {
-		data.push_back( Sdata.sw_out );
-		data.push_back( Sdata.sw_in );
-		data.push_back( Sdata.qw );
-		data.push_back( Sdata.pAlbedo );
-		data.push_back( Sdata.mAlbedo );
-		data.push_back( Sdata.sw_hor );
-		data.push_back( Sdata.sw_dir );
-		data.push_back( Sdata.sw_diff );
+		data.push_back( Sdata.sw_out ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.sw_in ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.qw ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.pAlbedo ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mAlbedo ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.sw_hor ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.sw_dir ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.sw_diff ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_meteo) {
-		data.push_back( IOUtils::K_TO_C(Mdata.ta) );
-		data.push_back( IOUtils::K_TO_C(NDS[nN-1].T) );
-		data.push_back( IOUtils::K_TO_C(Mdata.tss) );
-		data.push_back( IOUtils::K_TO_C(NDS[0].T) );
-		data.push_back( 100.*Mdata.rh );
-		data.push_back( Mdata.vw );
-		data.push_back( Mdata.vw_drift );
-		data.push_back( Mdata.dw );
-		data.push_back( Sdata.mass[SurfaceFluxes::MS_HNW] );
-		data.push_back( M_TO_CM((Xdata.cH - Xdata.Ground)/cos_sl) );
+		data.push_back( IOUtils::K_TO_C(Mdata.ta) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( IOUtils::K_TO_C(NDS[nN-1].T) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( IOUtils::K_TO_C(Mdata.tss) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( IOUtils::K_TO_C(NDS[0].T) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( 100.*Mdata.rh ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Mdata.vw ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Mdata.vw_drift ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Mdata.dw ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_HNW] ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		const double ReferenceLevel = (!useReferenceLayer || Xdata.findMarkedReferenceLayer() == IOUtils::nodata) ? (0.) : (Xdata.findMarkedReferenceLayer() - Xdata.Ground);
+		data.push_back( M_TO_CM((Xdata.cH - ReferenceLevel - Xdata.Ground)/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		if (Xdata.mH!=Constants::undefined)
 			data.push_back( M_TO_CM((Xdata.mH - Xdata.Ground)/cos_sl) );
 		else
 			data.push_back( IOUtils::nodata );
+		vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_haz) {
-		data.push_back( Hdata.hoar_size );
-		data.push_back( wind_trans24 );
-		data.push_back( (perp_to_slope? Hdata.hn24/cos_sl : Hdata.hn24) );
-		data.push_back( (perp_to_slope? Hdata.hn72_24/cos_sl : Hdata.hn72_24) );
+		data.push_back( Hdata.hoar_size ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( wind_trans24 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (perp_to_slope? Hdata.hn24/cos_sl : Hdata.hn24) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (perp_to_slope? Hdata.hn72_24/cos_sl : Hdata.hn72_24) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_soileb) {
-		const size_t nCalcSteps = static_cast<size_t>( ts_days_between / M_TO_D(calculation_step_length) + 0.5 );
-		data.push_back( (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. );
-		data.push_back( (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. );
-		data.push_back( Xdata.ColdContentSoil/1e6 );
+		const size_t nCalcSteps = (!avgsum_time_series) ? (static_cast<size_t>( ts_days_between / M_TO_D(calculation_step_length) + 0.5 )) : (1);
+		data.push_back( (Sdata.dIntEnergySoil * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.meltFreezeEnergySoil * static_cast<double>(nCalcSteps)) / 1000. ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.ColdContentSoil/1e6 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_mass) {
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SWE]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WATER]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_WATER_SOIL]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_ICE_SOIL]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_WIND]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_RAIN] );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( (useSoilLayers? Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] / Xdata.cos_sl : IOUtils::nodata) );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
 		data.push_back( Sdata.mass[SurfaceFluxes::MS_EVAPORATION]/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.meltMass/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		data.push_back( Sdata.refreezeMass/cos_sl );
+		vec_precision.push_back(dflt_precision);
+		vec_width.push_back(dflt_width);
+		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
+			data.push_back( Xdata.getTotalLateralFlowSnow() );
+			vec_precision.push_back(dflt_precision);
+			vec_width.push_back(dflt_width);
+			if (useSoilLayers) {
+				data.push_back( Xdata.getTotalLateralFlowSoil() );
+				vec_precision.push_back(dflt_precision);
+				vec_width.push_back(dflt_width);
+			}
+		}
+	}
+
+	if (out_dhs) {
+		data.push_back( (Sdata.mass[SurfaceFluxes::MS_SNOW_DHS] != IOUtils::nodata) ? (M_TO_MM(Sdata.mass[SurfaceFluxes::MS_SNOW_DHS])/cos_sl) : (IOUtils::nodata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.mass[SurfaceFluxes::MS_SUBL_DHS] != IOUtils::nodata) ? (M_TO_MM(Sdata.mass[SurfaceFluxes::MS_SUBL_DHS])/cos_sl) : (IOUtils::nodata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.mass[SurfaceFluxes::MS_SETTLING_DHS] != IOUtils::nodata) ? (M_TO_MM(Sdata.mass[SurfaceFluxes::MS_SETTLING_DHS])/cos_sl) : (IOUtils::nodata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.mass[SurfaceFluxes::MS_EROSION_DHS] != IOUtils::nodata) ? (M_TO_MM(Sdata.mass[SurfaceFluxes::MS_EROSION_DHS])/cos_sl) : (IOUtils::nodata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( (Sdata.mass[SurfaceFluxes::MS_REDEPOSIT_DHS] != IOUtils::nodata) ? (M_TO_MM(Sdata.mass[SurfaceFluxes::MS_REDEPOSIT_DHS])/cos_sl) : (IOUtils::nodata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_REDEPOSIT_DRHO] ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_load) {
-		data.push_back( Sdata.load[0] );
+		if (!Sdata.load.empty())
+			data.push_back( Sdata.load[0] );
+		else
+			data.push_back( IOUtils::nodata );
+		vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 	}
 
 	if (out_t && !fixedPositions.empty()) {
@@ -1075,27 +1332,86 @@ void SmetIO::writeTimeSeriesData(const SnowStation& Xdata, const SurfaceFluxes& 
 				data.push_back( IOUtils::K_TO_C(T) );
 			else
 				data.push_back( Constants::undefined );
+			vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
 		}
 	}
 
 	if (out_stab) {
-		data.push_back( Xdata.S_class1 );
-		data.push_back( Xdata.S_class2 );
-		data.push_back( M_TO_CM(Xdata.z_S_d/cos_sl) );
-		data.push_back( Xdata.S_d );
-		data.push_back( M_TO_CM(Xdata.z_S_n/cos_sl) );
-		data.push_back( Xdata.S_n );
-		data.push_back( M_TO_CM(Xdata.z_S_s/cos_sl) );
-		data.push_back( Xdata.S_s );
-		data.push_back( M_TO_CM(Xdata.z_S_4/cos_sl) );
-		data.push_back( Xdata.S_4 );
-		data.push_back( M_TO_CM(Xdata.z_S_5/cos_sl) );
-		data.push_back( Xdata.getLiquidWaterIndex() ); //Xdata.S_5 HACK
+		data.push_back( Xdata.S_class1 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.S_class2 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( M_TO_CM(Xdata.z_S_d/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.S_d ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( M_TO_CM(Xdata.z_S_n/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.S_n ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( M_TO_CM(Xdata.z_S_s/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.S_s ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( M_TO_CM(Xdata.z_S_4/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.S_4 ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( M_TO_CM(Xdata.z_S_5/cos_sl) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.getLiquidWaterIndex() ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width); //Xdata.S_5 HACK
 	}
 
-	/*if (out_canopy)
-		os << " ";*/
-	smet_writer.write(timestamp, data);
+	if (out_canopy) {
+		// PRIMARY "STATE" VARIABLES
+		data.push_back(  Xdata.Cdata.storage/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);        // intercepted water (mm or kg m-2)
+		data.push_back( IOUtils::K_TO_C( Xdata.Cdata.temp) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width); // temperature (degC)
+
+		// SECONDARY "STATE" VARIABLES
+		data.push_back(  Xdata.Cdata.canopyalb ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);             // albedo (1)
+		data.push_back(  Xdata.Cdata.wetfraction ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);           // wet fraction
+		data.push_back(  Xdata.Cdata.intcapacity/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);    // interception capacity (kg m-2)
+
+		// RADIATIVE FLUXES (W m-2)
+		data.push_back(  Xdata.Cdata.rsnet ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                 // net shortwave radiation to canopy
+		data.push_back(  Xdata.Cdata.rlnet ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                 // net longwave radiation to canopy
+		data.push_back(  Xdata.Cdata.rsnet+ Xdata.Cdata.rlnet ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);    // net radiation to canopy
+
+		// HEAT FLUXES CANOPY (W m-2)
+		data.push_back( - Xdata.Cdata.sensible ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);             // sensible heat flux to canopy (>0 towards canopy)
+		data.push_back( - Xdata.Cdata.latentcorr ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);           // latent heat flux to canopy (>0 towards canopy)
+		data.push_back(  Xdata.Cdata.CondFluxCanop ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);         // biomass heat storage flux towards Canopy
+
+		// WATER FLUXES CANOPY (kg m-2)
+		data.push_back(  Xdata.Cdata.transp/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);         // transpiration
+		data.push_back(  Xdata.Cdata.intevap/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);        // interception evaporation
+		data.push_back(  Xdata.Cdata.interception/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);   // interception
+		data.push_back(  Xdata.Cdata.throughfall/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);    // throughfall
+		data.push_back(  Xdata.Cdata.snowunload/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);     // unload of snow
+
+		// TOTAL SURFACE FLUXES,EVAPORATION; ETC
+		data.push_back(  Xdata.Cdata.rlwrac ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                // upward longwave radiation ABOVE canopy
+		data.push_back(  Xdata.Cdata.ilwrac ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                // upward longwave radiation ABOVE canopy
+		data.push_back(  Xdata.Cdata.rswrac ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                // upward longwave radiation ABOVE canopy
+		data.push_back(  Xdata.Cdata.iswrac ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);                // upward longwave radiation ABOVE canopy
+		data.push_back(  Xdata.Cdata.totalalb ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);              // total albedo [-]
+		data.push_back(  Xdata.Cdata.rlnet+Sdata.lw_net+ Xdata.Cdata.rsnet+Sdata.qw ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width); // net radiation to the total surface
+		data.push_back( IOUtils::K_TO_C(pow( Xdata.Cdata.rlwrac/Constants::stefan_boltzmann, 0.25)) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width); // surface (ground + canopy) temperature
+		data.push_back(  Xdata.Cdata.forestfloor_alb ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);       // albedo of the forest floor [-]
+		data.push_back(  Xdata.Cdata.snowfac/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);        // snowfall rate above canopy (mm per output timestep)
+		data.push_back(  Xdata.Cdata.rainfac/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);        // rainfall rate above canopy (mm per output timestep)
+		data.push_back(  (Xdata.Cdata.transp+ Xdata.Cdata.intevap-(Sdata.mass[SurfaceFluxes::MS_SUBLIMATION]+Sdata.mass[SurfaceFluxes::MS_EVAPORATION]))/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width); //evapotranspiration of total surface (mm h-1)
+}
+
+	if (Xdata.Seaice != NULL) {
+		data.push_back( Xdata.cH - Xdata.Ground ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Ndata[Xdata.Seaice->IceSurfaceNode].z - Xdata.Ground ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Ndata[Xdata.getNumberOfNodes()-1].z - Xdata.Ndata[Xdata.Seaice->IceSurfaceNode].z ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		// Check reference level: either a marked reference level, or, if non existent, the sea level (if sea ice module is used), otherwise 0:
+		const double ReferenceLevel = (  Xdata.findMarkedReferenceLayer()==IOUtils::nodata || !useReferenceLayer  )  ?  (  (Xdata.Seaice==NULL)?(0.):(Xdata.Seaice->SeaLevel)  )  :  (Xdata.findMarkedReferenceLayer() - Xdata.Ground);
+		data.push_back( Xdata.Ndata[Xdata.getNumberOfNodes()-1].z - ReferenceLevel ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->FreeBoard ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->SeaLevel ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->getTotSalinity(Xdata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->getAvgBulkSalinity(Xdata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->getAvgBrineSalinity(Xdata) ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->BottomSalFlux ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Xdata.Seaice->TopSalFlux ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+		data.push_back( Sdata.mass[SurfaceFluxes::MS_FLOODING]/cos_sl ); vec_precision.push_back(dflt_precision); vec_width.push_back(dflt_width);
+	}
+
+	smet_writer.set_precision(vec_precision);
+	smet_writer.set_width(vec_width);
+	smet_writer.write(timestamp, data, acdd);
 }
 
 void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdata, const CurrentMeteo& Mdata,
@@ -1112,7 +1428,7 @@ void SmetIO::writeTimeSeries(const SnowStation& Xdata, const SurfaceFluxes& Sdat
 				throw InvalidNameException(filename, AT);
 
 		if (FileUtils::fileExists(filename)) {
-			tsWriters[filename] = new smet::SMETWriter(filename, getFieldsHeader(), IOUtils::nodata); //set to append mode
+			tsWriters[filename] = new smet::SMETWriter(filename, getFieldsHeader(Xdata), IOUtils::nodata); //set to append mode
 		} else {
 			tsWriters[filename] = new smet::SMETWriter(filename);
 			writeTimeSeriesHeader(Xdata, Mdata.date.getTimeZone(), *tsWriters[filename]);

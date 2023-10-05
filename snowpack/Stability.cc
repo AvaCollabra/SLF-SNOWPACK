@@ -166,13 +166,13 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 	double slab_mass = 0.;	// Slab mass
 	double hi_Ei = 0.;		//this is the denominator of the multi layer Young's modulus
 
-	std::vector<unsigned short> n_lemon(nN, 0.);
+	std::vector<unsigned short> n_lemon(nN, 0);
 	size_t e = nE;
 	while (e-- > Xdata.SoilNode) {
 		EMS[e].hard = (mapHandHardness[hardness_parameterization])(EMS[e], hoar_density_buried);
 		EMS[e].S_dr = StabilityAlgorithms::setDeformationRateIndex(EMS[e]);
 		StabilityData  STpar(Stability::psi_ref);
-		
+
 		//update slab properties
 		const double hi = EMS[e].L;
 		slab_thick += hi;			//Increment slab depth
@@ -231,6 +231,9 @@ void Stability::checkStability(const CurrentMeteo& Mdata, SnowStation& Xdata)
 					    "Profile classification failed! (classifyStability_SchweizerWiesinger)");
 			}
 			break;
+		default:
+			prn_msg( __FILE__, __LINE__, "err", Mdata.date,
+						"Profile classification failed! Unknown prof. calss provided");
 	}
 
 	if (classify_profile) {

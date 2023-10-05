@@ -28,6 +28,10 @@
 
 #include <snowpack/Meteo.h>
 #include <snowpack/DataClasses.h>
+#include <snowpack/SnowDrift.h>
+#include <snowpack/TechnicalSnow.h>
+#include <snowpack/snowpackCore/Metamorphism.h>
+#include <snowpack/snowpackCore/PhaseChange.h>
 
 #include <meteoio/MeteoIO.h>
 #include <vector>
@@ -41,11 +45,18 @@ class Snowpack {
  public:
 		Snowpack(const SnowpackConfig& i_cfg);
 
-		void runSnowpackModel(CurrentMeteo Mdata, SnowStation& Xdata, double& cumu_precip,
+		void runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                      BoundCond& Bdata, SurfaceFluxes& Sdata);
 
+		/**
+		 * @brief Perform snow preparation (grooming, etc) on a given snowpack
+		 * @param currentDate the current date, to determine if grooming should be performed
+		 * @param Xdata snowpack to work on
+		 */
+		void snowPreparation(const mio::Date& currentDate, SnowStation& Xdata) const;
+
 		void setUseSoilLayers(const bool& value);
-		const static double new_snow_albedo, min_ice_content;
+		const static double min_ice_content;
 
 		double getSnDt() const { return sn_dt;}
 
@@ -73,11 +84,11 @@ class Snowpack {
 		BoundaryCondition surfaceCode;
 
  private:
-		static void EL_INCID(const size_t &e, int Ie[]);
+		static void EL_INCID(const int &e, int Ie[]);
 		static void EL_TEMP( const int Ie[], double Te0[], double Tei[], const std::vector<NodeData> &T0, const double Ti[] );
 		static void EL_RGT_ASSEM(double F[], const int Ie[], const double Fe[]);
 
-		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata);
+		void compSnowCreep(const CurrentMeteo& Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata);
 
 		bool sn_ElementKtMatrix(ElementData &Edata, double dt, const double dvdz, double T0[ N_OF_INCIDENCES ],
 		                        double Se[ N_OF_INCIDENCES ][ N_OF_INCIDENCES ], double Fe[ N_OF_INCIDENCES ],
@@ -102,11 +113,16 @@ class Snowpack {
 		void fillNewSnowElement(const CurrentMeteo& Mdata, const double& length, const double& density,
 		                        const bool& is_surface_hoar, const unsigned short& number_of_solutes, ElementData &elem);
 
+		void compTechnicalSnow(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip);
+
 		void compSnowFall(const CurrentMeteo& Mdata, SnowStation& Xdata, double& cumu_precip,
 		                  SurfaceFluxes& Sdata);
 
+		void RedepositSnow(CurrentMeteo Mdata, SnowStation& Xdata, SurfaceFluxes& Sdata, double redeposit_mass);
+
 		const SnowpackConfig& cfg;
 
+		TechSnow techsnow;
 		std::string variant, forcing, viscosity_model, watertransportmodel_snow, watertransportmodel_soil;
 		std::string hn_density, hn_density_parameterization;
 		std::string sw_mode, snow_albedo, albedo_parameterization, albedo_average_schmucki, sw_absorption_scheme;
@@ -121,26 +137,34 @@ class Snowpack {
 		double hoar_density_buried, hoar_density_surf, hoar_min_size_buried;
 		double minimum_l_element, comb_thresh_l;
 		double t_surf;
-		static const double min_snow_albedo;
 		bool allow_adaptive_timestepping;
 		bool research_mode, useCanopyModel, enforce_measured_snow_heights, detect_grass;
 		bool soil_flux, useSoilLayers;
-		bool useNewPhaseChange;
-		bool combine_elements, reduce_n_elements, change_bc, meas_tss;
+		bool coupled_phase_changes;
+		bool combine_elements;
+		int reduce_n_elements;
+		bool force_add_snowfall;
+		double max_simulated_hs; ///< if >0: lowest elements will be removed if simulated snow depth exceeds max_simulated_hs (in m)
+		bool change_bc, meas_tss;
 		bool vw_dendricity;
 		bool enhanced_wind_slab; ///< to use an even stronger wind slab densification than implemented by default
+		std::string snow_erosion;
+		bool redeposit_keep_age;
 		bool alpine3d; ///< triggers various tricks for Alpine3D (including reducing the number of warnings)
-		double soot_ppmv; ///< Impurity content in ppmv for albedo calculatoins
 		bool ageAlbedo; ///< use the age of snow in the albedo parametrizations? default: true
+		double soot_ppmv; ///< Impurity content in ppmv for albedo calculatoins
 
+		const static double min_allowed_sn_dt; ///< minimum allowed snowpack time step for solving the heat equation
 		const static bool hydrometeor;
 		const static double snowfall_warning;
 		const static unsigned int new_snow_marker;
-		bool adjust_height_of_meteo_values;
+		bool adjust_height_of_meteo_values, adjust_height_of_wind_value;
 		bool advective_heat;
 		double heat_begin, heat_end;
 		double temp_index_degree_day, temp_index_swr_factor;
 		bool forestfloor_alb;
+		bool rime_index, newsnow_lwc, read_dsm;
+		std::string soil_evaporation, soil_thermal_conductivity;
 }; //end class Snowpack
 
 #endif

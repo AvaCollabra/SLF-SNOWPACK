@@ -19,6 +19,7 @@
 */
 #include <snowpack/snowpackCore/ReSolver1d.h>
 #include <snowpack/vanGenuchten.h>
+#include <snowpack/snowpackCore/SalinityTransport.h>
 #include <snowpack/Utils.h>
 #include <snowpack/snowpackCore/Snowpack.h>
 #ifdef CLAPACK
@@ -54,13 +55,13 @@ using namespace mio;
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-const double ReSolver1d::max_theta_ice = 0.95;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
+const double ReSolver1d::max_theta_ice = 0.99;	//An ice pore space of around 5% is a reasonable value: K. M. Golden et al. The Percolation Phase Transition in Sea Ice, Science 282, 2238 (1998), doi: 10.1126/science.282.5397.2238
 
 //Setting convergence criteria and numerical limits
-const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-3;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
+const double ReSolver1d::REQUIRED_ACCURACY_H = 1E-5;		//Required accuracy for the Richard solver: this is for the delta h convergence criterion
 const double ReSolver1d::REQUIRED_ACCURACY_THETA = 1E-5;	//Required accuracy for the Richard solver: this is for the delta theta convergence criterion. It is recommended to adjust PhaseChange::RE_theta_r in PhaseChanges.cc in case this value is changed.
 								//Huang et al. (1996) proposes 0.0001 here (=1E-4). 1E-4 causes some mass balance problems. Therefore, it is set to 1E-5.
-const double ReSolver1d::convergencecriterionthreshold = 0.9;	//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
+const double ReSolver1d::convergencecriterionthreshold = 0.8;	//Based on this value of theta_dim, either theta-based convergence is chosen, or h-based. Note we need to make this destinction, beacuse theta-based does not work close to saturation or with ponding.
 const double ReSolver1d::MAX_ALLOWED_DELTA_H = 1E32;		//Set an upper threshold for the delta_h[i] that is allowed. The idea is that when delta_h for an iteration is too large, we have a too large time step and a rewind is necessary.
 const size_t ReSolver1d::INCR_ITER = 5;				//Number of iterations for the Richard solver after which time step is increased.
 const size_t ReSolver1d::DECR_ITER = 10;			//Number of iterations for the Richard solver after which time step is decreased.
@@ -69,15 +70,16 @@ const double ReSolver1d::MIN_VAL_TIMESTEP = 1E-12;		//Minimum time step allowed 
 const double ReSolver1d::MAX_VAL_TIMESTEP = 900.;		//Maximum time step allowed in Richards solver.
 const double ReSolver1d::MIN_DT_FOR_INFILTRATION=10.;		//If dt is above this value, do a rewind if the matrix cannot allow for all infiltrating water
 const size_t ReSolver1d::BS_MAX_ITER = 5000;			//Maximum allowed number of iterations in the soil-freezing algorithm.
-const double ReSolver1d::SF_epsilon = 1E-4;			//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
+const double ReSolver1d::SF_epsilon = REQUIRED_ACCURACY_THETA;	//Required accuracy for the root finding algorithm when solving soil freezing/thawing.
 
 
 ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
            : surfacefluxrate(0.), soilsurfacesourceflux(0.), variant(),
              iwatertransportmodel_snow(BUCKET), iwatertransportmodel_soil(BUCKET),
-             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN),
-             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.),
-             sn_dt(IOUtils::nodata), allow_surface_ponding(false), matrix(false), dz(), z(), dz_up(), dz_down(), dz_()
+             watertransportmodel_snow("BUCKET"), watertransportmodel_soil("BUCKET"), BottomBC(FREEDRAINAGE), K_AverageType(ARITHMETICMEAN), K_frozen_soilType(IGNORE), omega(7.),
+             enable_pref_flow(false), pref_flow_param_th(0.), pref_flow_param_N(0.), pref_flow_param_heterogeneity_factor(1.), enable_ice_reservoir(false), runSoilInitializer(false),
+             sn_dt(IOUtils::nodata), allow_surface_ponding(false), matrix(false), SalinityTransportSolver(SalinityTransport::IMPLICIT),
+             dz(), z(), dz_up(), dz_down(), dz_()
 {
 	cfg.getValue("VARIANT", "SnowpackAdvanced", variant);
 
@@ -123,8 +125,8 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		BottomBC=GRAVITATIONALDRAINAGE;
 	} else if (tmp_lb_cond_waterflux=="SEEPAGE") {
 		BottomBC=SEEPAGEBOUNDARY;
-	} else if (tmp_lb_cond_waterflux=="SEAICEFLOODING") {
-		BottomBC=SEAICEFLOODING;
+	} else if (tmp_lb_cond_waterflux=="SEAICE") {
+		BottomBC=SEAICE;
 	}
 
 	//Check for preferential flow
@@ -133,6 +135,12 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 	cfg.getValue("PREF_FLOW_PARAM_N", "SnowpackAdvanced", pref_flow_param_N);
 	cfg.getValue("PREF_FLOW_PARAM_HETEROGENEITY_FACTOR", "SnowpackAdvanced", pref_flow_param_heterogeneity_factor);
 
+	// Check for ice reservoir
+	cfg.getValue("ICE_RESERVOIR", "SnowpackAdvanced", enable_ice_reservoir);
+
+	// Check if the enforceThermalEquilibrium() function needs to be run
+	cfg.getValue("REQ_INITIALIZE_SOIL", "SnowpackAdvanced", runSoilInitializer);
+
 	//Set averaging method for hydraulic conductivity at the layer interfaces
 	std::string tmp_avg_method_K;
 	if(matrix_part) {
@@ -140,6 +148,8 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY", "SnowpackAdvanced", tmp_avg_method_K);
 		if (tmp_avg_method_K=="ARITHMETICMEAN") {
 			K_AverageType=ARITHMETICMEAN;
+		} else if (tmp_avg_method_K=="LOGMEAN") {
+			K_AverageType=LOGMEAN;
 		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
 			K_AverageType=GEOMETRICMEAN;
 		} else if (tmp_avg_method_K=="HARMONICMEAN") {
@@ -157,6 +167,8 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 		cfg.getValue("AVG_METHOD_HYDRAULIC_CONDUCTIVITY_PREF_FLOW", "SnowpackAdvanced", tmp_avg_method_K);
 		if (tmp_avg_method_K=="ARITHMETICMEAN") {
 			K_AverageType=ARITHMETICMEAN;
+		} else if (tmp_avg_method_K=="LOGMEAN") {
+			K_AverageType=LOGMEAN;
 		} else if (tmp_avg_method_K=="GEOMETRICMEAN") {
 			K_AverageType=GEOMETRICMEAN;
 		} else if (tmp_avg_method_K=="HARMONICMEAN") {
@@ -170,6 +182,38 @@ ReSolver1d::ReSolver1d(const SnowpackConfig& cfg, const bool& matrix_part)
 			throw;
 		}
 	}
+	std::string tmp_K_frozen_soil;
+	cfg.getValue("HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL", "SnowpackAdvanced", tmp_K_frozen_soil);
+	if (tmp_K_frozen_soil=="IGNORE") {
+		K_frozen_soilType=IGNORE;
+	} else if (tmp_K_frozen_soil.substr(0,5)=="OMEGA") {
+		K_frozen_soilType=OMEGA;
+		omega=::atof(tmp_K_frozen_soil.substr(5).c_str());
+		if (!(omega>0.) || tmp_K_frozen_soil.length() == 5) {
+			prn_msg( __FILE__, __LINE__, "err", Date(), "When selecting hydraulic conductivity model for frozen soil OMEGA (key: HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL), specify a positive value for omega following \"OMEGA\" (for example: \"OMEGA7\", which sets the recommended value of 7).");
+			throw;
+		}
+	} else if (tmp_K_frozen_soil=="LIQUIDPORESPACE") {
+		K_frozen_soilType=LIQUIDPORESPACE;
+	} else {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown hydraulic conductivity model for frozen soil (key: HYDRAULIC_CONDUCTIVITY_FROZEN_SOIL).");
+		throw;
+	}
+
+	std::string tmp_SalinityTransportSolver = "EXPLICIT";
+	cfg.getValue("SALINITYTRANSPORT_SOLVER", "SnowpackSeaice", tmp_SalinityTransportSolver, IOUtils::nothrow);
+	if (tmp_SalinityTransportSolver=="EXPLICIT") {
+		SalinityTransportSolver=SalinityTransport::EXPLICIT;
+	} else if (tmp_SalinityTransportSolver=="IMPLICIT") {
+		SalinityTransportSolver=SalinityTransport::IMPLICIT;
+	} else if (tmp_SalinityTransportSolver=="IMPLICIT2") {
+		SalinityTransportSolver=SalinityTransport::IMPLICIT2;
+	} else {
+		prn_msg( __FILE__, __LINE__, "err", Date(), "Unknown solver method for SalinityTransport (key: SALINITYTRANSPORT_SOLVER).");
+		throw;
+	}
+
+	//Assign if we solve matrix or prefential flow
 	matrix=matrix_part;
 }
 
@@ -317,13 +361,11 @@ int ReSolver1d::pinv(int m, int n, int lda, double *a)
 	//Calculate pseudo-inverse: Step 1: U.S':
 	for (i = m-1; i >= 0; i--) {
 		for (j = n-1; j >= 0; j--) {
-			//dinv[j*m+i]=0.;							//This line is not necessary anymore, as we reset array to zero where it is declared.
-			for (k = n-1; k >= 0; k--) {						//Do matrix multiplications
-				if (j==k) {							//j==k: this is because s is actually a diagonal matrix, and therefore, represented as a vector.
-					if(s[k]!=0.) {						//NANDER TODO HACK: I'm not happy with this solution, but how to circumvent underflow? I just want 0. in that case.
-						dinv[j*m+i]+=(vt[i*n+k]*(double(1.)/s[k]));	//Note: vt needs to be transposed AND is in FORTRAN matrix notation, therefore, the indices appear normal again.
-					}
-				}
+			k=j;							//This works because s is a diagonal matrix
+			if(s[k]!=0.) {
+				dinv[j*m+i]+=(vt[i*n+k]*(double(1.)/s[k]));	//Note: vt needs to be transposed AND is in FORTRAN matrix notation, therefore, the indices appear normal again.
+			} else {
+				return -1;
 			}
 		}
 	}
@@ -408,14 +450,207 @@ void ReSolver1d::InitializeGrid(const vector<ElementData>& EMS, const size_t& lo
 	return;
 }
 
+
+/**
+ * @brief Assemble the right hand side and assess the fluxes
+ * @author Nander Wever
+ * @param Takes many arguments, but in the future, many variables should become owned by the class.
+ */
+std::vector<double> ReSolver1d::AssembleRHS( const size_t& lowernode,
+					     const size_t& uppernode,
+					     const std::vector<double>& h_np1_m,
+					     const std::vector<double>& theta_n,
+					     const std::vector<double>& theta_np1_m,
+					     const std::vector<double>& theta_i_n,
+					     const std::vector<double>& theta_i_np1_m,
+					     const std::vector<double>& s,
+					     const double& dt,
+					     const std:: vector<double>& rho,
+					     const std::vector<double>& k_np1_m_im12,
+					     const std::vector<double>& k_np1_m_ip12,
+					     const BoundaryConditions aTopBC,
+					     const double& TopFluxRate,
+					     const BoundaryConditions aBottomBC,
+					     const double& BottomFluxRate,
+					     const SnowStation& Xdata,
+					     SalinityTransport& Salinity,
+					     const SalinityMixingModels& SALINITY_MIXING
+					)
+{
+	size_t nE = (uppernode - lowernode) + 1;
+	std::vector<double> term_up(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
+	std::vector<double> term_down(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
+	std::vector<double> term_up_crho(nE, 0.);		//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990), assuming constant density.
+	std::vector<double> term_down_crho(nE, 0.);		//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990), assuming constant density.
+
+	std::vector<double> r_mpfd(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
+
+	for (size_t i = lowernode; i <= uppernode; i++) {	//We loop over all Richards solver domain layers
+		// Calculate density related variables
+		double rho_up = 0;
+		double rho_down = 0;
+		double drho_up = 0;
+		double drho_down = 0;
+		if(i==uppernode) {
+			rho_up = rho[i]; //0.5 * (rho[i] + Constants::density_water);
+			drho_up = 0.; //(Constants::density_water - rho[i]) / dz_up[i];
+		} else {
+			rho_up = 0.5 * (rho[i] + rho[i+1]);
+			drho_up = (rho[i+1] - rho[i]) / (dz_up[i]);
+		}
+		if(i==lowernode) {
+			rho_down = 0.5 * (rho[i] + Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.)));
+			drho_down = (rho[i] - Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.))) / dz_down[i];
+		} else {
+			rho_down = 0.5 * (rho[i] + rho[i-1]);
+			drho_down = (rho[i] - rho[i-1]) / (dz_down[i]);
+		}
+
+		//Determine R:
+		term_up[i]=0.;
+		term_down[i]=0.;
+		term_up_crho[i]=0.;
+		term_down_crho[i]=0.;
+
+		//Fill R.H.S. vector
+		//Note: the gravity term is not explicitly in Celia et al (1990). It is just z[i], as pressure head should already be scaled by rho_water * g. Then it is taken outside the nabla, by using the chain rule.
+		if(i==uppernode) {
+			if(aTopBC==NEUMANN) {		//Neumann, following Equation 4 in McCord, WRR (1991).
+				term_up[i]=(TopFluxRate)*dz_up[i] - Xdata.cos_sl*(dz_up[i]*k_np1_m_ip12[i]) - Xdata.cos_sl*(dz_up[i]*(k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i]))) * (drho_up);
+				term_up_crho[i]=(TopFluxRate)*dz_up[i] - Xdata.cos_sl*(dz_up[i]*k_np1_m_ip12[i]);
+			} else {			//Dirichlet
+				term_up[i]=0.;
+				term_up_crho[i]=0.;
+				std::cout << "DIRICHLET NOT CORRECTLY IMPLEMENTED.\n";
+				throw;
+			}
+		} else {
+			term_up[i]=(k_np1_m_ip12[i]/rho_up)*(h_np1_m[i+1]*rho[i+1]-h_np1_m[i]*rho[i]);
+			term_up_crho[i]=k_np1_m_ip12[i]*(h_np1_m[i+1]-h_np1_m[i]);
+			//term_up_crho[i]=(k_np1_m_ip12[i]/rho_up)*(h_np1_m[i+1]*rho_up-h_np1_m[i]*rho_up);
+		}
+		if(i==lowernode) {
+			if(aBottomBC == NEUMANN) {	//Neumann, following Equation 4 in McCord, WRR (1991).
+				term_down[i]=(BottomFluxRate)*dz_down[i] - Xdata.cos_sl*(dz_down[i]*k_np1_m_im12[i]) - Xdata.cos_sl*(dz_down[i]*(k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+				term_down_crho[i]=term_down[i] + Xdata.cos_sl*(dz_down[i]*(k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+			} else {			//Dirichlet (r_mpfd[lowernode] should equal 0.)
+				term_down[i]=(term_up[i]/dz_up[i])*dz_down[i];
+				term_down[i]+=
+					(+ Xdata.cos_sl*((k_np1_m_ip12[i]-k_np1_m_im12[i])/(dz_[i]))
+					+ Xdata.cos_sl*(((k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i])) * (drho_up) - (k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i])) * (drho_down)) / (dz_[i]))
+					- (1./dt)*((theta_np1_m[i]-theta_n[i]) + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water))
+					+ s[i]) * dz_[i] * dz_down[i];
+				term_down_crho[i]=term_down[i] + Xdata.cos_sl*(dz_down[i]*(k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+			}
+		} else {
+			term_down[i]=(k_np1_m_im12[i]/rho_down)*(h_np1_m[i]*rho[i] - h_np1_m[i-1]*rho[i-1]);
+			term_down_crho[i]=k_np1_m_im12[i]*(h_np1_m[i] - h_np1_m[i-1]);
+			//term_down_crho[i]=(k_np1_m_im12[i]/rho_down)*(h_np1_m[i]*rho_down - h_np1_m[i-1]*rho_down);
+		}
+
+		//RHS eq. 17 in Celia et al. (1990):
+		r_mpfd[i]=(1./(dz_[i]))*((term_up[i]/dz_up[i])-(term_down[i]/dz_down[i]))
+			+ Xdata.cos_sl*((k_np1_m_ip12[i]-k_np1_m_im12[i])/(dz_[i]))
+			+ Xdata.cos_sl*(((k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i])) * (drho_up) - (k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i])) * (drho_down)) / (dz_[i]))
+			- (1./dt)*((theta_np1_m[i]-theta_n[i]) + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water))
+			+ s[i];
+
+		//Determine individual fluxes (defined as: negative = upward, positive = downward):
+		Salinity.dz_[i] = dz_[i];
+		Salinity.dz_up[i] = dz_up[i];
+		Salinity.dz_down[i] = dz_down[i];
+		Salinity.theta1[i] = theta_n[i];
+		Salinity.D[i] = 1E-10;
+		switch (SALINITY_MIXING) {
+			case NONE:
+			{
+				//No mixing: salt fluxes only based on net fluxes (1) and second term (2) is zero.
+				Salinity.flux_up[i] = term_up[i]/dz_up[i]
+					+ Xdata.cos_sl*(k_np1_m_ip12[i])
+					+ Xdata.cos_sl*((k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i]))) * (drho_up);
+				Salinity.flux_up_2[i] = 0.; //Salinity.flux_up[i] - term_up_crho[i]/dz_up[i] - Xdata.cos_sl*(k_np1_m_ip12[i]);
+
+				Salinity.flux_down[i] = term_down[i]/dz_down[i]
+					+ Xdata.cos_sl*(k_np1_m_im12[i])
+					+ Xdata.cos_sl*((k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+				Salinity.flux_down_2[i] = 0.; //Salinity.flux_down[i] - term_down_crho[i]/dz_down[i] - Xdata.cos_sl*(k_np1_m_im12[i]);
+				break;
+			}
+			case CAPILLARY_GRAVITY:
+			{
+				//Separate capillary (1) and gravity term (2)
+				Salinity.flux_up[i] = term_up[i]/dz_up[i];				// Capillary term
+				Salinity.flux_up_2[i] =							// Gravity term
+					+ Xdata.cos_sl*(k_np1_m_ip12[i])
+					+ Xdata.cos_sl*((k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i]))) * (drho_up);
+
+				Salinity.flux_down[i] = term_down[i]/dz_down[i];			// Capillary term
+				Salinity.flux_down_2[i] =						// Gravity term
+					+ Xdata.cos_sl*(k_np1_m_im12[i])
+					+ Xdata.cos_sl*((k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+				break;
+			}
+			case DENSITY_DIFFERENCE:
+			{
+				//Separate term dependent on density (1) and term constant density (2)
+				Salinity.flux_up[i] = term_up_crho[i]/dz_up[i]
+						+ Xdata.cos_sl*k_np1_m_ip12[i];
+				Salinity.flux_up_2[i] = (term_up[i]/dz_up[i] - term_up_crho[i]/dz_up[i])
+						+ Xdata.cos_sl*((k_np1_m_ip12[i]/rho_up)*(z[i]+0.5*(dz_up[i]))) * (drho_up);
+
+				Salinity.flux_down[i] = term_down_crho[i]/dz_down[i]
+						+ Xdata.cos_sl*k_np1_m_im12[i];
+				Salinity.flux_down_2[i] = (term_down[i]/dz_down[i] - term_down_crho[i]/dz_down[i])
+						+ Xdata.cos_sl*((k_np1_m_im12[i]/rho_down)*(z[i]-0.5*(dz_down[i]))) * (drho_down);
+				break;
+			}
+			case DENSITY_GRAVITY:
+			{
+				//Separate term constant density (1) and term dependent on density (2)
+				Salinity.flux_up[i] = term_up[i]/dz_up[i] + Xdata.cos_sl*(k_np1_m_ip12[i]*rho[i]);
+				Salinity.flux_up_2[i] =
+					+ Xdata.cos_sl*(k_np1_m_ip12[i]*(rho_up-rho[i]))
+					+ Xdata.cos_sl*(k_np1_m_ip12[i]*(z[i]+0.5*(dz_[i]))-k_np1_m_im12[i]*(z[i]-0.5*(dz_[i]))) * (drho_up);
+
+				Salinity.flux_down[i] = term_down[i]/dz_down[i] + Xdata.cos_sl*(k_np1_m_im12[i]*rho[i]);
+				Salinity.flux_down_2[i] =
+					+ Xdata.cos_sl*(k_np1_m_im12[i]*(rho_down-rho[i]))
+					+ Xdata.cos_sl*(k_np1_m_ip12[i]*(z[i]+0.5*(dz_[i]))-k_np1_m_im12[i]*(z[i]-0.5*(dz_[i]))) * (drho_down);
+				break;
+			}
+		}
+		if(i==uppernode) {
+			Salinity.flux_up[uppernode]+=Salinity.flux_up_2[uppernode];
+			Salinity.flux_up_2[uppernode]=0.;
+		}
+		if(i==lowernode) {
+			Salinity.flux_down[lowernode]+=Salinity.flux_down_2[lowernode];
+			Salinity.flux_down_2[lowernode]=0.;
+		}
+	}
+
+
+	// r_mpfd is an approximation of how far one is away from the solution. So in case of Dirichlet boundaries, we are *at* the solution:
+	if(aTopBC==DIRICHLET) r_mpfd[uppernode]=0.;
+	if(aBottomBC==DIRICHLET) r_mpfd[lowernode]=0.;
+
+
+	// return the right hand side vector
+	return r_mpfd;
+}
+
+
+
 /**
  * @brief Solve Richards Equation \n
  * Solve Richards Equation \n
  * @author Nander Wever
- * @param Xdata
- * @param Sdata
+ * @param Xdata SnowStation object for which Richards Equation should be solved
+ * @param Sdata SurfaceFluxes object to store fluxes
+ * @param ql latent heat flux that should be considered as evaporation in the upper boundary condition
+ * @param date Date for wich the time step is executed, to provide a helpful error message when problems occur
  */
-void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql)
+void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata, double& ql, const mio::Date& date)
 {
 // Main publications about the development of this code:
 // - Wever, N., Fierz, C., Mitterer, C., Hirashima, H., and Lehning, M.: Solving Richards Equation for snow improves snowpack meltwater runoff estimations in detailed multi-layer snowpack model, The Cryosphere, 8, 257-274, doi:10.5194/tc-8-257-2014, 2014.
@@ -484,19 +719,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//
 	// BEGIN OF SETTINGS
 	//
-	const BoundaryConditions TopBC = LIMITEDFLUX;				//Bottom boundary condition (recommended choice is LIMITEDFLUX, so too much evaporation from dry soil or snow or too much infilitration in wet soil is prohibited).
+	const BoundaryConditions TopBC = LIMITEDFLUX;				//Top boundary condition (DIRICHLET, NEUMANN or LIMITEDFLUX). Recommended: LIMITEDFLUX, i.e. too much evaporation from dry soil or snow or too much infilitration in wet soil or snow is prohibited.
 		//In case you select one of the LIMITEDFLUX options, specify whether these are only for soil, for snow or for both:
 		const bool LIMITEDFLUXEVAPORATION_soil=true;
 		const bool LIMITEDFLUXEVAPORATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_soil=true;
 		const bool LIMITEDFLUXINFILTRATION_snow=true;
 		const bool LIMITEDFLUXINFILTRATION_snowsoil=true;		//This switch allows to limit the infiltration flux from snow into soil, when the snowpack is solved with the Bucket or NIED water transport scheme.
-	const bool ApplyIceImpedance=false;					//Apply impedance on hydraulic conductivity in case of soil freezing. See: Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
+	const bool LIMITEDFLUXSOURCESINKTERM=true;				//Check if the source/sink term can be absorbed by the matrix.
 
 	//Setting some program flow variables
 	const bool SafeMode=true;			//Enable safemode only when necessary, for example in operational runs or Alpine3D simulations. It rescues simulations that do not converge, at the cost of violating mass balance.
 
-	const bool WriteDebugOutputput=false;		//true: debugging output is printed
+	const bool WriteDebugOutput=false;		//true: debugging output is printed
 
 
 //Set the defaults based on whether CLAPACK is available
@@ -516,7 +751,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Set parameterization for hydraulic functions for snow
 	const vanGenuchten::VanGenuchten_ModelTypesSnow VGModelTypeSnow=vanGenuchten::YAMAGUCHI2012;	//[Water retention curve]    Recommended: YAMAGUCHI2012   Set a VanGenuchten model for snow (relates pressure head to theta and vice versa)
-	const vanGenuchten::K_Parameterizations K_PARAM=vanGenuchten::CALONNE;				//[Hydraulic conductivity]   Recommended: CALONNE         Implemented choices: SHIMIZU, CALONNE, based on Shimizu (1970) and Calonne (2012).
+	const vanGenuchten::K_Parameterizations K_PARAM=vanGenuchten::CALONNE;				//[Hydraulic conductivity]   Recommended: CALONNE         Implemented choices: CALONNE, KOZENYCARMAN and SHIMIZU, based on Kozeny (1927), Calonne (2012) and Shimizu (1970), respectively.
+	const SalinityMixingModels SALINITY_MIXING = NONE;
 
 
 	//
@@ -541,7 +777,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//Initializing and defining Richards solver time domain
 	double dt=10.;					//Set the initial time step for the Richard solver (in seconds). This time step should be smaller or equal to the SNOWPACK time step.
 	bool boolFirstFunctionCall;			//true: first execution of this function, false: not the first execution of this function
-	if (Xdata.ReSolver_dt>0.) {			//Retrieve last dt used in last performed time step. Note Xdata.SoliNumerics_dt<0 when initialized
+	if (Xdata.ReSolver_dt>0.) {			//Retrieve last dt used in last performed time step. Note Xdata.ReSolver_dt<0 when initialized
 		boolFirstFunctionCall=false;		//Subsequent call to ReSolver1d
 		dt=Xdata.ReSolver_dt;			//Set time step to last used time step
  	} else {					//else it is the first time this function is called.
@@ -556,7 +792,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	vector<ElementData>& EMS = Xdata.Edata;		//Create reference to SNOWPACK elements.
 	vector<NodeData>& NDS = Xdata.Ndata;		//Create reference to SNOWPACK nodes.
 
-	if ((nE == 0) || (iwatertransportmodel_snow != RICHARDSEQUATION && Xdata.SoilNode == 0.)) return; //Nothing to do here!
+	if ((nE == 0) || (iwatertransportmodel_snow != RICHARDSEQUATION && Xdata.SoilNode == 0)) return; //Nothing to do here!
 	const size_t uppernode = (iwatertransportmodel_snow != RICHARDSEQUATION) ? (Xdata.SoilNode - 1) : (nE - 1);	//highest layer (top of snowpack, or top of soil in case of no soil)
 	size_t lowernode=0;				//Lower node of Richards solver domain
 
@@ -566,7 +802,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	double max_delta_h=0.;				//Tracks max_delta_h, to determine if our time step is too large. Note: this is different from checking the convergence criterion. This is just to check the time step. If a too large time step is used, big values of delta_h may arise, which cause pressure head to hit the singularities for dry and wet soil, and causes problems with the power functions in the Von Genuchten-Mualem model.
 	bool boolConvergence=false;			//true: convergence is reached, false: convergence not reached
 	double mass1=0, mass2=0, massbalanceerror=0.;	//Mass balance check variables.
-	const double maxallowedmassbalanceerror=1E-10;	//This value is carefully chosen. It should be considered together with REQUIRED_ACCURACY_THETA and REQUIRED_ACCURACY_H
+	const double maxallowedmassbalanceerror=1E-6;	//This value is carefully chosen. It should be considered together with REQUIRED_ACCURACY_THETA and REQUIRED_ACCURACY_H
 	double massbalanceerror_sum=0.;			//Sum of mass balance error over snowpack time step.
 
 
@@ -589,14 +825,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	size_t i, j, k;					//Counters for layers
 	const size_t nmemstates=1;			//Number of memory states, used to store changes of delta_h between iterations. Currently not used, but possible use is to check if delta_h is blowing up.
 	int memstate=0;					//Keeping track of the current memory index
-	double h_d=0.;					//Lower limit for pressure head: definition of "completely dry". This value will determined later on.
+	double h_d=0.;					//Lower limit for pressure head: definition of "completely dry". This value will be determined later.
+	double min_theta=Constants::eps;
 
 
 	//Initializing and declaring boundary conditions and flux variables
 	BoundaryConditions aTopBC;			//Actual applied top boundary condition (can only be either Dirichlet or Neumann, as all the others can be translated in an application of either one of those two.)
 	BoundaryConditions aBottomBC;			//Actual applied bottom boundary condition (can only be either Dirichlet or Neumann, as all the others can be translated in an application of either one of those two.)
 	double htop=0., TopFluxRate=0.;			//Dirichlet (constant head) and Neumann (constant flux) upper boundary values respectively.
-	double h_d_uppernode=0.;			//Used for LIMITEDFLUXEVAPORATION boundary condition.
+	double h_d_uppernode=h_d;			//Used for LIMITEDFLUXEVAPORATION boundary condition.
 	double hbottom=0., BottomFluxRate=0.;		//Dirichlet (constant head) and Neumann (constant flux) lower boundary values respectively.
 	double actualtopflux=0;				//Stores the actual applied flux through top (positive is inflow).
 	double refusedtopflux=0;			//Stores the difference in flux that was requested, but could not be applied
@@ -615,8 +852,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> delta_Te_i(nE, 0.);		//Change in element temperature per iteration time step due to soil freezing/thawing.
 	std::vector<double> delta_Te_adv(nE, 0.);	//Change in element temperature per time step due to heat advection by the water flow.
 	std::vector<double> delta_Te_adv_i(nE, 0.);	//Change in element temperature per iteration time step due to heat advection by the water flow.
-	std::vector<double> flux_down(nE, 0.);		//Total flux with element below (negative=upward, positive=downward)
-	std::vector<double> flux_up(nE, 0.);		//Total flux with element above (negative=upward, positive=downward)
+	std::vector<double> rho(nE, 0.);		//Liquid density
 
 	//std::vector<std::vector<double> > a(nE, std::vector<double> (nE, 0));	//Left hand side matrix. Note, we write immediately to ainv! But this is kept in to understand the original code.
 	std::vector<double> ainv(nE*nE, 0.);			//Inverse of A, written down as a 1D array instead of a 2D array, with the translation: a[i][j]=ainv[i*nlayers+j]
@@ -633,8 +869,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> K(nE, 0.);				//Hydraulic conductivity function
 	std::vector<double> impedance(nE, 0.);			//Impedance factor due to ice formation in matrix (see Dall'Amico, 2011);
 	std::vector<double> Se(nE, 0.);				//Effective saturation, sometimes called dimensionless volumetric water content.
-	std::vector<double> term_up(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
-	std::vector<double> term_down(nE, 0.);			//Variable to support construction of the R.H.S. (R_mpfd in Celia et al., 1990).
 	std::vector<double> r_mpfd(nE, 0.);			//R_mpfd (see Celia et al, 1990).
 	std::vector<double> r_mpfd2(nE, 0.);			//Copy of R_mpfd, used for DGTSV. Note: R_mpfd2 is overwritten by DGTSV, so we need a copy.
 	std::vector<double> h_np1_mp1(nE, 0.);			//Pressure head for the solution time step in the next iteration
@@ -650,9 +884,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	std::vector<double> dT(nE, 0.);				//Stores the energy needed to create theta_r from the ice matrix.
 	std::vector<double> snowpackBACKUPTHETAICE(nE, 0.);	//Backup array for the initial SNOWPACK theta ice
 
-
 	//Prevent buffering on the stdout when we write debugging output. In case of exceptions (program crashes), we don't loose any output which is still in the buffer and we can better track what went wrong.
-	if(WriteDebugOutputput) setvbuf(stdout, NULL, _IONBF, 0);
+	if(WriteDebugOutput) setvbuf(stdout, NULL, _IONBF, 0);
 
 #ifdef DEBUG_ARITHM
 	if(boolFirstFunctionCall==true) {
@@ -667,7 +900,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "PREF_FLOW = TRUE is expecting (for the matrix part) AVG_METHOD_HYDRAULIC_CONDUCTIVITY = GEOMETRICMEAN!");
 	}
 
-	if(WriteDebugOutputput) {
+	if(WriteDebugOutput) {
 		if(matrix == true) {
 			printf("RUNNING MATRIX_FLOW...\n");
 		} else {
@@ -677,10 +910,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 	//Backup SNOWPACK state
 	for (i = lowernode; i <= uppernode; i++) {
-		if (WriteDebugOutputput) std::cout << "RECEIVING at layer " << i << std::fixed << std::setprecision(15) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << "\n"<< std::setprecision(6) ;
+		if (WriteDebugOutput) std::cout << "RECEIVING at layer " << i << std::fixed << std::setprecision(10) <<  " air=" << EMS[i].theta[AIR] << " ice=" << EMS[i].theta[ICE] << " soil=" << EMS[i].theta[SOIL] << " water=" << EMS[i].theta[WATER] << " water_pref=" << EMS[i].theta[WATER_PREF] << " Te=" << EMS[i].Te << " L=" << EMS[i].L << " " << EMS[i].h << "\n" << std::setprecision(6) ;
 
 		//Make backup of incoming values for theta[ICE]
 		snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
+
+		//Check min theta which is not 0.
+		if (EMS[i].theta[WATERINDEX] > 0. && EMS[i].theta[WATERINDEX] < min_theta) min_theta = EMS[i].theta[WATERINDEX];
 	}
 
 	// Grid initialization (this needs to be done every time step, as snowpack layers will settle and thereby change height)
@@ -692,28 +928,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		if ( i >= Xdata.SoilNode ) {		//Snow
 			if(EMS[i].theta[ICE]>max_theta_ice) {
 				//Pure ice layers are a problem for Richards equation (of course...), so we limit the volumetric ice content to 99 %.
-				const double tmp_missing_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);	//Not too dry (original)
-				//HACK: how to treat ice layers? The line below that is commented out makes the model spiral out of control...
-				// Produce warning, but not when running for sea ice, because then ice layers are too common.
-				//dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-				if(variant!="SEAICE") std::cout << "[W] ReSolver1d.cc: ICE LAYER --> WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
-				EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
-				EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
+				const double tmp_excess_theta=(EMS[i].theta[ICE]-max_theta_ice)*(Constants::density_ice/Constants::density_water);
+				dT[i]+=tmp_excess_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
+				EMS[i].theta[WATERINDEX]+=tmp_excess_theta;
+				EMS[i].theta[ICE]-=tmp_excess_theta*(Constants::density_water/Constants::density_ice);
 				EMS[i].theta[AIR]=1.-EMS[i].theta[ICE]-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF];
 			}
 
-			EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix);
-
-			// Special case for ice
-			if(EMS[i].theta[ICE]>700./Constants::density_ice && variant=="SEAICE") {
-				// For sea ice, this probably has to become a function of ice temperature and salinity.
-				const double tmp_permeability = 1E-12;
-				const double tmp_dynamic_viscosity_water=0.001792;				//In Pa/s, from WaterTransport code by Hirashima: 0.001792
-				EMS[i].VG.ksat=tmp_permeability * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
-			}
+			EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix, variant=="SEAICE");
 
 			// Recheck pref flow area: some processes in SNOWPACK may change pore space and water contents, such that the pref flow area is not consistent to store all water.
-			EMS[i].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)))), std::max(1.001*(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water))), EMS[i].PrefFlowArea));
+			const double tmpPoreSpace = (1. - EMS[i].theta[ICE]) * (Constants::density_ice / Constants::density_water);
+			EMS[i].PrefFlowArea = std::min(0.999*(1.-(EMS[i].theta[WATER]/tmpPoreSpace)), std::max(1.001*(EMS[i].theta[WATER_PREF]/tmpPoreSpace), EMS[i].PrefFlowArea));
+
 			// Scale theta_s
 			if(WATERINDEX==WATER_PREF) {
 				EMS[i].VG.theta_s*=EMS[i].PrefFlowArea;
@@ -724,13 +951,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 			theta_i_n[i]=0.;						//This sounds strange for snow, but the idea is that ice in snow functions as soil in soil (being the matrix)
-			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk;	//For snow, we currently don't have anything with freezing point depression, as we have in soil.
+			EMS[i].meltfreeze_tk=Constants::meltfreeze_tk;	//For snow, we currently don't have anything with freezing point depression, as we have in soil.
 		} else {				//Soil
 			EMS[i].VG.SetVGParamsSoil();
 			theta_i_n[i]=EMS[i].theta[ICE];
 			//Get melting point that suffices partitioning pressure head into part for ice and part for water
 			const double hw0=std::min(EMS[i].VG.h_e, EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER]+(EMS[i].theta[ICE]*(Constants::density_ice/Constants::density_water)), h_d));
-			EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
+			EMS[i].meltfreeze_tk=Constants::meltfreeze_tk+((Constants::g*Constants::meltfreeze_tk)/Constants::lh_fusion)*hw0;
 		}
 
 		//Determine what pressure head should be considered "dry".
@@ -740,17 +967,17 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		const double tmp_head=EMS[i].VG.fromTHETAtoHforICE(EMS[i].VG.theta_r+(REQUIRED_ACCURACY_THETA/10.), h_d, theta_i_n[i]);
 		if(h_d>tmp_head) h_d=tmp_head;
 		if(i==uppernode) h_d_uppernode=tmp_head;	//We store this value in order to use it for the LIMITEDFLUXEVAPORATION
-		if (WriteDebugOutputput)
-			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << EMS[i].VG.alpha << "; m: " << EMS[i].VG.m << "; n: " << EMS[i].VG.n << "; Sc: " << EMS[i].VG.Sc << "; h_e: " << EMS[i].VG.h_e << "\n";
+		if (WriteDebugOutput)
+			std::cout << "H_D at " << i << ": " << std::scientific << tmp_head << std::fixed << " [alpha: " << EMS[i].VG.alpha << "; m: " << EMS[i].VG.m << "; n: " << EMS[i].VG.n << "; Sc: " << EMS[i].VG.Sc << "]; h_e: " << EMS[i].VG.h_e << " min_theta: " << min_theta << "\n";
 	}
 
 
 	//Coupling of SNOWPACK domain to RE-solver domain. Makes sure the EMS.theta[XXX] are within the limits specified by the Van Genuchten parameterizations.
 	for (i = lowernode; i <= uppernode; i++) {
 		//Now calculate the theta that should be considered "dry soil".
-		theta_d[i]=EMS[i].VG.fromHtoTHETAforICE(h_d, 0.);
+		theta_d[i]=EMS[i].VG.fromHtoTHETA(h_d);
 
-		//Now check if this case is not too extreme
+		//Now check if this case is not too extreme for pressure head (important for numerical stability)
 		const double fact=1000.;
 		if(theta_d[i]<EMS[i].VG.theta_r+(REQUIRED_ACCURACY_THETA/fact)) {
 			theta_d[i]=EMS[i].VG.theta_r+(REQUIRED_ACCURACY_THETA/fact);
@@ -790,29 +1017,52 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(EMS[i].theta[WATERINDEX]<theta_d[i]) {
 				const double tmp_missing_theta=(theta_d[i]-EMS[i].theta[WATERINDEX]);	//Not too dry (original)
 				dT[i]+=tmp_missing_theta*(Constants::density_water/Constants::density_ice) / ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ));
-				if (WriteDebugOutputput)
+				if (WriteDebugOutput)
 					std::cout << "WATER CREATED (" << tmp_missing_theta << "): i=" << i << " --- dT=" << dT[i] << " T=" << EMS[i].Te << "  theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << "\n";
 				EMS[i].theta[WATERINDEX]+=tmp_missing_theta;
 				EMS[i].theta[ICE]-=tmp_missing_theta*(Constants::density_water/Constants::density_ice);
+				EMS[i].VG.SetVGParamsSnow(VGModelTypeSnow, K_PARAM, matrix, variant=="SEAICE");    // Update the van Genuchten parameters
 			}
 		}
 
+		// Run soil initializer functionality when requested upon initialization
+		if (boolFirstFunctionCall && WATERINDEX==WATER && runSoilInitializer && i < Xdata.SoilNode) {
+			std::cout << "[i] Initializing soil layer " << i << ". Initial values: " << " h=" << EMS[i].h << " (" << EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, theta_i_n[i]) << ") theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE];
+			if (BottomBC==WATERTABLE) {
+				EMS[i].h = EMS[i].VG.h_e - NDS[i].z - .5*EMS[i].L;
+				// As partitioning in water and ice is done in enforceThermalEquilibrium(), assume all water for now
+				EMS[i].theta[WATER] = EMS[i].VG.fromHtoTHETAforICE(EMS[i].h, 0.);
+				EMS[i].theta[ICE] = 0.;
+			} else {
+				if (i>0) {
+					// Bottom element remains unchanged, add all elements above accordingly. Note that this assumes that the outer loop is executed bottom to top
+					EMS[i].h = h_n[i-1] - (.5*EMS[i-1].L + .5*EMS[i].L);
+					// As partitioning in water and ice is done in enforceThermalEquilibrium(), assume all water for now
+					EMS[i].theta[WATER] = EMS[i].VG.fromHtoTHETAforICE(EMS[i].h, 0.);
+					EMS[i].theta[ICE] = 0.;
+				}
+			}
+			EMS[i].VG.enforceThermalEquilibrium();
+			snowpackBACKUPTHETAICE[i]=EMS[i].theta[ICE];
+			std::cout << "   changed to:  h=" << EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, EMS[i].theta[ICE]) << " theta[WATER]=" << EMS[i].theta[WATER] << " theta[ICE]=" << EMS[i].theta[ICE] << std::endl;
+		}
 
 		//Now copy the EMS water content into the working arrays to solve Richards-equation (so this is the important part were this function is coupled to the rest of SNOWPACK).
 		if(EMS[i].theta[SOIL]<Constants::eps2) {		//For snow
 			h_n[i]=EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATERINDEX], h_d, theta_i_n[i]);
-			if(h_n[i]>=EMS[i].VG.h_e-Constants::eps2 && EMS[i].h>=EMS[i].VG.h_e-Constants::eps2 && variant=="SEAICE") {
+			if(variant=="SEAICE" && h_n[i]>EMS[i].VG.h_e-Constants::eps && EMS[i].h>EMS[i].VG.h_e-Constants::eps && NDS[i].z < Xdata.Seaice->SeaLevel) {
 				h_n[i]=EMS[i].h;
 			}
 		} else {
 			//For soil, we take the matrix pressure head as lower boundary for the snow preferential flow
+			theta_i_n[i]=EMS[i].theta[ICE];
 			if(matrix == false) theta_i_n[i]=EMS[i].theta[ICE];	// Keep ice contents in sync, as we skip soil freezing with preferential flow (in turn because we suppress preferential flow in soil)
 			h_n[i]=EMS[i].VG.fromTHETAtoHforICE(EMS[i].theta[WATER], h_d, theta_i_n[i]);
 		}
 		theta_n[i]=EMS[i].VG.fromHtoTHETAforICE(h_n[i], theta_i_n[i]);	//This is the current theta, which we determine from h_n[i].
 
 		//Determine source/sink term
-		s[i]=0.;								//Reset source/sink term
+		s[i]=0.;							//Reset source/sink term
 
 		//Now add soilsurfacesourceflux (in case RemoveElements removed the lowest snow element):
 		if(soilsurfacesourceflux>0. && i==Xdata.SoilNode) {		//We assign source flux in the lowest snow element if the source flux is >0. This can only be the case when we use RE for snow, so we don't have to check for this.
@@ -823,14 +1073,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		//Add source/sink term from other parts of SNOWPACK (in particular Canopy.cc)
 		s[i]+=EMS[i].lwc_source/sn_dt;
 		EMS[i].lwc_source=0.;		// Now that we used the variable, reset it.
-
-		//To now the flux of water in/out of the model domain due to the source/sink term.
-		totalsourcetermflux+=s[i]*dz[i];
 	}
 
 
 	//Initialize upper boundary in case of Dirichlet
-	if(TopBC==DIRICHLET) {
+	if (TopBC==DIRICHLET) {
 		aTopBC=DIRICHLET;
 		htop=h_n[uppernode];
 	}
@@ -838,6 +1085,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// Initialize upper boundary for evaporation
 	surfacefluxrate += (ql/Constants::lh_vaporization)/Constants::density_water;
 	Sdata.mass[SurfaceFluxes::MS_EVAPORATION] += ql*sn_dt/Constants::lh_vaporization;
+	if(Xdata.swe < Constants::eps2) {
+		Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += ql*sn_dt/Constants::lh_vaporization;
+	}
 	ql = 0.; //We dealt with ql, so set it to 0, only to be possibly modified at the end of the function.
 
 	//Important: We have to be aware that the previous time step may be too large for the infiltration flux in the current time step. Then, too much of the infiltration flux may be rejected.
@@ -863,18 +1113,23 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		theta_n[lowernode]=EMS[lowernode].VG.fromHtoTHETAforICE(h_n[lowernode], theta_i_n[lowernode]);
 	}
 
-	//Initialize lower boundary in case of SEAICEFLOODING: prescribe pressure of water column at lowest ice node.
-	if(BottomBC==SEAICEFLOODING) {
+	//Initialize lower boundary in case of SEAICE: prescribe pressure of water column at lowest ice node.
+	if(BottomBC==SEAICE) {
 		if(Xdata.Seaice == NULL) {
-			prn_msg( __FILE__, __LINE__, "err", Date(), "[Xdata.SeaIce==NULL] You can only use SEAICEFLOODING for simulations with sea ice!");
+			prn_msg( __FILE__, __LINE__, "err", Date(), "[Xdata.SeaIce==NULL] You can only use LB_COND_WATERFLUX = SEAICE for simulations with sea ice!");
 			throw;
 		} else {
 			Xdata.Seaice->updateFreeboard(Xdata);
 		}
 		aBottomBC=DIRICHLET;
-		hbottom=Xdata.Seaice->SeaLevel - NDS[0].z;
+		hbottom=std::min((Xdata.Seaice->SeaLevel - NDS[lowernode].z - .5 * EMS[lowernode].L), NDS[uppernode+1].z); // Keep hbottom smaller than depth of simulation domain.
 		h_n[lowernode]=hbottom;
+		EMS[lowernode].salinity += SeaIce::OceanSalinity * (EMS[lowernode].VG.fromHtoTHETAforICE(h_n[lowernode], theta_i_n[lowernode]) - EMS[lowernode].theta[WATER]);
+		EMS[lowernode].theta[WATER] = theta_n[lowernode] = EMS[lowernode].VG.fromHtoTHETAforICE(h_n[lowernode], theta_i_n[lowernode]);
+		EMS[lowernode].updDensity();
 	}
+
+	SalinityTransport Salinity(nE);
 
 	//Note: there are 2 iterations. First, the iteration starts to match the Richards solver time step to the SNOWPACK time step. Simple example: assume SNOWPACK time step is 15 minutes and
 	//Richards solver time step is 1 minute, there should be 15 iterations to match the solution to the SNOWPACK time step.
@@ -921,7 +1176,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		}
 
 		//Write out initial water content
-		if (WriteDebugOutputput) {
+		if (WriteDebugOutput) {
 			for (i = lowernode; i <= uppernode; i++) {
 				std::cout << "ITER: " << niter << " i: " << i << std::setprecision(15) << "; h_n: " << h_n[i] << " (h_np1: " << h_np1_m[i] << ") theta: " << theta_n[i] << std::setprecision(6) << "(" << EMS[i].VG.theta_r << "-" << EMS[i].VG.theta_s << ") ice: " << EMS[i].theta[ICE] << "/" << theta_i_n[i] << " (vg_params: " << EMS[i].VG.alpha << " " << EMS[i].VG.m << " " << EMS[i].VG.n << ") s[i]: " << s[i] << "\n";
 			}
@@ -953,17 +1208,18 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Determine hydraulic conductivity, using the Mualem model (see Ippisch, 2006), Eq. 11
 				K[i]=EMS[i].VG.ksat*sqrt(Se[i])*pow((1.-(pow(1.-pow(Se[i]*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
 
-				//Applying ice impedance on K
-				if(ApplyIceImpedance==true) {
-					const double omega=7.;		//See Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
-					if (i < Xdata.SoilNode && theta_i_np1_m[i]>0. && K[i]>0. ) {	//Only for soil and when there is ice in the soil
+				//Applying ice impedance on K when requested
+				if (K_frozen_soilType != IGNORE && i < Xdata.SoilNode && theta_i_np1_m[i]>0.) {	//Only for soil and when there is ice in the soil
+					if (K_frozen_soilType==OMEGA) {
+						//See Zhao et al. (1997) and Hansson et al. (2004)  [Dall'Amicao, 2011].
 						//q=theta_i_np1_m[i]/(EMS[i].VG.theta_s-EMS[i].VG.theta_r);					//This is how Dall'Amico presents it, but it is based on Hanssen (2004), who defines it as:
 						const double q = (theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water))/((theta_np1_m[i]+(theta_i_np1_m[i]*(Constants::density_ice/Constants::density_water)))-EMS[i].VG.theta_r);		//Hanssen (2004).
 						impedance[i]=pow(10., -1.*omega*q);
-					} else {
-						impedance[i]=1.;
+						K[i]*=impedance[i];
+					} else if (K_frozen_soilType==LIQUIDPORESPACE) {
+						const double tmp_Se = ((theta_np1_m[i] - EMS[i].VG.theta_r)/(EMS[i].VG.theta_s - EMS[i].VG.theta_r));
+						K[i]=EMS[i].VG.ksat*sqrt(tmp_Se)*pow((1.-(pow(1.-pow(tmp_Se*EMS[i].VG.Sc,(1./EMS[i].VG.m)),EMS[i].VG.m)))/(1.-pow(1.-pow(EMS[i].VG.Sc,(1./EMS[i].VG.m)), EMS[i].VG.m)),2.);
 					}
-					K[i]*=impedance[i];
 				}
 
 				//Calculate the specific moisture capacity (which is derivative d.theta/d.h)
@@ -971,10 +1227,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					C[i]=0.;
 				} else {
 					C[i]=EMS[i].VG.dtheta_dh(std::min(h_np1_m[i], EMS[i].VG.h_e));
-					if(isnan(C[i])) solver_result=-1;
+					if(std::isnan(C[i])) solver_result=-1;
 				}
 
-				if(WriteDebugOutputput) std::cout << "HYDPROPS: i=" << i << std::scientific << " Se=" << Se[i] << " C=" << C[i] << " K=" << K[i] << ".\n" << std::fixed;
+				//Update liquid density and brine salinity
+				rho[i] = Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * EMS[i].salinity):(0.));
+
+				if(WriteDebugOutput) std::cout << "HYDPROPS: i=" << i << std::scientific << " Se=" << Se[i] << " C=" << C[i] << " K=" << K[i] << " rho=" << rho[i] << " sal=" << EMS[i].salinity << ".\n" << std::fixed;
 			}
 
 			for (i = lowernode; i <= uppernode; i++) {
@@ -987,6 +1246,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						case ARITHMETICMEAN:
 						{
 							k_np1_m_ip12[i]=.5*(K[i]+K[i+1]);
+							break;
+						}
+
+						case LOGMEAN:
+						{
+							// See: https://doi.org/10.1061/9780784480472.078
+							if (K[i]==K[i+1]) {
+								k_np1_m_ip12[i]=K[i];
+							} else if (K[i]==0. || K[i+1]==0.) {
+								k_np1_m_ip12[i]=0.;
+							} else {
+								k_np1_m_ip12[i]=(K[i+1]-K[i])/log(K[i+1]/K[i]);
+							}
 							break;
 						}
 
@@ -1025,6 +1297,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							}
 							break;
 						}
+						default:
+							InvalidArgumentException("Unknown K_AverageType value provided", AT);
+
 					}
 					if(matrix==false) {
 						// When solving preferential flow, we suppress liquid water flow in soil by setting hydraulic conductivity to 0.
@@ -1035,11 +1310,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					}
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
-					if(i==uppernode) {
-						k_np1_m_ip12[i]=K[i];
-					} else {
-						k_np1_m_ip12[i]=0.;
-					}
+					k_np1_m_ip12[i]=K[i];
 				}
 
 				// 2) Determine k_np1_m_im12
@@ -1048,11 +1319,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					k_np1_m_im12[i]=k_np1_m_ip12[i-1];
 				} else {
 					//For the boundaries, we neglect gradients in K. This corresponds to the specified fluid flux boundary condition (Equation 4 of McCord, WRR, 1991).
-					if(i==lowernode) {
-						k_np1_m_im12[i]=K[i];
-					} else {
-						k_np1_m_im12[i]=0.;
-					}
+					k_np1_m_im12[i]=K[i];
 				}
 			}
 
@@ -1080,7 +1347,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					const double flux_compare = (dz[uppernode]*(EMS[uppernode].VG.theta_s - (theta_np1_m[uppernode] + theta_i_np1_m[uppernode]))/dt);
 					if((0.999*flux_compare) < TopFluxRate) {			//If prescribed flux is too large:
 						if(dt>MIN_DT_FOR_INFILTRATION) {			//Trigger rewind when the top layer cannot accomodate for all infiltrating flux
-							solver_result=-1.;
+							solver_result=-1;
 						} else {						//Limit flux. Note: we multiply flux_compare with 0.999 because flux_compare can be
 							TopFluxRate=std::max(0., (0.999*flux_compare));	//regarded as the asymptotic case from which we want to stay away a little.
 						}
@@ -1094,7 +1361,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						TopFluxRate=std::min(0., flux_compare);
 					}
 				}
-				if(h_np1_m[uppernode]>EMS[uppernode].VG.h_e) TopFluxRate=std::min(0., TopFluxRate);
 			} else if (TopBC==WATERTABLE) {
 				std::cout << "ERROR in ReSolver1d.cc: WATERTABLE cannot be applied as top boundary condition (doesn't make sense)!\n";
 				throw;
@@ -1159,8 +1425,19 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				// http://dx.doi.org/10.1175/2008JHM1011.1
 				aBottomBC=NEUMANN;
 				BottomFluxRate=k_np1_m_im12[lowernode];
-			} else if (BottomBC==SEAICEFLOODING) {
+			} else if (BottomBC==SEAICE) {
 				aBottomBC=DIRICHLET;
+				if(niter==1) {
+					// For a new iteration, do a quick update of sea ice mass and the lower boundary
+					for (i = lowernode; i <= uppernode; i++) {
+						EMS[i].theta[WATERINDEX]=theta_np1_m[i];
+						EMS[i].updDensity();
+						EMS[i].M=EMS[i].L*EMS[i].Rho;
+					}
+					Xdata.Seaice->updateFreeboard(Xdata);
+					hbottom=std::min((Xdata.Seaice->SeaLevel - NDS[lowernode].z - .5 * EMS[lowernode].L), NDS[uppernode+1].z); // Keep hbottom smaller than depth of simulation domain.
+				}
+				h_n[lowernode] = hbottom;
 				BottomFluxRate=0.;
 				theta_np1_m[lowernode]=theta_n[lowernode];
 			} else if (BottomBC==LIMITEDFLUX) {
@@ -1176,80 +1453,119 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			}
 
 
-			if (WriteDebugOutputput)
+			if (WriteDebugOutput)
 				std::cout << "BOUNDARYTOPFLUX: [ BC: " << TopBC << "] " << std::scientific << TopFluxRate << " " << surfacefluxrate << " " << theta_n[lowernode] << " " << K[lowernode] << " " << ((h_np1_mp1[lowernode])+(((TopFluxRate/k_np1_m_im12[lowernode])-1.)*dz_down[lowernode])) << " " << h_np1_mp1[lowernode] << " " << k_np1_m_im12[lowernode] << " " << (TopFluxRate/k_np1_m_im12[lowernode]) << "\n" << std::fixed;
 
 			// Verify source/sink term
+			totalsourcetermflux=0.;
 			for (i = lowernode; i <= uppernode; i++) {
 				if(s[i] != 0.) {
-					//TODO: a similar dt limiting procedure as for the surfacefluxrate should be considered
-					const double tmp = s[i];
-					// Determine the limiting influx:
-					const double flux_compare_max =														//The limiting flux is (positive is inflow):
-						std::max(0., (dz[i]*(EMS[i].VG.theta_s - (theta_np1_m[i] + theta_i_np1_m[i]))/dt)						// net flux that would lead to saturation of the layer
-							+ ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// plus what could leave below
-							- ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// minus what comes from above
-					// Determine the limiting outflux (note we take theta_d as reference "dry")
-					const double flux_compare_min =														//The limiting flux is (positive is outflow):
-						std::max(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - theta_d[i])/dt)							// net flux that would lead to drying of the layer
-							- ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// minus what will leave below
-							+ ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// plus what comes from above
-					s[i] = std::min(std::max(s[i], -0.999*flux_compare_min), 0.999*flux_compare_max);
+					if(LIMITEDFLUXSOURCESINKTERM==true) {
+						const double tmp = s[i];
+						// Determine the limiting influx:
+						const double flux_compare_max =														//The limiting flux is (positive is inflow):
+							std::max(0., (dz[i]*(EMS[i].VG.theta_s - (theta_np1_m[i] + theta_i_np1_m[i]))/dt)						// net flux that would lead to saturation of the layer
+								+ ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// plus what could leave below
+								- ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// minus what comes from above
+						// Determine the limiting outflux (note we take theta_d as reference "dry")
+						const double flux_compare_min =														//The limiting flux is (positive is outflow):
+							std::max(0., (dz[i]*((theta_np1_m[i] + theta_i_np1_m[i]) - theta_d[i])/dt)							// net flux that would lead to drying of the layer
+								- ((i>lowernode) ? k_np1_m_im12[i]*(((h_np1_m[i]-h_np1_m[i-1])/dz_down[i]) + Xdata.cos_sl) : BottomFluxRate)		// minus what will leave below
+								+ ((i<uppernode) ? k_np1_m_ip12[i]*(((h_np1_m[i+1]-h_np1_m[i])/dz_up[i]) + Xdata.cos_sl) : TopFluxRate));		// plus what comes from above
+						s[i] = std::min(std::max(s[i], -0.999*flux_compare_min), 0.999*flux_compare_max);
 
-					if(fabs(tmp - s[i])>Constants::eps2) {
-						std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied. Term reduced from " << tmp << " to " << s[i] << ".\n";
+						if(fabs(tmp - s[i])>Constants::eps2) {
+							if(dt>MIN_DT_FOR_INFILTRATION) {			//Trigger rewind when the layer cannot accomodate for the source/sink term
+								s[i]=tmp;					//Reset source/sink term to original value
+								solver_result=-1;				//Trigger rewind
+							} else {
+								std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied with dt=" << dt << ". Term reduced from " << tmp << " to " << s[i] << ".\n";
+							}
+						}
 					}
+
+					//Update now the flux of water in/out of the model domain due to the source/sink term.
+					totalsourcetermflux+=s[i]*dz[i];
 				}
 			}
 
 			//Solve equation
-			std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
+#ifdef CLAPACK
+			if(ActiveSolver==DGESVD || AllowSwitchSolver==true) std::fill(ainv.begin(), ainv.end(), 0.);	//This is very important: with inverting the matrix, it may become non-tridiagonal! So we have to explicitly set its elements to 0, because some of the for-loops only touch the tridiagonal part of the matrix.
+#endif
 			for (i = lowernode; i <= uppernode; i++) {
 				j=i;	//As matrix A is tridiagonal, it can be filled very efficiently. The notation of i and j is kept for clarity of the structure of A. However, only evaluating when i==j is required.
-				//This part is for the DGESVD/DGESDD solver, which uses full matrix a (ainv). We always need them, because in case DGTSV fails, we should be able to fall back on DGESVD/DGESDD:
-				if(i==j) {
-					//Set up the matrix diagonal
-					ainv[j*(uppernode+1)+i]=(1./dt)*C[i];
 
-					//The following two lines assume Neumann boundary conditions (for upper and lowernode, one of the terms drop out). If Dirichlet is used, this will be corrected later.
-					if(i!=lowernode) ainv[j*(uppernode+1)+i]+=(1./(dz_[i]))*((k_np1_m_im12[i]/(dz_down[i])));
-					if(i!=uppernode) ainv[j*(uppernode+1)+i]+=(1./(dz_[i]))*((k_np1_m_ip12[i]/(dz_up[i])));
 
-					//Correct diagonal in case of Dirichlet
-					if(aTopBC==DIRICHLET && i==uppernode) {
-						ainv[i*(uppernode+1)+i]=1.;
-					}
-					if(aBottomBC==DIRICHLET && i==lowernode) {
-						ainv[i*(uppernode+1)+i]=1.;
-					}
+				// Calculate density related variables
+				double rho_up = 0;
+				double rho_down = 0;
+				if(i==uppernode) {
+					rho_up = 0.5 * (rho[i] + Constants::density_water);
+				} else {
+					rho_up = 0.5 * (rho[i] + rho[i+1]);
+				}
+				if(i==lowernode) {
+					rho_down = 0.5 * (rho[i] + Constants::density_water + ((Xdata.Seaice!=NULL)?(SeaIce::betaS * Xdata.Seaice->OceanSalinity):(0.)));
+				} else {
+					rho_down = 0.5 * (rho[i] + rho[i-1]);
+				}
 
-					//Set up the matrix upper and lower diagonals
-					if(i!=lowernode) ainv[i*(uppernode+1)+(i-1)]=(-1./(dz_[i]))*((k_np1_m_im12[i]/(dz_down[i])));
-					if(i!=uppernode) ainv[i*(uppernode+1)+(i+1)]=(-1./(dz_[i]))*((k_np1_m_ip12[i]/(dz_up[i])));
 
-					if(uppernode>0) {
-						//Correct upper and lower diagonals in case of Dirichlet
-						//HACK/TODO: check if this piece of code is actually correct. Why is condition uppernode>0 necessary here, but not when using DGTSV or TDMA solvers?
+#ifdef CLAPACK
+				//This part is for the DGESVD/DGESDD solver, which uses full matrix inversion of matrix A (ainv).
+				if(ActiveSolver==DGESVD || AllowSwitchSolver==true) {
+					// For DGESVD, i indexes rows, j index columns, both starting at 0.
+					if(i==j) {
+						size_t LDA=(uppernode+1);
+						size_t i_d=j*LDA+i;		// The index for the main diagonal
+						size_t i_u=(j+1)*LDA+i;		// The index for the upper diagonal
+						size_t i_l=(j-1)*LDA+i;		// The index for the lower diagonal
+
+						//Set up the matrix diagonal
+						ainv[i_d]=(1./dt)*(C[i]/rho[i]);
+
+						//The following two lines assume Neumann boundary conditions (for upper and lowernode, one of the terms drop out). If Dirichlet is used, this will be corrected later.
+						if(i!=lowernode) ainv[i_d]+=(1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) ainv[i_d]+=(1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
+
+						//Correct diagonal in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
-							ainv[(i-1)*(uppernode+1)+i]=0.;
-							ainv[i*(uppernode+1)+(i-1)]=0.;
+							ainv[i_d]=1.;
 						}
 						if(aBottomBC==DIRICHLET && i==lowernode) {
-							ainv[(i+1)*(uppernode+1)+i]=0.;
-							ainv[i*(uppernode+1)+(i+1)]=0.;
+							ainv[i_d]=1.;
+						}
+
+						//Set up the matrix upper and lower diagonals
+						if(i!=lowernode) ainv[i_l]=(-1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) ainv[i_u]=(-1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
+
+						//Correct upper and lower diagonals in case of Dirichlet
+						if(aTopBC==DIRICHLET && i==uppernode) {
+							ainv[i_l]=0.;
+						}
+						if(aBottomBC==DIRICHLET && i==lowernode) {
+							ainv[i_u]=0.;
+						}
+
+						// Prevent degenerate case
+						if(ainv[i_d]==0. && ainv[i_l]==0. && ainv[i_u]==0.) {
+							ainv[i_d]=1.;
 						}
 					}
 				}
+#endif
 
 				//This part is for the DGTSV or TDMA solver, that uses the fact that A is a tridiagonal matrix, so we only have to specify the diagonals and subdiagonals.
-				if(ActiveSolver==DGTSV || ActiveSolver==TDMA ) {
+				if(ActiveSolver==DGTSV || ActiveSolver==TDMA) {
 					if(i==j) {
 						//Set up the matrix diagonal
-						ad[i]=(1./dt)*C[i];
+						ad[i]=(1./dt)*(C[i]/rho[i]);
 
 						//The following two lines assume Neumann boundary conditions (for upper and lowernode, one of the terms drop out). If Dirichlet is used, this will be corrected later.
-						if(i!=lowernode) ad[i]+=(1./(dz_[i]))*((k_np1_m_im12[i]/(dz_down[i])));
-						if(i!=uppernode) ad[i]+=(1./(dz_[i]))*((k_np1_m_ip12[i]/(dz_up[i])));
+						if(i!=lowernode) ad[i]+=(1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) ad[i]+=(1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
 
 						//Correct diagonal in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
@@ -1260,58 +1576,39 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 
 						//Set up the matrix upper and lower diagonals
-						if(i!=lowernode) adl[i-1]=-(1./(dz_[i]))*((k_np1_m_im12[i]/(dz_down[i])));
-						if(i!=uppernode) adu[i]=-(1./(dz_[i]))*((k_np1_m_ip12[i]/(dz_up[i])));
+						if(i!=lowernode) adl[i-1]=-(1./dz_[i])*(k_np1_m_im12[i]/rho_down/dz_down[i]);
+						if(i!=uppernode) adu[i]=-(1./dz_[i])*(k_np1_m_ip12[i]/rho_up/dz_up[i]);
 
 						//Correct diagonals in case of Dirichlet
 						if(aTopBC==DIRICHLET && i==uppernode) {
-							adu[i-1]=0.;
 							adl[i-1]=0.;
 						}
 						if(aBottomBC==DIRICHLET && i==lowernode) {
 							adu[i]=0.;
-							adl[i]=0.;
+						}
+
+						// Prevent degenerate case
+						if(ad[i]==0. && adl[i-1]==0. && adu[i]==0.) {
+							ad[i]=1.;
 						}
 					}
 				}
-
-				//We copy here the matrix to the ainv, which is passed to the SVD-routine later on. This ainv is altered externally, that's why we need a copy.
-				//ainv[j*(uppernode+1)+i]=a[i][j];
-
-				//Determine R:
-				term_up[i]=0.;
-				term_down[i]=0.;
-
-				//Fill R.H.S. vector
-				//Note: the gravity term is not explicitly in Celia et al (1990). It is just z[i], as pressure head should already be scaled by rho_water * g. Then it is taken outside the nabla, by using the chain rule.
-				if(i==uppernode) {
-					if(aTopBC==NEUMANN) {		//Neumann, following Equation 4 in McCord, WRR (1991).
-						term_up[i]=(TopFluxRate)*dz_up[i] - Xdata.cos_sl*(dz_up[i]*k_np1_m_ip12[i]);
-					} else {	//Dirichlet
-						term_up[i]=0.;
-					}
-				} else {
-					term_up[i]=k_np1_m_ip12[i]*(h_np1_m[i+1]-h_np1_m[i]);
-				}
-				if(i==lowernode) {
-					if(aBottomBC == NEUMANN) {	//Neumann, following Equation 4 in McCord, WRR (1991).
-						term_down[i]=(BottomFluxRate)*dz_down[i] - Xdata.cos_sl*(dz_down[i]*k_np1_m_im12[i]);
-					} else {			//Dirichlet
-						term_down[i]=0.;
-					}
-				} else {
-					term_down[i]=k_np1_m_im12[i]*(h_np1_m[i]-h_np1_m[i-1]);
-				}
-
-				//RHS eq. 17 in Celia et al. (1990):
-				r_mpfd[i]=(1./(dz_[i]))*((term_up[i]/dz_up[i])-(term_down[i]/dz_down[i])) + Xdata.cos_sl*((k_np1_m_ip12[i]-k_np1_m_im12[i])/(dz_[i])) - (1./dt)*((theta_np1_m[i]-theta_n[i]) + (theta_i_np1_m[i]-theta_i_n[i])*(Constants::density_ice/Constants::density_water)) + s[i];
-
-				// r_mpfd is an approximation of how far one is away from the solution. So in case of Dirichlet boundaries, we are *at* the solution:
-				if(aTopBC==DIRICHLET) r_mpfd[uppernode]=0.;
-				if(aBottomBC==DIRICHLET) r_mpfd[lowernode]=0.;
-
-				r_mpfd2[i]=r_mpfd[i];			// We make a copy for use with DGTSV and TDMA solvers.
 			}
+
+			r_mpfd = AssembleRHS(lowernode, uppernode, h_np1_m, theta_n, theta_np1_m, theta_i_n, theta_i_np1_m, s, dt, rho, k_np1_m_im12, k_np1_m_ip12, aTopBC, TopFluxRate, aBottomBC, BottomFluxRate, Xdata, Salinity, SALINITY_MIXING);
+			r_mpfd2 = r_mpfd;			// We make a copy for use with DGTSV and TDMA solvers.
+
+			// Check stability criterion for salinity transport for sea ice simulations
+			if(variant=="SEAICE") {
+				if(SalinityTransportSolver==SalinityTransport::EXPLICIT && Salinity.VerifyCFL(dt)==false) {
+					printf("CFL failed for dt=%.10f --> reducing time step\n", dt);
+					solver_result=-1;
+				} else if((SalinityTransportSolver==SalinityTransport::IMPLICIT || SalinityTransportSolver==SalinityTransport::IMPLICIT2) && Salinity.VerifyImplicitDt(dt)==false) {
+					printf("ImplicitLimit failed for dt=%.10f --> reducing time step\n", dt);
+					solver_result=-1;
+				}
+			}
+
 
 			//Before solving the system of equations, reset convergence tracking variables:
 			track_accuracy_h=0.;
@@ -1345,10 +1642,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						//    has not been computed.  The factorization has not been
 						//    completed unless i = N.
 						if(AllowSwitchSolver==true) {
-							if(WriteDebugOutputput) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying DGESVD/DGESDD...\n";
+							if(WriteDebugOutput) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying DGESVD/DGESDD...\n";
 							ActiveSolver=DGESVD;
 						} else {
-							if(WriteDebugOutputput) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying with smaller time step...\n";
+							if(WriteDebugOutput) std::cout << "ERROR in ReSolver1d.cc: DGTSV failed [info = " << info << "]. Trying with smaller time step...\n";
 							solver_result=-1;
 						}
 					}
@@ -1384,9 +1681,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					} else {	//In case of DGTSV, solution is returned in r_mpfd2, overwriting original content.
 						delta_h[memstate%nmemstates][i]=r_mpfd2[i];
 					}
-					if(isnan(delta_h[memstate%nmemstates][i])==true || isinf(delta_h[memstate%nmemstates][i])==true) {
+					if(std::isnan(delta_h[memstate%nmemstates][i])==true || std::isinf(delta_h[memstate%nmemstates][i])==true) {
 						solver_result=-1;
 					}
+					delta_h[memstate%nmemstates][i]/=rho[i];
 				}
 			}
 
@@ -1402,6 +1700,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				delta_h[memstate%nmemstates][lowernode]=0.;
 				delta_theta[lowernode]=0.;
 			}
+
+
+			if (Xdata.Seaice != NULL && solver_result != -1) {
+				AssembleRHS(lowernode, uppernode, h_np1_m, theta_n, theta_np1_m, theta_i_n, theta_i_np1_m, s, dt, rho, k_np1_m_im12, k_np1_m_ip12, aTopBC, TopFluxRate, aBottomBC, BottomFluxRate, Xdata, Salinity, SALINITY_MIXING);
+				if(SalinityTransportSolver==SalinityTransport::EXPLICIT && Salinity.VerifyCFL(dt)==false) {
+					printf("CFL failed for dt=%.10f @ second time\n", dt);
+					solver_result=-1;
+				}
+				if((SalinityTransportSolver==SalinityTransport::IMPLICIT || SalinityTransportSolver==SalinityTransport::IMPLICIT2) && Salinity.VerifyImplicitDt(dt)==false) {
+					printf("ImplicitLimit failed for dt=%.10f @ second time\n", dt);
+					solver_result=-1;
+				}
+			}
+
 
 			i = uppernode + 1;
 			while (i-- > lowernode) {
@@ -1455,9 +1767,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						if(matrix==true) {
 							unsigned int BS_iter=0;			//Counting the number of iterations
 							const double hw0=std::min(EMS[i].VG.h_e, h_np1_mp1[i]);
-							EMS[i].melting_tk=EMS[i].freezing_tk=Constants::freezing_tk+((Constants::g*Constants::freezing_tk)/Constants::lh_fusion)*hw0;
+							EMS[i].meltfreeze_tk=Constants::meltfreeze_tk+((Constants::g*Constants::meltfreeze_tk)/Constants::lh_fusion)*hw0;
 							// Bisection-Secant method, see wikipedia: http://en.wikipedia.org/wiki/False_position_method
-							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*(EMS[i].Te-EMS[i].melting_tk))
+							//   fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].meltfreeze_tk))*(EMS[i].Te-EMS[i].meltfreeze_tk))
 							//      +
 							//   (theta_i_np1_mp1[i]*(Constants::density_ice/Constants::density_water))
 							//      -
@@ -1466,17 +1778,17 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							// Solving this equation for theta_i_np1_mp1[i] (which influences theta_np1_mp1 and Te)
 
 							// So the new liquid water content basically is the same equation, but we have to adapt EMS[i].Te to the amount of ice we create (delta_i).
-							if((theta_i_np1_m[i] > 0. && (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > EMS[i].melting_tk) || (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) < EMS[i].melting_tk) {
+							if((theta_i_np1_m[i] > 0. && (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > EMS[i].meltfreeze_tk) || (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) < EMS[i].meltfreeze_tk) {
 
-								if(WriteDebugOutputput) {
+								if(WriteDebugOutput) {
 									const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i];
 									std::cout << "BEFORE [" << i << std::fixed << std::setprecision(15) << "]; theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_m[i] << " theta_s: " << EMS[i].VG.theta_s << std::setprecision(3) << "  T: " << tmp_T << std::setprecision(8) << "  rho: " << tmp_rho << "  cp: " << tmp_c_p << " ColdC: " << tmp_rho * tmp_c_p * tmp_T * EMS[i].L << "\n" << std::setprecision(6);
 								}
 
-								//Determine maximum possible change in ice content, which should be between 0, and theta_water > theta_d (all possible water freezes). Then maximum ice content is determined based on the temperature difference between element and EMS[i].melting_tk.
-								//const double max_delta_ice=(std::min((theta_np1_mp1[i]-theta_d[i])*(Constants::density_ice/Constants::density_water), std::max(0., EMS[i].melting_tk-(EMS[i].Te/*+delta_Te*/)) * ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ))));
+								//Determine maximum possible change in ice content, which should be between 0, and theta_water > theta_d (all possible water freezes). Then maximum ice content is determined based on the temperature difference between element and EMS[i].meltfreeze_tk.
+								//const double max_delta_ice=(std::min((theta_np1_mp1[i]-theta_d[i])*(Constants::density_ice/Constants::density_water), std::max(0., EMS[i].meltfreeze_tk-(EMS[i].Te/*+delta_Te*/)) * ((EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion ))));
 								double max_delta_ice;
-								if((EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > EMS[i].melting_tk) {
+								if((EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i]) > EMS[i].meltfreeze_tk) {
 									// Melt: either all ice will disappear, or a fraction based on available energy
 									max_delta_ice=-1.*theta_i_n[i];
 								} else {
@@ -1497,13 +1809,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 								}
 								// Deal with special cases:
 								// 1) So much energy available that all ice will melt (note: this case will not be properly solved by Bisection-Secant method.)
-								if((EMS[i].melting_tk-(EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i])) * ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion )) < -1.*theta_i_n[i] && BS_converged==false) {
+								if((EMS[i].meltfreeze_tk-(EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i])) * ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion )) < -1.*theta_i_n[i] && BS_converged==false) {
 									ck=-1.*theta_i_np1_m[i];
 									delta_w_ck=-1.*(ck*(Constants::density_ice/Constants::density_water));
 									delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
-									if(WriteDebugOutputput) {
+									if(WriteDebugOutput) {
 										const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
-										std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 2: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].melting_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 2: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].meltfreeze_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
 									}
 									BS_converged=true;
 								}
@@ -1516,9 +1828,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 										ck=theta_np1_mp1[i]*(Constants::density_water/Constants::density_ice);	//Necessary change in theta[ICE]
 										delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));	//Change in element temperature associated with change in ice content
 									}
-									if(WriteDebugOutputput) {
+									if(WriteDebugOutput) {
 										const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
-										std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 1: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].melting_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										std::cout << "BS_ITER [" << BS_iter << std::scientific << "], case 1: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].meltfreeze_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
 									}
 									BS_converged=true;
 								}
@@ -1526,25 +1838,25 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 									BS_iter++;
 									delta_Te_ak=((theta_i_np1_m[i] - theta_i_n[i]) + ak) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
 									delta_Te_bk=((theta_i_np1_m[i] - theta_i_n[i]) + bk) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ak=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ak)-EMS[i].melting_tk))) - theta_np1_mp1[i];
-									delta_w_bk=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_bk)-EMS[i].melting_tk))) - theta_np1_mp1[i];
+									delta_w_ak=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].meltfreeze_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ak)-EMS[i].meltfreeze_tk))) - theta_np1_mp1[i];
+									delta_w_bk=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].meltfreeze_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_bk)-EMS[i].meltfreeze_tk))) - theta_np1_mp1[i];
 									//Now calculate bisect
 									ck1=(ak+bk)/2.;
 									delta_Te_ck1=((theta_i_np1_m[i] - theta_i_n[i]) + ck1) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ck1=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck1)-EMS[i].melting_tk))) - theta_np1_mp1[i];
+									delta_w_ck1=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].meltfreeze_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck1)-EMS[i].meltfreeze_tk))) - theta_np1_mp1[i];
 									//Now check secant
 									ck=((delta_w_bk + bk*(Constants::density_ice/Constants::density_water))*ak  -  (delta_w_ak + ak*(Constants::density_ice/Constants::density_water))*bk)  /  ((delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) - (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)));
 									delta_Te_ck=((theta_i_np1_m[i] - theta_i_n[i]) + ck) / ((tmp_c_p * tmp_rho) / ( Constants::density_ice * Constants::lh_fusion ));			//Change in element temperature associated with change in ice content
-									delta_w_ck=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].melting_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck)-EMS[i].melting_tk))) - theta_np1_mp1[i];
+									delta_w_ck=(EMS[i].VG.fromHtoTHETA(hw0+(Constants::lh_fusion/(Constants::g*EMS[i].meltfreeze_tk))*std::min(0., (EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_ck)-EMS[i].meltfreeze_tk))) - theta_np1_mp1[i];
 									//Now check if bisect or secant is a better approximation
 									if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water))>fabs(delta_w_ck1+ck1*(Constants::density_ice/Constants::density_water))) {
 										ck=ck1;
 										delta_Te_ck=delta_Te_ck1;
 										delta_w_ck=delta_w_ck1;
 									}
-									if(WriteDebugOutputput) {
+									if(WriteDebugOutput) {
 										const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
-										std::cout << "BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].melting_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										std::cout << "BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].meltfreeze_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
 									}
 									//Now check if convergence is achieved
 									if(fabs(delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) < SF_epsilon) {
@@ -1570,11 +1882,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 									}
 								}
 								if(BS_converged==false) {
-									if(WriteDebugOutputput) std::cout << "[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = " << dt << ".\n";
-									if(WriteDebugOutputput) {
+									if(WriteDebugOutput) std::cout << "[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = " << dt << ".\n";
+									if(WriteDebugOutput) {
 										const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
-										std::cout << "  -- BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].melting_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
-										std::cout << "  -- " << std::setprecision(15) << EMS[i].melting_tk << " " << EMS[i].Te << " " << delta_Te_adv[i] << " " << delta_Te_adv_i[i] << " " << delta_Te[i] << "   " << EMS[i].theta[WATER] << " " << EMS[i].theta[ICE] << "\n" << std::setprecision(6);
+										std::cout << "  -- BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].meltfreeze_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
+										std::cout << "  -- " << std::setprecision(15) << EMS[i].meltfreeze_tk << " " << EMS[i].Te << " " << delta_Te_adv[i] << " " << delta_Te_adv_i[i] << " " << delta_Te[i] << "   " << EMS[i].theta[WATER] << " " << EMS[i].theta[ICE] << "\n" << std::setprecision(6);
 									}
 									max_delta_h=2.*MAX_ALLOWED_DELTA_H;
 									solver_result=-1;
@@ -1595,13 +1907,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							//Update BS-solver statistics
 							bs_stats_totiter+=BS_iter;
 							if(BS_iter>bs_stats_maxiter) bs_stats_maxiter=BS_iter;
-							if(WriteDebugOutputput)
+							if(WriteDebugOutput)
 								std::cout << "AFTER [" << i << std::setprecision(15) << "]: theta_w: " << theta_np1_mp1[i] << " theta_i_np1_m: " << theta_i_np1_mp1[i] << " theta_s:" << EMS[i].VG.theta_s << std::setprecision(3) << "  T: " << EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] << " (niter=" << BS_iter << ")\n" << std::setprecision(6);
 						} else { //END OF REPARTITIONING ICE/WATER
 							theta_i_np1_mp1[i]=theta_i_np1_m[i];
 						}
 					}
-
 					delta_theta[i]=theta_np1_mp1[i]-theta_np1_m[i];
 					delta_theta_i[i]=theta_i_np1_mp1[i]-theta_i_np1_m[i];
 				} else {
@@ -1612,7 +1923,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Update mass balance
 				mass2+=(theta_np1_mp1[i]+(theta_i_np1_mp1[i]*(Constants::density_ice/Constants::density_water)))*dz[i];
 
-				if(WriteDebugOutputput) {
+				if(WriteDebugOutput) {
 					std::cout << "ITER: " << niter << " i: " << i << std::scientific << std::setprecision(10) << " ---  h1: " << h_np1_m[i] << " d_h: " << delta_h[memstate%nmemstates][i] << " h2: " << h_np1_mp1[i] << std::setprecision(12) << " --- theta1: " << theta_np1_m[i] << " d_theta: " << delta_theta[i] << " theta2: " << theta_np1_mp1[i] << "\n" << std::setprecision(6) << std::fixed;
 				}
 
@@ -1630,8 +1941,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							track_accuracy_h=fabs(delta_h[memstate%nmemstates][i]);
 						}
 						//Now check against convergence criterion:
-						//if(fabs(delta_h[memstate%nmemstates][i]/h_np1_m[i]) > REQUIRED_ACCURACY_H) {	//relative accuracy
-						if(fabs(delta_h[memstate%nmemstates][i])>REQUIRED_ACCURACY_H) {			//absolute accuracy
+						if(fabs(delta_h[memstate%nmemstates][i]/h_np1_m[i]) > REQUIRED_ACCURACY_H) {	//relative accuracy
+						//if(fabs(delta_h[memstate%nmemstates][i])>REQUIRED_ACCURACY_H) {		//absolute accuracy
 							accuracy=fabs(delta_h[memstate%nmemstates][i]);
 						}
 					}
@@ -1640,14 +1951,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Absolute accuracy in theta. This doesn't behave stable, especially during saturated soil conditions, when the accuracy is set too low.
 				//See Huang (1996), which proposes this, and also discusses the need for a higher accuracy:
 				//if(not(Se[i]>convergencecriterionthreshold || i==uppernode || i==lowernode || i==Xdata.SoilNode-1 || i==Xdata.SoilNode)) {
-				if(not(Se[i]>convergencecriterionthreshold || i==Xdata.SoilNode-1 || i==Xdata.SoilNode || i==lowernode || i==lowernode-1)) {
+				if(!(Se[i]>convergencecriterionthreshold || i==Xdata.SoilNode-1 || i==Xdata.SoilNode || i==lowernode || i==lowernode-1)) {
 					if ((i!=lowernode || aBottomBC==NEUMANN) && (i!=uppernode || aTopBC==NEUMANN)) {
 						//First check general accuarcy:
 						if(fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water))>track_accuracy_theta) {
 							track_accuracy_theta=fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water));
 						}
 						//Now check against convergence criterion:
-						if (fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water)) > REQUIRED_ACCURACY_THETA ) {
+						if (fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water)) / (EMS[i].VG.theta_s - EMS[i].VG.theta_r) > REQUIRED_ACCURACY_THETA ) {
 							accuracy=fabs(delta_theta[i]+delta_theta_i[i]*(Constants::density_ice/Constants::density_water));
 						}
 					}
@@ -1671,13 +1982,23 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			if(aTopBC==NEUMANN) {		//If we use Neumann, the massbalance should incorporate the applied TopFluxRate:
 				tmp_mb_topflux=TopFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the influx: (Note that basically with Dirichlet, the change of theta in the element is 0., so the influx in the model domain is equal to the flux from the upper element to the one below.)
-				tmp_mb_topflux=((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_mp1[uppernode]-h_np1_mp1[uppernode-1])/dz_down[uppernode])+Xdata.cos_sl)*k_np1_m_im12[uppernode]*dt);
+				tmp_mb_topflux=((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + (2./(rho[uppernode]+rho[uppernode-1]))*((((h_np1_mp1[uppernode]*rho[uppernode]-h_np1_mp1[uppernode-1]*rho[uppernode-1])/dz_down[uppernode])+Xdata.cos_sl*rho[uppernode])*k_np1_m_im12[uppernode]*dt);
 			}
 			if(aBottomBC==NEUMANN) {	//If we use Neumann, the massbalance should incorporate the applied BottomFluxRate:
 				tmp_mb_bottomflux=BottomFluxRate*dt;
 			} else {			//Else when using Dirichlet, we should estimate the outflux: (Note that basically with Dirichlet, the change of theta in the element is 0., so the outflux in the model domain is equal to the flux from the element above the lowest one to the lowest one.)
 				if(uppernode > 0) {
-					tmp_mb_bottomflux=-1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt));
+					if(variant != "SEAICE") {
+						tmp_mb_bottomflux=-1.*(
+							((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]
+							-(2./(rho[lowernode+1]+rho[lowernode]))*
+								((((h_np1_mp1[lowernode+1]*rho[lowernode+1]-h_np1_mp1[lowernode]*rho[lowernode])/dz_up[lowernode])
+								+Xdata.cos_sl*(rho[lowernode+1]*z[lowernode+1]-rho[lowernode]*z[lowernode])/dz_up[lowernode])
+								*k_np1_m_ip12[lowernode]*dt)
+							);
+					} else {
+						tmp_mb_bottomflux=(Salinity.flux_down[lowernode] + Salinity.flux_down_2[lowernode]) * dt;		// Units: [m]
+					}
 				} else {
 					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
 					tmp_mb_bottomflux=0.;
@@ -1686,19 +2007,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			massbalanceerror+=tmp_mb_topflux;		//Add topflux (note: topflux>0. means influx)
 			massbalanceerror-=tmp_mb_bottomflux;		//Substract bottomflufx (note: bottomflux>0. means outflux)
 			massbalanceerror+=totalsourcetermflux*dt;	//Add the sink/source term flux.
-			if(WriteDebugOutputput) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-((((h_np1_m[lowernode+1]-h_np1_m[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
+
+			if(WriteDebugOutput) printf("MASSBALANCETEST: mass1 %.8E    mass2 %.8E    topflux %.8E (%.8E)  bottomflux %.8E (%.8E) sourceflux %.8E    delta %.8E\n", mass1, mass2, tmp_mb_topflux, ((theta_np1_mp1[uppernode]+theta_i_np1_mp1[uppernode]*(Constants::density_ice/Constants::density_water))-(theta_n[uppernode] + theta_i_n[uppernode]*(Constants::density_ice/Constants::density_water)))*dz[uppernode] + ((((h_np1_m[uppernode]-h_np1_m[uppernode-1])/dz_down[uppernode])+1.)*k_np1_m_im12[uppernode]*dt), tmp_mb_bottomflux, -1.*(((theta_np1_mp1[lowernode]+theta_i_np1_mp1[lowernode]*(Constants::density_ice/Constants::density_water))-(theta_n[lowernode] + theta_i_n[lowernode]*(Constants::density_ice/Constants::density_water)))*dz[lowernode]-(1./rho[lowernode])*((((h_np1_m[lowernode+1]*rho[lowernode+1]-h_np1_m[lowernode]*rho[lowernode])/dz_up[lowernode])+Xdata.cos_sl*rho[lowernode])*k_np1_m_ip12[lowernode]*dt)), totalsourcetermflux*dt, massbalanceerror);
 
 			//Make sure to trigger a rewind by making max_delta_h very large in case the mass balance is violated or change in head are too large.
 			if(fabs(massbalanceerror)>1E-1 || max_delta_h>MAX_ALLOWED_DELTA_H) {
 				max_delta_h=2.*MAX_ALLOWED_DELTA_H;
 			}
 
-			if (accuracy > 1E-20 || fabs(massbalanceerror)>maxallowedmassbalanceerror) {		//Check whether we converged. Note that accuracy is only assigned when the layer exceeds the prescribed required accuracy. This is because we want to have more than one convergence criterion (both h and theta based), we say accuracy=0 is a sign of convergence in the whole domain.
+			if (accuracy > 1E-20 || fabs(massbalanceerror)>maxallowedmassbalanceerror || solver_result==-1) {		//Check whether we converged. Note that accuracy is only assigned when the layer exceeds the prescribed required accuracy. This is because we want to have more than one convergence criterion (both h and theta based), we say accuracy=0 is a sign of convergence in the whole domain.
 				boolConvergence=false;
 			}
 
 
-			if(WriteDebugOutputput) printf("CONVERGENCE:  acc_h: %.10f acc_theta: %.10f acc: %.10f converged? %s\n", track_accuracy_h, track_accuracy_theta, accuracy, (boolConvergence)?"yes":"no");
+			if(WriteDebugOutput) printf("CONVERGENCE:  acc_h: %.10f acc_theta: %.10f acc: %.10f converged? %s\n", track_accuracy_h, track_accuracy_theta, accuracy, (boolConvergence)?"yes":"no");
 
 			//Copy solution, to prepare for next iteration
 			for (i = lowernode; i <= uppernode; i++) {
@@ -1710,7 +2032,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Rewind time step control: retry finding solution with smaller time step when MAX_ITER is exceeded. Also when max_delta_h is too large we do a rewind, else the model is starting to blow up.
 			if((niter>MAX_ITER || max_delta_h>MAX_ALLOWED_DELTA_H) && dt > MIN_VAL_TIMESTEP && boolConvergence==false) {
 
-				if(WriteDebugOutputput) std::cout << "REWIND: timestep " << std::setprecision(20) << dt << std::setprecision(6) << " ---> ";
+				if(WriteDebugOutput) std::cout << "REWIND: timestep " << std::setprecision(20) << dt << std::setprecision(6) << " ---> ";
 
 				niter_seqrewinds++;				//We increase the sequential rewinds counter. For this first rewind, this will give a power of 1 for the new time step, etc.
 										//When we find a good solution again, we reset this counter to 0.
@@ -1719,7 +2041,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				dt*=pow(0.333, double(niter_seqrewinds));	//Now make the time step smaller, we use niter_seqrewinds to speed up when we encounter multiple consecutive rewinds.
 										//The value of 0.333 is taken from the HYDRUS-manual, where they do this in case a rewind is necessary.
 
-				if(WriteDebugOutputput) std::cout << std::setprecision(20) << dt << "  accuracy: " << std::setprecision(10) << accuracy << " max_delta_h: " << max_delta_h << ")\n" << std::setprecision(6);
+				if(WriteDebugOutput) std::cout << std::setprecision(20) << dt << "  accuracy: " << std::setprecision(10) << accuracy << " max_delta_h: " << max_delta_h << ")\n" << std::setprecision(6);
 
 				niter=0;					//Because of the rewind, we start again with the iterations.
 				niter_nrewinds++;				//Increase rewind counter
@@ -1740,14 +2062,14 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//Print latest state for debugging:
 				bool DoThrow=false;
 				if(SafeMode==false) {
-					prn_msg(__FILE__, __LINE__, "err", Date(), "Richards-Equation solver did not converge: reached maximum number of iterations (500), with a time step: %G\n", dt);
+					prn_msg(__FILE__, __LINE__, "err", date, "Richards-Equation solver did not converge for %s: reached maximum number of iterations (500), with a time step: %G\n", Xdata.meta.stationID.c_str(), dt);
 					DoThrow=true;
 				} else {
 					if(seq_safemode>3) {
 						std::cout << "[E] ERROR in Richards-Equation solver: no convergence! SafeMode was not able to continue simulation!\n";
 						DoThrow=true;
 					} else {
-						std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << "].\n";
+						std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << ", stn=" << Xdata.meta.stationID << "].\n";
 					}
 				}
 				std::cout << "    POSSIBLE SOLUTIONS:\n  ========================================================================================\n";
@@ -1763,7 +2085,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				for (i = lowernode; i <= uppernode; i++) {
 					printf("    layer [%d]:  h(t): %.3f  h(t+dt): %.3f  th(t): %.3f (%.3f-%.3f)  th(t+dt): %.3f  th_ice(t): %.3f  th_ice(t+dt): %.3f  (vg_params: %.2f %.2f %.2f)\n", int(i), h_n[i], h_np1_m[i], theta_n[i], EMS[i].VG.theta_r, EMS[i].VG.theta_s, theta_np1_m[i], (i<Xdata.SoilNode)?(theta_i_n[i]):(EMS[i].theta[ICE]), (i<Xdata.SoilNode)?(theta_i_np1_m[i]):(EMS[i].theta[ICE]), EMS[i].VG.alpha, EMS[i].VG.m, EMS[i].VG.n);
 				}
-				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G\n", TopBC, surfacefluxrate, TopFluxRate);
+				printf("    upper boundary [ boundary condition: %d ]:   prescribed flux: %G    applied flux: %G     domain: %s\n", TopBC, surfacefluxrate, TopFluxRate, (matrix)?("matrix"):("pref_flow"));
 				if(DoThrow==true) {
 					//We are lost. We cannot do another rewind and decrease time step (if we could, niter is reset).
 					throw;
@@ -1784,7 +2106,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					boolConvergence=false;				//Of course, when we need to rewind, we have had no convergence.
 					DoRewindFlag=true;				//Set DoRewindFlag to true, to quit the iteration loop.
 					StopLoop=false;					//In case StopLoop was set true (last time step), we set it back to false. It might be that the smaller time step won't match the SNOWPACK time step any longer.
-					mass1=0.;					//Because we fiddle around with theta, we should update mass1 (mass at beginning of time step)
 					if(seq_safemode==1 && totalsourcetermflux!=0.) {
 						for (i = lowernode; i <= uppernode; i++) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 							// The first time a safe mode is required, set source/sink terms to 0.
@@ -1798,6 +2119,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						}
 					} else {
 						if(seq_safemode==3) {
+							mass1=0.;					//Because we will fiddle around with theta, we should update mass1 (mass at beginning of time step)
 							for (i = lowernode; i <= uppernode; i++) {	//We have to reset the whole domain, because we do the time step for the whole domain.
 								// Update the SafeMode mass balance error tracking variable by "removing" all water
 								SafeMode_MBE-=(theta_n[i]+theta_i_n[i])*dz[i]*Constants::density_water;
@@ -1841,7 +2163,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 							//Deal with the TopFluxRate:
 							SafeMode_MBE+=(surfacefluxrate/2.)*(sn_dt-TimeAdvance)*Constants::density_water;
 							printf("    --> set surfacefluxrate from %G ", surfacefluxrate);
-							surfacefluxrate/=2.;
+							if(seq_safemode==2) {
+								surfacefluxrate=0.;
+							} else {
+								surfacefluxrate/=2.;
+							}
 							printf("to %G.\n", surfacefluxrate);
 						}
 					}
@@ -1859,13 +2185,89 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			stats_nsteps++;			//Update the statistics of the number of steps.
 
 			//Prepare for next time step:
+			if (Xdata.Seaice != NULL) {
+				//
+				// For sea ice, deal with salinity flux
+				//
+
+				// Set the SalinityTransport vector with the solution after liquid water flow
+				std::vector<double> DeltaSal(nE, 0.);							//Salinity changes
+				std::vector<double> DeltaSal2(nE, 0.);							//Salinity changes
+				for (i = lowernode; i <= uppernode; i++) {						//We loop over all Richards solver domain layers
+					Salinity.BrineSal[i] = EMS[i].salinity / theta_n[i];				//Calculate brine salinity
+					Salinity.theta1[i] = theta_n[i];
+					Salinity.theta2[i] = theta_np1_mp1[i];
+				}
+				Salinity.BottomSalinity = (Xdata.Seaice->OceanSalinity);
+				Salinity.TopSalinity = (0.);
+
+				// Solve the transport equation
+				if(SalinityTransportSolver==SalinityTransport::EXPLICIT) {
+					Salinity.SolveSalinityTransportEquationExplicit(dt, DeltaSal);
+				} else {
+					Salinity.SolveSalinityTransportEquationImplicit(dt, DeltaSal, 0.5, (SalinityTransportSolver==SalinityTransport::IMPLICIT2));
+				}
+
+				// Apply and verify solution
+				const double tol = 0.;
+				for (i = lowernode; i <= uppernode; i++) {
+					//EMS[i].salinity = Salinity.BrineSal[i] * theta_np1_mp1[i];
+					//EMS[i].salinity += DeltaSal[i] * (theta_np1_mp1[i]);
+
+					//Verify new salinity profile
+					if(EMS[i].salinity < 0. && TimeAdvance > 900. - Constants::eps2) {
+						EMS[i].salinity = tol;
+					}
+					Xdata.Edata[i].meltfreeze_tk = -SeaIce::mu * Salinity.BrineSal[i] + Constants::meltfreeze_tk;
+				}
+
+				if (SALINITY_MIXING != NONE) {
+					for (i = lowernode; i <= uppernode; i++) {						//We loop over all Richards solver domain layers
+						DeltaSal2[i] = DeltaSal[i];
+						DeltaSal[i] = 0.;
+						Salinity.BrineSal[i] = EMS[i].salinity / theta_n[i];
+						Salinity.flux_up[i] = Salinity.flux_up_2[i];
+						Salinity.flux_down[i] = Salinity.flux_down_2[i];
+						Salinity.flux_up_2[i] = Salinity.flux_down_2[i] = 0.;
+						//Salinity.D[i] = 0.;
+					}
+					// Solve the transport equation
+					if(SalinityTransportSolver==SalinityTransport::EXPLICIT) {
+						Salinity.SolveSalinityTransportEquationExplicit(dt, DeltaSal2);
+					} else {
+						Salinity.SolveSalinityTransportEquationImplicit(dt, DeltaSal2, 0.5, SalinityTransportSolver==SalinityTransport::IMPLICIT2);
+					}
+				}
+
+				// Apply and verify solution
+				for (i = lowernode; i <= uppernode; i++) {
+					EMS[i].salinity = Salinity.BrineSal[i] * theta_np1_mp1[i];
+					//EMS[i].salinity = (((theta_n[i]!=0.) ? (EMS[i].salinity / theta_n[i]) : (0.)) + (DeltaSal[i] + DeltaSal2[i])) * (theta_np1_mp1[i]);
+					Salinity.sb[i] = 0.;
+					//Verify new salinity profile
+					if(EMS[i].salinity < 0. && TimeAdvance > 900. - Constants::eps2) {
+						EMS[i].salinity = tol;
+					}
+					EMS[i].meltfreeze_tk = -SeaIce::mu * Salinity.BrineSal[i] + Constants::meltfreeze_tk;
+					EMS[i].updDensity();
+					EMS[i].M=EMS[i].L*EMS[i].Rho;
+				}
+
+
+
+				Xdata.Seaice->BottomSalFlux += Salinity.BottomSalFlux;
+				Xdata.Seaice->TopSalFlux += Salinity.TopSalFlux;
+				Salinity.BottomSalFlux = 0.;
+				Salinity.TopSalFlux = 0.;
+			}
+
 			for (i = lowernode; i <= uppernode; i++) {				//Cycle through all Richards solver domain layers.
 				//Apply change in temperature due to soil freezing or thawing and heat advection by flowing water:
 				if(i<Xdata.SoilNode) {
 					//Freezing and thawing
 					if(fabs(delta_Te_i[i]) > 0.) {				//Check if phase change did occur in soil
 						delta_Te[i]+=delta_Te_i[i];
-						EMS[i].QIntmf+=(Constants::density_ice*(theta_i_np1_mp1[i]-theta_i_n[i])*(Constants::specific_heat_water-Constants::specific_heat_ice)*(EMS[i].melting_tk-Constants::melting_tk))/dt;
+						EMS[i].QIntmf+=(Constants::density_ice*(theta_i_np1_mp1[i]-theta_i_n[i])*(Constants::specific_heat_water-Constants::specific_heat_ice)*(EMS[i].meltfreeze_tk-Constants::meltfreeze_tk))/dt;
 						// Now that we have performed a phase change, we should correct the nodal temperatures too. This will be done later in PhaseChange,
 						// by using Qmf to determine amount of phase change that occurred.
 					}
@@ -1888,46 +2290,38 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				h_n[i]=h_np1_mp1[i];
 				theta_n[i]=theta_np1_mp1[i];
 				theta_i_n[i]=theta_i_np1_mp1[i];
-
-				//Calculate fluxes
-				if(i>lowernode) {
-					flux_down[i]+=((((h_n[i]-h_n[i-1])/dz_up[i-1])+Xdata.cos_sl)*k_np1_m_ip12[i-1]*dt);
-				} else {
-					//This case is treated out of this loop
-				}
-				if(i<uppernode) {
-					flux_up[i]+=((((h_n[i+1]-h_n[i])/dz_up[i])+Xdata.cos_sl)*k_np1_m_ip12[i]*dt);
-				} else {
-					//This case is treated out of this loop
-				}
 			}
-
 
 
 			//Determine (estimate) flux across boundaries (downward ==> positive flux):
 			//This is an additional check for the boundaries.
 			actualtopflux+=TopFluxRate*dt;
-			flux_up[uppernode]+=TopFluxRate*dt;
+			Xdata.Ndata[nN-1].water_flux += TopFluxRate*dt;
 			refusedtopflux+=(surfacefluxrate-TopFluxRate)*dt;
 			if(aBottomBC==DIRICHLET) {
 				if(uppernode > 0) {
-					const double tmp_flux=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt)-((((h_np1_mp1[lowernode+1]-h_np1_mp1[lowernode])/dz_up[lowernode])+Xdata.cos_sl)*k_np1_m_ip12[lowernode]*dt));
+					double tmp_flux = 0.;
+					if(variant != "SEAICE") {
+						tmp_flux=-1.*((delta_theta_dt[lowernode]+(delta_theta_i_dt[lowernode]*(Constants::density_ice/Constants::density_water))*dt*dz_[lowernode]) - (1./rho[lowernode])*((((h_np1_mp1[lowernode+1]*rho[lowernode+1]-h_np1_mp1[lowernode]*rho[lowernode])/dz_up[lowernode])+Xdata.cos_sl*rho[lowernode])*k_np1_m_ip12[lowernode]*dt));
+					} else {
+						tmp_flux=(Salinity.flux_down[0]+Salinity.flux_down_2[0])*dt;
+					}
 					actualbottomflux+=tmp_flux;
-					flux_down[lowernode]+=tmp_flux;
+					Xdata.Ndata[0].water_flux += tmp_flux*Constants::density_water;
 				} else {
 					//With Dirichlet lower boundary condition and only 1 element, we cannot really estimate the flux, so set it to 0.
 					const double tmp_flux=0.;
 					actualbottomflux+=tmp_flux;
-					flux_down[lowernode]+=tmp_flux;
 				}
 			} else {
 				actualbottomflux+=BottomFluxRate*dt;
-				flux_down[lowernode]+=BottomFluxRate*dt;
+				Xdata.Ndata[0].water_flux += BottomFluxRate*dt*Constants::density_water;
 			}
-
-			massbalanceerror_sum+=massbalanceerror;
-			if(WriteDebugOutputput) printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
-
+			if(nN > 2) {		// Note: top and bottom node have been filled above, so only execute loop when 3 or more nodes are present.
+				for(size_t node_i=1; node_i < nN-1; node_i++) {
+					Xdata.Ndata[node_i].water_flux += (1./rho[node_i])*((((h_n[node_i]*rho[node_i]-h_n[node_i-1]*rho[node_i-1])/dz_up[node_i-1])+Xdata.cos_sl*rho[node_i])*k_np1_m_ip12[node_i-1]*dt)*Constants::density_water;
+				}
+			}
 
 			//Determine flux at soil snow interface (note: postive=flux upward, negative=flux downward):
 			if (Xdata.SoilNode<nE) {	//We have snow layers
@@ -1938,7 +2332,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					// See McCord (1996). Note: I think there is a minus sign missing there.
 					// In any case: snowsoilinterfaceflux > 0 means influx!
 					if(Xdata.SoilNode>0) {
-					  	const double tmp_snowsoilinterfaceflux=((((h_n[Xdata.SoilNode]-h_n[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl)*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
+						const double tmp_snowsoilinterfaceflux=(1./rho[Xdata.SoilNode])*((((h_n[Xdata.SoilNode]*rho[Xdata.SoilNode]-h_n[Xdata.SoilNode-1]*rho[Xdata.SoilNode-1])/dz_up[Xdata.SoilNode-1])+Xdata.cos_sl*rho[Xdata.SoilNode])*k_np1_m_ip12[Xdata.SoilNode-1]*dt);
 						snowsoilinterfaceflux+=tmp_snowsoilinterfaceflux;
 					} else {
 						snowsoilinterfaceflux=actualbottomflux;
@@ -1949,7 +2343,20 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//snowsoilinterfaceflux+=TopFluxRate*dt;
 			}
 
-			if(WriteDebugOutputput) printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux, dt);
+
+			//Determine slope parallel flux
+			const double tmp_sin_sl = sqrt(1. - Xdata.cos_sl * Xdata.cos_sl); 	//Calculate sin of slope, from cos_sl
+			for (i = lowernode; i <= uppernode; i++) {				//Cycle through all Richards solver domain layers.
+				EMS[i].SlopeParFlux += tmp_sin_sl*K[i]*dt;
+			}
+
+
+			massbalanceerror_sum+=massbalanceerror;
+			if(WriteDebugOutput) {
+				printf("MASSBALANCE: mass1 %.8f    mass2 %.8f    delta %.8f\n", mass1, mass2, massbalanceerror);
+				printf("CONTROL: %.15f %.15f %.15f %.15f %.15f %.15f %f\n", surfacefluxrate, TopFluxRate, actualtopflux, BottomFluxRate, actualbottomflux, snowsoilinterfaceflux, dt);
+			}
+
 
 			//Time step control
 			//This time step control increases the time step when niter is below a certain value. When rewinds occurred in the time step, no change is done (dt already adapted by the rewind-mechanim), if too many iterations, time step is decreased.
@@ -1972,27 +2379,13 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 			//Update mass balance status variable (mass1 becomes mass2 to serve as reference for the next iteration)
 			mass1=mass2;
 
-			if(WriteDebugOutputput) printf("NSTEPS: %d, TIME ADVANCE: %f, ITERS NEEDED: %d [%d], ACTUALTOPFLUX: %.10f     ---> new dt: %.15f\n", nsteps, TimeAdvance, niter, niter_nrewinds, actualtopflux, dt);
+			if(WriteDebugOutput) printf("NSTEPS: %d, TIME ADVANCE: %f, ITERS NEEDED: %d [%d], ACTUALTOPFLUX: %.10f     ---> new dt: %.15f\n", nsteps, TimeAdvance, niter, niter_nrewinds, actualtopflux, dt);
 		}	//END DoRewindFlag==false
 	}
 	while(StopLoop==false);							//This is the main loop to perform 1 SNOWPACK time step
 
 	// Copy results back to SNOWPACK
-	std::vector<double> DeltaSal(nE, 0.);							//Salinity changes
 	for (i = lowernode; i <= uppernode; i++) {						//We loop over all Richards solver domain layers
-		if (i==uppernode) {
-			// We assume that the incoming flux at the top element consists of rain and has no salinity.
-			DeltaSal[i] += (flux_up[i]>0.)?(0.*flux_up[i]):(EMS[i].salinity*flux_up[i]);
-		} else {
-			DeltaSal[i] += (flux_up[i]>0.)?(EMS[i+1].salinity*flux_up[i]):(EMS[i].salinity*flux_up[i]);
-		}
-		if (i==lowernode) {
-			// We assume that ocean water has a salinity of 0.35
-			DeltaSal[i] += (flux_down[i]<0.)?(-1.*0.035*flux_down[i]):(-1.*EMS[i].salinity*flux_down[i]);
-		} else {
-			DeltaSal[i] += (flux_down[i]<0.)?(-1.*EMS[i-1].salinity*flux_down[i]):(-1.*EMS[i].salinity*flux_down[i]);
-		}
-
 		if(EMS[i].theta[SOIL]>Constants::eps2) {					//We are in soil
 			EMS[i].theta[WATER]=EMS[i].VG.fromHtoTHETAforICE(h_n[i], theta_i_n[i]);
 			EMS[i].theta[ICE]=theta_i_n[i];
@@ -2001,13 +2394,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		}
 		EMS[i].h=h_n[i];
 
-		//In case we had to melt ice to get theta_r, we have to adjust the temperature:
-		EMS[i].Te -= dT[i];
-		if(i==nE-1) {
-			NDS[i+1].T-=dT[i];
-			NDS[i].T-=dT[i];
-		}
-
 		//And adjust all the properties accordingly
 		EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
 		//Now we have checked everything, we make it fit between [0, 1]: to get rid off all round-off errors
@@ -2015,7 +2401,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		EMS[i].theta[WATER]=std::max(0., std::min(1., EMS[i].theta[WATER]));
 		EMS[i].theta[WATER_PREF]=std::max(0., std::min(1., EMS[i].theta[WATER_PREF]));
 		EMS[i].theta[ICE]=std::max(0., std::min(1., EMS[i].theta[ICE]));
-		EMS[i].Rho = (EMS[i].theta[ICE] * Constants::density_ice) + ((EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF]) * Constants::density_water) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
+		EMS[i].updDensity();
 		EMS[i].M=EMS[i].L*EMS[i].Rho;
 		EMS[i].heatCapacity();
 
@@ -2023,12 +2409,6 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		EMS[i].Qmf += ((EMS[i].theta[ICE]-snowpackBACKUPTHETAICE[i]) * Constants::density_ice * Constants::lh_fusion) / sn_dt;	// Units: [W m-3]
 		//We transferred the temperature change of the element due to soil freezing/thawing in Qmf, so reset delta_Te:
 		delta_Te[i]=0.;
-	}
-
-	//Apply new salinity profile
-	for (i = lowernode; i <= uppernode; i++) {						//We loop over all Richards solver domain layers
-		EMS[i].salinity+=DeltaSal[i];
-		DeltaSal[i]=0.;
 	}
 
 	//double max_flux=0.;
@@ -2041,7 +2421,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 				//(i==uppernode)?(surfacefluxrate):(((((h_n[i]-h_n[i-1])/dz_up[i-1])+cos_sl)*sqrt(K[i]*K[i-1])*dt))
 				//);
 				//if(max_flux<flux_compare) max_flux=flux_compare;
-				if(i>Xdata.SoilNode-1) {	//For snow only
+				if(i>=Xdata.SoilNode) {	//For snow only
 					// Volumetric area:
 					//vol_area = exp(0.09904-3.557*(EMS[i].ogs));		// As presented at EGU 2016.
 					const double vol_area = 0.0584 * pow((0.5*EMS[i].ogs), -1.1090277);
@@ -2066,7 +2446,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	i = uppernode + 1;
 	while (i-- > lowernode) {
 		if(enable_pref_flow) {
-			if(i>Xdata.SoilNode-1) {	// For snow
+			if(i>=Xdata.SoilNode) {	// For snow
 				if(matrix) {
 					// First from matrix to preferential flow ...
 					if(i==Xdata.SoilNode) {
@@ -2104,17 +2484,15 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 										  , 0.999*(												//Keep a bit of room
 										  std::min((1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*EMS[i-1].PrefFlowArea-EMS[i-1].theta[WATER_PREF], ((EMS[i].theta[WATER]-theta_d[i])*(EMS[i].L/EMS[i-1].L)))	//Take MIN of: (i) Don't oversaturate preferential part, and (ii) don't take too much from the matrix part (TODO: actually, this should never happen.... remove it?)
 										  )));
-							if(WriteDebugOutputput) printf("MATRIX->PREF [%d]: %f %f %f %f %f\n", int(i), EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i-1].theta[WATER], EMS[i-1].theta[WATER_PREF], dtheta_w);
-							EMS[i-1].theta[WATER_PREF]+=dtheta_w;
+							if(WriteDebugOutput) printf("MATRIX->PREF [%d]: %f %f %f %f %f\n", int(i), EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i-1].theta[WATER], EMS[i-1].theta[WATER_PREF], dtheta_w);
+							EMS[i-1].lwc_source+=dtheta_w;	// This works because preferential flow is executed after matrix flow, so the source/sink term will be used directly afterwards.
 							EMS[i].theta[WATER]-=dtheta_w*(EMS[i-1].L/EMS[i].L);
 							// After moving the water, adjust the other properties
 							EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
-							EMS[i].Rho=Constants::density_ice * EMS[i].theta[ICE] + (Constants::density_water * (EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF])) + (EMS[i].theta[SOIL] * EMS[i].soil[SOIL_RHO]);
+							EMS[i].updDensity();
 							EMS[i].M=EMS[i].Rho*EMS[i].L;
 							EMS[i-1].theta[AIR]=1.-EMS[i-1].theta[WATER]-EMS[i-1].theta[WATER_PREF]-EMS[i-1].theta[ICE]-EMS[i-1].theta[SOIL];
-							EMS[i-1].Rho = Constants::density_ice * EMS[i-1].theta[ICE] +
-							(Constants::density_water * (EMS[i-1].theta[WATER] + EMS[i-1].theta[WATER_PREF])) +
-							    (EMS[i-1].theta[SOIL] * EMS[i-1].soil[SOIL_RHO]);
+							EMS[i-1].updDensity();
 							EMS[i-1].M=EMS[i-1].Rho*EMS[i-1].L;
 						}
 
@@ -2122,24 +2500,32 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 						// This is because in wet snow, the preferential flow part is also wet. Moreover, it enables a smaller capillary suction in the preferential flow domain, and allows the water to flow downwards
 						const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
 						const double dtheta_w = std::max(0., (-1. * ( (EMS[i].VG.theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].VG.theta_r)) - EMS[i].theta[WATER_PREF]);
-						EMS[i].theta[WATER_PREF] += dtheta_w;
-						EMS[i].theta[WATER] -= dtheta_w;
+						EMS[i].lwc_source+=dtheta_w;	// This works because preferential flow is executed after matrix flow, so the source/sink term will be used directly afterwards.
+						EMS[i].theta[WATER]-=dtheta_w;
+						EMS[i].theta[AIR]=1.-EMS[i].theta[WATER]-EMS[i].theta[WATER_PREF]-EMS[i].theta[ICE]-EMS[i].theta[SOIL];
+						EMS[i].updDensity();
+						EMS[i].M=EMS[i].Rho*EMS[i].L;
 					}
 				} else {
 					// Now from preferential to matrix flow
+					// Reinitialize the PF->matrix transfer variable
+					EMS[i].theta_w_transfer = 0.;
 					if(i==Xdata.SoilNode) {
 						//For the snow layer just above the soil, we equalize the saturation in the matrix and preferential flow domain
 						//This leads to more realistic snowpack runoff behavior, as with the approach for the other snow layers, spiky behavior arises from whether or not pref_threshold is exceeded
 						const double tmp_theta_water_tot = EMS[i].theta[WATER] + EMS[i].theta[WATER_PREF];
 						//Note that the std::max(0., ...) ensures that the water flow is from preferential flow to matrix flow domain
 						const double dtheta_w2 = std::max(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].VG.theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].VG.theta_r));
+						//const double dtheta_w2 = std::min(EMS[i].theta[WATER_PREF], std::max(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].VG.theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].VG.theta_r)));
 						EMS[i].theta[WATER_PREF] -= dtheta_w2;
 						EMS[i].theta[WATER] += dtheta_w2;
+						// Increment the PF->matrix transfer variable
+						EMS[i].theta_w_transfer += dtheta_w2;
 					} else {
 						// For other snow layers than the lowest snow layer above the soil
 						if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea)) > pref_flow_param_th) {
 							// Using the code from PhaseChange.cc, we estimate the refreezing capacity
-							const double deltaT = EMS[i].freezing_tk - EMS[i].Te;
+							const double deltaT = EMS[i].meltfreeze_tk - EMS[i].Te;
 							// Adapt A to compute mass changes
 							double A = (EMS[i].c[TEMPERATURE] * EMS[i].Rho) / ( Constants::density_ice * Constants::lh_fusion );
 							// Compute the change in volumetric ice and water contents
@@ -2153,6 +2539,8 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 
 							EMS[i].theta[WATER]+=dtheta_w1;
 							EMS[i].theta[WATER_PREF]-=dtheta_w1;
+							// Increment the PF->matrix transfer variable
+							EMS[i].theta_w_transfer += dtheta_w1;
 
 							if(EMS[i].theta[WATER_PREF]/((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea)) > pref_flow_param_th) {
 								// This approach is equalizing both domains in case we still exceed the threshold:
@@ -2160,21 +2548,29 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 								const double dtheta_w2 = std::max(0., EMS[i].theta[WATER_PREF] + ( (EMS[i].VG.theta_r - tmp_theta_water_tot) * (1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water)*(EMS[i].PrefFlowArea) ) / ((1.-EMS[i].theta[ICE])*(Constants::density_ice/Constants::density_water) - EMS[i].VG.theta_r));
 								EMS[i].theta[WATER_PREF] -= dtheta_w2;
 								EMS[i].theta[WATER] += dtheta_w2;
+								// Increment the PF->matrix transfer variable
+								EMS[i].theta_w_transfer += dtheta_w2;
 							}
 						}
 						const double dx = sqrt((1. + EMS[i].PrefFlowArea)/(2. * Constants::pi)) - sqrt(EMS[i].PrefFlowArea/Constants::pi);	// Estimate of the typical length scale that determines the gradients
 
 						// Now consider refreeze due to temperature difference (mimicked by transferring water from preferential flow to matrix domain)
-						const double heat_flux=pref_flow_param_N*2.*sqrt(EMS[i].PrefFlowArea*Constants::pi)*(((Constants::melting_tk - EMS[i].Te)/dx)*EMS[i].k[TEMPERATURE]*sn_dt);
-						const double CC_move = ((heat_flux / Constants::lh_fusion)) / Constants::density_water; // Units: [kg]
+						const double heat_flux = ((Constants::meltfreeze_tk - EMS[i].Te) / dx) * EMS[i].k[TEMPERATURE];	// Units: [W/m^2], Eq. 6 in Wever et al. (2016), TC. Note that the paper reports wrong units here.
+						const double theta_move = (pref_flow_param_N * 2. * sqrt(EMS[i].PrefFlowArea * Constants::pi) * heat_flux * sn_dt) / Constants::lh_fusion / Constants::density_water;	// Units: [m^3/m^3], Eq. 7 in Wever et al. (2016), TC. Note that the paper reports a different and wrong equation here, which is not consistent with the units.
+
 						// Make sure that theta[WATER_PREF] is not negative and do the actual transfer!
-						const double dtheta_w3 = std::max(0., std::min(std::min(EMS[i].theta[WATER_PREF]-theta_d[i], 0.999*(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i-1].PrefFlowArea)-EMS[i].theta[WATER]), CC_move));
+						const double dtheta_w3 = std::max(0., std::min(std::min(EMS[i].theta[WATER_PREF]-theta_d[i], 0.999*(1.-EMS[i-1].theta[ICE])*(Constants::density_ice/Constants::density_water)*(1.-EMS[i-1].PrefFlowArea)-EMS[i].theta[WATER]), theta_move));
 						EMS[i].theta[WATER]+=dtheta_w3;
 						EMS[i].theta[WATER_PREF]-=dtheta_w3;
+						// Increment the PF->matrix transfer variable
+						EMS[i].theta_w_transfer += dtheta_w3;
 					}
-					// Check for first wetting
-					if ((EMS[i].theta[WATER] > 5E-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
-						EMS[i].mk += 10;
+					// Check for first wetting to set microstructural marker correctly only if not ice reservoir
+					if (!enable_ice_reservoir) {
+						// Check for first wetting to set microstructural marker correctly
+						if ((EMS[i].theta[WATER] > 5e-6 * sn_dt) && (EMS[i].mk%100 < 10)) {
+							EMS[i].mk += 10;
+						}
 					}
 				}
 			} else {	// For soil, we suppress preferential flow
@@ -2222,27 +2618,21 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					deltaN=(delta_Te_adv[i] * (EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L)) / (0.5*EMS[i+1].c[TEMPERATURE]*EMS[i+1].Rho*EMS[i+1].L + EMS[i].c[TEMPERATURE]*EMS[i].Rho*EMS[i].L + 0.5*EMS[i-1].c[TEMPERATURE]*EMS[i-1].Rho*EMS[i-1].L);
 				}
 			}
-			NDS[i+1].T+=deltaN;
-			NDS[i].T+=deltaN;
-			if(fabs(deltaN)>0.) {
-				if(i < nE-1) EMS[i+1].Te=0.5*(NDS[i+2].T+NDS[i+1].T);
-				EMS[i].Te=0.5*(NDS[i+1].T+NDS[i].T);
-				if(i > 0) EMS[i-1].Te=0.5*(NDS[i].T+NDS[i-1].T);
-			}
+			EMS[i].Qmf += (deltaN * EMS[i].c[TEMPERATURE] * EMS[i].Rho) / sn_dt;
 		} else {
 			// If there is only 1 element, we don't care about heat advection...
 		}
-		if (WriteDebugOutputput) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f\n", int(i), EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER]+EMS[i].theta[WATER_PREF], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te);
+		if (WriteDebugOutput) printf("SENDING at layer %d: sum=%f air=%.15f ice=%.15f soil=%.15f water=%.15f water_pref=%.15f Te=%.15f h=%f %f\n", int(i), EMS[i].theta[AIR]+EMS[i].theta[ICE]+EMS[i].theta[SOIL]+EMS[i].theta[WATER]+EMS[i].theta[WATER_PREF], EMS[i].theta[AIR], EMS[i].theta[ICE], EMS[i].theta[SOIL], EMS[i].theta[WATER], EMS[i].theta[WATER_PREF], EMS[i].Te, EMS[i].h, EMS[i].VG.fromTHETAtoH(EMS[i].theta[WATER], h_d));
 	}
 
 
-	if(WriteDebugOutputput) {
+	if(WriteDebugOutput) {
 		printf("ACTUALTOPFLUX: [ BC: %d ] %.15f %.15f %.15f CHK: %f\n", TopBC, actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0.);
 		printf("ACTUALBOTTOMFLUX: [ BC: %d ] %.15f %.15f %.15f %f    SNOWSOILINTERFACEFLUX=%.15f\n", BottomBC, actualbottomflux, actualbottomflux/sn_dt, BottomFluxRate, (BottomFluxRate!=0.)?(actualbottomflux/sn_dt)/BottomFluxRate:0., snowsoilinterfaceflux/sn_dt);
 	}
 
 
-	if(WriteDebugOutputput) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  MB_ERROR: %.15f\n", actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0., massbalanceerror_sum);
+	if(WriteDebugOutput) printf("WATERBALANCE: %.15f %.15f %.15f CHK1: %.15f  MB_ERROR: %.15f\n", actualtopflux/sn_dt, refusedtopflux/sn_dt, surfacefluxrate, (surfacefluxrate!=0.)?(actualtopflux/sn_dt)/surfacefluxrate:0., massbalanceerror_sum);
 
 	//Update soil runoff (mass[MS_SOIL_RUNOFF] = kg/m^2). Note: it does not matter whether SNOWPACK is run with soil or not. MS_SOIL_RUNOFF is always runoff from lower boundary.
 	Sdata.mass[SurfaceFluxes::MS_SOIL_RUNOFF] += actualbottomflux*Constants::density_water;
@@ -2250,6 +2640,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	// Update snow pack runoff (mass[MS_SNOWPACK_RUNOFF] = kg/m^2 (almost equal to mm/m^2), surfacefluxrate=m^3/m^2/s and snowsoilinterfaceflux = m^3/m^2):
 	// NOTE: snowsoilinterfaceflux will only be non-zero IF there is a snowpack AND we solve the richards equation also for snow! Else, snowpack runoff is calculated in the original WaterTransport functions.
 	Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += snowsoilinterfaceflux*Constants::density_water;
+	Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += snowsoilinterfaceflux*Constants::density_water;
 
 	//Deal with the situation that evaporation flux was limited in case of snow. Then, sublimate ice matrix.
 	if (refusedtopflux<0. && uppernode+1>=Xdata.SoilNode) {
@@ -2259,6 +2650,9 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		refusedtopflux = 0.;
 		//First, we fully intepreted ql as evaporation. Now, remaining energy (ql) should not be counted as evaporation
 		Sdata.mass[SurfaceFluxes::MS_EVAPORATION] -= ql*sn_dt/Constants::lh_vaporization;
+		if(Xdata.swe < Constants::eps2) {
+			Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] -= ql*sn_dt/Constants::lh_vaporization;
+		}
 		if(uppernode+1==Xdata.SoilNode) {
 			//The energy is substracted from the top element
 			//const double tmp_delta_Te = ql / (EMS[Xdata.SoilNode-1].c[TEMPERATURE] * EMS[Xdata.SoilNode-1].Rho);
@@ -2270,6 +2664,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	//If we could not handle all incoming water at top boundary AND we have snow AND we solve RE for snow:
 	if(refusedtopflux>0. && uppernode+1>Xdata.SoilNode) {
 		Sdata.mass[SurfaceFluxes::MS_SNOWPACK_RUNOFF] += refusedtopflux*Constants::density_water;
+		Sdata.mass[SurfaceFluxes::MS_SURFACE_MASS_FLUX] += refusedtopflux*Constants::density_water;
 	}
 
 	//If we could not handle all snowpack runoff when not modelling snow with RE, add water layer
@@ -2284,12 +2679,12 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 		Xdata.Edata[newnE-1].theta[AIR] = 0.;
 		Xdata.Edata[newnE-1].theta[SOIL] = 0.;
 		Xdata.Edata[newnE-1].L = Xdata.Edata[newnE-1].L0 = refusedtopflux;
-		EMS[newnE-1].Rho = (EMS[newnE-1].theta[ICE] * Constants::density_ice) + ((EMS[newnE-1].theta[WATER] + EMS[newnE-1].theta[WATER_PREF]) * Constants::density_water) + (EMS[newnE-1].theta[SOIL] * EMS[newnE-1].soil[SOIL_RHO]);
+		EMS[newnE-1].updDensity();
 		EMS[newnE-1].M = EMS[newnE-1].L*EMS[newnE-1].Rho;
 		EMS[newnE-1].Te = (backupWATERLAYER_Te != Constants::undefined) ? (backupWATERLAYER_Te) : NDS[newnE-2].T;
 		NDS[newnE].T = NDS[newnE-1].T = NDS[newnE-2].T = EMS[newnE-1].Te;
 		Xdata.Edata[newnE-1].mk = 19;	// Mark the layer as a water layer
-		prn_msg( __FILE__, __LINE__, "wrn", Date(), "Ponding occuring, water layer added! [depth = %lf m]", Xdata.Edata[newnE-1].L);
+		prn_msg( __FILE__, __LINE__, "wrn", date, "Ponding occuring, water layer added! [depth = %lf m]", Xdata.Edata[newnE-1].L);
 	}
 
 
@@ -2299,11 +2694,11 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 	if(matrix==true) {
 		for (i = lowernode; i <= uppernode; i++) {
 			if(EMS[i].theta[SOIL]<Constants::eps2) {
-				EMS[i].melting_tk=Constants::melting_tk;
+				EMS[i].meltfreeze_tk=((Xdata.Seaice!=NULL)?(-SeaIce::mu*EMS[i].salinity+Constants::meltfreeze_tk):(Constants::meltfreeze_tk));
 			} else {
 				//For soil layers solved with Richards Equation, everything (water transport and phase change) is done in this routine, except calculating the heat equation.
 				//To suppress phase changes in PhaseChange.cc, set the melting and freezing temperature equal to the element temperature:
-				EMS[i].freezing_tk=EMS[i].melting_tk=std::min(Constants::melting_tk, EMS[i].Te);
+				EMS[i].meltfreeze_tk=std::min(Constants::meltfreeze_tk, EMS[i].Te);
 			}
 		}
 	}

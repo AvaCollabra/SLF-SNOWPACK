@@ -36,7 +36,7 @@
  * @param pEMS pointer to the ElementData class which owns the van Genuchten class, so the van Genuchten class can access objects from the ElementData class.
  */
 vanGenuchten::vanGenuchten(ElementData& pEMS) :
-	EMS(&pEMS), theta_r(0.), theta_s(1.), alpha(0.), n(0.), m(0.), h_e(0.), Sc(0.), ksat(0.), defined(false) {}
+	EMS(&pEMS), theta_r(0.), theta_s(1.), alpha(0.), n(0.), m(0.), h_e(0.), Sc(0.), ksat(0.), field_capacity(0), defined(false) {}
 
 
 /**
@@ -45,13 +45,13 @@ vanGenuchten::vanGenuchten(ElementData& pEMS) :
  * @param c Class to copy
  */
 vanGenuchten::vanGenuchten(const vanGenuchten& c) :
-	EMS(c.EMS), theta_r(c.theta_r), theta_s(c.theta_s), alpha(c.alpha), n(c.n), m(c.m), h_e(c.h_e), Sc(c.Sc), ksat(c.ksat), defined(c.defined) {}
+	EMS(c.EMS), theta_r(c.theta_r), theta_s(c.theta_s), alpha(c.alpha), n(c.n), m(c.m), h_e(c.h_e), Sc(c.Sc), ksat(c.ksat), field_capacity(c.field_capacity), defined(c.defined) {}
 
 
 /**
  * @brief Assignment operator \n
  * @author Nander Wever
- * @param c Class to assign
+ * @param source Class to assign
  */
 vanGenuchten& vanGenuchten::operator=(const vanGenuchten& source) {
 	if(this != &source) {
@@ -86,16 +86,16 @@ std::iostream& operator<<(std::iostream& os, const vanGenuchten& data)
 
 std::iostream& operator>>(std::iostream& is, vanGenuchten& data)
 {
-	is.write(reinterpret_cast<const char*>(&data.EMS), sizeof(data.EMS));
-	is.write(reinterpret_cast<const char*>(&data.theta_r), sizeof(data.theta_r));
-	is.write(reinterpret_cast<const char*>(&data.theta_s), sizeof(data.theta_s));
-	is.write(reinterpret_cast<const char*>(&data.alpha), sizeof(data.alpha));
-	is.write(reinterpret_cast<const char*>(&data.n), sizeof(data.n));
-	is.write(reinterpret_cast<const char*>(&data.m), sizeof(data.m));
-	is.write(reinterpret_cast<const char*>(&data.h_e), sizeof(data.h_e));
-	is.write(reinterpret_cast<const char*>(&data.Sc), sizeof(data.Sc));
-	is.write(reinterpret_cast<const char*>(&data.ksat), sizeof(data.ksat));
-	is.write(reinterpret_cast<const char*>(&data.defined), sizeof(data.defined));
+	is.read(reinterpret_cast<char*>(&data.EMS), sizeof(data.EMS));
+	is.read(reinterpret_cast<char*>(&data.theta_r), sizeof(data.theta_r));
+	is.read(reinterpret_cast<char*>(&data.theta_s), sizeof(data.theta_s));
+	is.read(reinterpret_cast<char*>(&data.alpha), sizeof(data.alpha));
+	is.read(reinterpret_cast<char*>(&data.n), sizeof(data.n));
+	is.read(reinterpret_cast<char*>(&data.m), sizeof(data.m));
+	is.read(reinterpret_cast<char*>(&data.h_e), sizeof(data.h_e));
+	is.read(reinterpret_cast<char*>(&data.Sc), sizeof(data.Sc));
+	is.read(reinterpret_cast<char*>(&data.ksat), sizeof(data.ksat));
+	is.read(reinterpret_cast<char*>(&data.defined), sizeof(data.defined));
 	return is;
 }
 
@@ -140,9 +140,11 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			n=1.2039;
 			ksat=8.000/(365.*24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.2;
 			break;
 
 		//ROSETTA Class Average Hydraulic Parameters: http://ars.usda.gov/Services/docs.htm?docid=8955
+		//Field capacity computed from: K.E. Saxton et al., 1986, Estimating generalized soil-water characteristics from texture. Soil Sci. Soc. Amer. J. 50(4):1031-1036
 		case CLAY:
 			theta_r=0.098;
 			theta_s=0.459;
@@ -150,6 +152,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=1.496;
 			ksat=0.14757/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.479;
 			break;
 
 		case CLAYLOAM:
@@ -159,6 +162,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=1.581;
 			ksat=0.0818/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.336;
 			break;
 
 		case LOAM:
@@ -168,6 +172,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			n=1.47;
 			ksat=0.02947/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.262;
 			break;
 
 		case LOAMYSAND:
@@ -177,6 +182,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=3.475;
 			ksat=1.052/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.171;
 			break;
 
 		case SAND:
@@ -186,6 +192,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=3.524;
 			ksat=6.427/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.132;
 			break;
 
 		case SANDYCLAY:
@@ -195,6 +202,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=3.342;
 			ksat=0.1135/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.368;
 			break;
 
 		case SANDYCLAYLOAM:
@@ -204,6 +212,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=2.109;
 			ksat=0.1318/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.272;
 			break;
 
 		case SANDYLOAM:
@@ -213,6 +222,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=2.667;
 			ksat=0.3828/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.205;
 			break;
 
 		case SILT:
@@ -222,6 +232,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=0.6577;
 			ksat=0.4375/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.316;
 			break;
 
 		case SILTYCLAY:
@@ -231,6 +242,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=1.622;
 			ksat=0.09616/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.452;
 			break;
 
 		case SILTYCLAYLOAM:
@@ -240,6 +252,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=0.8395;
 			ksat=0.1112/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.367;
 			break;
 
 		case SILTLOAM:
@@ -249,6 +262,7 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=0.5058;
 			ksat=0.1824/(24.*60.*60.);
 			MaximumPoreSize=0.005;
+			field_capacity=0.292;
 			break;
 
 		case WFJGRAVELSAND: //Gravel/sand
@@ -258,7 +272,12 @@ void vanGenuchten::SetSoil(const SoilTypes type)
 			alpha=3.5;
 			ksat=0.000003171; //Equal to 100 m/year, for clean sand and silty sand, according to: http://web.ead.anl.gov/resrad/datacoll/conuct.htm
 			MaximumPoreSize=0.005;
+			field_capacity=0.07;
 			break;
+
+		default:
+			throw mio::UnknownValueException("Unknown soil type", AT);
+
 	}
 
 	h_e=vanGenuchten::AirEntryPressureHead(MaximumPoreSize, 273.);
@@ -360,33 +379,40 @@ double vanGenuchten::dtheta_dh(const double h) {
  * @brief Initialize van Genuchten model for snow layers\n
  * @author Nander Wever
  * @param VGModelTypeSnow van Genuchten model parameterization to use
- * @param VGModelTypeSnow hydraulic conductivity parameterization to use
+ * @param K_PARAM hydraulic conductivity parameterization to use
  * @param matrix true: set parameters for matrix domain. false: set parameters for preferential flow domain
+ * @param seaice if true: use some tweaks for sea ice.
  */
-void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelTypeSnow, const K_Parameterizations K_PARAM, const bool& matrix)
+void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelTypeSnow, const K_Parameterizations K_PARAM, const bool& matrix, const bool& seaice)
 {
-	if(matrix==true) {
-		//Scaling theta_r between 0 and 0.02:
-		const double TuningFactor=0.75;				//Tuning factor for scaling
-		//Increase theta_r in case of wetting:
-		theta_r=std::max(0., std::min(0.02, std::max(theta_r, TuningFactor*EMS->theta[WATER])));
-		//Decrease theta_r in case of refreezing:
-		theta_r=std::max(0., std::min(theta_r, EMS->theta[WATER]-(ReSolver1d::REQUIRED_ACCURACY_THETA/10.)));
-	} else {
-		//For preferential flow, we fix theta_r to 0:
+	if (EMS->theta[ICE] > 0.75) {
 		theta_r=0.;
+	} else {
+		if(matrix==true) {
+			//Scaling theta_r between 0 and 0.02:
+			const double TuningFactor=0.75;				//Tuning factor for scaling
+			//Increase theta_r in case of wetting:
+			theta_r=std::max(0., std::min(0.02, std::max(theta_r, TuningFactor*EMS->theta[WATER])));
+			//Decrease theta_r in case of refreezing:
+			theta_r=std::max(0., std::min(theta_r, EMS->theta[WATER]-(ReSolver1d::REQUIRED_ACCURACY_THETA/10.)));
+		} else {
+			//For preferential flow, we fix theta_r to 0:
+			theta_r=0.;
+		}
 	}
 
 	theta_s=(1. - EMS->theta[ICE])*(Constants::density_ice/Constants::density_water);
 
 	if(theta_s<Constants::eps2) {
 		// This case is not handled well
+		std::cout << "ERROR: theta_s= " << theta_s << "   theta_r=" << theta_r << "\n";
 		throw;
 	}
 	//Make sure theta_r << theta_s
-	if(theta_s<theta_r+0.01) {
+	if(theta_s<theta_r+0.001) {
 		std::cout << "WARNING: theta_s= " << theta_s << "   theta_r=" << theta_r << "\n";
-		theta_r=theta_s/4.;
+		// theta_r is only allowed to decrease when this condition occurs
+		theta_r=std::min(theta_s/4., theta_r);
 	}
 
 	//Note: rg is in mm, and it is the radius (confirmed by Charles, see DataClasses.h)
@@ -394,18 +420,22 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 
 	switch ( VGModelTypeSnow ) {	//Set Van Genuchten parameters for snow, depending on the chosen model for snow.
 
-	case YAMAGUCHI2012:
+		case YAMAGUCHI2012:
 		{
 			//Calculate ratio density/grain size (see Yamaguchi (2012)):
 			double tmp_rho_d=(EMS->theta[ICE]*Constants::density_ice)/( (2.*EMS->rg) / 1000.);
 			//Limit tmp_rho_d to reasonable values, so alpha and especially n remain in numerically stable bounds:
-			tmp_rho_d=std::max(2000., tmp_rho_d);
+			if(seaice) {
+				tmp_rho_d=std::max(100000., tmp_rho_d);
+			} else {
+				tmp_rho_d=std::max(2000., tmp_rho_d);
+			}
 			alpha=4.4E6*pow(tmp_rho_d, -0.98);	//See Eq. 6 in Yamaguchi (2012).
 			n=1.+2.7E-3*pow(tmp_rho_d, 0.61);	//See Eq. 7 in Yamaguchi (2012).
 			break;
 		}
 
-	case YAMAGUCHI2010:
+		case YAMAGUCHI2010:
 		{
 			//Limit grain size, to stay within the bounds of the Van Genuchten parameterizations for snow.
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
@@ -420,7 +450,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			break;
 		}
 
-	case YAMAGUCHI2010_ADAPTED:
+		case YAMAGUCHI2010_ADAPTED:
 		{
 			//Limit grain size, the parameterizations still hold, but high values of alpha and small values of n are causing numerical troubles.
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Lower threshold
@@ -435,7 +465,7 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			break;
 		}
 
-	case DAANEN:
+		case DAANEN:
 		{
 			const double GRAINRADIUSLOWERTHRESHOLD=0.0;		//Equal to Yamaguchi adapted
 			const double GRAINRADIUSUPPERTHRESHOLD=4.0;		//Equal to Yamaguchi adapted
@@ -447,27 +477,45 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 			n=0.800*(2.*EMS->rg)+3.;
 			break;
 		}
+		default:
+			throw mio::UnknownValueException("Unknown Van Genuchten parameter for snow", AT);
+
 	}
 
 
-	const double tmp_dynamic_viscosity_water=0.001792;				//In Pa/s, from WaterTransport code by Hirashima: 0.001792
+	const double tmp_dynamic_viscosity_water=0.001792;		// In Pa/s, from WaterTransport code by Hirashima: 0.001792
+	const double tmp_phi = (1. - EMS->theta[ICE]);			// Porosity
+	if (tmp_phi > 0.25) {						// For low density
+		switch ( K_PARAM ) {	//Set saturated hydraulic conductivity
 
-	switch ( K_PARAM ) {	//Set saturated hydraulic conductivity
+		case CALONNE:
+			//See: Calonne et al., 3-D image-based numerical computations of snow permeability: links to specific surface area, density, and microstructural anisotropy, TC, 2012.
+			ksat=0.75 * (EMS->ogs / 1000.)*(EMS->ogs / 1000.) * exp(-0.013 * EMS->theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+			break;
 
-	case SHIMIZU:
-		//This formulation for ksat is proposed by Shimizu (1970), and is valid up to 450 kg/m^3. See Equation 5 in Jordan, 1999 + conversion from hydraulic permeability to hydraulic conductivity.
-		if(EMS->theta[ICE] * Constants::density_ice>450.) {
-			ksat=0.077 * (2.*EMS->rg / 1000.)*(2.*EMS->rg / 1000.) * exp(-0.0078 * 450.) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
-		} else {
-			ksat=0.077 * (2.*EMS->rg / 1000.)*(2.*EMS->rg / 1000.) * exp(-0.0078 * EMS->theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+		case KOZENYCARMAN:
+			ksat=(EMS->sp * EMS->sp) * (tmp_phi * tmp_phi * tmp_phi * (EMS->ogs / 1000.) * (EMS->ogs / 1000.)) / (150. * ( EMS->theta[ICE] * EMS->theta[ICE] )) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+			break;
+
+		case SHIMIZU:
+			//This formulation for ksat is proposed by Shimizu (1970), and is valid up to 450 kg/m^3. See Equation 5 in Jordan, 1999 + conversion from hydraulic permeability to hydraulic conductivity.
+			if(EMS->theta[ICE] * Constants::density_ice>450.) {
+				ksat=0.077 * (2.*EMS->rg / 1000.)*(2.*EMS->rg / 1000.) * exp(-0.0078 * 450.) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+			} else {
+				ksat=0.077 * (2.*EMS->rg / 1000.)*(2.*EMS->rg / 1000.) * exp(-0.0078 * EMS->theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
+			}
+			break;
+
+		default:
+			throw mio::UnknownValueException("Unknown hydraulic conductivity parameter", AT);
+
 		}
-		break;
-
-	case CALONNE:
-		//See: Calonne et al., 3-D image-based numerical computations of snow permeability: links to specific surface area, density, and microstructural anisotropy, TC, 2012.
-		ksat=0.75 * (EMS->ogs / 1000.)*(EMS->ogs / 1000.) * exp(-0.013 * EMS->theta[ICE] * Constants::density_ice) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
-		break;
+	} else {									//For high density
+		// Eq. 5 in Golden, K. M., H. Eicken, A. L. Heaton, J. Miner, D. J. Pringle, and J. Zhu (2007), Thermal evolution of permeability and microstructure in sea ice, Geophys. Res. Lett., 34, L16501, doi:10.1029/2007GL030447:
+		ksat = 3E-8 * pow((1. - std::min(1., EMS->theta[ICE])), 3.) * (Constants::g * Constants::density_water) / tmp_dynamic_viscosity_water;
 	}
+
+	if (seaice) ksat = std::min(ksat, 1E-3);
 
 	//Set air entry pressure
 	h_e=vanGenuchten::AirEntryPressureHead(0.005, 273.);
@@ -487,6 +535,51 @@ void vanGenuchten::SetVGParamsSnow(const VanGenuchten_ModelTypesSnow VGModelType
 	return;
 }
 
+
+/**
+ * @brief Enforce thermal equilibrium in the soil layers\n
+ * @param fixTemp If true, keep element temperature fixed and repartition theta[ICE] and theta[WATER]. If false, keep theta[ICE] and theta[WATER] fixed, and calculate element temperature. The latter approach is prone to singularities. For example, a soil layer with a temperature below Constants::meltfreeze_tk, but with only water and no ice, cannot be properly initialized (i.e., there is no solution that satisfies thermal equilibrium).
+ * @return True: element state was modified by this function, false: element state was not modified by this function
+ * @author Nander Wever
+ */
+bool vanGenuchten::enforceThermalEquilibrium(const bool fixTemp)
+{
+	const double h_d = -1E10;
+	if(EMS->theta[SOIL] > 0. && EMS->Te < Constants::meltfreeze_tk) {
+		// If this is a soil layer with temperatures below the freezing point of water
+		const double hw0 = fromTHETAtoHforICE(EMS->theta[WATER], h_d, EMS->theta[ICE]);
+		EMS->meltfreeze_tk = Constants::meltfreeze_tk + ((Constants::g*Constants::meltfreeze_tk) / Constants::lh_fusion) * hw0;
+		if (fixTemp) {
+			// Keep temperature fixed, repartition ice and water according to prescribed temperature
+			if (EMS->Te >= EMS->meltfreeze_tk) {
+				// Above freezing point, only water
+				const double theta_w_new = fromHtoTHETA(hw0);
+				static const double theta_ice_new = 0.;
+				EMS->theta[ICE] = theta_ice_new;
+				EMS->theta[WATER] = theta_w_new;
+				EMS->theta[AIR] = 1. - EMS->theta[WATER] - EMS->theta[WATER_PREF] - EMS->theta[ICE] - EMS->theta[SOIL];
+			} else {
+				// Freezing conditions
+				const double theta_w_new = fromHtoTHETA(hw0 + (Constants::lh_fusion / (Constants::g * EMS->meltfreeze_tk)) * (EMS->Te - EMS->meltfreeze_tk));
+				const double theta_ice_new = (fromHtoTHETA(hw0) - theta_w_new) / (Constants::density_ice/Constants::density_water);
+				EMS->theta[ICE] = theta_ice_new;
+				EMS->theta[WATER] = theta_w_new;
+				EMS->theta[AIR] = 1. - EMS->theta[WATER] - EMS->theta[WATER_PREF] - EMS->theta[ICE] - EMS->theta[SOIL];
+			}
+		} else {
+			// Keep theta[ICE] and theta[WATER] constant, and recalculate element temperature
+			double Te_new = Constants::meltfreeze_tk;
+			if (EMS->theta[ICE] > 0.) {
+				Te_new = (fromTHETAtoH(EMS->theta[WATER], h_d) - hw0) * ((Constants::g * EMS->meltfreeze_tk) / Constants::lh_fusion) + EMS->meltfreeze_tk;
+				//throw mio::UnknownValueException("Not implemented yet.", AT);
+			}
+			EMS->Te = Te_new;
+		}
+		return true;
+	} else {
+		return false;
+	}
+}
 
 /**
  * @brief Initialize van Genuchten model for soil layers, based on index approach via grain size\n
@@ -529,9 +622,6 @@ void vanGenuchten::SetVGParamsSoil()
 
 	//Calculate saturation at cut-off point h_e (see Ippisch et al (2006)).
 	Sc=pow((1.+pow(alpha*fabs(h_e), n)), -1.*m);
-
-	//The VG model has been initialized
-	defined=true;
 
 	//I encountered the following problem: fully saturated soil and freezing water: there is not enough place to store the ice!!!
 	//In the old snowpack code, this problem was solved by keeping the increase in volume when all the water in the element would freeze, free as theta[AIR].

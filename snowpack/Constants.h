@@ -63,12 +63,15 @@ namespace Constants {
 	/// @name Albedo (1)
 	//@{
 	const double min_albedo = 0.3;
-	const double max_albedo = 0.99;
+	const double max_albedo = 0.9;
 	const double glacier_albedo = 0.3;
+	const double blueice_albedo = 0.6;
 	//@}
 	/// @name Emissivity (1)
 	//@{
 	const double emissivity_snow = 0.98;
+  const double emissivity_soil = 0.95;
+
 	//@}
 	/// @name Density (kg m-3)
 	//@{
@@ -100,8 +103,7 @@ namespace Constants {
 
 	///@name Phase change constants
 	//@{
-	const double melting_tk = 273.15; ///< (K)
-	const double freezing_tk = 273.15; ///< (K)
+	const double meltfreeze_tk = 273.15; ///< (K)
 	const double triple_point_t = 273.16; ///< (K)
 	const double triple_point_p = 611.73; ///< (Pa)
 	const double lh_sublimation = 2.838e6; ///< (J kg-1) (solid to vapor)

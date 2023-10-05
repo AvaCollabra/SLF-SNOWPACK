@@ -25,8 +25,6 @@
 
 #include <sstream>
 
-using namespace std;
-
 /**
  * @class vanGenuchten
  * @version 1.0
@@ -36,22 +34,22 @@ using namespace std;
 class ElementData;
 
 class vanGenuchten {
-	ElementData *EMS;	// Reference to the ElementData where the vanGenuchten class belongs to
 
 	public:
 		vanGenuchten(ElementData &pEMS);
 		vanGenuchten(const vanGenuchten& c);
-		virtual ~vanGenuchten() {};
+		virtual ~vanGenuchten() {}
 		vanGenuchten& operator=(const vanGenuchten&); ///<Assignement operator
 		friend std::iostream& operator<<(std::iostream& os, const vanGenuchten& data);
 		friend std::iostream& operator>>(std::iostream& is, vanGenuchten& data);
+		ElementData *EMS;	// Reference to the ElementData where the vanGenuchten class belongs to
 
 		//Soil types
 		enum SoilTypes{ORGANIC, CLAY, CLAYLOAM, LOAM, LOAMYSAND, SAND, SANDYCLAY, SANDYCLAYLOAM, SANDYLOAM, SILT, SILTYCLAY, SILTYCLAYLOAM, SILTLOAM, WFJGRAVELSAND};
 		//Van genuchten model types
 		enum VanGenuchten_ModelTypesSnow{YAMAGUCHI2012, YAMAGUCHI2010, YAMAGUCHI2010_ADAPTED, DAANEN};
 		//Hydraulic conductivity parameterizations
-		enum K_Parameterizations{SHIMIZU, CALONNE};
+		enum K_Parameterizations{CALONNE, KOZENYCARMAN, SHIMIZU};
 
 		// Functions
 		static double AirEntryPressureHead(double MaximumPoreSize, double Temperature);
@@ -64,8 +62,9 @@ class vanGenuchten {
 		double dtheta_dh(const double h);
 
 		// Functions to initialize the van Genuchten model
-		void SetVGParamsSnow(VanGenuchten_ModelTypesSnow VGModelTypeSnow, K_Parameterizations K_PARAM, const bool& matrix);
+		void SetVGParamsSnow(VanGenuchten_ModelTypesSnow VGModelTypeSnow, K_Parameterizations K_PARAM, const bool& matrix, const bool& seaice);
 		void SetVGParamsSoil();
+		bool enforceThermalEquilibrium(const bool fixTemp=true);
 
 		double theta_r;	//Soil property, residual water content.
 		double theta_s;	//Soil property, saturation water content.
@@ -75,7 +74,7 @@ class vanGenuchten {
 		double h_e;	//Soil property, air entry pressure, see Ippisch (2006) for details.
 		double Sc;	//Saturation at cut-off point h_e (see Ippisch et al (2006)).
 		double ksat;	//Soil property. Saturation hydraulic conductivity.
-
+		double field_capacity; //Soil property, grain size
 		bool defined;	//true: the van Genuchten model has been initialized for this layer, false: the van Genuchten model is not initialized and should not be used.
 
 	private:
