@@ -278,7 +278,7 @@ Snowpack::Snowpack(const SnowpackConfig& i_cfg)
 	//Watertransport models
 	cfg.getValue("WATERTRANSPORTMODEL_SNOW", "SnowpackAdvanced", watertransportmodel_snow);
 	cfg.getValue("WATERTRANSPORTMODEL_SOIL", "SnowpackAdvanced", watertransportmodel_soil);
-	if (variant!="SEAICE" && coupled_phase_changes && watertransportmodel_soil=="RICHARDSEQUATION")
+	if (variant!="SEAICE" && coupled_phase_changes && useSoilLayers && watertransportmodel_soil=="RICHARDSEQUATION")
 		throw IOException("COUPLEDPHASECHANGES cannot be set to true when WATERTRANSPORTMODEL_SOIL == RICHARDSEQUATION! Please correct your ini file.", AT);
 
 	//Indicate if the meteo values can be considered at constant height above the snow surface (e.g., Col de Porte measurement method)
