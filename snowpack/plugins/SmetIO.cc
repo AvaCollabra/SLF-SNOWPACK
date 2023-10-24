@@ -1070,7 +1070,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 		plot_min << "" << " ";
 		plot_max << "" << " ";
 		if (useRichardsEq && Xdata.meta.getSlopeAngle() > 0.) {
-			plot_description << "later_flow_snow" << " ";
+			plot_description << "lateral_flow_snow" << " ";
 			plot_units << "kg/m2" << " ";
 			units_offset << "0" << " ";
 			units_multiplier << "1" << " ";
@@ -1078,7 +1078,7 @@ void SmetIO::writeTimeSeriesHeader(const SnowStation& Xdata, const double& tz, s
 			plot_min << "" << " ";
 			plot_max << "" << " ";
 			if (useSoilLayers) {
-				plot_description << "later_flow_soil" << " ";
+				plot_description << "lateral_flow_soil" << " ";
 				plot_units << "kg/m2" << " ";
 				units_offset << "0" << " ";
 				units_multiplier << "1" << " ";
