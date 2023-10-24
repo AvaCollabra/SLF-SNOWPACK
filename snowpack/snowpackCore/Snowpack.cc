@@ -685,9 +685,14 @@ void Snowpack::neumannBoundaryConditions(const CurrentMeteo& Mdata, BoundCond& B
 		}
 
 		// Net longwave radiation: NON-linear dependence on snow surface temperature
-		const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
-		Se[1][1] += delta;
-		Fe[1] += delta * pow( Mdata.ea, 0.25 ) * T_air;
+		if (Mdata.lw_net == IOUtils::nodata) {
+			const double delta = SnLaws::compLWRadCoefficient( T_iter, T_air, Mdata.ea);
+			Se[1][1] += delta;
+			Fe[1] += delta * pow( Mdata.ea, 0.25 ) * T_air;
+		} else {
+			// When NET_LW is provided, we force explicitly
+			Fe[1] += Bdata.lw_net;
+		}
 
 		// Because of the implicit time integration, must subtract this term from the flux ....
 		Fe[1] -= Se[1][1] * T_snow;
