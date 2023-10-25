@@ -510,8 +510,8 @@ bool Snowpack::sn_ElementKtMatrix(ElementData &Edata, double dt, const double dv
 	Se[1][0] += c;
 
 	// Add the source/sink term resulting from phase changes
-	Fe[1] += Edata.Qph_up * 0.5 * Edata.L;
-	Fe[0] += Edata.Qph_down * 0.5 * Edata.L;
+	Fe[1] += Edata.Qph_up * Edata.L;
+	Fe[0] += Edata.Qph_down * Edata.L;
 
 	// Add the source/sink term resulting from phase changes (due to water vapor transport)
 	Fe[1] += Edata.Qmm * 1.0 * Edata.L;
@@ -1071,26 +1071,26 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 					// c = Constants::meltfreeze_tk
 					const double f = Constants::density_ice / Constants::density_water;
 					const double tmp_T = 0.5 * (U[e+1] + U[e]);
-					const double tmp_Theta = Xdata.Edata[e].theta[WATER] - 0.5 * (dth_i_up[e] + dth_i_down[e]) * f;
+					const double tmp_Theta = Xdata.Edata[e].theta[WATER] - (dth_i_up[e] + dth_i_down[e]) * f;
 					Xdata.Edata[e].meltfreeze_tk = -1. * (sqrt(A * f * A * f * tmp_T * tmp_T + (2. * A * f * tmp_Theta - 2. * A * f * A * f * Constants::meltfreeze_tk) * tmp_T + tmp_Theta * tmp_Theta - 2. * A * f * Constants::meltfreeze_tk * tmp_Theta + 4. * A * f * SeaIce::mu * Xdata.Edata[e].salinity + A * f * A * f * Constants::meltfreeze_tk * Constants::meltfreeze_tk) - A * f * tmp_T - tmp_Theta - A * f * Constants::meltfreeze_tk) / (2. * A * f);
 				}
 
-				dth_i_up[e] += A * (Xdata.Edata[e].meltfreeze_tk - U[e+1]);	// change in volumetric ice content in upper half of element
-				dth_i_down[e] += A * (Xdata.Edata[e].meltfreeze_tk - U[e]);	// change in volumetric ice content in lower half of element
+				dth_i_up[e] += .5 * A * (Xdata.Edata[e].meltfreeze_tk - U[e+1]);	// change in volumetric ice content in upper half of element
+				dth_i_down[e] += .5 * A * (Xdata.Edata[e].meltfreeze_tk - U[e]);	// change in volumetric ice content in lower half of element
 
-				// This approach is not stable, may introduce oscillations such that the temperature equation doesn't converge
-				const double dth_i_sum = 0.5 * (dth_i_up[e] + dth_i_down[e]);	// Net phase change effect on ice content in element
-				if(dth_i_sum != 0.) {	// Element has phase changes
-					double dth_i_lim = dth_i_sum;
-					if(dth_i_lim < 0.) {
-						// Melt: Only available ice can melt
-						dth_i_lim = std::max(-Xdata.Edata[e].theta[ICE], dth_i_lim);
-					} else {
-						// Freeze: Only available liquid water can freeze, and not more than max_ice
-						dth_i_lim = std::min(std::max(0., std::min(max_ice - Xdata.Edata[e].theta[ICE], (Xdata.Edata[e].theta[WATER] - theta_rn) * (Constants::density_water / Constants::density_ice))), dth_i_lim);
-					}
-					// Correct volumetric changes in upper and lower half of element proportional to limits
-					dth_i_down[e] = dth_i_up[e] = dth_i_lim;
+				if(dth_i_up[e] < 0.) {
+					// Melt: Only available ice can melt
+					dth_i_up[e] = std::max(-Xdata.Edata[e].theta[ICE], dth_i_up[e]);
+				} else {
+					// Freeze: Only available liquid water can freeze, and not more than max_ice
+					dth_i_up[e] = std::min(std::max(0., std::min(max_ice - Xdata.Edata[e].theta[ICE], (Xdata.Edata[e].theta[WATER] - theta_rn) * (Constants::density_water / Constants::density_ice))), dth_i_up[e]);
+				}
+				if(dth_i_down[e] < 0.) {
+					// Melt: Only available ice can melt
+					dth_i_down[e] = std::max(-Xdata.Edata[e].theta[ICE]+dth_i_up[e], dth_i_down[e]);
+				} else {
+					// Freeze: Only available liquid water can freeze, and not more than max_ice
+					dth_i_down[e] = std::min(std::max(0., std::min(max_ice - Xdata.Edata[e].theta[ICE]+dth_i_up[e], (Xdata.Edata[e].theta[WATER] - theta_rn - dth_i_up[e]) * (Constants::density_water / Constants::density_ice))), dth_i_down[e]);
 				}
 
 				// Track max. abs. change in ice contents
@@ -1103,7 +1103,7 @@ bool Snowpack::compTemperatureProfile(const CurrentMeteo& Mdata, SnowStation& Xd
 
 				if (Xdata.Seaice != NULL) {
 					// Adjust melting/freezing point assuming thermal quilibrium in the brine pockets
-					const double ThetaWater_new = (Xdata.Edata[e].theta[WATER] - 0.5 * (dth_i_up[e] + dth_i_down[e]) * (Constants::density_ice / Constants::density_water));
+					const double ThetaWater_new = (Xdata.Edata[e].theta[WATER] - (dth_i_up[e] + dth_i_down[e]) * (Constants::density_ice / Constants::density_water));
 					const double BrineSal_new = (ThetaWater_new == 0.) ? (0.) : (Xdata.Edata[e].salinity / ThetaWater_new);
 					Xdata.Edata[e].meltfreeze_tk = Xdata.Seaice->calculateMeltingTemperature(BrineSal_new);
 				}
@@ -2085,7 +2085,7 @@ void Snowpack::runSnowpackModel(CurrentMeteo& Mdata, SnowStation& Xdata, double&
 					const double max_ice = ReSolver1d::max_theta_ice;
 					for (size_t e = 0; e < Xdata.getNumberOfElements(); e++) {
 						// Net ice contents change:
-						double dth_i = 0.5 * (Xdata.Edata[e].Qph_up + Xdata.Edata[e].Qph_down) / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
+						double dth_i = (Xdata.Edata[e].Qph_up + Xdata.Edata[e].Qph_down) / ((Constants::density_ice * Constants::lh_fusion) / sn_dt);
 						// Limit to all ice melts:
 						dth_i = (dth_i<0.)?(std::max(-Xdata.Edata[e].theta[ICE], dth_i)):(dth_i);
 						// Limit to all liquid water freezes:
