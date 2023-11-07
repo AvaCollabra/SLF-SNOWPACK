@@ -35,7 +35,9 @@
  *          -# <A HREF="https://snowpack.slf.ch/Getting-started">Installation, compilation</A>
  *          -# <A HREF="https://snowpack.slf.ch/GettingHelp">Getting help</A>
  * -# End User documentation
- *    -# \subpage getting_started "Getting Started"
+ *    -# Running Snowpack
+ *       -# \subpage getting_started "Getting started & simple simulations"
+ *       -# \subpage advanced_setups "Advanced simulation setup"
  *    -# Model principles
  *        -# \subpage general "General concepts"
  *        -# Submodels documentation
@@ -117,6 +119,8 @@
  * \image html simulation_workflow.png "Simulation workflow"
  * \image latex simulation_workflow.eps "Simulation workflow" width=0.9\textwidth
  * 
+ * @page advanced_setups Advanced simulation setup
+ *
  * @section virtual_stations Spatial resampling
  * Through MeteoIO, it is possible to force Snowpack with data that has not been measured locally. The forcings are then extracted for example from gridded data (such as the outputs of
  * weather forecasting models or reanalysis models) or by spatially interpolating stations' data to the point of interest. For the data extraction or interpolation, please
@@ -533,12 +537,12 @@
  * (see section \subpage snowpackio "Snowpack file formats"). These files can be processed with some scripts, relying on GNU plot or R for generating graphs
  * but are usually viewed with a graphical application such as the open source, online niViz application.
  * 
- * @section snopviz The niViz tool
+ * @section niviz The niViz tool
  * This javascript application work in any sufficiently recent web browser ( firefox >= 33.0, Safari >= 5.1, Internet Explorer >= 11.0, 
  * Chrome >= 38). You can either use it <a href="https://run.niviz.org">online</a> and then open your profile to visualize or you can 
  * <a href="https://code.wsl.ch/snow-models/niviz/-/wikis/home">download</a> a pre-packaged version that can be installed for offline use on your computer.
- * \image html snopviz_small.png "SnopViz overview"
- * \image latex snopviz.eps "SnopVizi overview" width=0.9\textwidth
+ * \image html niviz.png "niViz overview"
+ * \image latex niviz.eps "niViz overview" width=0.9\textwidth
  * 
  */
 
