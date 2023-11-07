@@ -35,10 +35,8 @@
  *          -# <A HREF="https://snowpack.slf.ch/Getting-started">Installation, compilation</A>
  *          -# <A HREF="https://snowpack.slf.ch/GettingHelp">Getting help</A>
  * -# End User documentation
- *    -# Running Snowpack
- *       -# \subpage getting_started "Getting started & simple simulations"
- *       -# \subpage advanced_setups "Advanced simulation setup"
- *    -# Model principles
+ *    -# \subpage getting_started "Getting Started"
+ *    -# Model principles & configuration
  *        -# \subpage general "General concepts"
  *        -# Submodels documentation
  *            -# \subpage water_transport "Water Transport"
@@ -50,6 +48,7 @@
  *    -# Inputs / Outputs
  *        -# \subpage requirements "Data requirements"
  *        -# \subpage snowpackio "Data file formats"
+ *        -# \subpage advanced_setups "Advanced simulation setup"
  *    -# Simulation tools
  *        -# \subpage configuration "Configuring a simulation"
  *        -# \subpage snowpack_visualization "Visualization of the results"
@@ -80,7 +79,7 @@
  */
 
 /**
- * @page getting_started Getting Started
+ * @page getting_started Simple simulations
  * After you installed a binary package or compiled and installed %Snowpack, you can run your first simulation.
  * Please make sure you properly set the proper environement variables for your operating system:
  *      - on osX: set \em PATH and \em DYLD_FALLBACK_LIBRARY_PATH
@@ -114,11 +113,15 @@
  * @section model_workflow Simulation workflow
  * When running a simulation, it is important to keep in mind that the model is organized as several modules that interract together. It is possible to configure
  * some parameters for the various modules and to enable/disable modules. Some modules can be used outside of Snowpack (like
- * <A HREF="https://meteoio.slf.ch">MeteoIO</A> that is used in various applications or libSnowpack that is used by <A HREF="https://alpine3d.slf.ch">Alpine3D</A>) .
+ * <A HREF="https://meteoio.slf.ch">MeteoIO</A> that is used in various applications or libSnowpack that is used by <A HREF="https://alpine3d.slf.ch">Alpine3D</A>).
+ *  More complex simulation workflows (such as spatial resampling or one-way coupling with other numerical models) are presented in the
+ * \subpage advanced_setups "Advanced simulation setup" page.
  *
  * \image html simulation_workflow.png "Simulation workflow"
  * \image latex simulation_workflow.eps "Simulation workflow" width=0.9\textwidth
- * 
+ */
+
+ /**
  * @page advanced_setups Advanced simulation setup
  *
  * @section virtual_stations Spatial resampling
