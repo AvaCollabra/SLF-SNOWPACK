@@ -1479,7 +1479,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 								s[i]=tmp;					//Reset source/sink term to original value
 								solver_result=-1;				//Trigger rewind
 							} else {
-								std::cout << "[W] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied with dt=" << dt << ". Term reduced from " << tmp << " to " << s[i] << ".\n";
+								std::cout << "[W] [" << date.toString(mio::Date::ISO) << "] ReSolver1d.cc: for layer " << i << ", prescribed source/sink term could not be applied with dt=" << dt << ". Term reduced from " << tmp << " to " << s[i] << ".\n";
 							}
 						}
 					}
@@ -1882,7 +1882,7 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 									}
 								}
 								if(BS_converged==false) {
-									if(WriteDebugOutput) std::cout << "[W] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = " << dt << ".\n";
+									if(WriteDebugOutput) std::cout << "[W] [" << date.toString(mio::Date::ISO) << "] ReSolver1d.cc: Bisect-Secant method failed to converge in soil freezing with dt = " << dt << ".\n";
 									if(WriteDebugOutput) {
 										const double tmp_T = EMS[i].Te + delta_Te_adv[i] + delta_Te_adv_i[i] + delta_Te[i] + delta_Te_i[i] + delta_Te_ck;
 										std::cout << "  -- BS_ITER [" << BS_iter << std::scientific << "]: a=" << ak << " b=" << bk << " c=" << ck << " (max: " << max_delta_ice << ") " << delta_w_ck << " " << tmp_T << " " << EMS[i].meltfreeze_tk << ": fa: " << (delta_w_ak + ak*(Constants::density_ice/Constants::density_water)) << " fb: " << (delta_w_bk + bk*(Constants::density_ice/Constants::density_water)) << " fc: " << (delta_w_ck + ck*(Constants::density_ice/Constants::density_water)) << "\n" << std::fixed;
@@ -2066,10 +2066,10 @@ void ReSolver1d::SolveRichardsEquation(SnowStation& Xdata, SurfaceFluxes& Sdata,
 					DoThrow=true;
 				} else {
 					if(seq_safemode>3) {
-						std::cout << "[E] ERROR in Richards-Equation solver: no convergence! SafeMode was not able to continue simulation!\n";
+						std::cout << "[E] [" << date.toString(mio::Date::ISO) << "] ERROR in Richards-Equation solver: no convergence! SafeMode was not able to continue simulation!\n";
 						DoThrow=true;
 					} else {
-						std::cout << "[W] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << ", stn=" << Xdata.meta.stationID << "].\n";
+						std::cout << "[W] [" << date.toString(mio::Date::ISO) << "] WARNING in Richards-Equation solver: no convergence! SafeMode was used to continue simulation! [" << seq_safemode << ", stn=" << Xdata.meta.stationID << "].\n";
 					}
 				}
 				std::cout << "    POSSIBLE SOLUTIONS:\n  ========================================================================================\n";
