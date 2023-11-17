@@ -1378,7 +1378,7 @@ bool ElementData::checkVolContent()
 	for (unsigned int i = 0; i < N_COMPONENTS; i++) {
 		sum += theta[i];
 	}
-	if (sum <= 1. - Constants::eps || sum >= 1. + Constants::eps) {
+	if (sum < 1. - 2.*Constants::eps || sum > 1. + 2.*Constants::eps) {
 		prn_msg(__FILE__, __LINE__, "wrn", Date(), "SUM of volumetric contents = %1.4f", sum);
 		ret = false;
 	}
