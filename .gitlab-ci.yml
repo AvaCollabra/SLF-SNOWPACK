@@ -105,6 +105,21 @@ implicitsolver:
   variables:
     TEST_NAME: implicitsolver.smoke
 
+validate xml:
+  stage: test
+  image: python:3
+  before_script:
+    - apt-get update && apt-get install -y default-jre
+  script:
+    - pip3 install -r tools/schema_validation/requirements.txt
+    - INISHELL_APP_CONFIGS=$(find inishell-apps/ -type f -name "*.xml")
+    - INISHELL_SIMULATIONS=$(find simulations/ -type f -name "*.xml")
+    - INISHELL_DOCS=$(find resources/doc/ -type f -name "*.xml")
+    - INISHELL_SETTINGS="resources/settings_dialog.xml"
+    - python3 tools/schema_validation/validate.py tools/schema_validation/settings_schema.xsd resources/inishell_settings_minimal.xml
+    - python3 tools/schema_validation/validate.py tools/schema_validation/config_schema.xsd $INISHELL_APP_CONFIGS $INISHELL_SIMULATIONS $INISHELL_DOCS $INISHELL_SETTINGS
+
+
 running times and coverage:
   stage: test coverage
   script:

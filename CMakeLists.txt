@@ -153,6 +153,16 @@ ADD_CUSTOM_TARGET(distclean make clean
 	COMMAND cmake -E remove *~ CMakeCache.txt cmake_install.cmake CPack*.cmake cmake_*.cmake Makefile
 	)
 
+# Install the inishell apps, so they can be found
+SET(XML_DEST inishell-apps/meteoio)
+IF((UNIX) AND (NOT APPLE) AND (NOT WIN32))
+	SET(XML_DEST share/inishell-apps/meteoio)
+ENDIF()
+
+FILE(GLOB xmlfiles "inishell-apps/*.xml")
+INSTALL(FILES ${xmlfiles} DESTINATION ${XML_DEST} COMPONENT resources)
+FILE(GLOB pngfiles "inishell-apps/*.png")
+INSTALL(FILES ${pngfiles} DESTINATION ${XML_DEST} COMPONENT resources)
 ###########################################################
 #for the uninstall target
 CONFIGURE_FILE(
