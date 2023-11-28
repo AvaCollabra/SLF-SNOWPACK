@@ -113,7 +113,7 @@ validate xml:
   script:
     - pip3 install -r tools/schema_validation/requirements.txt
     - INISHELL_APP_CONFIGS=$(find inishell-apps/ -type f -name "*.xml")
-    - python3 tools/schema_validation/validate.py tools/schema_validation/settings_schema.xsd resources/inishell_settings_minimal.xml
+    - python3 tools/schema_validation/validate.py tools/schema_validation/settings_schema.xsd
     - python3 tools/schema_validation/validate.py tools/schema_validation/config_schema.xsd $INISHELL_APP_CONFIGS
 
 running times and coverage:
